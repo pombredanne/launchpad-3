@@ -132,9 +132,6 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.accountID == p.accountID
-    True
-
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
@@ -145,10 +142,7 @@ using the createPersonAndEmail() method.
     >>> from lp.services.identity.model.account import Account
     >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
-    >>> account.activate(
-    ...     "Activated by doc test.",
-    ...     password=p.password,
-    ...     preferred_email=email)
+    >>> account.reactivate("Activated by doc test.", password=p.password)
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 

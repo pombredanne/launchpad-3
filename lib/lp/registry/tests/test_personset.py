@@ -229,7 +229,6 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             email = from_person.preferredemail
             email.status = EmailAddressStatus.NEW
             email.person = to_person
-            email.account = to_person.account
         transaction.commit()
 
     def _do_merge(self, from_person, to_person, reviewer=None):
@@ -725,12 +724,10 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         # The old email address is still there and correctly linked.
         self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.account, self.account)
         self.assertIs(self.email.person, self.person)
 
         # The new email address is there too and correctly linked.
         new_email = self.store.find(EmailAddress, email=new_email).one()
-        self.assertIs(new_email.account, self.account)
         self.assertIs(new_email.person, self.person)
         self.assertEqual(EmailAddressStatus.NEW, new_email.status)
 
@@ -751,31 +748,8 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         # It is correctly linked to an account, emailaddress and
         # identifier.
         self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
-
-    def testNoPerson(self):
-        # If the account is not linked to a Person, create one. ShipIt
-        # users fall into this category the first time they log into
-        # Launchpad.
-        self.email.person = None
-        self.person.account = None
-
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, self.email.email, 'New Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        # We have a new Person
-        self.assertIs(True, updated)
-        self.assertIsNot(self.person, found)
-
-        # It is correctly linked to an account, emailaddress and
-        # identifier.
-        self.assertIs(found, found.preferredemail.person)
-        self.assertIs(found.account, found.preferredemail.account)
-        self.assertIn(self.identifier, list(found.account.openid_identifiers))
 
     def testNoAccount(self):
         # EmailAddress is linked to a Person, but there is no Account.
@@ -795,7 +769,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertEqual(
             new_identifier, found.account.openid_identifiers.any().identifier)
         self.assertIs(self.email.person, found)
-        self.assertIs(self.email.account, found.account)
         self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
 
     def testMovedEmailAddress(self):
@@ -916,41 +889,6 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
             self.email_address, self.displayname, self.rationale)
         self.assertTrue(ensured_person.hide_email_addresses)
 
-    def test_ensurePerson_for_existing_account(self):
-        # IPerson.ensurePerson creates missing Person for existing
-        # Accounts.
-        test_account = self.factory.makeAccount(
-            self.displayname, email=self.email_address)
-        self.assertIs(None, test_account.preferredemail.person)
-
-        ensured_person = self.person_set.ensurePerson(
-            self.email_address, self.displayname, self.rationale)
-        self.assertEquals(test_account.id, ensured_person.account.id)
-        self.assertEquals(
-            test_account.preferredemail, ensured_person.preferredemail)
-        self.assertEquals(ensured_person, test_account.preferredemail.person)
-        self.assertTrue(ensured_person.hide_email_addresses)
-
-    def test_ensurePerson_for_existing_account_with_person(self):
-        # IPerson.ensurePerson return existing Person for existing
-        # Accounts and additionally bounds the account email to the
-        # Person in question.
-
-        # Create a testing `Account` and a testing `Person` directly,
-        # linked.
-        testing_account = self.factory.makeAccount(
-            self.displayname, email=self.email_address)
-        testing_person = removeSecurityProxy(
-            testing_account).createPerson(self.rationale)
-        self.assertEqual(
-            testing_person, testing_account.preferredemail.person)
-
-        # Since there's an existing Person for the given email address,
-        # IPersonSet.ensurePerson() will just return it.
-        ensured_person = self.person_set.ensurePerson(
-            self.email_address, self.displayname, self.rationale)
-        self.assertEqual(testing_person, ensured_person)
-
 
 class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
 
@@ -976,25 +914,6 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
 
         self.assertEqual(person, result)
         self.assertFalse(db_updated)
-
-    def test_existing_account_no_person(self):
-        # A person is created with the correct rationale.
-        account = self.factory.makeAccount('purchaser')
-        openid_ident = removeSecurityProxy(
-            account).openid_identifiers.any().identifier
-
-        person, db_updated = self.callGetOrCreate(openid_ident)
-
-        self.assertEqual(account, person.account)
-        # The person is created with the correct rationale and creation
-        # comment.
-        self.assertEqual(
-            "when purchasing an application via Software Center.",
-            person.creation_comment)
-        self.assertEqual(
-            PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
-            person.creation_rationale)
-        self.assertTrue(db_updated)
 
     def test_existing_deactivated_account(self):
         # An existing deactivated account will be reactivated.

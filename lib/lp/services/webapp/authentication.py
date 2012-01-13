@@ -68,7 +68,7 @@ class PlacelessAuthUtility:
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None and principal.account.is_valid:
+            if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
                 if principal.validate(password):
                     # We send a LoggedInEvent here, when the
@@ -107,7 +107,7 @@ class PlacelessAuthUtility:
             # available in login source. This happens when account has
             # become invalid for some reason, such as being merged.
             return None
-        elif principal.account.is_valid:
+        elif principal.person.is_valid_person:
             login = authdata['login']
             assert login, 'login is %s!' % repr(login)
             notify(CookieAuthPrincipalIdentifiedEvent(
@@ -276,13 +276,11 @@ class LaunchpadLoginSource:
         validate the password against so it may then email a validation
         request to the user and inform them it has done so.
         """
-        try:
-            account = getUtility(IAccountSet).getByEmail(login)
-        except LookupError:
+        person = getUtility(IPersonSet).getByEmail(login)
+        if person is None or person.account is None:
             return None
-        else:
-            return self._principalForAccount(
-                account, access_level, scope, want_password)
+        return self._principalForAccount(
+            person.account, access_level, scope, want_password)
 
     def _principalForAccount(self, account, access_level, scope,
                              want_password=True):

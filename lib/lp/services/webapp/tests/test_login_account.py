@@ -17,7 +17,6 @@ from lp.services.identity.interfaces.account import (
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.interfaces import (
     CookieAuthLoggedInEvent,
-    ILaunchpadPrincipal,
     IPlacelessAuthUtility,
     )
 from lp.services.webapp.login import (
@@ -27,7 +26,6 @@ from lp.services.webapp.login import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
-    ANONYMOUS,
     login,
     TestCaseWithFactory,
     )
@@ -172,34 +170,3 @@ class TestLoginAndLogout(TestCaseWithFactory):
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
         self.failUnless(principal is None)
-
-
-class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.request = LaunchpadTestRequest()
-        login(ANONYMOUS)
-        account_set = getUtility(IAccountSet)
-        account, email = account_set.createAccountAndEmail(
-            'foo@example.com', AccountCreationRationale.UNKNOWN,
-            'Display name', 'password')
-        self.principal = LaunchpadPrincipal(
-            account.id, account.displayname, account.displayname, account)
-        login('foo@example.com')
-
-    def test_logInPrincipal(self):
-        # logInPrincipal() will log the given principal in and not worry about
-        # its lack of an associated Person.
-        logInPrincipal(self.request, self.principal, 'foo@example.com')
-
-        # Ensure we are using cookie auth.
-        self.assertIsNotNone(
-            self.request.response.getCookie(config.launchpad_session.cookie)
-            )
-
-        placeless_auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = placeless_auth_utility.authenticate(self.request)
-        self.failUnless(ILaunchpadPrincipal.providedBy(principal))
-        self.failUnless(principal.person is None)
