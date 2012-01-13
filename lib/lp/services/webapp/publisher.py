@@ -314,7 +314,11 @@ class LaunchpadView(UserAttributeCache):
     @property
     def yui_version(self):
         """The version of YUI we are using."""
-        return 'yui'
+        value = getFeatureFlag('js.yui_version')
+        if not value:
+            return 'yui'
+        else:
+            return value
 
     def render(self):
         """Return the body of the response.
