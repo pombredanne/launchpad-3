@@ -9,11 +9,11 @@ By default the bug heat appears on the bug index page as four flames.
     >>> print_heat()
     <a href="/+help-bugs/bug-heat.html" target="help" class="icon"><img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 0" /></a>
 
-But the bugs.numeric_heat.enabled feature flag displays it as a number
+But the bugs.heat_ratio_display.disabled feature flag displays it as a number
 instead.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> with FeatureFixture({'bugs.numeric_heat.enabled': 'true'}):
+    >>> with FeatureFixture({'bugs.heat_ratio_display.disabled': 'true'}):
     ...     anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> print_heat()
     <a href="/+help-bugs/bug-heat.html" target="help" class="sprite flame">0</a>

@@ -1082,7 +1082,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if getFeatureFlag('bugs.numeric_heat.enabled'):
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
             return (
                 '<span><a href="/+help-bugs/bug-heat.html" target="help" '
                 'class="sprite flame">%d</a></span>' % self.context.bug.heat)
@@ -2217,7 +2217,7 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        if getFeatureFlag('bugs.numeric_heat.enabled'):
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
             if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
                 return (
                     '<span class="sprite flame">%d</span>'
@@ -2230,7 +2230,7 @@ class BugTaskListingItem:
     @property
     def center_bug_heat(self):
         """Returns whether the bug_heat_html should be centered."""
-        return not getFeatureFlag('bugs.numeric_heat.enabled')
+        return not getFeatureFlag('bugs.heat_ratio_display.disabled')
 
     @property
     def model(self):
