@@ -31,10 +31,7 @@ cp lib/lp/app/longpoll/javascript/longpoll.js $BUILD_DIR/lp
 utilities/js-deps -n LP_MODULES -s $BUILD_DIR/lp -o $BUILD_DIR/lp/meta.js >/dev/null
 
 # Minify our JS.
-#for jsfile in $(find $BUILD_DIR/lp -name '*.js') ; do
-#    outfile=$(echo $jsfile | sed -e 's/.js$/-min.js/')
-#	bin/py -m lp.scripts.utilities.js.jsmin < $jsfile > $outfile
-#done
+bin/py -m lp.scripts.utilities.js.jsmin_all $BUILD_DIR/lp
 
 # Check if any JS modules are missing.
 error=0
