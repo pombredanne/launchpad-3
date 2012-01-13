@@ -40,6 +40,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+CONVOY_ROOT=/var/tmp/convoy
+
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
@@ -178,7 +180,7 @@ else
 endif
 
 jsbuild: $(PY) $(JS_OUT)
-	bin/combo-rootdir
+	bin/combo-rootdir $(CONVOY_ROOT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -234,6 +236,7 @@ compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	mkdir -p $(CONVOY_ROOT)
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -252,7 +255,7 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll,combo-loader -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -269,7 +272,7 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll,combo-loader \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
 	 -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -348,13 +351,13 @@ rebuildfti:
 clean_js:
 	$(RM) $(JS_OUT)
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+	$(RM) -r $(CONVOY_ROOT)
 
 clean_buildout:
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
 
