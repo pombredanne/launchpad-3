@@ -21,15 +21,23 @@ parser = argparse.ArgumentParser(
     description='Create an LXC test environment for Launchpad testing.')
 parser.add_argument(
     '-u', '--user', required=True,
-    help=('The name of the user on this system for which the test '
-          'environment will be installed.'))
+    help=('The name of the system user to be created.'))
+parser.add_argument(
+    '-e', '--email', required=True,
+    help=('The email of the user, used for bzr whoami.'))
+parser.add_argument(
+    '-m', '--name', required=True,
+    help=('The full name of the user, used fo bzr whoami.'))
 parser.add_argument(
     '-l', '--lpuser',
     help=('The name of the Launchpad user that will be used to check out '
           'dependencies.  If not provided, the system user name is used.'))
 parser.add_argument(
-    '-p', '--private-key', required=True,
+    '-v', '--private-key', required=True,
     help='The SSH private key for the Launchpad user.')
+parser.add_argument(
+    '-b', '--public-key', required=True,
+    help='The SSH public key for the Launchpad user.')
 parser.add_argument(
     'directory',
     help='The directory of the Launchpad repository to be created.')
@@ -81,5 +89,10 @@ def main(user, fullname, email, lpuser, private_key, public_key, directory):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    main(
-        args.user, args.lpuser or args.user, args.private_key, args.directory)
+    main(args.user,
+         args.fullname,
+         args.email,
+         args.lpuser or args.user,
+         args.private_key,
+         args.public_key,
+         args.directory)
