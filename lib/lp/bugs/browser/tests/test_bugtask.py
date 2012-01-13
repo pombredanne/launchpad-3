@@ -2382,3 +2382,13 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
+
+    def test_model_numeric_heat(self):
+        """bug_heat_html contains just the number if the flag is enabled."""
+        with FeatureFixture({'bugs.numeric_heat.enabled': 'true'}):
+            owner, item = make_bug_task_listing_item(self.factory)
+            self.assertNotIn('/@@/bug-heat', item.bug_heat_html)
+            self.assertIn('sprite flame', item.bug_heat_html)
+            with person_logged_in(owner):
+                model = item.model
+                self.assertEqual(item.bug_heat_html, model['bug_heat_html'])

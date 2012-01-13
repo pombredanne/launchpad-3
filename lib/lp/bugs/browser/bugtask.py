@@ -1082,11 +1082,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            return bugtask_heat_html(
-                self.context, target=self.context.distribution)
+        if getFeatureFlag('bugs.numeric_heat.enabled'):
+            return (
+                '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+                'class="sprite flame">%d</a></span>' % self.context.bug.heat)
         else:
-            return bugtask_heat_html(self.context)
+            if IDistributionSourcePackage.providedBy(self.context.target):
+                return bugtask_heat_html(
+                    self.context, target=self.context.distribution)
+            else:
+                return bugtask_heat_html(self.context)
 
     @property
     def privacy_notice_classes(self):
@@ -2212,7 +2217,20 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask, target=self.target_context)
+        if getFeatureFlag('bugs.numeric_heat.enabled'):
+            if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+                return (
+                    '<span class="sprite flame">%d</span>'
+                    % self.bugtask.bug.heat)
+            else:
+                return str(self.bugtask.bug.heat)
+        else:
+            return bugtask_heat_html(self.bugtask, target=self.target_context)
+
+    @property
+    def center_bug_heat(self):
+        """Returns whether the bug_heat_html should be centered."""
+        return not getFeatureFlag('bugs.numeric_heat.enabled')
 
     @property
     def model(self):
