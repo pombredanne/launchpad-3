@@ -62,7 +62,7 @@
         links: {}
     };
   </script>
-  <tal:js-legacy condition="not features/js.combo_loader.enabled">
+  <tal:js-legacy condition="not: features/js.combo_loader.enabled">
     <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
   </tal:js-legacy>
@@ -118,7 +118,6 @@
         };
    </script>
   </tal:js-loader>
-
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
