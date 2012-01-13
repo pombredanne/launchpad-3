@@ -62,11 +62,18 @@
         links: {}
     };
   </script>
+  <tal:js-legacy condition="not features/js.combo_loader.enabled">
+    <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+  </tal:js-legacy>
+
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+
+  <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
    src="http://localhost:8000/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
-  <script type="text/javascript">
+   <script type="text/javascript">
         YUI.GlobalConfig = {
             combine: true,
             comboBase: 'http://localhost:8000/?',
@@ -110,6 +117,8 @@
             }
         };
    </script>
+  </tal:js-loader>
+
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"

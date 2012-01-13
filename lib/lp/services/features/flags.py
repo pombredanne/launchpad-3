@@ -109,7 +109,7 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('js.use_combo',
+    ('js.combo_loader',
      'boolean',
      'Determines if we use a js combo loader or not.',
      '',
