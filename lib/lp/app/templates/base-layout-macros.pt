@@ -74,8 +74,6 @@
   <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
    src="/combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
-  <script type="text/javascript">
-   src="/combo?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
