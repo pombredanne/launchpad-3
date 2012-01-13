@@ -39,6 +39,7 @@
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
+      yui_version view/yui_version;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -62,11 +63,20 @@
         links: {}
     };
   </script>
+  <tal:js-legacy condition="not: features/js.combo_loader.enabled">
+    <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+  </tal:js-legacy>
+
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+
+  <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
    src="/combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
   <script type="text/javascript">
+   src="/combo?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+   <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
             comboBase: '/combo/?',
@@ -79,6 +89,7 @@
                     base: '/combo/?lp/',
                     comboBase: '/combo/?',
                     root: 'lp/',
+                    // comes from including lp/meta.js
                     modules: LP_MODULES,
                     fetchCSS: false
                 },
@@ -107,8 +118,9 @@
                     }
                 }
             }
-        };
+        }">
    </script>
+  </tal:js-loader>
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
@@ -124,9 +136,9 @@
 
     <script id="base-layout-load-scripts" type="text/javascript">
         YUI().use('base', 'event', 'event-delegate', 'lp',
-            'lp.app.beta_features', 'lp.app.foldables', 'lp.app.inlinehelp',
-            'lp.app.links', 'lp.app.longpoll', 'lp.app.privacy',
-            'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+            'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
+            'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
+            'lp.app.privacy', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
             'oop', function(Y) {
 
@@ -136,7 +148,6 @@
                     Y.lp.app.privacy.display_privacy_notification();
                 }
                 Y.lp.app.beta_features.display_beta_notification();
-
                 Y.lp.app.sorttable.SortTable.init();
                 Y.lp.app.inlinehelp.init_help();
                 Y.lp.activate_collapsibles();
