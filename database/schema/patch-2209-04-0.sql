@@ -10,6 +10,7 @@ ALTER TABLE specification
 ALTER TABLE specification ALTER COLUMN date_last_changed SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 
 CREATE INDEX specification__last_changed_by__idx ON specification USING btree (last_changed_by) WHERE (last_changed_by IS NOT NULL);
+CREATE INDEX specification__date_last_changed__idx ON specification USING btree (date_last_changed);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 04, 0);
 
