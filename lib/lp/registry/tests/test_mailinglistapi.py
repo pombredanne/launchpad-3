@@ -73,10 +73,6 @@ class MailingListAPITestCase(TestCaseWithFactory):
     def test_isRegisteredInLaunchpad_email_no_email_address(self):
         self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
 
-    def test_isRegisteredInLaunchpad_email_without_person(self):
-        self.factory.makeAccount('Me', email='me@fndor.dom')
-        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))
-
     def test_isRegisteredInLaunchpad_archive_address_is_false(self):
         # The Mailman archive address can never be owned by an Lp user
         # because such a user would have acces to all lists.

@@ -168,8 +168,9 @@ class BugImporter:
             person = None
 
         if person is None:
-            address = getUtility(IEmailAddressSet).getByEmail(email)
-            if address is None:
+            person = getUtility(IPersonSet).getByEmail(email)
+
+            if person is None:
                 self.logger.debug('creating person for %s' % email)
                 # Has the short name been taken?
                 if name is not None and (
@@ -184,26 +185,6 @@ class BugImporter:
                         rationale=PersonCreationRationale.BUGIMPORT,
                         comment=('when importing bugs for %s' %
                                  self.product.displayname)))
-            elif address.personID is None:
-                # The user has an Account and and EmailAddress linked
-                # to that account.
-                assert address.accountID is not None, (
-                    "Email address not linked to an Account: %s " % email)
-                self.logger.debug(
-                    'creating person from account for %s' % email)
-                if name is not None and (
-                    person_set.getByName(name) is not None):
-                    # The short name is already taken, so we'll pass
-                    # None to createPerson(), which will take care of
-                    # creating a unique one.
-                    name = None
-                person = address.account.createPerson(
-                    rationale=PersonCreationRationale.BUGIMPORT,
-                    name=name, comment=('when importing bugs for %s' %
-                                        self.product.displayname))
-            else:
-                # EmailAddress and Person are in different stores.
-                person = person_set.get(address.personID)
 
             self.person_id_cache[email] = person.id
 

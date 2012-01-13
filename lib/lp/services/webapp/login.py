@@ -323,11 +323,11 @@ class OpenIDCallbackView(OpenIDLogin):
         finally:
             timeline_action.finish()
 
-    def login(self, account):
+    def login(self, person):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
-        email = removeSecurityProxy(account.preferredemail).email
+        email = removeSecurityProxy(person.preferredemail).email
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
@@ -383,7 +383,7 @@ class OpenIDCallbackView(OpenIDLogin):
             return self.suspended_account_template()
 
         with MasterDatabasePolicy():
-            self.login(person.account)
+            self.login(person)
 
         if should_update_last_write:
             # This is a GET request but we changed the database, so update

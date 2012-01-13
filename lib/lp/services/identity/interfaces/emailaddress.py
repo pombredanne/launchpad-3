@@ -32,7 +32,6 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.role import IHasOwner
-from lp.services.identity.interfaces.account import IAccount
 
 
 class InvalidEmailAddress(Exception):
@@ -99,8 +98,6 @@ class IEmailAddress(IHasOwner):
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
-    account = Object(title=_('Account'), schema=IAccount, required=False)
-    accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
         Reference(title=_('Person'), required=False, readonly=False,
                   schema=Interface))
@@ -131,12 +128,10 @@ class IEmailAddress(IHasOwner):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+    def new(email, person=None, status=EmailAddressStatus.NEW):
         """Create a new EmailAddress with the given email.
 
-        The newly created EmailAddress will point to the person
-        and/or account. If account is omitted and the person has a linked
-        account, that account will be used.
+        The newly created EmailAddress will point to the person.
 
         The given status must be an item of EmailAddressStatus.
 
