@@ -39,6 +39,7 @@
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
+      yui_version view/yui_version;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -73,11 +74,11 @@
   <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
    src="/combo/revno/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
-  <script type="text/javascript">
+   <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
             comboBase: '/combo/revno/?',
-            root: 'yui/',
+            root: '${yui_version}/',
             filter: 'raw',
             fetchCSS: false,
             groups: {
@@ -115,7 +116,7 @@
                     }
                 }
             }
-        };
+        }">
    </script>
   </tal:js-loader>
 </metal:load-javascript>

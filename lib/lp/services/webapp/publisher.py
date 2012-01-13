@@ -311,6 +311,11 @@ class LaunchpadView(UserAttributeCache):
         """The page's template, if configured in zcml."""
         return self.index
 
+    @property
+    def yui_version(self):
+        """The version of YUI we are using."""
+        return 'yui'
+
     def render(self):
         """Return the body of the response.
 
