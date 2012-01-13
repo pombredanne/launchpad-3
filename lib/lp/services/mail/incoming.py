@@ -225,13 +225,7 @@ def authenticateEmail(mail,
         setupInteraction(authutil.unauthenticatedPrincipal())
         return None
 
-    # People with accounts but no related person will have a principal, but
-    # the person adaptation will fail.
     person = IPerson(principal, None)
-    if person is None:
-        setupInteraction(authutil.unauthenticatedPrincipal())
-        return None
-
     if person.account_status != AccountStatus.ACTIVE:
         raise InactiveAccount(
             "Mail from a user with an inactive account.")

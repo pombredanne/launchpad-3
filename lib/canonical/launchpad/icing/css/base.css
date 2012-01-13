@@ -264,6 +264,9 @@ table.sortable a.sortheader {
 table.sortable img.sortarrow {
     padding-left: 2px;
     }
+table.sortable th {
+    cursor: pointer;
+    }
 th.ascending {
     background-image: url(/@@/arrowDown);
     background-position: center right;

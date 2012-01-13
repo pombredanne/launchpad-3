@@ -31,16 +31,16 @@ from lp.services.webapp.interfaces import (
 
 class DummyPerson(object):
     implements(IPerson)
-    is_valid = True
+    is_valid_person = True
 
 
 class DummyAccount(object):
     implements(IAccount)
-    is_valid = True
     person = DummyPerson()
 
 
 Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount(), 'bruce!')
+Bruce.person = Bruce.account.person
 
 
 class DummyPlacelessLoginSource(object):
