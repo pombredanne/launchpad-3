@@ -65,19 +65,19 @@
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
    <script
-   src="http://localhost:8000/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+   src="/combo/revno/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
   <script type="text/javascript">
         YUI.GlobalConfig = {
             combine: true,
-            comboBase: 'http://localhost:8000/?',
+            comboBase: '/combo/revno/?',
             root: 'yui/',
             filter: 'raw',
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: 'http://localhost:8000/?lp/',
-                    comboBase: 'http://localhost:8000/?',
+                    base: '/combo/revno/?lp/',
+                    comboBase: '/combo/revno/?',
                     root: 'lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
@@ -85,7 +85,7 @@
                 },
                 yui2: {
                     combine: true,
-                    base: 'http://localhost:8000/?yui2/',
+                    base: '/combo/revno/?yui2/',
                     comboBase: 'http://localhost:8000/?',
                     root: 'yui2/',
                     fetchCSS: false,
