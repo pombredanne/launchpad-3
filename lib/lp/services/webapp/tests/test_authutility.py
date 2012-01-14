@@ -4,29 +4,30 @@
 __metaclass__ = type
 
 import base64
-import unittest
 
 from zope.app.security.basicauthadapter import BasicAuthAdapter
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.app.testing import ztapi
-from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
 from lp.registry.interfaces.person import IPerson
+from lp.services.config import config
 from lp.services.identity.interfaces.account import IAccount
-from lp.services.webapp.authentication import (
-    LaunchpadPrincipal,
-    PlacelessAuthUtility,
-    )
+from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.interfaces import (
     IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
+from lp.testing import TestCase
+from lp.testing.fixture import (
+    ZopeAdapterFixture,
+    ZopeUtilityFixture,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class DummyPerson(object):
@@ -55,29 +56,14 @@ class DummyPlacelessLoginSource(object):
         return [Bruce]
 
 
-class DummyPasswordEncryptor(object):
-    implements(IPasswordEncryptor)
+class TestPlacelessAuth(TestCase):
 
-    def validate(self, plaintext, encrypted):
-        return plaintext == encrypted
-
-
-class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        PlacelessSetup.setUp(self)
-        ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())
-        ztapi.provideUtility(IPlacelessLoginSource,
-                             DummyPlacelessLoginSource())
-        ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
-        ztapi.provideAdapter(
-            IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
-
-    def tearDown(self):
-        ztapi.unprovideUtility(IPasswordEncryptor)
-        ztapi.unprovideUtility(IPlacelessLoginSource)
-        ztapi.unprovideUtility(IPlacelessAuthUtility)
-        PlacelessSetup.tearDown(self)
+        super(TestPlacelessAuth, self).setUp()
+        self.useFixture(ZopeUtilityFixture(
+            DummyPlacelessLoginSource(), IPlacelessLoginSource, ''))
 
     def _make(self, login, pwd):
         dict = {
@@ -87,11 +73,11 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
         return getUtility(IPlacelessAuthUtility), request
 
     def test_authenticate_ok(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.authenticate(request), Bruce)
 
     def test_authenticate_notok(self):
-        authsvc, request = self._make('bruce', 'notbruce!')
+        authsvc, request = self._make('bruce', 'nottest')
         self.assertEqual(authsvc.authenticate(request), None)
 
     def test_unauthenticatedPrincipal(self):
@@ -100,18 +86,33 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
                                 UnauthenticatedPrincipal))
 
     def test_unauthorized(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.unauthorized('bruce', request), None)
         self.assertEqual(request._response._status, 401)
 
+    def test_only_for_testrunner(self):
+        # Basic authentication only works on a launchpad_ftest*
+        # database, with a mainsite hostname of launchpad.dev. It has a
+        # hardcoded password, so must never be used on production.
+        try:
+            config.push(
+                "change-rooturl", "[vhost.mainsite]\nhostname: launchpad.net")
+            authsvc, request = self._make('bruce', 'test')
+            self.assertRaisesWithContent(
+                AssertionError,
+                "Attempted to use basic auth outside the test suite.",
+                authsvc.authenticate, request)
+        finally:
+            config.pop("change-rooturl")
+
     def test_getPrincipal(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipal('bruce'), Bruce)
 
     def test_getPrincipals(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipals('bruce'), [Bruce])
 
     def test_getPrincipalByLogin(self):
-        authsvc, request = self._make('bruce', 'bruce!')
+        authsvc, request = self._make('bruce', 'test')
         self.assertEqual(authsvc.getPrincipalByLogin('bruce'), Bruce)
