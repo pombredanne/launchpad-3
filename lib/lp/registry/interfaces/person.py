@@ -766,8 +766,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
     karma = exported(
         Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
@@ -1820,7 +1818,6 @@ class IPersonSpecialRestricted(Interface):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
-            - Setting its password to NULL;
             - Removing the user from all teams he's a member of;
             - Changing all his email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
@@ -1830,17 +1827,16 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
-    def reactivate(comment, password, preferred_email):
+    def reactivate(comment, preferred_email):
         """Reactivate this person and its account.
 
-        Set the account status to ACTIVE, the account's password to the given
-        one and its preferred email address.
+        Set the account status to ACTIVE, and update the preferred email
+        address.
 
         If the person's name contains a -deactivatedaccount suffix (usually
         added by `IPerson`.deactivateAccount(), it is removed.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
         """
@@ -2073,7 +2069,6 @@ class IPersonSet(Interface):
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
-            password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """Create and return an `IPerson` and `IEmailAddress`.
 
@@ -2094,9 +2089,6 @@ class IPersonSet(Interface):
             (e.g. "when the foo package was imported into Ubuntu Breezy").
         :param name: The person's name.
         :param displayname: The person's displayname.
-        :param password: The person's password.
-        :param passwordEncrypted: Whether or not the given password is
-            encrypted.
         :param registrant: The user who created this person, if any.
         :param hide_email_addresses: Whether or not Launchpad should hide the
             person's email addresses from other users.

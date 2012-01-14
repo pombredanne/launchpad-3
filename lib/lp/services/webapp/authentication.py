@@ -307,10 +307,6 @@ class LaunchpadLoginSource:
         account's password.  Otherwise it's set to None.
         """
         naked_account = removeSecurityProxy(account)
-        if want_password:
-            password = naked_account.password
-        else:
-            password = None
         principal = LaunchpadPrincipal(
             naked_account.id, naked_account.displayname,
             naked_account.displayname, account,
