@@ -112,6 +112,20 @@ class TestZopeUtilityFixture(TestCase):
             self.assertEquals(get_mailer(), fake)
         self.assertRaises(ComponentLookupError, get_mailer)
 
+    def test_restores_old(self):
+        def get_mailer():
+            return getGlobalSiteManager().getUtility(
+                IMailDelivery, 'Mail')
+        fake = DummyMailer()
+        fake2 = DummyMailer()
+        # In BaseLayer there should be no mailer by default.
+        self.assertRaises(ComponentLookupError, get_mailer)
+        with ZopeUtilityFixture(fake, IMailDelivery, 'Mail'):
+            with ZopeUtilityFixture(fake2, IMailDelivery, 'Mail'):
+                self.assertEquals(get_mailer(), fake2)
+            self.assertEquals(get_mailer(), fake)
+        self.assertRaises(ComponentLookupError, get_mailer)
+
 
 class TestPGBouncerFixtureWithCA(TestCase):
     """PGBouncerFixture reconnect tests for Component Architecture layers.
