@@ -5,28 +5,21 @@ __metaclass__ = type
 
 import base64
 
-from zope.app.security.basicauthadapter import BasicAuthAdapter
-from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import TestRequest
-from zope.publisher.interfaces.http import IHTTPCredentials
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.interfaces import (
-    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
 from lp.testing import TestCase
-from lp.testing.fixture import (
-    ZopeAdapterFixture,
-    ZopeUtilityFixture,
-    )
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 
 

@@ -136,7 +136,6 @@ rationale and displayname are required.
 
     >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale)
-    >>> from storm.store import Store
 
     >>> login('admin@canonical.com')
     >>> passwordless_account = account_set.new(

@@ -145,7 +145,6 @@ from lp.services.fields import (
     is_public_person_or_closed_team,
     LogoImageUpload,
     MugshotImageUpload,
-    PasswordField,
     PersonChoice,
     PublicPersonChoice,
     StrippedTextLine,

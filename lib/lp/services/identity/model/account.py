@@ -6,16 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'Account',
-    'AccountPassword',
     'AccountSet',
     ]
 
-from sqlobject import (
-    ForeignKey,
-    StringCol,
-    )
+from sqlobject import StringCol
 from storm.locals import ReferenceSet
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.database.constants import UTC_NOW
@@ -33,7 +28,6 @@ from lp.services.identity.interfaces.account import (
     IAccountSet,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.webapp.interfaces import IPasswordEncryptor
 
 
 class Account(SQLBase):
