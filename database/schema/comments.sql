@@ -615,7 +615,6 @@ COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the bin
 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 COMMENT ON INDEX emailaddress__person__key IS 'Ensures that a Person only has one preferred email address';
-COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has one preferred email address';
 
 
 -- FeaturedProject
