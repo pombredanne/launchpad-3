@@ -313,7 +313,7 @@ class LaunchpadLoginSource:
             password = None
         principal = LaunchpadPrincipal(
             naked_account.id, naked_account.displayname,
-            naked_account.displayname, account, password,
+            naked_account.displayname, account,
             access_level=access_level, scope=scope)
         principal.__parent__ = self
         return principal
@@ -329,7 +329,7 @@ class LaunchpadPrincipal:
 
     implements(ILaunchpadPrincipal)
 
-    def __init__(self, id, title, description, account, pwd=None,
+    def __init__(self, id, title, description, account,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
         self.id = id
         self.title = title
@@ -338,16 +338,9 @@ class LaunchpadPrincipal:
         self.scope = scope
         self.account = account
         self.person = IPerson(account, None)
-        self.__pwd = pwd
 
     def getLogin(self):
         return self.title
-
-    def validate(self, pw):
-        encryptor = getUtility(IPasswordEncryptor)
-        pw1 = (pw or '').strip()
-        pw2 = (self.__pwd or '').strip()
-        return encryptor.validate(pw1, pw2)
 
 
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so

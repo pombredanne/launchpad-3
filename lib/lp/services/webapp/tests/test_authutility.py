@@ -40,7 +40,7 @@ class DummyAccount(object):
     person = DummyPerson()
 
 
-Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount(), 'bruce!')
+Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount())
 Bruce.person = Bruce.account.person
 
 
