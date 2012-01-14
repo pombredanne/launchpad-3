@@ -448,7 +448,7 @@ class MilestoneAddView(LaunchpadFormView):
         self.field_names = self.field_names[:]
         # Insert the tags field before the summary.
         summary_index = self.field_names.index('summary')
-        self.field_names[summary_index:summary_index] = [tag_entry.__name__]
+        self.field_names.insert(summary_index, tag_entry.__name__)
 
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
@@ -527,12 +527,11 @@ class MilestoneEditView(LaunchpadEditFormView):
             required=False)
         self.form_fields += form.Fields(
             tag_entry, render_context=self.render_context)
-
         # Make an instance attribute to avoid mutating the class attribute.
         self.field_names = self._field_names[:]
         # Insert the tags field before the summary.
         summary_index = self.field_names.index('summary')
-        self.field_names[summary_index:summary_index] = [tag_entry.__name__]
+        self.field_names.insert(summary_index, tag_entry.__name__)
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
