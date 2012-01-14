@@ -121,7 +121,7 @@ class WorkingBase:
         self._login = login
         self._principal = (
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                self._login, want_password=False))
+                self._login))
         self._transaction_manager = transaction_manager
         self.logger = logger
 

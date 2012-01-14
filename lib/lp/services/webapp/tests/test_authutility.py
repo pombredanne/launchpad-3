@@ -40,7 +40,7 @@ Bruce.person = Bruce.account.person
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
 
-    def getPrincipalByLogin(self, id, want_password=True):
+    def getPrincipalByLogin(self, id):
         return Bruce
 
     getPrincipal = getPrincipalByLogin
