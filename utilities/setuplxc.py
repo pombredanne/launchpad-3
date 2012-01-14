@@ -9,6 +9,7 @@ __all__ = []
 
 # This script is run as root.
 
+from contextlib import contextmanager
 import argparse
 import os
 import pwd
@@ -43,7 +44,6 @@ def ssh(location, user=None):
 
 @contextmanager
 def su(user):
-    ssh = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     yield lambda cmd: subprocess.call(['su', '-c', "'%s'" % cmd, user])
 
 
@@ -96,12 +96,12 @@ def initialize_host(
         gid = _userdata.pw_gid
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
-        home = os.path.join(['', 'home', user])
-        usercall('mkdir -p ~/.ssh')
-        ssh_dir = os.path.join([home, '.ssh'])
-        priv_file = os.path.join([ssh_dir, 'id_rsa'])
-        pub_file = os.path.join([ssh_dir, 'id_rsa.pub'])
-        auth_file = os.path.join([ssh_dir, 'authorized_keys'])
+        home = os.path.join(os.path.sep, 'home', user)
+        usercall('mkdir -p %s' % os.path.join(home, '.ssh'))
+        ssh_dir = os.path.join(home, '.ssh')
+        priv_file = os.path.join(ssh_dir, 'id_rsa')
+        pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
+        auth_file = os.path.join(ssh_dir, 'authorized_keys')
         for filename, contents in [(priv_file, private_key),
              (pub_file, public_key),
              (auth_file, public_key)]:
