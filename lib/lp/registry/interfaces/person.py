@@ -18,11 +18,13 @@ __all__ = [
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -2535,6 +2537,17 @@ class ISoftwareCenterAgentAPI(Interface):
         the software center to create subscriptions to private PPAs without
         requiring a Launchpad account.
         """
+
+
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
 
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
