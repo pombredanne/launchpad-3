@@ -38,6 +38,7 @@ from wsgi_intercept.urllib2_intercept import (
 from zope.component import (
     adapter,
     getGlobalSiteManager,
+    queryUtility,
     provideHandler,
     )
 from zope.interface import Interface
@@ -218,10 +219,15 @@ class ZopeUtilityFixture(Fixture):
     def setUp(self):
         super(ZopeUtilityFixture, self).setUp()
         gsm = getGlobalSiteManager()
+        self._old_component = queryUtility(self.intf, name=self.name)
         gsm.registerUtility(self.component, self.intf, self.name)
         self.addCleanup(
             gsm.unregisterUtility,
             self.component, self.intf, self.name)
+        if self._old_component is not None:
+            self.addCleanup(
+                gsm.registerUtility,
+                self._old_component, self.intf, self.name)
 
 
 class Urllib2Fixture(Fixture):
