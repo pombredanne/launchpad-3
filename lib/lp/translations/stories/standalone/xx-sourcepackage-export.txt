@@ -149,7 +149,7 @@ expert.
 "cprov" is able to download translations as an Ubuntu uploader.
 
     >>> ubuntu_member_browser = setupBrowser(
-    ...     auth='Basic cprov@ubuntu.com:cprov')
+    ...     auth='Basic cprov@ubuntu.com:test')
     >>> can_download_translations(ubuntu_member_browser)
     True
 

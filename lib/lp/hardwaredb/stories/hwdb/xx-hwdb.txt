@@ -353,7 +353,7 @@ visible for members of the team and admins.
     Hardware submissions for Ubuntu Team...
     Ubuntu Team has posted no submissions.
 
-    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
@@ -389,7 +389,7 @@ Private submissions can't be viewed anonymously:
 
 But they can with the right permissions.
 
-    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/+hwdb/+submission/unique-id-3a/+text')
     >>> print browser.contents

@@ -21,7 +21,7 @@ specification.
 First we load the page to target to the series.
 
     >>> browser.addHeader(
-    ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    ...     'Authorization', 'Basic celso.providelo@canonical.com:test')
     >>> browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
     >>> browser.getLink('Propose as goal').click()
