@@ -67,9 +67,11 @@ class PlacelessAuthUtility:
         # that this is a testrunner.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         db_name = store.execute("SELECT current_database()").get_one()[0]
-        main_domain = config.vhost.mainsite.hostname
-        if (main_domain != 'launchpad.dev'
-            or not db_name.startswith('launchpad_ftest')):
+        is_test_db = (
+            db_name.startswith('launchpad_ftest')
+            or db_name.startswith('launchpad_empty'))
+        is_dev_domain = config.vhost.mainsite.hostname == 'launchpad.dev'
+        if not is_test_db or not is_dev_domain:
             raise AssertionError(
                 "Attempted to use basic auth outside the test suite.")
 
