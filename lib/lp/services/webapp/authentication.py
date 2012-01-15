@@ -79,7 +79,8 @@ class PlacelessAuthUtility:
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
-                if password == 'test':
+                if password in ('test', 'cprov', 'zeca', 'jblack', 'jdub',
+                                'daf'):
                     # We send a LoggedInEvent here, when the
                     # cookie auth below sends a PrincipalIdentified,
                     # as the login form is never visited for BasicAuth.
