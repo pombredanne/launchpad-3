@@ -138,10 +138,10 @@ rationale and displayname are required.
     ...     AccountCreationRationale)
 
     >>> login('admin@canonical.com')
-    >>> passwordless_account = account_set.new(
-    ...     AccountCreationRationale.USER_CREATED, 'Account')
+    >>> new_account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED, 'New Account')
     >>> transaction.commit()
-    >>> print passwordless_account.creation_rationale.name
+    >>> print new_account.creation_rationale.name
     USER_CREATED
-    >>> print passwordless_account.displayname
-    Account
+    >>> print new_account.displayname
+    New Account
