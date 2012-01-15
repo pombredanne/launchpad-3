@@ -205,10 +205,10 @@ autonomously.
     >>> template = templatesubset.new(
     ...     'foo', 'foo', 'foo.pot', template_owner)
 
-    >>> distro_owner = factory.makePerson('do@example.com', password='test')
+    >>> distro_owner = factory.makePerson('do@example.com')
     >>> ubuntu.owner = distro_owner
 
-    >>> group_owner = factory.makePerson('go@example.com', password='test')
+    >>> group_owner = factory.makePerson('go@example.com')
     >>> translation_group = factory.makeTranslationGroup(group_owner)
     >>> ubuntu.translationgroup = translation_group
     >>> template_admin_url = str(

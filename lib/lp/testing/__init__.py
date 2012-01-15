@@ -720,7 +720,7 @@ class TestCaseWithFactory(TestCase):
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson()
-        browser = setupBrowserForUser(user, 'test')
+        browser = setupBrowserForUser(user)
         if url is not None:
             browser.open(url)
         return browser

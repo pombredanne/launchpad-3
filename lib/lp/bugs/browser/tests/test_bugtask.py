@@ -109,8 +109,8 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson(password='test')
-        person_with_teams = self.factory.makePerson(password='test')
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams

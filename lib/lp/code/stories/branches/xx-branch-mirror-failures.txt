@@ -5,8 +5,7 @@ page, together with the last failure message we got when mirroring.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> eric = factory.makePerson(
-    ...     name='eric', email='eric@example.com', password='test')
+    >>> eric = factory.makePerson(name='eric', email='eric@example.com')
     >>> from lp.code.enums import BranchType
     >>> mirror_branch = factory.makeAnyBranch(
     ...     branch_type=BranchType.MIRRORED, owner=eric)
