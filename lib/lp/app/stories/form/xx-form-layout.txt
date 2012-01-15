@@ -131,7 +131,7 @@ LPFormView:
 Or for another example.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open(
     ...   'http://launchpad.dev/~cprov/+archive/ppa/+edit/++form++')
     >>> print cprov_browser.contents

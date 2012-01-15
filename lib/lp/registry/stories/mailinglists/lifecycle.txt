@@ -246,7 +246,7 @@ The same is true for normal users who are not team members.
 Members who are not owners can see the link.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open('http://launchpad.dev/~bassists')
     Traceback (most recent call last):
     ...

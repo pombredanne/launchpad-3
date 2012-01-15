@@ -67,7 +67,7 @@ Celso is a member of launchpad-buildd-admins, he has full access to
 the builder actions.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
 
     >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()

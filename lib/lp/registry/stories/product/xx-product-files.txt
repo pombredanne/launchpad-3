@@ -67,7 +67,7 @@ the delete options.
 Again, for an authenticated user who is not the firefox product owner.
 
     >>> non_owner = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> non_owner.open('http://launchpad.dev/firefox/+download')
     >>> non_owner.url
     'http://launchpad.dev/firefox/+download'

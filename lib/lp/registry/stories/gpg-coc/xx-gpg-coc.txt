@@ -651,7 +651,7 @@ Test if the advertisement email was sent:
   ...         del browser.mech_browser.addheaders[pos]
   ...         break
   >>> browser.addHeader(
-  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:zeca')
+  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:test')
 
   Check if we can see the Code of conduct page
 
