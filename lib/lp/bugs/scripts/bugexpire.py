@@ -120,8 +120,7 @@ class BugJanitor:
         auth_utility = getUtility(IPlacelessAuthUtility)
         janitor_email = self.janitor.preferredemail.email
         setupInteraction(
-            auth_utility.getPrincipalByLogin(
-                janitor_email, want_password=False),
+            auth_utility.getPrincipalByLogin(janitor_email),
             login=janitor_email)
 
     def _logout(self):
