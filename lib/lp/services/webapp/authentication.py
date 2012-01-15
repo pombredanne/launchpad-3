@@ -45,10 +45,13 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     BasicAuthLoggedInEvent,
     CookieAuthPrincipalIdentifiedEvent,
+    DEFAULT_FLAVOR,
     ILaunchpadPrincipal,
     IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
+    IStoreSelector,
+    MAIN_STORE,
     )
 
 
@@ -64,13 +67,25 @@ class PlacelessAuthUtility:
         self.nobody.__parent__ = self
 
     def _authenticateUsingBasicAuth(self, credentials, request):
+        # Since there is a hardcoded password, check really really hard
+        # that this is a testrunner.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        db_name = store.execute("SELECT current_database()").get_one()[0]
+        is_test_db = (
+            db_name.startswith('launchpad_ftest')
+            or db_name.startswith('launchpad_empty'))
+        is_dev_domain = config.vhost.mainsite.hostname == 'launchpad.dev'
+        if not is_test_db or not is_dev_domain:
+            raise AssertionError(
+                "Attempted to use basic auth outside the test suite.")
+
         login = credentials.getLogin()
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
-                if principal.validate(password):
+                if password == 'test':
                     # We send a LoggedInEvent here, when the
                     # cookie auth below sends a PrincipalIdentified,
                     # as the login form is never visited for BasicAuth.
@@ -130,7 +145,8 @@ class PlacelessAuthUtility:
             # encoded properly. That's a client error, so we don't really
             # care, and we're done.
             raise Unauthorized("Bad Basic authentication.")
-        if credentials is not None and credentials.getLogin() is not None:
+        if (config.isTestRunner() and credentials is not None
+            and credentials.getLogin() is not None):
             return self._authenticateUsingBasicAuth(credentials, request)
         else:
             # Hack to make us not even think of using a session if there
