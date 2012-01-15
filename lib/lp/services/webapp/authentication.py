@@ -81,8 +81,7 @@ class PlacelessAuthUtility:
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
-                if password in ('test', 'cprov', 'zeca', 'jblack', 'jdub',
-                                'daf'):
+                if password == 'test':
                     # We send a LoggedInEvent here, when the
                     # cookie auth below sends a PrincipalIdentified,
                     # as the login form is never visited for BasicAuth.
@@ -181,8 +180,7 @@ class PlacelessAuthUtility:
 
     def getPrincipalByLogin(self, login):
         """See IAuthenticationService."""
-        utility = getUtility(IPlacelessLoginSource)
-        return utility.getPrincipalByLogin(login)
+        return getUtility(IPlacelessLoginSource).getPrincipalByLogin(login)
 
 
 class LaunchpadLoginSource:
