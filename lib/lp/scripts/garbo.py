@@ -324,9 +324,7 @@ class UnlinkedAccountPruner(BulkPruner):
         SELECT Account.id
         FROM Account
         LEFT OUTER JOIN Person ON Account.id = Person.account
-        WHERE
-            EmailAddress.id IS NULL
-            AND Person.id IS NULL
+        WHERE Person.id IS NULL
         """
 
 
