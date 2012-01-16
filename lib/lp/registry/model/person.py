@@ -260,10 +260,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from lp.services.identity.model.account import (
-    Account,
-    AccountPassword,
-    )
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
