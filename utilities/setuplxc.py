@@ -37,6 +37,7 @@ LXC_REPOS = (
     'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
     'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
     )
+LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 DEPENDENCIES_DIR = '~/dependencies'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr']
 RESOLV_FILE = '/etc/resolv.conf'
@@ -114,7 +115,7 @@ def get_container_path(lxcname, path=''):
 
 def error(msg):
     """Print out the error message and quit the script."""
-    print msg
+    print 'ERROR: %s' % msg
     sys.exit(1)
 
 
@@ -199,26 +200,32 @@ def initialize_host(
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
-    config_template = '/etc/lxc/local.conf'
     # Container configuration template.
     content = '\n'.join('%s=%s' % i for i in LXC_OPTIONS.items())
-    with open(config_template, 'w') as f:
+    with open(LXC_CONFIG_TEMPLATE, 'w') as f:
         f.write(content)
     # Creating container.
-    subprocess.call(
-        'lxc-create -t ubuntu -n %s -f %s -- '
-        '-r lucid -a i386 -b %s' % (lxcname, config_template, user))
-    subprocess.call('lxc-start -n %s -d' % lxcname)
-    # SSH the container
-    timeout = 30
+    exit_code = subprocess.call([
+        'lxc-create',
+        '-t', 'ubuntu',
+        '-n', lxcname,
+        '-f', LXC_CONFIG_TEMPLATE,
+        '--'
+        '-r lucid -a i386 -b %s' % user
+        ])
+    if exit_code:
+        error('Unable to create the LXC container.')
+    subprocess.call(['lxc-start', '-n', lxcname, '-d'])
+    # SSH into the container
     with ssh(user, lxcname) as sshcall:
+        timeout = 30
         while timeout:
             if not sshcall('true'):
                 break
             timeout -= 1
             time.sleep(1)
         else:
-            error('Impossible to SSH into LXC.')
+            error('Unable to SSH into LXC.')
     # Set up root ssh key.
     src = '/home/%s/.ssh/authorized_keys' % user
     dst = get_container_path(lxcname, '/root/.ssh/')
@@ -235,7 +242,7 @@ def initialize_lxc(user, directory, lxcname):
         with open(sources, 'w') as f:
             f.write('\n'.join(LXC_REPOS))
         # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
-        # containers currently does not work
+        # containers currently does not work.
         sshcall("echo 'mountall hold' | dpkg --set-selections")
         # Upgrading packages.
         sshcall(
@@ -261,7 +268,10 @@ def initialize_lxc(user, directory, lxcname):
 
 def stop_lxc(lxcname):
     """Stop the lxc instance named `lxcname`."""
-    pass
+    with ssh(lxcname) as sshcall:
+        sshcall('poweroff')
+    time.sleep(5)
+    subprocess.call(['lxc-stop', '-n', lxcname])
 
 
 def main(user, fullname, email, lpuser, private_key, public_key, directory):
@@ -269,6 +279,7 @@ def main(user, fullname, email, lpuser, private_key, public_key, directory):
         user, fullname, email, lpuser, private_key, public_key, directory)
     create_lxc(user, LXC_NAME)
     initialize_lxc(user, directory, LXC_NAME)
+    stop_lxc(LXC_NAME)
 
 
 if __name__ == '__main__':
