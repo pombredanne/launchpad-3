@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 # This script is run as root.
+# To run doctests: python -m doctest -v setuplxc.py
 
 from contextlib import contextmanager
 import argparse
@@ -25,36 +26,96 @@ LXC_OPTIONS = {
     'lxc.network.link': 'virbr0',
     'lxc.network.flags': 'up',
     }
+LXC_PATH = '/var/lib/lxc/'
 LXC_REPOS = (
-    'deb http://archive.ubuntu.com/ubuntu lucid main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu lucid-updates main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu lucid-security main universe multiverse',
+    'deb http://archive.ubuntu.com/ubuntu '
+    'lucid main universe multiverse',
+    'deb http://archive.ubuntu.com/ubuntu '
+    'lucid-updates main universe multiverse',
+    'deb http://archive.ubuntu.com/ubuntu '
+    'lucid-security main universe multiverse',
     'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
     'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
     )
 DEPENDENCIES_DIR = '~/dependencies'
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr']
+RESOLV_FILE = '/etc/resolv.conf'
+LP_SOURCE_DEPS = (
+    'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 
 
 @contextmanager
 def ssh(location, user=None):
+    """Return a callable that can be used to run shell commands into another
+    host using ssh.
+
+    The ssh `location` and, optionally, `user` must be given.
+    If the user is None then the current user is used for the connection.
+    """
     sshcmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     if user is not None:
         location = '%s@%s' % (user, location)
     yield lambda cmd: subprocess.call([sshcmd, location, '--', "'%s'" % cmd])
 
+
 def get_user_ids(user):
-    """Return the uid and gid of given (or current) user."""
+    """Return the uid and gid of given `user`, e.g.::
+
+        >>> get_user_ids('root')
+        (0, 0)
+    """
     userdata = pwd.getpwnam(user)
     return userdata.pw_uid, userdata.pw_gid
 
+
 @contextmanager
-def user(user):
+def su(user):
+    """A context manager to temporary run the Python interpreter as a
+    different user.
+    """
     uid, gid = get_user_ids(user)
-    os.seteuid(uid)
     os.setegid(gid)
+    os.seteuid(uid)
     yield uid, gid
-    os.seteuid(os.getuid())
     os.setegid(os.getgid())
+    os.seteuid(os.getuid())
+
+
+@contextmanager
+def cd(directory):
+    """A context manager to temporary change current working dir, e.g.::
+
+        >>> import os
+        >>> os.chdir('/tmp')
+        >>> with cd('/bin'): print os.getcwd()
+        /bin
+        >>> os.getcwd()
+        '/tmp'
+    """
+    cwd = os.getcwd()
+    os.chdir(directory)
+    yield
+    os.chdir(cwd)
+
+
+def get_container_path(lxcname, path=''):
+    """Return the path of LXC container called `lxcname`.
+    If a `path` is given, return that path inside the container, e.g.::
+
+        >>> get_container_path('mycontainer')
+        '/var/lib/lxc/mycontainer/rootfs/'
+        >>> get_container_path('mycontainer', '/etc/apt/')
+        '/var/lib/lxc/mycontainer/rootfs/etc/apt/'
+        >>> get_container_path('mycontainer', 'home')
+        '/var/lib/lxc/mycontainer/rootfs/home'
+    """
+    return os.path.join(LXC_PATH, lxcname, 'rootfs', path.lstrip('/'))
+
+
+def error(msg):
+    """Print out the error message and quit the script."""
+    print msg
+    sys.exit(1)
 
 
 parser = argparse.ArgumentParser(
@@ -83,69 +144,61 @@ parser.add_argument(
     help='The directory of the Launchpad repository to be created.')
 
 
-def error(msg):
-    print msg
-    sys.exit(1)
-
-def get_container_path(lxcname, path=''):
-    return '/var/lib/lxc/%s/rootfs/%s' % (lxc_name, path.lstrip('/'))
-
 def initialize_host(
     user, fullname, email, lpuser, private_key, public_key, directory):
-    with su(user) as usercall:
-        # Install necessary deb packages.  This requires Oneiric or later.
-        subprocess.call(
-            ['apt-get', '-y', 'install', 'ssh', 'lxc', 'libvirt-bin', 'bzr'])
-        # Make the user.
-        subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
-        # Get the user's uid and gid.
-        _userdata = pwd.getpwnam(user)
-        uid = _userdata.pw_uid
-        gid = _userdata.pw_gid
+    """Initialize host machine."""
+    # Install necessary deb packages.  This requires Oneiric or later.
+    subprocess.call(['apt-get', '-y', 'install'] + HOST_PACKAGES)
+    # Make the user.
+    subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
+    # Get the user's uid and gid, and run as user.
+    with su(user) as (uid, gid):
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
-        home = os.path.join(os.path.sep, 'home', user)
-        usercall('mkdir -p %s' % os.path.join(home, '.ssh'))
-        ssh_dir = os.path.join(home, '.ssh')
+        home_dir = os.path.join(os.path.sep, 'home', user)
+        ssh_dir = os.path.join(home_dir, '.ssh')
+        os.makedirs(ssh_dir)
         priv_file = os.path.join(ssh_dir, 'id_rsa')
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
-        for filename, contents in [(priv_file, private_key),
-             (pub_file, public_key),
-             (auth_file, public_key)]:
+        for filename, contents in [
+            (priv_file, private_key),
+            (pub_file, public_key),
+            (auth_file, public_key),
+            ]:
             with open(filename, 'w') as f:
                 f.write(contents)
-            os.chown(filename, uid, gid)
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
         # Set up bzr and Launchpad authentication.
-        usercall('bzr whoami "%s <%s>"' % (fullname, email))
-        usercall('bzr lp-login %s' % lpuser)
+        subprocess.call(['bzr', 'whoami', '"%s <%s>"' % (fullname, email)])
+        subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
-        usercall('mkdir -p %s' % directory)
-        usercall('bzr init-repo %s' % directory)
+        os.makedirs(directory)
+        subprocess.call(['bzr', 'init-repo', directory])
         checkout_dir = os.path.join(directory, 'lp')
-        usercall('bzr branch lp:launchpad %s' % checkout_dir)
-        resolv_file = '/etc/resolv.conf'
-        with open(resolv_file, 'r+') as f:
-            lines = f.readlines()
-            line = 'nameserver 192.168.122.1\n'
-            if lines[0] != line:
-                f.seek(0)
-                lines.insert(0, line)
-                f.writelines(lines)
+        subprocess.call(['bzr', 'branch', 'lp:launchpad', checkout_dir])
         # Set up source dependencies.
-        usercall('mkdir -p %s/eggs %s/yui' % (
-            DEPENDENCIES_DIR, DEPENDENCIES_DIR))
-        usercall(
-            'cd %s && utilities/update-sourcecode %s' % (
-            checkout_dir, DEPENDENCIES_DIR))
-        usercall(
-            'cd %s && bzr co --lightweight '
-            'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk '
-            'download-cache' % DEPENDENCIES_DIR)
+        os.makedirs('%s/eggs' % DEPENDENCIES_DIR)
+        os.makedirs('%s/yui' % DEPENDENCIES_DIR)
+        with cd(checkout_dir):
+            subprocess.call(['utilities/update-sourcecode', DEPENDENCIES_DIR])
+        with cd(DEPENDENCIES_DIR):
+            subprocess.call([
+                'bzr co --lightweight', LP_SOURCE_DEPS, 'download-cache'])
+    # Update resolv file in order to get the ability to ssh into the LXC
+    # container using its name.
+    with open(RESOLV_FILE, 'r+') as f:
+        lines = f.readlines()
+        line = 'nameserver 192.168.122.1\n'
+        if lines[0] != line:
+            lines.insert(0, line)
+            f.seek(0)
+            f.writelines(lines)
+
 
 def create_lxc(user, lxcname):
+    """Create the LXC container that will be used for ephemeral instances."""
     config_template = '/etc/lxc/local.conf'
     # Container configuration template.
     content = '\n'.join('%s=%s' % i for i in LXC_OPTIONS.items())
@@ -169,10 +222,13 @@ def create_lxc(user, lxcname):
     # Set up root ssh key.
     src = '/home/%s/.ssh/authorized_keys' % user
     dst = get_container_path(lxcname, '/root/.ssh/')
-    subprocess.call('mkdir -p %s' % dst)
+    os.makedirs(dst)
     shutil.copy(src, dst)
 
+
 def initialize_lxc(user, directory, lxcname):
+    """Set up the Launchpad development environment inside the LXC container.
+    """
     with ssh(lxcname) as sshcall:
         # APT repository update.
         sources = get_container_path(lxcname, '/etc/apt/sources.list')
@@ -187,9 +243,8 @@ def initialize_lxc(user, directory, lxcname):
             'apt-get -y install bzr launchpad-developer-dependencies')
         # User configuration.
         sshcall('adduser %s sudo' % user)
-        #
-        gid = "`python -c 'import pwd; print pwd.getpwnam(\"%s\").pw_gid'`" % (
-            user)
+        pygetgid = 'import pwd; print pwd.getpwnam("%s").pw_gid' % user
+        gid = "`python -c '%s'`" % pygetgid
         sshcall('addgroup --gid %s %s' % (gid, user))
     with ssh(lxcname, user) as sshcall:
         # Launchpad database setup.
@@ -202,6 +257,12 @@ def initialize_lxc(user, directory, lxcname):
         # Probably unnecessary (just a test).
         sshcall('cd %s && make schema' % directory)
         sshcall('cd %s && make install' % directory)
+
+
+def stop_lxc(lxcname):
+    """Stop the lxc instance named `lxcname`."""
+    pass
+
 
 def main(user, fullname, email, lpuser, private_key, public_key, directory):
     initialize_host(
