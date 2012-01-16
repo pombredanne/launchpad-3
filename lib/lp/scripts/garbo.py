@@ -701,7 +701,7 @@ class PersonPruner(TunableLoop):
                     AND Person.id IN (%s)
                 """ % people_ids)
             self.store.execute("""
-                UPDATE EmailAddress SET person=NULL
+                DELETE FROM EmailAddress
                 WHERE person IN (%s)
                 """ % people_ids)
             # This cascade deletes any PersonSettings records.

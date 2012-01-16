@@ -230,9 +230,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
+        person = IPerson(self.account)
         sreg_fields = dict(
-            nickname=IPerson(self.account).name,
-            email=self.account.preferredemail.email,
+            nickname=person.name,
+            email=person.preferredemail.email,
             fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
