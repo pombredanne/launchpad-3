@@ -301,7 +301,6 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         else:
             store.find(
                 MilestoneTag, MilestoneTag.milestone_id == self.id).remove()
-        store.commit()
 
     def getTagsData(self):
         """See IMilestone."""

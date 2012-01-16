@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import transaction
 import datetime
+import transaction
 
 from lp.testing.layers import (
     AppServerLayer,
@@ -20,7 +20,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
-    ws_object,
     )
 
 
@@ -225,6 +224,7 @@ class MilestoneTagWebServiceTest(WebServiceTestCase):
     def test_get_tags(self):
         tags = [u'zeta', u'alpha', u'beta']
         self.milestone.setTags(tags, self.owner)
+        transaction.commit()
         self.assertEqual(sorted(tags), self.ws_milestone.getTags())
 
     def test_set_tags_initial(self):
