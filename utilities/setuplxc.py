@@ -10,6 +10,7 @@ __all__ = []
 # This script is run as root.
 # To run doctests: python -m doctest -v setuplxc.py
 
+from collections import namedtuple
 from contextlib import contextmanager
 import argparse
 import os
@@ -39,10 +40,19 @@ LXC_REPOS = (
     )
 LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 DEPENDENCIES_DIR = '~/dependencies'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
 RESOLV_FILE = '/etc/resolv.conf'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
+KNOWN_HOST_CONTENT = (
+    '|1|n76YK19Z/RqAKUguxJkWFEl0+Ng=|CLsJbbgxtuSPt0IjJZnKQoHESTA= ssh-rsa '
+    'AAAAB3NzaC1yc2EAAAABIwAAAIEApuXd4MHTfr1qLXWeClxTTQYZQblCA+nHvbjAjowkE'
+    'd2Y4kpvntJOVewoSwa22zTbiYSmmssCuCkFHwcpnZBZN5qMWewjizav30WfeyLR5Kng5q'
+    'ucxmFAEkNJjCJiu194wRNKu0cD99Uk/6X/AfsWGLgmL5pa5UFk62aW+iZLUQ8='
+)
+
+
+Env = namedtuple('Env', 'uid gid home')
 
 
 @contextmanager
@@ -77,9 +87,13 @@ def su(user):
     uid, gid = get_user_ids(user)
     os.setegid(gid)
     os.seteuid(uid)
-    yield uid, gid
+    current_home = os.getenv('HOME')
+    home = os.path.join(os.path.sep, 'home', user)
+    os.environ['HOME'] = home
+    yield Env(uid, gid, home)
     os.setegid(os.getgid())
     os.seteuid(os.getuid())
+    os.environ['HOME'] = current_home
 
 
 @contextmanager
@@ -153,19 +167,20 @@ def initialize_host(
     # Make the user.
     subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
     # Get the user's uid and gid, and run as user.
-    with su(user) as (uid, gid):
+    with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
-        home_dir = os.path.join(os.path.sep, 'home', user)
-        ssh_dir = os.path.join(home_dir, '.ssh')
+        ssh_dir = os.path.join(env.home, '.ssh')
         os.makedirs(ssh_dir)
         priv_file = os.path.join(ssh_dir, 'id_rsa')
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
+        known_hosts = os.path.join(ssh_dir, 'known_hosts')
         for filename, contents in [
             (priv_file, private_key),
             (pub_file, public_key),
             (auth_file, public_key),
+            (known_hosts, KNOWN_HOST_CONTENT),
             ]:
             with open(filename, 'w') as f:
                 f.write(contents)
@@ -178,15 +193,18 @@ def initialize_host(
         os.makedirs(directory)
         subprocess.call(['bzr', 'init-repo', directory])
         checkout_dir = os.path.join(directory, 'lp')
-        subprocess.call(['bzr', 'branch', 'lp:launchpad', checkout_dir])
+    # bzr branch does not work well with seteuid.
+    os.system(
+        "su - %s -c 'bzr branch lp:launchpad %s'" % (user, checkout_dir))
+    with su(user) as env:
         # Set up source dependencies.
-        os.makedirs('%s/eggs' % DEPENDENCIES_DIR)
-        os.makedirs('%s/yui' % DEPENDENCIES_DIR)
-        with cd(checkout_dir):
-            subprocess.call(['utilities/update-sourcecode', DEPENDENCIES_DIR])
-        with cd(DEPENDENCIES_DIR):
+        dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
+        os.makedirs('%s/eggs' % dependencies_dir)
+        os.makedirs('%s/yui' % dependencies_dir)
+        with cd(dependencies_dir):
             subprocess.call([
-                'bzr co --lightweight', LP_SOURCE_DEPS, 'download-cache'])
+                'bzr', 'co', '--lightweight',
+                LP_SOURCE_DEPS, 'download-cache'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
     with open(RESOLV_FILE, 'r+') as f:
@@ -254,13 +272,18 @@ def initialize_lxc(user, directory, lxcname):
         gid = "`python -c '%s'`" % pygetgid
         sshcall('addgroup --gid %s %s' % (gid, user))
     with ssh(lxcname, user) as sshcall:
+        checkout_dir = os.path.join(directory, 'lp')
+        dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
+        sshcall(
+            'cd %s && utilities/update-sourcecode %s' % (
+            checkout_dir, dependencies_dir))
         # Launchpad database setup.
         sshcall(
             'cd %s && utilities/launchpad-database-setup %s' % (
-            directory, user))
+            checkout_dir, user))
         sshcall(
             'cd %s && utilities/link-external-sourcecode %s' % (
-            directory, DEPENDENCIES_DIR))
+            checkout_dir, dependencies_dir))
         # Probably unnecessary (just a test).
         sshcall('cd %s && make schema' % directory)
         sshcall('cd %s && make install' % directory)
