@@ -404,8 +404,8 @@
                 setAliases"/>
 
         <!-- IProjectGroupModerate -->
-	<allow
-	    interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
+        <allow
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
@@ -1006,6 +1006,7 @@
                 series_target
                 displayname
                 title
+                bugtasks
                 specifications
                 product_release"/>
         <require
@@ -1013,7 +1014,15 @@
             attributes="
                 createProductRelease
                 closeBugsAndBlueprints
-                destroySelf"/>
+                destroySelf
+                setTags
+                "/>
+        <require
+            permission="zope.Public"
+            attributes="
+                getTags
+                getTagsData
+                "/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1051,6 +1060,11 @@
         class="lp.registry.model.milestone.ProjectMilestone">
         <allow
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
+    </class>
+    <class
+        class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
+        <allow
+            interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
@@ -1245,7 +1259,7 @@
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
-	<!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
+        <!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
         <require
             permission="launchpad.Moderate"
             set_attributes="name autoupdate registrant"/>
