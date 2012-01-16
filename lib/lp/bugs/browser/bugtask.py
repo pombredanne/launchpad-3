@@ -3504,7 +3504,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
         else:
-            raise AssertionError('Uknown context type: %s' % self.context)
+            raise AssertionError('Unknown context type: %s' % self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
