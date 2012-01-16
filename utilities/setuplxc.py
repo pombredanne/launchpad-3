@@ -42,12 +42,20 @@ def ssh(location, user=None):
         location = '%s@%s' % (user, location)
     yield lambda cmd: subprocess.call([sshcmd, location, '--', "'%s'" % cmd])
 
+def get_user_ids(user):
+    """Return the uid and gid of given (or current) user."""
+    userdata = pwd.getpwnam(user)
+    return userdata.pw_uid, userdata.pw_gid
+
 @contextmanager
-def su(user):
-    yield lambda cmd: subprocess.call(['su', '-c', "'%s'" % cmd, user])
+def user(user):
+    uid, gid = get_user_ids(user)
+    os.seteuid(uid)
+    os.setegid(gid)
+    yield uid, gid
+    os.seteuid(os.getuid())
+    os.setegid(os.getgid())
 
-
-# setup-lxc -u frankban -p XXX ~/buildbot/launchpad/
 
 parser = argparse.ArgumentParser(
     description='Create an LXC test environment for Launchpad testing.')
