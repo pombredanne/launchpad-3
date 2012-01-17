@@ -12,7 +12,9 @@ A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
-    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import (
+    ...     IEmailAddressSet,
+    ...     )
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> emailset = getUtility(IEmailAddressSet)
@@ -22,8 +24,6 @@ process. Matsubara's account was created during a code import.
     False
     >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara.password
-    None
     >>> print matsubara.preferredemail
     None
 

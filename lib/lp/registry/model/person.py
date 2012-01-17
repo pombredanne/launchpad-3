@@ -260,10 +260,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from lp.services.identity.model.account import (
-    Account,
-    AccountPassword,
-    )
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
@@ -527,24 +524,6 @@ class Person(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-
-    def _get_password(self):
-        # We have to remove the security proxy because the password is
-        # needed before we are authenticated. I'm not overly worried because
-        # this method is scheduled for demolition -- StuartBishop 20080514
-        password = IStore(AccountPassword).find(
-            AccountPassword, accountID=self.accountID).one()
-        if password is None:
-            return None
-        else:
-            return password.password
-
-    def _set_password(self, value):
-        account = IMasterStore(Account).get(Account, self.accountID)
-        assert account is not None, 'No account for this Person.'
-        account.password = value
-
-    password = property(_get_password, _set_password)
 
     def _get_account_status(self):
         account = IStore(Account).get(Account, self.accountID)

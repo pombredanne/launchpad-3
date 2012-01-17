@@ -980,7 +980,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_indirect(self):
         """Ensure get_recipients uses indirect memberships."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner)
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
@@ -989,7 +989,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_team(self):
         """Ensure get_recipients uses teams with preferredemail."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner, email='team@bar.com')
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
@@ -1026,7 +1026,7 @@ class TestGetRecipients(TestCaseWithFactory):
     def test_get_recipients_complex_indirect(self):
         """Ensure get_recipients uses indirect memberships."""
         owner = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(owner)
         super_team_member_person = self.factory.makePerson(
             displayname='Bing Bar', email='bing@bar.com')

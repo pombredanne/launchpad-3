@@ -8,7 +8,7 @@ part of the stories in xx-private-ppa-subscription-stories.txt.
 Public PPAs do not have an option for managing subscriptions:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> cprov_browser.getLink("Manage subscriptions")
     Traceback (most recent call last):

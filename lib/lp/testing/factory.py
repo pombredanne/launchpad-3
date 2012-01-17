@@ -647,9 +647,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
 
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
-
         if (time_zone is not None or latitude is not None or
             longitude is not None):
             naked_person.setLocation(latitude, longitude, time_zone, person)

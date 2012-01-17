@@ -145,7 +145,6 @@ from lp.services.fields import (
     is_public_person_or_closed_team,
     LogoImageUpload,
     MugshotImageUpload,
-    PasswordField,
     PersonChoice,
     PublicPersonChoice,
     StrippedTextLine,
@@ -766,8 +765,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
     karma = exported(
         Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
