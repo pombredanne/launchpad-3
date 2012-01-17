@@ -21,7 +21,7 @@ specification.
 First we load the page to target to the series.
 
     >>> browser.addHeader(
-    ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    ...     'Authorization', 'Basic celso.providelo@canonical.com:test')
     >>> browser.open(
     ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
     >>> browser.getLink('Propose as goal').click()
@@ -46,7 +46,7 @@ so the targeting should NOT be automatically approved.
 
   >>> print http(r"""
   ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... Authorization: Basic celso.providelo@canonical.com:test
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730
@@ -90,7 +90,7 @@ OK, we will also pitch the e4x spec to the same series:
 
   >>> print http(r"""
   ... POST /firefox/+spec/e4x/+setproductseries HTTP/1.1
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... Authorization: Basic celso.providelo@canonical.com:test
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730

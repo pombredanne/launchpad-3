@@ -29,7 +29,7 @@ users.
 Salgado sees a message explaining that he can register his ssh key.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic guilherme.salgado@canonical.com:zeca')
+    ...     auth='Basic guilherme.salgado@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~salgado')
     >>> print browser.title
     Guilherme Salgado in Launchpad
