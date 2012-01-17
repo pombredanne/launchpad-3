@@ -72,7 +72,7 @@ def ssh(location, user=None):
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
-            '--', "'%s'" % cmd,
+            '--', cmd,
             )
         return subprocess.call(sshcmd)
 
