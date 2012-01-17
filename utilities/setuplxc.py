@@ -299,7 +299,9 @@ def initialize_lxc(user, directory, lxcname):
         # Upgrading packages.
         sshcall(
             'apt-get update && '
-            'apt-get -y install bzr launchpad-developer-dependencies')
+            'DEBIAN_FRONTEND=noninteractive '
+            'apt-get -y --allow-unauthenticated '
+            'install bzr launchpad-developer-dependencies')
         # User configuration.
         sshcall('adduser %s sudo' % user)
         pygetgid = 'import pwd; print pwd.getpwnam("%s").pw_gid' % user
@@ -307,7 +309,8 @@ def initialize_lxc(user, directory, lxcname):
         sshcall('addgroup --gid %s %s' % (gid, user))
     with ssh(lxcname, user) as sshcall:
         checkout_dir = os.path.join(directory, 'lp')
-        dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
+        with su(user):
+            dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
         sshcall(
             'cd %s && utilities/update-sourcecode %s' % (
             checkout_dir, dependencies_dir))
