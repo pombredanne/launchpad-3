@@ -16,12 +16,9 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.cve import ICveSet
 from lp.services.helpers import shortlist
-from lp.services.propertycache import cachedproperty
-from lp.services.searchbuilder import any
 from lp.services.webapp import LaunchpadView
 
 
@@ -46,30 +43,18 @@ class CVEReportView(LaunchpadView):
     def page_title(self):
         return 'CVE reports for %s' % self.context.title
 
-    @cachedproperty
-    def open_cve_bugtasks(self):
-        """Find BugTaskCves for bugs with open bugtasks in the context."""
-        search_params = BugTaskSearchParams(
-            self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        return self._buildBugTaskCves(search_params)
-
-    @cachedproperty
-    def resolved_cve_bugtasks(self):
-        """Find BugTaskCves for bugs with resolved bugtasks in the context."""
-        search_params = BugTaskSearchParams(
-            self.user, status=any(*RESOLVED_BUGTASK_STATUSES))
-        return self._buildBugTaskCves(search_params)
-
     def setContextForParams(self, params):
         """Update the search params for the context for a specific view."""
         raise NotImplementedError
 
-    def _buildBugTaskCves(self, search_params):
-        """Construct a list of BugTaskCve objects, sorted by bug ID."""
-        search_params.has_cve = True
+    def initialize(self):
+        """See `LaunchpadView`."""
+        super(CVEReportView, self).initialize()
+        search_params = BugTaskSearchParams(
+            self.user, has_cve=True)
         bugtasks = shortlist(
             self.context.searchTasks(search_params),
-            longest_expected=300)
+            longest_expected=600)
 
         if not bugtasks:
             return []
@@ -77,7 +62,8 @@ class CVEReportView(LaunchpadView):
         badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             bugtasks)
 
-        bugtaskcves = {}
+        open_bugtaskcves = {}
+        resolved_bugtaskcves = {}
         for bugtask in bugtasks:
             badges = badge_properties[bugtask]
             # Wrap the bugtask in a BugTaskListingItem, to avoid db
@@ -87,15 +73,26 @@ class CVEReportView(LaunchpadView):
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
                 has_patch=badges['has_patch'])
-            if bugtask.bug.id not in bugtaskcves:
-                bugtaskcves[bugtask.bug.id] = BugTaskCve()
-            bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
+            if bugtask.status in RESOLVED_BUGTASK_STATUSES:
+                current_bugtaskcves = resolved_bugtaskcves
+            else:
+                current_bugtaskcves = open_bugtaskcves
+            if bugtask.bug.id not in current_bugtaskcves:
+                current_bugtaskcves[bugtask.bug.id] = BugTaskCve()
+            current_bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
 
         bugcves = getUtility(ICveSet).getBugCvesForBugTasks(bugtasks)
         for bug, cve in bugcves:
-            assert bug.id in bugtaskcves, "Bug missing in bugcves."
-            bugtaskcves[bug.id].cves.append(cve)
+            if bug.id in open_bugtaskcves:
+                open_bugtaskcves[bug.id].cves.append(cve)
+            if bug.id in resolved_bugtaskcves:
+                resolved_bugtaskcves[bug.id].cves.append(cve)
 
-        # Order the dictionary items by bug ID and then return only the
+        # Order the dictionary items by bug ID and then store only the
         # bugtaskcve objects.
-        return [bugtaskcve for bug, bugtaskcve in sorted(bugtaskcves.items())]
+        self.open_cve_bugtasks = [
+            bugtaskcve for bug, bugtaskcve
+            in sorted(open_bugtaskcves.items())]
+        self.resolved_cve_bugtasks = [
+            bugtaskcve for bug, bugtaskcve
+            in sorted(resolved_bugtaskcves.items())]
