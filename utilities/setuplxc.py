@@ -239,6 +239,7 @@ def initialize_host(
         dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
         os.makedirs('%s/eggs' % dependencies_dir)
         os.makedirs('%s/yui' % dependencies_dir)
+        os.makedirs('%s/sourcecode' % dependencies_dir)
         with cd(dependencies_dir):
             subprocess.call([
                 'bzr', 'co', '--lightweight',
@@ -312,7 +313,7 @@ def initialize_lxc(user, directory, lxcname):
         with su(user):
             dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
         sshcall(
-            'cd %s && utilities/update-sourcecode %s' % (
+            'cd %s && utilities/update-sourcecode %s/sourcecode' % (
             checkout_dir, dependencies_dir))
         # Launchpad database setup.
         sshcall(
@@ -322,8 +323,8 @@ def initialize_lxc(user, directory, lxcname):
             'cd %s && utilities/link-external-sourcecode %s' % (
             checkout_dir, dependencies_dir))
         # Probably unnecessary (just a test).
-        sshcall('cd %s && make schema' % directory)
-        sshcall('cd %s && make install' % directory)
+        sshcall('cd %s && make schema' % checkout_dir)
+        sshcall('cd %s && make install' % checkout_dir)
 
 
 def stop_lxc(lxcname):
