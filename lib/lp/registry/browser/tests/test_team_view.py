@@ -266,6 +266,7 @@ class TestTeamEditView(TestCaseWithFactory):
             self.assertEqual(
                 TeamSubscriptionPolicy,
                 view.widgets['subscriptionpolicy'].vocabulary)
+            self.assertIsNone(view.widgets['subscriptionpolicy'].extra_hint)
             self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
