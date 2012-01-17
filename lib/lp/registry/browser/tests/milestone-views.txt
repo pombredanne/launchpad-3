@@ -347,7 +347,7 @@ cancel_url property can be used to return to the milestone.
     Modify milestone details
 
     >>> view.field_names
-    ['name', 'code_name', 'active', 'dateexpected', 'summary',
+    ['name', 'code_name', 'active', 'dateexpected', 'tags', 'summary',
      'productseries']
 
     >>> print view.cancel_url
@@ -378,6 +378,7 @@ values.
     ...     'field.summary': 'a summary',
     ...     'field.active': 'False',
     ...     'field.productseries': '1',
+    ...     'field.tags': '',
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(milestone, '+edit', form=form)
@@ -406,6 +407,7 @@ The milestone's name is unique to the product or series.
     ...     'field.summary': 'a summary',
     ...     'field.active': 'True',
     ...     'field.productseries': '1',
+    ...     'field.tags': '',
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(milestone, '+edit', form=form)
@@ -443,7 +445,7 @@ instead of a productseries field.
     >>> milestone = hoary_series.newMilestone('alpha')
     >>> view = create_initialized_view(milestone, '+edit')
     >>> view.field_names
-    ['name', 'code_name', 'active', 'dateexpected', 'summary', 'distroseries']
+    ['name', 'code_name', 'active', 'dateexpected', 'tags', 'summary', 'distroseries']
 
 The distroseries milestone can be updated too.
 
@@ -454,6 +456,7 @@ The distroseries milestone can be updated too.
     ...     'field.summary': 'a summary',
     ...     'field.active': 'False',
     ...     'field.distroseries': '5',
+    ...     'field.tags': '',
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(milestone, '+edit', form=form)
@@ -508,12 +511,12 @@ The AddMilestoneView is used to create a new milestone.
 
     >>> owner = firefox.owner
     >>> login_person(owner)
-    >>> view = create_view(firefox_1_0, '+addmilestone')
+    >>> view = create_initialized_view(firefox_1_0, '+addmilestone')
     >>> print view.label
     Register a new milestone
 
     >>> view.field_names
-    ['name', 'code_name', 'dateexpected', 'summary']
+    ['name', 'code_name', 'dateexpected', 'tags', 'summary']
 
 The view provides an action_url and cancel_url properties that form
 submitting the form or aborting the action.

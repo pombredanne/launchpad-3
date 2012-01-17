@@ -647,9 +647,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
 
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
-
         if (time_zone is not None or latitude is not None or
             longitude is not None):
             naked_person.setLocation(latitude, longitude, time_zone, person)
@@ -1947,9 +1944,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
-        return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=bug_watch,
-                              remote_comment_id=None)
+        with person_logged_in(owner):
+            return bug.newMessage(owner=owner, subject=subject, content=body,
+                                  parent=None, bugwatch=bug_watch,
+                                  remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,

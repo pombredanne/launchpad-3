@@ -117,6 +117,7 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
     IPerson,
     validate_person,
@@ -2045,6 +2046,18 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
+        if params.exclude_conjoined_tasks:
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            if params.milestone_tag:
+                raise NotImplementedError(
+                    'Excluding conjoined tasks is not currently supported '
+                    'for milestone tags')
+            if not params.milestone:
+                raise ValueError(
+                    "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                    "BugTaskSearchParam.milestone is not set")
+
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
@@ -2064,10 +2077,29 @@ class BugTaskSet:
                     params.milestone)
                 join_tables += tables
                 extra_clauses += clauses
-        elif params.exclude_conjoined_tasks:
-            raise ValueError(
-                "BugTaskSearchParam.exclude_conjoined cannot be True if "
-                "BugTaskSearchParam.milestone is not set")
+
+        if params.milestone_tag:
+            where_cond = """
+                IN (SELECT Milestone.id
+                    FROM Milestone, Product, MilestoneTag
+                    WHERE Milestone.product = Product.id
+                        AND Product.project = %s
+                        AND MilestoneTag.milestone = Milestone.id
+                        AND MilestoneTag.tag IN %s
+                    GROUP BY Milestone.id
+                    HAVING COUNT(Milestone.id) = %s)
+            """ % sqlvalues(params.milestone_tag.target,
+                            params.milestone_tag.tags,
+                            len(params.milestone_tag.tags))
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
+
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            # if params.exclude_conjoined_tasks:
+            #     tables, clauses = self._buildExcludeConjoinedClause(
+            #         params.milestone_tag)
+            #     join_tables += tables
+            #     extra_clauses += clauses
 
         if params.project:
             # Prevent circular import problems.
@@ -2865,12 +2897,25 @@ class BugTaskSet:
             result[row[:-1]] = row[-1]
         return result
 
-    def getPrecachedNonConjoinedBugTasks(self, user, milestone):
+    def getPrecachedNonConjoinedBugTasks(self, user, milestone_data):
         """See `IBugTaskSet`."""
-        params = BugTaskSearchParams(
-            user, milestone=milestone,
-            orderby=['status', '-importance', 'id'],
-            omit_dupes=True, exclude_conjoined_tasks=True)
+        kwargs = {
+            'orderby': ['status', '-importance', 'id'],
+            'omit_dupes': True,
+            }
+        if IProjectGroupMilestoneTag.providedBy(milestone_data):
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            kwargs.update({
+                'exclude_conjoined_tasks': False,
+                'milestone_tag': milestone_data,
+                })
+        else:
+            kwargs.update({
+                'exclude_conjoined_tasks': True,
+                'milestone': milestone_data,
+                })
+        params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
     def createTask(self, bug, owner, target,
