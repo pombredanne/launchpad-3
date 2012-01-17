@@ -118,7 +118,7 @@ class BinaryPackageNameSet:
                     active_publishing_status),
                 BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
                 BinaryPackagePublishingHistory.binarypackagenameID.is_in(
-                    name_ids))
+                    name_ids)).config(distinct=True)
 
 
 class BinaryPackageNameIterator(BatchedCountableIterator):
