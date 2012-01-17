@@ -92,23 +92,12 @@ def _validate_email(email):
 def _check_email_availability(email):
     email_address = getUtility(IEmailAddressSet).getByEmail(email)
     if email_address is not None:
-        # The email already exists; determine what has it.
-        if email_address.person is not None:
-            person = email_address.person
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with <a href="${url}">${person}</a>.',
-                        mapping={'email': escape(email),
-                                'url': canonical_url(person),
-                                'person': escape(person.displayname)})
-        elif email_address.account is not None:
-            account = email_address.account
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with the ${account} account.',
-                        mapping={'email': escape(email),
-                                'account': escape(account.displayname)})
-        else:
-            message = _('${email} is already registered in Launchpad.',
-                        mapping={'email': escape(email)})
+        person = email_address.person
+        message = _('${email} is already registered in Launchpad and is '
+                    'associated with <a href="${url}">${person}</a>.',
+                    mapping={'email': escape(email),
+                            'url': canonical_url(person),
+                            'person': escape(person.displayname)})
         raise LaunchpadValidationError(structured(message))
 
 
