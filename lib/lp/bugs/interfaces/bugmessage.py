@@ -32,6 +32,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import Title
+from lp.services.comments.interfaces.conversation import IComment
 from lp.services.messages.interfaces.message import IMessage
 
 
@@ -113,7 +114,7 @@ class IBugMessageAddForm(Interface):
         required=False, default=None)
 
 
-class IBugComment(IMessage):
+class IBugComment(IMessage, IComment):
     """A bug comment for displaying in the web UI."""
 
     bugtask = Attribute(

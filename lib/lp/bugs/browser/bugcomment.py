@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug comment browser view classes."""
@@ -41,6 +41,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -176,7 +177,7 @@ def group_comments_with_activity(comments, activities):
             yield [event for (kind, event) in window_group]
 
 
-class BugComment:
+class BugComment(MessageComment):
     """Data structure that holds all data pertaining to a bug comment.
 
     It keeps track of which index it has in the bug comment list and

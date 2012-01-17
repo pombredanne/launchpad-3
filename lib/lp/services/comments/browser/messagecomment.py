@@ -13,6 +13,14 @@ from lp.services.propertycache import cachedproperty
 class MessageComment:
     """Mixin to partially implement IComment in terms of IMessage."""
 
+    extra_css_class = ''
+
+    has_footer = False
+
+    @property
+    def display_attachments(self):
+        return []
+
     @cachedproperty
     def comment_author(self):
         """The author of the comment."""
@@ -27,3 +35,7 @@ class MessageComment:
     def comment_date(self):
         """The date of the comment."""
         return IMessage(self).datecreated
+
+    @property
+    def body_text(self):
+        return IMessage(self).text_contents
