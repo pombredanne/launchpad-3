@@ -286,6 +286,11 @@ class TestTeamEditView(TestCaseWithFactory):
                 expected_items,
                 [term.value
                  for term in view.widgets['subscriptionpolicy'].vocabulary])
+            self.assertEqual(
+                'inline-informational',
+                view.widgets['subscriptionpolicy'].extra_hint_class)
+            self.assertIsNotNone(
+                view.widgets['subscriptionpolicy'].extra_hint)
 
     def test_edit_team_view_pillar_owner(self):
         # The edit view renders only closed subscription policy choices when

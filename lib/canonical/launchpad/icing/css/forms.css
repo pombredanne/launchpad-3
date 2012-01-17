@@ -332,6 +332,13 @@ table.form .error {
     color: red;
     font-weight: bold;
     }
+.inline-informational {
+    padding: 2px 2px 0 0;
+    }
+.inline-informational::before {
+    content: url('/@@/info');
+    padding-right: 5px;
+    }
 .sml-informational {
     background: #d4e8ff url('/+icing/blue-fade-to-grey');
     border: solid #666;
