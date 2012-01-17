@@ -666,6 +666,11 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
+    <adapter
+      provides="lp.services.messages.interfaces.message.IMessage"
+      for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+      factory="lp.code.browser.codereviewcomment.get_message"/>
+
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
         layer="lp.code.publisher.CodeLayer"

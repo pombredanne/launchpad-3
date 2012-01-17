@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -33,6 +33,7 @@ from lp.app.browser.launchpadform import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.propertycache import (
@@ -52,7 +53,7 @@ class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
 
 
-class CodeReviewDisplayComment:
+class CodeReviewDisplayComment(MessageComment):
     """A code review comment or activity or both.
 
     The CodeReviewComment itself does not implement the IComment interface as
@@ -80,24 +81,9 @@ class CodeReviewDisplayComment:
             return ''
 
     @cachedproperty
-    def comment_author(self):
-        """The author of the comment."""
-        return self.comment.message.owner
-
-    @cachedproperty
-    def has_body(self):
-        """Is there body text?"""
-        return bool(self.body_text)
-
-    @cachedproperty
     def body_text(self):
         """Get the body text for the message."""
         return self.comment.message_body
-
-    @cachedproperty
-    def comment_date(self):
-        """The date of the comment."""
-        return self.comment.message.datecreated
 
     @cachedproperty
     def all_attachments(self):
@@ -112,6 +98,10 @@ class CodeReviewDisplayComment:
     def other_attachments(self):
         # Attachments to not show.
         return self.all_attachments[1]
+
+
+def get_message(display_comment):
+    return display_comment.comment.message
 
 
 class CodeReviewCommentPrimaryContext:
