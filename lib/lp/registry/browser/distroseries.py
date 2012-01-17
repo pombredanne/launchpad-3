@@ -67,7 +67,7 @@ from lp.registry.browser import (
     add_subscribe_link,
     MilestoneOverlayMixin,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )

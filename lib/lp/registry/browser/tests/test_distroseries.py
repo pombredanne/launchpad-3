@@ -43,7 +43,7 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
