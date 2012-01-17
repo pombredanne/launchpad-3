@@ -316,7 +316,7 @@ via the 'architectures' property.
 DistroArchSeries for which we support PPA building can be obtained via
 another distroseries method called 'virtualized_architectures'.
 
-For testing purpose we can compare the results of a
+For testing purposes we can compare the results of a
 manually-calculated set of warty architectures for which we support
 PPA  and the actual value returned from the 'ppa_architecture'
 property.

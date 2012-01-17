@@ -24,7 +24,7 @@ and/or revoked from that user's +oauth-tokens page.
     >>> logout()
 
     # View the tokens.
-    >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:test')
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
     >>> print my_browser.title
     Authorized applications...

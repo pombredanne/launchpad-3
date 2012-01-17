@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -282,7 +282,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         transaction.commit()
         self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
-            'foo@preferred.com', person, account=person.account)
+            'foo@preferred.com', person)
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
@@ -296,34 +296,6 @@ class GetPersonTestCase(TestCaseWithFactory):
         person = importer.getPerson(personnode)
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
-
-    def test_person_from_account(self):
-        # If an Account record exists for a user's email address, but
-        # no Person record is linked to it, the bug importer creates a
-        # Person and links the three piece of information together.
-        account = self.factory.makeAccount("Sam")
-        personnode = ET.fromstring(
-            '<person xmlns="https://launchpad.net/xmlns/2006/bugs" />')
-        personnode.set('name', generate_nick(account.preferredemail.email))
-        personnode.set('email', account.preferredemail.email)
-        personnode.text = account.displayname
-
-        product = getUtility(IProductSet).getByName('netapplet')
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        person = importer.getPerson(personnode)
-
-        # The person returned is associated with the account.
-        self.failUnlessEqual(account.id, person.accountID)
-        # The creation comment and rationale are set correctly.
-        self.failUnlessEqual(
-            'when importing bugs for %s' % product.displayname,
-            person.creation_comment)
-        self.failUnlessEqual(
-            PersonCreationRationale.BUGIMPORT,
-            person.creation_rationale)
-        # The person's email addresses are hidden by default.
-        self.failUnless(person.hide_email_addresses)
 
 
 class GetMilestoneTestCase(unittest.TestCase):

@@ -845,6 +845,27 @@ class PackageUpload(SQLBase):
         # and uploading to any archive as the signer.
         return changes, strip_pgp_signature(changes_content).splitlines(True)
 
+    def findSourcePublication(self):
+        """Find the `SourcePackagePublishingHistory` for this build."""
+        first_build = self.builds[:1]
+        if first_build:
+            [first_build] = first_build
+            return first_build.build._getLatestPublication()
+        else:
+            return None
+
+    def findPersonToNotify(self):
+        """Find the right person to notify about this upload."""
+        spph = self.findSourcePublication()
+        if spph and self.sourcepackagerelease.upload_archive != self.archive:
+            # This is a build triggered by the syncing of a source
+            # package.  Notify the person who requested the sync.
+            return spph.creator
+        elif self.signing_key:
+            return self.signing_key.owner
+        else:
+            return None
+
     def notify(self, summary_text=None, changes_file_object=None,
                logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -860,12 +881,9 @@ class PackageUpload(SQLBase):
             changesfile_content = changes_file_object.read()
         else:
             changesfile_content = 'No changes file content available.'
-        if self.signing_key is not None:
-            signer = self.signing_key.owner
-        else:
-            signer = None
+        blamee = self.findPersonToNotify()
         notify(
-            signer, self.sourcepackagerelease, self.builds, self.customfiles,
+            blamee, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run=dry_run, logger=logger)

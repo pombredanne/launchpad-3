@@ -83,7 +83,7 @@ class CustomUploadTarballBadFile(CustomUploadError):
 class CustomUpload:
     """Base class for custom upload handlers"""
 
-    # The following should be overriden by subclasses, probably in
+    # The following should be overridden by subclasses, probably in
     # their __init__
     targetdir = None
     version = None

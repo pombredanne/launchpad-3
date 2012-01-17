@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the lp.soyuz.browser.builder module."""
@@ -67,14 +67,10 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
     layer = LaunchpadFunctionalLayer
 
-    # XXX rvb: the 3 additional queries per build are the result of the calls
-    # to:
-    # - builder.currentjob
-    # - buildqueue.specific_job
-    # These could be converted into cachedproperty and pre-populated in
-    # bulk but several tests assert that the value returned by these
-    # these properties are up to date.  Since they are not really expensive
-    # to compute I'll leave them as regular properties for now.
+    # XXX rvb: the query issued per build is the result of the call to
+    # build.buildqueue_record.  It was decided not to make it a cachedproperty
+    # because the code relies on the fact that this property always returns
+    # the current record.
 
     def test_builders_binary_package_build_query_count(self):
         def create_build():
@@ -82,12 +78,13 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
             queue = build.queueBuild()
             queue.markAsBuilding(build.builder)
 
+        nb_objects = 2
         recorder1, recorder2 = record_two_runs(
-            builders_homepage_render, create_build, 2)
+            builders_homepage_render, create_build, nb_objects)
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
 
     def test_builders_recipe_build_query_count(self):
         def create_build():
@@ -95,12 +92,13 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
             queue = build.queueBuild()
             queue.markAsBuilding(build.builder)
 
+        nb_objects = 2
         recorder1, recorder2 = record_two_runs(
-            builders_homepage_render, create_build, 2)
+            builders_homepage_render, create_build, nb_objects)
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
@@ -114,9 +112,10 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
             queue = queueset.get(job_id)
             queue.markAsBuilding(self.factory.makeBuilder())
 
+        nb_objects = 2
         recorder1, recorder2 = record_two_runs(
-            builders_homepage_render, create_build, 2)
+            builders_homepage_render, create_build, nb_objects)
 
         self.assertThat(
             recorder2,
-            HasQueryCount(LessThan(recorder1.count + 3 * 2 + 1)))
+            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))

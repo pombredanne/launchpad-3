@@ -59,10 +59,9 @@ class DeathRowProcessor(LaunchpadCronScript):
     def processDeathRow(self, archive):
         """Process death-row for the given archive.
 
-        It handles the current DB transaction according with the results
-        of the operatin just executed, i.e, commits successfull runs and
-        aborts runs with errors. It also respects 'dry-run' command-line
-        option.
+        It handles the current DB transaction according to the results of
+        the operation just executed, i.e, commits successful runs and aborts
+        runs with errors. It also respects 'dry-run' command-line option.
         """
         death_row = getDeathRow(
             archive, self.logger, self.options.pool_root)

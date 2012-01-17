@@ -117,6 +117,7 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
     IPerson,
     validate_person,
@@ -1093,15 +1094,8 @@ class BugTask(SQLBase):
             return self.userHasBugSupervisorPrivileges(user)
 
     def userCanUnassign(self, user):
-        """True if user can set the assignee to None.
-
-        This option not shown for regular users unless they or their teams
-        are the assignees. Project owners, drivers, bug supervisors and
-        Launchpad admins can always unassign.
-        """
-        return user is not None and (
-            user.inTeam(self.assignee) or
-            self.userHasBugSupervisorPrivileges(user))
+        """See `IBugTask`."""
+        return user is not None
 
     def canTransitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -2052,6 +2046,18 @@ class BugTaskSet:
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
+        if params.exclude_conjoined_tasks:
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            if params.milestone_tag:
+                raise NotImplementedError(
+                    'Excluding conjoined tasks is not currently supported '
+                    'for milestone tags')
+            if not params.milestone:
+                raise ValueError(
+                    "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                    "BugTaskSearchParam.milestone is not set")
+
         if params.milestone:
             if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
@@ -2071,10 +2077,29 @@ class BugTaskSet:
                     params.milestone)
                 join_tables += tables
                 extra_clauses += clauses
-        elif params.exclude_conjoined_tasks:
-            raise ValueError(
-                "BugTaskSearchParam.exclude_conjoined cannot be True if "
-                "BugTaskSearchParam.milestone is not set")
+
+        if params.milestone_tag:
+            where_cond = """
+                IN (SELECT Milestone.id
+                    FROM Milestone, Product, MilestoneTag
+                    WHERE Milestone.product = Product.id
+                        AND Product.project = %s
+                        AND MilestoneTag.milestone = Milestone.id
+                        AND MilestoneTag.tag IN %s
+                    GROUP BY Milestone.id
+                    HAVING COUNT(Milestone.id) = %s)
+            """ % sqlvalues(params.milestone_tag.target,
+                            params.milestone_tag.tags,
+                            len(params.milestone_tag.tags))
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
+
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            # if params.exclude_conjoined_tasks:
+            #     tables, clauses = self._buildExcludeConjoinedClause(
+            #         params.milestone_tag)
+            #     join_tables += tables
+            #     extra_clauses += clauses
 
         if params.project:
             # Prevent circular import problems.
@@ -2368,9 +2393,6 @@ class BugTaskSet:
                 "BugTask.datecreated > %s" % (
                     sqlvalues(params.created_since,)))
 
-        orderby_arg, extra_joins = self._processOrderBy(params)
-        join_tables.extend(extra_joins)
-
         query = " AND ".join(extra_clauses)
 
         if not decorators:
@@ -2386,7 +2408,7 @@ class BugTaskSet:
         else:
             with_clause = None
         return (
-            query, clauseTables, orderby_arg, decorator, join_tables,
+            query, clauseTables, decorator, join_tables,
             has_duplicate_results, with_clause)
 
     def buildUpstreamClause(self, params):
@@ -2644,7 +2666,8 @@ class BugTaskSet:
                     SpecificationBug.specification %s)
                 """ % search_value_to_where_condition(linked_blueprints)
 
-    def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
+    def buildOrigin(self, join_tables, prejoin_tables, clauseTables,
+                    start_with=BugTask):
         """Build the parameter list for Store.using().
 
         :param join_tables: A sequence of tables that should be joined
@@ -2663,7 +2686,7 @@ class BugTaskSet:
         and in clauseTables. This method ensures that each table
         appears exactly once in the returned sequence.
         """
-        origin = [BugTask]
+        origin = [start_with]
         already_joined = set(origin)
         for table, join in join_tables:
             if table is None or table not in already_joined:
@@ -2691,26 +2714,29 @@ class BugTaskSet:
         :param args: optional additional BugTaskSearchParams instances,
         """
         orig_store = store = IStore(BugTask)
-        [query, clauseTables, orderby, bugtask_decorator, join_tables,
+        [query, clauseTables, bugtask_decorator, join_tables,
         has_duplicate_results, with_clause] = self.buildQuery(params)
         if with_clause:
             store = store.with_(with_clause)
+        orderby_expression, orderby_joins = self._processOrderBy(params)
         if len(args) == 0:
             if has_duplicate_results:
                 origin = self.buildOrigin(join_tables, [], clauseTables)
-                outer_origin = self.buildOrigin([], prejoins, [])
+                outer_origin = self.buildOrigin(
+                     orderby_joins, prejoins, [])
                 subquery = Select(BugTask.id, where=SQL(query), tables=origin)
                 resultset = store.using(*outer_origin).find(
                     resultrow, In(BugTask.id, subquery))
             else:
-                origin = self.buildOrigin(join_tables, prejoins, clauseTables)
+                origin = self.buildOrigin(
+                    join_tables + orderby_joins, prejoins, clauseTables)
                 resultset = store.using(*origin).find(resultrow, query)
             if prejoins:
                 decorator = lambda row: bugtask_decorator(row[0])
             else:
                 decorator = bugtask_decorator
 
-            resultset.order_by(orderby)
+            resultset.order_by(orderby_expression)
             return DecoratedResultSet(resultset, result_decorator=decorator,
                 pre_iter_hook=pre_iter_hook)
 
@@ -2720,7 +2746,7 @@ class BugTaskSet:
 
         decorators = [bugtask_decorator]
         for arg in args:
-            [query, clauseTables, ignore, decorator, join_tables,
+            [query, clauseTables, decorator, join_tables,
              has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
             localstore = store
@@ -2745,15 +2771,16 @@ class BugTaskSet:
                 bugtask = decorator(bugtask)
             return bugtask
 
-        origin = [Alias(resultset._get_select(), "BugTask")]
+        origin = self.buildOrigin(
+            orderby_joins, prejoins, [],
+            start_with=Alias(resultset._get_select(), "BugTask"))
         if prejoins:
-            origin += [join for table, join in prejoins]
             decorator = prejoin_decorator
         else:
             decorator = simple_decorator
 
         result = store.using(*origin).find(resultrow)
-        result.order_by(orderby)
+        result.order_by(orderby_expression)
         return DecoratedResultSet(result, result_decorator=decorator,
             pre_iter_hook=pre_iter_hook)
 
@@ -2870,12 +2897,25 @@ class BugTaskSet:
             result[row[:-1]] = row[-1]
         return result
 
-    def getPrecachedNonConjoinedBugTasks(self, user, milestone):
+    def getPrecachedNonConjoinedBugTasks(self, user, milestone_data):
         """See `IBugTaskSet`."""
-        params = BugTaskSearchParams(
-            user, milestone=milestone,
-            orderby=['status', '-importance', 'id'],
-            omit_dupes=True, exclude_conjoined_tasks=True)
+        kwargs = {
+            'orderby': ['status', '-importance', 'id'],
+            'omit_dupes': True,
+            }
+        if IProjectGroupMilestoneTag.providedBy(milestone_data):
+            # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
+            # bugtasks is not currently supported for milestone tags.
+            kwargs.update({
+                'exclude_conjoined_tasks': False,
+                'milestone_tag': milestone_data,
+                })
+        else:
+            kwargs.update({
+                'exclude_conjoined_tasks': True,
+                'milestone': milestone_data,
+                })
+        params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
     def createTask(self, bug, owner, target,

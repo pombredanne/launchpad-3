@@ -1079,11 +1079,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            return bugtask_heat_html(
-                self.context, target=self.context.distribution)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            return (
+                '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+                'class="sprite flame">%d</a></span>' % self.context.bug.heat)
         else:
-            return bugtask_heat_html(self.context)
+            if IDistributionSourcePackage.providedBy(self.context.target):
+                return bugtask_heat_html(
+                    self.context, target=self.context.distribution)
+            else:
+                return bugtask_heat_html(self.context)
 
     @property
     def privacy_notice_classes(self):
@@ -2209,7 +2214,20 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask, target=self.target_context)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+                return (
+                    '<span class="sprite flame">%d</span>'
+                    % self.bugtask.bug.heat)
+            else:
+                return str(self.bugtask.bug.heat)
+        else:
+            return bugtask_heat_html(self.bugtask, target=self.target_context)
+
+    @property
+    def center_bug_heat(self):
+        """Returns whether the bug_heat_html should be centered."""
+        return not getFeatureFlag('bugs.heat_ratio_display.disabled')
 
     @property
     def model(self):
@@ -3501,7 +3519,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
         else:
-            raise AssertionError('Uknown context type: %s' % self.context)
+            raise AssertionError('Unknown context type: %s' % self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
@@ -4229,6 +4247,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    def search_macro_title(self):
+        return u'Search all bugs'
 
     @property
     def label(self):

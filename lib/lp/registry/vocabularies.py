@@ -1196,7 +1196,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         productseries = productrelease.productseries
         product = productseries.product
 
-        # NB: We use '/' as the seperator because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s/%s' % (
                     product.name, productseries.name, productrelease.version)
@@ -1256,7 +1256,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        # NB: We use '/' as the seperator because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
         return SimpleTerm(

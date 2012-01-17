@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -1293,18 +1293,6 @@ class BugTargetBugListingView(LaunchpadView):
                         count=milestone_bug_count,
                         ))
         return milestone_buglistings
-
-
-class BugCountDataItem:
-    """Data about bug count for a status."""
-
-    def __init__(self, label, count, color):
-        self.label = label
-        self.count = count
-        if color.startswith('#'):
-            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
-        else:
-            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
 
 class BugTargetBugTagsView(LaunchpadView):

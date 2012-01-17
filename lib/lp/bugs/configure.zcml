@@ -650,6 +650,7 @@
           permission="launchpad.View"
           attributes="
               bug
+              bugtask
               level
               " />
       <!-- Properties -->
@@ -659,11 +660,23 @@
               all_assignees
               all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
+              direct_subscribers
+              direct_subscribers_at_all_levels
               direct_subscriptions
+              direct_subscriptions_at_all_levels
               duplicate_only_subscriptions
               duplicate_subscriptions
               indirect_subscribers
+              muted_subscribers
+              structural_subscribers
               structural_subscriptions
+              " />
+      <!-- Methods -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              forLevel
+              forTask
               " />
     </class>
 

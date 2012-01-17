@@ -453,7 +453,7 @@ uploads can have all three properties overrdden but can be overridden
 only at their file level.  Currently, this UI only permits overriding
 all of the binary files in an upload at once, or not at all.
 
-Thus, the items that are checked for acceptance will also be overriden
+Thus, the items that are checked for acceptance will also be overridden
 depending on the selected values.  This allows many items to be
 all overridden at once with the same value(s).
 

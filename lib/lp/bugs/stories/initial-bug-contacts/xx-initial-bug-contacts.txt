@@ -11,7 +11,7 @@ to change the bug supervisor.
   ...
   LinkNotFoundError
 
-Collin is an an Ubuntu owner and can set the bug supervisor role.
+Colin is an Ubuntu owner and can set the bug supervisor role.
 
   >>> colin_browser = setupBrowser(
   ...     auth='Basic colin.watson@ubuntulinux.com:test')
@@ -40,7 +40,7 @@ Ubuntu.
   ...     ' colin.watson@ubuntulinux.com ')
   >>> colin_browser.getControl("Change").click()
 
-And then collin is redirected to the distribution bugs page.
+And then Colin is redirected to the distribution bugs page.
 
     >>> print extract_text(find_tag_by_id(
     ...     colin_browser.contents, 'bug-supervisor'))

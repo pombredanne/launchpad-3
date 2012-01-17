@@ -173,7 +173,7 @@ Building IBreadcrumb objects
 The construction of breadcrumb objects is handled by an IBreadcrumb adapter,
 which adapts a context object and produces an IBreadcrumb object for that
 context.  The default adapter provides the url attribute, but the breadcrumb's
-text must be overriden in subclasses.
+text must be overridden in subclasses.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.services.webapp.interfaces import IBreadcrumb

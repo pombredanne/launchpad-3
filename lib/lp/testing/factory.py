@@ -561,7 +561,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname=None, email=None, password=None,
+    def makeAccount(self, displayname=None, password=None,
                     status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
@@ -570,13 +570,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
-        if email is None:
-            email = self.getUniqueEmailAddress()
-        email_status = EmailAddressStatus.PREFERRED
-        if status != AccountStatus.ACTIVE:
-            email_status = EmailAddressStatus.NEW
-        email = self.makeEmail(
-            email, person=None, account=account, email_status=email_status)
         self.makeOpenIdIdentifier(account)
         return account
 
@@ -614,7 +607,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
         selfgenerated_bugnotifications=False, member_of=(),
-        homepage_content=None):
+        homepage_content=None, account_status=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -654,9 +647,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
 
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
-
         if (time_zone is not None or latitude is not None or
             longitude is not None):
             naked_person.setLocation(latitude, longitude, time_zone, person)
@@ -679,6 +669,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        if account_status:
+            removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
         for team in member_of:
@@ -729,10 +721,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # setPreferredEmail no longer activates the account
             # automatically.
             account = IMasterStore(Account).get(Account, person.accountID)
-            account.activate(
-                "Activated by factory.makePersonByName",
-                password='foo',
-                preferred_email=email)
+            account.reactivate(
+                "Activated by factory.makePersonByName", password='foo')
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -743,20 +733,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     MailingListAutoSubscribePolicy.NEVER)
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED,
-            account)
+            alternative_address, person, EmailAddressStatus.VALIDATED)
         return person
 
-    def makeEmail(self, address, person, account=None, email_status=None):
+    def makeEmail(self, address, person, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
-        :param account: The account to assign the email address to.  Will use
-            the given person's account if None is provided.
-        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -766,10 +752,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
-        if account is None:
-            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, account)
+            address, person, email_status)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,

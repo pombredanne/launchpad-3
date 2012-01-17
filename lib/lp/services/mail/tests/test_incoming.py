@@ -104,13 +104,6 @@ class TestIncoming(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage(email_address=unknown)
         self.assertThat(authenticateEmail(mail), Is(None))
 
-    def test_accounts_without_person(self):
-        # An account without a person should be the same as an unknown email.
-        email = 'non-person@example.com'
-        self.factory.makeAccount(email=email)
-        mail = self.factory.makeSignedMessage(email_address=email)
-        self.assertThat(authenticateEmail(mail), Is(None))
-
 
 class TestExtractAddresses(TestCaseWithFactory):
 

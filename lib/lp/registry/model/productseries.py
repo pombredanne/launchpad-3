@@ -541,11 +541,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return history
 
     def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+                     code_name=None, tags=None):
         """See IProductSeries."""
-        return Milestone(
+        milestone = Milestone(
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
+        if tags:
+            milestone.setTags(tags.split())
+        return milestone
 
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
