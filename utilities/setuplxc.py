@@ -22,11 +22,11 @@ import time
 
 
 LXC_NAME = 'lptests'
-LXC_OPTIONS = {
-    'lxc.network.type': 'veth',
-    'lxc.network.link': 'virbr0',
-    'lxc.network.flags': 'up',
-    }
+LXC_OPTIONS = (
+    ('lxc.network.type', 'veth'),
+    ('lxc.network.link', 'virbr0'),
+    ('lxc.network.flags', 'up'),
+    )
 LXC_PATH = '/var/lib/lxc/'
 LXC_REPOS = (
     'deb http://archive.ubuntu.com/ubuntu '
@@ -63,10 +63,20 @@ def ssh(location, user=None):
     The ssh `location` and, optionally, `user` must be given.
     If the user is None then the current user is used for the connection.
     """
-    sshcmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
     if user is not None:
         location = '%s@%s' % (user, location)
-    yield lambda cmd: subprocess.call([sshcmd, location, '--', "'%s'" % cmd])
+
+    def _sshcall(cmd):
+        sshcmd = (
+            'ssh',
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            location,
+            '--', "'%s'" % cmd,
+            )
+        return subprocess.call(sshcmd)
+
+    yield _sshcall
 
 
 def get_user_ids(user):
@@ -125,6 +135,29 @@ def get_container_path(lxcname, path=''):
         '/var/lib/lxc/mycontainer/rootfs/home'
     """
     return os.path.join(LXC_PATH, lxcname, 'rootfs', path.lstrip('/'))
+
+
+def file_insert(filename, line):
+    """Insert given `line`, if not present, at the beginning of `filename`,
+    e.g.::
+
+        >>> import tempfile
+        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
+        >>> f.write('line1\n')
+        >>> f.close()
+        >>> file_insert(f.name, 'line0\n')
+        >>> open(f.name).read()
+        'line0\nline1\n'
+        >>> file_insert(f.name, 'line0\n')
+        >>> open(f.name).read()
+        'line0\nline1\n'
+    """
+    with open(filename, 'r+') as f:
+        lines = f.readlines()
+        if lines[0] != line:
+            lines.insert(0, line)
+            f.seek(0)
+            f.writelines(lines)
 
 
 def error(msg):
@@ -207,19 +240,13 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    with open(RESOLV_FILE, 'r+') as f:
-        lines = f.readlines()
-        line = 'nameserver 192.168.122.1\n'
-        if lines[0] != line:
-            lines.insert(0, line)
-            f.seek(0)
-            f.writelines(lines)
+    file_insert(RESOLV_FILE, 'nameserver 192.168.122.1\n')
 
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
     # Container configuration template.
-    content = '\n'.join('%s=%s' % i for i in LXC_OPTIONS.items())
+    content = ''.join('%s=%s\n' % i for i in LXC_OPTIONS)
     with open(LXC_CONFIG_TEMPLATE, 'w') as f:
         f.write(content)
     # Creating container.
@@ -228,14 +255,21 @@ def create_lxc(user, lxcname):
         '-t', 'ubuntu',
         '-n', lxcname,
         '-f', LXC_CONFIG_TEMPLATE,
-        '--'
+        '--',
         '-r lucid -a i386 -b %s' % user
         ])
     if exit_code:
         error('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
+    # Set up root ssh key.
+    user_authorized_keys = '/home/%s/.ssh/authorized_keys' % user
+    with open(user_authorized_keys, 'a') as f:
+        f.write(open('/root/.ssh/id_rsa.pub').read())
+    dst = get_container_path(lxcname, '/root/.ssh/')
+    os.makedirs(dst)
+    shutil.copy(user_authorized_keys, dst)
     # SSH into the container
-    with ssh(user, lxcname) as sshcall:
+    with ssh(lxcname, user) as sshcall:
         timeout = 30
         while timeout:
             if not sshcall('true'):
@@ -244,11 +278,6 @@ def create_lxc(user, lxcname):
             time.sleep(1)
         else:
             error('Unable to SSH into LXC.')
-    # Set up root ssh key.
-    src = '/home/%s/.ssh/authorized_keys' % user
-    dst = get_container_path(lxcname, '/root/.ssh/')
-    os.makedirs(dst)
-    shutil.copy(src, dst)
 
 
 def initialize_lxc(user, directory, lxcname):
