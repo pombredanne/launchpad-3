@@ -155,7 +155,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.location import LocationWidget
-from lp.app.widgets.password import PasswordChangeWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -971,8 +970,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
+    links = ('personal', 'email_settings', 'sshkeys', 'gpgkeys')
 
     def personal(self):
         target = '+edit'
@@ -1277,7 +1275,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     label = "Review person's account"
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
-    custom_widget('password', PasswordChangeWidget)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1290,7 +1287,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
         if self.viewed_by_admin:
-            self.field_names = ['displayname', 'password'] + self.field_names
+            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1334,10 +1331,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         """Update the IAccount."""
         if (data['status'] == AccountStatus.SUSPENDED
             and self.context.status != AccountStatus.SUSPENDED):
-            # Setting the password to a clear value makes it impossible to
-            # login. The preferred email address is removed to ensure no
-            # email is sent to the user.
-            data['password'] = 'invalid'
+            # The preferred email address is removed to ensure no email
+            # is sent to the user.
             self.person.setPreferredEmail(None)
             self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
