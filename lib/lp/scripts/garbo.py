@@ -312,12 +312,6 @@ class OAuthNoncePruner(BulkPruner):
         """
 
 
-class AccountOnlyEmailAddressPruner(BulkPruner):
-    """Remove EmailAddress records not linked to a Person."""
-    target_table_class = EmailAddress
-    ids_to_prune_query = "SELECT id FROM EmailAddress WHERE person IS NULL"
-
-
 class UnlinkedAccountPruner(BulkPruner):
     """Remove Account records not linked to a Person."""
     target_table_class = Account
@@ -329,11 +323,8 @@ class UnlinkedAccountPruner(BulkPruner):
     ids_to_prune_query = """
         SELECT Account.id
         FROM Account
-        LEFT OUTER JOIN EmailAddress ON Account.id = EmailAddress.account
         LEFT OUTER JOIN Person ON Account.id = Person.account
-        WHERE
-            EmailAddress.id IS NULL
-            AND Person.id IS NULL
+        WHERE Person.id IS NULL
         """
 
 
@@ -1306,7 +1297,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
-        AccountOnlyEmailAddressPruner,
         UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [
