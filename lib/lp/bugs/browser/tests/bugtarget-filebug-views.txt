@@ -331,7 +331,7 @@ The attachments are all added to the same comment.
 
     >>> for comment in filebug_view.added_bug.messages[1:]:
     ...     print "Comment by %s: %s attachment(s)" % (
-    ...         comment.owner.displayname, comment.bugattachments.count())
+    ...         comment.owner.displayname, len(comment.bugattachments))
     Comment by No Privileges Person: 2 attachment(s)
 
 

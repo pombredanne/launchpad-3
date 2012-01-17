@@ -560,7 +560,7 @@ class ImportBugTestCase(unittest.TestCase):
             message1.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(message1.subject, 'A test bug')
         self.assertEqual(message1.text_contents, 'Original description')
-        self.assertEqual(message1.bugattachments.count(), 1)
+        self.assertEqual(len(message1.bugattachments), 1)
         attachment = message1.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
@@ -586,7 +586,7 @@ class ImportBugTestCase(unittest.TestCase):
             message3.text_contents,
             'A comment from mark about CVE-2005-2730\n\n'
             ' * list item 1\n * list item 2\n\nAnother paragraph')
-        self.assertEqual(message3.bugattachments.count(), 2)
+        self.assertEqual(len(message3.bugattachments), 2)
         # grab the attachments in the appropriate order
         [attachment1, attachment2] = list(message3.bugattachments)
         if attachment1.type == BugAttachmentType.PATCH:
@@ -611,7 +611,7 @@ class ImportBugTestCase(unittest.TestCase):
             message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
         self.assertEqual(message4.subject, 'Re: A test bug')
         self.assertEqual(message4.text_contents, '<empty comment>')
-        self.assertEqual(message4.bugattachments.count(), 0)
+        self.assertEqual(len(message4.bugattachments), 0)
 
         # Message 5:
         self.assertEqual(
@@ -620,7 +620,7 @@ class ImportBugTestCase(unittest.TestCase):
             message5.datecreated.isoformat(), '2005-01-01T15:00:00+00:00')
         self.assertEqual(message5.subject, 'Re: A test bug')
         self.assertEqual(message5.text_contents, '')
-        self.assertEqual(message5.bugattachments.count(), 1)
+        self.assertEqual(len(message5.bugattachments), 1)
         attachment = message5.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
