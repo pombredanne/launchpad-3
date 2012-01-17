@@ -143,14 +143,14 @@ def file_insert(filename, line):
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\n')
+        >>> f.write('line1\\n')
         >>> f.close()
-        >>> file_insert(f.name, 'line0\n')
+        >>> file_insert(f.name, 'line0\\n')
         >>> open(f.name).read()
-        'line0\nline1\n'
-        >>> file_insert(f.name, 'line0\n')
+        'line0\\nline1\\n'
+        >>> file_insert(f.name, 'line0\\n')
         >>> open(f.name).read()
-        'line0\nline1\n'
+        'line0\\nline1\\n'
     """
     with open(filename, 'r+') as f:
         lines = f.readlines()
@@ -199,6 +199,11 @@ def initialize_host(
     subprocess.call(['apt-get', '-y', 'install'] + HOST_PACKAGES)
     # Make the user.
     subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
+    # Generate root ssh keys if they are not present.
+    if not os.path.exists('/root/.ssh/id_rsa.pub'):
+        subprocess.call([
+            'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
+            '-f', '/root/.ssh/id_rsa'])
     # Get the user's uid and gid, and run as user.
     with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
@@ -216,7 +221,7 @@ def initialize_host(
             (known_hosts, KNOWN_HOST_CONTENT),
             ]:
             with open(filename, 'w') as f:
-                f.write(contents)
+                f.write('%s\n' % contents)
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
         # Set up bzr and Launchpad authentication.
