@@ -2103,7 +2103,9 @@ the original message.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> msg = original_msg.get_payload()[0]
-    >>> # Fudge due to new line added to the payload.
+
+Fudge due to new line added to the payload.
+
     >>> len(str(msg)) <= (max_return_size + 1)
     True
 

@@ -38,7 +38,6 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.person import generate_nick
 from lp.services.config import config
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
