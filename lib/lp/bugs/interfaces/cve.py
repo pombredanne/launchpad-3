@@ -182,9 +182,9 @@ class ICveSet(Interface):
         """
 
     def getBugCvesForBugTasks(bugtasks):
-        """Return BugCve objects that correspond to the supplied bugtasks.
+        """Return (Bug, Cve) tuples that correspond to the supplied bugtasks.
 
-        Returns an iterable of BugCve objects for bugs related to the
+        Returns an iterable of (Bug, Cve) tuples for bugs related to the
         supplied sequence of bugtasks.
         """
 

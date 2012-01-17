@@ -92,9 +92,9 @@ class CVEReportView(LaunchpadView):
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
 
         bugcves = getUtility(ICveSet).getBugCvesForBugTasks(bugtasks)
-        for bugcve in bugcves:
-            assert bugcve.bug.id in bugtaskcves, "Bug missing in bugcves."
-            bugtaskcves[bugcve.bug.id].cves.append(bugcve.cve)
+        for bug, cve in bugcves:
+            assert bug.id in bugtaskcves, "Bug missing in bugcves."
+            bugtaskcves[bug.id].cves.append(cve)
 
         # Order the dictionary items by bug ID and then return only the
         # bugtaskcve objects.
