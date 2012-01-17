@@ -20,6 +20,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.services.helpers import shortlist
 from lp.services.webapp import LaunchpadView
+from lp.services.webapp.publisher import canonical_url
 
 
 class BugTaskCve:
@@ -34,6 +35,14 @@ class BugTaskCve:
         # All the bugtasks we have should represent the same bug.
         assert self.bugtasks, "No bugtasks added before calling bug!"
         return self.bugtasks[0].bug
+
+
+def getCVEDisplayData(cve):
+    """Return the data we need for display for the given CVE."""
+    return {
+        'displayname': cve.displayname,
+        'url': canonical_url(cve),
+        }
 
 
 class CVEReportView(LaunchpadView):
@@ -81,7 +90,8 @@ class CVEReportView(LaunchpadView):
                 current_bugtaskcves[bugtask.bug.id] = BugTaskCve()
             current_bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
 
-        bugcves = getUtility(ICveSet).getBugCvesForBugTasks(bugtasks)
+        bugcves = getUtility(ICveSet).getBugCvesForBugTasks(
+            bugtasks, getCVEDisplayData)
         for bug, cve in bugcves:
             if bug.id in open_bugtaskcves:
                 open_bugtaskcves[bug.id].cves.append(cve)

@@ -180,7 +180,7 @@ class CveSet:
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(cves, key=lambda a: a.sequence)
 
-    def getBugCvesForBugTasks(self, bugtasks):
+    def getBugCvesForBugTasks(self, bugtasks, cve_mapper=None):
         bugs = set(bugtask.bug for bugtask in bugtasks)
         if len(bugs) == 0:
             return []
@@ -205,7 +205,10 @@ class CveSet:
         cve_ids = set(cve_id for bug_id, cve_id in bugcve_ids)
         cves = store.find(Cve, In(Cve.id, list(cve_ids)))
 
-        cvemap = dict((cve.id, cve) for cve in cves)
+        if cve_mapper is None:
+            cvemap = dict((cve.id, cve) for cve in cves)
+        else:
+            cvemap = dict((cve.id, cve_mapper(cve)) for cve in cves)
         bugmap = dict((bug.id, bug) for bug in bugs)
         return [
             (bugmap[bug_id], cvemap[cve_id])
