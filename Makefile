@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON:=$(shell uname -r | sed -e 's/3.2.*/python2.7/; s/[23].*/python2.6/')
+PYTHON:=$(shell uname -r | sed -e 's/^3.2.*/python2.7/; s/^[23].*/python2.6/')
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
