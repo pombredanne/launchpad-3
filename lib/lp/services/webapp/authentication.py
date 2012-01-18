@@ -9,13 +9,10 @@ __all__ = [
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
     'PlacelessAuthUtility',
-    'SSHADigestEncryptor',
     ]
 
 
 import binascii
-import hashlib
-import random
 from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
@@ -46,7 +43,6 @@ from lp.services.webapp.interfaces import (
     BasicAuthLoggedInEvent,
     CookieAuthPrincipalIdentifiedEvent,
     ILaunchpadPrincipal,
-    IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
@@ -178,49 +174,6 @@ class PlacelessAuthUtility:
     def getPrincipalByLogin(self, login):
         """See IAuthenticationService."""
         return getUtility(IPlacelessLoginSource).getPrincipalByLogin(login)
-
-
-class SSHADigestEncryptor:
-    """SSHA is a modification of the SHA digest scheme with a salt
-    starting at byte 20 of the base64-encoded string.
-    """
-    implements(IPasswordEncryptor)
-
-    # Source: http://developer.netscape.com/docs/technote/ldap/pass_sha.html
-
-    saltLength = 20
-
-    def generate_salt(self):
-        # Salt can be any length, but not more than about 37 characters
-        # because of limitations of the binascii module.
-        # All 256 characters are available.
-        salt = ''
-        for n in range(self.saltLength):
-            salt += chr(random.randrange(256))
-        return salt
-
-    def encrypt(self, plaintext, salt=None):
-        plaintext = str(plaintext)
-        if salt is None:
-            salt = self.generate_salt()
-        v = binascii.b2a_base64(
-                hashlib.sha1(plaintext + salt).digest() + salt)
-        return v[:-1]
-
-    def validate(self, plaintext, encrypted):
-        encrypted = str(encrypted)
-        plaintext = str(plaintext)
-        try:
-            ref = binascii.a2b_base64(encrypted)
-        except binascii.Error:
-            # Not valid base64.
-            return False
-        salt = ref[20:]
-        v = binascii.b2a_base64(
-            hashlib.sha1(plaintext + salt).digest() + salt)[:-1]
-        pw1 = (v or '').strip()
-        pw2 = (encrypted or '').strip()
-        return pw1 == pw2
 
 
 class LaunchpadLoginSource:

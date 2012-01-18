@@ -35,10 +35,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.fields import (
-    PasswordField,
-    StrippedTextLine,
-    )
+from lp.services.fields import StrippedTextLine
 
 
 class AccountSuspendedError(Exception):
@@ -229,9 +226,6 @@ class IAccountPrivate(Interface):
 
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
 
-    password = PasswordField(
-        title=_("Password."), readonly=False, required=True)
-
 
 class IAccountSpecialRestricted(Interface):
     """Attributes of `IAccount` protected with launchpad.Special."""
@@ -244,14 +238,12 @@ class IAccountSpecialRestricted(Interface):
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
-    def reactivate(comment, password):
+    def reactivate(comment):
         """Activate this account.
 
-        Set the account status to ACTIVE, the account's password to the given
-        one and its preferred email address.
+        Set the account status to ACTIVE.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
         """
 
 
@@ -262,16 +254,11 @@ class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname, password=None,
-            password_is_encrypted=False):
+    def new(rationale, displayname):
         """Create a new `IAccount`.
 
         :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
-        :param password: A password.
-        :param password_is_encrypted: If True, the password parameter has
-            already been encrypted using the `IPasswordEncryptor` utility.
-            If False, the password will be encrypted automatically.
 
         :return: The newly created `IAccount` provider.
         """
