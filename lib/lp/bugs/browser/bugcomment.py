@@ -241,20 +241,16 @@ class BugComment(MessageComment):
         return not self.visible
 
     @property
-    def needs_truncation(self):
+    def too_long(self):
         if self.comment_limit is None:
             return False
         return len(self.text_contents) > self.comment_limit
-
-    @property
-    def was_truncated(self):
-        return self.needs_truncation
 
     @cachedproperty
     def text_for_display(self):
         if self.hide_text:
             return ''
-        if not self.needs_truncation:
+        if not self.too_long:
             return self.text_contents
         # Note here that we truncate at comment_limit, and not
         # comment_limit - 3; while it would be nice to account for

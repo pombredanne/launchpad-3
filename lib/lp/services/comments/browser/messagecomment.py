@@ -17,6 +17,8 @@ class MessageComment:
 
     has_footer = False
 
+    too_long = False
+
     @property
     def display_attachments(self):
         return []
@@ -39,3 +41,7 @@ class MessageComment:
     @property
     def body_text(self):
         return IMessage(self).text_contents
+
+    @cachedproperty
+    def text_for_display(self):
+        return self.body_text

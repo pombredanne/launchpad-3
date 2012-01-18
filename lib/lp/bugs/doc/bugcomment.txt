@@ -112,7 +112,7 @@ just any of the bug's bugtask.)
 If we get the bug comments from the view we can see that the two additional
 comments have been truncated:
 
-    >>> [(bug_comment.index, bug_comment.was_truncated)
+    >>> [(bug_comment.index, bug_comment.too_long)
     ...  for bug_comment in bug_comments(bug_view)]
     [(1, True), (2, True)]
 

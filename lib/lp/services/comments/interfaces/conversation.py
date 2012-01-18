@@ -39,6 +39,13 @@ class IComment(Interface):
         description=_("Does the comment have a footer?"),
         readonly=True)
 
+    too_long = Bool(
+        title=u'Whether the comment body is too long to display in full.',
+        readonly=True)
+
+    text_for_display = Text(
+        title=u'The comment text to be displayed in the UI.', readonly=True)
+
     body_text = Text(
         description=_("The body text of the comment."),
         readonly=True)

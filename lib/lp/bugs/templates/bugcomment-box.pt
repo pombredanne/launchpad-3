@@ -95,7 +95,7 @@
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.
     </div>
-    <p tal:condition="comment/was_truncated">
+    <p tal:condition="comment/too_long">
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>

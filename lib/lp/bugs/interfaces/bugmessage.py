@@ -128,11 +128,6 @@ class IBugComment(IMessage, IComment):
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
     index = Int(title=u'The comment number', required=True, readonly=True)
-    was_truncated = Bool(
-        title=u'Whether the displayed text was truncated for display.',
-        readonly=True)
-    text_for_display = Text(
-        title=u'The comment text to be displayed in the UI.', readonly=True)
     display_title = Attribute('Whether or not to show the title.')
     synchronized = Attribute(
         'Has the comment been synchronized with a remote bug tracker?')
