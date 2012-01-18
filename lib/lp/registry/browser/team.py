@@ -958,10 +958,13 @@ class TeamMailingListArchiveView(LaunchpadView):
         super(TeamMailingListArchiveView, self).__init__(context, request)
         self.messages = self._get_messages()
         cache = IJSONRequestCache(request).objects 
-        cache['mail_messages'] = self.messages
+        cache['mail'] = self.messages
 
     def _get_messages(self):
-        return simplejson.loads(MOCK_LIST_DATA)
+        # XXX: jcsackett 18-1-2012: This needs to be updated to use the
+        # grackle client, once that is available, instead of returning
+        # an empty list as it does now.
+        return simplejson.loads([])
 
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
