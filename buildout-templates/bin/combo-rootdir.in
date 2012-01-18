@@ -12,7 +12,7 @@ rm -rf $BUILD_DIR/*
 
 # Populate YUI.
 mkdir $BUILD_DIR/yui
-tar zxf download-cache/dist/yui-${versions:yui}.tar.gz -C $BUILD_DIR/yui
+cp -a build/js/yui/yui-${versions:yui}/* $BUILD_DIR/yui
 
 # And YUI 2, for now.
 cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
