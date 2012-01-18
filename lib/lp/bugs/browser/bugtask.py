@@ -347,9 +347,12 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info, show_spam_controls=show_spam_controls,
-        user=user)
+        user=user, hide_first=for_display)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
+    for comment in comments.values():
+        get_property_cache(comment._message).bugattachments = []
+
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
@@ -359,8 +362,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
-        else:
-            comments[message_id].bugattachments.append(attachment)
+        cache = get_property_cache(attachment.message)
+        cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -371,12 +374,6 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index == 0:
-        # We show the text of the first comment as the bug description,
-        # or via the special link "View original description", but we want
-        # to display attachments filed together with the bug in the
-        # comment list.
-        comments[0].text_for_display = ''
     return comments
 
 
