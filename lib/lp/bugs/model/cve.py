@@ -31,9 +31,11 @@ from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
     )
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.bugs.model.cvereference import CveReference
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -181,7 +183,7 @@ class CveSet:
         return sorted(cves, key=lambda a: a.sequence)
 
     def getBugCvesForBugTasks(self, bugtasks, cve_mapper=None):
-        bugs = set(bugtask.bug for bugtask in bugtasks)
+        bugs = load_related(Bug, bugtasks, ('bugID', ))
         if len(bugs) == 0:
             return []
         bug_ids = [bug.id for bug in bugs]

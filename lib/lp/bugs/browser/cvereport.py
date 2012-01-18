@@ -19,6 +19,7 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.helpers import shortlist
 from lp.services.webapp import LaunchpadView
 from lp.services.webapp.publisher import canonical_url
@@ -107,6 +108,12 @@ class CVEReportView(LaunchpadView):
         self.resolved_cve_bugtasks = [
             bugtaskcve for bug, bugtaskcve
             in sorted(resolved_bugtaskcves.items())]
+
+        # The page contains links to the bug task assignees:
+        # Pre-load the related Person and ValidPersonCache records
+        assignee_ids = [task.assigneeID for task in bugtasks]
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            assignee_ids, need_validity=True))
 
     def renderCVELinks(self, cves):
         """Render the CVE links related to the given bug.
