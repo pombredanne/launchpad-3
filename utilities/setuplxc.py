@@ -10,7 +10,7 @@ __all__ = []
 # This script is run as root.
 # To run doctests: python -m doctest -v setuplxc.py
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from contextlib import contextmanager
 import argparse
 import os
@@ -182,6 +182,11 @@ parser.add_argument(
     '-b', '--public-key', required=True,
     help='The SSH public key for the Launchpad user.')
 parser.add_argument(
+    '-a', '--actions',
+    choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
+    nargs='+',
+    help='Only for debugging. Call one or more internal functions.')
+parser.add_argument(
     'directory',
     help=('The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
@@ -332,12 +337,21 @@ def stop_lxc(lxcname):
     subprocess.call(['lxc-stop', '-n', lxcname])
 
 
-def main(user, fullname, email, lpuser, private_key, public_key, directory):
-    initialize_host(
-        user, fullname, email, lpuser, private_key, public_key, directory)
-    create_lxc(user, LXC_NAME)
-    initialize_lxc(user, directory, LXC_NAME)
-    stop_lxc(LXC_NAME)
+def main(
+    user, fullname, email, lpuser, private_key, public_key, actions,
+    directory):
+    function_args_map = OrderedDict((
+        ('initialize_host', (user, fullname, email, lpuser, private_key,
+                             public_key, directory)),
+        ('create_lxc', (user, LXC_NAME)),
+        ('initialize_lxc', (user, directory, LXC_NAME)),
+        ('stop_lxc', (LXC_NAME,)),
+        ))
+    if actions is None:
+        actions = function_args_map.keys()
+    scope = globals()
+    for action in actions:
+        scope[action](*function_args_map[action])
 
 
 if __name__ == '__main__':
@@ -348,4 +362,5 @@ if __name__ == '__main__':
          args.lpuser or args.user,
          args.private_key.decode('string-escape'),
          args.public_key.decode('string-escape'),
+         args.actions,
          args.directory)
