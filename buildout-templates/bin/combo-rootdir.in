@@ -2,6 +2,11 @@
 
 set -e
 
+if [ -z "$1" ]; then
+    echo "$0: Need root combo loader directory as an argument."
+    exit 1
+fi
+
 BUILD_DIR=$1
 rm -rf $BUILD_DIR/*
 
