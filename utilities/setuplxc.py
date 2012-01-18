@@ -312,15 +312,15 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(
             'cd %s && utilities/update-sourcecode %s/sourcecode' % (
             checkout_dir, dependencies_dir))
+    with ssh(lxcname) as sshcall:
         # Launchpad database setup.
         sshcall(
             'cd %s && utilities/launchpad-database-setup %s' % (
             checkout_dir, user))
+    with ssh(lxcname, user) as sshcall:
         sshcall(
             'cd %s && utilities/link-external-sourcecode %s' % (
             checkout_dir, dependencies_dir))
-        # Probably unnecessary (just a test).
-        sshcall('cd %s && make schema' % checkout_dir)
         sshcall('cd %s && make install' % checkout_dir)
 
 
