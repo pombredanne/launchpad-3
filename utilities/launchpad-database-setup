@@ -18,9 +18,15 @@ fi
 # https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
+if [[ $EUID -ne 0 ]]; then
+    SUDO='sudo'
+else
+    SUDO=''
+fi
+
 for pgversion in 8.4 8.3 8.2
 do
-  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
+  $SUDO grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
   if [ $? -eq 0 ]; then
     break
   fi
@@ -35,31 +41,31 @@ fi
 echo "Using postgres $pgversion"
 
 # Make sure that we have the correct version running on port 5432
-sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
+$SUDO grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
 if [ $? -ne 0 ]; then
   echo "Please check /etc/postgresql/$pgversion/main/postgresql.conf and"
   echo "ensure postgres is running on port 5432."
 fi;
 
 if [ -e /etc/init.d/postgresql-$pgversion ]; then
-    sudo /etc/init.d/postgresql-$pgversion stop
+    $SUDO /etc/init.d/postgresql-$pgversion stop
 else
     # This is Maverick.
-    sudo /etc/init.d/postgresql stop $pgversion
+    $SUDO /etc/init.d/postgresql stop $pgversion
 fi
 
 echo Purging postgresql data...
-sudo pg_dropcluster $pgversion main --stop-server
+$SUDO pg_dropcluster $pgversion main --stop-server
 echo Re-creating postgresql database...
 # Setting locale to C to make the server run in that locale.
-LC_ALL=C sudo pg_createcluster $pgversion main --encoding UNICODE
+LC_ALL=C $SUDO pg_createcluster $pgversion main --encoding UNICODE
 
 echo Applying postgresql configuration changes...
 
-sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
+$SUDO cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
     /etc/postgresql/$pgversion/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
-sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
+$SUDO grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
+$SUDO patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
 @@ -58,7 +58,10 @@
@@ -75,13 +81,13 @@ sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 
 
 EOF
-sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+$SUDO chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
     /etc/postgresql/$pgversion/main/pg_hba.conf
-sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+$SUDO chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
     /etc/postgresql/$pgversion/main/pg_hba.conf
 
-sudo grep -q Launchpad /etc/postgresql/$pgversion/main/postgresql.conf || \
-sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
+$SUDO grep -q Launchpad /etc/postgresql/$pgversion/main/postgresql.conf || \
+$SUDO tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 
 ##
 ## Launchpad configuration
@@ -98,25 +104,25 @@ EOF
 
 if [ "$pgversion" = 8.2 -o "$pgversion" = 8.3 ]
 then
-  sudo grep -q '^[[:space:]]*max_fsm_relations' /etc/postgresql/$pgversion/main/postgresql.conf || \
-  sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
+  $SUDO grep -q '^[[:space:]]*max_fsm_relations' /etc/postgresql/$pgversion/main/postgresql.conf || \
+  $SUDO tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 max_fsm_relations=2000
 
 EOF
 fi
 
 if [ -e /etc/init.d/postgresql-$pgversion ]; then
-    sudo /etc/init.d/postgresql-$pgversion start
+    $SUDO /etc/init.d/postgresql-$pgversion start
 else
     # This is Maverick.
-    sudo /etc/init.d/postgresql start $pgversion
+    $SUDO /etc/init.d/postgresql start $pgversion
 fi
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
 echo Creating postgresql user $USER
-sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $USER
+$SUDO -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $USER
 
 echo
 echo Looks like everything went ok.
