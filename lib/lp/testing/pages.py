@@ -682,11 +682,8 @@ def setupBrowserForUser(user, password='test'):
     """
     naked_user = removeSecurityProxy(user)
     email = naked_user.preferredemail.email
-    if hasattr(naked_user, '_password_cleartext_cached'):
-        password = naked_user._password_cleartext_cached
     logout()
-    return setupBrowser(
-        auth="Basic %s:%s" % (str(email), password))
+    return setupBrowser(auth="Basic %s:test" % str(email))
 
 
 def safe_canonical_url(*args, **kwargs):
