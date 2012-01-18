@@ -304,7 +304,10 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(
             'apt-get update && '
             'DEBIAN_FRONTEND=noninteractive '
-            'apt-get -y --allow-unauthenticated install language-pack-en '
+            'apt-get -y --allow-unauthenticated install language-pack-en')
+        sshcall(
+            'DEBIAN_FRONTEND=noninteractive '
+            'apt-get -y --allow-unauthenticated install '
             'bzr launchpad-developer-dependencies apache2 apache2-mpm-worker')
         # User configuration.
         sshcall('adduser %s sudo' % user)
