@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster utilities."""
@@ -13,26 +13,17 @@ __all__ = [
     'ObsoleteDistroseries',
     'PackageRemover',
     'PubSourceChecker',
-    'SyncSource',
-    'SyncSourceError',
     ]
 
-import hashlib
 from itertools import chain
 import os
-import stat
-import sys
-import time
 
-from debian.deb822 import Changes
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.browser_helpers import get_plural_text
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import filenameToContentType
@@ -403,138 +394,6 @@ class ChrootManager:
 
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
-
-
-class SyncSourceError(Exception):
-    """Raised when an critical error occurs inside SyncSource.
-
-    The entire procedure should be aborted in order to avoid unknown problems.
-    """
-
-
-class SyncSource:
-    """Sync Source procedure helper class.
-
-    It provides the backend for retrieving files from Librarian or the
-    'sync source' location. Also provides a method to check the downloaded
-    files integrity.
-    'aptMD5Sum' is provided as a classmethod during the integration time.
-    """
-
-    def __init__(self, files, origin, logger, downloader, todistro):
-        """Store local context.
-
-        files: a dictionary where the keys are the filename and the
-               value another dictionary with the file informations.
-        origin: a dictionary similar to 'files' but where the values
-                contain information for download files to be synchronized
-        logger: a logger
-        downloader: a callable that fetchs URLs,
-                    'downloader(url, destination)'
-        todistro: target distribution object
-        """
-        self.files = files
-        self.origin = origin
-        self.logger = logger
-        self.downloader = downloader
-        self.todistro = todistro
-
-    @classmethod
-    def generateMD5Sum(self, filename):
-        file_handle = open(filename)
-        md5sum = hashlib.md5(file_handle.read()).hexdigest()
-        file_handle.close()
-        return md5sum
-
-    def fetchFileFromLibrarian(self, filename):
-        """Fetch file from librarian.
-
-        Store the contents in local path with the original filename.
-        Return the fetched filename if it was present in Librarian or None
-        if it wasn't.
-        """
-        try:
-            libraryfilealias = self.todistro.main_archive.getFileByName(
-                filename)
-        except NotFoundError:
-            return None
-
-        self.logger.info(
-            "%s: already in distro - downloading from librarian" %
-            filename)
-
-        output_file = open(filename, 'w')
-        libraryfilealias.open()
-        copy_and_close(libraryfilealias, output_file)
-        return filename
-
-    def fetchLibrarianFiles(self):
-        """Try to fetch files from Librarian.
-
-        It raises SyncSourceError if anything else then an
-        orig tarball was found in Librarian.
-        Return the names of the files retrieved from the librarian.
-        """
-        retrieved = []
-        for filename in self.files.keys():
-            if not self.fetchFileFromLibrarian(filename):
-                continue
-            file_type = determine_source_file_type(filename)
-            # set the return code if an orig was, in fact,
-            # fetched from Librarian
-            orig_types = (
-                SourcePackageFileType.ORIG_TARBALL,
-                SourcePackageFileType.COMPONENT_ORIG_TARBALL)
-            if file_type not in orig_types:
-                raise SyncSourceError(
-                    'Oops, only orig tarball can be retrieved from '
-                    'librarian.')
-            retrieved.append(filename)
-
-        return retrieved
-
-    def fetchSyncFiles(self):
-        """Fetch files from the original sync source.
-
-        Return DSC filename, which should always come via this path.
-        """
-        dsc_filename = None
-        for filename in self.files.keys():
-            file_type = determine_source_file_type(filename)
-            if file_type == SourcePackageFileType.DSC:
-                dsc_filename = filename
-            if os.path.exists(filename):
-                self.logger.info("  - <%s: cached>" % (filename))
-                continue
-            self.logger.info(
-                "  - <%s: downloading from %s>" %
-                (filename, self.origin["url"]))
-            download_f = ("%s%s" % (self.origin["url"],
-                                    self.files[filename]["remote filename"]))
-            sys.stdout.flush()
-            self.downloader(download_f, filename)
-        return dsc_filename
-
-    def checkDownloadedFiles(self):
-        """Check md5sum and size match Source.
-
-        If anything fails SyncSourceError will be raised.
-        """
-        for filename in self.files.keys():
-            actual_md5sum = self.generateMD5Sum(filename)
-            expected_md5sum = self.files[filename]["md5sum"]
-            if actual_md5sum != expected_md5sum:
-                raise SyncSourceError(
-                    "%s: md5sum check failed (%s [actual] "
-                    "vs. %s [expected])."
-                    % (filename, actual_md5sum, expected_md5sum))
-
-            actual_size = os.stat(filename)[stat.ST_SIZE]
-            expected_size = int(self.files[filename]["size"])
-            if actual_size != expected_size:
-                raise SyncSourceError(
-                    "%s: size mismatch (%s [actual] vs. %s [expected])."
-                    % (filename, actual_size, expected_size))
 
 
 class LpQueryDistro(LaunchpadScript):
@@ -1007,56 +866,3 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
-
-
-def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                     lp_closes, section, priority, description,
-                     files_from_librarian, requested_by, origin):
-    """Generate a Changes object.
-
-    :param dsc: A `Dsc` instance for the related source package.
-    :param suite: Distribution name
-    :param changelog: Relevant changelog data
-    :param urgency: Urgency string (low, medium, high, etc)
-    :param closes: Sequence of Debian bug numbers (as strings) fixed by
-        this upload.
-    :param section: Debian section
-    :param priority: Package priority
-    """
-
-    # XXX cprov 2007-07-03:
-    # Changed-By can be extracted from most-recent changelog footer,
-    # but do we care?
-
-    changes = Changes()
-    changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
-    changes["Format"] = "1.7"
-    changes["Date"] = time.strftime("%a,  %d %b %Y %H:%M:%S %z")
-    changes["Source"] = dsc["source"]
-    changes["Binary"] = dsc["binary"]
-    changes["Architecture"] = "source"
-    changes["Version"] = dsc["version"]
-    changes["Distribution"] = suite
-    changes["Urgency"] = urgency
-    changes["Maintainer"] = dsc["maintainer"]
-    changes["Changed-By"] = requested_by
-    if description:
-        changes["Description"] = "\n %s" % description
-    if closes:
-        changes["Closes"] = " ".join(closes)
-    if lp_closes:
-        changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
-    files = []
-    for filename in dsc_files:
-        if filename in files_from_librarian:
-            continue
-        files.append({"md5sum": dsc_files[filename]["md5sum"],
-                      "size": dsc_files[filename]["size"],
-                      "section": section,
-                      "priority": priority,
-                      "name": filename,
-                     })
-
-    changes["Files"] = files
-    changes["Changes"] = "\n%s" % changelog
-    return changes

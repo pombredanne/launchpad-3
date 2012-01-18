@@ -96,25 +96,6 @@ Using 'pocket' filter:
     >>> soyuz_helper.checkPubList(updates_main_pubs, result)
     True
 
-Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
-
-    >>> non_release_main_pubs = [
-    ...     pub_main_proposed_published,
-    ...     pub_main_updates_pending,
-    ...     ]
-
-
-    >>> non_release_main_pubs = sorted(
-    ...    non_release_main_pubs, key=operator.attrgetter('id'),
-    ...    reverse=True)
-
-    >>> result = breezy_autotest.getPublishedSources(
-    ...     'cnews', include_pending=True,
-    ...     exclude_pocket=PackagePublishingPocket.RELEASE)
-
-    >>> soyuz_helper.checkPubList(non_release_main_pubs, result)
-    True
-
 Looking for all PUBLISHED or PENDING publications in cprov PPA and all
 pockets.
 
