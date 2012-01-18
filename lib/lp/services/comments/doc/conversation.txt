@@ -33,7 +33,7 @@ on the comment:
 
  * +comment-header - the top part of the comment
      normally something like "Bob wrote 4 seconds ago"
- * +comment-body - the main content
+ * +comment-body-text - the main content
      Only rendered if IComment.has_body is true.
  * +comment-footer - associated activity or other footer info, like
      bug activity or code reviews.

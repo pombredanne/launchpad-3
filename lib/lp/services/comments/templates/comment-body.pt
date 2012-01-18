@@ -3,6 +3,10 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <tal:message replace="structure context/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+  <div class="comment-text" itemprop="commentText" tal:content="structure
+  context/text_for_display/fmt:obfuscate-email/fmt:email-to-html" />
+  <p tal:condition="context/too_long">
+    <a tal:attributes="href context/fmt:url">Read more...</a>
+  </p>
 
 </tal:root>

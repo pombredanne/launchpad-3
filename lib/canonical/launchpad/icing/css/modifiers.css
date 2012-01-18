@@ -118,7 +118,7 @@ div.beta img {
     clear: left;
     }
 pre.changelog, table.diff,
-.bug-comment, .bug-activity, .codereviewcomment {
+.bug-activity, .comment-text {
     font-family: 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {

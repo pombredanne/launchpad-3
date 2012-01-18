@@ -25,7 +25,7 @@
           name="+comment-header"
           template="../templates/comment-header.pt"/>
       <browser:page
-          name="+comment-body"
+          name="+comment-body-text"
           template="../templates/comment-body.pt"/>
   </browser:pages>
 

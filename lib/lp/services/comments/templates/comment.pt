@@ -14,7 +14,7 @@
     <div class="boardCommentBody"
       itemprop="commentText"
          tal:condition="context/has_body"
-         tal:content="structure context/@@+comment-body">
+         tal:content="structure context/@@+comment-body-text">
       The comment body
     </div>
     <div class="boardCommentFooter"

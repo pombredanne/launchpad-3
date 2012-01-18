@@ -229,7 +229,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
     custom_widget('vote', MyDropWidget)
 
     page_title = 'Reply to code review comment'
