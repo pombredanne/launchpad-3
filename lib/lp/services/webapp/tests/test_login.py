@@ -545,11 +545,10 @@ class MyMechanizeBrowser(mechanize.Browser):
     handler_classes['_redirect'] = MyHTTPRedirectHandler
 
 
-def fill_login_form_and_submit(browser, email_address, password):
+def fill_login_form_and_submit(browser, email_address):
     assert browser.getControl(name='field.email') is not None, (
         "We don't seem to be looking at a login form.")
     browser.getControl(name='field.email').value = email_address
-    browser.getControl(name='field.password').value = password
     browser.getControl('Continue').click()
 
 
@@ -565,7 +564,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         browser.getControl('Continue').click()
 
         self.assertEquals('Login', browser.title)
-        fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
+        fill_login_form_and_submit(browser, 'test@canonical.com')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
         self.assertIn('Sample Person (name12)', login_status)

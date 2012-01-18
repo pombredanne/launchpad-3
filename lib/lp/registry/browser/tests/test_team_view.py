@@ -266,6 +266,7 @@ class TestTeamEditView(TestCaseWithFactory):
             self.assertEqual(
                 TeamSubscriptionPolicy,
                 view.widgets['subscriptionpolicy'].vocabulary)
+            self.assertIsNone(view.widgets['subscriptionpolicy'].extra_hint)
             self.assertEqual(
                 TeamMembershipRenewalPolicy.NONE,
                 view.widgets['renewal_policy']._data)
@@ -286,6 +287,11 @@ class TestTeamEditView(TestCaseWithFactory):
                 expected_items,
                 [term.value
                  for term in view.widgets['subscriptionpolicy'].vocabulary])
+            self.assertEqual(
+                'sprite info',
+                view.widgets['subscriptionpolicy'].extra_hint_class)
+            self.assertIsNotNone(
+                view.widgets['subscriptionpolicy'].extra_hint)
 
     def test_edit_team_view_pillar_owner(self):
         # The edit view renders only closed subscription policy choices when

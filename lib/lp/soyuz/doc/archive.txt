@@ -2342,6 +2342,25 @@ all result in a NotFound exception:
     ...
     NoSuchDistroSeries: No such distribution series: 'badseries'.
 
+If a package exists in multiple distroseries, we can use the `from_series`
+parameter to select the distroseries to synchronise from:
+
+    >>> test_publisher.addFakeChroots(breezy_autotest)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.0",
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.1",
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> mark.archive.syncSources(
+    ...     ["package-multiseries"], cprov.archive, "release",
+    ...     from_series="hoary", person=mark)
+    >>> mark_multiseries = mark.archive.getPublishedSources(
+    ...     name="package-multiseries").one()
+    >>> print mark_multiseries.sourcepackagerelease.version
+    1.0
+
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
 pulled.

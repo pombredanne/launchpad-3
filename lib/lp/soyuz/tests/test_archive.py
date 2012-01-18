@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -443,7 +443,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
-            archive, ["foo"])
+            archive, None, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('1.1', pubs[0].source_package_version)
 
@@ -460,9 +460,31 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
-            archive, ["foo"])
+            archive, None, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('1.0', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_multiple_distroseries(self):
+        # The helper method selects the correct publication from multiple
+        # distroseries.
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        archive = self.factory.makeArchive()
+        distroseries_one = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        distroseries_two = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, archive=archive,
+            distroseries=distroseries_one, version="1.0",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, archive=archive,
+            distroseries=distroseries_two, version="1.1",
+            status=PackagePublishingStatus.PUBLISHED)
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, distroseries_one.name, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual("1.0", pubs[0].source_package_version)
 
 
 class TestArchiveCanUpload(TestCaseWithFactory):
@@ -2301,6 +2323,45 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
+
+    def test_copyPackages_with_multiple_distroseries(self):
+        # The from_series parameter selects a source distroseries.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        new_distroseries = self.factory.makeDistroSeries(
+            distribution=source_archive.distribution)
+        new_version = "%s.1" % version
+        new_spr = self.factory.makeSourcePackageRelease(
+            archive=source_archive, distroseries=new_distroseries,
+            sourcepackagename=source_name, version=new_version)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive, distroseries=new_distroseries,
+            sourcepackagerelease=new_spr)
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name,
+                from_series=source.distroseries.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # There should be one copy job with the correct version.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(version, copy_job.package_version)
+
+        # If we now do another copy without the from_series parameter, it
+        # selects the newest version in the source archive.
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(2, copy_jobs.count())
+        self.assertEqual(copy_job, copy_jobs[0])
+        self.assertEqual(new_version, copy_jobs[1].package_version)
 
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):
