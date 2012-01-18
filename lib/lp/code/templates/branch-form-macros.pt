@@ -17,28 +17,11 @@
 
 <script type="text/javascript">
 //<![CDATA[
-function update_branch_unique_name()
-{
-  var unique_name = document.getElementById("branch-unique-name")
-  var owner = document.getElementById("field.owner")
-  var name = document.getElementById("field.name").value
-  if (name == '') {
-    name = '&lt;name&gt;'
-  }
-  var branch_name = "~" + owner.value + "/" + target_name + "/" + name
-  unique_name.innerHTML = branch_name
-}
-
-function hookUpBranchFieldFunctions()
-{
-  connect('field.owner', 'onkeyup', update_branch_unique_name);
-  connect('field.owner', 'onchange', update_branch_unique_name);
-  connect('field.name', 'onkeyup', update_branch_unique_name);
-  update_branch_unique_name();
-  document.getElementById("branch-unique-name-div").style.display = "block";
-}
-
-registerLaunchpadFunction(hookUpBranchFieldFunctions);
+LPS.use('lp.code.util', function(Y) {
+  Y.on('domready', function(e) {
+      Y.lp.code.util.hookUpBranchFieldFunctions(Y);
+  }, window);
+});
 
 //]]>
 </script>

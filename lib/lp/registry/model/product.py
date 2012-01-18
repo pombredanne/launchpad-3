@@ -926,10 +926,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+        return results
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""

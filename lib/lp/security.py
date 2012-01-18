@@ -107,6 +107,7 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.milestone import (
+    IAbstractMilestone,
     IMilestone,
     IProjectGroupMilestone,
     )
@@ -449,8 +450,8 @@ class ViewDistributionMirror(AnonymousAuthorization):
 
 
 class ViewMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone."""
-    usedfor = IMilestone
+    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
+    usedfor = IAbstractMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):

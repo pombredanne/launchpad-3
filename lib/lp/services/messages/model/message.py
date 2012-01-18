@@ -126,10 +126,20 @@ class Message(SQLBase):
     rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+    _chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+
+    @cachedproperty
+    def chunks(self):
+        return list(self._chunks)
+
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
-    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+    _bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+
+    @cachedproperty
+    def bugattachments(self):
+        return list(self._bugattachments)
+
     visible = BoolCol(notNull=True, default=True)
 
     def __repr__(self):
@@ -143,24 +153,9 @@ class Message(SQLBase):
         self.visible = visible
 
     @property
-    def followup_title(self):
-        """See IMessage."""
-        if self.title.lower().startswith('re: '):
-            return self.title
-        return 'Re: ' + self.title
-
-    @property
     def title(self):
         """See IMessage."""
         return self.subject
-
-    @property
-    def has_new_title(self):
-        """See IMessage."""
-        if self.parent is None:
-            return True
-        return self.title.lower().lstrip('re:').strip() != \
-        self.parent.title.lower().lstrip('re:').strip()
 
     @property
     def sender(self):

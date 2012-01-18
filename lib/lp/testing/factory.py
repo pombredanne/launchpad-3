@@ -1929,9 +1929,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
-        return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=bug_watch,
-                              remote_comment_id=None)
+        with person_logged_in(owner):
+            return bug.newMessage(owner=owner, subject=subject, content=body,
+                                  parent=None, bugwatch=bug_watch,
+                                  remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
