@@ -170,7 +170,7 @@ parser.add_argument(
     '-e', '--email', required=True,
     help=('The email of the user, used for bzr whoami.'))
 parser.add_argument(
-    '-m', '--name', required=True,
+    '-n', '--name', required=True,
     help=('The full name of the user, used fo bzr whoami.'))
 parser.add_argument(
     '-l', '--lpuser',
@@ -343,7 +343,7 @@ def main(user, fullname, email, lpuser, private_key, public_key, directory):
 if __name__ == '__main__':
     args = parser.parse_args()
     main(args.user,
-         args.fullname,
+         args.name,
          args.email,
          args.lpuser or args.user,
          args.private_key,
