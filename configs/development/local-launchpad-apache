@@ -138,7 +138,7 @@ RewriteLock /var/tmp/rewrite-lock
 
   ProxyPreserveHost on
   ProxyPass /+longpoll/ http://localhost:22435/ retry=1
-  ProxyPass /combo !
+  ProxyPass /+combo !
   ProxyPass / http://localhost:8086/ retry=1
 
   <Location />
@@ -154,7 +154,7 @@ RewriteLock /var/tmp/rewrite-lock
     SetEnvIfNoCase Request_URI ^/@@/.*\.js$ !no-gzip !dont-vary
   </Location>
 
-  WSGIScriptAlias /combo /usr/share/convoy/convoy.wsgi
+  WSGIScriptAlias /+combo /usr/share/convoy/convoy.wsgi
 
 </VirtualHost>
 

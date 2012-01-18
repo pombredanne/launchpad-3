@@ -79,18 +79,18 @@
 
   <tal:js-loader condition="features/js.combo_loader.enabled">
    <script
-   src="/combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+   src="/+combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
-            comboBase: '/combo/?',
+            comboBase: '/+combo/?',
             root: 'yui/',
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: '/combo/?lp/',
-                    comboBase: '/combo/?',
+                    base: '/+combo/?lp/',
+                    comboBase: '/+combo/?',
                     root: 'lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
@@ -98,8 +98,8 @@
                 },
                 yui2: {
                     combine: true,
-                    base: '/combo/?yui2/',
-                    comboBase: '/combo/?',
+                    base: '/+combo/?yui2/',
+                    comboBase: '/+combo/?',
                     root: 'yui2/',
                     fetchCSS: false,
                     modules: {
