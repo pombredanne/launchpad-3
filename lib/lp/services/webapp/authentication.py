@@ -67,8 +67,9 @@ class PlacelessAuthUtility:
         self.nobody.__parent__ = self
 
     def _authenticateUsingBasicAuth(self, credentials, request):
-        # Since there is a hardcoded password, check really really hard
-        # that this is a testrunner.
+        # authenticate() only attempts basic auth if the config is a
+        # testrunner.  But since there is a hardcoded password, check
+        # again really really hard that this is a test environment.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         db_name = store.execute("SELECT current_database()").get_one()[0]
         is_test_db = (
