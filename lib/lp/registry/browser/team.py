@@ -940,6 +940,20 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
 
+class TeamMailingListArchiveView(LaunchpadView):
+
+    label = "Mailing list archive"
+
+    def __init__(self, context, request):
+        super(TeamMailingListArchiveView, self).__init__(context, request)
+        self.messages = self._get_messages()
+        cache = IJSONRequestCache(request).objects 
+        cache['mail_messages'] = self.messages
+
+    def _get_messages(self):
+        return simplejson.loads(MOCK_LIST_DATA)
+
+
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
