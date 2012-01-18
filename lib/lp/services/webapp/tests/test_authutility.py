@@ -5,22 +5,28 @@ __metaclass__ = type
 
 import base64
 
+import testtools
+from zope.app.security.basicauthadapter import BasicAuthAdapter
+from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
+from zope.app.testing import ztapi
+from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces.http import IHTTPCredentials
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
 from lp.services.identity.interfaces.account import IAccount
-from lp.services.webapp.authentication import LaunchpadPrincipal
+from lp.services.webapp.authentication import (
+    LaunchpadPrincipal,
+    PlacelessAuthUtility,
+    )
 from lp.services.webapp.interfaces import (
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
-from lp.testing import TestCase
-from lp.testing.fixture import ZopeUtilityFixture
-from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class DummyPerson(object):
@@ -49,14 +55,22 @@ class DummyPlacelessLoginSource(object):
         return [Bruce]
 
 
-class TestPlacelessAuth(TestCase):
-
-    layer = DatabaseFunctionalLayer
+class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
 
     def setUp(self):
-        super(TestPlacelessAuth, self).setUp()
-        self.useFixture(ZopeUtilityFixture(
-            DummyPlacelessLoginSource(), IPlacelessLoginSource, ''))
+        testtools.TestCase.setUp(self)
+        PlacelessSetup.setUp(self)
+        ztapi.provideUtility(IPlacelessLoginSource,
+                             DummyPlacelessLoginSource())
+        ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
+        ztapi.provideAdapter(
+            IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
+
+    def tearDown(self):
+        ztapi.unprovideUtility(IPlacelessLoginSource)
+        ztapi.unprovideUtility(IPlacelessAuthUtility)
+        PlacelessSetup.tearDown(self)
+        testtools.TestCase.tearDown(self)
 
     def _make(self, login, pwd):
         dict = {
@@ -83,20 +97,39 @@ class TestPlacelessAuth(TestCase):
         self.assertEqual(authsvc.unauthorized('bruce', request), None)
         self.assertEqual(request._response._status, 401)
 
-    def test_only_for_testrunner(self):
-        # Basic authentication only works on a launchpad_ftest*
-        # database, with a mainsite hostname of launchpad.dev. It has a
-        # hardcoded password, so must never be used on production.
+    def test_basic_auth_disabled(self):
+        # Basic auth uses a single password for every user, so it must
+        # never be used on production. authenticate() will skip basic
+        # auth unless it's enabled.
+        authsvc, request = self._make('bruce', 'test')
+        self.assertEqual(authsvc.authenticate(request), Bruce)
         try:
             config.push(
-                "change-rooturl", "[vhost.mainsite]\nhostname: launchpad.net")
-            authsvc, request = self._make('bruce', 'test')
-            self.assertRaisesWithContent(
-                AssertionError,
-                "Attempted to use basic auth outside the test suite.",
-                authsvc.authenticate, request)
+                "no-basic", "[launchpad]\nbasic_auth_password: none")
+            self.assertEqual(authsvc.authenticate(request), None)
         finally:
-            config.pop("change-rooturl")
+            config.pop("no-basic")
+
+    def test_direct_basic_call_fails_when_disabled(self):
+        # Basic auth uses a single password for every user, so it must
+        # never be used on production. authenticate() won't call the
+        # underlying method unless it's enabled, but even if it somehow
+        # does it will fail.
+        authsvc, request = self._make('bruce', 'test')
+        credentials = ILoginPassword(request, None)
+        self.assertEqual(
+            authsvc._authenticateUsingBasicAuth(credentials, request), Bruce)
+        try:
+            config.push(
+                "no-basic", "[launchpad]\nbasic_auth_password: none")
+            exception = self.assertRaises(
+                AssertionError, authsvc._authenticateUsingBasicAuth,
+                credentials, request)
+            self.assertEquals(
+                "Attempted to use basic auth when it is disabled",
+                str(exception))
+        finally:
+            config.pop("no-basic")
 
     def test_getPrincipal(self):
         authsvc, request = self._make('bruce', 'test')

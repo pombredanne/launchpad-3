@@ -45,13 +45,10 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     BasicAuthLoggedInEvent,
     CookieAuthPrincipalIdentifiedEvent,
-    DEFAULT_FLAVOR,
     ILaunchpadPrincipal,
     IPasswordEncryptor,
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
-    IStoreSelector,
-    MAIN_STORE,
     )
 
 
@@ -67,18 +64,13 @@ class PlacelessAuthUtility:
         self.nobody.__parent__ = self
 
     def _authenticateUsingBasicAuth(self, credentials, request):
-        # authenticate() only attempts basic auth if the config is a
-        # testrunner.  But since there is a hardcoded password, check
-        # again really really hard that this is a test environment.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        db_name = store.execute("SELECT current_database()").get_one()[0]
-        is_test_db = (
-            db_name.startswith('launchpad_ftest')
-            or db_name.startswith('launchpad_empty'))
-        is_dev_domain = config.vhost.mainsite.hostname == 'launchpad.dev'
-        if not is_test_db or not is_dev_domain:
+        # authenticate() only attempts basic auth if it's enabled. But
+        # recheck here, just in case. There is a single password for all
+        # users, so this must never get anywhere near production!
+        if (not config.launchpad.basic_auth_password
+            or config.launchpad.basic_auth_password.lower() == 'none'):
             raise AssertionError(
-                "Attempted to use basic auth outside the test suite.")
+                "Attempted to use basic auth when it is disabled")
 
         login = credentials.getLogin()
         if login is not None:
@@ -86,7 +78,7 @@ class PlacelessAuthUtility:
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None and principal.person.is_valid_person:
                 password = credentials.getPassword()
-                if password == 'test':
+                if password == config.launchpad.basic_auth_password:
                     # We send a LoggedInEvent here, when the
                     # cookie auth below sends a PrincipalIdentified,
                     # as the login form is never visited for BasicAuth.
@@ -146,7 +138,7 @@ class PlacelessAuthUtility:
             # encoded properly. That's a client error, so we don't really
             # care, and we're done.
             raise Unauthorized("Bad Basic authentication.")
-        if (config.isTestRunner() and credentials is not None
+        if (config.launchpad.basic_auth_password and credentials is not None
             and credentials.getLogin() is not None):
             return self._authenticateUsingBasicAuth(credentials, request)
         else:
