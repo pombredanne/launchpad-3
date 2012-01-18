@@ -29,7 +29,7 @@ The OpenID Provider will ask us to authenticate.
     Login
     >>> from lp.services.webapp.tests.test_login import (
     ...     fill_login_form_and_submit)
-    >>> fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
+    >>> fill_login_form_and_submit(browser, 'test@canonical.com')
 
 Once authenticated, we're redirected back to the page where we started, with
 the query args preserved.
