@@ -306,7 +306,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -314,10 +314,14 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in OPEN_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
+
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -325,6 +329,9 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in CLOSED_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):

@@ -996,42 +996,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
 
-    def test_SourcePackageReleaseDscBinariesUpdater_updates_incorrect(self):
-        # SourcePackageReleaseDscBinariesUpdater fixes incorrectly-separated
-        # dsc_binaries values.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spr = self.factory.makeSourcePackageRelease(
-            dsc_binaries="one two three")
-        transaction.commit()
-        self.runDaily()
-        self.assertEqual("one, two, three", spr.dsc_binaries)
-
-    def test_SourcePackageReleaseDscBinariesUpdater_skips_correct(self):
-        # SourcePackageReleaseDscBinariesUpdater leaves correct dsc_binaries
-        # values alone.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spr_one = self.factory.makeSourcePackageRelease(dsc_binaries="one")
-        spr_three = self.factory.makeSourcePackageRelease(
-            dsc_binaries="one, two, three")
-        transaction.commit()
-        self.runDaily()
-        self.assertEqual("one", spr_one.dsc_binaries)
-        self.assertEqual("one, two, three", spr_three.dsc_binaries)
-
-    def test_SourcePackageReleaseDscBinariesUpdater_skips_broken(self):
-        # There have been a few instances of Binary fields in PPA packages
-        # that are formatted like a dependency relationship field, complete
-        # with (>= ...).  This is completely invalid (and failed to build),
-        # but does exist historically, so we have to deal with it.
-        # SourcePackageReleaseDscBinariesUpdater leaves such fields well
-        # alone.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spr = self.factory.makeSourcePackageRelease(
-            dsc_binaries="one (>= 1), two")
-        transaction.commit()
-        self.runDaily()
-        self.assertEqual("one (>= 1), two", spr.dsc_binaries)
-
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer

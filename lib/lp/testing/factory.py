@@ -529,20 +529,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     @with_celebrity_logged_in('admin')
     def makeAdministrator(self, name=None, email=None, password=None):
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+        user = self.makePerson(name=name, email=email)
         administrators = getUtility(ILaunchpadCelebrities).admin
         administrators.addMember(user, administrators.teamowner)
         return user
 
     def makeRegistryExpert(self, name=None, email='expert@example.com',
-                           password='test'):
+                           password=None):
         from lp.testing.sampledata import ADMIN_EMAIL
         login(ADMIN_EMAIL)
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+        user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
         return user
@@ -561,14 +557,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname=None, password=None,
-                    status=AccountStatus.ACTIVE,
+    def makeAccount(self, displayname=None, status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
         if displayname is None:
             displayname = self.getUniqueString('displayname')
-        account = getUtility(IAccountSet).new(
-            rationale, displayname, password=password)
+        account = getUtility(IAccountSet).new(rationale, displayname)
         removeSecurityProxy(account).status = status
         self.makeOpenIdIdentifier(account)
         return account
@@ -612,10 +606,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         :param email: The email address for the new person.
         :param name: The name for the new person.
-        :param password: The password for the person.
-            This password can be used in setupBrowser in combination
-            with the email address to create a browser for this new
-            person.
+        :param password: Ignored.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
@@ -630,20 +621,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
-        if password is None:
-            password = self.getUniqueString('password')
         # By default, make the email address preferred.
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
-        # Set the password to test in order to allow people that have
-        # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname,
+            displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        naked_person._password_cleartext_cached = password
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
 
@@ -721,8 +707,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # setPreferredEmail no longer activates the account
             # automatically.
             account = IMasterStore(Account).get(Account, person.accountID)
-            account.reactivate(
-                "Activated by factory.makePersonByName", password='foo')
+            account.reactivate("Activated by factory.makePersonByName")
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -1944,9 +1929,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
-        return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=bug_watch,
-                              remote_comment_id=None)
+        with person_logged_in(owner):
+            return bug.newMessage(owner=owner, subject=subject, content=body,
+                                  parent=None, bugwatch=bug_watch,
+                                  remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,

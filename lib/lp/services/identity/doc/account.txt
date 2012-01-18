@@ -83,22 +83,6 @@ Account objects have a useful string representation.
     >>> account
     <Account 'No Privileges Person' (Active account)>
 
-It also has an encrypted password.
-
-    >>> print account.password
-    K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf
-
-Ensure the password changes are sticky, as this is a property hiding the
-AccountPassword table.
-
-    >>> account.password = None
-    >>> print account.password
-    None
-
-    >>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
-    >>> print account.password
-    K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf
-
 The account has other metadata.
 
     >>> account.date_created
@@ -152,36 +136,12 @@ rationale and displayname are required.
 
     >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale)
-    >>> from storm.store import Store
 
     >>> login('admin@canonical.com')
-    >>> passwordless_account = account_set.new(
-    ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
+    >>> new_account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED, 'New Account')
     >>> transaction.commit()
-    >>> print passwordless_account.creation_rationale.name
+    >>> print new_account.creation_rationale.name
     USER_CREATED
-    >>> print passwordless_account.displayname
-    Passwordless
-    >>> print passwordless_account.password
-    None
-
-The new() method accepts the optional parameters of password and
-password_is_encrypted. If password_is_encrypted is False, the default,
-then the method encrypts it for us.
-
-    >>> passworded_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
-    ...     password=u'clear_password')
-    >>> Store.of(passworded_account).flush()
-    >>> passworded_account.password == u'clear_password'
-    False
-
-The method does not encrypt the password if told that it is already
-encrypted, by setting password_is_encrypted to True.
-
-    >>> clear_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
-    ...     password=u'clear_password', password_is_encrypted=True)
-    >>> Store.of(clear_account).flush()
-    >>> print clear_account.password
-    clear_password
+    >>> print new_account.displayname
+    New Account
