@@ -288,7 +288,7 @@ class TestTeamEditView(TestCaseWithFactory):
                 [term.value
                  for term in view.widgets['subscriptionpolicy'].vocabulary])
             self.assertEqual(
-                'inline-informational',
+                'sprite info',
                 view.widgets['subscriptionpolicy'].extra_hint_class)
             self.assertIsNotNone(
                 view.widgets['subscriptionpolicy'].extra_hint)

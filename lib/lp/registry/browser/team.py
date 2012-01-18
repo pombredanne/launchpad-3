@@ -312,7 +312,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     for policy in OPEN_TEAM_POLICY])
                 )
             self.widgets['subscriptionpolicy'].extra_hint_class = (
-                'inline-informational')
+                'sprite info')
             self.widgets['subscriptionpolicy'].extra_hint = e.message
 
         # Do we need to only show closed subscription policy choices?
@@ -327,7 +327,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     for policy in CLOSED_TEAM_POLICY])
                 )
             self.widgets['subscriptionpolicy'].extra_hint_class = (
-                'inline-informational')
+                'sprite info')
             self.widgets['subscriptionpolicy'].extra_hint = e.message
 
     @action('Save', name='save')
