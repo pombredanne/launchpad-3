@@ -20,6 +20,7 @@ import os
 import readline
 import rlcompleter
 import sys
+import webbrowser
 
 from pytz import utc
 from storm.expr import *
@@ -80,6 +81,9 @@ def _get_locals():
 
     # Having a factory instance is handy.
     factory = LaunchpadObjectFactory()
+    def browser_open(obj, *args, **kwargs):
+        transaction.commit()
+        webbrowser.open(canonical_url(obj, *args, **kwargs))
     res = {}
     res.update(locals())
     res.update(globals())
