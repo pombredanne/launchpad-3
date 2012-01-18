@@ -22,7 +22,8 @@ import zope.testing.cleanup
 
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import AuthorizationBase
-from lp.services.identity.interfaces.account import IAccount
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.services.webapp.authorization import (
@@ -62,7 +63,7 @@ class Allow(AuthorizationBase):
     def checkUnauthenticated(self):
         return True
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         return True
 
 
@@ -72,7 +73,7 @@ class Deny(AuthorizationBase):
     def checkUnauthenticated(self):
         return False
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         return False
 
 
@@ -82,7 +83,7 @@ class Explode(AuthorizationBase):
     def checkUnauthenticated(self):
         raise NotImplementedError()
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         raise NotImplementedError()
 
 
@@ -105,13 +106,13 @@ class Checker(AuthorizationBase):
         self.calls.append('checkUnauthenticated')
         return False
 
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
 
         We record the call and then return False, arbitrarily chosen, to keep
         the policy from complaining.
         """
-        self.calls.append(('checkAccountAuthenticated', account))
+        self.calls.append(('checkAuthenticated', user))
         return False
 
 
@@ -159,7 +160,7 @@ class Delegate(AuthorizationBase):
         yield self.object_one, self.permission
         yield self.object_two, self.permission
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         yield self.object_one, self.permission
         yield self.object_two, self.permission
 
@@ -170,15 +171,15 @@ class PermissionAccessLevel:
     access_level = 'read'
 
 
-class FakeAccount:
-    """A minimal object to represent an account."""
-    implements(IAccount)
+class FakePerson:
+    """A minimal object to represent a person."""
+    implements(IPerson, IPersonRoles)
 
 
 class FakeLaunchpadPrincipal:
     """A minimal principal implementing `ILaunchpadPrincipal`"""
     implements(ILaunchpadPrincipal)
-    account = FakeAccount()
+    person = FakePerson()
     scope = None
     access_level = ''
 
@@ -302,12 +303,12 @@ class TestCheckPermissionCaching(TestCase):
         # calls the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAccountAuthenticated', principal.account)],
+            [('checkAuthenticated', principal.person)],
             checker_factory.calls)
         # A subsequent identical call does not call the checker.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAccountAuthenticated', principal.account)],
+            [('checkAuthenticated', principal.person)],
             checker_factory.calls)
 
     def test_checkPermission_clearSecurityPolicyCache_resets_cache(self):
@@ -347,8 +348,8 @@ class TestCheckPermissionCaching(TestCase):
         # rather than finding a value in the cache.
         policy.checkPermission(permission, obj)
         self.assertEqual(
-            ['checkUnauthenticated', ('checkAccountAuthenticated',
-                                      principal.account)],
+            ['checkUnauthenticated', ('checkAuthenticated',
+                                      principal.person)],
             checker_factory.calls)
 
     def test_checkPermission_commit_clears_cache(self):
