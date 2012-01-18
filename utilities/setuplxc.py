@@ -44,12 +44,6 @@ HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
 RESOLV_FILE = '/etc/resolv.conf'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
-KNOWN_HOST_CONTENT = (
-    '|1|n76YK19Z/RqAKUguxJkWFEl0+Ng=|CLsJbbgxtuSPt0IjJZnKQoHESTA= ssh-rsa '
-    'AAAAB3NzaC1yc2EAAAABIwAAAIEApuXd4MHTfr1qLXWeClxTTQYZQblCA+nHvbjAjowkE'
-    'd2Y4kpvntJOVewoSwa22zTbiYSmmssCuCkFHwcpnZBZN5qMWewjizav30WfeyLR5Kng5q'
-    'ucxmFAEkNJjCJiu194wRNKu0cD99Uk/6X/AfsWGLgmL5pa5UFk62aW+iZLUQ8='
-)
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -214,11 +208,13 @@ def initialize_host(
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
         known_hosts = os.path.join(ssh_dir, 'known_hosts')
+        known_host_content = subprocess.check_output([
+            'ssh-keyscan', '-t', 'rsa', 'bazaar.launchpad.net'])
         for filename, contents in [
             (priv_file, private_key),
             (pub_file, public_key),
             (auth_file, public_key),
-            (known_hosts, KNOWN_HOST_CONTENT),
+            (known_hosts, known_host_content),
             ]:
             with open(filename, 'w') as f:
                 f.write('%s\n' % contents)
