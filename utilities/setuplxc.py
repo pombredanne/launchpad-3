@@ -42,6 +42,7 @@ LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 DEPENDENCIES_DIR = '~/dependencies'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
 RESOLV_FILE = '/etc/resolv.conf'
+LP_REPOSITORY = 'lp:launchpad'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 
@@ -229,7 +230,7 @@ def initialize_host(
         checkout_dir = os.path.join(directory, 'lp')
     # bzr branch does not work well with seteuid.
     os.system(
-        "su - %s -c 'bzr branch lp:launchpad %s'" % (user, checkout_dir))
+        "su - %s -c 'bzr branch %s %s'" % (user, LP_REPOSITORY, checkout_dir))
     with su(user) as env:
         # Set up source dependencies.
         dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
