@@ -2,7 +2,7 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Set up this box to act as an lxc test machine"""
+"""Create an LXC test environment for Launchpad testing."""
 
 __metaclass__ = type
 __all__ = []
@@ -161,30 +161,31 @@ def error(msg):
     sys.exit(1)
 
 
-parser = argparse.ArgumentParser(
-    description='Create an LXC test environment for Launchpad testing.')
+parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     '-u', '--user', required=True,
-    help=('The name of the system user to be created.'))
+    help='The name of the system user to be created.')
 parser.add_argument(
     '-e', '--email', required=True,
-    help=('The email of the user, used for bzr whoami.'))
+    help='The email of the user, used for bzr whoami.')
 parser.add_argument(
     '-n', '--name', required=True,
-    help=('The full name of the user, used fo bzr whoami.'))
+    help='The full name of the user, used fo bzr whoami.')
 parser.add_argument(
     '-l', '--lpuser',
     help=('The name of the Launchpad user that will be used to check out '
           'dependencies.  If not provided, the system user name is used.'))
 parser.add_argument(
     '-v', '--private-key', required=True,
-    help='The SSH private key for the Launchpad user.')
+    help='The SSH private key for the Launchpad user (without passphrase).')
 parser.add_argument(
     '-b', '--public-key', required=True,
     help='The SSH public key for the Launchpad user.')
 parser.add_argument(
     'directory',
-    help='The directory of the Launchpad repository to be created.')
+    help=('The directory of the Launchpad repository to be created. '
+         'The directory must reside under the home directory of the '
+         'given user (see -u argument).'))
 
 
 def initialize_host(
@@ -345,6 +346,6 @@ if __name__ == '__main__':
          args.name,
          args.email,
          args.lpuser or args.user,
-         args.private_key,
-         args.public_key,
+         args.private_key.decode('string-escape'),
+         args.public_key.decode('string-escape'),
          args.directory)
