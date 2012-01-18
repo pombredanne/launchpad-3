@@ -431,6 +431,8 @@ class TestTeamEditView(TestCaseWithFactory):
         self.assertEqual(
             'existing is already in use by another person or team.',
             view.errors[0].doc())
+
+
 class TestTeamMenu(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
