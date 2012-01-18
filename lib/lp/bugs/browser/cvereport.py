@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.browser.stringformatter import escape
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -37,7 +38,7 @@ class BugTaskCve:
         return self.bugtasks[0].bug
 
 
-def getCVEDisplayData(cve):
+def get_cve_display_data(cve):
     """Return the data we need for display for the given CVE."""
     return {
         'displayname': cve.displayname,
@@ -91,7 +92,7 @@ class CVEReportView(LaunchpadView):
             current_bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)
 
         bugcves = getUtility(ICveSet).getBugCvesForBugTasks(
-            bugtasks, getCVEDisplayData)
+            bugtasks, get_cve_display_data)
         for bug, cve in bugcves:
             if bug.id in open_bugtaskcves:
                 open_bugtaskcves[bug.id].cves.append(cve)
@@ -106,3 +107,18 @@ class CVEReportView(LaunchpadView):
         self.resolved_cve_bugtasks = [
             bugtaskcve for bug, bugtaskcve
             in sorted(resolved_bugtaskcves.items())]
+
+    def renderCVELinks(self, cves):
+        """Render the CVE links related to the given bug.
+
+        Doing this in a TAL expression is too inefficient for thousands
+        of CVEs.
+        """
+        cve_link_template = (
+            '<a style="text-decoration: none" href=%s">'
+            '<img src="/@@/link" alt="" />'
+            '<span style="text-decoration: underline">%s</span></a>')
+
+        return '<br />\n'.join(
+            cve_link_template % (cve['url'], escape(cve['displayname']))
+            for cve in cves)
