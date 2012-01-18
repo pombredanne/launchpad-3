@@ -18,10 +18,10 @@ fi
 # https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-if [[ $EUID -ne 0 ]]; then
-    SUDO='sudo'
-else
+if [ $(id -u) = 0 ]; then
     SUDO=''
+else
+    SUDO='sudo'
 fi
 
 for pgversion in 8.4 8.3 8.2
