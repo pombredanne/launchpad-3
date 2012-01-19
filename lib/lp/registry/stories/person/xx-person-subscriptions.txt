@@ -29,7 +29,7 @@ those.
     >>> affluenza = factory.makeProduct(name='affluenza')
     >>> bugB = factory.makeBug(product=affluenza,
     ...     title='A terrible affliction')
-    >>> subscriber = factory.makePerson(name='webster', password='test')
+    >>> subscriber = factory.makePerson(name='webster')
     >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
@@ -259,8 +259,7 @@ filters are shown with a message stating that there is no filtering.
     >>> from lp.testing import celebrity_logged_in, person_logged_in
 
     >>> with celebrity_logged_in("admin"):
-    ...     nigel = factory.makePerson(
-    ...         name="nigel", displayname="Nigel", password='test')
+    ...     nigel = factory.makePerson(name="nigel", displayname="Nigel")
     >>> with person_logged_in(nigel):
     ...     nigel_subscription = scofflaw.addBugSubscription(nigel, nigel)
     ...     nigel_browser = setupBrowser(

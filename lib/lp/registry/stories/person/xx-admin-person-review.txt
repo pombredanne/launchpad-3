@@ -97,7 +97,7 @@ Registry experts
 Registry experts can see the +review page, minus the displayname.
 
     >>> email = "expert@example.com"
-    >>> expert = factory.makeRegistryExpert(email=email, password="test")
+    >>> expert = factory.makeRegistryExpert(email=email)
     >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
     >>> logout()
     >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')

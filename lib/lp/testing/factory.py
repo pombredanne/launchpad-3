@@ -528,14 +528,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     @with_celebrity_logged_in('admin')
-    def makeAdministrator(self, name=None, email=None, password=None):
+    def makeAdministrator(self, name=None, email=None):
         user = self.makePerson(name=name, email=email)
         administrators = getUtility(ILaunchpadCelebrities).admin
         administrators.addMember(user, administrators.teamowner)
         return user
 
-    def makeRegistryExpert(self, name=None, email='expert@example.com',
-                           password=None):
+    def makeRegistryExpert(self, name=None, email='expert@example.com'):
         from lp.testing.sampledata import ADMIN_EMAIL
         login(ADMIN_EMAIL)
         user = self.makePerson(name=name, email=email)
@@ -597,16 +596,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             can_encrypt=False)
 
     def makePerson(
-        self, email=None, name=None, password=None,
+        self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=(),
-        homepage_content=None, account_status=None):
+        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
         :param name: The name for the new person.
-        :param password: Ignored.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
