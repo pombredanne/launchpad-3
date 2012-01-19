@@ -315,6 +315,7 @@ def initialize_lxc(user, directory, lxcname):
         gid = "`python -c '%s'`" % pygetgid
         sshcall('addgroup --gid %s %s' % (gid, user))
     with ssh(lxcname, user) as sshcall:
+        # Set up Launchpad dependencies.
         checkout_dir = os.path.join(directory, 'lp')
         with su(user):
             dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
@@ -324,7 +325,14 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(
             'cd %s && utilities/link-external-sourcecode %s' % (
             checkout_dir, dependencies_dir))
+        # Set up Apache document root.
+        sshcall('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
+        sshcall('mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors')
     with ssh(lxcname) as sshcall:
+        # Set up Apache modules.
+        for module in (
+            'proxy', 'proxy_http', 'rewrite', 'ssl', 'deflate', 'headers'):
+            sshcall('a2enmod %s' % module)
         # Launchpad database setup.
         sshcall(
             'cd %s && utilities/launchpad-database-setup %s' % (
