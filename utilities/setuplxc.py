@@ -49,8 +49,8 @@ LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
     '/var/tmp/bazaar.launchpad.dev/static',
     '/var/tmp/bazaar.launchpad.dev/mirrors',
-    '/var/tmp/bazaar.launchpad.dev/archive',
-    '/var/tmp/bazaar.launchpad.dev/ppa',
+    '/var/tmp/archive',
+    '/var/tmp/ppa',
     )
 
 
@@ -286,7 +286,7 @@ def create_lxc(user, lxcname):
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container
     with ssh(lxcname, user) as sshcall:
-        timeout = 30
+        timeout = 60
         while timeout:
             if not sshcall('true'):
                 break
