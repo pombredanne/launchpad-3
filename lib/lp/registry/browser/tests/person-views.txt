@@ -314,7 +314,7 @@ on..." section in the Person profile page (+index). Nothing is rendered
 when the user does not have any assigned bug or specs that are not in
 progress.
 
-    >>> user = factory.makePerson(name='ken', password='test')
+    >>> user = factory.makePerson(name='ken')
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
     False

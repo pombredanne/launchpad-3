@@ -51,8 +51,8 @@ and a browser for Celso currently navigated to the Manage Subscriptions page,
 and a client of Celso's who has a launchpad name of 'joesmith'
 
     >>> login('foo.bar@canonical.com')
-    >>> client = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> client = factory.makePerson(
+    ...     name="joesmith", displayname="Joe Smith", email="joe@example.com")
     >>> logout()
 
 When Celso fills in the form with 'joesmith' as the subscriber, a blank

@@ -8,7 +8,7 @@ and only teams that have branches are shown.
 
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(
-    ...     name="eric", password="test", email="eric@example.com",
+    ...     name="eric", email="eric@example.com",
     ...     displayname="Eric the Viking")
     >>> vikings = factory.makeTeam(name="vikings", owner=eric)
     >>> # Also give vikings a cool icon.

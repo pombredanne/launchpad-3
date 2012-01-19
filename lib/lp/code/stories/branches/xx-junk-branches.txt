@@ -4,8 +4,7 @@ Junk Branches
 Create a person and team.
 
     >>> login(ANONYMOUS)
-    >>> eric = factory.makePerson(
-    ...     name='eric', password='test', email='eric@example.com')
+    >>> eric = factory.makePerson(name='eric', email='eric@example.com')
     >>> vikings = factory.makeTeam(name='vikings', owner=eric)
     >>> logout()
 
