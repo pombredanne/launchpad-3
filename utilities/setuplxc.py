@@ -49,12 +49,6 @@ LP_REPOSITORY = 'lp:launchpad'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
-LP_APACHE_ROOTS = (
-    '/var/tmp/bazaar.launchpad.dev/static',
-    '/var/tmp/bazaar.launchpad.dev/mirrors',
-    '/var/tmp/archive',
-    '/var/tmp/ppa',
-    )
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -358,11 +352,6 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(
             'cd %s && utilities/link-external-sourcecode %s' % (
             checkout_dir, dependencies_dir))
-        # Set up Apache document root.
-        sshcall(' && '.join('mkdir -p %s' % i for i in LP_APACHE_ROOTS))
-        sshcall(
-            'touch %(rewrite)s && chmod 777 %(rewrite)s' %
-            {'rewrite': '/var/tmp/bazaar.launchpad.dev/rewrite.log'})
     with ssh(lxcname) as sshcall:
         # Set up Apache modules.
         for module in LP_APACHE_MODULES.split():
@@ -371,6 +360,9 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(
             'cd %s && utilities/launchpad-database-setup %s' % (
             checkout_dir, user))
+    with ssh(lxcname, user) as sshcall:
+        sshcall('cd %s && make' % checkout_dir)
+    with ssh(lxcname) as sshcall:
         sshcall('cd %s && make install' % checkout_dir)
 
 
