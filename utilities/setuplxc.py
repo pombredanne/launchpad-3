@@ -22,6 +22,7 @@ import time
 
 
 LXC_NAME = 'lptests'
+LXC_GUEST_OS = 'lucid'
 LXC_OPTIONS = (
     ('lxc.network.type', 'veth'),
     ('lxc.network.link', 'virbr0'),
@@ -42,6 +43,7 @@ LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 DEPENDENCIES_DIR = '~/dependencies'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
 RESOLV_FILE = '/etc/resolv.conf'
+DHCP_FILE = '/etc/dhcp/dhclient.conf'
 LP_REPOSITORY = 'lp:launchpad'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
@@ -162,6 +164,28 @@ def file_insert(filename, line):
             f.writelines(lines)
 
 
+def file_append(filename, content):
+    """Append given `content`, if not present, at the end of `filename`,
+    e.g.::
+
+        >>> import tempfile
+        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
+        >>> f.write('line1\\n')
+        >>> f.close()
+        >>> file_append(f.name, 'new content\\n')
+        >>> open(f.name).read()
+        'line1\\nnew content\\n'
+        >>> file_append(f.name, 'content')
+        >>> open(f.name).read()
+        'line1\\nnew content\\n'
+    """
+    with open(filename, 'r+') as f:
+        current_content = f.read()
+        if content not in current_content:
+            f.seek(0)
+            f.write(current_content + content)
+
+
 def error(msg):
     """Print out the error message and quit the script."""
     print 'ERROR: %s' % msg
@@ -257,6 +281,7 @@ def initialize_host(
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
     file_insert(RESOLV_FILE, 'nameserver 192.168.122.1\n')
+    file_append(DHCP_FILE, 'prepend domain-name-servers 192.168.122.1;\n')
 
 
 def create_lxc(user, lxcname):
@@ -272,7 +297,7 @@ def create_lxc(user, lxcname):
         '-n', lxcname,
         '-f', LXC_CONFIG_TEMPLATE,
         '--',
-        '-r lucid -a i386 -b %s' % user
+        '-r %s -a i386 -b %s' % (LXC_GUEST_OS, user)
         ])
     if exit_code:
         error('Unable to create the LXC container.')
@@ -284,7 +309,7 @@ def create_lxc(user, lxcname):
     dst = get_container_path(lxcname, '/root/.ssh/')
     os.makedirs(dst)
     shutil.copy(user_authorized_keys, dst)
-    # SSH into the container
+    # SSH into the container.
     with ssh(lxcname, user) as sshcall:
         timeout = 60
         while timeout:
