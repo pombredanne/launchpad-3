@@ -674,19 +674,15 @@ def setupBrowser(auth=None):
     return browser
 
 
-def setupBrowserForUser(user, password='test'):
+def setupBrowserForUser(user):
     """Setup a browser grabbing details from a user.
 
     :param user: The user to use.
-    :param password: The password to use.
     """
     naked_user = removeSecurityProxy(user)
     email = naked_user.preferredemail.email
-    if hasattr(naked_user, '_password_cleartext_cached'):
-        password = naked_user._password_cleartext_cached
     logout()
-    return setupBrowser(
-        auth="Basic %s:%s" % (str(email), password))
+    return setupBrowser(auth="Basic %s:test" % str(email))
 
 
 def safe_canonical_url(*args, **kwargs):
@@ -734,8 +730,7 @@ def setupDTCBrowser():
     login('foo.bar@canonical.com')
     try:
         dtg_member = LaunchpadObjectFactory().makePerson(
-            name='ubuntu-translations-coordinator',
-            email="dtg-member@ex.com", password="test")
+            name='ubuntu-translations-coordinator', email="dtg-member@ex.com")
     except NameAlreadyTaken:
         # We have already created the translations coordinator
         pass
@@ -756,8 +751,7 @@ def setupRosettaExpertBrowser():
     login('admin@canonical.com')
     try:
         rosetta_expert = LaunchpadObjectFactory().makePerson(
-            name='rosetta-experts-member',
-            email='re@ex.com', password='test')
+            name='rosetta-experts-member', email='re@ex.com')
     except NameAlreadyTaken:
         # We have already created an Rosetta expert
         pass

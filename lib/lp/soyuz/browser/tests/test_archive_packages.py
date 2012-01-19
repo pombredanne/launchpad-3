@@ -203,7 +203,7 @@ class TestPPAPackages(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             # The baseline has one package, because otherwise the
@@ -225,7 +225,7 @@ class TestPPAPackages(TestCaseWithFactory):
         # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             for i in range(2):
@@ -244,7 +244,7 @@ class TestPPAPackages(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             # The baseline has one package, because otherwise the
@@ -261,7 +261,7 @@ class TestPPAPackages(TestCaseWithFactory):
         # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             for i in range(3):

@@ -58,7 +58,7 @@ The link is also available for the bug supervisor.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from lp.testing import login, logout
     >>> login(ADMIN_EMAIL)
-    >>> supervisor = factory.makePerson(password='test')
+    >>> supervisor = factory.makePerson()
     >>> youbuntu = factory.makeProduct(name='youbuntu',
     ...     bug_supervisor=supervisor,
     ...     official_malone=True)
