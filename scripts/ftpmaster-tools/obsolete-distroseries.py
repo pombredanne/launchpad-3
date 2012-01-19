@@ -22,4 +22,3 @@ if __name__ == '__main__':
     script = ObsoleteDistroseries(
         'obsolete-distroseries', dbuser=config.archivepublisher.dbuser)
     script.lock_and_run()
-

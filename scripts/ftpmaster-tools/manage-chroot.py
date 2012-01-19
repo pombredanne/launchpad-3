@@ -16,4 +16,3 @@ from lp.soyuz.scripts.chrootmanager import ManageChrootScript
 if __name__ == '__main__':
     script = ManageChrootScript('manage-chroot', dbuser="fiera")
     script.lock_and_run()
-

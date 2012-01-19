@@ -391,7 +391,7 @@ class TestPackageRemover(unittest.TestCase):
         the same result than not passing any component filter, because
         all test publications are in main component.
         """
-        source = self.test_publisher.getPubSource(sourcename='foo')
+        self.test_publisher.getPubSource(sourcename='foo')
 
         self.layer.commit()
 
@@ -414,7 +414,7 @@ class TestPackageRemover(unittest.TestCase):
         `SoyuzScriptError` because the selected publications are in main
         component.
         """
-        source = self.test_publisher.getPubSource(sourcename='foo')
+        self.test_publisher.getPubSource(sourcename='foo')
 
         remover = self.getRemover(component='multiverse')
         self.assertRaises(SoyuzScriptError, remover.mainTask)

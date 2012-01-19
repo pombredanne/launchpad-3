@@ -18,4 +18,3 @@ if __name__ == '__main__':
     script = PackageRemover(
         'lp-remove-package', dbuser=config.archivepublisher.dbuser)
     script.lock_and_run()
-
