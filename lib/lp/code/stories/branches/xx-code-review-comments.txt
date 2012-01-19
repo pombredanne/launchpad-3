@@ -6,7 +6,7 @@ Set up required objects
     >>> # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> eric = factory.makePerson(
-    ...     name="eric", email="eric@example.com", password="test",
+    ...     name="eric", email="eric@example.com",
     ...     displayname="Eric the Viking")
     >>> merge_proposal = factory.makeBranchMergeProposal(reviewer=eric)
     >>> merge_proposal_url = canonical_url(merge_proposal)

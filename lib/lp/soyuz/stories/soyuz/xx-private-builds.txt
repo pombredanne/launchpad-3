@@ -95,7 +95,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
 cprov is also allowed to see his own build:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...

@@ -92,7 +92,7 @@ Y.on("domready", dispatchUpdate);
 });
       </script>
       <script type="text/javascript" id="repository-size-update">
-LPS.use('lp.soyuz.archive_packages',
+YUI().use('lp.soyuz.archive_packages',
           'lp.app.widgets.expander.Expander', function(Y) {
 
 Y.on('domready', function() {

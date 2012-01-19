@@ -38,10 +38,7 @@
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
-      yui string:${icingroot}/yui;
       yui_version view/yui_version;
-      lazr_js string:${icingroot}/lazr/build;
-      lp_js string:${icingroot}/build"
   >
   <tal:comment replace="nothing">
     This macro just loads javascript files. It doesn't
@@ -180,7 +177,7 @@
             // registers a function to fire onload.
             // Use this for initilaizing any javascript that should fire once the page
             // has been loaded.
-            LPS.use('node', function(Y) {
+            YUI().use('node', function(Y) {
                 Y.on('load', function(e) {
                     func();
                 }, window);
@@ -217,7 +214,7 @@
                             node.focus();
                         }
                     } catch (e) {
-                        LPS.use('console', function(Y) {
+                        YUI().use('console', function(Y) {
                             Y.log('In setFocusByName(<' +
                                 node.tagName + ' type=' + node.type + '>): ' + e);
                         });

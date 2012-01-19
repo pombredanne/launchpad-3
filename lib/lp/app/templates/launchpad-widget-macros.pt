@@ -113,8 +113,6 @@
                 tal:attributes="src string:${yui2}/dom/dom.js"></script>
         <script type="text/javascript"
                 tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
-        <script type="text/javascript"
-                tal:attributes="src string:${lp_js}/app/calendar.js"></script>
         </tal:devmode>
         <tal:nondevmode condition="not: devmode">
         <script type="text/javascript"

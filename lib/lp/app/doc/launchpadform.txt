@@ -132,11 +132,9 @@ attribute:
 
   >>> from zope.app.form.browser import TextWidget
   >>> from lp.app.browser.launchpadform import custom_widget
-  >>> from lp.app.widgets.password import PasswordChangeWidget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
-  ...     custom_widget('password', PasswordChangeWidget)
   ...     custom_widget('displayname', TextWidget, displayWidth=50)
 
   >>> context = FormTest()
@@ -149,7 +147,7 @@ attribute:
   >>> view.widgets['displayname'].displayWidth
   50
   >>> view.widgets['password']
-  <...PasswordChangeWidget object at ...>
+  <...TextWidget object at ...>
 
 
 == Using Another Context ==

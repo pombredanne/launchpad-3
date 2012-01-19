@@ -2103,7 +2103,9 @@ the original message.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> msg = original_msg.get_payload()[0]
-    >>> # Fudge due to new line added to the payload.
+
+Fudge due to new line added to the payload.
+
     >>> len(str(msg)) <= (max_return_size + 1)
     True
 
@@ -2367,7 +2369,7 @@ Email attachments are stored as bug attachments (provided that they match the
 criteria described below).
 
     >>> def print_attachments(attachments):
-    ...     if attachments.count() == 0:
+    ...     if len(list(attachments)) == 0:
     ...         print "No attachments"
     ...         return
     ...     commit()

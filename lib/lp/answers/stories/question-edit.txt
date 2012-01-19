@@ -84,7 +84,7 @@ distribution owner) can also change the question Assignee, and
 edit the Status Whiteboard using the 'Edit Question' page.
 
     >>> browser.addHeader(
-    ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://localhost/ubuntu/+question/5')
     >>> browser.getLink('Edit question').click()
 

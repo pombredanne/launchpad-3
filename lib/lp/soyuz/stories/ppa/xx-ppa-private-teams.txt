@@ -25,7 +25,7 @@ A section named 'Personal Package Archives' is presented in the
 user/team page.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open("http://launchpad.dev/~private-team")
 
    >>> print_tag_with_id(browser.contents, 'ppas')

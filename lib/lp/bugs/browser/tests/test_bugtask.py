@@ -44,7 +44,6 @@ from lp.testing import (
     )
 from lp.testing.pages import find_tag_by_id
 from lp.services.webapp import canonical_url
-from lp.services.webapp.authorization import clear_cache
 from lp.services.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadRoot,
@@ -109,8 +108,8 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson(password='test')
-        person_with_teams = self.factory.makePerson(password='test')
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
@@ -939,7 +938,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -970,7 +969,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bug.default_bugtask, name='+delete', server_url=server_url,
@@ -1006,7 +1005,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': default_bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -2382,3 +2381,15 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
+
+    def test_model_numeric_heat(self):
+        """bug_heat_html contains just the number if the flag is enabled."""
+        with FeatureFixture({'bugs.heat_ratio_display.disabled': 'true'}):
+            with dynamic_listings():
+                owner, item = make_bug_task_listing_item(self.factory)
+                self.assertNotIn('/@@/bug-heat', item.bug_heat_html)
+                self.assertIn('sprite flame', item.bug_heat_html)
+                with person_logged_in(owner):
+                    model = item.model
+                    self.assertEqual(
+                        item.bug_heat_html, model['bug_heat_html'])
