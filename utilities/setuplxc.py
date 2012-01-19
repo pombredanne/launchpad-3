@@ -23,9 +23,10 @@ import time
 
 LXC_NAME = 'lptests'
 LXC_GUEST_OS = 'lucid'
+LXC_GATEWAY = '10.0.3.1'
 LXC_OPTIONS = (
     ('lxc.network.type', 'veth'),
-    ('lxc.network.link', 'virbr0'),
+    ('lxc.network.link', 'lxcbr0'),
     ('lxc.network.flags', 'up'),
     )
 LXC_PATH = '/var/lib/lxc/'
@@ -280,8 +281,8 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    file_insert(RESOLV_FILE, 'nameserver 192.168.122.1\n')
-    file_append(DHCP_FILE, 'prepend domain-name-servers 192.168.122.1;\n')
+    file_insert(RESOLV_FILE, 'nameserver %s\n' % LXC_GATEWAY)
+    file_append(DHCP_FILE, 'prepend domain-name-servers %s;\n' % LXC_GATEWAY)
 
 
 def create_lxc(user, lxcname):
