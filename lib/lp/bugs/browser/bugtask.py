@@ -1044,8 +1044,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         links = {}
         for tag in self.context.bug.tags:
             if tag in target_official_tags:
-                links[tag] = '%s/+bugs?field.tag=%s' % (
-                    canonical_url(self.context.target,
+                links[tag] = '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
                         force_local_path=True), urllib.quote(tag))
         return links
 
@@ -1056,8 +1056,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         links = {}
         for tag in self.context.bug.tags:
             if tag not in target_official_tags:
-                links[tag] = '%s/+bugs?field.tag=%s' % (
-                    canonical_url(self.context.target,
+                links[tag] = '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
                         force_local_path=True), urllib.quote(tag))
         return links
 
