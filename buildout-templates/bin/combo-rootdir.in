@@ -11,8 +11,8 @@ BUILD_DIR=$1
 rm -rf $BUILD_DIR/*
 
 # Populate YUI.
-cp -r ${buildout:yui-directory}/yui-${versions:yui} $BUILD_DIR/yui-${versions:yui}
-ln -sf $BUILD_DIR/yui-${versions:yui} $BUILD_DIR/yui
+mkdir $BUILD_DIR/yui
+cp -a build/js/yui/yui-${versions:yui}/* $BUILD_DIR/yui
 
 # And YUI 2, for now.
 cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
