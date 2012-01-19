@@ -254,15 +254,16 @@ class TestBugTaskView(TestCaseWithFactory):
 
     def test_bugtag_urls_are_encoded(self):
         # The link to bug tags are encoded to protect against special chars.
-        bug = self.factory.makeBug(tags=['depends-on+987'])
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
         getUtility(ILaunchBag).add(bug.default_bugtask)
         view = create_initialized_view(bug.default_bugtask, name=u'+index')
         expected = {u'depends-on+987':
-            u'/product-name-100003/+bugs?field.tag=depends-on%2B987'}
+            u'/foobar/+bugs?field.tag=depends-on%2B987'}
         self.assertEqual(expected, view.unofficial_tags)
         browser = self.getUserBrowser(canonical_url(bug), bug.owner)
         self.assertIn(
-            'href="/product-name-100003/+bugs?field.tag=depends-on%2B987"',
+            'href="/foobar/+bugs?field.tag=depends-on%2B987"',
             browser.contents)
 
 
