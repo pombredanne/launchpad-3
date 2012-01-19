@@ -59,7 +59,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         super(TestSourcePackageRecipeBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test')
+            displayname='Master Chef', name='chef')
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')

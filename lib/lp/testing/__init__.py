@@ -710,19 +710,17 @@ class TestCaseWithFactory(TestCase):
         # messages.
         trace._bzr_logger = logging.getLogger('bzr')
 
-    def getUserBrowser(self, url=None, user=None, password='test'):
+    def getUserBrowser(self, url=None, user=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
 
         :param user: The user to open a browser for.
-        :param password: The password to use.  (This cannot be determined
-            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from lp.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
-            user = self.factory.makePerson(password=password)
-        browser = setupBrowserForUser(user, password)
+            user = self.factory.makePerson()
+        browser = setupBrowserForUser(user)
         if url is not None:
             browser.open(url)
         return browser
@@ -835,7 +833,7 @@ class BrowserTestCase(TestCaseWithFactory):
     def setUp(self):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
                        rootsite=None, user=None):

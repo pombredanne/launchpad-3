@@ -85,7 +85,7 @@ Nominate a bug to a distribution release
 A bug can be nominated for a distribution release.
 
     >>> login('foo.bar@canonical.com')
-    >>> nominater = factory.makePerson(name='denominater', password='test')
+    >>> nominater = factory.makePerson(name='denominater')
     >>> poseidon = factory.makeDistribution(name='poseidon',
     ...     bug_supervisor=nominater)
     >>> dsp = factory.makeDistributionSourcePackage(distribution=poseidon)
@@ -156,7 +156,7 @@ Nominating a bug for a product series
 A bug can be nominated for a product series.
 
     >>> login('foo.bar@canonical.com')
-    >>> nominater = factory.makePerson(name='nominater', password='test')
+    >>> nominater = factory.makePerson(name='nominater')
     >>> widget = factory.makeProduct(name='widget',
     ...     official_malone = True,
     ...     bug_supervisor=nominater)

@@ -41,7 +41,7 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
         super(TestArchiveSubscribersIndex, self).setUp()
 
         user = self.factory.makePerson(
-            name='joe-bloggs', email='joe@example.com', password='joe',
+            name='joe-bloggs', email='joe@example.com',
             displayname='Joe Bloggs')
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.ppa = self.factory.makeArchive(
@@ -54,7 +54,7 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
         transaction.commit()
 
         self.lpuser = LaunchpadUser(
-            'Joe Bloggs', 'joe@example.com', 'joe')
+            'Joe Bloggs', 'joe@example.com', 'test')
 
     def test_add_subscriber(self):
         """Test adding a private PPA subscriber.."""

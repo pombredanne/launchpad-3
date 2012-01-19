@@ -120,8 +120,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsBranchOwner(self):
         # A branch location with a defined private host is visible to the
         # owner.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
@@ -138,10 +137,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsOtherLoggedInUser(self):
         # A branch location with a defined private host is hidden from other
         # users.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
-        other = self.factory.makePerson(
-            email="other@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
+        other = self.factory.makePerson(email="other@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,

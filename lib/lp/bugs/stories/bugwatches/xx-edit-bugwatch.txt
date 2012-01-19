@@ -292,7 +292,7 @@ It also appears for Launchpad Developers.
 
     >>> login(ADMIN_EMAIL)
     >>> admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-    >>> new_lp_developer = factory.makePerson(password='test')
+    >>> new_lp_developer = factory.makePerson()
     >>> launchpad_developers = getUtility(
     ...     ILaunchpadCelebrities).launchpad_developers
     >>> dev_added = launchpad_developers.addMember(

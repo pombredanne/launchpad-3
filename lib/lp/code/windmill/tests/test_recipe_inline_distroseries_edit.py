@@ -30,8 +30,7 @@ class TestRecipeEdit(WindmillTestCase):
         """Test that inline editing of distroseries works."""
 
         chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test',
-            email="chef@example.com")
+            displayname='Master Chef', name='chef', email="chef@example.com")
         recipe = self.factory.makeSourcePackageRecipe(owner=chef)
         transaction.commit()
 

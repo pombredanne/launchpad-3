@@ -50,7 +50,7 @@ Registry experts
 Registry experts do not have access to the 'Change details' link.
 
     >>> email = "expert@example.com"
-    >>> registry= factory.makeRegistryExpert(email=email, password="test")
+    >>> registry= factory.makeRegistryExpert(email=email)
     >>> logout()
     >>> registry_browser = setupBrowser(
     ...     auth='Basic %s:test' % email)
