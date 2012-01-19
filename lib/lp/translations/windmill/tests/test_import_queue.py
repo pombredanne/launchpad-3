@@ -60,7 +60,7 @@ class ImportQueueStatusTest(WindmillTestCase):
     def test_import_queue_status_nopriv(self):
         """Tests that a none-admin will have less choices."""
         hubert = self.factory.makePerson(
-            name="hubert", displayname="Hubert Hunt", password="test",
+            name="hubert", displayname="Hubert Hunt",
             email="hubert@example.com")
         # Create a project and an import entry with it.
         product = self.factory.makeProduct(

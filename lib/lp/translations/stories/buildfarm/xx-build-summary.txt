@@ -28,7 +28,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> login(ANONYMOUS)
     >>> owner_email = factory.getUniqueString() + '@example.com'
-    >>> owner = factory.makePerson(email=owner_email, password='test')
+    >>> owner = factory.makePerson(email=owner_email)
 
     >>> productseries = factory.makeProductSeries(owner=owner)
     >>> product = productseries.product

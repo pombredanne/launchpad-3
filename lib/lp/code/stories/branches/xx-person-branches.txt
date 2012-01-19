@@ -102,7 +102,7 @@ Firstly lets set up a new person with no branches.
 
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(
-    ...     name="eric", password="test", email="eric@example.com",
+    ...     name="eric", email="eric@example.com",
     ...     displayname="Eric the Viking")
     >>> b1 = factory.makeAnyBranch(owner=eric)
     >>> logout()
