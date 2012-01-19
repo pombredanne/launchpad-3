@@ -10,7 +10,7 @@
 
 <script tal:condition="view/can_write"
         tal:content="structure string:
-LP_YUI.use('lp.app.choice', function(Y) {
+YUI().use('lp.app.choice', function(Y) {
     Y.lp.app.choice.addBinaryChoice(
         ${view/json_config},
         ${view/json_resource_uri},

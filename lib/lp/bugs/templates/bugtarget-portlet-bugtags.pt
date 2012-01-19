@@ -9,7 +9,7 @@
   <a id="tags-content-link"
      tal:attributes="href context/fmt:url/+bugtarget-portlet-tags-content"></a>
   <script type="text/javascript">
-    LP_YUI.use('lp.bugs.bugtask.taglist', function(Y) {
+    YUI().use('lp.bugs.bugtask.taglist', function(Y) {
       Y.on('domready', function() {
         Y.lp.bugs.bugtask.taglist.setup_taglist();
       });

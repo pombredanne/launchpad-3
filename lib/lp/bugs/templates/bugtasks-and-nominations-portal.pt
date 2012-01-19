@@ -37,7 +37,7 @@
           </a>
         </span>
         <script type="text/javascript" tal:content="string:
-          LP_YUI.use('event', 'lp.bugs.bugtask_index', function(Y) {
+          YUI().use('event', 'lp.bugs.bugtask_index', function(Y) {
               Y.on('load', function(e) {
                   Y.lp.bugs.bugtask_index.setup_me_too(
                       ${view/current_user_affected_js_status},

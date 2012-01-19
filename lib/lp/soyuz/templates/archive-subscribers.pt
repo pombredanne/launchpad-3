@@ -93,7 +93,7 @@
         </form>
       </div><!-- class="portlet" -->
       <script type="text/javascript" id="setup-archivesubscribers-index">
-          LP_YUI.use('lp.soyuz.archivesubscribers_index', function(Y) {
+          YUI().use('lp.soyuz.archivesubscribers_index', function(Y) {
               Y.lp.soyuz.archivesubscribers_index.setup_archivesubscribers_index();
           });
       </script>

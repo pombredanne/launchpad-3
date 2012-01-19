@@ -147,7 +147,7 @@
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
             <script type="text/javascript">
-                LP_YUI.use('lp', function () {
+                YUI().use('lp', function () {
                     setFocusByName('field.text');
                 });
             </script>

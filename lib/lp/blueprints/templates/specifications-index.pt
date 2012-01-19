@@ -65,7 +65,7 @@
         </table>
       </form>
       <script type="text/javascript">
-          LP_YUI.use('lp', function (Y) {
+          YUI().use('lp', function (Y) {
               setFocusByName('field.search_text');
           });
       </script>

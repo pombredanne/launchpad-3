@@ -206,7 +206,7 @@
     replace='structure string:&lt;script type="text/javascript"&gt;
   start_ajax_logging();
   var render_time = "${render_time}";
-  LP_YUI.use("node", function(Y) {
+  YUI().use("node", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");
       node.set("innerHTML", render_time);
