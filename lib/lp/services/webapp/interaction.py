@@ -143,7 +143,7 @@ def setupInteractionByEmail(email, participation=None):
         # IPersonSet.getByEmail() and since this is security wrapped, it needs
         # an interaction available.
         setupInteraction(authutil.unauthenticatedPrincipal())
-        principal = authutil.getPrincipalByLogin(email, want_password=False)
+        principal = authutil.getPrincipalByLogin(email)
         assert principal is not None, "Invalid login"
         if principal.person is not None and principal.person.is_team:
             raise AssertionError("Please do not try to login as a team")
