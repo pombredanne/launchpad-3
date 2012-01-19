@@ -26,10 +26,8 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.ftpmaster import (
-    PackageRemover,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
+from lp.soyuz.scripts.packageremover import PackageRemover
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.layers import LaunchpadZopelessLayer
 

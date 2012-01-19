@@ -15,7 +15,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
 from lp.services.database.sqlbase import commit
-from lp.soyuz.scripts.ftpmaster import (
+from lp.soyuz.scripts.chrootmanager import (
     ChrootManager,
     ChrootManagerError,
     )

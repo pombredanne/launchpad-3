@@ -27,7 +27,7 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 
 
 if __name__ == '__main__':

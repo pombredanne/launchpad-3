@@ -11,7 +11,7 @@
 import _pythonpath
 
 from lp.services.config import config
-from lp.soyuz.scripts.ftpmaster import PackageRemover
+from lp.soyuz.scripts.packageremover import PackageRemover
 
 
 if __name__ == '__main__':

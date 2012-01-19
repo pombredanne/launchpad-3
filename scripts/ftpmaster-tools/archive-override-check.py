@@ -20,7 +20,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.scripts.ftpmaster import PubSourceChecker
+from lp.soyuz.scripts.pubsourcechecker import PubSourceChecker
 
 
 class ArchiveOverrideCheckScript(LaunchpadScript):

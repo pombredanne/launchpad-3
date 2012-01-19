@@ -19,10 +19,8 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
+from lp.soyuz.scripts.obsolete_distroseries import ObsoleteDistroseries
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

@@ -16,7 +16,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 from lp.testing.layers import (
     LaunchpadLayer,
     LaunchpadZopelessLayer,

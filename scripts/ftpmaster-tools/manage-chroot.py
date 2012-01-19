@@ -10,7 +10,7 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.ftpmaster import ManageChrootScript
+from lp.soyuz.scripts.chrootmanager import ManageChrootScript
 
 
 if __name__ == '__main__':

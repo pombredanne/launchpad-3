@@ -15,7 +15,7 @@ in an obsolete distroseries.
 import _pythonpath
 
 from lp.services.config import config
-from lp.soyuz.scripts.ftpmaster import ObsoleteDistroseries
+from lp.soyuz.scripts.obsolete_distroseries import ObsoleteDistroseries
 
 
 if __name__ == '__main__':
