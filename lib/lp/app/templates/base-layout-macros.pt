@@ -60,7 +60,7 @@
         links: {}
     };
   </script>
-  <tal:js-legacy condition="not: features/js.combo_loader.enabled">
+  <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
     <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
     <script type="text/javascript">
@@ -74,7 +74,7 @@
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
 
-  <tal:js-loader condition="features/js.combo_loader.enabled">
+  <tal:js-loader condition="request/features/js.combo_loader.enabled">
    <script
    src="/+combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
