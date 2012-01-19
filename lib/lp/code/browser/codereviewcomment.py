@@ -65,8 +65,12 @@ class CodeReviewDisplayComment(MessageComment):
 
     delegates(ICodeReviewComment, 'comment')
 
-    def __init__(self, comment, from_superseded=False):
-        super(CodeReviewDisplayComment, self).__init__(None)
+    def __init__(self, comment, from_superseded=False, limit_length=True):
+        if limit_length:
+            comment_limit = config.malone.max_comment_size
+        else:
+            comment_limit = None
+        super(CodeReviewDisplayComment, self).__init__(comment_limit)
         self.comment = comment
         get_property_cache(self).has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None
@@ -164,7 +168,7 @@ class CodeReviewCommentView(LaunchpadView):
     @cachedproperty
     def comment(self):
         """The decorated code review comment."""
-        return CodeReviewDisplayComment(self.context)
+        return CodeReviewDisplayComment(self.context, limit_length=False)
 
     @property
     def page_description(self):

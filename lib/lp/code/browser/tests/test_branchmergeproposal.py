@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -1113,6 +1113,22 @@ class TestBranchMergeProposal(BrowserTestCase):
             "An updated diff is being calculated and will appear "
                 "automatically when ready.",
             browser.contents)
+
+    def test_short_conversation_comments_not_truncated(self):
+        """Short comments should not be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertIn('x y' * 100, browser.contents)
+
+    def test_long_conversation_comments_truncated(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        url = canonical_url(comment, force_local_path=True)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertNotIn('x y' * 2000, browser.contents)#'Read more...'
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        self.assertThat(browser.contents, HTMLContains(read_more))
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

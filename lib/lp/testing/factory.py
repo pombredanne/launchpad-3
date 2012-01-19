@@ -2341,9 +2341,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
-        return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent,
-            _date_created=date_created)
+        with person_logged_in(sender):
+            return merge_proposal.createComment(
+                sender, subject, body, vote, vote_tag, parent,
+                _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())

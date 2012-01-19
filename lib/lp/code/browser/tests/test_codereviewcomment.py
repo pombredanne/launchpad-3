@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComments."""
@@ -70,3 +70,10 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
                 dict(
                     name='description',
                     content=comment.message_body))))
+
+    def test_long_comments_not_truncated(self):
+        """Long comments displayed by themselves are not truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        browser = self.getViewBrowser(comment)
+        body = Tag('Body text', 'p', text='x y' * 2000)
+        self.assertThat(browser.contents, HTMLContains(body))
