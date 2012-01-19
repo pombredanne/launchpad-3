@@ -1143,7 +1143,7 @@ class UserTeamsParticipationPlusSelfVocabulary(
     UserTeamsParticipationVocabulary):
     """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
-    """    """All `IProduct` objects vocabulary."""
+    """
 
     def __iter__(self):
         logged_in_user = getUtility(ILaunchBag).user
