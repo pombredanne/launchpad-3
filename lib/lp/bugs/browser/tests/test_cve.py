@@ -3,6 +3,7 @@
 
 """CVE related tests."""
 
+from operator import attrgetter
 import re
 
 from lp.bugs.interfaces.bugtask import (
@@ -31,16 +32,16 @@ class TestCVEReportView(TestCaseWithFactory):
         self.resolved_bugtasks = []
         self.unresolved_bugtasks = []
         self.cves = {}
-        self.cve_index = 0
+        self.getCVE = self.cveGenerator().next
         with person_logged_in(distroseries.owner):
             for status in RESOLVED_BUGTASK_STATUSES:
-                tasks, cve = self.makeBugTasksWithCve(status, distroseries)
+                tasks, cves = self.makeBugTasksWithCve(status, distroseries)
                 self.resolved_bugtasks.append(tasks)
-                self.cves[tasks[0].bug] = cve
+                self.cves[tasks[0].bug] = cves
             for status in UNRESOLVED_BUGTASK_STATUSES:
-                tasks, cve = self.makeBugTasksWithCve(status, distroseries)
+                tasks, cves = self.makeBugTasksWithCve(status, distroseries)
                 self.unresolved_bugtasks.append(tasks)
-                self.cves[tasks[0].bug] = cve
+                self.cves[tasks[0].bug] = cves
         self.view = create_initialized_view(distroseries, '+cve')
 
     def makeBugTasksWithCve(self, status, distroseries):
@@ -53,14 +54,22 @@ class TestCVEReportView(TestCaseWithFactory):
             target=self.factory.makeSourcePackage(distroseries=distroseries),
             bug=bug)
         task_2.transitionToStatus(status, distroseries.owner)
-        cve = self.makeCVE()
-        bug.linkCVE(cve, distroseries.owner)
-        return [task, task_2], cve
+        cve_1 = self.getCVE()
+        cve_2 = self.getCVE()
+        bug.linkCVE(cve_1, distroseries.owner)
+        bug.linkCVE(cve_2, distroseries.owner)
+        return [task, task_2], (cve_1, cve_2)
 
-    def makeCVE(self):
-        """Create a CVE."""
-        self.cve_index += 1
-        return self.factory.makeCVE('2000-%04i' % self.cve_index)
+    def cveGenerator(self):
+        """A generator returning five CVEs cyclically."""
+        NUM_CVES = 5
+        cves = [
+            self.factory.makeCVE('2000-%04i' % count)
+            for count in range(NUM_CVES)]
+        cve_index = 0
+        while True:
+            yield cves[cve_index]
+            cve_index = (cve_index + 1) % NUM_CVES
 
     def test_render(self):
         # The rendered page contains all expected CVE links.
@@ -72,7 +81,10 @@ class TestCVEReportView(TestCaseWithFactory):
             r'<span style="text-decoration: underline">CVE-\d{4}-\d{4}</span>'
             r'</a>',
             html_data)
-        self.assertEqual(len(self.cves), len(cve_links))
+        # We have two CVEs per bug, and one bug per bugtask status.
+        expected = 2 * (
+            len(RESOLVED_BUGTASK_STATUSES) + len(UNRESOLVED_BUGTASK_STATUSES))
+        self.assertEqual(expected, len(cve_links))
 
     def test_open_resolved_cve_bugtasks(self):
         # The properties CVEReportView.open_cve_bugtasks and
@@ -109,29 +121,30 @@ class TestCVEReportView(TestCaseWithFactory):
         resolved_bugtasks = unwrap_bugtask_listing_items(resolved_bugtasks)
         self.assertEqual(self.resolved_bugtasks, resolved_bugtasks)
 
+        def get_cve_data_for_task(task):
+            """Sort the CVEs for the given bug task by ID and return
+            their display data."""
+            cves = sorted(self.cves[task.bug], key=attrgetter('id'))
+            return [
+                {
+                    'url': canonical_url(cve),
+                    'displayname': cve.displayname,
+                    }
+                for cve in cves
+                ]
+
         open_cves = [
             bugtaskcve.cves for bugtaskcve in self.view.open_cve_bugtasks]
         expected_open_cves = [
-            self.cves[task.bug] for task, task_2 in self.unresolved_bugtasks]
-        expected_open_cves = [
-            [{
-                'url': canonical_url(cve),
-                'displayname': cve.displayname,
-                }]
-            for cve in expected_open_cves
-            ]
+            get_cve_data_for_task(task)
+            for task, task_2 in self.unresolved_bugtasks]
         self.assertEqual(expected_open_cves, open_cves)
+
         resolved_cves = [
             bugtaskcve.cves for bugtaskcve in self.view.resolved_cve_bugtasks]
         expected_resolved_cves = [
-            self.cves[task.bug] for task, task_2 in self.resolved_bugtasks]
-        expected_resolved_cves = [
-            [{
-                'url': canonical_url(cve),
-                'displayname': cve.displayname,
-                }]
-            for cve in expected_resolved_cves
-            ]
+            get_cve_data_for_task(task)
+            for task, task_2 in self.resolved_bugtasks]
         self.assertEqual(expected_resolved_cves, resolved_cves)
 
     def test_renderCVELinks(self):

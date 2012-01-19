@@ -183,6 +183,7 @@ class CveSet:
         return sorted(cves, key=lambda a: a.sequence)
 
     def getBugCvesForBugTasks(self, bugtasks, cve_mapper=None):
+        """See ICveSet."""
         bugs = load_related(Bug, bugtasks, ('bugID', ))
         if len(bugs) == 0:
             return []

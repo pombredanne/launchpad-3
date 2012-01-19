@@ -47,6 +47,11 @@ def get_cve_display_data(cve):
         'url': canonical_url(cve),
         }
 
+cve_link_template = (
+    '<a style="text-decoration: none" href=%s">'
+    '<img src="/@@/link" alt="" />'
+    '<span style="text-decoration: underline">%s</span></a>')
+
 
 class CVEReportView(LaunchpadView):
     """View that builds data to be displayed in CVE reports."""
@@ -122,11 +127,6 @@ class CVEReportView(LaunchpadView):
         Doing this in a TAL expression is too inefficient for thousands
         of CVEs.
         """
-        cve_link_template = (
-            '<a style="text-decoration: none" href=%s">'
-            '<img src="/@@/link" alt="" />'
-            '<span style="text-decoration: underline">%s</span></a>')
-
         return '<br />\n'.join(
             cve_link_template % (cve['url'], escape(cve['displayname']))
             for cve in cves)
