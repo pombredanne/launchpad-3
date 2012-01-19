@@ -3005,7 +3005,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI.use('node', 'lp.app.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);

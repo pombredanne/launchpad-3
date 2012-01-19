@@ -63,7 +63,7 @@ location.
     >>> widget.center_lat
     52...
     >>> widget.center_lng
-    0.29...
+    0.3...
     >>> widget.show_marker
     1
 
@@ -166,7 +166,7 @@ access ba-ws.geonames.net's service.
     >>> print widget.map_javascript
     <BLANKLINE>
     <script type="text/javascript">
-        YUI.use('node', 'lp.app.mapping', function(Y) {
+        YUI().use('node', 'lp.app.mapping', function(Y) {
             function renderMap() {
                 Y.lp.app.mapping.renderPersonMap(
                     52.2, 0.3, "Colin Watson",
