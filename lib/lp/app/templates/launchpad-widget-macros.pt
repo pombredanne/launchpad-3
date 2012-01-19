@@ -91,17 +91,15 @@
     <tal:yui2resources
       tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
 
-      <tal:js-combo condition="features/js.combo_loader.enabled">
-        <script type="text/javascript">
-            YUI().use(
-                'lang', 'node', 'lp.app.calendar', 'yui2-yahoo',
-                'yui2-event', 'yui2-dom', 'yui2-calendar', 'yui2-dom-event',
-                function(Y) {
-                    Y.lp.app.calendar.setup_calendar_widgets();
-                }
-            );
-        </script>
-        </tal:js-combo>
+      <script type="text/javascript">
+          YUI().use(
+              'lang', 'node', 'lp.app.calendar', 'yui2-yahoo',
+              'yui2-event', 'yui2-dom', 'yui2-calendar', 'yui2-dom-event',
+              function(Y) {
+                  Y.lp.app.calendar.setup_calendar_widgets();
+              }
+          );
+      </script>
 
       <tal:js-legacy condition="not: features/js.combo_loader.enabled">
         <tal:devmode condition="devmode">

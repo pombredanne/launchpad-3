@@ -11,7 +11,8 @@ BUILD_DIR=$1
 rm -rf $BUILD_DIR/*
 
 # Populate YUI.
-cp -a ${buildout:yui-directory}/yui-${versions:yui}/* $BUILD_DIR/yui
+mkdir $BUILD_DIR/yui-${versions:yui}
+cp -a ${buildout:yui-directory}/yui-${versions:yui}/* $BUILD_DIR/yui-${versions:yui}
 ln -sf $BUILD_DIR/yui-${versions:yui} $BUILD_DIR/yui
 
 # And YUI 2, for now.

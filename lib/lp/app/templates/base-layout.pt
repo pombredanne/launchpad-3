@@ -21,7 +21,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
-  <head tal:define="
+  <head>
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <link

@@ -38,7 +38,7 @@
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
-      yui_version view/yui_version;
+      yui_version view/yui_version;"
   >
   <tal:comment replace="nothing">
     This macro just loads javascript files. It doesn't
@@ -135,7 +135,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
-        YUI().use('base', 'event', 'event-delegate', 'lp',
+        YUI().use('base', 'lang', 'event', 'event-delegate', 'lp',
             'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.app.privacy', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
