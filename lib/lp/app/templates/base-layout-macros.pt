@@ -132,7 +132,7 @@
     Load and initialize the common script used by all pages.
   </tal:comment>
 
-  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />r
+  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
         YUI().use('base', 'node', 'console', 'event',
