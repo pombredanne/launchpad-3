@@ -45,6 +45,13 @@ RESOLV_FILE = '/etc/resolv.conf'
 LP_REPOSITORY = 'lp:launchpad'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
+LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
+LP_APACHE_ROOTS = (
+    '/var/tmp/bazaar.launchpad.dev/static',
+    '/var/tmp/bazaar.launchpad.dev/mirrors',
+    '/var/tmp/bazaar.launchpad.dev/archive',
+    '/var/tmp/bazaar.launchpad.dev/ppa',
+    )
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -326,12 +333,13 @@ def initialize_lxc(user, directory, lxcname):
             'cd %s && utilities/link-external-sourcecode %s' % (
             checkout_dir, dependencies_dir))
         # Set up Apache document root.
-        sshcall('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
-        sshcall('mkdir -p /var/tmp/bazaar.launchpad.dev/mirrors')
+        sshcall(' && '.join('mkdir -p %s' % i for i in LP_APACHE_ROOTS))
+        sshcall(
+            'touch %(rewrite)s && chmod 777 %(rewrite)s' %
+            {'rewrite': '/var/tmp/bazaar.launchpad.dev/mirrors'})
     with ssh(lxcname) as sshcall:
         # Set up Apache modules.
-        for module in (
-            'proxy', 'proxy_http', 'rewrite', 'ssl', 'deflate', 'headers'):
+        for module in LP_APACHE_MODULES.split():
             sshcall('a2enmod %s' % module)
         # Launchpad database setup.
         sshcall(
