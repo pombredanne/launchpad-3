@@ -893,14 +893,14 @@ class TestBranchEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
         team = self.factory.makeTeam(
-            owner=person, displayname="Permitted team")
+            owner=person, name="permitted-team")
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Permitted team"]
+        browser.getControl("Owner").value = "permitted-team"
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEquals(team, branch.owner)
@@ -912,14 +912,14 @@ class TestBranchEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         branch = self.factory.makeBranch(product=product, owner=person)
         self.factory.makeTeam(
-            owner=person, displayname="Forbidden team")
+            owner=person, name="forbidden-team", displayname="Forbidden team")
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             person, BranchVisibilityRule.PRIVATE)
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").displayValue = ["Forbidden team"]
+        browser.getControl("Owner").value = "forbidden-team"
         browser.getControl("Change Branch").click()
         self.assertThat(
             browser.contents,
@@ -928,6 +928,25 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+    def test_private_owner_is_ok(self):
+        # A branch's owner can be changed to a private team permitted by the
+        # visibility policy.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        team = self.factory.makeTeam(
+            owner=person, name="private-team",
+            visibility=PersonVisibility.PRIVATE)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").value = "private-team"
+        browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEquals(team, branch.owner)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

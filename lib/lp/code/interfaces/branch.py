@@ -294,7 +294,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
-            vocabulary='UserTeamsParticipationPlusSelf',
+            vocabulary='AllUserTeamsParticipation',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
 
