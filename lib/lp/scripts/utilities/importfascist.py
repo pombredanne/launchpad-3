@@ -47,6 +47,7 @@ permitted_database_imports = text_lines_to_set("""
 
 
 warned_database_imports = text_lines_to_set("""
+    lp.soyuz.scripts.obsolete_distroseries
     lp.soyuz.scripts.gina.handlers
     lp.registry.browser.distroseries
     lp.translations.scripts.po_import
