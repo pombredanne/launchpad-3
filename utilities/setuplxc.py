@@ -336,7 +336,7 @@ def initialize_lxc(user, directory, lxcname):
         sshcall(' && '.join('mkdir -p %s' % i for i in LP_APACHE_ROOTS))
         sshcall(
             'touch %(rewrite)s && chmod 777 %(rewrite)s' %
-            {'rewrite': '/var/tmp/bazaar.launchpad.dev/mirrors'})
+            {'rewrite': '/var/tmp/bazaar.launchpad.dev/rewrite.log'})
     with ssh(lxcname) as sshcall:
         # Set up Apache modules.
         for module in LP_APACHE_MODULES.split():
