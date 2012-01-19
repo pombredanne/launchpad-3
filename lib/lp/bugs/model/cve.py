@@ -188,7 +188,6 @@ class CveSet:
         if len(bugs) == 0:
             return []
         bug_ids = [bug.id for bug in bugs]
-        assert bug_ids, "bugtasks must be non-empty, received %r" % bugtasks
 
         # Do not use BugCve instances: Storm may need a very long time
         # to look up the bugs and CVEs referenced by a BugCve instance
