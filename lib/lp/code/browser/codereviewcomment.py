@@ -66,6 +66,7 @@ class CodeReviewDisplayComment(MessageComment):
     delegates(ICodeReviewComment, 'comment')
 
     def __init__(self, comment, from_superseded=False):
+        super(CodeReviewDisplayComment, self).__init__(None)
         self.comment = comment
         get_property_cache(self).has_body = bool(self.comment.message_body)
         self.has_footer = self.comment.vote is not None

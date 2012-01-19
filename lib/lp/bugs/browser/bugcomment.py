@@ -195,6 +195,11 @@ class BugComment(MessageComment):
     def __init__(
             self, index, message, bugtask, activity=None,
             show_spam_controls=False, user=None, display='full'):
+        if display == 'truncate':
+            comment_limit = config.malone.max_comment_size
+        else:
+            comment_limit = None
+        super(BugComment, self).__init__(comment_limit)
 
         self.index = index
         self.bugtask = bugtask
@@ -217,10 +222,6 @@ class BugComment(MessageComment):
         if bool(getFeatureFlag(flag)):
             user_owns_comment = user is not None and user == self.owner
         self.show_spam_controls = show_spam_controls or user_owns_comment
-        if display == 'truncate':
-            self.comment_limit = config.malone.max_comment_size
-        else:
-            self.comment_limit = None
         self.hide_text = (display == 'hide')
 
     @cachedproperty
@@ -240,24 +241,12 @@ class BugComment(MessageComment):
         """
         return not self.visible
 
-    @property
-    def too_long(self):
-        if self.comment_limit is None:
-            return False
-        return len(self.text_contents) > self.comment_limit
-
     @cachedproperty
     def text_for_display(self):
         if self.hide_text:
             return ''
-        if not self.too_long:
-            return self.text_contents
-        # Note here that we truncate at comment_limit, and not
-        # comment_limit - 3; while it would be nice to account for
-        # the ellipsis, this breaks down when the comment limit is
-        # less than 3 (which can happen in a testcase) and it makes
-        # counting the strings harder.
-        return "%s..." % self.text_contents[:self.comment_limit]
+        else:
+            return super(BugComment, self).text_for_display
 
     def isIdenticalTo(self, other):
         """Compare this BugComment to another and return True if they are

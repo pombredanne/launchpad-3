@@ -17,7 +17,8 @@ class MessageComment:
 
     has_footer = False
 
-    too_long = False
+    def __init__(self, comment_limit):
+        self.comment_limit = comment_limit
 
     @property
     def display_attachments(self):
@@ -42,6 +43,19 @@ class MessageComment:
     def body_text(self):
         return IMessage(self).text_contents
 
+    @property
+    def too_long(self):
+        if self.comment_limit is None:
+            return False
+        return len(self.body_text) > self.comment_limit
+
     @cachedproperty
     def text_for_display(self):
-        return self.body_text
+        if not self.too_long:
+            return self.body_text
+        # Note here that we truncate at comment_limit, and not
+        # comment_limit - 3; while it would be nice to account for
+        # the ellipsis, this breaks down when the comment limit is
+        # less than 3 (which can happen in a testcase) and it makes
+        # counting the strings harder.
+        return "%s..." % self.body_text[:self.comment_limit]
