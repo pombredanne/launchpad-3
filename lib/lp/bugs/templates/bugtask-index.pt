@@ -148,11 +148,11 @@
               <a tal:repeat="tag view/official_tags"
                  tal:content="tag"
                  class="official-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href string:${view/official_tags/?tag}">tag</a>
               <a tal:repeat="tag view/unofficial_tags"
                  tal:content="tag"
                  class="unofficial-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href string:${view/unofficial_tags/?tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
