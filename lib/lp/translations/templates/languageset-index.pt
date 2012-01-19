@@ -9,7 +9,7 @@
   <body>
     <div metal:fill-slot="head_epilogue">
       <script type="text/javascript">
-          YUI().use('lp.languages', 'event', function(Y) {
+          LP_YUI.use('lp.languages', 'event', function(Y) {
               Y.on('domready', function(e) {
                   Y.lp.languages.initialize_languages_page(Y);
               });

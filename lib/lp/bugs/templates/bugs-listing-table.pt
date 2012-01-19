@@ -33,7 +33,7 @@
   <tal:comment
     tal:condition="request/features/ajax.batch_navigator.enabled"
     replace='structure string:&lt;script type="text/javascript"&gt;
-    YUI().use("lp.app.batchnavigator",
+    LP_YUI.use("lp.app.batchnavigator",
         function(Y) {
             Y.on("domready", function () {
                 var config = {

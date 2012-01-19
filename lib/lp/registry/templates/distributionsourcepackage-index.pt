@@ -13,7 +13,7 @@
   <tal:uses_launchpad_bugtracker
      condition="context/distribution/bug_tracking_usage/enumvalue:LAUNCHPAD">
     <script type="text/javascript">
-      YUI().use('lp.registry.structural_subscription', function(Y) {
+      LP_YUI.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
           Y.on('domready', function() {
             module.setup({content_box: "#structural-subscription-content-box"});
@@ -236,7 +236,7 @@
       </p>
     </div>
 <script type="text/javascript">
-YUI().use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+LP_YUI.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.

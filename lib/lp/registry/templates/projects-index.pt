@@ -33,7 +33,7 @@
           type="submit" value="Search project groups" />
       </form>
       <script type="text/javascript">
-          YUI().use('lp', function (Y) {
+          LP_YUI.use('lp', function (Y) {
               setFocusByName('text');
           });
       </script>

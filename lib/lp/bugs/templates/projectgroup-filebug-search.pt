@@ -7,7 +7,7 @@
 
   <metal:block fill-slot="head_epilogue">
     <script type="text/javascript">
-      YUI().use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      LP_YUI.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
       function(Y) {
       Y.on('domready', function() {
       Y.lp.bugs.filebug_dupefinder.setup_dupes();

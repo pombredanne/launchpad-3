@@ -73,7 +73,7 @@
     string:&lt;script id='branchlink-script' type='text/javascript'&gt;" />
     <!--
 
-    YUI().use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
+    LP_YUI.use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
 
     if(Y.UA.ie) {
         return;

@@ -7,7 +7,7 @@
   <body>
     <tal:head_epilogue metal:fill-slot="head_epilogue">
       <script type="text/javascript">
-        YUI().use('lp.translations.sourcepackage_sharing_details', function(Y) {
+        LP_YUI.use('lp.translations.sourcepackage_sharing_details', function(Y) {
           Y.on('domready', function() {
               Y.lp.translations.sourcepackage_sharing_details.prepare(
                 LP.cache);
@@ -45,7 +45,7 @@
         }
       </style>
       <script language="JavaScript" type="text/javascript">
-      YUI().use('node-base', 'event-delegate', function(Y) {
+      LP_YUI.use('node-base', 'event-delegate', function(Y) {
           Y.on('domready', function(e) {
               Y.all('#templates_table .template_links').addClass(
                     'inactive_links');

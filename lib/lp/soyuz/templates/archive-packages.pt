@@ -27,7 +27,7 @@
 
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
-YUI().use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
+LP_YUI.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
           'lp.soyuz.update_archive_build_statuses', function(Y) {
 
 
@@ -92,7 +92,7 @@ Y.on("domready", dispatchUpdate);
 });
       </script>
       <script type="text/javascript" id="repository-size-update">
-YUI().use('lp.soyuz.archive_packages',
+LP_YUI.use('lp.soyuz.archive_packages',
           'lp.app.widgets.expander.Expander', function(Y) {
 
 Y.on('domready', function() {

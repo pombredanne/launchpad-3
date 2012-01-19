@@ -655,7 +655,7 @@
       show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
       advanced_search view/shouldShowAdvancedForm"
     tal:condition="python: show_new_listings and not advanced_search">
-    YUI().use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
+    LP_YUI.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
       function(Y) {
         Y.on('domready', function() {
             var navigator = Y.lp.bugs.buglisting.BugListingNavigator
