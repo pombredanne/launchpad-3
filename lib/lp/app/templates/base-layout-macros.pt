@@ -132,15 +132,16 @@
     Load and initialize the common script used by all pages.
   </tal:comment>
 
-  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
+  <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />r
 
     <script id="base-layout-load-scripts" type="text/javascript">
-        YUI().use('base', 'lang', 'event', 'event-delegate', 'lp',
+        YUI().use('base', 'node', 'console', 'event',
+            'oop', 'lp', 'lp.app.privacy',
             'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
-            'lp.app.privacy', 'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
-            'lp.code.branchmergeproposal.diff', 'lp.comments.hide', 'node',
-            'oop', function(Y) {
+            'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+            'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+            function(Y) {
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {

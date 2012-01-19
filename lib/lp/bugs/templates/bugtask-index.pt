@@ -7,7 +7,6 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
-      <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
       <script type="text/javascript">
