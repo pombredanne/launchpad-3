@@ -74,7 +74,9 @@ class CVEReportView(LaunchpadView):
             longest_expected=600)
 
         if not bugtasks:
-            return []
+            self.open_cve_bugtasks = []
+            self.resolved_cve_bugtasks = []
+            return
 
         badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             bugtasks)

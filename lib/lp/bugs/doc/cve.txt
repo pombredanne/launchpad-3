@@ -130,11 +130,11 @@ surprisingly, the same the method above returned:
 
     >>> for bugtaskcve in cve_report.open_cve_bugtasks:
     ...    ([bugtask.title for bugtask in bugtaskcve.bugtasks],
-    ...     [cve.title for cve in bugtaskcve.cves])
+    ...     [cve['displayname'] for cve in bugtaskcve.cves])
     ([u'Bug #1 in mozilla-firefox (Ubuntu): "Firefox does not support SVG"'],
-     [u'CVE-1999-8979 (Entry)'])
+     [u'CVE-1999-8979'])
     ([u'Bug #2 in Ubuntu: "Blackhole Trash folder"'],
-     [u'CVE-1999-2345 (Candidate)'])
+     [u'CVE-1999-2345'])
 
 There are no resolved bugtasks linked to CVEs in Ubuntu:
 
