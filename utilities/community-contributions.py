@@ -305,6 +305,10 @@ merge_names_map = dict((wiki_encode(a), wiki_encode(b))
 class ContainerRevision():
     """A wrapper for a top-level LogRevision containing child LogRevisions."""
 
+    # Regular expression based on that used by qa-tagger.
+    fixed_bug_re = re.compile(
+        r'(\[bugs?=)(\d+(?:,\s*\d+)*)(\])', re.IGNORECASE)
+
     def __init__(self, top_lr, branch_info):
         """Create a new ContainerRevision.
 
@@ -320,10 +324,21 @@ class ContainerRevision():
         """Add a descendant child of this container revision."""
         self.contained_revs.append(lr)
 
+    def format_fixed_bug_ids(self, text):
+        """Format any bug numbers in the given string as links."""
+        def format_bugs(match):
+            return (
+                match.group(1) +
+                re.sub(r'(\d+)', r'[[Bug:\1]]', match.group(2)) +
+                match.group(3))
+
+        return self.fixed_bug_re.sub(format_bugs, text)
+
     def __str__(self):
         timestamp = self.top_rev.rev.timestamp
         timezone = self.top_rev.rev.timezone
         message = self.top_rev.rev.message or "(NO LOG MESSAGE)"
+        message = self.format_fixed_bug_ids(message)
         rev_id = self.top_rev.rev.revision_id or "(NO REVISION ID)"
         if timestamp:
             date_str = format_date(timestamp, timezone or 0, 'original')
