@@ -453,8 +453,6 @@ class DeletedContentTestCase(unittest.TestCase):
         alias_id = alias.id
         transaction.commit()
 
-        client = LibrarianClient()
-
         # This works
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
         alias.open()
@@ -465,7 +463,6 @@ class DeletedContentTestCase(unittest.TestCase):
         url = alias.http_url
         retrieved_content = urlopen(url).read()
         self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
-
 
         # But when we flag the content as deleted
         cur = cursor()

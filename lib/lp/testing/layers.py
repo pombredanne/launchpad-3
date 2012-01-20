@@ -149,7 +149,6 @@ from lp.testing import (
     logout,
     reset_logging,
     )
-from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 

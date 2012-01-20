@@ -83,7 +83,7 @@ def test_suite():
 
     for filename in sorted(filenames):
         test = LayeredDocFileSuite(
-            "../doc/" +filename, setUp=buildmasterSetUp,
+            "../doc/" + filename, setUp=buildmasterSetUp,
             tearDown=buildmasterTearDown,
             stdout_logging_level=logging.WARNING,
             layer=LaunchpadZopelessLayer)

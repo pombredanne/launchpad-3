@@ -109,7 +109,6 @@ possibilities for the user.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
     >>> import transaction
-    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import lp_dbuser
 
     >>> with lp_dbuser():

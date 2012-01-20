@@ -10,6 +10,7 @@ import unittest
 import psycopg2
 
 from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 

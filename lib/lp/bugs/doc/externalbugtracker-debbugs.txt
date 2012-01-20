@@ -630,7 +630,6 @@ tracker.
     >>> commit()
 
     # Make sane data to play this test.
-    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 

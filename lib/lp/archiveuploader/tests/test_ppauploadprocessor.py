@@ -43,6 +43,7 @@ from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.dbuser import switch_dbuser
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):

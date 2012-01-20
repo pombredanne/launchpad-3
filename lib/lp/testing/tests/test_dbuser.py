@@ -43,4 +43,3 @@ class TestDbUser(TestCase):
         with lp_dbuser():
             self.assertEqual('launchpad', self.get_current_dbuser())
         self.assertEqual(config.uploader.dbuser, self.get_current_dbuser())
-

@@ -129,7 +129,6 @@ arbitrary bug watch will be retrieved, and queried for its remote
 product. Products having a bug tracker of a different type than the
 given one are ignored.
 
-    >>> import transaction
     >>> from lp.testing.dbuser import lp_dbuser
 
     >>> updater = NoNetworkRemoteProductUpdater(

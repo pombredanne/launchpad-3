@@ -66,8 +66,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             potemplate=potemplate,
             sequence=1)
         pofile = self.factory.makePOFile(potemplate=potemplate)
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=potmsgset)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
         results = list(
             self.migrate_process.getCurrentNonimportedTranslations(
                 potemplate.productseries.product))

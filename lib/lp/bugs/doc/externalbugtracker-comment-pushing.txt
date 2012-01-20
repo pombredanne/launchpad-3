@@ -7,7 +7,6 @@ In order to demonstrate this we need to create example Bug, BugTracker,
 BugWatch, Message and BugMessage instances with which to work.
 
     >>> from zope.interface import implements
-    >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from lp.services.messages.interfaces.message import IMessageSet
@@ -93,7 +92,6 @@ calling the addRemoteComment() method of ISupportsCommentPushing for
 each Launchpad comment that needs to be pushed to the remote bug
 tracker.
 
-    >>> from lp.services.scripts.logger import log
     >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
     >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
     ...     make_bug_watch_updater)

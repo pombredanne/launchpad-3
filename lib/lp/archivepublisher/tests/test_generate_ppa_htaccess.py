@@ -543,7 +543,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # This happens even if they have no tokens.
 
         # Create a public PPA that should not be in the list.
-        public_ppa = self.factory.makeArchive(private=False)
+        self.factory.makeArchive(private=False)
 
         script = self.getScript()
         self.assertContentEqual([self.ppa], script.getNewPrivatePPAs())
@@ -566,7 +566,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
-        now = datetime.now(pytz.UTC)
         tokens = self.setupDummyTokens()[1]
 
         # If there is no record of the script running previously, all
@@ -583,7 +582,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         getUtility(IScriptActivitySet).recordSuccess(
             'generate-ppa-htaccess', date_started=script_start_time,
-            date_completed = script_end_time)
+            date_completed=script_end_time)
         tokens = self.setupDummyTokens()[1]
         # This token will not be included.
         removeSecurityProxy(tokens[0]).date_created = before_previous_start
@@ -628,7 +627,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def test_getNewTokensSinceLastRun_only_active_tokens(self):
         """Only active tokens are returned."""
-        now = datetime.now(pytz.UTC)
         tokens = self.setupDummyTokens()[1]
         tokens[0].deactivate()
 

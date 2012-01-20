@@ -312,7 +312,7 @@ Getting remote statuses
 -----------------------
 
 BugzillaLPPlugin doesn't have any special functionality for getting
-remote statuses. See the "Getting remote statuses" section of 
+remote statuses. See the "Getting remote statuses" section of
 externalbugtracker-bugzilla-api.txt for details of getting remote
 statuses from Bugzilla APIs.
 

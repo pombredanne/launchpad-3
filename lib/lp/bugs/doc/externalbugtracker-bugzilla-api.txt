@@ -395,7 +395,6 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import lp_dbuser
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams

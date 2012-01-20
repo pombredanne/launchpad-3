@@ -10,7 +10,6 @@ The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
-    >>> from lp.services.config import config
     >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.testing.gpgkeys import import_public_test_keys
 

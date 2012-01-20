@@ -45,7 +45,6 @@ handle, and register them for some domains:
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
-    >>> from lp.services.database.sqlbase import commit
     >>> from lp.services.mail.tests.helpers import read_test_message
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
     >>> from lp.testing.dbuser import switch_dbuser

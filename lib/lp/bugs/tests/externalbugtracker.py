@@ -60,7 +60,6 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.config import config
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import celebrity_logged_in
 from lp.testing.dbuser import lp_dbuser
