@@ -1,10 +1,12 @@
-= Bug comments truncated, obfuscated, and hidden =
+Bug comments truncated, obfuscated, and hidden
+##############################################
 
 There are several scenarios where user messages are altered for
 presentation. Messages originating from emails for example often
 have unwanted or unnecessary content included.
 
-== Truncated text ==
+Truncated text
+==============
 
 When displaying the comments on the main bug page they are truncated if
 they are too long. In order to show that, let's set the limit to a
@@ -69,7 +71,8 @@ The whole comment is visible on this page:
     >>> config_data  = config.pop('max_comment_data')
 
 
-== Obfuscated email addresses and hidden content ==
+Obfuscated email addresses and hidden content
+=============================================
 
 Let's have an No Privileges Person create a message in the style of
 an email post to examine the markup rules for obfuscations and
@@ -145,10 +148,9 @@ Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
 class.
 
-    >>> # XXX sinzui 2007-06-14 bug 120425
-    >>> # Pagetests cannot test CSS and JS behaviour.
-    >>> # We can only check that the markup includes the hooks
-    >>> # for the style and script.
+Pagetests cannot test CSS and JS behaviour.  We can only check that the markup
+includes the hooks for the style and script.
+
     >>> print text.findAll('p')[-2]
     <p><span class="foldable">--...
     &lt;email address hidden&gt;<br />
