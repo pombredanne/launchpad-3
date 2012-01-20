@@ -2147,25 +2147,27 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
             FROM DistributionSourcePackage dsp
                 JOIN (
-                SELECT DISTINCT ON (dspc.sourcepackagename)
-                    dspc.sourcepackagename, dspc.name, dspc.binpkgnames,
-                    CASE WHEN dspc.name = ? THEN 100
+                SELECT DISTINCT ON (spn.id)
+                    spn.id, spn.name, dspc.binpkgnames,
+                    CASE WHEN spn.name = ? THEN 100
                         WHEN dspc.binpkgnames SIMILAR TO
                             '(^| )' || ? || '( |$)' THEN 75
-                        WHEN dspc.name SIMILAR TO
+                        WHEN spn.name SIMILAR TO
                             '(^|.*-)' || ? || '(-|$)' THEN 50
                         WHEN dspc.binpkgnames SIMILAR TO
                             '(^|.*-)' || ? || '(-| |$)' THEN 25
                         ELSE 1
                         END AS rank
-                FROM DistributionSourcePackageCache dspc
-                    JOIN Archive a ON dspc.archive = a.id AND a.purpose IN (
-                        ?, ?)
+                FROM SourcePackageName spn
+                    LEFT JOIN DistributionSourcePackageCache dspc
+                        ON dspc.sourcepackagename = spn.id
+                    LEFT JOIN Archive a ON dspc.archive = a.id
+                        AND a.purpose IN (?, ?)
                 WHERE
-                    dspc.name like '%%' || ? || '%%'
+                    spn.name like '%%' || ? || '%%'
                     OR dspc.binpkgnames like '%%' || ? || '%%'
                 LIMIT ?
-                ) dsps ON dsp.sourcepackagename = dsps.sourcepackagename
+                ) dsps ON dsp.sourcepackagename = dsps.id
             WHERE
                 dsp.distribution = ?
             ORDER BY rank DESC
