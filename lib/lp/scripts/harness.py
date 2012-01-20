@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2004-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -89,6 +89,13 @@ def _get_locals():
     factory = LaunchpadObjectFactory()
 
     def browser_open(obj, *args, **kwargs):
+        """Open a (possibly newly-created) object's view in a web browser.
+
+        Accepts the same parameters as canonical_url.
+
+        Performs a commit before invoking the browser, so
+        "browser_open(factory.makeFoo())" works.
+        """
         transaction.commit()
         webbrowser.open(canonical_url(obj, *args, **kwargs))
 

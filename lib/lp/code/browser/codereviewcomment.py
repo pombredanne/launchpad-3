@@ -106,6 +106,7 @@ class CodeReviewDisplayComment(MessageComment):
 
 
 def get_message(display_comment):
+    """Adapt an ICodeReviwComment to an IMessage."""
     return display_comment.comment.message
 
 

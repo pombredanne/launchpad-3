@@ -35,8 +35,11 @@ on the comment:
 
  * +comment-header - the top part of the comment
      normally something like "Bob wrote 4 seconds ago"
+ * +comment-body - the main content
+     Only rendered if IComment.has_body is true.  By default, is the same as
+     +comment-body-text
  * +comment-body-text - the main content
-     Only rendered if IComment.has_body is true.
+     The textual portion of the message body, suitably escaped and linkified.
  * +comment-footer - associated activity or other footer info, like
      bug activity or code reviews.
      Only rendered if IComment.has_footer is true
