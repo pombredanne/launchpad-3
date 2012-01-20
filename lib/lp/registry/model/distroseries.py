@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1081,7 +1081,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
-                             exclude_pocket=None, archive=None):
+                             archive=None):
         """See `IDistroSeries`."""
         # Deprecated.  Use IArchive.getPublishedSources instead.
 
@@ -1110,9 +1110,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         if version is not None:
             queries.append("version=%s" % sqlvalues(version))
-
-        if exclude_pocket is not None:
-            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(

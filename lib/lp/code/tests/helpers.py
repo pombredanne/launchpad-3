@@ -92,8 +92,7 @@ def make_erics_fooix_project(factory):
     :return: a dict of objects to put into local scope.
     """
     eric = factory.makePerson(
-        name='eric', displayname='Eric the Viking',
-        email='eric@example.com', password='test')
+        name='eric', displayname='Eric the Viking', email='eric@example.com')
     fooix = factory.makeProduct(
         name='fooix', displayname='Fooix', owner=eric)
     trunk = factory.makeProductBranch(
@@ -101,8 +100,7 @@ def make_erics_fooix_project(factory):
     removeSecurityProxy(fooix.development_focus).branch = trunk
     # Development is done by Fred.
     fred = factory.makePerson(
-        name='fred', displayname='Fred Flintstone',
-        email='fred@example.com', password='test')
+        name='fred', displayname='Fred Flintstone', email='fred@example.com')
     feature = factory.makeProductBranch(
         owner=fred, product=fooix, name='feature')
     proposed = factory.makeProductBranch(
@@ -209,8 +207,7 @@ def make_mint_distro_with_branches(factory):
         twisted, zope, bzr, python
     """
     albert, bob, charlie = [
-        factory.makePerson(
-            name=name, email=("%s@mint.example.com" % name), password="test")
+        factory.makePerson(name=name, email=("%s@mint.example.com" % name))
         for name in ('albert', 'bob', 'charlie')]
     mint_team = factory.makeTeam(owner=albert, name="mint-team")
     mint_team.addMember(bob, albert)

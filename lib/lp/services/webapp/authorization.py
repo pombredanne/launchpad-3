@@ -36,6 +36,7 @@ from zope.security.simplepolicies import (
     )
 
 from lp.app.interfaces.security import IAuthorization
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -254,12 +255,11 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
             yield cache[objecttoauthorize][permission]
             return
 
-    # Create a check_auth function to call checkAccountAuthenticated or
+    # Create a check_auth function to call checkAuthenticated or
     # checkUnauthenticated as appropriate.
     if ILaunchpadPrincipal.providedBy(principal):
-        account = principal.account
         check_auth = lambda authorization: (
-            authorization.checkAccountAuthenticated(account))
+            authorization.checkAuthenticated(IPersonRoles(principal.person)))
     else:
         check_auth = lambda authorization: (
             authorization.checkUnauthenticated())

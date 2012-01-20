@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -31,7 +31,7 @@ from lp.services.webapp.dbpolicy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 
 
 COMPONENTS = [

@@ -25,7 +25,7 @@ class TestBranchStatus(WindmillTestCase):
     def test_inline_branch_status_setting(self):
         """Set the status of a branch."""
         eric = self.factory.makePerson(
-            name="eric", displayname="Eric the Viking", password="test",
+            name="eric", displayname="Eric the Viking",
             email="eric@example.com")
         branch = self.factory.makeBranch(owner=eric)
         transaction.commit()

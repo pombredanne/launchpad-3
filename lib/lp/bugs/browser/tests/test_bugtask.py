@@ -1,9 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from BeautifulSoup import BeautifulSoup
-
-from lp.registry.interfaces.person import PersonVisibility
-
 
 __metaclass__ = type
 
@@ -16,6 +12,7 @@ import re
 import simplejson
 import urllib
 
+from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
@@ -35,6 +32,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.testing import (
@@ -108,8 +106,8 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson(password='test')
-        person_with_teams = self.factory.makePerson(password='test')
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
@@ -253,6 +251,20 @@ class TestBugTaskView(TestCaseWithFactory):
             # happend. The error will be listed in the view.
             self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
+
+    def test_bugtag_urls_are_encoded(self):
+        # The link to bug tags are encoded to protect against special chars.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        getUtility(ILaunchBag).add(bug.default_bugtask)
+        view = create_initialized_view(bug.default_bugtask, name=u'+index')
+        expected = [(u'depends-on+987',
+            u'/foobar/+bugs?field.tag=depends-on%2B987')]
+        self.assertEqual(expected, view.unofficial_tags)
+        browser = self.getUserBrowser(canonical_url(bug), bug.owner)
+        self.assertIn(
+            'href="/foobar/+bugs?field.tag=depends-on%2B987"',
+            browser.contents)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):

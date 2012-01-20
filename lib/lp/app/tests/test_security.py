@@ -17,6 +17,7 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.testing import (
     person_logged_in,
     TestCase,
@@ -74,27 +75,16 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_checkAccountAuthenticated_for_full_fledged_account(self):
-        # AuthorizationBase.checkAccountAuthenticated should delegate to
-        # checkAuthenticated() when the given account can be adapted into an
-        # IPerson.
+    def test_checkAuthenticated_for_full_fledged_account(self):
+        # AuthorizationBase.checkAuthenticated should delegate to
+        # checkAuthenticated() when the given account can be adapted
+        # into an IPerson.
         full_fledged_account = self.factory.makePerson().account
         adapter = FakeSecurityAdapter()
-        adapter.checkAccountAuthenticated(full_fledged_account)
+        adapter.checkAuthenticated(IPerson(full_fledged_account))
         self.assertVectorEqual(
             (1, adapter.checkAuthenticated.call_count),
             (0, adapter.checkUnauthenticated.call_count))
-
-    def test_checkAccountAuthenticated_for_personless_account(self):
-        # AuthorizationBase.checkAccountAuthenticated should delegate to
-        # checkUnauthenticated() when the given account can't be adapted into
-        # an IPerson.
-        personless_account = self.factory.makeAccount('Test account')
-        adapter = FakeSecurityAdapter()
-        adapter.checkAccountAuthenticated(personless_account)
-        self.assertVectorEqual(
-            (0, adapter.checkAuthenticated.call_count),
-            (1, adapter.checkUnauthenticated.call_count))
 
     def test_forwardCheckAuthenticated_object_changes(self):
         # Requesting a check for the same permission on a different object.

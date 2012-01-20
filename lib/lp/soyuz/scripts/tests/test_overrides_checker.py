@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """archive-override-check tool base class tests."""
@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from unittest import TestCase
 
-from lp.soyuz.scripts.ftpmaster import (
+from lp.soyuz.scripts.pubsourcechecker import (
     PubBinaryContent,
     PubBinaryDetails,
     PubSourceChecker,

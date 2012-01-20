@@ -111,7 +111,7 @@ def login_as_person(person):
     request = get_current_browser_request()
     assert request is not None, "We do not have a browser request."
     authutil = getUtility(IPlacelessAuthUtility)
-    principal = authutil.getPrincipalByLogin(email, want_password=False)
+    principal = authutil.getPrincipalByLogin(email)
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(email)
     logInPrincipal(request, principal, email)

@@ -8,7 +8,7 @@ branch.
     >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)
-    >>> owner = factory.makePerson(email='x@example.com', password='test')
+    >>> owner = factory.makePerson(email='x@example.com')
     >>> product = factory.makeProduct(owner=owner,
     ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> productseries = product.getSeries('trunk')
