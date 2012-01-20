@@ -15,9 +15,11 @@ __all__ = [
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
+    'Namespace',
     'ssh',
     'stop_lxc',
     'su',
+    'user_exists',
     ]
 
 # This script is run as root.
@@ -140,7 +142,7 @@ def cd(directory):
     os.chdir(cwd)
 
 
-def get_container_path(lxcname, path=''):
+def get_container_path(lxcname, path='', base_path=LXC_PATH):
     """Return the path of LXC container called `lxcname`.
     If a `path` is given, return that path inside the container, e.g.::
 
@@ -151,7 +153,7 @@ def get_container_path(lxcname, path=''):
         >>> get_container_path('mycontainer', 'home')
         '/var/lib/lxc/mycontainer/rootfs/home'
     """
-    return os.path.join(LXC_PATH, lxcname, 'rootfs', path.lstrip('/'))
+    return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
 
 
 def file_insert(filename, line):
@@ -199,6 +201,21 @@ def file_append(filename, content):
             f.write(current_content + content)
 
 
+def user_exists(username):
+    """Return True if given `username` exists, e.g.::
+
+        >>> user_exists('root')
+        True
+        >>> user_exists('_this_user_does_not_exist_')
+        False
+    """
+    try:
+        pwd.getpwnam(username)
+    except KeyError:
+        return False
+    return True
+
+
 def error(msg):
     """Print out the error message and quit the script."""
     print 'ERROR: %s' % msg
@@ -208,7 +225,7 @@ def error(msg):
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     '-u', '--user', required=True,
-    help='The name of the system user to be created.')
+    help='The name of the system user to be created or updated.')
 parser.add_argument(
     '-e', '--email', required=True,
     help='The email of the user, used for bzr whoami.')
@@ -220,21 +237,24 @@ parser.add_argument(
     help=('The name of the Launchpad user that will be used to check out '
           'dependencies.  If not provided, the system user name is used.'))
 parser.add_argument(
-    '-v', '--private-key', required=True,
-    help='The SSH private key for the Launchpad user (without passphrase).')
+    '-v', '--private-key',
+    help=('The SSH private key for the Launchpad user (without passphrase). '
+          'If the system user already exists with SSH key pair set up, '
+          'this argument can be omitted.'))
 parser.add_argument(
-    '-b', '--public-key', required=True,
-    help='The SSH public key for the Launchpad user.')
+    '-b', '--public-key',
+    help=('The SSH public key for the Launchpad user. '
+          'If the system user already exists with SSH key pair set up, '
+          'this argument can be omitted.'))
 parser.add_argument(
-    '-a', '--actions',
+    '-a', '--actions', nargs='+',
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
-    nargs='+',
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
     'directory',
     help=('The directory of the Launchpad repository to be created. '
-         'The directory must reside under the home directory of the '
-         'given user (see -u argument).'))
+          'The directory must reside under the home directory of the '
+          'given user (see -u argument).'))
 
 
 def initialize_host(
@@ -316,7 +336,8 @@ def create_lxc(user, lxcname):
         error('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
-    user_authorized_keys = '/home/%s/.ssh/authorized_keys' % user
+    user_authorized_keys = os.path.join(
+        os.path.sep, 'home', user, '.ssh/authorized_keys')
     with open(user_authorized_keys, 'a') as f:
         f.write(open('/root/.ssh/id_rsa.pub').read())
     dst = get_container_path(lxcname, '/root/.ssh/')
@@ -411,13 +432,56 @@ def main(
         scope[action](*function_args_map[action])
 
 
+class Namespace(object):
+    """A namespace for argparse.
+
+    Add methods for further arguments validation.
+    """
+    _errors = []
+
+    @property
+    def error_message(self):
+        return '\n'.join(self._errors)
+
+    def _get_file_content(self, filename):
+        path = os.path.join(os.path.sep, 'home', self.user, filename)
+        return open(path).read()
+
+    def _get_ssh_key(self, attr, filename):
+        value = getattr(self, attr)
+        if value:
+            return value.decode('string-escape')
+        try:
+            return self._get_file_content(filename)
+        except IOError:
+            self._errors.append(
+                'argument --%s is required if the system user '
+                'does not exists with SSH key pair set up.' % attr)
+
+    def are_valid(self):
+        home_dir = os.path.join(os.path.sep, 'home', self.user)
+        if self.lpuser is None:
+            self.lpuser = self.user
+        self.private_key = self._get_ssh_key(
+            'private_key', os.path.join(home_dir, '.ssh', 'id_rsa'))
+        self.public_key = self._get_ssh_key(
+            'public_key', os.path.join(home_dir, '.ssh', 'id_rsa.pub'))
+        if not self.directory.startswith(home_dir + os.path.sep):
+            self._errors.append('argument --directory does not reside under '
+                                'the home directory of the system user.')
+        return not self._errors
+
+
 if __name__ == '__main__':
-    args = parser.parse_args()
-    main(args.user,
-         args.name,
-         args.email,
-         args.lpuser or args.user,
-         args.private_key.decode('string-escape'),
-         args.public_key.decode('string-escape'),
-         args.actions,
-         args.directory)
+    args = parser.parse_args(namespace=Namespace())
+    if args.are_valid():
+        main(args.user,
+             args.name,
+             args.email,
+             args.lpuser or args.user,
+             args.private_key,
+             args.public_key,
+             args.actions,
+             args.directory)
+    else:
+        parser.error(args.error_message)
