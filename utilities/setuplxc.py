@@ -36,9 +36,23 @@ import sys
 import time
 
 
-LXC_NAME = 'lptests'
-LXC_GUEST_OS = 'lucid'
+DEPENDENCIES_DIR = '~/dependencies'
+DHCP_FILE = '/etc/dhcp/dhclient.conf'
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
+LP_APACHE_ROOTS = (
+    '/var/tmp/bazaar.launchpad.dev/static',
+    '/var/tmp/archive',
+    '/var/tmp/ppa',
+    )
+LP_CHECKOUT = 'devel'
+LP_REPOSITORY = 'lp:launchpad'
+LP_SOURCE_DEPS = (
+    'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
+LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 LXC_GATEWAY = '10.0.3.1'
+LXC_GUEST_OS = 'lucid'
+LXC_NAME = 'lptests'
 LXC_OPTIONS = (
     ('lxc.network.type', 'veth'),
     ('lxc.network.link', 'lxcbr0'),
@@ -55,20 +69,7 @@ LXC_REPOS = (
     'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
     'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
     )
-LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
-DEPENDENCIES_DIR = '~/dependencies'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
 RESOLV_FILE = '/etc/resolv.conf'
-DHCP_FILE = '/etc/dhcp/dhclient.conf'
-LP_REPOSITORY = 'lp:launchpad'
-LP_SOURCE_DEPS = (
-    'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
-LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
-LP_APACHE_ROOTS = (
-    '/var/tmp/bazaar.launchpad.dev/static',
-    '/var/tmp/archive',
-    '/var/tmp/ppa',
-    )
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -251,6 +252,16 @@ parser.add_argument(
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
+    '-c', '--lxc-name', default=LXC_NAME,
+    metavar='LXC_NAME (default=%s)' % LXC_NAME,
+    help='The LXC container name.')
+parser.add_argument(
+    '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
+    metavar='DEPENDENCIES_DIR (default=%s)' % DEPENDENCIES_DIR,
+    help=('The directory of the Launchpad dependencies to be created. '
+          'The directory must reside under the home directory of the '
+          'given user (see -u argument).'))
+parser.add_argument(
     'directory',
     help=('The directory of the Launchpad repository to be created. '
           'The directory must reside under the home directory of the '
@@ -258,36 +269,38 @@ parser.add_argument(
 
 
 def initialize_host(
-    user, fullname, email, lpuser, private_key, public_key, directory):
+    user, fullname, email, lpuser, private_key, public_key,
+    dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
     subprocess.call(['apt-get', '-y', 'install'] + HOST_PACKAGES)
-    # Make the user.
-    subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
-    # Generate root ssh keys if they are not present.
+    # Create the user (if he does not exist).
+    if not user_exists(user):
+        subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
+    # Generate root ssh keys if they do not exist.
     if not os.path.exists('/root/.ssh/id_rsa.pub'):
         subprocess.call([
             'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
             '-f', '/root/.ssh/id_rsa'])
-    # Get the user's uid and gid, and run as user.
     with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
         ssh_dir = os.path.join(env.home, '.ssh')
-        os.makedirs(ssh_dir)
+        if not os.path.exists(ssh_dir):
+            os.makedirs(ssh_dir)
         priv_file = os.path.join(ssh_dir, 'id_rsa')
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
         known_hosts = os.path.join(ssh_dir, 'known_hosts')
         known_host_content = subprocess.check_output([
             'ssh-keyscan', '-t', 'rsa', 'bazaar.launchpad.net'])
-        for filename, contents in [
-            (priv_file, private_key),
-            (pub_file, public_key),
-            (auth_file, public_key),
-            (known_hosts, known_host_content),
+        for filename, contents, mode in [
+            (priv_file, private_key, 'w'),
+            (pub_file, public_key, 'w'),
+            (auth_file, public_key, 'a'),
+            (known_hosts, known_host_content, 'a'),
             ]:
-            with open(filename, 'w') as f:
+            with open(filename, mode) as f:
                 f.write('%s\n' % contents)
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
@@ -295,15 +308,15 @@ def initialize_host(
         subprocess.call(['bzr', 'whoami', '"%s <%s>"' % (fullname, email)])
         subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
-        os.makedirs(directory)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         subprocess.call(['bzr', 'init-repo', directory])
-        checkout_dir = os.path.join(directory, 'lp')
+        checkout_dir = os.path.join(directory, LP_CHECKOUT)
     # bzr branch does not work well with seteuid.
     os.system(
         "su - %s -c 'bzr branch %s %s'" % (user, LP_REPOSITORY, checkout_dir))
     with su(user) as env:
         # Set up source dependencies.
-        dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
         os.makedirs('%s/eggs' % dependencies_dir)
         os.makedirs('%s/yui' % dependencies_dir)
         os.makedirs('%s/sourcecode' % dependencies_dir)
@@ -355,7 +368,7 @@ def create_lxc(user, lxcname):
             error('Unable to SSH into LXC.')
 
 
-def initialize_lxc(user, directory, lxcname):
+def initialize_lxc(user, dependencies_dir, directory, lxcname):
     """Set up the Launchpad development environment inside the LXC container.
     """
     with ssh(lxcname) as sshcall:
@@ -382,9 +395,7 @@ def initialize_lxc(user, directory, lxcname):
         sshcall('addgroup --gid %s %s' % (gid, user))
     with ssh(lxcname, user) as sshcall:
         # Set up Launchpad dependencies.
-        checkout_dir = os.path.join(directory, 'lp')
-        with su(user):
-            dependencies_dir = os.path.expanduser(DEPENDENCIES_DIR)
+        checkout_dir = os.path.join(directory, LP_CHECKOUT)
         sshcall(
             'cd %s && utilities/update-sourcecode %s/sourcecode' % (
             checkout_dir, dependencies_dir))
@@ -417,13 +428,13 @@ def stop_lxc(lxcname):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    directory):
+    lxc_name, dependencies_dir, directory):
     function_args_map = OrderedDict((
         ('initialize_host', (user, fullname, email, lpuser, private_key,
-                             public_key, directory)),
-        ('create_lxc', (user, LXC_NAME)),
-        ('initialize_lxc', (user, directory, LXC_NAME)),
-        ('stop_lxc', (LXC_NAME,)),
+                             public_key, dependencies_dir, directory)),
+        ('create_lxc', (user, lxc_name)),
+        ('initialize_lxc', (user, dependencies_dir, directory, lxc_name)),
+        ('stop_lxc', (lxc_name,)),
         ))
     if actions is None:
         actions = function_args_map.keys()
@@ -436,8 +447,38 @@ class Namespace(object):
     """A namespace for argparse.
 
     Add methods for further arguments validation.
+    This class implements ssh key validation, e.g.::
+
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                      '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                      '/home/example_user/launchpad/'.split(),
+        ...                      namespace=Namespace())
+        >>> args.are_valid()
+        True
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                      '-n exampleuser -b PUBLIC '
+        ...                      '/home/example_user/launchpad/'.split(),
+        ...                      namespace=Namespace())
+        >>> args.are_valid()
+        False
+        >>> args.error_message # doctest:+ELLIPSIS
+        'argument private_key ...'
+
+    and directory validation::
+
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                      '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                      '/home/'.split(),
+        ...                      namespace=Namespace())
+        >>> args.are_valid()
+        False
+        >>> args.error_message # doctest:+ELLIPSIS
+        'argument directory ...'
     """
-    _errors = []
+    _errors = None
+
+    def __repr__(self):
+        return repr(vars(self))
 
     @property
     def error_message(self):
@@ -451,10 +492,18 @@ class Namespace(object):
             return open(filename).read()
         except IOError:
             self._errors.append(
-                'argument --%s is required if the system user '
+                'argument %s is required if the system user '
                 'does not exists with SSH key pair set up.' % attr)
 
+    def _get_directory(self, attr, home_dir):
+        directory = getattr(self, attr).replace('~', home_dir)
+        if not directory.startswith(home_dir + os.path.sep):
+            self._errors.append('argument %s does not reside under the home '
+                                'directory of the system user.' % attr)
+        return directory
+
     def are_valid(self):
+        self._errors = []
         home_dir = os.path.join(os.path.sep, 'home', self.user)
         if self.lpuser is None:
             self.lpuser = self.user
@@ -462,9 +511,9 @@ class Namespace(object):
             'private_key', os.path.join(home_dir, '.ssh', 'id_rsa'))
         self.public_key = self._get_ssh_key(
             'public_key', os.path.join(home_dir, '.ssh', 'id_rsa.pub'))
-        if not self.directory.startswith(home_dir + os.path.sep):
-            self._errors.append('argument --directory does not reside under '
-                                'the home directory of the system user.')
+        self.directory = self._get_directory('directory', home_dir)
+        self.dependencies_dir = self._get_directory(
+            'dependencies_dir', home_dir)
         return not self._errors
 
 
@@ -478,6 +527,8 @@ if __name__ == '__main__':
              args.private_key,
              args.public_key,
              args.actions,
+             args.lxc_name,
+             args.dependencies_dir,
              args.directory)
     else:
         parser.error(args.error_message)
