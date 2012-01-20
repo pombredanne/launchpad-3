@@ -5,7 +5,20 @@
 """Create an LXC test environment for Launchpad testing."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'cd',
+    'create_lxc',
+    'error',
+    'file_append',
+    'file_insert',
+    'get_container_path',
+    'get_user_ids',
+    'initialize_host',
+    'initialize_lxc',
+    'ssh',
+    'stop_lxc',
+    'su',
+    ]
 
 # This script is run as root.
 # To run doctests: python -m doctest -v setuplxc.py
