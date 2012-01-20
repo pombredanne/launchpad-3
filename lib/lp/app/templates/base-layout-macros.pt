@@ -38,7 +38,8 @@
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
       devmode modules/lp.services.config/config/devmode;
-      yui_version view/yui_version;"
+      yui_version view/yui_version;
+      yui_console_debug view/yui_console_debug;"
   >
   <tal:comment replace="nothing">
     This macro just loads javascript files. It doesn't
@@ -63,11 +64,13 @@
   <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
     <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-    <script type="text/javascript">
+    <script type="text/javascript" tal:content="string:
        YUI.GlobalConfig = {
+           debug: ${yui_console_debug},
            fetchCSS: false,
            timeout: 50
         }
+       ">
     </script>
   </tal:js-legacy>
 
@@ -82,6 +85,7 @@
             combine: true,
             comboBase: '/+combo/?',
             root: 'yui/',
+            debug: ${yui_console_debug},
             fetchCSS: false,
             groups: {
                 lp: {

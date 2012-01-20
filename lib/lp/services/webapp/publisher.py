@@ -66,6 +66,7 @@ from lp.layers import (
     setFirstLayer,
     WebServiceLayer,
     )
+from lp.services.config import config
 from lp.services.encoding import is_ascii_only
 from lp.services.features import (
     defaultFlagValue,
@@ -319,6 +320,11 @@ class LaunchpadView(UserAttributeCache):
             return 'yui'
         else:
             return value
+
+    @property
+    def yui_console_debug(self):
+        """Hide console debug messages in production."""
+        return 'true' if config.devmode else 'false'
 
     def render(self):
         """Return the body of the response.
