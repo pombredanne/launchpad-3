@@ -1041,24 +1041,24 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def official_tags(self):
         """The list of official tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        links = {}
+        links = []
         for tag in self.context.bug.tags:
             if tag in target_official_tags:
-                links[tag] = '%s?field.tag=%s' % (
+                links.append((tag, '%s?field.tag=%s' % (
                     canonical_url(self.context.target, view_name='+bugs',
-                        force_local_path=True), urllib.quote(tag))
+                        force_local_path=True), urllib.quote(tag))))
         return links
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        links = {}
+        links = []
         for tag in self.context.bug.tags:
             if tag not in target_official_tags:
-                links[tag] = '%s?field.tag=%s' % (
+                links.append((tag, '%s?field.tag=%s' % (
                     canonical_url(self.context.target, view_name='+bugs',
-                        force_local_path=True), urllib.quote(tag))
+                        force_local_path=True), urllib.quote(tag))))
         return links
 
     @property

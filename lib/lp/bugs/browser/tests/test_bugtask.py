@@ -258,8 +258,8 @@ class TestBugTaskView(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
         getUtility(ILaunchBag).add(bug.default_bugtask)
         view = create_initialized_view(bug.default_bugtask, name=u'+index')
-        expected = {u'depends-on+987':
-            u'/foobar/+bugs?field.tag=depends-on%2B987'}
+        expected = [(u'depends-on+987',
+            u'/foobar/+bugs?field.tag=depends-on%2B987')]
         self.assertEqual(expected, view.unofficial_tags)
         browser = self.getUserBrowser(canonical_url(bug), bug.owner)
         self.assertIn(
