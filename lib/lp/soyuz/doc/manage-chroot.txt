@@ -1,4 +1,6 @@
-= Manage-Chroot Tool =
+==================
+Manage-Chroot Tool
+==================
 
 This tool is used to add or update chroots for suites (distroseries)
 and DistroArchSeries.
@@ -35,7 +37,7 @@ Setup a function to return a ManageChrootScript object given some
 parameters.
 
     >>> from lp.services.log.logger import FakeLogger
-    >>> from lp.soyuz.scripts.ftpmaster import ManageChrootScript
+    >>> from lp.soyuz.scripts.chrootmanager import ManageChrootScript
     >>> def getScriptObject(command, distribution='ubuntu', suite='hoary',
     ...                     arch='i386', filepath=filepath):
     ...     test_args = ['-s', suite,
@@ -92,7 +94,7 @@ Using an invalid command results in an error.
     ERROR Allowed actions: ['add', 'update', 'remove', 'get']
     Unknown action: bogus
 
-Specifiying a bad architecture results in an error.
+Specifying a bad architecture results in an error.
 
     >>> manage_chroot = getScriptObject("add", arch="bogus")
     >>> try:
@@ -176,7 +178,7 @@ Trying to retrieve a removed chroot will fail.
     DEBUG Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Chroot was deleted.
 
-  >>> os.remove(filepath)
+    >>> os.remove(filepath)
 
 When the librarian is not running, attempting to upload a chroot file
 results in an appropriate error.
