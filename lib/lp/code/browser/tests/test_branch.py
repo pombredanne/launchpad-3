@@ -912,7 +912,7 @@ class TestBranchEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         branch = self.factory.makeBranch(product=product, owner=person)
         self.factory.makeTeam(
-            owner=person, name="forbidden-team", displayname="Forbidden team")
+            owner=person, displayname="Forbidden team")
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
