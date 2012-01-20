@@ -354,7 +354,8 @@ def create_lxc(user, lxcname):
     with open(user_authorized_keys, 'a') as f:
         f.write(open('/root/.ssh/id_rsa.pub').read())
     dst = get_container_path(lxcname, '/root/.ssh/')
-    os.makedirs(dst)
+    if not os.path.exists(dst):
+        os.makedirs(dst)
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container.
     with ssh(lxcname, user) as sshcall:
@@ -461,7 +462,7 @@ class Namespace(object):
         ...                      namespace=Namespace())
         >>> args.are_valid()
         False
-        >>> args.error_message # doctest:+ELLIPSIS
+        >>> args.error_message # doctest: +ELLIPSIS
         'argument private_key ...'
 
     and directory validation::
@@ -472,7 +473,7 @@ class Namespace(object):
         ...                      namespace=Namespace())
         >>> args.are_valid()
         False
-        >>> args.error_message # doctest:+ELLIPSIS
+        >>> args.error_message # doctest: +ELLIPSIS
         'argument directory ...'
     """
     _errors = None
