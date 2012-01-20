@@ -443,16 +443,12 @@ class Namespace(object):
     def error_message(self):
         return '\n'.join(self._errors)
 
-    def _get_file_content(self, filename):
-        path = os.path.join(os.path.sep, 'home', self.user, filename)
-        return open(path).read()
-
     def _get_ssh_key(self, attr, filename):
         value = getattr(self, attr)
         if value:
             return value.decode('string-escape')
         try:
-            return self._get_file_content(filename)
+            return open(filename).read()
         except IOError:
             self._errors.append(
                 'argument --%s is required if the system user '
@@ -478,7 +474,7 @@ if __name__ == '__main__':
         main(args.user,
              args.name,
              args.email,
-             args.lpuser or args.user,
+             args.lpuser,
              args.private_key,
              args.public_key,
              args.actions,
