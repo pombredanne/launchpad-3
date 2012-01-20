@@ -964,7 +964,7 @@ class TeamMailingListArchiveView(LaunchpadView):
         # XXX: jcsackett 18-1-2012: This needs to be updated to use the
         # grackle client, once that is available, instead of returning
         # an empty list as it does now.
-        return simplejson.loads([])
+        return simplejson.loads('[]')
 
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
