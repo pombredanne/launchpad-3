@@ -303,7 +303,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -311,10 +311,14 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in OPEN_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
+
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -322,6 +326,9 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in CLOSED_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -1773,6 +1780,7 @@ class TeamJoinForm(Interface):
 
 class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     """A view class for joining a team."""
+
     schema = TeamJoinForm
 
     @property
@@ -1947,8 +1955,6 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         candidates = []
         for team in self.user.getAdministratedTeams():
             if team == self.context:
-                continue
-            elif team.visibility != PersonVisibility.PUBLIC:
                 continue
             elif team in self.context.activemembers:
                 # The team is already a member of the context object.

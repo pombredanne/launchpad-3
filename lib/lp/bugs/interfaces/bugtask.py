@@ -560,7 +560,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
-    assigneeID = Attribute('The assignee ID (for eager loading)')
+    assigneeID = Int(title=_('The assignee ID (for eager loading)'))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -841,12 +841,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userCanUnassign(user):
-        """Check if the current user can set assignee to None.
-
-        Project owner, project drivers, series drivers, bug supervisors
-        and Launchpad admins can do this always; other users can do this
-        only if they or their reams are the assignee.
-        """
+        """Check if the current user can set assignee to None."""
 
     @mutator_for(assignee)
     @operation_parameters(
@@ -918,8 +913,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasBugSupervisorPrivileges(user):
-        """Is the user a privledged one, allowed to changed details on a
-        bug?
+        """Is the user privileged and allowed to change details on a bug?
 
         :return: A boolean.
         """
@@ -1193,9 +1187,9 @@ class BugTaskSearchParams:
 
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
-                 assignee=None, sourcepackagename=None, owner=None,
-                 attachmenttype=None, orderby=None, omit_dupes=False,
-                 subscriber=None, component=None,
+                 milestone_tag=None, assignee=None, sourcepackagename=None,
+                 owner=None, attachmenttype=None, orderby=None,
+                 omit_dupes=False, subscriber=None, component=None,
                  pending_bugwatch_elsewhere=False, resolved_upstream=False,
                  open_upstream=False, has_no_upstream_bugtask=False, tag=None,
                  has_cve=False, bug_supervisor=None, bug_reporter=None,
@@ -1218,6 +1212,7 @@ class BugTaskSearchParams:
         self.status = status
         self.importance = importance
         self.milestone = milestone
+        self.milestone_tag = milestone_tag
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
         self.owner = owner

@@ -230,9 +230,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
+        person = IPerson(self.account)
         sreg_fields = dict(
-            nickname=IPerson(self.account).name,
-            email=self.account.preferredemail.email,
+            nickname=person.name,
+            email=person.preferredemail.email,
             fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
@@ -304,12 +305,12 @@ class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):
         super(TestOpenIDLoginView, self).initialize()
 
     def validate(self, data):
-        """Check that the email address and password are valid for login."""
+        """Check that the email address is valid for login."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(data['email'])
-        if principal is None or not principal.validate(data['password']):
+        if principal is None:
             self.addError(
-                _("Incorrect password for the provided email address."))
+                _("Unknown email address."))
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):

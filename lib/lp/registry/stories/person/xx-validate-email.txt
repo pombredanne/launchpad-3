@@ -9,7 +9,7 @@ added by gina. Now he wants to validate it.
     >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
-    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:test')
     >>> browser.open('http://launchpad.dev/~salgado/+editemails')
     >>> print browser.title
     Change your e-mail settings...

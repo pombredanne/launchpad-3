@@ -5,10 +5,15 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from zope.component import getUtility
 
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
+from lp.testing import (
+    set_feature_flag,
+    feature_flags,
+    )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
@@ -17,6 +22,14 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
+
+
+@contextmanager
+def dynamic_listings():
+    """Context manager to enable new bug listings."""
+    with feature_flags():
+        set_feature_flag(u'bugs.dynamic_bug_listings.enabled', u'on')
+        yield
 
 
 class TestMaloneView(TestCaseWithFactory):
@@ -90,3 +103,14 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.searchtext')"
         self.assertIn(focus_script, text)
+
+    def test_search_all_bugs_rendering(self):
+        with dynamic_listings():
+            view = create_initialized_view(
+                self.application,
+                '+bugs',
+                rootsite='bugs')
+            content = view.render()
+
+        # we should get some valid content out of this
+        self.assertIn('Search all bugs', content)

@@ -8,8 +8,7 @@ members should be deactivated before the teams are merged.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
-    >>> registry_expert = factory.makePerson(
-    ...     email='reg@example.com', password='test')
+    >>> registry_expert = factory.makePerson(email='reg@example.com')
     >>> new_team = factory.makeTeam(
     ...     name="new-team", email="new_team@example.com")
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')

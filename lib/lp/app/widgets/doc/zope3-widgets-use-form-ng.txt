@@ -53,7 +53,7 @@ contains more than one argument.
       ...
     UnexpectedFormData: ...
 
-Since the SimpleInputWidget._getFormValue is overriden, it also works
+Since the SimpleInputWidget._getFormValue is overridden, it also works
 with the Launchpad widgets extending it:
 
     >>> from lp.app.widgets.textwidgets import StrippedTextWidget

@@ -87,7 +87,7 @@ convert it to an ACCEPTED item.
     >>> new_queue = hoary.getPackageUploads(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
-upload. If some designed check according the request state do not
+upload. If some designed check according to the request state do not
 pass, the state-machine methods will raise an exception indicating the
 upload can not have that state.
 

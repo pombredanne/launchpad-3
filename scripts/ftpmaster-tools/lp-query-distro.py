@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -12,11 +12,11 @@
    * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
    * DEVELOPMENT distroseries name:
        `./ubuntu-helper.py -d ubuntu development`
-   * Distorelease architectures:
+   * Distroseries architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
-   * Distorelease official architectures:
+   * Distroseries official architectures:
        `./lp-query-distro.py -d ubuntu -s feisty official_archs`
-   * Distorelease nominated-arch-indep:
+   * Distroseries nominated-arch-indep:
        `./lp-query-distro.py -d ubuntu -s feisty nominated_arch_indep`
 
    Standard Output will carry the successfully executed information and
@@ -27,7 +27,7 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 
 
 if __name__ == '__main__':

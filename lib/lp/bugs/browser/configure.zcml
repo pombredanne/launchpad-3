@@ -369,7 +369,7 @@
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.BugSupervisor"
         name="+configure-bugtracker"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/bugtracker-configure.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"

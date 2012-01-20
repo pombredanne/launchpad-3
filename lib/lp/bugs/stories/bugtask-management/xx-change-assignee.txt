@@ -157,35 +157,3 @@ But if he tries to set other persons or teams, he gets an error message.
     There is 1 error in the data you entered. Please fix it and try again.
     (Find&hellip;)
     Constraint not satisfied
-
-The unassign option is only shown if the current assignee is the user
-or one of his teams...
-
-    >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
-    >>> assignee_control = user_browser.getControl(
-    ...     name="jokosher.assignee.option", index=0)
-    >>> assignee_control.value = ["jokosher.assignee.assign_to_nobody"]
-    >>> user_browser.getControl("Save Changes", index=0).click()
-
-...or if there is no assignee.
-
-    >>> assignee_control = user_browser.getControl(
-    ...     name="jokosher.assignee.option", index=0)
-    >>> assignee_control.value = ["jokosher.assignee.assign_to_nobody"]
-
-If the bugtask is assigned to anybody else, the unassign option is not
-shown.
-
-    >>> admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
-    >>> assignee_control = admin_browser.getControl(
-    ...     name="jokosher.assignee.option", index=0)
-    >>> assignee_control.value = ["jokosher.assignee.assign_to_me"]
-    >>> admin_browser.getControl("Save Changes", index=0).click()
-    >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
-    >>> assignee_control = user_browser.getControl(
-    ...     name="jokosher.assignee.option", index=0)
-    >>> assignee_control.value = ["jokosher.assignee.assign_to_nobody"]
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name
-    'jokosher.assignee.assign_to_nobody'

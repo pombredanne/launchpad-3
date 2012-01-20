@@ -1,6 +1,6 @@
--- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.8
+-- Created using pg_dump (PostgreSQL) 8.4.9
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,9 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
 
 
 
@@ -2041,56 +2044,56 @@ ALTER TABLE accesspolicygrant ENABLE TRIGGER ALL;
 ALTER TABLE accountpassword DISABLE TRIGGER ALL;
 
 INSERT INTO accountpassword (id, account, password) VALUES (1, 11, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (2, 21, 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==');
+INSERT INTO accountpassword (id, account, password) VALUES (2, 21, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (4, 41, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (6, 61, 'egSV4F7r1WCy/hf5jWu7AlOfsdt6E5/eGUDj2esLlEPV8VfJSdIJSQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (8, 81, 'AqRrSgxlaD/jsmKcwKM6WRV6RjgdyuND0kHVDSFG+F1FGUCoCXncuQ==');
+INSERT INTO accountpassword (id, account, password) VALUES (6, 61, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (8, 81, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (11, 111, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (12, 121, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (13, 131, 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U');
-INSERT INTO accountpassword (id, account, password) VALUES (14, 141, 'pGQrbOLX8qWHLVFxd/VPhZlqhPDXj/3/8p8CeEUYIFfYziLKdTbJNQ==');
+INSERT INTO accountpassword (id, account, password) VALUES (13, 131, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (14, 141, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (16, 161, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (22, 221, 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx');
+INSERT INTO accountpassword (id, account, password) VALUES (22, 221, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (23, 231, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (27, 271, 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==');
-INSERT INTO accountpassword (id, account, password) VALUES (28, 281, 'OkikNBxGC7hgRBJ109OZru86vpzhHw+cO+zW/0SlTN2phfv7lSwSHg==');
-INSERT INTO accountpassword (id, account, password) VALUES (29, 291, 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==');
-INSERT INTO accountpassword (id, account, password) VALUES (33, 331, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (34, 341, 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==');
-INSERT INTO accountpassword (id, account, password) VALUES (35, 351, 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (36, 361, 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==');
-INSERT INTO accountpassword (id, account, password) VALUES (37, 371, 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (38, 381, 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==');
-INSERT INTO accountpassword (id, account, password) VALUES (39, 391, 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==');
-INSERT INTO accountpassword (id, account, password) VALUES (40, 401, 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==');
-INSERT INTO accountpassword (id, account, password) VALUES (41, 411, '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (42, 421, 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==');
-INSERT INTO accountpassword (id, account, password) VALUES (43, 431, 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==');
-INSERT INTO accountpassword (id, account, password) VALUES (44, 441, 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==');
-INSERT INTO accountpassword (id, account, password) VALUES (45, 451, 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==');
-INSERT INTO accountpassword (id, account, password) VALUES (46, 461, '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==');
-INSERT INTO accountpassword (id, account, password) VALUES (47, 471, 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==');
-INSERT INTO accountpassword (id, account, password) VALUES (48, 481, 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==');
-INSERT INTO accountpassword (id, account, password) VALUES (49, 491, 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==');
-INSERT INTO accountpassword (id, account, password) VALUES (50, 501, 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U');
-INSERT INTO accountpassword (id, account, password) VALUES (51, 511, 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==');
+INSERT INTO accountpassword (id, account, password) VALUES (27, 271, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (28, 281, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (29, 291, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (33, 331, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (34, 341, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (35, 351, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (36, 361, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (37, 371, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (38, 381, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (39, 391, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (40, 401, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (41, 411, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (42, 421, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (43, 431, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (44, 441, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (45, 451, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (46, 461, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (47, 471, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (48, 481, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (49, 491, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (50, 501, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (51, 511, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (52, 521, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (55, 551, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (56, 561, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 INSERT INTO accountpassword (id, account, password) VALUES (58, 581, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
-INSERT INTO accountpassword (id, account, password) VALUES (63, 631, 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (68, 681, 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==');
-INSERT INTO accountpassword (id, account, password) VALUES (243602, 2436021, 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==');
-INSERT INTO accountpassword (id, account, password) VALUES (243603, 2436031, '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (243610, 2436101, '9I7bMpJUcBH+edfXjswjdo7nC6iuoTU6YAqolznT59Q1h9v+z9pdVQ==');
-INSERT INTO accountpassword (id, account, password) VALUES (243611, 2436111, 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==');
-INSERT INTO accountpassword (id, account, password) VALUES (243617, 2436171, '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==');
-INSERT INTO accountpassword (id, account, password) VALUES (243622, 2436221, 'x3AXXkF9hiPAvbgZSrM/6wczynYy0x+o7SNoT+Gy2Z1GZCMcDNb08A==');
-INSERT INTO accountpassword (id, account, password) VALUES (243623, 2436231, '0HM7dR9mHB8uh4Pi88me/V7VrPBbsZZCIVWtkjyHV9WtA0QMcaVM5w==');
-INSERT INTO accountpassword (id, account, password) VALUES (243624, 261, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (243625, 71, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (243626, 31, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (243629, 2436242, 'AmIxkZe2yl53W8ai9xg8ok+JtsX1CTpR6Ma9bT5LJyMMz1HXnvfPoA==');
+INSERT INTO accountpassword (id, account, password) VALUES (63, 631, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (68, 681, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243602, 2436021, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243603, 2436031, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243610, 2436101, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243611, 2436111, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243617, 2436171, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243622, 2436221, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243623, 2436231, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243624, 261, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243625, 71, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243626, 31, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
+INSERT INTO accountpassword (id, account, password) VALUES (243629, 2436242, 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -5680,6 +5683,13 @@ Martin Pitt wrote:
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
+
+
+ALTER TABLE milestonetag DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE milestonetag ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mirror DISABLE TRIGGER ALL;
@@ -9998,34 +10008,34 @@ ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagepublishinghistory DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (1, 14, 1, 1, 1, 3, '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 1, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (2, 15, 3, 2, 1, 3, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 9, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (4, 17, 1, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 10, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (5, 16, 3, 2, 1, 2, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 10, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', 21, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 14, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (9, 21, 3, 2, 1, 3, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 14, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (10, 23, 1, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (11, 24, 8, 2, 1, 2, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, 3, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (13, 26, 3, 2, 3, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 20, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (14, 24, 3, 3, 1, 3, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, 1, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (15, 24, 1, 2, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (16, 27, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 21, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 22, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (18, 14, 1, 2, 1, 2, '2006-02-13 12:19:00.05741', '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 1, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 22, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (21, 24, 11, 4, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, 8, 1, 'does anyone like ? I did not think so.', NULL, 19, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (22, 32, 1, 4, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, '2006-12-02 11:44:00', 0, 1, 28, 'I do not like it.', NULL, 23, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (23, 33, 1, 2, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 24, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (24, 14, 1, 2, 1, 2, '2006-02-19 11:57:13', '2007-02-19 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 8, NULL, NULL, NULL, 1, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (25, 33, 10, 2, 1, 3, '2007-04-25 13:44:00.10654', '2007-04-25 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 24, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (26, 35, 1, 2, 1, 3, '2006-04-11 12:00:00', '2006-04-11 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 26, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (27, 33, 10, 2, 1, 3, '2007-07-09 13:44:00.10654', '2007-07-09 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 24, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (28, 35, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 26, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 14, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (30, 36, 10, 2, 5, 7, '2007-08-09 21:28:12.106187', NULL, NULL, NULL, NULL, NULL, NULL, 0, 12, NULL, NULL, NULL, 27, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator) VALUES (31, 35, 10, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL, NULL, 26, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (1, 14, 1, 1, 1, 3, '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (2, 15, 3, 2, 1, 3, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 9, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (4, 17, 1, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 10, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (5, 16, 3, 2, 1, 2, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 10, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', 21, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 14, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (9, 21, 3, 2, 1, 3, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 14, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (10, 23, 1, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (11, 24, 8, 2, 1, 2, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, 3, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (13, 26, 3, 2, 3, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 20, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (14, 24, 3, 3, 1, 3, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, 1, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (15, 24, 1, 2, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (16, 27, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 21, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 22, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (18, 14, 1, 2, 1, 2, '2006-02-13 12:19:00.05741', '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (19, 28, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 22, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (20, 25, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (21, 24, 11, 4, 1, 3, '2006-09-14 11:44:00.10654', '2006-09-14 11:44:00', '2006-09-14 11:44:01', 25, '2006-09-14 11:45:00', '2006-09-14 11:45:00', '2006-09-15 11:45:00', 0, 8, 1, 'does anyone like ? I did not think so.', NULL, 19, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (22, 32, 1, 4, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, '2006-12-02 11:44:00', 0, 1, 28, 'I do not like it.', NULL, 23, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (23, 33, 1, 2, 1, 3, '2006-12-01 13:44:00.10654', '2006-12-01 11:44:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 24, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (24, 14, 1, 2, 1, 2, '2006-02-19 11:57:13', '2007-02-19 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, 8, NULL, NULL, NULL, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (25, 33, 10, 2, 1, 3, '2007-04-25 13:44:00.10654', '2007-04-25 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 24, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (26, 35, 1, 2, 1, 3, '2006-04-11 12:00:00', '2006-04-11 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL, 26, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (27, 33, 10, 2, 1, 3, '2007-07-09 13:44:00.10654', '2007-07-09 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 24, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (28, 35, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 26, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL, 14, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (30, 36, 10, 2, 5, 7, '2007-08-09 21:28:12.106187', NULL, NULL, NULL, NULL, NULL, NULL, 0, 12, NULL, NULL, NULL, 27, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor, sourcepackagename, creator, sponsor) VALUES (31, 35, 10, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL, NULL, 26, NULL, NULL);
 
 
 ALTER TABLE sourcepackagepublishinghistory ENABLE TRIGGER ALL;

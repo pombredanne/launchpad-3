@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -347,9 +347,12 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info, show_spam_controls=show_spam_controls,
-        user=user)
+        user=user, hide_first=for_display)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
+    for comment in comments.values():
+        get_property_cache(comment._message).bugattachments = []
+
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
@@ -359,8 +362,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
-        else:
-            comments[message_id].bugattachments.append(attachment)
+        cache = get_property_cache(attachment.message)
+        cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -371,12 +374,6 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index == 0:
-        # We show the text of the first comment as the bug description,
-        # or via the special link "View original description", but we want
-        # to display attachments filed together with the bug in the
-        # comment list.
-        comments[0].text_for_display = ''
     return comments
 
 
@@ -1041,15 +1038,25 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def official_tags(self):
         """The list of official tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag not in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag not in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def available_official_tags_js(self):
@@ -1082,11 +1089,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            return bugtask_heat_html(
-                self.context, target=self.context.distribution)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            return (
+                '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+                'class="sprite flame">%d</a></span>' % self.context.bug.heat)
         else:
-            return bugtask_heat_html(self.context)
+            if IDistributionSourcePackage.providedBy(self.context.target):
+                return bugtask_heat_html(
+                    self.context, target=self.context.distribution)
+            else:
+                return bugtask_heat_html(self.context)
 
     @property
     def privacy_notice_classes(self):
@@ -2212,7 +2224,20 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask, target=self.target_context)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+                return (
+                    '<span class="sprite flame">%d</span>'
+                    % self.bugtask.bug.heat)
+            else:
+                return str(self.bugtask.bug.heat)
+        else:
+            return bugtask_heat_html(self.bugtask, target=self.target_context)
+
+    @property
+    def center_bug_heat(self):
+        """Returns whether the bug_heat_html should be centered."""
+        return not getFeatureFlag('bugs.heat_ratio_display.disabled')
 
     @property
     def model(self):
@@ -3504,7 +3529,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
         else:
-            raise AssertionError('Uknown context type: %s' % self.context)
+            raise AssertionError('Unknown context type: %s' % self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
@@ -4232,6 +4257,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    def search_macro_title(self):
+        return u'Search all bugs'
 
     @property
     def label(self):
