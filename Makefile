@@ -90,7 +90,7 @@ apidoc:
 ifdef LP_MAKE_NO_WADL
 	@echo "Skipping WADL generation."
 else
-	compile $(API_INDEX)
+	$(MAKE) compile $(API_INDEX)
 endif
 
 # Used to generate HTML developer documentation for Launchpad.
