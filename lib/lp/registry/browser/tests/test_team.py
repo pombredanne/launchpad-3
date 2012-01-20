@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import contextlib
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 import transaction
@@ -475,6 +476,30 @@ class TestMailingListArchiveView(TestCaseWithFactory):
         messages = IJSONRequestCache(view.request).objects['mail']
         self.assertEqual(0, len(messages))
 
+    @contextlib.contextmanager
+    def _override_messages(self, view_class, messages):
+        def _message_shim(self):
+            return simplejson.loads(messages)
+        tmp = TeamMailingListArchiveView._get_messages
+        TeamMailingListArchiveView._get_messages = _message_shim
+        yield TeamMailingListArchiveView
+        TeamMailingListArchiveView._get_messages = tmp
+
+    def test_messages_are_in_json(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        messages = '''[{
+            "headers": {
+                "To": "somelist@example.com",
+                "From": "someguy@example.com",
+                "Subject": "foobar"},
+            "message_id": "foo"}]'''
+ 
+        with self._override_messages(TeamMailingListArchiveView, messages):
+            view = create_view(team, name='+mailing-list-archive')
+            messages = IJSONRequestCache(view.request).objects['mail']
+            self.assertEqual(1, len(messages))
+            self.assertEqual('foo', messages[0]['message_id'])
 
 class TestModeration(TestCaseWithFactory):
 
