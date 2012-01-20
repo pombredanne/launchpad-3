@@ -87,6 +87,7 @@ def _get_locals():
 
     # Having a factory instance is handy.
     factory = LaunchpadObjectFactory()
+
     def browser_open(obj, *args, **kwargs):
         transaction.commit()
         webbrowser.open(canonical_url(obj, *args, **kwargs))
