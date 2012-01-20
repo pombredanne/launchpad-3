@@ -18,7 +18,7 @@ class RoUserTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('ro')
+        switch_dbuser('ro')
 
     def test(self):
         """Test that read-only users cannot make changes to the database."""

@@ -34,6 +34,10 @@ from lp.soyuz.enums import (
     ArchiveSubscriberStatus,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
@@ -63,8 +67,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
         script.logger = BufferLogger()
         script.txn = self.layer.txn
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         return script
 
     def runScript(self):
@@ -272,10 +275,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Now remove someone from team1, he will lose his token but
         # everyone else keeps theirs.
-        self.layer.switchDbUser("launchpad")
-        team1_person.leave(team1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            team1_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
@@ -293,11 +294,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad")
-        promiscuous_person.leave(team1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            promiscuous_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
         script.deactivateTokens(send_email=True)
@@ -312,15 +310,13 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
-        self.layer.switchDbUser("launchpad")
-        name12 = getUtility(IPersonSet).getByName("name12")
-        parent_team.setMembershipData(
-            team2, TeamMembershipStatus.APPROVED, name12)
-        parent_team.setMembershipData(
-            team2, TeamMembershipStatus.DEACTIVATED, name12)
-        self.assertFalse(team2.inTeam(parent_team))
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            name12 = getUtility(IPersonSet).getByName("name12")
+            parent_team.setMembershipData(
+                team2, TeamMembershipStatus.APPROVED, name12)
+            parent_team.setMembershipData(
+                team2, TeamMembershipStatus.DEACTIVATED, name12)
+            self.assertFalse(team2.inTeam(parent_team))
         script.deactivateTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])

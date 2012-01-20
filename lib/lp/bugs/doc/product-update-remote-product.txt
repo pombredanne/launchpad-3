@@ -130,33 +130,20 @@ product. Products having a bug tracker of a different type than the
 given one are ignored.
 
     >>> import transaction
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_updateremoteproduct():
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.updateremoteproduct.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(), BufferLogger())
 
-    >>> switch_db_to_launchpad()
-
-    >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
-    >>> bugzilla_bugwatch = factory.makeBugWatch(
-    ...     '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
-    >>> bugzilla_bugtask.bugwatch = bugzilla_bugwatch
-    >>> rt_bugtask = factory.makeBugTask(target=rt_product)
-    >>> rt_bugwatch = factory.makeBugWatch(
-    ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
-    >>> rt_bugtask.bugwatch = rt_bugwatch
-
-    >>> switch_db_to_updateremoteproduct()
+    >>> with lp_dbuser():
+    ...     bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
+    ...     bugzilla_bugwatch = factory.makeBugWatch(
+    ...         '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
+    ...     bugzilla_bugtask.bugwatch = bugzilla_bugwatch
+    ...     rt_bugtask = factory.makeBugTask(target=rt_product)
+    ...     rt_bugwatch = factory.makeBugWatch(
+    ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
+    ...     rt_bugtask.bugwatch = rt_bugwatch
 
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].

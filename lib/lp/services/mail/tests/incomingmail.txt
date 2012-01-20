@@ -47,8 +47,8 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from lp.services.database.sqlbase import commit
     >>> from lp.services.mail.tests.helpers import read_test_message
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
+    >>> from lp.testing.dbuser import switch_dbuser
 
 For these examples, we don't want the Precedence header added. Domains
 are treated without regard to case: for incoming mail, foo.com and
@@ -57,7 +57,7 @@ FOO.COM are treated equivalently.
     >>> def sendmail(msg, to_addrs=None):
     ...     return original_sendmail(msg, to_addrs=to_addrs, bulk=False)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
     >>> for domain in ('foo.com', 'bar.com', 'FOO.COM', 'baz.com'):
     ...     msg = read_test_message('signed_detached.txt')
@@ -73,16 +73,7 @@ on our testdata are old, and in these tests we don't care to be told.
 Since the User gets authenticated using OpenPGP signatures we have to
 import the keys before handleMail is called.
 
-    >>> from lp.services.config import config
-    >>> from lp.testing.gpgkeys import import_public_test_keys
-    >>> import_public_test_keys()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
-    >>> zopeless_transaction = LaunchpadZopelessLayer.txn
-
-    >>> handleMailForTest = lambda: handleMail(
-    ...     zopeless_transaction,
-    ...     signature_timestamp_checker=accept_any_timestamp)
+from lp.testing.dbuser import switch_dbuser
 
 
 We temporarily override the error mails' From address, so that they will

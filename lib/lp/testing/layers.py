@@ -1553,12 +1553,6 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     def abort(cls):
         transaction.abort()
 
-    @classmethod
-    @profiled
-    def switchDbUser(cls, dbuser):
-        # DEPRECATED: use switch_dbuser directly.
-        switch_dbuser(dbuser)
-
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
     """LaunchpadZopelessLayer using the mock database."""

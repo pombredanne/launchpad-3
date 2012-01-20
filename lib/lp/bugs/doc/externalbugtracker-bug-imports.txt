@@ -48,16 +48,14 @@ distributions are supported as the bug target.
 
     # Make sane data to play this test.
     >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')

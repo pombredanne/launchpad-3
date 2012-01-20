@@ -4,11 +4,12 @@ Private by default bugs
 A product with private bugs by default must always have a bug supervisor
 (this is enforced by a DB constraint).
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.testing.layers import switch_dbuser
+
+    >>> switch_dbuser('launchpad')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> name16 = getUtility(IPersonSet).get(16)
     >>> landscape = getUtility(IProductSet).getByName('landscape')
