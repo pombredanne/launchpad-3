@@ -49,6 +49,10 @@ from lp.services.webapp.interfaces import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 
+# Silence unused name warnings
+(utc, transaction, verifyObject, removeSecurityProxy, canonical_url,
+ SLAVE_FLAVOR, DEFAULT_FLAVOR)
+
 
 def _get_locals():
     if len(sys.argv) > 1:
@@ -77,9 +81,15 @@ def _get_locals():
         b1 = Bug.get(1)
         s = Specification.get(1)
         q = Question.get(1)
+        # Silence unused name warnings
+        d, p, ds, prod, proj, b2, b1, s, q
 
     # Having a factory instance is handy.
     factory = LaunchpadObjectFactory()
+
+    # Silence unused name warnings
+    factory, store
+
     res = {}
     res.update(locals())
     res.update(globals())
