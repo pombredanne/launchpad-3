@@ -24,6 +24,11 @@
       <browser:page
           name="+comment-header"
           template="../templates/comment-header.pt"/>
+      <!-- Default comment body is just the body text, but implementations may
+      vary -->
+      <browser:page
+          name="+comment-body"
+          template="../templates/comment-body.pt"/>
       <browser:page
           name="+comment-body-text"
           template="../templates/comment-body.pt"/>

@@ -573,6 +573,8 @@ class CodeReviewNewRevisions:
         self.extra_css_class = None
         self.comment_author = None
         self.body_text = None
+        self.text_for_display = None
+        self.too_long = False
         self.comment_date = None
         self.display_attachments = False
 
