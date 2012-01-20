@@ -361,9 +361,11 @@ def project_products_vocabulary_factory(context):
 
 
 class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
-    """Describes the teams in which the current user participates."""
+    """Describes the public teams in which the current user participates."""
     _table = Person
     _orderBy = 'displayname'
+
+    INCLUDE_PRIVATE_TEAM = False
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -377,7 +379,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if team.visibility == PersonVisibility.PUBLIC:
+                if (team.visibility == PersonVisibility.PUBLIC
+                    or self.INCLUDE_PRIVATE_TEAM):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -997,26 +1000,6 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
                 TeamParticipation.team == Person.id)
 
 
-class AllUserTeamsParticipationPlusSelfVocabulary(
-                                            UserTeamsParticipationVocabulary):
-    def __iter__(self):
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        logged_in_user = getUtility(ILaunchBag).user
-        yield self.toTerm(logged_in_user)
-        for team in logged_in_user.teams_participated_in:
-            yield self.toTerm(team)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        logged_in_user = getUtility(ILaunchBag).user
-        if logged_in_user.name == token:
-            return self.getTerm(logged_in_user)
-        super_class = super(AllUserTeamsParticipationPlusSelfVocabulary, self)
-        return super_class.getTermByToken(token)
-
-
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
 
@@ -1180,6 +1163,18 @@ class UserTeamsParticipationPlusSelfVocabulary(
             return self.getTerm(logged_in_user)
         super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
         return super_class.getTermByToken(token)
+
+
+class AllUserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationPlusSelfVocabulary):
+    """All public and private teams participates in and himself.
+
+    This redefines UserTeamsParticipationVocabulary to include private teams
+    and it includes the logged in user from
+    UserTeamsParticipationPlusSelfVocabulary.
+    """
+
+    INCLUDE_PRIVATE_TEAM = True
 
 
 class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
