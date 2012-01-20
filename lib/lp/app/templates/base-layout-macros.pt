@@ -168,7 +168,9 @@
                   window.location = e.new_value;
             });
         });
-
+    </script>
+    <script id="base-helper-functions" type="text/javascript">
+         //<![CDATA[
         // This code is pulled from lp.js that needs to be available on every
         // request. Pulling here to get it outside the scope of the YUI block.
         // Lint-safe scripting URL.
@@ -310,6 +312,7 @@
         {
             field.disabled = !enabled;
         }
+        //]]>
     </script>
 </metal:page-javascript>
 
