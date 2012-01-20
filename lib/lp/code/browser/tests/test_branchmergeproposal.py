@@ -1125,7 +1125,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
         url = canonical_url(comment, force_local_path=True)
         browser = self.getViewBrowser(comment.branch_merge_proposal)
-        self.assertNotIn('x y' * 2000, browser.contents)#'Read more...'
+        self.assertNotIn('x y' * 2000, browser.contents)
         read_more = Tag(
             'Read more link', 'a', {'href': url}, text='Read more...')
         self.assertThat(browser.contents, HTMLContains(read_more))
