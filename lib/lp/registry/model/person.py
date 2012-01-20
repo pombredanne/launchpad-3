@@ -2516,10 +2516,10 @@ class Person(
         else:
             return None
 
-    def reactivate(self, comment, password, preferred_email):
+    def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
         account = IMasterObject(self.account)
-        account.reactivate(comment, password)
+        account.reactivate(comment)
         self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
@@ -3153,9 +3153,7 @@ class PersonSet:
 
             elif person.account.status in [AccountStatus.DEACTIVATED,
                                            AccountStatus.NOACCOUNT]:
-                password = ''
-                removeSecurityProxy(person.account).reactivate(
-                    comment, password)
+                removeSecurityProxy(person.account).reactivate(comment)
                 removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
@@ -3186,8 +3184,7 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None,
-            displayname=None, password=None, passwordEncrypted=False,
+            self, email, rationale, comment=None, name=None, displayname=None,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
 
@@ -3208,9 +3205,7 @@ class PersonSet:
         # Convert the PersonCreationRationale to an AccountCreationRationale
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
-        account = getUtility(IAccountSet).new(
-                account_rationale, displayname, password=password,
-                password_is_encrypted=passwordEncrypted)
+        account = getUtility(IAccountSet).new(account_rationale, displayname)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,

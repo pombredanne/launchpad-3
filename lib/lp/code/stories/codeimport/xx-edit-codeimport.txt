@@ -11,7 +11,7 @@ can see a link to edit the details.
     >>> from lp.services.webapp import canonical_url
 
     >>> login(ANONYMOUS)
-    >>> registrant = factory.makePerson(password='test')
+    >>> registrant = factory.makePerson()
     >>> svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk',
     ...     registrant=registrant)

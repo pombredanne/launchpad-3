@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1526,11 +1526,12 @@ class Archive(SQLBase):
             reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False, person=None):
+                    to_series=None, from_series=None, include_binaries=False,
+                    person=None):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = self._collectLatestPublishedSources(
-            from_archive, source_names)
+            from_archive, from_series, source_names)
         self._copySources(
             sources, to_pocket, to_series, include_binaries,
             person=person)
@@ -1591,13 +1592,13 @@ class Archive(SQLBase):
             sponsored=sponsored)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
-                     person, to_series=None, include_binaries=None,
-                     sponsored=None):
+                     person, to_series=None, from_series=None,
+                     include_binaries=None, sponsored=None):
         """See `IArchive`."""
         self._checkCopyPackageFeatureFlags()
 
         sources = self._collectLatestPublishedSources(
-            from_archive, source_names)
+            from_archive, from_series, source_names)
         if not sources:
             raise CannotCopy(
                 "None of the supplied package names are published")
@@ -1635,13 +1636,16 @@ class Archive(SQLBase):
             copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries, sponsored=sponsored)
 
-    def _collectLatestPublishedSources(self, from_archive, source_names):
+    def _collectLatestPublishedSources(self, from_archive, from_series,
+                                       source_names):
         """Private helper to collect the latest published sources for an
         archive.
 
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
         """
+        from_series_obj = self._text_to_series(
+            from_series, distribution=from_archive.distribution)
         # XXX bigjools bug=810421
         # This code is inefficient.  It should try to bulk load all the
         # sourcepackagenames and publications instead of iterating.
@@ -1654,7 +1658,7 @@ class Archive(SQLBase):
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             published_sources = from_archive.getPublishedSources(
-                name=name, exact_match=True,
+                name=name, distroseries=from_series_obj, exact_match=True,
                 status=(PackagePublishingStatus.PUBLISHED,
                         PackagePublishingStatus.PENDING))
             first_source = published_sources.first()
@@ -1662,10 +1666,12 @@ class Archive(SQLBase):
                 sources.append(first_source)
         return sources
 
-    def _text_to_series(self, to_series):
+    def _text_to_series(self, to_series, distribution=None):
+        if distribution is None:
+            distribution = self.distribution
         if to_series is not None:
             result = getUtility(IDistroSeriesSet).queryByName(
-                self.distribution, to_series)
+                distribution, to_series)
             if result is None:
                 raise NoSuchDistroSeries(to_series)
             series = result

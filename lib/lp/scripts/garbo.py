@@ -86,7 +86,6 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -893,42 +892,6 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
         self._update_oldest()
 
 
-class SourcePackageReleaseDscBinariesUpdater(TunableLoop):
-    """Fix incorrect values for SourcePackageRelease.dsc_binaries."""
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(SourcePackageReleaseDscBinariesUpdater, self).__init__(
-            log, abort_time)
-        self.store = IMasterStore(SourcePackageRelease)
-        self.ids = list(
-            self.store.find(
-                SourcePackageRelease.id,
-                # Get all SPR IDs which have an incorrectly-separated
-                # dsc_binaries value (space rather than comma-space).
-                SQL("dsc_binaries ~ '[a-z0-9+.-] '"),
-                # Skip rows with dsc_binaries in dependency relationship
-                # format.  This is a different bug.
-                SQL("dsc_binaries NOT LIKE '%(%'")))
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return len(self.ids) == 0
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        chunk_size = int(chunk_size + 0.5)
-        chunk_ids = self.ids[:chunk_size]
-        del self.ids[:chunk_size]
-        self.store.execute("""
-            UPDATE SourcePackageRelease
-            SET dsc_binaries = regexp_replace(
-                dsc_binaries, '([a-z0-9+.-]) ', E'\\\\1, ', 'g')
-            WHERE id IN %s""" % sqlvalues(chunk_ids), noresult=True)
-        transaction.commit()
-
-
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -1293,7 +1256,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
-        SourcePackageReleaseDscBinariesUpdater,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,

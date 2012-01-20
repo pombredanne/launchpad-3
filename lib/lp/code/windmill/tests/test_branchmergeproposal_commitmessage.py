@@ -37,7 +37,7 @@ class TestCommitMessage(WindmillTestCase):
     def test_set_commit_message(self):
         """Test the commit message multiline editor."""
         eric = self.factory.makePerson(
-            name="eric", displayname="Eric the Viking", password="test",
+            name="eric", displayname="Eric the Viking",
             email="eric@example.com")
         bmp = self.factory.makeBranchMergeProposal(registrant=eric)
         transaction.commit()
@@ -72,8 +72,7 @@ class TestQueueStatus(WindmillTestCase):
     def test_inline_queue_status_setting(self):
         """Test setting the queue_status with the ChoiceWidget."""
         mike = self.factory.makePerson(
-            name="mike", displayname="Mike Tyson", password="test",
-            email="mike@example.com")
+            name="mike", displayname="Mike Tyson", email="mike@example.com")
         branch = self.factory.makeBranch(owner=mike)
         second_branch = self.factory.makeBranch(product=branch.product)
         self.factory.makeRevisionsForBranch(second_branch)

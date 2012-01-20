@@ -142,7 +142,7 @@ using the createPersonAndEmail() method.
     >>> from lp.services.identity.model.account import Account
     >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
-    >>> account.reactivate("Activated by doc test.", account.password)
+    >>> account.reactivate("Activated by doc test.")
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
