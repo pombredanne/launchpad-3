@@ -893,14 +893,14 @@ class TestBranchEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
         team = self.factory.makeTeam(
-            owner=person, name="permitted-team")
+            owner=person, displayname="Permitted team")
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
         branch.product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").value = "permitted-team"
+        browser.getControl("Owner").displayValue = ["Permitted team"]
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEquals(team, branch.owner)
@@ -919,7 +919,7 @@ class TestBranchEditView(TestCaseWithFactory):
             person, BranchVisibilityRule.PRIVATE)
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").value = "forbidden-team"
+        browser.getControl("Owner").displayValue = ["Forbidden team"]
         browser.getControl("Change Branch").click()
         self.assertThat(
             browser.contents,
@@ -935,7 +935,7 @@ class TestBranchEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         branch = self.factory.makeProductBranch(owner=person)
         team = self.factory.makeTeam(
-            owner=person, name="private-team",
+            owner=person, displayname="Private team",
             visibility=PersonVisibility.PRIVATE)
         branch.product.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
@@ -943,7 +943,7 @@ class TestBranchEditView(TestCaseWithFactory):
             team, BranchVisibilityRule.PRIVATE)
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+edit', user=person)
-        browser.getControl("Owner").value = "private-team"
+        browser.getControl("Owner").displayValue = ["Private team"]
         browser.getControl("Change Branch").click()
         with person_logged_in(person):
             self.assertEquals(team, branch.owner)

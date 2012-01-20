@@ -27,6 +27,7 @@ __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
     'AllUserTeamsParticipationVocabulary',
+    'AllUserTeamsParticipationPlusSelfVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
@@ -994,6 +995,26 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
                 super(AllUserTeamsParticipationVocabulary, self).extra_clause,
                 TeamParticipation.person == user.id,
                 TeamParticipation.team == Person.id)
+
+
+class AllUserTeamsParticipationPlusSelfVocabulary(
+                                            UserTeamsParticipationVocabulary):
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        logged_in_user = getUtility(ILaunchBag).user
+        yield self.toTerm(logged_in_user)
+        for team in logged_in_user.teams_participated_in:
+            yield self.toTerm(team)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user.name == token:
+            return self.getTerm(logged_in_user)
+        super_class = super(AllUserTeamsParticipationPlusSelfVocabulary, self)
+        return super_class.getTermByToken(token)
 
 
 class PersonActiveMembershipVocabulary:
