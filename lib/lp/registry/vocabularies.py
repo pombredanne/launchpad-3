@@ -27,6 +27,7 @@ __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
     'AllUserTeamsParticipationVocabulary',
+    'AllUserTeamsParticipationPlusSelfVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
@@ -360,9 +361,11 @@ def project_products_vocabulary_factory(context):
 
 
 class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
-    """Describes the teams in which the current user participates."""
+    """Describes the public teams in which the current user participates."""
     _table = Person
     _orderBy = 'displayname'
+
+    INCLUDE_PRIVATE_TEAM = False
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -376,7 +379,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if team.visibility == PersonVisibility.PUBLIC:
+                if (team.visibility == PersonVisibility.PUBLIC
+                    or self.INCLUDE_PRIVATE_TEAM):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -1143,7 +1147,7 @@ class UserTeamsParticipationPlusSelfVocabulary(
     UserTeamsParticipationVocabulary):
     """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
-    """    """All `IProduct` objects vocabulary."""
+    """
 
     def __iter__(self):
         logged_in_user = getUtility(ILaunchBag).user
@@ -1159,6 +1163,18 @@ class UserTeamsParticipationPlusSelfVocabulary(
             return self.getTerm(logged_in_user)
         super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
         return super_class.getTermByToken(token)
+
+
+class AllUserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationPlusSelfVocabulary):
+    """All public and private teams participates in and himself.
+
+    This redefines UserTeamsParticipationVocabulary to include private teams
+    and it includes the logged in user from
+    UserTeamsParticipationPlusSelfVocabulary.
+    """
+
+    INCLUDE_PRIVATE_TEAM = True
 
 
 class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(

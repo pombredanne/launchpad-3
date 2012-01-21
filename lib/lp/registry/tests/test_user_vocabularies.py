@@ -21,13 +21,13 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
     """Test that the UserTeamsParticipationPlusSelf behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def _vocabTermValues(self):
         """Return the token values for the vocab."""
@@ -81,13 +81,34 @@ class TestUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
         self.assertEqual([user, alpha, bravo], self._vocabTermValues())
 
 
+class TestAllUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
+    """Test that the AllUserTeamsParticipationPlusSelf behaves as expected."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _vocabTermValues(self):
+        """Return the token values for the vocab."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocab = vocabulary_registry.get(
+            None, 'AllUserTeamsParticipationPlusSelf')
+        return [term.value for term in vocab]
+
+    def test_user_no_private_teams(self):
+        # Private teams are shown in the vocabulary.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        login_person(team_owner)
+        self.assertEqual([team_owner, team], self._vocabTermValues())
+
+
 class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
     """AllUserTeamsParticipation contains all teams joined by a user.
 
     This includes private teams.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def _vocabTermValues(self):
         """Return the token values for the vocab."""
