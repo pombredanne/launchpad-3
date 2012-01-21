@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.errors import (
     JoinNotAllowed,
     TeamSubscriptionPolicyError,
