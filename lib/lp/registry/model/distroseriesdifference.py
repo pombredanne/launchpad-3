@@ -40,7 +40,7 @@ from zope.interface import (
     )
 
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
