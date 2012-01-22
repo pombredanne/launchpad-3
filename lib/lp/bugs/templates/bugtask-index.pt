@@ -145,13 +145,13 @@
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
-                 tal:content="tag"
+                 tal:content="python: tag[0]"
                  class="official-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href python: tag[1]">tag</a>
               <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="tag"
+                 tal:content="python: tag[0]"
                  class="unofficial-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href python: tag[1]">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
