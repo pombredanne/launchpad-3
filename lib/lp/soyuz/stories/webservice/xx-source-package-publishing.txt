@@ -138,6 +138,7 @@ publication to play with first.
     self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
     source_package_name: u'testwebservice'
     source_package_version: u'666'
+    sponsor_link: None
     status: u'Pending'
 
     >>> webservice.named_get(

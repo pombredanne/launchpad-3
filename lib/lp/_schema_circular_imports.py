@@ -90,7 +90,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
