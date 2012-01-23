@@ -66,7 +66,6 @@ from lp.layers import (
     setFirstLayer,
     WebServiceLayer,
     )
-from lp.services.config import config
 from lp.services.encoding import is_ascii_only
 from lp.services.features import (
     defaultFlagValue,
@@ -324,6 +323,9 @@ class LaunchpadView(UserAttributeCache):
     @property
     def yui_console_debug(self):
         """Hide console debug messages in production."""
+        # We need to import here otherwise sitecustomize can't get imported,
+        # likely due to some non-obvious circular import issues.
+        from lp.services.config import config
         return 'true' if config.devmode else 'false'
 
     def render(self):
