@@ -10,17 +10,15 @@
 <head>
   <tal:block metal:fill-slot="head_epilogue">
     <tal:script-not-ready replace="nothing">
-    <!-- 
-    We'll add this in later, for now it's a place holder because this is where
-    we bolt in the js module some day.
-    <script type="text/javascript">
-        LPS.use('lp.registry.team.mailinglists', function(Y) {
-            Y.on('domready', function() {
-                <!-- message render funtime here -->
+        <!--We'll add this in later, for now it's a place holder because this is where
+        we bolt in the js module some day.-->
+        <script type="text/javascript">
+            LPS.use('lp.registry.team.mailinglists', function(Y) {
+                Y.on('domready', function() {
+                    // message render funtime here
+                });
             });
-        });
-    </script>
-    -->
+        </script>
     </tal:script-not-ready>
   </tal:block>
 </head>
