@@ -62,7 +62,7 @@ location.
     9
     >>> widget.center_lat
     52...
-    >>> widget.center_lng
+    >>> round(widget.center_lng, 5)
     0.3...
     >>> widget.show_marker
     1
