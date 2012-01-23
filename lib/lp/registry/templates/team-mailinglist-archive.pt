@@ -25,12 +25,19 @@
 
 <body>
   <div metal:fill-slot="main">
-    <h2>Message archive for <tal:teamname replace="view/context/displayname" /></h2>
-    <ul id="messagelist">
-        <tal:comment replace="nothing">
+    <h2>Message archive for <tal:teamname
+      replace="view/context/displayname" /></h2>
+    
+    <div id="messagelist">
+      <tal:comment replace="nothing">
         The json loaded and manipulated messages go here.
-        </tal:comment>
-    </ul>
+      </tal:comment>
+      <tal:no-messages condition="not: view/messages">
+      There are no messages in <tal:teamname
+        replace="view/context/displayname"/>'s mail archive.
+      </tal:no-messages>
+    </div>
+
   </div>
 </body>
 </html>
