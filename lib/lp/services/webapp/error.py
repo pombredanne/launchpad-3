@@ -32,6 +32,7 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
 
+
 class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
