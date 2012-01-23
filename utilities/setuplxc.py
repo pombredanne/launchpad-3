@@ -39,6 +39,7 @@ import time
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
     '/var/tmp/bazaar.launchpad.dev/static',
@@ -52,6 +53,18 @@ LP_SOURCE_DEPS = (
 LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
 LXC_GATEWAY = '10.0.3.1'
 LXC_GUEST_OS = 'lucid'
+LXC_HOSTS_CONTENT = (
+    ('127.0.0.88',
+        'launchpad.dev answers.launchpad.dev archive.launchpad.dev '
+        'api.launchpad.dev bazaar-internal.launchpad.dev beta.launchpad.dev '
+        'blueprints.launchpad.dev bugs.launchpad.dev code.launchpad.dev '
+        'feeds.launchpad.dev id.launchpad.dev keyserver.launchpad.dev '
+        'lists.launchpad.dev openid.launchpad.dev '
+        'ubuntu-openid.launchpad.dev ppa.launchpad.dev '
+        'private-ppa.launchpad.dev testopenid.dev translations.launchpad.dev '
+        'xmlrpc-private.launchpad.dev xmlrpc.launchpad.dev'),
+    ('127.0.0.99', 'bazaar.launchpad.dev'),
+    )
 LXC_NAME = 'lptests'
 LXC_OPTIONS = (
     ('lxc.network.type', 'veth'),
@@ -273,6 +286,7 @@ def initialize_host(
     dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
+    subprocess.call(['apt-get', 'update'])
     subprocess.call(['apt-get', '-y', 'install'] + HOST_PACKAGES)
     # Create the user (if he does not exist).
     if not user_exists(user):
@@ -415,6 +429,11 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
             checkout_dir, user))
     with ssh(lxcname, user) as sshcall:
         sshcall('cd %s && make' % checkout_dir)
+    # Set up container hosts file.
+    lines = ['%s\t%s' % (ip, names) for ip, names in LXC_HOSTS_CONTENT]
+    lxc_hosts_file = get_container_path(lxcname, HOSTS_FILE)
+    file_append(lxc_hosts_file, '\n'.join(lines))
+    # Make and install launchpad.
     with ssh(lxcname) as sshcall:
         sshcall('cd %s && make install' % checkout_dir)
 
@@ -451,15 +470,15 @@ class Namespace(object):
     This class implements ssh key validation, e.g.::
 
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                      '-n exampleuser -v PRIVATE -b PUBLIC '
-        ...                      '/home/example_user/launchpad/'.split(),
-        ...                      namespace=Namespace())
+        ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '/home/example_user/launchpad/'.split(),
+        ...                          namespace=Namespace())
         >>> args.are_valid()
         True
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                      '-n exampleuser -b PUBLIC '
-        ...                      '/home/example_user/launchpad/'.split(),
-        ...                      namespace=Namespace())
+        ...                          '-n exampleuser -b PUBLIC '
+        ...                          '/home/example_user/launchpad/'.split(),
+        ...                          namespace=Namespace())
         >>> args.are_valid()
         False
         >>> args.error_message # doctest: +ELLIPSIS
@@ -468,9 +487,9 @@ class Namespace(object):
     and directory validation::
 
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                      '-n exampleuser -v PRIVATE -b PUBLIC '
-        ...                      '/home/'.split(),
-        ...                      namespace=Namespace())
+        ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '/home/'.split(),
+        ...                          namespace=Namespace())
         >>> args.are_valid()
         False
         >>> args.error_message # doctest: +ELLIPSIS
