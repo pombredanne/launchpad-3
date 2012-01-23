@@ -27,7 +27,7 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
