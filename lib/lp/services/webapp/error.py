@@ -72,8 +72,7 @@ class SystemErrorView(LaunchpadView):
             self.request.response.addHeader(
                 'X-Lazr-OopsId', self.request.oopsid)
 
-        # need to neuter the feature flags on error output
-
+        # Need to neuter the feature flags on error output.
         request.features = NullFeatureController()
         features.install_feature_controller(request.features)
 
