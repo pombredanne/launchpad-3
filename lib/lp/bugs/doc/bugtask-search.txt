@@ -382,8 +382,8 @@ The search filter can also return bugs that are related to CVE reports:
 
     >>> from lp.bugs.interfaces.cve import ICveSet
     >>> def getCves(bugtask):
-    ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
-    ...     return bugcve.cve.sequence
+    ...     bug, cve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
+    ...     return cve.sequence
     >>> params = BugTaskSearchParams(
     ...     has_cve=True, orderby='id', user=None)
     >>> tasks_with_cves = ubuntu.searchTasks(params)
