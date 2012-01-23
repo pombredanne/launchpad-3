@@ -43,7 +43,7 @@ from bzrlib.urlutils import (
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
-    run_with_log_observers
+    run_with_log_observers,
     )
 from twisted.internet import defer
 
