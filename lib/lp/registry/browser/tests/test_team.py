@@ -494,12 +494,13 @@ class TestMailingListArchiveView(TestCaseWithFactory):
                 "From": "someguy@example.com",
                 "Subject": "foobar"},
             "message_id": "foo"}]'''
- 
+
         with self._override_messages(TeamMailingListArchiveView, messages):
             view = create_view(team, name='+mailing-list-archive')
             messages = IJSONRequestCache(view.request).objects['mail']
             self.assertEqual(1, len(messages))
             self.assertEqual('foo', messages[0]['message_id'])
+
 
 class TestModeration(TestCaseWithFactory):
 

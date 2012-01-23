@@ -957,7 +957,7 @@ class TeamMailingListArchiveView(LaunchpadView):
     def __init__(self, context, request):
         super(TeamMailingListArchiveView, self).__init__(context, request)
         self.messages = self._get_messages()
-        cache = IJSONRequestCache(request).objects 
+        cache = IJSONRequestCache(request).objects
         cache['mail'] = self.messages
 
     def _get_messages(self):
