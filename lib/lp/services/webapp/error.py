@@ -73,7 +73,9 @@ class SystemErrorView(LaunchpadView):
             self.request.response.addHeader(
                 'X-Lazr-OopsId', self.request.oopsid)
 
-        # Need to neuter the feature flags on error output.
+        # Need to neuter the feature flags on error output. The base template
+        # checks for a feature flag, but they depend on db access which might
+        # not have been setup yet.
         request.features = NullFeatureController()
         features.install_feature_controller(request.features)
 
