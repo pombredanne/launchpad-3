@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -492,6 +492,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             IPerson,
             title=_('Publication Creator'),
             description=_('The IPerson who created this publication.'),
+            required=False, readonly=True
+        ))
+
+    sponsor = exported(
+        Reference(
+            IPerson,
+            title=_('Publication sponsor'),
+            description=_('The IPerson who sponsored the creation of'
+                'this publication.'),
             required=False, readonly=True
         ))
 
@@ -1009,6 +1018,8 @@ class IPublishingSet(Interface):
              should be created for the new source publication.
         :param creator: An optional `IPerson`. If this is None, the
             sourcepackagerelease's creator will be used.
+        :param sponsor: An optional `IPerson` indicating the sponsor of this
+            publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
