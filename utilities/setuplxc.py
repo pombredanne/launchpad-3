@@ -581,8 +581,20 @@ def stop_lxc(lxcname):
     """Stop the lxc instance named `lxcname`."""
     with ssh(lxcname) as sshcall:
         sshcall('poweroff')
-    time.sleep(5)
-    subprocess.call(['lxc-stop', '-n', lxcname])
+    timeout = 30
+    while timeout:
+        try:
+            output = subprocess.check_output([
+                'lxc-info', '-n', lxcname], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError:
+            pass
+        else:
+            if 'STOPPED' in output:
+                break
+        timeout -= 1
+        time.sleep(1)
+    else:
+        subprocess.call(['lxc-stop', '-n', lxcname])
 
 
 def main(
