@@ -260,7 +260,111 @@ def error(msg):
     sys.exit('ERROR: {}'.format(msg))
 
 
-parser = argparse.ArgumentParser(description=__doc__)
+class Configuration(argparse.Namespace):
+    """A namespace for argparse.
+
+    Add methods for further arguments validation.
+    This class implements ssh key validation, e.g.::
+
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '/home/example_user/launchpad/'.split(),
+        ...                          namespace=Configuration())
+        >>> args.are_valid()
+        True
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                          '-f exampleuser -b PUBLIC '
+        ...                          '/home/example_user/launchpad/'.split(),
+        ...                          namespace=Configuration())
+        >>> args.are_valid()
+        False
+        >>> args.error_message # doctest: +ELLIPSIS
+        'argument private_key ...'
+
+    and directory validation::
+
+        >>> args = parser.parse_args('-u example_user -e example@example.com '
+        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '/home/'.split(),
+        ...                          namespace=Configuration())
+        >>> args.are_valid()
+        False
+        >>> args.error_message # doctest: +ELLIPSIS
+        'argument directory ...'
+    """
+    _errors = None
+
+    @property
+    def error_message(self):
+        return '\n'.join(self._errors)
+
+    def _get_ssh_key(self, attr, filename):
+        value = getattr(self, attr)
+        if value:
+            return value.decode('string-escape')
+        try:
+            return open(filename).read()
+        except IOError:
+            self._errors.append(
+                'argument {} is required if the system user '
+                'does not exists with SSH key pair set up.'.format(attr))
+
+    def _get_directory(self, attr, home_dir):
+        directory = getattr(self, attr).replace('~', home_dir)
+        if not directory.startswith(home_dir + os.path.sep):
+            self._errors.append('argument {} does not reside under the home '
+                                'directory of the system user.'.format(attr))
+        return directory
+
+    def are_valid(self):
+        self._errors = []
+        self.run_as_root = not os.geteuid()
+        home_dir = os.path.join(os.path.sep, 'home', self.user)
+        if self.lpuser is None:
+            self.lpuser = self.user
+        self.private_key = self._get_ssh_key(
+            'private_key', os.path.join(home_dir, '.ssh', 'id_rsa'))
+        self.public_key = self._get_ssh_key(
+            'public_key', os.path.join(home_dir, '.ssh', 'id_rsa.pub'))
+        self.directory = self._get_directory('directory', home_dir)
+        self.dependencies_dir = self._get_directory(
+            'dependencies_dir', home_dir)
+        return not self._errors
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """A customized parser for argparse."""
+
+    def get_args_from_namespace(self, namespace):
+        """Return a list of arguments taking values from `namespace`.
+
+        Having a parser defined as usual::
+
+            >>> parser = ArgumentParser()
+            >>> _ = parser.add_argument('--foo')
+            >>> _ = parser.add_argument('bar')
+            >>> namespace = parser.parse_args('--foo eggs spam'.split())
+
+        It is possible to recreate the argument list taking values from
+        a different namespace::
+
+            >>> namespace.foo = 'changed'
+            >>> parser.get_args_from_namespace(namespace)
+            ['--foo', 'changed', 'spam']
+        """
+        args = []
+        for action in self._actions:
+            dest = action.dest
+            option_strings = action.option_strings
+            value = getattr(namespace, dest, None)
+            if value:
+                if option_strings:
+                    args.append(option_strings[0])
+                args.append(value)
+        return args
+
+
+parser = ArgumentParser(description=__doc__)
 parser.add_argument(
     '-u', '--user', required=True,
     help='The name of the system user to be created or updated.')
@@ -489,92 +593,25 @@ def main(
         scope[action](*function_args_map[action])
 
 
-class Configuration(object):
-    """A namespace for argparse.
-
-    Add methods for further arguments validation.
-    This class implements ssh key validation, e.g.::
-
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
-        ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        True
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -b PUBLIC '
-        ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        False
-        >>> args.error_message # doctest: +ELLIPSIS
-        'argument private_key ...'
-
-    and directory validation::
-
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
-        ...                          '/home/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        False
-        >>> args.error_message # doctest: +ELLIPSIS
-        'argument directory ...'
-    """
-    _errors = None
-
-    def __repr__(self):
-        return repr(vars(self))
-
-    @property
-    def error_message(self):
-        return '\n'.join(self._errors)
-
-    def _get_ssh_key(self, attr, filename):
-        value = getattr(self, attr)
-        if value:
-            return value.decode('string-escape')
-        try:
-            return open(filename).read()
-        except IOError:
-            self._errors.append(
-                'argument {} is required if the system user '
-                'does not exists with SSH key pair set up.'.format(attr))
-
-    def _get_directory(self, attr, home_dir):
-        directory = getattr(self, attr).replace('~', home_dir)
-        if not directory.startswith(home_dir + os.path.sep):
-            self._errors.append('argument {} does not reside under the home '
-                                'directory of the system user.'.format(attr))
-        return directory
-
-    def are_valid(self):
-        self._errors = []
-        home_dir = os.path.join(os.path.sep, 'home', self.user)
-        if self.lpuser is None:
-            self.lpuser = self.user
-        self.private_key = self._get_ssh_key(
-            'private_key', os.path.join(home_dir, '.ssh', 'id_rsa'))
-        self.public_key = self._get_ssh_key(
-            'public_key', os.path.join(home_dir, '.ssh', 'id_rsa.pub'))
-        self.directory = self._get_directory('directory', home_dir)
-        self.dependencies_dir = self._get_directory(
-            'dependencies_dir', home_dir)
-        return not self._errors
-
-
 if __name__ == '__main__':
     args = parser.parse_args(namespace=Configuration())
     if args.are_valid():
-        main(args.user,
-             args.full_name,
-             args.email,
-             args.lpuser,
-             args.private_key,
-             args.public_key,
-             args.actions,
-             args.lxc_name,
-             args.dependencies_dir,
-             args.directory)
+        if args.run_as_root:
+            exit_code = main(
+                args.user,
+                args.full_name,
+                args.email,
+                args.lpuser,
+                args.private_key,
+                args.public_key,
+                args.actions,
+                args.lxc_name,
+                args.dependencies_dir,
+                args.directory,
+                )
+        else:
+            exit_code = subprocess.call(
+                ['sudo', sys.argv[0]] + parser.get_args_from_namespace(args))
+        sys.exit(exit_code)
     else:
         parser.error(args.error_message)
