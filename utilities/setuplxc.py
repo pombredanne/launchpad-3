@@ -6,9 +6,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'ArgumentParser',
     'cd',
     'create_lxc',
-    'error',
     'file_append',
     'file_prepend',
     'get_container_path',
@@ -16,13 +16,14 @@ __all__ = [
     'initialize_host',
     'initialize_lxc',
     'Configuration',
+    'SetupLXCError',
     'ssh',
+    'SSHError',
     'stop_lxc',
     'su',
     'user_exists',
     ]
 
-# This script is run as root.
 # To run doctests: python -m doctest -v setuplxc.py
 
 from collections import namedtuple, OrderedDict
@@ -88,6 +89,14 @@ RESOLV_FILE = '/etc/resolv.conf'
 Env = namedtuple('Env', 'uid gid home')
 
 
+class SetupLXCError(Exception):
+    """Base exception for setuplxc."""
+
+
+class SSHError(SetupLXCError):
+    """Errors occurred during SSH connection."""
+
+
 @contextmanager
 def ssh(location, user=None):
     """Return a callable that can be used to run ssh shell commands.
@@ -106,7 +115,9 @@ def ssh(location, user=None):
             location,
             '--', cmd,
             )
-        return subprocess.call(sshcmd)
+        if subprocess.call(sshcmd):
+            raise SSHError(
+                'Error running command: {}'.format(' '.join(sshcmd)))
 
     yield _sshcall
 
@@ -253,11 +264,6 @@ def user_exists(username):
     except KeyError:
         return False
     return True
-
-
-def error(msg):
-    """Print out the error message and quit the script."""
-    sys.exit('ERROR: {}'.format(msg))
 
 
 class Configuration(argparse.Namespace):
@@ -490,7 +496,7 @@ def create_lxc(user, lxcname):
         '-r {} -a i386 -b {}'.format(LXC_GUEST_OS, user),
         ])
     if exit_code:
-        error('Unable to create the LXC container.')
+        raise SetupLXCError('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
     user_authorized_keys = os.path.join(
@@ -503,14 +509,17 @@ def create_lxc(user, lxcname):
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container.
     with ssh(lxcname, user) as sshcall:
-        timeout = 60
-        while timeout:
-            if not sshcall('true'):
+        trials = 60
+        while True:
+            trials -= 1
+            try:
+                sshcall('true')
+            except SSHError:
+                if not trials:
+                    raise
+                time.sleep(1)
+            else:
                 break
-            timeout -= 1
-            time.sleep(1)
-        else:
-            error('Unable to SSH into LXC.')
 
 
 def initialize_lxc(user, dependencies_dir, directory, lxcname):
@@ -590,7 +599,10 @@ def main(
         actions = function_args_map.keys()
     scope = globals()
     for action in actions:
-        scope[action](*function_args_map[action])
+        try:
+            scope[action](*function_args_map[action])
+        except SetupLXCError as err:
+            return err
 
 
 if __name__ == '__main__':
