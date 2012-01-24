@@ -10,12 +10,12 @@ __all__ = [
     'create_lxc',
     'error',
     'file_append',
-    'file_insert',
+    'file_prepend',
     'get_container_path',
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
-    'Namespace',
+    'Configuration',
     'ssh',
     'stop_lxc',
     'su',
@@ -168,7 +168,7 @@ def get_container_path(lxcname, path='', base_path=LXC_PATH):
     return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
 
 
-def file_insert(filename, line):
+def file_prepend(filename, line):
     """Insert given `line`, if not present, at the beginning of `filename`.
 
     Usage example::
@@ -177,10 +177,10 @@ def file_insert(filename, line):
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
         >>> f.write('line1\\n')
         >>> f.close()
-        >>> file_insert(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\\n')
         >>> open(f.name).read()
         'line0\\nline1\\n'
-        >>> file_insert(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\\n')
         >>> open(f.name).read()
         'line0\\nline1\\n'
     """
@@ -340,7 +340,7 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    file_insert(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
+    file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
     file_append(
         DHCP_FILE, 'prepend domain-name-servers {};\n'.format(LXC_GATEWAY))
 
@@ -464,7 +464,7 @@ def main(
         scope[action](*function_args_map[action])
 
 
-class Namespace(object):
+class Configuration(object):
     """A namespace for argparse.
 
     Add methods for further arguments validation.
@@ -473,13 +473,13 @@ class Namespace(object):
         >>> args = parser.parse_args('-u example_user -e example@example.com '
         ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
         ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Namespace())
+        ...                          namespace=Configuration())
         >>> args.are_valid()
         True
         >>> args = parser.parse_args('-u example_user -e example@example.com '
         ...                          '-n exampleuser -b PUBLIC '
         ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Namespace())
+        ...                          namespace=Configuration())
         >>> args.are_valid()
         False
         >>> args.error_message # doctest: +ELLIPSIS
@@ -490,7 +490,7 @@ class Namespace(object):
         >>> args = parser.parse_args('-u example_user -e example@example.com '
         ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
         ...                          '/home/'.split(),
-        ...                          namespace=Namespace())
+        ...                          namespace=Configuration())
         >>> args.are_valid()
         False
         >>> args.error_message # doctest: +ELLIPSIS
@@ -539,7 +539,7 @@ class Namespace(object):
 
 
 if __name__ == '__main__':
-    args = parser.parse_args(namespace=Namespace())
+    args = parser.parse_args(namespace=Configuration())
     if args.are_valid():
         main(args.user,
              args.name,
