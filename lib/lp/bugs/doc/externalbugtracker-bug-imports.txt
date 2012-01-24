@@ -48,6 +48,7 @@ distributions are supported as the bug target.
 
     # Make sane data to play this test.
     >>> from lp.testing.dbuser import lp_dbuser
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
 
     >>> with lp_dbuser():
     ...     debian = getUtility(IDistributionSet).getByName('debian')

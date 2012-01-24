@@ -7,7 +7,7 @@ A product with private bugs by default must always have a bug supervisor
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.testing.layers import switch_dbuser
+    >>> from lp.testing.dbuser import switch_dbuser
 
     >>> switch_dbuser('launchpad')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')

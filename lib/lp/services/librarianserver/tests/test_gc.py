@@ -103,7 +103,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Connect to the database as a user with file upload privileges,
         # in this case the PostgreSQL default user who happens to be an
         # administrator on launchpad development boxes.
-        switch_dbuser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         ztm = self.layer.txn
 
         ztm.begin()
@@ -543,7 +543,7 @@ class TestLibrarianGarbageCollection(TestCase):
     def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
         # if the last file found on disk was unwanted.
-        switch_dbuser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         content = 'foo'
         self.client.addFile(
             'foo.txt', len(content), StringIO(content), 'text/plain')
@@ -559,7 +559,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # In production, our tree has symlinks in it now.  We need to be able
         # to cope.
         # First, let's make sure we have some trash.
-        switch_dbuser(dbuser='testadmin')
+        switch_dbuser('testadmin')
         content = 'foo'
         self.client.addFile(
             'foo.txt', len(content), StringIO(content), 'text/plain')

@@ -489,7 +489,7 @@ We will use `SoyuzTestPublisher` for creating convenient publications.
 
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.testing.layers import (
+    >>> from lp.testing.dbuser import (
     ...     lp_dbuser,
     ...     switch_dbuser,
     ...     )

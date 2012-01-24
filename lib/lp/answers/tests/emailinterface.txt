@@ -368,6 +368,8 @@ Answers linked to FAQ questions
 
 Answers may also be linked to FAQ questions.
 
+    >>> from zope.security.proxy import removeSecurityProxy
+
     >>> with lp_dbuser():
     ...     login('foo.bar@canonical.com')
     ...     faq = question.target.newFAQ(
