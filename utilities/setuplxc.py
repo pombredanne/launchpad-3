@@ -192,8 +192,8 @@ def file_prepend(filename, line):
             f.writelines(lines)
 
 
-def file_append(filename, content):
-    """Append given `content`, if not present, at the end of `filename`.
+def file_append(filename, line):
+    """Append given `line`, if not present, at the end of `filename`.
 
     Usage example::
 
@@ -201,18 +201,31 @@ def file_append(filename, content):
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
         >>> f.write('line1\\n')
         >>> f.close()
-        >>> file_append(f.name, 'new content\\n')
+        >>> file_append(f.name, 'new line\\n')
         >>> open(f.name).read()
-        'line1\\nnew content\\n'
-        >>> file_append(f.name, 'content')
+        'line1\\nnew line\\n'
+
+    If the given `line` is already present in the file, nothing happens::
+
+        >>> file_append(f.name, 'new line\\n')
         >>> open(f.name).read()
-        'line1\\nnew content\\n'
+        'line1\\nnew line\\n'
+
+    A new line is automatically added before the given `line` if it is not
+    present at the end of current file content::
+
+        >>> import tempfile
+        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
+        >>> f.write('line1')
+        >>> f.close()
+        >>> file_append(f.name, 'new line\\n')
+        >>> open(f.name).read()
+        'line1\\nnew line\\n'
     """
-    with open(filename, 'r+') as f:
-        current_content = f.read()
-        if content not in current_content:
-            f.seek(0)
-            f.write(current_content + content)
+    with open(filename, 'a+') as f:
+        content = f.read()
+        if line not in content:
+            f.write(line if content.endswith('\n') else '\n{}'.format(line))
 
 
 def user_exists(username):
@@ -471,13 +484,13 @@ class Configuration(object):
     This class implements ssh key validation, e.g.::
 
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
         ...                          '/home/example_user/launchpad/'.split(),
         ...                          namespace=Configuration())
         >>> args.are_valid()
         True
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-n exampleuser -b PUBLIC '
+        ...                          '-f exampleuser -b PUBLIC '
         ...                          '/home/example_user/launchpad/'.split(),
         ...                          namespace=Configuration())
         >>> args.are_valid()
@@ -488,7 +501,7 @@ class Configuration(object):
     and directory validation::
 
         >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-n exampleuser -v PRIVATE -b PUBLIC '
+        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
         ...                          '/home/'.split(),
         ...                          namespace=Configuration())
         >>> args.are_valid()
@@ -542,7 +555,7 @@ if __name__ == '__main__':
     args = parser.parse_args(namespace=Configuration())
     if args.are_valid():
         main(args.user,
-             args.name,
+             args.full_name,
              args.email,
              args.lpuser,
              args.private_key,
