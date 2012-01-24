@@ -33,5 +33,4 @@ CREATE TABLE specificationworkitemstats (
 -- TODO: Add security.cfg entries for the new tables
 -- TODO: Add comments.sql entries for the new tables
 
--- FIXME: The patch number here is bogus.
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 13, 0);
