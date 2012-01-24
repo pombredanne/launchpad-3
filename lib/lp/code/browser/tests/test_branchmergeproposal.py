@@ -1130,6 +1130,26 @@ class TestBranchMergeProposal(BrowserTestCase):
             'Read more link', 'a', {'href': url}, text='Read more...')
         self.assertThat(browser.contents, HTMLContains(read_more))
 
+    def test_short_conversation_comments_no_download(self):
+        """Short comments should not have a download link."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, Not(HTMLContains(body)))
+
+    def test_long_conversation_comments_download_link(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, HTMLContains(body))
+
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
     """Confirm that the latest branch is returned."""

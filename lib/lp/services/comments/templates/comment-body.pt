@@ -3,11 +3,11 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
+  <a tal:attributes="href context/download_url"
+     tal:condition="context/too_long">Download full text</a>
   <div class="comment-text" itemprop="commentText" tal:content="structure
   context/text_for_display/fmt:obfuscate-email/fmt:email-to-html" />
   <p tal:condition="context/too_long">
     <a tal:attributes="href context/fmt:url">Read more...</a>
   </p>
-  <a tal:attributes="href context/download_url"
-     tal:condition="context/too_long_to_render">Download full text</a>
 </tal:root>

@@ -10,6 +10,9 @@ from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import cachedproperty
 
 
+MAX_RENDERABLE = 10000
+
+
 class MessageComment:
     """Mixin to partially implement IComment in terms of IMessage."""
 
@@ -18,6 +21,8 @@ class MessageComment:
     has_footer = False
 
     def __init__(self, comment_limit):
+        if comment_limit is None:
+            comment_limit = MAX_RENDERABLE
         self.comment_limit = comment_limit
 
     @property
@@ -51,7 +56,7 @@ class MessageComment:
 
     @property
     def too_long_to_render(self):
-        return len(self.body_text) > 10000
+        return len(self.body_text) > MAX_RENDERABLE
 
     @cachedproperty
     def text_for_display(self):
