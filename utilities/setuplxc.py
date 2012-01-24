@@ -97,7 +97,7 @@ def ssh(location, user=None):
     If the user is None then the current user is used for the connection.
     """
     if user is not None:
-        location = '%s@%s' % (user, location)
+        location = '{}@{}'.format(user, location)
 
     def _sshcall(cmd):
         sshcmd = (
@@ -232,8 +232,7 @@ def user_exists(username):
 
 def error(msg):
     """Print out the error message and quit the script."""
-    print 'ERROR: %s' % msg
-    sys.exit(1)
+    sys.exit('ERROR: {}'.format(msg))
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -266,11 +265,11 @@ parser.add_argument(
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
     '-n', '--lxc-name', default=LXC_NAME,
-    metavar='LXC_NAME (default=%s)' % LXC_NAME,
+    metavar='LXC_NAME (default={})'.format(LXC_NAME),
     help='The LXC container name.')
 parser.add_argument(
     '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
-    metavar='DEPENDENCIES_DIR (default=%s)' % DEPENDENCIES_DIR,
+    metavar='DEPENDENCIES_DIR (default={})'.format(DEPENDENCIES_DIR),
     help='The directory of the Launchpad dependencies to be created. '
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
@@ -315,11 +314,12 @@ def initialize_host(
             (known_hosts, known_host_content, 'a'),
             ]:
             with open(filename, mode) as f:
-                f.write('%s\n' % contents)
+                f.write('{}\n'.format(contents))
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
         # Set up bzr and Launchpad authentication.
-        subprocess.call(['bzr', 'whoami', '"%s <%s>"' % (fullname, email)])
+        subprocess.call([
+            'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
         subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
         if not os.path.exists(directory):
@@ -328,26 +328,27 @@ def initialize_host(
         checkout_dir = os.path.join(directory, LP_CHECKOUT)
     # bzr branch does not work well with seteuid.
     os.system(
-        "su - %s -c 'bzr branch %s %s'" % (user, LP_REPOSITORY, checkout_dir))
+        "su - {} -c 'bzr branch {} {}'".format(
+        user, LP_REPOSITORY, checkout_dir))
     with su(user) as env:
         # Set up source dependencies.
-        os.makedirs('%s/eggs' % dependencies_dir)
-        os.makedirs('%s/yui' % dependencies_dir)
-        os.makedirs('%s/sourcecode' % dependencies_dir)
+        for subdir in ('eggs', 'yui', 'sourcecode'):
+            os.makedirs(os.path.join(dependencies_dir, subdir))
         with cd(dependencies_dir):
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    file_insert(RESOLV_FILE, 'nameserver %s\n' % LXC_GATEWAY)
-    file_append(DHCP_FILE, 'prepend domain-name-servers %s;\n' % LXC_GATEWAY)
+    file_insert(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
+    file_append(
+        DHCP_FILE, 'prepend domain-name-servers {};\n'.format(LXC_GATEWAY))
 
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
     # Container configuration template.
-    content = ''.join('%s=%s\n' % i for i in LXC_OPTIONS)
+    content = ''.join('{}={}\n'.format(*i) for i in LXC_OPTIONS)
     with open(LXC_CONFIG_TEMPLATE, 'w') as f:
         f.write(content)
     # Creating container.
@@ -357,7 +358,7 @@ def create_lxc(user, lxcname):
         '-n', lxcname,
         '-f', LXC_CONFIG_TEMPLATE,
         '--',
-        '-r %s -a i386 -b %s' % (LXC_GUEST_OS, user)
+        '-r {} -a i386 -b {}'.format(LXC_GUEST_OS, user),
         ])
     if exit_code:
         error('Unable to create the LXC container.')
@@ -404,38 +405,38 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
             'apt-get -y --allow-unauthenticated install '
             'bzr launchpad-developer-dependencies apache2 apache2-mpm-worker')
         # User configuration.
-        sshcall('adduser %s sudo' % user)
-        pygetgid = 'import pwd; print pwd.getpwnam("%s").pw_gid' % user
-        gid = "`python -c '%s'`" % pygetgid
-        sshcall('addgroup --gid %s %s' % (gid, user))
+        sshcall('adduser {} sudo'.format(user))
+        pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
+        gid = "`python -c '{}'`".format(pygetgid)
+        sshcall('addgroup --gid {} {}'.format(gid, user))
     with ssh(lxcname, user) as sshcall:
         # Set up Launchpad dependencies.
         checkout_dir = os.path.join(directory, LP_CHECKOUT)
         sshcall(
-            'cd %s && utilities/update-sourcecode %s/sourcecode' % (
+            'cd {} && utilities/update-sourcecode {}/sourcecode'.format(
             checkout_dir, dependencies_dir))
         sshcall(
-            'cd %s && utilities/link-external-sourcecode %s' % (
+            'cd {} && utilities/link-external-sourcecode {}'.format(
             checkout_dir, dependencies_dir))
         # Create Apache document roots, to avoid warnings.
-        sshcall(' && '.join('mkdir -p %s' % i for i in LP_APACHE_ROOTS))
+        sshcall(' && '.join('mkdir -p {}'.format(i) for i in LP_APACHE_ROOTS))
     with ssh(lxcname) as sshcall:
         # Set up Apache modules.
         for module in LP_APACHE_MODULES.split():
-            sshcall('a2enmod %s' % module)
+            sshcall('a2enmod {}'.format(module))
         # Launchpad database setup.
         sshcall(
-            'cd %s && utilities/launchpad-database-setup %s' % (
+            'cd {} && utilities/launchpad-database-setup {}'.format(
             checkout_dir, user))
     with ssh(lxcname, user) as sshcall:
-        sshcall('cd %s && make' % checkout_dir)
+        sshcall('cd {} && make'.format(checkout_dir))
     # Set up container hosts file.
-    lines = ['%s\t%s' % (ip, names) for ip, names in LXC_HOSTS_CONTENT]
+    lines = ['{}\t{}'.format(ip, names) for ip, names in LXC_HOSTS_CONTENT]
     lxc_hosts_file = get_container_path(lxcname, HOSTS_FILE)
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
     with ssh(lxcname) as sshcall:
-        sshcall('cd %s && make install' % checkout_dir)
+        sshcall('cd {} && make install'.format(checkout_dir))
 
 
 def stop_lxc(lxcname):
@@ -512,14 +513,14 @@ class Namespace(object):
             return open(filename).read()
         except IOError:
             self._errors.append(
-                'argument %s is required if the system user '
-                'does not exists with SSH key pair set up.' % attr)
+                'argument {} is required if the system user '
+                'does not exists with SSH key pair set up.'.format(attr))
 
     def _get_directory(self, attr, home_dir):
         directory = getattr(self, attr).replace('~', home_dir)
         if not directory.startswith(home_dir + os.path.sep):
-            self._errors.append('argument %s does not reside under the home '
-                                'directory of the system user.' % attr)
+            self._errors.append('argument {} does not reside under the home '
+                                'directory of the system user.'.format(attr))
         return directory
 
     def are_valid(self):
