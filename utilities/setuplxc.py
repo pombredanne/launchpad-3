@@ -245,21 +245,21 @@ parser.add_argument(
     help='The email of the user, used for bzr whoami.')
 parser.add_argument(
     '-f', '--full-name', required=True,
-    help='The full name of the user, used fo bzr whoami.')
+    help='The full name of the user, used for bzr whoami.')
 parser.add_argument(
     '-l', '--lpuser',
-    help=('The name of the Launchpad user that will be used to check out '
-          'dependencies.  If not provided, the system user name is used.'))
+    help='The name of the Launchpad user that will be used to check out '
+         'dependencies.  If not provided, the system user name is used.')
 parser.add_argument(
     '-v', '--private-key',
-    help=('The SSH private key for the Launchpad user (without passphrase). '
-          'If the system user already exists with SSH key pair set up, '
-          'this argument can be omitted.'))
+    help='The SSH private key for the Launchpad user (without passphrase). '
+         'If the system user already exists with SSH key pair set up, '
+         'this argument can be omitted.')
 parser.add_argument(
     '-b', '--public-key',
-    help=('The SSH public key for the Launchpad user. '
-          'If the system user already exists with SSH key pair set up, '
-          'this argument can be omitted.'))
+    help='The SSH public key for the Launchpad user. '
+         'If the system user already exists with SSH key pair set up, '
+         'this argument can be omitted.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
@@ -271,14 +271,14 @@ parser.add_argument(
 parser.add_argument(
     '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
     metavar='DEPENDENCIES_DIR (default=%s)' % DEPENDENCIES_DIR,
-    help=('The directory of the Launchpad dependencies to be created. '
-          'The directory must reside under the home directory of the '
-          'given user (see -u argument).'))
+    help='The directory of the Launchpad dependencies to be created. '
+         'The directory must reside under the home directory of the '
+         'given user (see -u argument).')
 parser.add_argument(
     'directory',
-    help=('The directory of the Launchpad repository to be created. '
-          'The directory must reside under the home directory of the '
-          'given user (see -u argument).'))
+    help='The directory of the Launchpad repository to be created. '
+         'The directory must reside under the home directory of the '
+         'given user (see -u argument).')
 
 
 def initialize_host(
