@@ -72,7 +72,17 @@ on our testdata are old, and in these tests we don't care to be told.
 Since the User gets authenticated using OpenPGP signatures we have to
 import the keys before handleMail is called.
 
-from lp.testing.dbuser import switch_dbuser
+    >>> from lp.services.config import config
+    >>> from lp.testing.gpgkeys import import_public_test_keys
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
+
+    >>> import_public_test_keys()
+    >>> switch_dbuser(config.processmail.dbuser)
+    >>> zopeless_transaction = LaunchpadZopelessLayer.txn
+
+    >>> handleMailForTest = lambda: handleMail(
+    ...     zopeless_transaction,
+    ...     signature_timestamp_checker=accept_any_timestamp)
 
 
 We temporarily override the error mails' From address, so that they will
