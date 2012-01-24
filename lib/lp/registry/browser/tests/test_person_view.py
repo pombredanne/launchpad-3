@@ -62,6 +62,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -205,10 +206,10 @@ class TestPersonViewKarma(TestCaseWithFactory):
 
         In order to create the KarmaCache record we must switch to the DB
         user 'karma', so tests that need a different user after calling
-        this method should do run switchDbUser() themselves.
+        this method should run switch_dbuser() themselves.
         """
 
-        LaunchpadZopelessLayer.switchDbUser('karma')
+        switch_dbuser('karma')
 
         cache_manager = getUtility(IKarmaCacheManager)
         karmacache = cache_manager.new(
@@ -222,7 +223,7 @@ class TestPersonViewKarma(TestCaseWithFactory):
                 value, person.id, category_id=None, product_id=product.id)
 
         # We must commit here so that the change is seen in other transactions
-        # (e.g. when the callsite issues a switchDbUser() after we return).
+        # (e.g. when the callsite issues a switch_dbuser() after we return).
         transaction.commit()
         return karmacache
 
