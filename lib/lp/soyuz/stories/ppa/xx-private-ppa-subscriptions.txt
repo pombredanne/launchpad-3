@@ -221,3 +221,11 @@ subscriptions page.
     PPA named p3a for Mark Shuttleworth (ppa:mark/p3a) Mark Shuttleworth View
     PPA named p3a for Celso Providelo (ppa:cprov/p3a)  Celso Providelo   View
 
+== Attempting to browse directly to a subscription ==
+
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions/foo")
+    Traceback (most recent call last):
+    ...
+    NotFound...
+
