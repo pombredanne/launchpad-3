@@ -79,7 +79,7 @@ delayed-copy was issued can additionally access a link to its original
 archive, nothing else.
 
     >>> cprov_browser = setupBrowser(
-    ...       auth="Basic celso.providelo@canonical.com:cprov")
+    ...       auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(anon_browser.url)
 
     >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):
@@ -107,8 +107,8 @@ become available to everyone.
     # DB objects that have no security adapter are modified during the
     # delayed copy, the modification must be done in Zopeless mode.
     >>> import os.path
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.services.config import config
+    >>> from lp.testing.script import run_script
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> result, stdout, stderr = run_script(script, ["ubuntu"])
     >>> if result != 0:

@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class MemcacheTestCase(TestCaseWithFactory):

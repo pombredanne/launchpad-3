@@ -9,6 +9,7 @@
 
 import sys
 
+
 class Row:
     def __init__(self, scores, trailing):
         self.scores = scores

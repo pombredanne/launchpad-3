@@ -14,29 +14,23 @@ __all__ = [
     'ProcessorVocabulary',
     ]
 
-from sqlobject import (
-    AND,
-    )
-from storm.expr import (
-    SQL,
-    )
+from sqlobject import AND
+from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.vocabulary import (
-    SimpleTerm,
-    )
+from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import (
+from lp.registry.model.person import Person
+from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from lp.registry.model.person import Person
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component

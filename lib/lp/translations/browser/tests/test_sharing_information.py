@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.translations.interfaces.side import TranslationSide
 
@@ -72,7 +72,7 @@ class TestSharingInfoMixin:
         If productseries is None, return an arbritrary user. Used by
         implementations of getAuthorizedUser.
         """
-        logged_in_user = self.factory.makePerson(password='test')
+        logged_in_user = self.factory.makePerson()
         if productseries is not None:
             with celebrity_logged_in('admin'):
                 productseries.product.owner = logged_in_user

@@ -26,7 +26,7 @@ Let's fill a IPackageRelationshipSet:
   ...    url=None)
 
 Note that iterations over PackageRelationshipSet are sorted
-alphabetically according the relationship 'name':
+alphabetically according to the relationship 'name':
 
   >>> [relationship.name for relationship in relationship_set]
   ['foobar', 'test']
@@ -55,7 +55,7 @@ correctly like:
      </li>
   </ul>
 
-  >>> from canonical.launchpad.testing.pages import (
+  >>> from lp.testing.pages import (
   ...     parse_relationship_section)
 
   >>> parse_relationship_section(pkg_rel_view())

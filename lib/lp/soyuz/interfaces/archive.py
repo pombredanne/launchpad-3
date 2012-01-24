@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -87,9 +87,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp import _
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
@@ -1004,15 +1004,21 @@ class IArchiveView(IHasBuildRecords):
             # Really PackagePublishingPocket, circular import fixed below.
             vocabulary=DBEnumeratedType,
             required=False, readonly=True),
+        exact_match=Bool(
+            description=_("Whether or not to filter binary names by exact "
+                          "matching."),
+            required=False),
         created_since_date=Datetime(
             title=_("Created Since Date"),
             description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
             required=False),
-        exact_match=Bool(
-            description=_("Whether or not to filter binary names by exact "
-                          "matching."),
-            required=False))
+        ordered=Bool(
+            title=_("Ordered"),
+            description=_("Return ordered results by default, but specifying "
+                          "False will return results more quickly."),
+            required=False, readonly=True),
+        )
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1020,19 +1026,25 @@ class IArchiveView(IHasBuildRecords):
     @export_read_operation()
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
-                                exact_match=False, created_since_date=None):
+                                exact_match=False, created_since_date=None,
+                                ordered=True):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
-        :param: name: binary name filter (exact match or SQL LIKE controlled
+        :param name: binary name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
-        :param: version: binary version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
-        :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
-        :param: pocket: `PackagePublishingPocket` filter.
-        :param: exact_match: either or not filter source names by exact
+        :param version: binary version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a list.
+        :param distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param pocket: `PackagePublishingPocket` filter.
+        :param exact_match: either or not filter source names by exact
                              matching.
-        :param: created_since_date: a filter on teh `date_created` of the
-                                    publishing record.
+        :param created_since_date: Only return publications created on or
+            after this date.
+        :param ordered: Normally publications are ordered by binary package
+            name and then ID order (creation order).  If this parameter is
+            False then the results will be unordered.  This will make the
+            operation much quicker to return results if you don't care about
+            ordering.
 
         :return: A collection containing `BinaryPackagePublishingHistory`.
         """
@@ -1256,7 +1268,14 @@ class IArchiveView(IHasBuildRecords):
         from_archive=Reference(schema=Interface),
         #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
+        to_series=TextLine(
+            title=_("Distroseries name"),
+            description=_("The distro series to copy packages into."),
+            required=False),
+        from_series=TextLine(
+            title=_("Distroseries name"),
+            description=_("The distro series to copy packages from."),
+            required=False),
         include_binaries=Bool(
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
@@ -1270,7 +1289,7 @@ class IArchiveView(IHasBuildRecords):
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
-                     to_series=None, include_binaries=False,
+                     to_series=None, from_series=None, include_binaries=False,
                      sponsored=None):
         """Copy multiple named sources into this archive from another.
 
@@ -1286,6 +1305,7 @@ class IArchiveView(IHasBuildRecords):
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
         :param to_series: the target distroseries (as a string).
+        :param from_series: the source distroseries (as a string).
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
@@ -1313,7 +1333,14 @@ class IArchiveAppend(Interface):
         from_archive=Reference(schema=Interface),
         #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
-        to_series=TextLine(title=_("Distroseries name"), required=False),
+        to_series=TextLine(
+            title=_("Distroseries name"),
+            description=_("The distro series to copy packages into."),
+            required=False),
+        from_series=TextLine(
+            title=_("Distroseries name"),
+            description=_("The distro series to copy packages from."),
+            required=False),
         include_binaries=Bool(
             title=_("Include Binaries"),
             description=_("Whether or not to copy binaries already built for"
@@ -1323,7 +1350,7 @@ class IArchiveAppend(Interface):
     # Source_names is a string because exporting a SourcePackageName is
     # rather nonsensical as it only has id and name columns.
     def syncSources(source_names, from_archive, to_pocket, to_series=None,
-                    include_binaries=False, person=None):
+                    from_series=None, include_binaries=False, person=None):
         """Synchronise (copy) named sources into this archive from another.
 
         It will copy the most recent PUBLISHED versions of the named
@@ -1338,6 +1365,7 @@ class IArchiveAppend(Interface):
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
         :param to_series: the target distroseries (as a string).
+        :param from_series: the source distroseries (as a string).
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
@@ -1421,6 +1449,22 @@ class IArchiveAppend(Interface):
             being created.
 
         :return: The `IArchiveSubscriber` that was created.
+        """
+
+    @operation_parameters(job_id=Int())
+    @export_write_operation()
+    @operation_for_version("devel")
+    def removeCopyNotification(job_id):
+        """Remove a copy notification that's displayed on the +packages page.
+
+        Copy notifications are shown on the +packages page when a
+        `PlainPackageCopyJob` is in progress or failed.  Calling this
+        method will delete failed jobs so they no longer appear on the
+        page.
+
+        You need to have upload privileges on the PPA to use this.
+
+        :param job_id: The ID of the `PlainPackageCopyJob` to be removed.
         """
 
 

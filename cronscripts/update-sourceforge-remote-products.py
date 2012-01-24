@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Cron job to update remote_products using SourceForge project data."""
@@ -10,10 +10,11 @@ import _pythonpath
 
 import time
 
-from canonical.config import config
+from lp.bugs.scripts.sfremoteproductfinder import (
+    SourceForgeRemoteProductFinder,
+    )
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.sfremoteproductfinder import (
-    SourceForgeRemoteProductFinder)
 
 
 class UpdateRemoteProductsFromSourceForge(LaunchpadCronScript):

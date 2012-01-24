@@ -17,30 +17,22 @@ __all__ = [
 
 import bz2
 from cStringIO import StringIO
-
-#XXX: Given the version of python we know we're running on now,
-# is the try/except here necessary?
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import cElementTree as etree
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from logging import getLogger
 import os
 import re
 import sys
+import xml.etree.cElementTree as etree
 
 import pytz
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.lazr.xml import RelaxNGValidator
-
-from lp.services.propertycache import cachedproperty
-from canonical.config import config
-from canonical.librarian.interfaces import LibrarianServerError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     HWSubmissionProcessingStatus,
@@ -53,14 +45,20 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorNameSet,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import LibrarianServerError
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.scripts.base import disable_oops_handler
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
-from lp.services.scripts.base import disable_oops_handler
+from lp.services.xml import RelaxNGValidator
+
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -141,8 +139,8 @@ class SubmissionParser(object):
         self._logged_warnings = set()
 
         self.validator = {}
-        directory = os.path.join(config.root, 'lib', 'canonical',
-                                 'launchpad', 'scripts')
+        directory = os.path.join(
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts')
         for version, relax_ng_filename in _relax_ng_files.items():
             path = os.path.join(directory, relax_ng_filename)
             self.validator[version] = RelaxNGValidator(path)

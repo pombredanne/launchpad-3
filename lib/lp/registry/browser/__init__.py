@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common registry browser helpers and mixins."""
@@ -23,15 +23,7 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    LaunchpadEditFormView,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.lazr import ExportedFolder
+from lp.app.browser.folder import ExportedFolder
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -39,6 +31,14 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class StatusCount:

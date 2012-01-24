@@ -7,14 +7,14 @@ __metaclass__ = type
 
 import re
 
-from canonical.launchpad.testing.pages import (
+from lp.code.enums import RevisionControlSystems
+from lp.services.webapp import canonical_url
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.enums import RevisionControlSystems
-from lp.testing import TestCaseWithFactory
 
 
 class TestImportDetails(TestCaseWithFactory):

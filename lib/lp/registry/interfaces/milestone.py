@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,9 +8,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'IAbstractMilestone',
     'ICanGetMilestonesDirectly',
     'IHasMilestones',
     'IMilestone',
+    'IMilestoneData',
     'IMilestoneSet',
     'IProjectGroupMilestone',
     ]
@@ -23,6 +25,7 @@ from lazr.restful.declarations import (
     export_factory_operation,
     export_operation_as,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
@@ -42,13 +45,11 @@ from zope.schema import (
     Bool,
     Choice,
     Int,
+    List,
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.components.apihelpers import (
-    patch_plain_parameter_type,
-    )
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
@@ -65,6 +66,7 @@ from lp.services.fields import (
     NoneableDescription,
     NoneableTextLine,
     )
+from lp.services.webservice.apihelpers import patch_plain_parameter_type
 
 
 class MilestoneNameField(ContentNameField):
@@ -99,20 +101,52 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
-                 IHasOfficialBugTags):
-    """A milestone, or a targeting point for bugs and other
-    release-management items that need coordination.
-    """
-    export_as_webservice_entry()
+class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
+                     IHasOfficialBugTags):
+    """Interface containing the data for milestones.
 
+    To be registered for views but not instantiated.
+    """
     id = Int(title=_("Id"))
+
     name = exported(
         MilestoneNameField(
             title=_("Name"),
             description=_(
                 "Only letters, numbers, and simple punctuation are allowed."),
             constraint=name_validator))
+    target = exported(
+        Reference(
+            schema=Interface,  # IHasMilestones
+            title=_(
+                "The product, distribution, or project group for this "
+                "milestone."),
+            required=False))
+    specifications = Attribute(
+        "A list of specifications targeted to this object.")
+    dateexpected = exported(
+        FormattableDate(title=_("Date Targeted"), required=False,
+             description=_("Example: 2005-11-24")),
+        exported_as='date_targeted')
+    active = exported(
+        Bool(
+            title=_("Active"),
+            description=_("Whether or not this object should be shown "
+                          "in web forms for targeting.")),
+        exported_as='is_active')
+    displayname = Attribute("A displayname constructed from the name.")
+    title = exported(
+        TextLine(title=_("A context title for pages."),
+                 readonly=True))
+
+    def bugtasks(user):
+        """Get a list of non-conjoined bugtasks visible to this user."""
+
+
+class IAbstractMilestone(IMilestoneData):
+    """An intermediate interface for milestone, or a targeting point for bugs
+    and other release-management items that need coordination.
+    """
     code_name = exported(
         NoneableTextLine(
             title=u'Code name', required=False,
@@ -128,47 +162,24 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         title=_("Product Series"),
         description=_("The product series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
-        required=False) # for now
+        required=False)  # for now
     distroseries = Choice(
         title=_("Distro Series"),
         description=_(
             "The distribution series for which this is a milestone."),
         vocabulary="FilteredDistroSeries",
-        required=False) # for now
-    dateexpected = exported(
-        FormattableDate(title=_("Date Targeted"), required=False,
-             description=_("Example: 2005-11-24")),
-        exported_as='date_targeted')
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_("Whether or not this milestone should be shown "
-                          "in web forms for bug targeting.")),
-        exported_as='is_active')
+        required=False)  # for now
     summary = exported(
         NoneableDescription(
             title=_("Summary"),
             required=False,
             description=_(
                 "A summary of the features and status of this milestone.")))
-    target = exported(
-        Reference(
-            schema=Interface, # IHasMilestones
-            title=_("The product or distribution of this milestone."),
-            required=False))
     series_target = exported(
         Reference(
-            schema=Interface, # IHasMilestones
+            schema=Interface,  # IHasMilestones
             title=_("The productseries or distroseries of this milestone."),
             required=False))
-    displayname = Attribute("A displayname for this milestone, constructed "
-        "from the milestone name.")
-    title = exported(
-        TextLine(title=_("A milestone context title for pages."),
-                 readonly=True))
-    specifications = Attribute("A list of the specifications targeted to "
-        "this milestone.")
-
     product_release = exported(
         Reference(
             schema=IProductRelease,
@@ -213,6 +224,49 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         release.
         """
 
+
+class IMilestone(IAbstractMilestone):
+    """Actual interface for milestones."""
+
+    export_as_webservice_entry()
+
+    @operation_parameters(
+        tags=List(
+            title=_("Tags for this milestone"),
+            description=_("Space-separated keywords for classifying "
+                          "this milestone."),
+            value_type=TextLine()))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setTags(tags, user):
+        """Set the milestone tags.
+
+        :param: tags The list of tags to be associated with milestone.
+        :param: user The user who is updating tags for this milestone.
+
+        Note that this is not a property because, while the current user
+        is needed to store tags metadata, it is desirable to avoid
+        using thread locals to get the current request in models.
+        """
+
+    def getTagsData():
+        """Return MilestoneTag instances associated with milestone.
+
+        See above the IMilestone.setTags docstring for an explanation of
+        why this is not a property.
+        """
+
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getTags():
+        """Return the milestone tags in alphabetical order.
+
+        See above the IMilestone.setTags docstring for an explanation of
+        why this is not a property.
+        """
+
+
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
 patch_plain_parameter_type(
@@ -251,8 +305,9 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectGroupMilestone(IMilestone):
+class IProjectGroupMilestone(IAbstractMilestone):
     """A marker interface for milestones related to a project"""
+    export_as_webservice_entry()
 
 
 class IHasMilestones(Interface):

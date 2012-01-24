@@ -7,12 +7,12 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 

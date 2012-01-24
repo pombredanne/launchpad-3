@@ -9,8 +9,12 @@ Run a command and suppress output unless it returns a non-zero exit status
 
 __metaclass__ = type
 
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import sys
-from subprocess import Popen, PIPE
+
 
 def shhh(cmd):
     r"""Run a command and suppress output unless it returns a non-zero exitcode

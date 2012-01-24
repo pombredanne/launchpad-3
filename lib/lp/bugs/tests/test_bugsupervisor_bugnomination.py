@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import (
+from lp.bugs.interfaces.bugnomination import NominationError
+from lp.testing import (
     login,
     login_person,
     logout,
+    TestCaseWithFactory,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bugnomination import NominationError
-from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class AddNominationTestMixin:

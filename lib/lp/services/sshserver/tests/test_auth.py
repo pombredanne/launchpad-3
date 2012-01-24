@@ -5,10 +5,9 @@ import os
 
 from testtools.deferredruntest import (
     assert_fails_with,
-    flush_logged_errors,
     AsynchronousDeferredRunTest,
+    flush_logged_errors,
     )
-
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
@@ -34,10 +33,10 @@ from twisted.python import failure
 from twisted.python.util import sibpath
 from zope.interface import implements
 
-from canonical.launchpad.xmlrpc import faults
 from lp.services.sshserver import auth
 from lp.services.twistedsupport import suppress_stderr
 from lp.testing import TestCase
+from lp.xmlrpc import faults
 
 
 class MockRealm:

@@ -9,7 +9,7 @@ added by gina. Now he wants to validate it.
     >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
-    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:test')
     >>> browser.open('http://launchpad.dev/~salgado/+editemails')
     >>> print browser.title
     Change your e-mail settings...
@@ -32,7 +32,7 @@ Retrieve the email and make sure it was sent to the right address.
 Visit the token URL mentioned in the email, and get redirected to
 +validateemail.
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg)
     >>> browser.open(token_url)

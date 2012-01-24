@@ -1,4 +1,4 @@
-/* Copyright (c) 2011, Canonical Ltd. All rights reserved. */
+/* Copyright (c) 2012, Canonical Ltd. All rights reserved. */
 YUI({
     base: '../../../../canonical/launchpad/icing/yui/',
     filter: 'raw',

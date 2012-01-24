@@ -1,20 +1,20 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
     MassSyncCopyPolicy,
     )
-from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageCopyPolicy,
     )
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestCopyPolicy(TestCaseWithFactory):

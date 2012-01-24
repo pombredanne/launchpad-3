@@ -52,7 +52,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
@@ -334,8 +334,7 @@ class IBugTarget(IHasBugs):
     def createBug(bug_params):
         """Create a new bug on this target.
 
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
+        bug_params is an instance of `CreateBugParams`.
         """
 
 # We assign the schema for an `IBugTask` attribute here

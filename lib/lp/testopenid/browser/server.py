@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  All rights reserved.
+# Copyright 2010-2011 Canonical Ltd.  All rights reserved.
 
 """Test OpenID server."""
 
@@ -32,39 +32,37 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import (
-    AccountStatus,
-    IAccountSet,
-    )
-from canonical.launchpad.webapp import (
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    IPlacelessLoginSource,
-    )
-from canonical.launchpad.webapp.login import (
-    allowUnauthenticatedSession,
-    logInPrincipal,
-    logoutPerson,
-    )
-from canonical.launchpad.webapp.publisher import (
-    Navigation,
-    stepthrough,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.person import IPerson
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
     )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IPlacelessLoginSource,
+    )
+from lp.services.webapp.login import (
+    allowUnauthenticatedSession,
+    logInPrincipal,
+    logoutPerson,
+    )
+from lp.services.webapp.publisher import (
+    Navigation,
+    stepthrough,
     )
 from lp.testopenid.interfaces.server import (
     get_server_url,
@@ -232,9 +230,10 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
+        person = IPerson(self.account)
         sreg_fields = dict(
-            nickname=IPerson(self.account).name,
-            email=self.account.preferredemail.email,
+            nickname=person.name,
+            email=person.preferredemail.email,
             fullname=self.account.displayname)
         sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
         sreg_response = SRegResponse.extractResponse(
@@ -306,12 +305,12 @@ class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):
         super(TestOpenIDLoginView, self).initialize()
 
     def validate(self, data):
-        """Check that the email address and password are valid for login."""
+        """Check that the email address is valid for login."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(data['email'])
-        if principal is None or not principal.validate(data['password']):
+        if principal is None:
             self.addError(
-                _("Incorrect password for the provided email address."))
+                _("Unknown email address."))
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):

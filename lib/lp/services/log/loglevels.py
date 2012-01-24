@@ -28,7 +28,6 @@ __all__ = [
 
 import logging
 
-
 # Reexport standard log levels.
 DEBUG = logging.DEBUG
 INFO = logging.INFO

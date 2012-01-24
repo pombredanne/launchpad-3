@@ -27,7 +27,7 @@ File size and mime type are displayed for each attachment
 
 A filesize of 2700 byte is displayed in 'KiB'
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_size_data = """
     ...     [launchpad]
     ...     max_attachment_size: 5000

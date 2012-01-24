@@ -17,9 +17,6 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
@@ -29,15 +26,18 @@ from lp.archiveuploader.utils import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
@@ -88,7 +88,7 @@ def get_template(archive, action):
     if archive.is_ppa:
         template_name = 'ppa-%s' % template_name
     template_name += '.txt'
-    return get_email_template(template_name)
+    return get_email_template(template_name, app='soyuz')
 
 
 ACTION_DESCRIPTIONS = {

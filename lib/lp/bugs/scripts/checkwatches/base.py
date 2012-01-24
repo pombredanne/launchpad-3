@@ -20,29 +20,23 @@ from zope.security.management import (
     queryInteraction,
     )
 
-from canonical.launchpad.webapp.adapter import (
+from lp.bugs.externalbugtracker import BugWatchUpdateWarning
+from lp.services.database.isolation import check_no_transaction
+from lp.services.limitedlist import LimitedList
+from lp.services.webapp.adapter import (
     clear_request_started,
     get_request_start_time,
     set_request_started,
     )
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
-from canonical.launchpad.webapp.interaction import setupInteraction
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from lp.bugs.externalbugtracker import BugWatchUpdateWarning
-from lp.services.database.isolation import check_no_transaction
-from lp.services.limitedlist import LimitedList
+from lp.services.webapp.interaction import setupInteraction
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 
 # For OOPS reporting keep up to this number of SQL statements.
 MAX_SQL_STATEMENTS_LOGGED = 10000
-
-
-class CheckWatchesErrorUtility(ErrorReportingUtility):
-    """An error utility that for the checkwatches process."""
-
-    _default_config_section = 'checkwatches'
 
 
 def report_oops(message=None, properties=None, info=None,
@@ -91,7 +85,8 @@ def report_oops(message=None, properties=None, info=None,
 
     # Create the dummy request object.
     request = ScriptRequest(properties, url)
-    error_utility = CheckWatchesErrorUtility()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure(section_name='checkwatches')
     error_utility.raising(info, request)
     return request
 
@@ -126,7 +121,7 @@ class WorkingBase:
         self._login = login
         self._principal = (
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                self._login, want_password=False))
+                self._login))
         self._transaction_manager = transaction_manager
         self.logger = logger
 

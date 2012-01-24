@@ -23,7 +23,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import ValidationError
 
-from canonical.launchpad.webapp.menu import escape
+from lp.services.webapp.menu import escape
 
 
 __all__ = ['LaunchpadValidationError']
@@ -45,7 +45,7 @@ class LaunchpadValidationError(ValidationError):
     >>> LaunchpadValidationError('<br/>oops').snippet()
     u'&lt;br/&gt;oops'
 
-    >>> from canonical.launchpad.webapp.menu import structured
+    >>> from lp.services.webapp.menu import structured
     >>> LaunchpadValidationError(
     ...     structured('<a title="%s">Ok</a>', '<evil/>')).snippet()
     u'<a title="&lt;evil/&gt;">Ok</a>'
@@ -101,7 +101,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         Otherwise return the error message.
 
         >>> from zope.app.form.interfaces import WidgetInputError
-        >>> from canonical.launchpad.webapp.menu import structured
+        >>> from lp.services.webapp.menu import structured
         >>> bold_error = LaunchpadValidationError(structured("<b>Foo</b>"))
         >>> err = WidgetInputError("foo", "Foo", bold_error)
         >>> view = WidgetInputErrorView(err, None)

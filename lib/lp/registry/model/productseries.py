@@ -32,19 +32,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
@@ -92,6 +79,17 @@ from lp.registry.model.milestone import (
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.series import SeriesMixin
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -543,11 +541,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return history
 
     def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+                     code_name=None, tags=None):
         """See IProductSeries."""
-        return Milestone(
+        milestone = Milestone(
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
+        if tags:
+            milestone.setTags(tags.split())
+        return milestone
 
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""

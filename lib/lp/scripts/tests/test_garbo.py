@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -34,32 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import sqlbase
-from canonical.database.constants import (
-    ONE_DAY_AGO,
-    SEVEN_DAYS_AGO,
-    THIRTY_DAYS_AGO,
-    UTC_NOW,
-    )
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -77,10 +51,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -92,7 +63,19 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.config import config
+from lp.services.database import sqlbase
+from lp.services.database.constants import (
+    ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
 from lp.services.messages.model.message import Message
 from lp.services.oauth.model import (
@@ -100,15 +83,29 @@ from lp.services.oauth.model import (
     OAuthNonce,
     )
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
+from lp.services.scripts.tests import run_script
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
+    )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
@@ -626,18 +623,14 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
         rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
-        rev3 = self.factory.makeRevision('Author 3 <author-3@Example.Org>')
 
         person1 = self.factory.makePerson(email='Author-1@example.org')
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount(
-            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(rev1.revision_author.person, None)
         self.assertEqual(rev2.revision_author.person, None)
-        self.assertEqual(rev3.revision_author.person, None)
 
         self.runDaily()
 
@@ -646,7 +639,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(rev1.revision_author.person, person1)
         self.assertEqual(rev2.revision_author.person, None)
-        self.assertEqual(rev3.revision_author.person, None)
 
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
@@ -656,33 +648,20 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(rev2.revision_author.person, person2)
 
-        # Creating a person for an existing account creates a linkage.
-        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
-        self.assertEqual(rev3.revision_author.person, None)
-
-        self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(rev3.revision_author.person, person3)
-
     def test_HWSubmissionEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         sub1 = self.factory.makeHWSubmission(
             emailaddress='author-1@Example.Org')
         sub2 = self.factory.makeHWSubmission(
             emailaddress='author-2@Example.Org')
-        sub3 = self.factory.makeHWSubmission(
-            emailaddress='author-3@Example.Org')
 
         person1 = self.factory.makePerson(email='Author-1@example.org')
         person2 = self.factory.makePerson(
             email='Author-2@example.org',
             email_address_status=EmailAddressStatus.NEW)
-        account3 = self.factory.makeAccount(
-            'Author 3', 'Author-3@example.org')
 
         self.assertEqual(sub1.owner, None)
         self.assertEqual(sub2.owner, None)
-        self.assertEqual(sub3.owner, None)
 
         self.runDaily()
 
@@ -691,7 +670,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub1.owner, person1)
         self.assertEqual(sub2.owner, None)
-        self.assertEqual(sub3.owner, None)
 
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
@@ -700,14 +678,6 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub2.owner, person2)
-
-        # Creating a person for an existing account creates a linkage.
-        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
-        self.assertEqual(sub3.owner, None)
-
-        self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(sub3.owner, person3)
 
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
@@ -1025,23 +995,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
-
-    def test_SPPH_and_BPPH_populator(self):
-        # If SPPHs (or BPPHs) do not have sourcepackagename (or
-        # binarypackagename) set, the populator will set it.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        spn = spph.sourcepackagename
-        removeSecurityProxy(spph).sourcepackagename = None
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        bpn = bpph.binarypackagename
-        removeSecurityProxy(bpph).binarypackagename = None
-        transaction.commit()
-        self.assertIs(None, spph.sourcepackagename)
-        self.assertIs(None, bpph.binarypackagename)
-        self.runHourly()
-        self.assertEqual(spn, spph.sourcepackagename)
-        self.assertEqual(bpn, bpph.binarypackagename)
 
 
 class TestGarboTasks(TestCaseWithFactory):

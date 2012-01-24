@@ -41,7 +41,7 @@ Set the email address for announcements:
 
     >>> breezy_autotest.changeslist = 'test@example.com'
 
-First, test the rejection of a missapplied changesfile name, which
+First, test the rejection of a misapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
     >>> sync_policy = getPolicy(
@@ -143,7 +143,7 @@ Let's use the script to fetch the ddtp-tarball upload:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...    config.root, "scripts", "ftpmaster-tools", "queue")

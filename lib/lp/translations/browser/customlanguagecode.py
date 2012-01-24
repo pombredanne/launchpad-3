@@ -18,19 +18,19 @@ import re
 
 from lazr.restful.utils import smartquote
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
 from lp.translations.interfaces.customlanguagecode import (
     ICustomLanguageCode,
     IHasCustomLanguageCodes,

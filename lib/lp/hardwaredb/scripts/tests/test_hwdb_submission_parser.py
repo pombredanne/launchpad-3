@@ -4,27 +4,25 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
-
-
-try:
-    import xml.etree.cElementTree as etree
-except ImportError:
-    import cElementTree as etree
 from datetime import datetime
 import logging
 import os
 from textwrap import dedent
+import xml.etree.cElementTree as etree
 
 import pytz
-
 from zope.testing.loghandler import Handler
 
-from canonical.config import config
-from lp.hardwaredb.scripts.hwdbsubmissions import (SubmissionParser,
-    ROOT_UDI)
-from canonical.testing.layers import BaseLayer
-
-from lp.testing import TestCase, validate_mock_class
+from lp.hardwaredb.scripts.hwdbsubmissions import (
+    ROOT_UDI,
+    SubmissionParser,
+    )
+from lp.services.config import config
+from lp.testing import (
+    TestCase,
+    validate_mock_class,
+    )
+from lp.testing.layers import BaseLayer
 
 
 class SubmissionParserTestParseSoftware(SubmissionParser):
@@ -1431,7 +1429,7 @@ invalid line
     def testSubmissionParser(self):
         """Test the entire parser."""
         sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest.xml')
         sample_data = open(sample_data_path).read()
         parser = SubmissionParser()

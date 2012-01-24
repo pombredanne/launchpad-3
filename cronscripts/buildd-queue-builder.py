@@ -8,8 +8,9 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.soyuz.scripts.buildd import QueueBuilder
+
 
 if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)

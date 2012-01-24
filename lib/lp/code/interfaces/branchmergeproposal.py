@@ -67,10 +67,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.database.constants import DEFAULT
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -78,7 +76,9 @@ from lp.code.enums import (
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.constants import DEFAULT
 from lp.services.fields import (
+    PersonChoice,
     PublicPersonChoice,
     Summary,
     Whiteboard,
@@ -89,6 +89,7 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     ITwistedJobSource,
     )
+from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -165,7 +166,7 @@ class IBranchMergeProposal(IPrivacy):
     # Not to be confused with a code reviewer. A code reviewer is someone who
     # can vote or has voted on a proposal.
     reviewer = exported(
-        PublicPersonChoice(
+        PersonChoice(
             title=_('Review person or team'), required=False,
             readonly=True, vocabulary='ValidPersonOrTeam',
             description=_("The person that accepted (or rejected) the code "

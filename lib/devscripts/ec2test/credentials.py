@@ -14,8 +14,9 @@ import os
 import boto
 import boto.ec2
 from bzrlib.errors import BzrCommandError
-from devscripts.ec2test.account import EC2Account
+
 from devscripts.ec2test import instance
+from devscripts.ec2test.account import EC2Account
 
 
 class CredentialsError(BzrCommandError):
@@ -23,7 +24,7 @@ class CredentialsError(BzrCommandError):
 
     _fmt = (
         "Please put your aws access key identifier and secret access "
-        "key identifier in %(filename)s. (On two lines).  %(extra)s" )
+        "key identifier in %(filename)s. (On two lines).  %(extra)s")
 
     def __init__(self, filename, extra=None):
         super(CredentialsError, self).__init__(filename=filename, extra=extra)

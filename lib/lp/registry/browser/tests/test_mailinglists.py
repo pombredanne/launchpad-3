@@ -7,16 +7,16 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.testing.views import (
     create_initialized_view,

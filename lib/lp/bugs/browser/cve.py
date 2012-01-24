@@ -17,14 +17,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -35,6 +27,14 @@ from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,
     )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.batching import BatchNavigator
 
 
 class CveSetNavigation(GetitemNavigation):

@@ -5,13 +5,13 @@
 
 
 import hashlib
-from Mailman.Queue import XMLRPCRunner
 
 from Mailman import (
     Errors,
     mm_cfg,
     )
 from Mailman.Logging.Syslog import syslog
+from Mailman.Queue import XMLRPCRunner
 
 
 def process(mlist, msg, msgdata):

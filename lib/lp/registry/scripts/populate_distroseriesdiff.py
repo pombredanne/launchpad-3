@@ -26,13 +26,7 @@ from storm.locals import ClassAlias
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    quote,
-    quote_identifier,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -42,6 +36,12 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    quote_identifier,
+    )
+from lp.services.looptuner import TunableLoop
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import active_publishing_status
 

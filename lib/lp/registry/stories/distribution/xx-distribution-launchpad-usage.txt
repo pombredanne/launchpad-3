@@ -24,7 +24,7 @@ details.
 The distribution's registrant can access the page and change the usage.
 
     >>> registrant = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> registrant.open('http://launchpad.dev/ubuntu/+edit')
     >>> print registrant.url
     http://launchpad.dev/ubuntu/+edit

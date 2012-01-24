@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug attachment views."""
@@ -20,26 +20,9 @@ from zope.component import (
 from zope.contenttype import guess_content_type
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    custom_widget,
-    GetitemNavigation,
-    Navigation,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
@@ -50,6 +33,21 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachmentIsPatchConfirmationForm,
     IBugAttachmentSet,
     )
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    Navigation,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from lp.services.webapp.menu import structured
 
 
 class BugAttachmentContentCheck:

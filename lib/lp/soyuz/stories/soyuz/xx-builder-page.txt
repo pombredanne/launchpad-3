@@ -67,7 +67,7 @@ Celso is a member of launchpad-buildd-admins, he has full access to
 the builder actions.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
 
     >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()
@@ -112,7 +112,7 @@ Edit page:
 Celso changes the builder title and the change takes effect immediately.
 
     # We use backslashreplace because the page title includes smart quotes.
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(cprov_browser.title)
     Change details for...
 

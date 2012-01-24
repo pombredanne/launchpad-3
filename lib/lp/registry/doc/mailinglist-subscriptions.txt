@@ -48,7 +48,7 @@ The list of sender addresses, i.e. those that are allowed to send emails to a
 mailing list, are available both through the mailing list object and through
 the mailing list set.
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'no-priv@canonical.com']
@@ -76,7 +76,7 @@ provide an email address when she subscribes, her preferred address is used.
     >>> list_one.subscribe(anne)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com']
     >>> sorted(person.displayname for person in list_one.getSubscribers())
     [u'Anne Person']
@@ -94,7 +94,7 @@ other than his preferred email address.
     >>> list_one.subscribe(bart, alternative_email)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org']
     >>> sorted(person.displayname for person in list_one.getSubscribers())
     [u'Anne Person', u'Bart Person']
@@ -114,7 +114,7 @@ A user's subscribed address is the address to which they'll receive posted
 messages.  However, the user may post a message from any of the addresses
 they've confirmed with Launchpad.
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'no-priv@canonical.com']
@@ -122,25 +122,25 @@ they've confirmed with Launchpad.
 However, should Anne register a new, but not-validated email address, she may
 not post from it.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
     >>> alternative = address_set.new(
-    ...     'anne.x.person@example.net', anne, account=anne.account)
+    ...     'anne.x.person@example.net', anne)
     >>> alternative.email
     u'anne.x.person@example.net'
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'no-priv@canonical.com']
 
 Once Anne validates her new address, she can post from it.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'anne.x.person@example.net',
      u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -164,7 +164,7 @@ MailingListSubscription objects make it possible to see under which
 address (if any) a user is subscribed. That information is available
 as the email_address member.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.mailinglist import IMailingListSubscription
     >>> subscription = list_one.getSubscription(bart)
     >>> verifyObject(IMailingListSubscription, subscription)
@@ -215,7 +215,7 @@ team-one's mailing list.
     >>> list_one.subscribe(cris)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
     >>> [person.displayname for person in list_one.getSubscribers()]
@@ -229,7 +229,7 @@ team-one's mailing list.
 Cris may post to the mailing list using any of her registered and validated
 email addresses.
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'cperson@example.org', u'cris.person@example.com',
@@ -246,11 +246,11 @@ Any new address that Cris registers but does not validate may not yet be used
 to post to the mailing list.
 
     >>> alternative = address_set.new(
-    ...     'cris.x.person@example.net', cris, account=cris.account)
+    ...     'cris.x.person@example.net', cris)
     >>> alternative.email
     u'cris.x.person@example.net'
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'cperson@example.org', u'cris.person@example.com',
@@ -261,7 +261,7 @@ Once Cris validates her new address, she can post from it.
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSenderAddresses())
+    >>> sorted(list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
      u'cperson@example.org', u'cris.person@example.com',
@@ -297,10 +297,9 @@ mailing list.
     >>> sub_team_list.subscribe(lars)
     >>> transaction.commit()
 
-    >>> sorted(email.email
-    ...        for email in super_team_list.getSubscribedAddresses())
+    >>> sorted(super_team_list.getSubscribedAddresses())
     [u'lars.person@example.com']
-    >>> sorted(email.email for email in sub_team_list.getSubscribedAddresses())
+    >>> sorted(sub_team_list.getSubscribedAddresses())
     [u'lars.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -337,10 +336,10 @@ allowed due to indirect membership in the superteam.
     >>> list_three.subscribe(dirk)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com', u'dirk.person@example.com']
-    >>> sorted(email.email for email in list_three.getSubscribedAddresses())
+    >>> sorted(list_three.getSubscribedAddresses())
     [u'dirk.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -379,7 +378,7 @@ unsubscribed from the superteam's mailing list.
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
@@ -426,7 +425,7 @@ approved member of the super-team.
     ...
     CannotSubscribe: Dirk Person is already subscribed to list Team One
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
@@ -471,7 +470,7 @@ preferred address.
     >>> list_four.subscribe(elle)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_four.getSubscribedAddresses())
+    >>> sorted(list_four.getSubscribedAddresses())
     [u'elle.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -506,7 +505,7 @@ preferred address.
     >>> elle.setPreferredEmail(elle_alternative)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_four.getSubscribedAddresses())
+    >>> sorted(list_four.getSubscribedAddresses())
     [u'eperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -554,14 +553,14 @@ Unsubscribing
 
 Any list member can unsubscribe from the mailing list.
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
     >>> list_one.unsubscribe(anne)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -607,7 +606,7 @@ When someone leaves a direct team, they automatically get unsubscribed.
     >>> bart.leave(team_one)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'cris.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -647,7 +646,7 @@ persistence of preferences below for more examples of this.
     >>> bart.join(team_two)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'cris.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -686,7 +685,7 @@ leave that indirect team, they also get unsubscribed from the mailing list.
     >>> cris.leave(team_two)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -720,7 +719,7 @@ more than one subteam.
     >>> iona.join(team_five)
     >>> iona.join(team_two)
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org']
 
     >>> list_one.subscribe(gwen)
@@ -728,7 +727,7 @@ more than one subteam.
     >>> list_one.subscribe(iona)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'gwen.person@example.com',
      u'hank.person@example.com', u'iona.person@example.com']
 
@@ -753,7 +752,7 @@ unsubscribed from the superteam's mailing list.
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -795,7 +794,7 @@ List deactivation
 When a team's mailing list is deactivated, all subscriptions to that mailing
 list are dropped.
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     [u'bperson@example.org', u'iona.person@example.com']
 
     # Deactivation isn't complete until the list's status is transitioned to
@@ -805,7 +804,7 @@ list are dropped.
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_one.getSubscribedAddresses())
+    >>> sorted(list_one.getSubscribedAddresses())
     []
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -843,7 +842,7 @@ only relevant preference.
     >>> list_six.subscribe(jack)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -861,7 +860,7 @@ only relevant preference.
     >>> jack.leave(team_six)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     []
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -877,7 +876,7 @@ only relevant preference.
     >>> jack.join(team_six)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -903,7 +902,7 @@ their preferred email address.
     >>> list_six.subscribe(kara, kara_alternative)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -921,7 +920,7 @@ their preferred email address.
     >>> kara.leave(team_six)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'jack.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -939,7 +938,7 @@ their preferred email address.
     >>> kara.join(team_six)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'jack.person@example.com', u'kperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -968,7 +967,7 @@ she is subscribed to List Six with.
     >>> list_six.changeAddress(kara, address)
     >>> transaction.commit()
 
-    >> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >> sorted(list_six.getSubscribedAddresses())
     [u'kara.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -987,7 +986,7 @@ she is subscribed to List Six with.
     >>> list_six.changeAddress(kara, address)
     >>> transaction.commit()
 
-    >> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >> sorted(list_six.getSubscribedAddresses())
     [u'kperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1008,7 +1007,7 @@ changes to her preferred email address.
     >>> list_six.changeAddress(kara, None)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'kara.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1028,7 +1027,7 @@ changes to her preferred email address.
     >>> kara.setPreferredEmail(address)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_six.getSubscribedAddresses())
+    >>> sorted(list_six.getSubscribedAddresses())
     [u'kperson@example.org']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1076,7 +1075,7 @@ emails from it.
     >>> transaction.commit()
 
     >>> list_seven.subscribe(sam)
-    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    >>> sorted(list_seven.getSubscribedAddresses())
     []
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1093,7 +1092,7 @@ emails from it.
 
 Samuel may not post to the mailing list using any of his addresses.
 
-    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    >>> sorted(list_seven.getSenderAddresses())
     [u'no-priv@canonical.com']
 
     >>> print_addresses(mailinglist_set.getSenderAddresses(team_names))
@@ -1125,9 +1124,9 @@ his team membership is approved.
     >>> sam.join(team_seven)
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    >>> sorted(list_seven.getSubscribedAddresses())
     [u'samuel.person@example.com']
-    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    >>> sorted(list_seven.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'samuel.person@example.com', u'sperson@example.org']
 
@@ -1172,9 +1171,9 @@ returned either as recipients or senders.
     >>> removeSecurityProxy(list_seven).status = MailingListStatus.INACTIVE
     >>> transaction.commit()
 
-    >>> sorted(email.email for email in list_seven.getSubscribedAddresses())
+    >>> sorted(list_seven.getSubscribedAddresses())
     []
-    >>> sorted(email.email for email in list_seven.getSenderAddresses())
+    >>> sorted(list_seven.getSenderAddresses())
     []
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1218,8 +1217,7 @@ subscriptions that use that address are automatically deleted as well.
 
     >>> list_six.changeAddress(kara, kara_alternative)
     >>> transaction.commit()
-    >>> print sorted(email.email
-    ...              for email in list_six.getSubscribedAddresses())
+    >>> print sorted(list_six.getSubscribedAddresses())
     [u'kperson@example.org']
 
     # kara_alternative has been set as kara's preferred email during this
@@ -1231,8 +1229,7 @@ subscriptions that use that address are automatically deleted as well.
     False
     >>> kara_alternative.destroySelf()
     >>> transaction.commit()
-    >>> print sorted(email.email
-    ...              for email in list_six.getSubscribedAddresses())
+    >>> print sorted(list_six.getSubscribedAddresses())
     []
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1286,11 +1283,10 @@ post to the mailing list, nor will she receive mailing list posts.
     >>> list_nine.subscribe(vera)
     >>> transaction.commit()
 
-    >>> print sorted(
-    ...     email.email for email in list_nine.getSubscribedAddresses())
+    >>> print sorted(list_nine.getSubscribedAddresses())
     [u'umma.person@example.com', u'vera.person@example.com']
 
-    >>> print sorted(email.email for email in list_nine.getSenderAddresses())
+    >>> print sorted(list_nine.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'umma.person@example.com', u'uperson@example.org',
      u'vera.person@example.com', u'vperson@example.org']
@@ -1335,17 +1331,14 @@ post to the mailing list, nor will she receive mailing list posts.
 
 Now Umma's account is suspended by a Launchpad administrator.
 
-    >>> from canonical.launchpad.interfaces.account import (
-    ...     AccountStatus, IAccountSet)
-    >>> umma_account = getUtility(IAccountSet).getByEmail(
-    ...     'umma.person@example.com')
-    >>> umma_account.status = AccountStatus.SUSPENDED
+    >>> from lp.services.identity.interfaces.account import (
+    ...     AccountStatus)
+    >>> umma.account.status = AccountStatus.SUSPENDED
     >>> transaction.commit()
 
 Umma is no longer subscribed to the mailing list...
 
-    >>> print sorted(
-    ...     email.email for email in list_nine.getSubscribedAddresses())
+    >>> print sorted(list_nine.getSubscribedAddresses())
     [u'vera.person@example.com']
 
     >>> print_addresses(mailinglist_set.getSubscribedAddresses(team_names))
@@ -1364,7 +1357,7 @@ Umma is no longer subscribed to the mailing list...
 
 ...and she can no longer post directly to the mailing list.
 
-    >>> print sorted(email.email for email in list_nine.getSenderAddresses())
+    >>> print sorted(list_nine.getSenderAddresses())
     [u'no-priv@canonical.com',
      u'vera.person@example.com', u'vperson@example.org']
 

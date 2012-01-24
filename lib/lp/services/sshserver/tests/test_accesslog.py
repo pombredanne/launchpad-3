@@ -15,7 +15,7 @@ import tempfile
 from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event
 
-from canonical.launchpad.scripts import WatchedFileHandler
+from lp.services.scripts import WatchedFileHandler
 from lp.services.sshserver.accesslog import LoggingManager
 from lp.testing import TestCase
 

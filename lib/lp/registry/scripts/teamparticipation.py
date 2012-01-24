@@ -26,18 +26,18 @@ from itertools import (
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.teammembership import ACTIVE_STATES
+from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
-from lp.registry.interfaces.teammembership import ACTIVE_STATES
-from lp.services.scripts.base import LaunchpadScriptFailure
 
 
 def get_master_store():

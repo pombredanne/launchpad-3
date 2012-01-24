@@ -7,8 +7,7 @@ branches that have been created in error.
 
     >>> from lp.code.enums import BranchType
     >>> login(ANONYMOUS)
-    >>> alice = factory.makePerson(name="alice", password="test",
-    ...                            email="alice@example.com")
+    >>> alice = factory.makePerson(name="alice", email="alice@example.com")
     >>> product = factory.makeProduct(
     ...     name='earthlynx', displayname="Earth Lynx", owner=alice)
     >>> branch = factory.makeProductBranch(

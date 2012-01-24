@@ -9,7 +9,7 @@ you can't know to which comment the new comment was a reply to.
 
 Let's add add change notification and see how it works:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.messages.model.message import MessageSet
 
     >>> login('test@canonical.com')

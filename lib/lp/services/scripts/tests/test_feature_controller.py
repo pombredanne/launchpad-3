@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
@@ -17,6 +16,7 @@ from lp.services.features.flags import (
 from lp.services.scripts.base import LaunchpadScript
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class FakeScript(LaunchpadScript):

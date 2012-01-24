@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -35,26 +35,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    cursor,
-    session_store,
-    sqlvalues,
-    )
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
@@ -74,8 +54,23 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
+    cursor,
+    session_store,
+    sqlvalues,
+    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
+from lp.services.looptuner import TunableLoop
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -85,9 +80,11 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
@@ -311,6 +308,22 @@ class OAuthNoncePruner(BulkPruner):
         SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
+
+
+class UnlinkedAccountPruner(BulkPruner):
+    """Remove Account records not linked to a Person."""
+    target_table_class = Account
+    # We join with EmailAddress to ensure we only attempt removal after
+    # the EmailAddress rows have been removed by
+    # AccountOnlyEmailAddressPruner. We join with Person to work around
+    # records with bad crosslinks. These bad crosslinks will be fixed by
+    # dropping the EmailAddress.account column.
+    ids_to_prune_query = """
+        SELECT Account.id
+        FROM Account
+        LEFT OUTER JOIN Person ON Account.id = Person.account
+        WHERE Person.id IS NULL
         """
 
 
@@ -678,7 +691,7 @@ class PersonPruner(TunableLoop):
                     AND Person.id IN (%s)
                 """ % people_ids)
             self.store.execute("""
-                UPDATE EmailAddress SET person=NULL
+                DELETE FROM EmailAddress
                 WHERE person IN (%s)
                 """ % people_ids)
             # This cascade deletes any PersonSettings records.
@@ -965,86 +978,6 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
-    """Populate the new sourcepackagename column of SPPH."""
-
-    done = False
-    maximum_chunk_size = 5000
-
-    SPPH = SourcePackagePublishingHistory
-
-    def getStore(self):
-        return IMasterStore(self.SPPH)
-
-    def findSPPHs(self):
-        SPPH = self.SPPH
-        return self.getStore().find(SPPH.id, SPPH.sourcepackagename == None)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.done
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        spphs = list(self.findSPPHs()[:chunk_size])
-        self.log.info("Populating %d SPPH(s).", len(spphs))
-        if len(spphs) == 0:
-            self.log.info("Finished populating SPPHs.  Remove the populator.")
-            self.done = True
-            return
-        self.getStore().execute("""
-            UPDATE SourcePackagePublishingHistory AS SPPH
-            SET sourcepackagename = SPR.sourcepackagename
-            FROM SourcePackageRelease AS SPR
-            WHERE
-                SPR.id = SPPH.sourcepackagerelease AND
-                SPPH.sourcepackagename IS NULL AND
-                SPPH.id IN %s
-            """ % sqlvalues(spphs))
-        transaction.commit()
-
-
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
-    """Populate the new binarypackagename column of BPPH."""
-
-    done = False
-    maximum_chunk_size = 5000
-
-    BPPH = BinaryPackagePublishingHistory
-
-    def getStore(self):
-        return IMasterStore(self.BPPH)
-
-    def findBPPHs(self):
-        BPPH = self.BPPH
-        return self.getStore().find(BPPH.id, BPPH.binarypackagename == None)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.done
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        bpphs = list(self.findBPPHs()[:chunk_size])
-        self.log.info("Populating %d BPPH(s).", len(bpphs))
-        if len(bpphs) == 0:
-            self.log.info("Finished populating BPPHs.  Remove the populator.")
-            self.done = True
-            return
-        self.getStore().execute("""
-            UPDATE BinaryPackagePublishingHistory AS BPPH
-            SET binarypackagename = BPR.binarypackagename
-            FROM BinaryPackageRelease AS BPR
-            WHERE
-                BPR.id = BPPH.binarypackagerelease AND
-                BPPH.binarypackagename IS NULL AND
-                BPPH.id IN %s
-            """ % sqlvalues(bpphs))
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1203,7 +1136,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1211,7 +1144,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
@@ -1294,8 +1227,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        SourcePackagePublishingHistorySPNPopulator,
-        BinaryPackagePublishingHistoryBPNPopulator,
         ]
     experimental_tunable_loops = []
 
@@ -1328,6 +1259,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
+        UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

@@ -51,7 +51,7 @@ Only Celso and an administrator can access the 'Edit PPA dependencies'
 page for Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> cprov_browser.getLink('Edit PPA dependencies').click()
     >>> print cprov_browser.url

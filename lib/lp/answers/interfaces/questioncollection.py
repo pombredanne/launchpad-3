@@ -13,17 +13,6 @@ __all__ = [
     'ISearchableByQuestionOwner',
     ]
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-from zope.schema import (
-    Choice,
-    Int,
-    List,
-    TextLine,
-    )
-
 from lazr.restful.declarations import (
     collection_default_content,
     export_as_webservice_collection,
@@ -35,8 +24,18 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     )
 from lazr.restful.fields import ReferenceChoice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionSort,

@@ -1,10 +1,8 @@
 #!/usr/bin/python2.6 -S
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Confirm the database systems are ready to be patched as best we can."""
-
-import _pythonpath
 
 __all__ = [
     'DatabasePreflight',
@@ -12,6 +10,7 @@ __all__ = [
     'NoConnectionCheckPreflight',
     ]
 
+import _pythonpath
 
 from datetime import timedelta
 from optparse import OptionParser
@@ -20,19 +19,18 @@ import time
 
 import psycopg2
 
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
 import replication.helpers
 import upgrade
-
 
 # Ignore connections by these users.
 SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
@@ -58,6 +56,9 @@ FRAGILE_USERS = frozenset([
 BAD_USERS = frozenset([
     'karma',  # Bug #863109
     'rosettaadmin',  # Bug #863122
+    'update-pkg-cache',  # Bug #912144
+    'process_death_row',  # Bug #912146
+    'langpack',  # Bug #912147
     ])
 
 # How lagged the cluster can be before failing the preflight check.

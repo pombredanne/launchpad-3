@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -17,31 +17,27 @@ from datetime import (
     )
 
 import pytz
+from storm import Undef
 from storm.expr import (
     Desc,
     Join,
     Max,
     Select,
     )
-from storm import Undef
-
 from zope.interface import implements
-
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.services.database.stormexpr import CountDistinct
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.stormexpr import CountDistinct
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -204,8 +200,8 @@ class RecipeBuildRecordResultSet(DecoratedResultSet):
         # We don't support distinct=False for this result set
         select = Select(
             columns=CountDistinct(self.result_set._group_by),
-            tables = self.result_set._tables,
-            where = self.result_set._where,
+            tables=self.result_set._tables,
+            where=self.result_set._where,
             )
         result = self.result_set._store.execute(select)
         return result.get_one()[0]
