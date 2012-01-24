@@ -473,15 +473,15 @@ def initialize_host(
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
+
+
+def create_lxc(user, lxcname):
+    """Create the LXC container that will be used for ephemeral instances."""
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
     file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
     file_append(
         DHCP_FILE, 'prepend domain-name-servers {};\n'.format(LXC_GATEWAY))
-
-
-def create_lxc(user, lxcname):
-    """Create the LXC container that will be used for ephemeral instances."""
     # Container configuration template.
     content = ''.join('{}={}\n'.format(*i) for i in LXC_OPTIONS)
     with open(LXC_CONFIG_TEMPLATE, 'w') as f:
