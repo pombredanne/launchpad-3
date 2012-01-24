@@ -40,8 +40,11 @@ from zope.interface import implements
 
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
     CodeReviewVote,
-    CodeReviewNotificationLevel, BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    CodeReviewNotificationLevel,
+    )
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
