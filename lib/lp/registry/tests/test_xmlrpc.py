@@ -86,7 +86,7 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             removeSecurityProxy(
                 person.account).openid_identifiers.any().identifier)
 
-    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_error(self):
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_suspended(self):
         # A suspended account results in an appropriate xmlrpc fault.
         suspended_person = self.factory.makePerson(
             displayname='Joe Blogs', email='a@b.com',
@@ -103,6 +103,22 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             fault_raised = True
             self.assertEqual(370, e.faultCode)
             self.assertIn(openid_identifier, e.faultString)
+
+        self.assertTrue(fault_raised)
+
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_team(self):
+        # A team email address results in an appropriate xmlrpc fault.
+        self.factory.makeTeam(email='a@b.com')
+
+        # assertRaises doesn't let us check the type of Fault.
+        fault_raised = False
+        try:
+            self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
+                'foo', 'a@b.com', 'Joe Blogs')
+        except xmlrpclib.Fault, e:
+            fault_raised = True
+            self.assertEqual(400, e.faultCode)
+            self.assertIn('a@b.com', e.faultString)
 
         self.assertTrue(fault_raised)
 
