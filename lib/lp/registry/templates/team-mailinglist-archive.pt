@@ -9,8 +9,6 @@
 
 <body>
   <div metal:fill-slot="main">
-    <h2>Message archive for <tal:teamname
-      replace="view/context/displayname" /></h2>
     
     <div id="messagelist">
       <tal:comment replace="nothing">
