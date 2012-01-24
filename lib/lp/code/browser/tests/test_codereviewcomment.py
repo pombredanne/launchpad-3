@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from testtools.matchers import Not
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -14,6 +15,7 @@ from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,
     ICodeReviewDisplayComment,
     )
+from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import IPrimaryContext
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -77,3 +79,23 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
         browser = self.getViewBrowser(comment)
         body = Tag('Body text', 'p', text='x y' * 2000)
         self.assertThat(browser.contents, HTMLContains(body))
+
+    def test_excessive_comments_download_link(self):
+        """Excessive comments have a download link displayed."""
+        comment = self.factory.makeCodeReviewComment(body='x ' * 5001)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, HTMLContains(body))
+
+    def test_short_comment_no_download_link(self):
+        """Long comments displayed by themselves are not truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x ' * 5000)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, Not(HTMLContains(body)))

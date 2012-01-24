@@ -49,6 +49,10 @@ class MessageComment:
             return False
         return len(self.body_text) > self.comment_limit
 
+    @property
+    def too_long_to_render(self):
+        return len(self.body_text) > 10000
+
     @cachedproperty
     def text_for_display(self):
         if not self.too_long:

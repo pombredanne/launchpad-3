@@ -43,11 +43,19 @@ class IComment(Interface):
         title=u'Whether the comment body is too long to display in full.',
         readonly=True)
 
+    too_long_to_render = Bool(
+        title=(u'Whether the comment body is so long that rendering is'
+        ' inappropriate.'), readonly=True)
+
     text_for_display = Text(
         title=u'The comment text to be displayed in the UI.', readonly=True)
 
     body_text = Text(
         description=_("The body text of the comment."),
+        readonly=True)
+
+    download_url = Text(
+        description=_("URL for downloading full text."),
         readonly=True)
 
     comment_author = Reference(

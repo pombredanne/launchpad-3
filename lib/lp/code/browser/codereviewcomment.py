@@ -45,12 +45,23 @@ from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
+    Navigation,
+    stepto,
     )
 from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
+
+
+class CodeReviewDisplayCommentNavigation(Navigation):
+
+    usedfor = ICodeReviewComment
+
+    @stepto('+download')
+    def download(self):
+        return None
 
 
 class CodeReviewDisplayComment(MessageComment):
@@ -103,6 +114,9 @@ class CodeReviewDisplayComment(MessageComment):
     def other_attachments(self):
         # Attachments to not show.
         return self.all_attachments[1]
+
+    def download_url(self):
+        return canonical_url(self.comment, view_name='+download')
 
 
 def get_message(display_comment):

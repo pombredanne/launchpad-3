@@ -8,5 +8,6 @@
   <p tal:condition="context/too_long">
     <a tal:attributes="href context/fmt:url">Read more...</a>
   </p>
-
+  <a tal:attributes="href context/download_url"
+     tal:condition="context/too_long_to_render">Download full text</a>
 </tal:root>
