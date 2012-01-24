@@ -243,7 +243,7 @@ A distroseries is created whent the required field are submitted.
 
 Administrators can create series, but normal users cannot.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Driver', view)
     True

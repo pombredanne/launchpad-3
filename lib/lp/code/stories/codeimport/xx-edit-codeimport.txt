@@ -7,11 +7,11 @@ The code import details are displayed on the main branch page for imported
 branches. If the logged-in user is allowed to edit the code import then they
 can see a link to edit the details.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> from lp.services.webapp import canonical_url
 
     >>> login(ANONYMOUS)
-    >>> registrant = factory.makePerson(password='test')
+    >>> registrant = factory.makePerson()
     >>> svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk',
     ...     registrant=registrant)
@@ -91,7 +91,7 @@ We log in as "david.allouche" since he has super-user privileges for code
 imports.
 
     >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_finished_import, get_import_for_branch_name)
     >>> from datetime import datetime
     >>> import pytz

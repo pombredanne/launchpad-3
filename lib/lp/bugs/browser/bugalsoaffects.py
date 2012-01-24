@@ -29,18 +29,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
+    )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -87,6 +84,9 @@ from lp.registry.interfaces.product import (
 from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -663,12 +663,13 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         if data.get('add_packaging', False):
             # Create a packaging link so that Launchpad will suggest the
             # upstream project to the user.
-            packaging_util = getUtility(IPackagingUtil)
-            packaging_util.createPackaging(
-                productseries=data['product'].development_focus,
-                sourcepackagename=self.context.target.sourcepackagename,
-                distroseries=self.context.target.distribution.currentseries,
-                packaging=PackagingType.PRIME, owner=self.user)
+            series = self.context.target.distribution.currentseries
+            if series:
+                getUtility(IPackagingUtil).createPackaging(
+                    productseries=data['product'].development_focus,
+                    sourcepackagename=self.context.target.sourcepackagename,
+                    distroseries=series, packaging=PackagingType.PRIME,
+                    owner=self.user)
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
     @property

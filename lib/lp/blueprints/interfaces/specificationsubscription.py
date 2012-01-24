@@ -27,8 +27,8 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
-from lp.services.fields import PublicPersonChoice
+from lp import _
+from lp.services.fields import PersonChoice
 
 
 class ISpecificationSubscription(Interface):
@@ -38,7 +38,7 @@ class ISpecificationSubscription(Interface):
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
-    person = PublicPersonChoice(
+    person = PersonChoice(
             title=_('Subscriber'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(

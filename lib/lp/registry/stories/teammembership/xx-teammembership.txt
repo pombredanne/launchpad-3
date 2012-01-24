@@ -191,7 +191,7 @@ approved, though.
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
-    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+    ...     auth='Basic james.blackwell@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
@@ -233,7 +233,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.url
     'http://launchpad.dev/~myemail'
@@ -346,7 +346,7 @@ without bounds, so they are paginated.
 
     # The ~admins team doesn't have enough inactive members to overflow
     # the default batch size of 5; set the max batch size to 2.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('default-batch-size', """
     ... [launchpad]
     ... default_batch_size: 2

@@ -9,7 +9,7 @@ Breadcrumbs
 
 Announcement breadcrumbs use the announcement title.
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from lp.testing.menu import make_fake_request
 
     >>> product = factory.makeProduct(name='cube')
     >>> owner = product.owner

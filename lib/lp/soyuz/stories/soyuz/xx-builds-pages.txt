@@ -4,7 +4,7 @@ Builds pages
 These pages are based in the BuildRecordView class and
 template/builds-list.pt. Basically they have a buildstate selector
 action via HTTP GET and present a batched list of build records
-according the selected buildstate, by default All.
+according to the selected buildstate, by default All.
 
     >>> def check_builds_options(contents):
     ...     """Check if the label and/or the field for the optional

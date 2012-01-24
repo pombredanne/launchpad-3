@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import doctest
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
@@ -20,12 +23,13 @@ import time
 import traceback
 import unittest
 
-import simplejson
-
 from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
-
-from testtools import TestCase, TestResult
+import simplejson
+from testtools import (
+    TestCase,
+    TestResult,
+    )
 from testtools.content import Content
 from testtools.content_type import ContentType
 from testtools.matchers import DocTestMatches

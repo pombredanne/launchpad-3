@@ -4,14 +4,14 @@ Translations URLs
 Here we document what URLs different Translations-related objects use.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
 
 Homepage
 --------
 
 The Rosetta homepage.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
+    >>> from lp.translations.interfaces.translations import (
     ...     IRosettaApplication)
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'

@@ -30,7 +30,7 @@ Now the reporter and the maintainer are subscribed.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> login("foo.bar@canonical.com")

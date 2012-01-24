@@ -33,28 +33,7 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    BatchNavigator,
-    StormRangeFactory,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -74,7 +53,28 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
@@ -302,8 +302,14 @@ class BuildView(LaunchpadView):
         return self.context.buildqueue_record
 
     @cachedproperty
-    def component(self):
-        return self.context.current_component
+    def component_name(self):
+        # Production has some buggy historic builds without
+        # source publications.
+        component = self.context.current_component
+        if component is not None:
+            return component.name
+        else:
+            return 'unknown'
 
     @cachedproperty
     def files(self):
@@ -582,7 +588,7 @@ class BuildRecordsView(LaunchpadView):
         if self.text is not None or self.arch_tag is not None:
             binary_only = True
 
-        # request context build records according the selected state
+        # request context build records according to the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
             user=self.user, binary_only=binary_only)

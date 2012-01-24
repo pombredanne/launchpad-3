@@ -20,7 +20,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 

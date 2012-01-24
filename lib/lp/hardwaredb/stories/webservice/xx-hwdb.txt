@@ -132,7 +132,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -140,7 +140,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+device/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 HWDevice.drivers returns the list of drivers associtaed with this device.
@@ -225,7 +225,7 @@ with different package names, so that we can see how filtering
 by name works.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
     >>> from lp.hardwaredb.interfaces.hwdb import IHWDriverSet
     >>> login(ANONYMOUS)
     >>> driver_set = getUtility(IHWDriverSet)
@@ -392,7 +392,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -400,7 +400,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+driver/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Once we've got a driver, we can search for submissions associated with it.
@@ -870,7 +870,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/1000000')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'1000000'
 
 ...and when an otherwise invalid ID is passed.
@@ -878,7 +878,7 @@ A 404 error is returned, when a non-existent ID is passed in the URL...
     >>> print webservice.get('/+hwdb/+hwvendorid/nonsense')
     HTTP/1.1 404 Not Found
     ...
-    Object: <canonical.launchpad.systemhomes.HWDBApplication
+    Object: <lp.systemhomes.HWDBApplication
     ... name: u'nonsense'
 
 Known vendor IDs for a given bus can be queried with
@@ -1319,8 +1319,8 @@ We can additionally ask for bugsubscribers...
 
 or users affected by a bug.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')

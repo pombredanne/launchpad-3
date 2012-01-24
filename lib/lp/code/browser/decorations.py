@@ -11,7 +11,7 @@ __all__ = [
 from lazr.delegates import delegates
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import IPrivacy
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     IBranch,

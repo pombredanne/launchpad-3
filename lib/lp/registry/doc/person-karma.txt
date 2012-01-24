@@ -18,7 +18,7 @@ product or a distribution), so that we know to what a user contributes to and
 what users are the top contributors for a given product/distribution.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.karma import IKarma
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -140,13 +140,13 @@ is updated by the foaf-update-karma-cache.py cronscript.
     <BLANKLINE>
     >>> process.returncode
     0
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.karmacacheupdater.max_scaling
     2
 
     (Now we flush the caches, because 'salgado' is an object that was changed
     in another transaction)
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 Independently of the number of "Bug Management"-related and "Specification

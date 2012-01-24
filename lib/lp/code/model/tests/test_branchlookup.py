@@ -9,8 +9,6 @@ from lazr.uri import URI
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -38,11 +36,13 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.services.config import config
 from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestGetByUniqueName(TestCaseWithFactory):

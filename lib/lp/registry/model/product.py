@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -54,31 +54,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -95,6 +70,9 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
@@ -172,9 +150,25 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
@@ -829,7 +823,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def name_with_project(self):
-        """See lib.canonical.launchpad.interfaces.IProduct"""
+        """See `IProduct`"""
         if self.project and self.project.name != self.name:
             return self.project.name + ": " + self.name
         return self.name
@@ -932,10 +926,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+        return results
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""

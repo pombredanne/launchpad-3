@@ -10,9 +10,9 @@ The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.services.database.sqlbase import commit
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.testing.gpgkeys import import_public_test_keys
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -44,7 +44,7 @@ user in the launch bag:
 
     >>> import email
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> launchbag = getUtility(ILaunchBag)
     >>> name, addr = email.Utils.parseaddr(msg['From'])

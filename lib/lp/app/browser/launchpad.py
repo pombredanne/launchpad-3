@@ -24,9 +24,7 @@ __all__ = [
 
 
 import cgi
-from datetime import (
-    timedelta,
-    )
+from datetime import timedelta
 import operator
 import os
 import re
@@ -46,54 +44,26 @@ from zope.datetime import (
     parseDatetimetz,
     )
 from zope.i18nmessageid import Message
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.traversing.interfaces import ITraversable
 
-from canonical.config import config
-from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm,
-    IBazaarApplication,
-    IRosettaApplication,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.layers import WebServiceLayer
-from canonical.launchpad.webapp import (
-    canonical_name,
-    canonical_url,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb,
-    ILaunchBag,
-    ILaunchpadRoot,
-    INavigationMenu,
-    )
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import (
+from lp import _
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.folder import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -122,8 +92,10 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.layers import WebServiceLayer
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -137,8 +109,36 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.helpers import intOrZero
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import utc_now
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.url import urlappend
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -152,6 +152,7 @@ from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.interfaces.translations import IRosettaApplication
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -894,6 +895,15 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ('index.html', )
         else:
             return self, ()
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AppFrontPageSearchView(LaunchpadFormView):

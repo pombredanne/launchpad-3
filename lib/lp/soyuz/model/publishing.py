@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -42,40 +42,38 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
@@ -152,6 +150,12 @@ def get_archive(archive, bpr):
                 "for %s" % (archive.displayname))
         archive = debug_archive
     return archive
+
+
+def proxied_urls(files, parent):
+    """Run the files passed through `ProxiedLibraryFileAlias`."""
+    return [
+        ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
 
 class FilePublishingBase:
@@ -452,6 +456,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
+    sponsor = ForeignKey(
+        dbName='sponsor', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -579,14 +586,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
         # a 302 so that webapp threads are not tied up.
-        the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
+        the_url = proxied_urls((changes_lfa,), self.archive)[0]
         return the_url
 
     def changelogUrl(self):
         """See `ISourcePackagePublishingHistory`."""
         lfa = self.sourcepackagerelease.changelog
         if lfa is not None:
-            return self._proxied_urls((lfa,), self)[0]
+            return proxied_urls((lfa,), self)[0]
         return None
 
     def _getAllowedArchitectures(self, available_archs):
@@ -812,7 +819,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True, creator=None):
+               create_dsd_job=True, creator=None, sponsor=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -830,7 +837,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket,
             ancestor=self,
             create_dsd_job=create_dsd_job,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -872,14 +880,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         assert self.component in (
             self.archive.getComponentsForSeries(self.distroseries))
 
-    def _proxied_urls(self, files, parent):
-        """Run the files passed through `ProxiedLibraryFileAlias`."""
-        return [
-            ProxiedLibraryFileAlias(file, parent).http_url for file in files]
-
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
-        source_urls = self._proxied_urls(
+        source_urls = proxied_urls(
             [file.libraryfile for file in self.sourcepackagerelease.files],
              self.archive)
         return source_urls
@@ -889,7 +892,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         publishing_set = getUtility(IPublishingSet)
         binaries = publishing_set.getBinaryFilesForSources(
             self).config(distinct=True)
-        binary_urls = self._proxied_urls(
+        binary_urls = proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
         return binary_urls
 
@@ -1324,6 +1327,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IPublishing`."""
         self.setDeleted(removed_by, removal_comment)
 
+    def binaryFileUrls(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        binary_urls = proxied_urls(
+            [f.libraryfilealias for f in self.files], self.archive)
+        return binary_urls
+
 
 def expand_binary_requests(distroseries, binaries):
     """Architecture-expand a dict of binary publication requests.
@@ -1506,7 +1515,7 @@ class PublishingSet:
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,
-                             creator=None):
+                             creator=None, sponsor=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
@@ -1523,7 +1532,8 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             ancestor=ancestor,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:

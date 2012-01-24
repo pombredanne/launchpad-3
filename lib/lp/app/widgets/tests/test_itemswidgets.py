@@ -5,31 +5,27 @@ __metaclass__ = type
 
 import doctest
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from testtools.matchers import DocTestMatches
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
-from testtools.matchers import DocTestMatches
-
-from lazr.enum import (
-    EnumeratedType,
-    Item,
-    )
-
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     PlainMultiCheckBoxWidget,
     )
-from lp.testing import (
-    TestCaseWithFactory,
-    )
+from lp.services.webapp.menu import structured
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class ItemWidgetTestCase(TestCaseWithFactory):
@@ -207,3 +203,12 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
+
+    def test_renderExtraHint(self):
+        # If an extra hint is specified, it is rendered.
+        self.widget.extra_hint = "Hello World"
+        self.widget.extra_hint_class = 'hint_class'
+        expected = (
+            '<div class="hint_class">Hello World</div>')
+        hint_html = self.widget.renderExtraHint()
+        self.assertEqual(expected, hint_html)

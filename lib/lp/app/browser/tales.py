@@ -23,73 +23,47 @@ from lazr.enum import enumerated_type_registry
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app import zapi
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    queryAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import (
     Attribute,
-    Interface,
     implements,
+    Interface,
     )
-from zope.component import (
-    adapts,
-    getUtility,
-    queryAdapter,
-    getMultiAdapter,
-    )
-from zope.app import zapi
 from zope.publisher.browser import BrowserView
-from zope.traversing.interfaces import (
-    ITraversable,
-    IPathAdapter,
-    TraversalError,
-    )
+from zope.schema import TextLine
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from zope.schema import TextLine
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    ITraversable,
+    TraversalError,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.app.browser.badge import IHasBadges
+from lp.app.browser.stringformatter import (
+    escape,
+    FormattersAPI,
+    )
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    IPrivacy
+    IPrivacy,
     )
-from canonical.launchpad.layers import LaunchpadLayer
-from canonical.launchpad.webapp import canonical_url, urlappend
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
-from canonical.launchpad.webapp.interfaces import (
-    IApplicationMenu,
-    IContextMenu,
-    IFacetMenu,
-    ILaunchBag,
-    INavigationMenu,
-    IPrimaryContext,
-    NoCanonicalUrl
-    )
-from canonical.launchpad.webapp.menu import (
-    get_current_view,
-    get_facet,
-    )
-from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request,
-    LaunchpadView,
-    nearest
-    )
-from canonical.launchpad.webapp.session import get_cookie_domain
-from canonical.lazr.canonicalurl import nearest_adapter
-from lp.app.browser.stringformatter import escape, FormattersAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.bug import IBug
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.branch import IBranch
-from lp.services.features import getFeatureFlag
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryAndSourcePackageName,
-    )
+from lp.layers import LaunchpadLayer
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -97,6 +71,36 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.interfaces import (
+    IApplicationMenu,
+    IContextMenu,
+    IFacetMenu,
+    ILaunchBag,
+    INavigationMenu,
+    IPrimaryContext,
+    NoCanonicalUrl,
+    )
+from lp.services.webapp.menu import (
+    get_current_view,
+    get_facet,
+    )
+from lp.services.webapp.publisher import (
+    get_current_browser_request,
+    LaunchpadView,
+    nearest,
+    )
+from lp.services.webapp.session import get_cookie_domain
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
 SEPARATOR = ' : '
@@ -1418,6 +1422,13 @@ class PillarFormatterAPI(CustomizableFormatter):
     _link_summary_template = '%(displayname)s'
     _link_permission = 'zope.Public'
 
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'url': 'url',
+        'link_with_displayname': 'link_with_displayname'
+        }
+
     def _link_summary_values(self):
         displayname = self._context.displayname
         return {'displayname': displayname}
@@ -1429,28 +1440,69 @@ class PillarFormatterAPI(CustomizableFormatter):
         """
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
+    def _getLinkHTML(self, view_name, rootsite,
+        template, custom_icon_template):
+        """Generates html, mapping a link context to given templates.
+
+        The html is generated using given `template` or `custom_icon_template`
+        based on the presence of a custom icon for Products/ProjectGroups.
+        Named string substitution is used to render the final html
+        (see below for a list of allowed keys).
+
+        The link context is a dict containing info about current
+        Products or ProjectGroups.
+        Keys are `url`, `name`, `displayname`, `custom_icon` (if present),
+        `css_class` (if a custom icon does not exist),
+        'summary' (see CustomizableFormatter._make_link_summary()).
+        """
+        context = self._context
+        mapping = {
+            'url': self.url(view_name, rootsite),
+            'name': cgi.escape(context.name),
+            'displayname': cgi.escape(context.displayname),
+            'summary': self._make_link_summary(),
+            }
+        custom_icon = ObjectImageDisplayAPI(context).custom_icon_url()
+        if custom_icon is None:
+            mapping['css_class'] = ObjectImageDisplayAPI(context).sprite_css()
+            return template % mapping
+        mapping['custom_icon'] = custom_icon
+        return custom_icon_template % mapping
+
     def link(self, view_name, rootsite='mainsite'):
         """The html to show a link to a Product, ProjectGroup or distribution.
 
         In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
+        super(PillarFormatterAPI, self).link(view_name)
+        template = u'<a href="%(url)s" class="%(css_class)s">%(summary)s</a>'
+        custom_icon_template = (
+            u'<a href="%(url)s" class="bg-image" '
+            u'style="background-image: url(%(custom_icon)s)">%(summary)s</a>'
+            )
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
-        html = super(PillarFormatterAPI, self).link(view_name)
-        context = self._context
-        custom_icon = ObjectImageDisplayAPI(
-            context).custom_icon_url()
-        url = self.url(view_name, rootsite)
-        summary = self._make_link_summary()
-        if custom_icon is None:
-            css_class = ObjectImageDisplayAPI(context).sprite_css()
-            html = (u'<a href="%s" class="%s">%s</a>') % (
-                url, css_class, summary)
-        else:
-            html = (u'<a href="%s" class="bg-image" '
-                     'style="background-image: url(%s)">%s</a>') % (
-                url, custom_icon, summary)
-        return html
+    def link_with_displayname(self, view_name, rootsite='mainsite'):
+        """The html to show a link to a Product, ProjectGroup or
+        distribution, including displayname and name.
+
+        In the case of Products or ProjectGroups we display the custom
+        icon, if one exists. The default URL for a pillar is to the mainsite.
+        """
+        super(PillarFormatterAPI, self).link(view_name)
+        template = (
+            u'<a href="%(url)s" class="%(css_class)s">%(displayname)s</a>'
+            u'&nbsp;(<a href="%(url)s">%(name)s</a>)'
+            )
+        custom_icon_template = (
+            u'<a href="%(url)s" class="bg-image" '
+            u'style="background-image: url(%(custom_icon)s)">'
+            u'%(displayname)s</a>&nbsp;(<a href="%(url)s">%(name)s</a>)'
+            )
+        return self._getLinkHTML(
+            view_name, rootsite, template, custom_icon_template)
 
 
 class DistroSeriesFormatterAPI(CustomizableFormatter):
@@ -2193,6 +2245,8 @@ class DurationFormatterAPI:
             return self.exactduration()
         elif name == 'approximateduration':
             return self.approximateduration()
+        elif name == 'millisecondduration':
+            return self.millisecondduration()
         else:
             raise TraversalError(name)
 
@@ -2338,6 +2392,12 @@ class DurationFormatterAPI:
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
         return "%d weeks" % weeks
 
+    def millisecondduration(self):
+        return str(
+            (self._duration.days * 24 * 3600
+             + self._duration.seconds * 1000
+             + self._duration.microseconds // 1000)) + 'ms'
+
 
 class LinkFormatterAPI(ObjectFormatterAPI):
     """Adapter from Link objects to a formatted anchor."""
@@ -2443,9 +2503,11 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
         view/macro:pagehas/portlets
+        view/macro:pagehas/main
 
         view/macro:pagetype
 
+        view/macro:is-page-contentless
     """
 
     implements(ITraversable)
@@ -2478,8 +2540,8 @@ class PageMacroDispatcher:
             return self.haspage(layoutelement)
         elif name == 'pagetype':
             return self.pagetype()
-        elif name == 'show_actions_menu':
-            return self.show_actions_menu()
+        elif name == 'is-page-contentless':
+            return self.isPageContentless()
         else:
             raise TraversalError(name)
 
@@ -2494,6 +2556,20 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def isPageContentless(self):
+        """Should the template avoid rendering detailed information.
+
+        Circumstances such as not possessing launchpad.View on a private
+        context require the template to not render detailed information. The
+        user may only know identifying information about the context.
+        """
+        view_context = self.context.context
+        privacy = IPrivacy(view_context, None)
+        if privacy is None or not privacy.private:
+            return False
+        can_view = check_permission('launchpad.View', view_context)
+        return not can_view
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

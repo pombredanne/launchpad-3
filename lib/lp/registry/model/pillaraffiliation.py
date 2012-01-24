@@ -28,8 +28,8 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import IHasIcon
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.interfaces.launchpad import IHasIcon
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -150,7 +150,7 @@ class PillarAffiliation(object):
                 result.append([])
                 continue
 
-            # Sort the affiliation list according the the importance of each
+            # Sort the affiliation list according to the importance of each
             # affiliation role.
             badges.sort(
                 key=lambda badge:

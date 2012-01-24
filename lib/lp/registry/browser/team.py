@@ -42,8 +42,8 @@ from datetime import (
 import math
 from urllib import unquote
 
-import pytz
 from lazr.restful.utils import smartquote
+import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -55,7 +55,6 @@ from zope.interface import (
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.interfaces import Unauthorized
 from zope.schema import (
     Bool,
     Choice,
@@ -67,33 +66,10 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.validation import validate_new_team_email
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    ActiveBatchNavigator,
-    InactiveBatchNavigator,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp import _
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -102,6 +78,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.validation import validate_new_team_email
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
@@ -120,11 +97,11 @@ from lp.registry.browser.person import (
     PersonRenameFormMixin,
     PPANavigationMenuMixIn,
     )
-from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.browser.teamjoin import (
     TeamJoinMixin,
     userIsActiveTeamMember,
     )
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
     IMailingListSet,
@@ -140,9 +117,9 @@ from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
     ITeam,
-    ITeamReassignment,
     ITeamContactAddressForm,
     ITeamCreation,
+    ITeamReassignment,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     PRIVATE_TEAM_PREFIX,
@@ -158,8 +135,34 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.config import config
 from lp.services.fields import PublicPersonChoice
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
+from lp.services.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 class TeamPrivacyAdapter:
@@ -300,7 +303,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -308,10 +311,14 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in OPEN_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
+
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -319,6 +326,9 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in CLOSED_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -1718,6 +1728,13 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
     """
 
     @property
+    def super_teams(self):
+        """Return only the super teams that the viewer is able to see."""
+        return [
+            team for team in self.context.super_teams
+            if check_permission('launchpad.View', team)]
+
+    @property
     def can_show_subteam_portlet(self):
         """Only show the subteam portlet if there is info to display.
 
@@ -1726,7 +1743,7 @@ class TeamIndexView(PersonIndexView, TeamJoinMixin):
         link so that the invitation can be accepted.
         """
         try:
-            return (self.context.super_teams.count() > 0
+            return (len(self.super_teams) > 0
                     or (self.context.open_membership_invitations
                         and check_permission('launchpad.Edit', self.context)))
         except AttributeError, e:
@@ -1763,6 +1780,7 @@ class TeamJoinForm(Interface):
 
 class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     """A view class for joining a team."""
+
     schema = TeamJoinForm
 
     @property
@@ -1938,8 +1956,6 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
-            elif team.visibility != PersonVisibility.PUBLIC:
-                continue
             elif team in self.context.activemembers:
                 # The team is already a member of the context object.
                 continue
@@ -2045,7 +2061,9 @@ class TeamReassignmentView(ObjectReassignmentView):
 
     def __init__(self, context, request):
         super(TeamReassignmentView, self).__init__(context, request)
-        self.callback = self._addOwnerAsMember
+        self.callback = self._afterOwnerChange
+        self.teamdisplayname = self.contextName
+        self._next_url = canonical_url(self.context)
 
     def validateOwner(self, new_owner):
         """Display error if the owner is not valid.
@@ -2077,7 +2095,11 @@ class TeamReassignmentView(ObjectReassignmentView):
     def contextName(self):
         return self.context.displayname
 
-    def _addOwnerAsMember(self, team, oldOwner, newOwner):
+    @property
+    def next_url(self):
+        return self._next_url
+
+    def _afterOwnerChange(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.
 
         When a user creates a new team, he is added as an administrator of
@@ -2097,6 +2119,17 @@ class TeamReassignmentView(ObjectReassignmentView):
             team.addMember(
                 oldOwner, reviewer=oldOwner,
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
+
+        # If the current logged in user cannot see the team anymore as a
+        # result of the ownership change, we don't want them to get a nasty
+        # error page. So we redirect to launchpad.net with a notification.
+        clear_cache()
+        if not check_permission('launchpad.LimitedView', team):
+            self.request.response.addNotification(
+                "The owner of team %s was successfully changed but you are "
+                "now no longer authorised to view the team."
+                    % self.teamdisplayname)
+            self._next_url = canonical_url(self.user)
 
 
 class ITeamIndexMenu(Interface):

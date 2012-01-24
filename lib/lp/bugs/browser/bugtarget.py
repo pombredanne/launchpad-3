@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -24,8 +24,8 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
-from operator import itemgetter
 import httplib
+from operator import itemgetter
 import urllib
 from urlparse import urljoin
 
@@ -53,19 +53,7 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    urlappend,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -137,8 +125,20 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
@@ -1220,7 +1220,8 @@ class BugTargetBugListingView(LaunchpadView):
         elif IProduct(self.context, None):
             milestone_resultset = self.context.milestones
         else:
-            raise AssertionError("milestones_list called with illegal context")
+            raise AssertionError(
+                "milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1294,18 +1295,6 @@ class BugTargetBugListingView(LaunchpadView):
         return milestone_buglistings
 
 
-class BugCountDataItem:
-    """Data about bug count for a status."""
-
-    def __init__(self, label, count, color):
-        self.label = label
-        self.count = count
-        if color.startswith('#'):
-            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
-        else:
-            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
-
-
 class BugTargetBugTagsView(LaunchpadView):
     """Helper methods for rendering the bug tags portlet."""
 
@@ -1320,7 +1309,6 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = self.context.official_bug_tags
         tags = self.context.getUsedBugTagsWithOpenCounts(
             self.user, 10, official_tags)
-        max_count = float(max([1] + tags.values()))
 
         return sorted(
             [dict(

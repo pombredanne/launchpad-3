@@ -8,9 +8,8 @@ __metaclass__ = type
 
 from unittest import TestCase
 
-from lp.testing.fakemethod import FakeMethod
-
 from devscripts.ec2test.instance import EC2Instance
+from lp.testing.fakemethod import FakeMethod
 
 
 class FakeAccount:

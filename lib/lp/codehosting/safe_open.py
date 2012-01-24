@@ -8,8 +8,8 @@ __metaclass__ = type
 import threading
 
 from bzrlib import (
-    trace,
     errors,
+    trace,
     urlutils,
     )
 from bzrlib.branch import Branch
@@ -17,11 +17,11 @@ from bzrlib.bzrdir import (
     BzrProber,
     RemoteBzrProber,
     )
-from lazr.uri import URI
 from bzrlib.transport import (
     do_catching_redirections,
     get_transport,
     )
+from lazr.uri import URI
 
 
 __all__ = [
@@ -44,6 +44,7 @@ __all__ = [
 # unless a different set was specified.
 
 DEFAULT_PROBERS = [BzrProber, RemoteBzrProber]
+
 
 class BadUrl(Exception):
     """Tried to access a branch from a bad URL."""
@@ -289,7 +290,7 @@ class SafeBranchOpener(object):
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
 
-        This exists as a separate method only to be overriden in unit tests.
+        This exists as a separate method only to be overridden in unit tests.
         """
         bzrdir = self._open_dir(url)
         return bzrdir.get_branch_reference()

@@ -7,13 +7,13 @@
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
-import os
-
 import _pythonpath
 
-from canonical.config import config
+import os
+
 from lp.registry.interfaces.distributionmirror import MirrorContent
 from lp.registry.scripts.distributionmirror_prober import DistroMirrorProber
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,

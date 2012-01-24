@@ -35,7 +35,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.version import valid_debian_version
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.interfaces.archive import IArchive

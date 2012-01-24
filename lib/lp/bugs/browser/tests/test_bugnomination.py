@@ -11,19 +11,19 @@ import soupmatchers
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
 
@@ -88,8 +88,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_distribution_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a distro series.
-        person = self.factory.makePerson(
-            name='main-person-test', password='test')
+        person = self.factory.makePerson(name='main-person-test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
         self._makeBugSupervisorTeam(person, owner, distro)
@@ -108,8 +107,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_source_package_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a source package distro series.
-        person = self.factory.makePerson(
-            name='main-person-test', password='test')
+        person = self.factory.makePerson(name='main-person-test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
         self._makeBugSupervisorTeam(person, owner, distro)
@@ -132,8 +130,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_product_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a product series.
-        person = self.factory.makePerson(
-            name='main-person-test-product', password='test')
+        person = self.factory.makePerson(name='main-person-test-product')
         product = self.factory.makeProduct()
         owner = product.owner
         self._makeBugSupervisorTeam(person, owner, product)

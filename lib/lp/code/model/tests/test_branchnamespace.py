@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -48,6 +47,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class NamespaceMixin:
@@ -977,6 +977,7 @@ class TestPersonalNamespaceCanBranchesBePrivate(TestCaseWithFactory):
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         namespace = PersonalNamespace(team)
         self.assertTrue(namespace.canBranchesBePrivate())
+
 
 class TestPersonalNamespaceCanBranchesBePublic(TestCaseWithFactory):
     """Tests for PersonalNamespace.canBranchesBePublic."""

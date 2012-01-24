@@ -1,5 +1,5 @@
 <div class="listing">
-{{#bugtasks}}
+{{#items}}
   <div class="buglisting-row">
 
     <div class="buglisting-col1">
@@ -22,7 +22,7 @@
             {{/show_id}}
             <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
         </div>
-        <div class="buginfo-extras">
+        <div class="buginfo-extra">
             {{#show_targetname}}
                 <span class="{{bugtarget_css}} field">
                     {{bugtarget}}
@@ -61,24 +61,23 @@
             {{/show_datecreated}}
             {{#show_tag}}
                 <span class="field">Tags:
-                  {{#tags}}{{tags}}{{/tags}}
-                  {{^tags}}None{{/tags}}
+                  {{^has_tags}}None{{/has_tags}}
+                  {{#tags}}
+                     <a href="{{url}}" class="tag">{{tag}}</a>&#160;
+                  {{/tags}}
                 </span>
             {{/show_tag}}
+            {{#show_heat}}
+                <span class="bug-heat-icons">
+                     {{{bug_heat_html}}}
+                </span>
+            {{/show_heat}}
+            <span class="bug-related-icons">
+                {{{badges}}}
+            </span>
         </div>
     </div>
 
-    <div class="buglisting-col3">
-        {{#show_heat}}
-            <span class="bug-heat-icons">
-                 {{{bug_heat_html}}}
-            </span>
-        {{/show_heat}}
-        <span class="bug-related-icons">
-            {{{badges}}}
-        </span>
-    </div>
-
   </div>
-{{/bugtasks}}
+{{/items}}
 </div>

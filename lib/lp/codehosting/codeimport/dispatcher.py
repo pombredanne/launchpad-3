@@ -18,7 +18,7 @@ import socket
 import subprocess
 import time
 
-from canonical.config import config
+from lp.services.config import config
 
 
 class CodeImportDispatcher:

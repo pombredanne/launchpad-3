@@ -28,7 +28,7 @@ The custom field's missing value (i.e. None) represents the 'no bug tracker'
 option.  This is displayed by the widget as the project having a bug tracker
 in a specified external location.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.product import ProductBugTrackerWidget
     >>> from lp.registry.interfaces.product import IProduct
 
@@ -43,7 +43,7 @@ Firefox has not yet selected a bug tracker.
     None
 
     >>> from BeautifulSoup import BeautifulSoup, Tag
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
@@ -253,7 +253,7 @@ The widget has one checkbox for each license, and it also has a link to the
 license policy.  The licenses are split up into categories, and they are
 presented ordered to appear in a 3 column list.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> html = license_widget()
     >>> print extract_text(find_tag_by_id(html, 'recommended'))
@@ -476,7 +476,7 @@ GhostWidget to suppress the markup.
 
 Launchpad form macros do not generate table rows for the GhostWidget.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)

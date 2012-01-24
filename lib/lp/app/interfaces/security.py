@@ -26,10 +26,10 @@ class IAuthorization(Interface):
         the security policy's job of checking authorization of those pairs.
         """
 
-    def checkAccountAuthenticated(account):
+    def checkAuthenticated(person):
         """Whether an authenticated user has `permission` on `obj`.
 
-        Returns `True` if the account has that permission on the adapted
+        Returns `True` if the person has that permission on the adapted
         object. Otherwise returns `False`.
 
         If the check must be delegated to other objects, this method can
@@ -40,5 +40,5 @@ class IAuthorization(Interface):
         top-level authorization to be allowed, but this is dependent on the
         security policy in force.
 
-        :param account: The account that is authenticated.
+        :param person: The person that is authenticated.
         """

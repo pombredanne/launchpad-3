@@ -105,71 +105,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import (
-    Account,
-    AccountPassword,
-    )
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress,
-    HasOwnerMixin,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    AccountSuspendedError,
-    IAccount,
-    IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -281,6 +224,52 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
@@ -295,6 +284,12 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -529,24 +524,6 @@ class Person(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-
-    def _get_password(self):
-        # We have to remove the security proxy because the password is
-        # needed before we are authenticated. I'm not overly worried because
-        # this method is scheduled for demolition -- StuartBishop 20080514
-        password = IStore(AccountPassword).find(
-            AccountPassword, accountID=self.accountID).one()
-        if password is None:
-            return None
-        else:
-            return password.password
-
-    def _set_password(self, value):
-        account = IMasterStore(Account).get(Account, self.accountID)
-        assert account is not None, 'No account for this Person.'
-        account.password = value
-
-    password = property(_get_password, _set_password)
 
     def _get_account_status(self):
         account = IStore(Account).get(Account, self.accountID)
@@ -1410,7 +1387,7 @@ class Person(
             # Initialize cache
             self._inTeam_cache = {}
         else:
-            # Retun from cache or fall through.
+            # Return from cache or fall through.
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:
@@ -1475,12 +1452,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):
@@ -2536,10 +2516,11 @@ class Person(
         else:
             return None
 
-    def reactivate(self, comment, password, preferred_email):
+    def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
         account = IMasterObject(self.account)
-        account.reactivate(comment, password, preferred_email)
+        account.reactivate(comment)
+        self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
             # name, but we must ensure it does not conflict with a current
@@ -3107,97 +3088,79 @@ class PersonSet:
         # possible replication lag issues but this might actually be
         # unnecessary.
         with MasterDatabasePolicy():
-            store = IMasterStore(EmailAddress)
-            join = store.using(
-                EmailAddress,
-                LeftJoin(Account, EmailAddress.accountID == Account.id))
-            email, account = (
-                join.find(
-                    (EmailAddress, Account),
-                    EmailAddress.email.lower() ==
-                        ensure_unicode(email_address).lower()).one()
+            email, person = (
+                getUtility(IPersonSet).getByEmails([email_address]).one()
                 or (None, None))
-            identifier = store.find(
+            identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
 
-            if email is None and identifier is None:
-                # Neither the Email Address not the OpenId Identifier
-                # exist in the database. Create the email address,
-                # account, and associated info. OpenIdIdentifier is
-                # created later.
-                account_set = getUtility(IAccountSet)
-                account, email = account_set.createAccountAndEmail(
-                    email_address, creation_rationale, full_name,
-                    password=None)
-                db_updated = True
-
-            elif email is None:
-                # The Email Address does not exist in the database,
-                # but the OpenId Identifier does. Create the Email
-                # Address and link it to the account.
-                assert account is None, 'Retrieved an account but not email?'
-                account = identifier.account
-                emailaddress_set = getUtility(IEmailAddressSet)
-                email = emailaddress_set.new(
-                    email_address, account=account)
-                db_updated = True
-
-            elif account is None:
-                # Email address exists, but there is no Account linked
-                # to it. Create the Account and link it to the
-                # EmailAddress.
+            if email is None:
+                if identifier is None:
+                    # Neither the Email Address not the OpenId Identifier
+                    # exist in the database. Create the email address,
+                    # account, and associated info. OpenIdIdentifier is
+                    # created later.
+                    person_set = getUtility(IPersonSet)
+                    person, email = person_set.createPersonAndEmail(
+                        email_address, creation_rationale, comment=comment,
+                        displayname=full_name)
+                    db_updated = True
+                else:
+                    # The Email Address does not exist in the database,
+                    # but the OpenId Identifier does. Create the Email
+                    # Address and link it to the person.
+                    person = IPerson(identifier.account, None)
+                    assert person is not None, (
+                        'Received a personless account.')
+                    emailaddress_set = getUtility(IEmailAddressSet)
+                    email = emailaddress_set.new(email_address, person=person)
+                    db_updated = True
+            elif email.person.account is None:
+                # Email address and person exist, but there is no
+                # account. Create and link it.
                 account_set = getUtility(IAccountSet)
                 account = account_set.new(
                     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
                     full_name)
-                email.account = account
+                removeSecurityProxy(email.person).account = account
                 db_updated = True
+
+            person = email.person
+            assert person.account is not None
 
             if identifier is None:
                 # This is the first time we have seen that
                 # OpenIdIdentifier. Link it.
                 identifier = OpenIdIdentifier()
-                identifier.account = account
+                identifier.account = person.account
                 identifier.identifier = openid_identifier
-                store.add(identifier)
+                IStore(OpenIdIdentifier).add(identifier)
                 db_updated = True
-
-            elif identifier.account != account:
+            elif identifier.account != person.account:
                 # The ISD OpenId server may have linked this OpenId
                 # identifier to a new email address, or the user may
                 # have transfered their email address to a different
                 # Launchpad Account. If that happened, repair the
                 # link - we trust the ISD OpenId server.
-                identifier.account = account
+                identifier.account = person.account
                 db_updated = True
 
             # We now have an account, email address, and openid identifier.
 
-            if account.status == AccountStatus.SUSPENDED:
+            if person.account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
 
-            elif account.status in [AccountStatus.DEACTIVATED,
-                                    AccountStatus.NOACCOUNT]:
-                password = ''  # Needed just to please reactivate() below.
-                removeSecurityProxy(account).reactivate(
-                    comment, password, removeSecurityProxy(email))
+            elif person.account.status in [AccountStatus.DEACTIVATED,
+                                           AccountStatus.NOACCOUNT]:
+                removeSecurityProxy(person.account).reactivate(comment)
+                removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
 
-            if IPerson(account, None) is None:
-                removeSecurityProxy(account).createPerson(
-                    creation_rationale, comment=comment)
-                db_updated = True
-
-            person = IPerson(account)
-            if email.personID != person.id:
-                removeSecurityProxy(email).person = person
-                db_updated = True
-
-            return person, db_updated
+            return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3221,8 +3184,7 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None,
-            displayname=None, password=None, passwordEncrypted=False,
+            self, email, rationale, comment=None, name=None, displayname=None,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
 
@@ -3243,19 +3205,13 @@ class PersonSet:
         # Convert the PersonCreationRationale to an AccountCreationRationale
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
-        account = getUtility(IAccountSet).new(
-                account_rationale, displayname, password=password,
-                password_is_encrypted=passwordEncrypted)
+        account = getUtility(IAccountSet).new(account_rationale, displayname)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
             comment=comment, registrant=registrant, account=account)
+        email = getUtility(IEmailAddressSet).new(email, person)
 
-        email = getUtility(IEmailAddressSet).new(
-                email, person, account=account)
-
-        assert email.accountID is not None, (
-            'Failed to link EmailAddress to Account')
         return person, email
 
     def createPersonWithoutEmail(
@@ -3298,55 +3254,14 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        # Start by checking if there is an `EmailAddress` for the given
-        # text address.  There are many cases where an email address can be
-        # created without an associated `Person`. For instance, we created
-        # an account linked to the address through an external system such
-        # SSO or ShipIt.
-        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        person = getUtility(IPersonSet).getByEmail(email)
 
-        # There is no `EmailAddress` for this text address, so we need to
-        # create both the `Person` and `EmailAddress` here and we are done.
-        if email_address is None:
+        if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
-            return person
 
-        # There is an `EmailAddress` for this text address, but no
-        # associated `Person`.
-        if email_address.person is None:
-            assert email_address.accountID is not None, (
-                '%s is not associated to a person or account'
-                % email_address.email)
-            account = IMasterStore(Account).get(
-                Account, email_address.accountID)
-            account_person = self.getByAccount(account)
-            if account_person is None:
-                # There is no associated `Person` to the email `Account`.
-                # This is probably because the account was created externally
-                # to Launchpad. Create just the `Person`, associate it with
-                # the `EmailAddress` and return it.
-                name = generate_nick(email)
-                account_person = self._newPerson(
-                    name, displayname, hide_email_addresses=True,
-                    rationale=rationale, comment=comment,
-                    registrant=registrant, account=email_address.account)
-            # There is (now) a `Person` linked to the `Account`, link the
-            # `EmailAddress` to this `Person` and return it.
-            master_email = IMasterStore(EmailAddress).get(
-                EmailAddress, email_address.id)
-            master_email.personID = account_person.id
-            # Populate the previously empty 'preferredemail' cached
-            # property, so the Person record is up-to-date.
-            if master_email.status == EmailAddressStatus.PREFERRED:
-                cache = get_property_cache(account_person)
-                cache.preferredemail = master_email
-            return account_person
-
-        # Easy, return the `Person` associated with the existing
-        # `EmailAddress`.
-        return IMasterStore(Person).get(Person, email_address.personID)
+        return person
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
@@ -3586,8 +3501,15 @@ class PersonSet:
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
-        return Person.select("Person.teamowner IS NOT NULL",
-            orderBy=['-datecreated'], limit=limit)
+        orderby = (Desc(Person.datecreated), Desc(Person.id))
+        result = IStore(Person).find(
+            Person,
+            And(
+                self._teamPrivacyQuery(),
+                TeamParticipation.team == Person.id,
+                Person.teamowner != None,
+                Person.merged == None))
+        return result.order_by(orderby).config(distinct=True)[:limit]
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):

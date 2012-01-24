@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,25 +9,23 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
+from lp.soyuz.scripts.obsolete_distroseries import ObsoleteDistroseries
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestObsoleteDistroseriesScript(TestCase):

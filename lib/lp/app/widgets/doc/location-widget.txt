@@ -1,8 +1,9 @@
-= Location widget =
+Location widget
+===============
 
 A widget used when setting the geographic location of a given person.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.app.widgets.location import LocationWidget
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.services.fields import LocationField
@@ -128,7 +129,8 @@ latitude/longitude have non-realistic values.
     longitude...
 
 
-== The widget's HTML ==
+The widget's HTML
+-----------------
 
 The widget's HTML will include <input> elements for the latitude,
 longitude and time zone fields.  The values of these elements will be
@@ -146,7 +148,8 @@ the map.
     <select...name="field.location.time_zone"...
 
 
-== The widget's script ==
+The widget's script
+-------------------
 
 The widget initializes the mapping.renderPersonMap() JavaScript methods
 with its map_javascript property. The widget uses the
@@ -154,7 +157,7 @@ mapping.setLocation() method to lookup the time zone for the location.
 The launchpad.geonames_identity config key provides the identity required to
 access ba-ws.geonames.net's service.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> config.push('geoname_data', """
     ...     [launchpad]
@@ -179,7 +182,8 @@ access ba-ws.geonames.net's service.
     >>> config_data = config.pop('geoname_data')
 
 
-== XSS ==
+XSS
+---
 
 The widget must escape and JS encode the person's displayname to prevent
 XSS attacks and to make sure the generated javascript can be parsed.

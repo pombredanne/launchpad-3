@@ -3,12 +3,12 @@
 
 """Tests for visibility of a bug."""
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):

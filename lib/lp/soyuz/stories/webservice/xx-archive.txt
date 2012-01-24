@@ -268,8 +268,8 @@ Passing a bad package name results in an error:
 
 Colin is a valid member of the team who owns the ubuntu primary archive.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -711,7 +711,7 @@ These are syncSource() and syncSources(). Both are wrappers of the
 `PackageCopier` infrastructure, see more information in
 scripts/packagecopier.py.
 
-For testing purpose we will create some publications.
+For testing purposes we will create some publications.
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

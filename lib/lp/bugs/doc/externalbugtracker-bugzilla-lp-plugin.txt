@@ -55,8 +55,8 @@ doing the authentication work with the remote server. We'll override the
 _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
 
@@ -334,7 +334,7 @@ BugzillaLPPlugin implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
@@ -342,7 +342,7 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.registry.interfaces.person import IPersonSet

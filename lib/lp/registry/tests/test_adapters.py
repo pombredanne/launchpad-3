@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.adapters import (
     distroseries_to_distribution,
     package_to_sourcepackagename,
@@ -16,6 +15,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestAdapters(TestCaseWithFactory):

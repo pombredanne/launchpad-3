@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ChangesFile functionality."""
@@ -10,10 +10,6 @@ import os
 from debian.deb822 import Changes
 from zope.component import getUtility
 
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -37,6 +33,10 @@ from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.keyserver import KeyServerTac
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class TestDetermineFileClassAndName(TestCase):
@@ -123,7 +123,8 @@ class ChangesFileTests(TestCase):
         contents = self.getBaseChanges()
         contents["Binary"] = "binary1\n binary2 \n binary3"
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
-        self.assertEquals(set(["binary1", "binary2", "binary3"]), changes.binaries)
+        self.assertEqual(
+            set(["binary1", "binary2", "binary3"]), changes.binaries)
 
     def test_checkFileName(self):
         # checkFileName() yields an UploadError if the filename is invalid.

@@ -14,14 +14,14 @@ import operator
 
 from lazr.restful.utils import smartquote
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp import (
+from lp.archivepublisher.debversion import Version
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     LaunchpadView,
     Navigation,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.archivepublisher.debversion import Version
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.browser.build import BuildNavigationMixin
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (

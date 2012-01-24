@@ -39,21 +39,6 @@ from storm.store import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.librarian.interfaces import DownloadFailed
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -64,6 +49,21 @@ from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces.client import DownloadFailed
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
@@ -845,6 +845,27 @@ class PackageUpload(SQLBase):
         # and uploading to any archive as the signer.
         return changes, strip_pgp_signature(changes_content).splitlines(True)
 
+    def findSourcePublication(self):
+        """Find the `SourcePackagePublishingHistory` for this build."""
+        first_build = self.builds[:1]
+        if first_build:
+            [first_build] = first_build
+            return first_build.build._getLatestPublication()
+        else:
+            return None
+
+    def findPersonToNotify(self):
+        """Find the right person to notify about this upload."""
+        spph = self.findSourcePublication()
+        if spph and self.sourcepackagerelease.upload_archive != self.archive:
+            # This is a build triggered by the syncing of a source
+            # package.  Notify the person who requested the sync.
+            return spph.creator
+        elif self.signing_key:
+            return self.signing_key.owner
+        else:
+            return None
+
     def notify(self, summary_text=None, changes_file_object=None,
                logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -860,12 +881,9 @@ class PackageUpload(SQLBase):
             changesfile_content = changes_file_object.read()
         else:
             changesfile_content = 'No changes file content available.'
-        if self.signing_key is not None:
-            signer = self.signing_key.owner
-        else:
-            signer = None
+        blamee = self.findPersonToNotify()
         notify(
-            signer, self.sourcepackagerelease, self.builds, self.customfiles,
+            blamee, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run=dry_run, logger=logger)

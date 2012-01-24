@@ -25,12 +25,18 @@ import sys
 
 import psycopg2
 
-from canonical.config import config
-from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
-    connect, quote, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.scripts import db_options, logger_options, logger
-
+from lp.services.config import config
+from lp.services.database.postgresql import ConnectionString
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    quote,
+    )
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 import replication.helpers
 
 

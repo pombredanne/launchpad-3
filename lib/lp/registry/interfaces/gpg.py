@@ -37,7 +37,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 
 
@@ -75,8 +75,8 @@ class GPGKeyAlgorithm(DBEnumeratedType):
     20: "G", # ElGamal, compromised
 
     FIXME
-    Rewrite it according the experimental API retuning also a name attribute
-    tested on 'algorithmname' attribute
+    Rewrite it according to the experimental API returning also a name
+    attribute tested on 'algorithmname' attribute
 
     """
 

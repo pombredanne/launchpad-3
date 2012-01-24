@@ -37,29 +37,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp import (
-    canonical_url,
-    urlappend,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.diskpool import poolify
 from lp.registry.errors import (
@@ -90,11 +67,34 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     BinaryPackageFileType,

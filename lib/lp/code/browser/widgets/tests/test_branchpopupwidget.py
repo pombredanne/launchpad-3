@@ -14,15 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp import _
 from lp.code.browser.widgets.branch import (
     BranchPopupWidget,
     NoProductError,
@@ -33,7 +25,15 @@ from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class DummyLaunchBag:

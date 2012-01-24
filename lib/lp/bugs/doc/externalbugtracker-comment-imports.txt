@@ -7,7 +7,7 @@ In order to demonstrate this we need to create example Bug, BugTracker
 and BugWatch instances with which to work.
 
     >>> from zope.interface import implements
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from lp.services.messages.interfaces.message import IMessageSet
@@ -84,7 +84,7 @@ comments. Calling importBugComments() and passing it our new
 comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
-    >>> from canonical.launchpad.scripts.logger import log
+    >>> from lp.services.scripts.logger import log
     >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
     >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
     ...     make_bug_watch_updater)
@@ -178,23 +178,6 @@ is associated with the existing person.
 
     >>> bug.messages[-1].owner.name
     u'no-priv'
-
-This also works if the address is associated with an Account, but not a
-Person. This should only happen when the user has logged into ShipIt but
-not Launchpad. A new Person is created.
-
-    >>> account = factory.makeAccount(email="account-only@example.com")
-    >>> external_bugtracker.poster_tuple = (
-    ...     'Account Only', 'account-only@example.com')
-    >>> external_bugtracker.remote_comments['account-only-comment'] = (
-    ...     "Account-only comment.")
-    >>> bugwatch_updater.importBugComments()
-    INFO:...:Imported 1 comments for remote bug 123456 on ...
-
-    >>> bug.messages[-1].owner.name
-    u'account-only'
-    >>> bug.messages[-1].owner.account == account
-    True
 
 It's also possible for Launchpad to create Persons from remote
 bugtracker users when the remote bugtracker doesn't specify an email

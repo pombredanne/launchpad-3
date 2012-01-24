@@ -6,14 +6,14 @@ __all__ = [
     'JSComboFile',
     ]
 
+from glob import glob
 import optparse
 import os
 import re
 import sys
 
-from glob import glob
-
 import cssutils
+
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(
