@@ -180,13 +180,25 @@ def file_prepend(filename, line):
         >>> file_prepend(f.name, 'line0\\n')
         >>> open(f.name).read()
         'line0\\nline1\\n'
+
+    If the file starts with the given `line`, nothing happens::
+
         >>> file_prepend(f.name, 'line0\\n')
         >>> open(f.name).read()
         'line0\\nline1\\n'
+
+    If the file contains the given `line`, but not at the beginning,
+    the line is moved on top::
+
+        >>> file_prepend(f.name, 'line1\\n')
+        >>> open(f.name).read()
+        'line1\\nline0\\n'
     """
     with open(filename, 'r+') as f:
         lines = f.readlines()
         if lines[0] != line:
+            if line in lines:
+                lines.remove(line)
             lines.insert(0, line)
             f.seek(0)
             f.writelines(lines)
@@ -205,7 +217,7 @@ def file_append(filename, line):
         >>> open(f.name).read()
         'line1\\nnew line\\n'
 
-    If the given `line` is already present in the file, nothing happens::
+    Nothing happens if the file already contains the given `line`::
 
         >>> file_append(f.name, 'new line\\n')
         >>> open(f.name).read()
