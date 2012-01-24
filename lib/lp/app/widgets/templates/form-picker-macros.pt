@@ -40,7 +40,7 @@
         var vocabulary = config.vocabulary_name;
         var vocabulary_filters = config.vocabulary_filters;
         var input_element = config.input_element;
-        var show_widget_id = '${view/show_widget_id}';
+        var show_widget_id =config.show_widget_id;
         var namespace = Y.namespace('lp.app.picker.connect');
         namespace[show_widget_id] = function() {
             // Sort out the Choose... link.
