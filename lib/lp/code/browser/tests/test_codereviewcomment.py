@@ -90,6 +90,15 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
             text='Download full text')
         self.assertThat(browser.contents, HTMLContains(body))
 
+    def test_excessive_comments_no_read_more(self):
+        """Excessive comments have no "Read more" link."""
+        comment = self.factory.makeCodeReviewComment(body='x ' * 5001)
+        url = canonical_url(comment, force_local_path=True)
+        browser = self.getViewBrowser(comment)
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        self.assertThat(browser.contents, Not(HTMLContains(read_more)))
+
     def test_short_comment_no_download_link(self):
         """Long comments displayed by themselves are not truncated."""
         comment = self.factory.makeCodeReviewComment(body='x ' * 5000)
