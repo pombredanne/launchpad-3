@@ -244,7 +244,7 @@ parser.add_argument(
     '-e', '--email', required=True,
     help='The email of the user, used for bzr whoami.')
 parser.add_argument(
-    '-n', '--name', required=True,
+    '-f', '--full-name', required=True,
     help='The full name of the user, used fo bzr whoami.')
 parser.add_argument(
     '-l', '--lpuser',
@@ -265,7 +265,7 @@ parser.add_argument(
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
-    '-c', '--lxc-name', default=LXC_NAME,
+    '-n', '--lxc-name', default=LXC_NAME,
     metavar='LXC_NAME (default=%s)' % LXC_NAME,
     help='The LXC container name.')
 parser.add_argument(
