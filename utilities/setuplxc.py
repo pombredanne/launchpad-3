@@ -90,8 +90,7 @@ Env = namedtuple('Env', 'uid gid home')
 
 @contextmanager
 def ssh(location, user=None):
-    """Return a callable that can be used to run shell commands into another
-    host using ssh.
+    """Return a callable that can be used to run ssh shell commands.
 
     The ssh `location` and, optionally, `user` must be given.
     If the user is None then the current user is used for the connection.
@@ -124,9 +123,7 @@ def get_user_ids(user):
 
 @contextmanager
 def su(user):
-    """A context manager to temporary run the Python interpreter as a
-    different user.
-    """
+    """A context manager to temporary run the script as a different user."""
     uid, gid = get_user_ids(user)
     os.setegid(gid)
     os.seteuid(uid)
@@ -158,6 +155,7 @@ def cd(directory):
 
 def get_container_path(lxcname, path='', base_path=LXC_PATH):
     """Return the path of LXC container called `lxcname`.
+
     If a `path` is given, return that path inside the container, e.g.::
 
         >>> get_container_path('mycontainer')
@@ -171,8 +169,9 @@ def get_container_path(lxcname, path='', base_path=LXC_PATH):
 
 
 def file_insert(filename, line):
-    """Insert given `line`, if not present, at the beginning of `filename`,
-    e.g.::
+    """Insert given `line`, if not present, at the beginning of `filename`.
+
+    Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
@@ -194,8 +193,9 @@ def file_insert(filename, line):
 
 
 def file_append(filename, content):
-    """Append given `content`, if not present, at the end of `filename`,
-    e.g.::
+    """Append given `content`, if not present, at the end of `filename`.
+
+    Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
