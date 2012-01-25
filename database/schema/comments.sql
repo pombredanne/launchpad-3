@@ -900,6 +900,35 @@ COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a so
 COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
 COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
 
+-- specificationworkitem
+COMMENT ON TABLE specificationworkitem IS 'A work item which is a piece of work relating to a blueprint.';
+COMMENT ON COLUMN id IS 'The id of the work item.';
+COMMENT ON COLUMN title IS 'The title of the work item.';
+COMMENT ON COLUMN specification IS 'The blueprint that this work item is a part of.';
+COMMENT ON COLUMN assignee IS 'The person who is assigned to complete the work item.';
+COMMENT ON COLUMN milestone IS 'The milestone this work item is targetted to.';
+COMMENT ON COLUMN date_created IS 'The date on which the work item was created.';
+COMMENT ON COLUMN deleted IS 'Marks if the work item has been deleted. To be able to keep history we do not want to actually delete them from the database.';
+
+-- specificationworkitemchange
+COMMENT ON TABLE specificationworkitemchange IS 'A property change on a work item.';
+COMMENT ON COLUMN id IS 'Id of the change.';
+COMMENT ON COLUMN work_item id IS 'The work item for which a propery has changed.';
+COMMENT ON COLUMN new_status IS 'The new status for the work item.';
+COMMENT ON COLUMN new_milestone IS 'The new milestone the work item has been targetted to.';
+COMMENT ON COLUMN new_assignee IS 'The person which the work item has be assigned to.';
+COMMENT ON COLUMN time timestamp IS 'The time of the change.';
+
+-- specificationworkitemstats
+COMMENT TABLE specificationworkitemstats IS '';
+COMMENT ON COLUMN id IS '';
+COMMENT ON COLUMN specification IS '';
+COMMENT ON COLUMN time IS '';
+COMMENT ON COLUMN status IS '';
+COMMENT ON COLUMN assignee IS '';
+COMMENT ON COLUMN milestone IS '';
+COMMENT ON COLUMN count IS '';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
