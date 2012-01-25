@@ -137,6 +137,7 @@ from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.code.interfaces.branchcollection import IBranchCollection
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -1748,6 +1749,18 @@ class Person(
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because one "
                     "or more if its member teams are Open." % policy)
+
+    def getBranchVisibilityInfo(self, branch_names):
+        """See `IPerson`."""
+        branch_set = getUtility(IBranchLookup)
+        invisible_branches = []
+        for name in branch_names:
+            branch = branch_set.getByUniqueName(name)
+            if branch is not None and not branch.visibleByUser(self):
+                invisible_branches.append(branch.unique_name)
+        return {
+            'person_name': self.displayname,
+            'invisible_branches': invisible_branches}
 
     @property
     def wiki_names(self):
