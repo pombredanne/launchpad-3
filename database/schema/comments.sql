@@ -917,17 +917,17 @@ COMMENT ON COLUMN work_item id IS 'The work item for which a propery has changed
 COMMENT ON COLUMN new_status IS 'The new status for the work item.';
 COMMENT ON COLUMN new_milestone IS 'The new milestone the work item has been targetted to.';
 COMMENT ON COLUMN new_assignee IS 'The person which the work item has be assigned to.';
-COMMENT ON COLUMN time timestamp IS 'The time of the change.';
+COMMENT ON COLUMN date timestamp IS 'The time of the change.';
 
 -- specificationworkitemstats
-COMMENT TABLE specificationworkitemstats IS '';
-COMMENT ON COLUMN id IS '';
-COMMENT ON COLUMN specification IS '';
-COMMENT ON COLUMN time IS '';
-COMMENT ON COLUMN status IS '';
-COMMENT ON COLUMN assignee IS '';
-COMMENT ON COLUMN milestone IS '';
-COMMENT ON COLUMN count IS '';
+COMMENT TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
+COMMENT ON COLUMN id IS 'The id for this stats collection.';
+COMMENT ON COLUMN specification IS 'The related blueprint.';
+COMMENT ON COLUMN date IS 'Date when the stats where collected.';
+COMMENT ON COLUMN status IS 'The work item status that work items are counted for.';
+COMMENT ON COLUMN assignee IS 'The assignee that work items are counted for.';
+COMMENT ON COLUMN milestone IS 'The milestone that work items are counted for.';
+COMMENT ON COLUMN count IS 'The number of work items for the blueprint with the particular status, assignee and milestone.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';

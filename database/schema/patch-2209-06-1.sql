@@ -20,18 +20,17 @@ CREATE TABLE specificationworkitemchange (
     new_status integer NOT NULL,
     new_milestone integer REFERENCES milestone,
     new_assignee integer REFERENCES person,
-    time timestamp NOT NULL);
+    date timestamp without time zone DEFAULT 
+        timezone('UTC'::text, now()) NOT NULL);
 
 CREATE TABLE specificationworkitemstats (
     id SERIAL PRIMARY KEY,
     specification integer REFERENCES specification,
-    time timestamp NOT NULL,
+    date timestamp without time zone DEFAULT 
+        timezone('UTC'::text, now()) NOT NULL,
     status integer NOT NULL,
     assignee integer REFERENCES person,
     milestone integer REFERENCES milestone,
     count integer NOT NULL);
-
--- TODO: Add security.cfg entries for the new tables
--- TODO: Add comments.sql entries for the new tables
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 13, 0);
