@@ -536,6 +536,30 @@ class TestPerson(TestCaseWithFactory):
         self.assertTrue(contact.isAnySecurityContact())
         self.assertFalse(person.isAnySecurityContact())
 
+    def test_getBranchVisibilityInfo_empty_branch_names(self):
+        """Test the test_getBranchVisibilityInfo API with no branch names specified."""
+        person = self.factory.makePerson(name='fred')
+        info = person.getBranchVisibilityInfo(branch_names=[])
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual([], info['invisible_branches'])
+
+    def test_getBranchVisibilityInfo(self):
+        """Test the test_getBranchVisibilityInfo API."""
+        person = self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch()
+        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
+        invisible_name = removeSecurityProxy(invisible_branch).unique_name
+        branches = [
+            visible_branch.unique_name,
+            invisible_name,
+            'invalid_branch_name']
+
+        login_person(owner)
+        info = person.getBranchVisibilityInfo(branch_names=branches)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual([invisible_name], info['invisible_branches'])
+
 
 class TestPersonStates(TestCaseWithFactory):
 
