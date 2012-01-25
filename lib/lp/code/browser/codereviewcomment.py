@@ -46,24 +46,11 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     )
-from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
-
-
-class CommentBodyDownloadView(DataDownloadView):
-
-    content_type = 'text/plain'
-
-    @property
-    def filename(self):
-        return 'comment-%d.txt' % self.context.id
-
-    def getBody(self):
-        return self.context.message_body
 
 
 class CodeReviewDisplayComment(MessageComment):
@@ -90,6 +77,10 @@ class CodeReviewDisplayComment(MessageComment):
         # The date attribute is used to sort the comments in the conversation.
         self.date = self.comment.message.datecreated
         self.from_superseded = from_superseded
+
+    @property
+    def index(self):
+        return self.comment.id
 
     @property
     def extra_css_class(self):
@@ -190,6 +181,9 @@ class CodeReviewCommentView(LaunchpadView):
     @property
     def page_description(self):
         return self.context.message_body
+
+    def download(self):
+        return CodeReviewDisplayComment(self.context).download(self.request)
 
     # Should the comment be shown in full?
     full_comment = True

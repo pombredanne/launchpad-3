@@ -127,7 +127,6 @@ class IBugComment(IMessage, IComment):
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
-    index = Int(title=u'The comment number', required=True, readonly=True)
     display_title = Attribute('Whether or not to show the title.')
     synchronized = Attribute(
         'Has the comment been synchronized with a remote bug tracker?')

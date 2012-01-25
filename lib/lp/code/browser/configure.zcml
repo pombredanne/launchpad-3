@@ -630,12 +630,6 @@
         class="lp.code.browser.branch.BranchHierarchy"
         template="../../app/templates/launchpad-hierarchy.pt"
         permission="zope.Public"/>
-    <browser:page
-        name="+download"
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        class="lp.code.browser.codereviewcomment.CommentBodyDownloadView"
-        permission="launchpad.View"
-        />
     <browser:url
         for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
         path_expression="string:comments/${id}"
@@ -656,6 +650,10 @@
         <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+download"
+            attribute="download"
+        />
     </browser:pages>
     <browser:pages
         for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"

@@ -18,6 +18,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Datetime,
+    Int,
     Text,
     TextLine,
     )
@@ -27,6 +28,8 @@ from lp import _
 
 class IComment(Interface):
     """A comment which may have a body or footer."""
+
+    index = Int(title=u'The comment number', required=True, readonly=True)
 
     extra_css_class = TextLine(
         description=_("A css class to apply to the comment's outer div."))
@@ -69,6 +72,9 @@ class IComment(Interface):
     display_attachments = Bool(
         description=_("Should attachments be displayed for this comment."),
         readonly=True)
+
+    def download(request):
+        """Respond to the request with the full message body as a download."""
 
 
 class IConversation(Interface):

@@ -275,6 +275,9 @@ class BugComment(MessageComment):
     def add_comment_url(self):
         return canonical_url(self.bugtask, view_name='+addcomment')
 
+    def download_url(self):
+        return canonical_url(self, view_name='+download')
+
     @property
     def show_footer(self):
         """Return True if the footer should be shown for this comment."""
@@ -333,6 +336,9 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+
+    def download(self):
+        return self.comment.download(self.request)
 
     @property
     def show_spam_controls(self):

@@ -30,6 +30,7 @@ from lp.coop.answersbugs.visibility import (
     TestMessageVisibilityMixin,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
@@ -331,3 +332,10 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         bugtask = bug_message.bugs[0].bugtasks[0]
         bug_comment = BugComment(1, bug_message, bugtask)
         verifyObject(IBugComment, bug_comment)
+
+    def test_download_url(self):
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].bugtasks[0]
+        bug_comment = BugComment(1, bug_message, bugtask)
+        url = canonical_url(bug_comment, view_name='+download')
+        self.assertEqual(url, bug_comment.download_url())
