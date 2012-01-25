@@ -29,10 +29,10 @@ about the bug.
 
 The methods are called by the CheckwatchesMaster class:
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> txn = transaction
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> bug_watch = factory.makeBugWatch('42')
     >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
@@ -44,7 +44,7 @@ The methods are called by the CheckwatchesMaster class:
     >>> unlinked_bug = factory.makeBug()
 
     >>> txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
+    >>> switch_dbuser('checkwatches')
 
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> checkwatches_master = CheckwatchesMaster(txn)

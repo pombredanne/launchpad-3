@@ -30,6 +30,7 @@ from lp.services.log.logger import (
     DevNullLogger,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -71,7 +72,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFTPArchive, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive

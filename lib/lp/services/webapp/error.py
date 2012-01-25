@@ -25,7 +25,9 @@ from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
 import lp.layers
+from lp.services import features
 from lp.services.config import config
+from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
@@ -70,6 +72,13 @@ class SystemErrorView(LaunchpadView):
         if getattr(self.request, 'oopsid') is not None:
             self.request.response.addHeader(
                 'X-Lazr-OopsId', self.request.oopsid)
+
+        # Need to neuter the feature flags on error output. The base template
+        # checks for a feature flag, but they depend on db access which might
+        # not have been setup yet.
+        request.features = NullFeatureController()
+        features.install_feature_controller(request.features)
+
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True

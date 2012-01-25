@@ -22,6 +22,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -47,7 +48,7 @@ def lobotomizeSteveASetUp(test):
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    switch_dbuser(config.checkwatches.dbuser)
 
 
 def branchscannerBugsSetUp(test):
@@ -58,7 +59,7 @@ def branchscannerBugsSetUp(test):
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
+    switch_dbuser(config.malone.bugnotification_dbuser)
     setUp(test)
 
 
@@ -68,7 +69,7 @@ def bugNotificationSendingTearDown(test):
 
 def cveSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
+    switch_dbuser(config.cveupdater.dbuser)
     setUp(test)
 
 
@@ -81,7 +82,7 @@ def uploaderBugsSetUp(test):
     """
     lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
@@ -110,7 +111,7 @@ def bugtaskExpirationSetUp(test):
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+    switch_dbuser(config.updateremoteproduct.dbuser)
 
 
 def updateRemoteProductTeardown(test):

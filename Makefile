@@ -42,6 +42,8 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+CONVOY_ROOT=/var/tmp/convoy
+
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
@@ -86,7 +88,12 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	    --force "$(APIDOC_TMPDIR)"
 	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
-apidoc: compile $(API_INDEX)
+apidoc:
+ifdef LP_MAKE_NO_WADL
+	@echo "Skipping WADL generation."
+else
+	$(MAKE) compile $(API_INDEX)
+endif
 
 # Used to generate HTML developer documentation for Launchpad.
 doc:
@@ -180,6 +187,10 @@ else
 endif
 
 jsbuild: $(PY) $(JS_OUT)
+	mkdir -p $(CONVOY_ROOT)
+	bin/combo-rootdir $(CONVOY_ROOT)
+	rm -f $(ICING)/yui
+	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -348,21 +359,31 @@ rebuildfti:
 
 clean_js:
 	$(RM) $(JS_OUT)
-	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+	$(RM) -r $(ICING)/yui
+	$(RM) -r $(CONVOY_ROOT)
 
 clean_buildout:
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
 
-clean: clean_js clean_buildout clean_logs
+clean_mailman:
+	$(RM) -r \
+			  /var/tmp/mailman \
+			  /var/tmp/mailman-xmlrpc.test
+ifdef LP_MAKE_KEEP_MAILMAN
+	@echo "Keeping previously built mailman."
+else
+	$(RM) -r lib/mailman
+endif
+
+clean: clean_js clean_mailman clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -375,11 +396,11 @@ clean: clean_js clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r lib/mailman
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) -r $(APIDOC_DIR)
 	$(RM) -r $(APIDOC_DIR).tmp
+	$(RM) -r build
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
 	$(RM) -r \

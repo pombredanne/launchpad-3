@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+import contextlib
+from lazr.restful.interfaces import IJSONRequestCache
+import simplejson
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -21,6 +24,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.browser.team import TeamMailingListArchiveView
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -459,6 +463,43 @@ class TestTeamMenu(TestCaseWithFactory):
         self.assertEqual(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
+
+
+class TestMailingListArchiveView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_messages(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        view = create_view(team, name='+mailing-list-archive')
+        messages = IJSONRequestCache(view.request).objects['mail']
+        self.assertEqual(0, len(messages))
+
+    @contextlib.contextmanager
+    def _override_messages(self, view_class, messages):
+        def _message_shim(self):
+            return simplejson.loads(messages)
+        tmp = TeamMailingListArchiveView._get_messages
+        TeamMailingListArchiveView._get_messages = _message_shim
+        yield TeamMailingListArchiveView
+        TeamMailingListArchiveView._get_messages = tmp
+
+    def test_messages_are_in_json(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        messages = '''[{
+            "headers": {
+                "To": "somelist@example.com",
+                "From": "someguy@example.com",
+                "Subject": "foobar"},
+            "message_id": "foo"}]'''
+
+        with self._override_messages(TeamMailingListArchiveView, messages):
+            view = create_view(team, name='+mailing-list-archive')
+            messages = IJSONRequestCache(view.request).objects['mail']
+            self.assertEqual(1, len(messages))
+            self.assertEqual('foo', messages[0]['message_id'])
 
 
 class TestModeration(TestCaseWithFactory):

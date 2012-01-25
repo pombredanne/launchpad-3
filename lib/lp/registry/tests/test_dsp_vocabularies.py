@@ -221,7 +221,19 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(1, len(terms))
         self.assertEqual('fnord/snarf', terms[0].token)
 
-    def test_searchForTerms_similar_offcial_source_name(self):
+    def test_searchForTerms_exact_unpublished_offcial_source_name(self):
+        # Exact source name matches of unpublished packages are found.
+        distribution = self.factory.makeDistribution(name='fnord')
+        self.factory.makeDistributionSourcePackage(
+            distribution=distribution, sourcepackagename='snarf',
+            with_db=True)
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        results = vocabulary.searchForTerms(query='fnord/snarf')
+        terms = list(results)
+        self.assertEqual(1, len(terms))
+        self.assertEqual('fnord/snarf', terms[0].token)
+
+    def test_searchForTerms_similar_official_source_name(self):
         # Partial source name matches are found.
         self.factory.makeDSPCache('fnord', 'pting-snarf-ack')
         vocabulary = DistributionSourcePackageVocabulary(None)
@@ -325,7 +337,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
 
     def test_searchForTerms_ppa_archive(self):
         # Packages in PPAs are ignored.
-        self.factory.makeDSPCache('fnord', 'snarf', archive='ppa')
+        self.factory.makeDSPCache(
+            'fnord', 'snarf', official=False, archive='ppa')
         vocabulary = DistributionSourcePackageVocabulary(None)
         results = vocabulary.searchForTerms(query='fnord/snarf')
         terms = list(results)
