@@ -1643,7 +1643,8 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
 
         Return a dict with the following values:
         person_name: the displayname of this person.
-        invisible_branches: a list of the unique names of the branches the person cannot see.
+        invisible_branches: a list of the unique names of the branches
+        the person cannot see.
 
         This API call is provided for use by the client Javascript where the
         calling context only has a person web_link and unique branch names.
