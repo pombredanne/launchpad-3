@@ -398,6 +398,51 @@ def _clean_users(namespace, euid=None):
     namespace.run_as_root = not euid
 
 
+def _clean_userdata(namespace, whois=bzr_whois):
+    """Clean full_name and email arguments.
+
+    If they are not provided, this function tries to obtain them using
+    the given `whois` callable::
+
+        >>> namespace = argparse.Namespace(
+        ...     full_name=None, email=None, user='foo')
+        >>> email = 'email@example.com'
+        >>> _clean_userdata(namespace, lambda user: (user, email))
+        >>> namespace.full_name == namespace.user
+        True
+        >>> namespace.email == email
+        True
+
+    The validation fails if full_name or email are not provided and
+    they can not be obtained using the `whois` callable::
+
+        >>> namespace = argparse.Namespace(
+        ...     full_name=None, email=None, user='foo')
+        >>> _clean_userdata(namespace, lambda user: None) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: arguments full-name ...
+
+    It does not make sense to provide only one argument::
+
+        >>> namespace = argparse.Namespace(full_name='Foo Bar', email=None)
+        >>> _clean_userdata(namespace) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: arguments full-name ...
+    """
+    args = (namespace.full_name, namespace.email)
+    if not all(args):
+        if any(args):
+            raise ValidationError(
+                'arguments full-name and email: '
+                'either none or both must be provided.')
+        userdata = whois(namespace.user)
+        if userdata is None:
+            raise ValidationError(
+                'arguments full-name and email are required: '
+                'bzr user id not found.')
+        namespace.full_name, namespace.email = userdata
+
+
 def _clean_ssh_keys(namespace):
     """Clean private and public ssh keys.
 
@@ -481,11 +526,13 @@ parser.add_argument(
          'The current user is used if this script is not run as root '
          'and this argument is omitted.')
 parser.add_argument(
-    '-e', '--email', required=True,
-    help='The email of the user, used for bzr whoami.')
+    '-e', '--email',
+    help='The email of the user, used for bzr whoami. This argument can '
+         'be omitted if a bzr id exists for current user.')
 parser.add_argument(
-    '-f', '--full-name', required=True,
-    help='The full name of the user, used for bzr whoami.')
+    '-f', '--full-name',
+    help='The full name of the user, used for bzr whoami. This argument can '
+         'be omitted if a bzr id exists for current user.')
 parser.add_argument(
     '-l', '--lpuser',
     help='The name of the Launchpad user that will be used to check out '
@@ -519,7 +566,12 @@ parser.add_argument(
     help='The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
-parser.validators = (_clean_users, _clean_ssh_keys, _clean_directories)
+parser.validators = (
+    _clean_users,
+    _clean_userdata,
+    _clean_ssh_keys,
+    _clean_directories,
+    )
 
 
 def initialize_host(
