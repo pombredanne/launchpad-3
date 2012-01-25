@@ -537,7 +537,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertFalse(person.isAnySecurityContact())
 
     def test_getBranchVisibilityInfo_empty_branch_names(self):
-        """Test the test_getBranchVisibilityInfo API with no branch names specified."""
+        """Test the test_getBranchVisibilityInfo API with no branch names."""
         person = self.factory.makePerson(name='fred')
         info = person.getBranchVisibilityInfo(branch_names=[])
         self.assertEqual('Fred', info['person_name'])
