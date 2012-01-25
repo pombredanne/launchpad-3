@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -17,9 +18,15 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.model.specification import (
+    extractWorkItemsFromWhiteboard,
+    SpecificationWorkItemStatus,
+    WorkitemParser,
+    )
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     login_person,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -142,3 +149,68 @@ class TestSpecificationSet(TestCaseWithFactory):
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertRaises(
             AssertionError, self.specification_set.new, **args)
+
+
+class FakeSpecification(object):
+    assignee = None
+
+
+# This test doesn't need to use the database, so we can keep it without a
+# layer and that will make it run much faster than the other.
+class TestWorkItemParser(TestCase):
+
+    def test_parse_line(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status, milestone = (
+            parser.parse_blueprint_workitem("A single work item: TODO", None))
+        self.assertEqual(
+            [None, "A single work item", SpecificationWorkItemStatus.TODO,
+             None],
+            [assignee, description, status, milestone])
+
+
+
+class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_None_whiteboard(self):
+        spec = self.factory.makeSpecification(whiteboard=None)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual([], work_items)
+
+    def test_empty_whiteboard(self):
+        spec = self.factory.makeSpecification(whiteboard='')
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual([], work_items)
+
+    def test_single_work_item(self):
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual([], work_items)
+
+    def test_multiple_work_items(self):
+        self.fail('TODO')
+
+    def test_work_item_with_milestone(self):
+        self.fail('TODO')
+
+    def test_whiteboard_with_all_possible_sections(self):
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+
+            Meta:
+            Headline: Foo bar
+            Acceptance: Baz foo
+
+            Complexity:
+            [user1] milestone1: 10
+            """)
+        self.fail('TODO')
+
+    def test_error_when_parsing(self):
+        self.fail('TODO')

@@ -10,8 +10,13 @@ __all__ = [
     'recursive_dependent_query',
     'Specification',
     'SpecificationSet',
+    'extractWorkItemsFromWhiteboard',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -1009,3 +1014,172 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+
+
+class SpecificationWorkItemStatus(DBEnumeratedType):
+    TODO = DBItem(0, """
+        TODO
+
+        A work item that's not done yet.
+        """)
+    DONE = DBItem(1, """
+        DONE
+
+        A work item that's done.
+        """)
+    POSTPONED = DBItem(2, """
+        POSTPONED
+
+        A work item that has been postponed.
+        """)
+    INPROGRESS = DBItem(3, """
+        INPROGRESS
+
+        A work item that is inprogress.
+        """)
+    BLOCKED = DBItem(4, """
+        BLOCKED
+
+        A work item that is blocked.
+        """)
+
+
+class SpecificationWorkItem(SQLBase):
+    # TODO
+
+    # XXX: Should NULL here mean the Specification's milestone? I think that's
+    # necessary because otherwise what we'd do when somebody changes the
+    # milestone of a Specification?
+    milestone = ForeignKey(dbName='milestone',
+        foreignKey='Milestone', notNull=False, default=None)
+
+
+# Shamelessly stolen from lp-work-items-tracker, with plenty of unnecessary
+# stuff removed.
+class WorkitemParser(object):
+    """A class that construct Workitems from Blueprint information.
+
+    Workitems are created from a blueprint, based primarily on the
+    whiteboard.
+    """
+
+    def __init__(self, blueprint):
+        self.blueprint = blueprint
+
+    def _normalize_status(self, status, desc):
+        status = status.strip().lower()
+        if not status:
+            status = SpecificationWorkItemStatus.TODO
+        elif status == u'completed':
+            status = SpecificationWorkItemStatus.DONE
+        elif status in (u'postpone', u'dropped', u'drop'):
+            status = SpecificationWorkItemStatus.POSTPONED
+        else:
+            valid_statuses = [
+                item.name.lower() for item in SpecificationWorkItemStatus.items]
+            if status not in valid_statuses:
+                raise Exception('FIXME')
+            return SpecificationWorkItemStatus.items[status.upper()]
+        return status
+
+    def _get_assignee(self, assignee_name):
+        # TODO: Return the Person with the given name
+        return assignee_name
+
+    def _parse_line(self, line):
+        try:
+            desc, status = line.rsplit(':', 1)
+        except ValueError:
+            desc = line
+            status = ""
+        assignee_name = None
+        if desc.startswith('['):
+            if ']' in desc:
+                off = desc.index(']')
+                assignee_name = desc[1:off]
+                desc = desc[off + 1:].strip()
+            else:
+                raise Exception('FIXME: missing closing "]" for assignee')
+        return assignee_name, desc, status
+
+    def parse_blueprint_workitem(self, line, milestone):
+        line = line.strip()
+        if not line:
+            return None
+        assignee_name, desc, status = self._parse_line(line)
+        if desc is None:
+            return None
+        status = self._normalize_status(status, desc)
+        if status is None:
+            # XXX: Should we raise an error here instead?
+            return None
+        if assignee_name is not None:
+            assignee = self._get_assignee(assignee_name)
+        else:
+            assignee = self.blueprint.assignee
+        return assignee, desc, status, milestone
+
+
+# XXX: This can be a method on ISpecification, but since the plan is to run
+# this once and throw it away afterwards, we might as well have it as a
+# standalone function to avoid the extra overhead of adding stuff to model
+# classes. If we do that we should also move everything related to the
+# migration to a separate file as well, to make it easier to remove it later.
+import re
+def extractWorkItemsFromWhiteboard(spec):
+    work_items = []
+    if not spec.whiteboard:
+        return work_items
+    work_items_re = re.compile('^work items(.*)\s*:\s*$', re.I)
+    meta_re = re.compile('^Meta.*?:$', re.I)
+    complexity_re = re.compile('^Complexity.*?:$', re.I)
+    in_block = None
+    milestone = None
+
+    # Here we'll just store the lines we care about under the appropriate key
+    # of the dictionary below.
+    interesting_lines = {'wi': [], 'meta': [], 'complexity': []}
+    for line in spec.whiteboard.splitlines():
+        if work_items_re.search(line):
+            in_block = 'wi'
+            # TODO: extract milestone from line, setting it to None if one
+            # wasn't specified.
+            milestone = None
+            continue
+        if meta_re.search(line):
+            in_block = 'meta'
+            # Set milestone back to None.
+            milestone = None
+            continue
+        if complexity_re.search(line):
+            # Set milestone back to None.
+            milestone = None
+            in_block = 'complexity'
+            continue
+        if not in_block:
+            continue
+
+        item = line
+        if in_block == 'wi':
+            item = (line, milestone)
+
+        # XXX: I'm storing complexity/meta as interesting lines because we
+        # might want to extract headline/acceptance from there.
+
+        # If we've made this far it means we're in one of the interesting
+        # blocks so we just store the line in interesting_lines[in_block].
+        interesting_lines[in_block].append(item)
+
+    # Now parse the work item lines.
+    parser = WorkitemParser(spec)
+    for line, milestone in interesting_lines['wi']:
+        assignee, desc, status, milestone = parser.parse_blueprint_workitem(
+            line, milestone)
+        work_items.append((assignee, desc, status, milestone))
+        # TODO
+#         workitem = SpecificationWorkItem(
+#             blueprint=spec, status=status, description=desc,
+#             assignee=assignee, milestone=milestone)
+#         work_items.append(workitem)
+
+    return work_items
