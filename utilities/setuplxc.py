@@ -250,6 +250,7 @@ def ssh(location, user=None):
     def _sshcall(cmd):
         sshcmd = (
             'ssh',
+            '-t',
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
