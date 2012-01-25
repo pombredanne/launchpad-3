@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,7 +16,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 from lp.testing.layers import (
     LaunchpadLayer,
     LaunchpadZopelessLayer,

@@ -42,6 +42,7 @@ from lp import _
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
+    TeamEmailAddressError,
     )
 from lp.services.config import config
 from lp.services.database.readonly import is_read_only
@@ -295,6 +296,9 @@ class OpenIDCallbackView(OpenIDLogin):
     suspended_account_template = ViewPageTemplateFile(
         'templates/login-suspended-account.pt')
 
+    team_email_address_template = ViewPageTemplateFile(
+        'templates/login-team-email-address.pt')
+
     def _gather_params(self, request):
         params = dict(request.form)
         for key, value in request.query_string_params.iteritems():
@@ -381,6 +385,8 @@ class OpenIDCallbackView(OpenIDLogin):
             should_update_last_write = db_updated
         except AccountSuspendedError:
             return self.suspended_account_template()
+        except TeamEmailAddressError:
+            return self.team_email_address_template()
 
         with MasterDatabasePolicy():
             self.login(person)

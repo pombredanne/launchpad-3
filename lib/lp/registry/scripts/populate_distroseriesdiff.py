@@ -26,7 +26,7 @@ from storm.locals import ClassAlias
 import transaction
 from zope.component import getUtility
 
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )

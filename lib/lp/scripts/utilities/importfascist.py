@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import __builtin__
@@ -47,7 +47,7 @@ permitted_database_imports = text_lines_to_set("""
 
 
 warned_database_imports = text_lines_to_set("""
-    lp.soyuz.scripts.ftpmaster
+    lp.soyuz.scripts.obsolete_distroseries
     lp.soyuz.scripts.gina.handlers
     lp.registry.browser.distroseries
     lp.translations.scripts.po_import
