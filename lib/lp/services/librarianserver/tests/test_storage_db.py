@@ -15,6 +15,7 @@ from lp.services.librarianserver.storage import (
     LibrarianStorage,
     LibraryFileUpload,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -22,7 +23,7 @@ class LibrarianStorageDBTests(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('librarian')
+        switch_dbuser('librarian')
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
 
