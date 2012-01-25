@@ -26,8 +26,7 @@ CREATE TABLE specificationworkitemchange (
 CREATE TABLE specificationworkitemstats (
     id SERIAL PRIMARY KEY,
     specification integer REFERENCES specification,
-    date timestamp without time zone DEFAULT 
-        timezone('UTC'::text, now()) NOT NULL,
+    day date NOT NULL,
     status integer NOT NULL,
     assignee integer REFERENCES person,
     milestone integer REFERENCES milestone,
