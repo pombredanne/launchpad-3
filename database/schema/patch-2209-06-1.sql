@@ -20,11 +20,12 @@ CREATE TABLE specificationworkitemchange (
     new_status integer NOT NULL,
     new_milestone integer REFERENCES milestone,
     new_assignee integer REFERENCES person,
-    date date NOT NULL);
+    time timestamp NOT NULL);
 
 CREATE TABLE specificationworkitemstats (
+    id SERIAL PRIMARY KEY,
     specification integer REFERENCES specification,
-    date date NOT NULL,
+    time timestamp NOT NULL,
     status integer NOT NULL,
     assignee integer REFERENCES person,
     milestone integer REFERENCES milestone,
