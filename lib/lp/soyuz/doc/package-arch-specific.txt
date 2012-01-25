@@ -16,11 +16,14 @@ For testing PAS we will create a set of publications using
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import (
+    ...     lp_dbuser,
+    ...     switch_dbuser,
+    ...     )
 
 Publication will be added as 'launchpad' DB user.
 
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+    >>> switch_dbuser("launchpad")
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
@@ -43,9 +46,7 @@ Create a PPA source publication.
 Good, all done, we can commit the publications and continue the tests
 with the buildmaster DB user.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
 
 == Check the architectures to build ==
@@ -153,18 +154,13 @@ produces a single binary.
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-
-    >>> pub_single = test_publisher.getPubSource(
-    ...     sourcename='single', version='1.0',
-    ...     architecturehintlist="any")
-
-    >>> binaries = test_publisher.getPubBinaries(
-    ...     binaryname='single-bin', pub_source=pub_single,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     pub_single = test_publisher.getPubSource(
+    ...         sourcename='single', version='1.0',
+    ...         architecturehintlist="any")
+    ...     binaries = test_publisher.getPubBinaries(
+    ...         binaryname='single-bin', pub_source=pub_single,
+    ...         status=PackagePublishingStatus.PUBLISHED)
 
     >>> len(set(pub.binarypackagerelease.name
     ...         for pub in pub_single.getPublishedBinaries()))
@@ -210,16 +206,11 @@ built. This would never be a legitimate use-case.
 Binary PAS lines are ignored for PPAs as well. We create a binary for
 the existing test PPA source publication.
 
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-
-    >>> pub_ppa.archive.require_virtualized = False
-
-    >>> binaries = test_publisher.getPubBinaries(
-    ...     binaryname='ppa-bin', pub_source=pub_ppa,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     pub_ppa.archive.require_virtualized = False
+    ...     binaries = test_publisher.getPubBinaries(
+    ...         binaryname='ppa-bin', pub_source=pub_ppa,
+    ...         status=PackagePublishingStatus.PUBLISHED)
 
 And it will build in the same architectures with or without a
 corresponding PAS binary line.
@@ -241,26 +232,21 @@ circumstances.
 We will create a 'multiple' source publication build two binaries,
 'bin-one' and 'bin-two'.
 
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-
-    >>> pub_multiple = test_publisher.getPubSource(
-    ...     sourcename='multiple', version='1.1',
-    ...     architecturehintlist="any")
-
-    >>> for build in pub_multiple.createMissingBuilds():
-    ...     bin_one = test_publisher.uploadBinaryForBuild(
-    ...         build, 'bin-one')
-    ...     pub_bin_one = test_publisher.publishBinaryInArchive(
-    ...         bin_one, pub_multiple.archive,
-    ...         status=PackagePublishingStatus.PUBLISHED)
-    ...     bin_two = test_publisher.uploadBinaryForBuild(
-    ...         build, 'bin-two')
-    ...     pub_bin_two = test_publisher.publishBinaryInArchive(
-    ...         bin_two, pub_multiple.archive,
-    ...         status=PackagePublishingStatus.PUBLISHED)
-
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     pub_multiple = test_publisher.getPubSource(
+    ...         sourcename='multiple', version='1.1',
+    ...         architecturehintlist="any")
+    ...     for build in pub_multiple.createMissingBuilds():
+    ...         bin_one = test_publisher.uploadBinaryForBuild(
+    ...             build, 'bin-one')
+    ...         pub_bin_one = test_publisher.publishBinaryInArchive(
+    ...             bin_one, pub_multiple.archive,
+    ...             status=PackagePublishingStatus.PUBLISHED)
+    ...         bin_two = test_publisher.uploadBinaryForBuild(
+    ...             build, 'bin-two')
+    ...         pub_bin_two = test_publisher.publishBinaryInArchive(
+    ...             bin_two, pub_multiple.archive,
+    ...             status=PackagePublishingStatus.PUBLISHED)
 
     >>> len(set(pub.binarypackagerelease.name
     ...         for pub in pub_multiple.getPublishedBinaries()))

@@ -64,6 +64,7 @@ from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
@@ -173,9 +174,8 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
         self.createBzrBranch(bmp.source_branch, tree.branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.run()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.run()
 
 
 class TestUpdatePreviewDiffJob(DiffTestCase):
@@ -206,10 +206,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        JobRunner([job]).runAll()
-        transaction.commit()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            JobRunner([job]).runAll()
         self.checkExampleMerge(bmp.preview_diff.text)
 
     def test_run_object_events(self):
@@ -220,10 +218,9 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        with EventRecorder() as event_recorder:
-            JobRunner([job]).runAll()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            with EventRecorder() as event_recorder:
+                JobRunner([job]).runAll()
         bmp_object_events = [
             event for event in event_recorder.events
             if (IObjectModifiedEvent.providedBy(event) and
@@ -322,18 +319,15 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
     def test_run(self):
         """The job runs successfully, and its results can be committed."""
         job = make_runnable_incremental_diff_job(self)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.run()
-        transaction.commit()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.run()
 
     def test_run_all(self):
         """The job can be run under the JobRunner successfully."""
         job = make_runnable_incremental_diff_job(self)
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        runner = JobRunner([job])
-        runner.runAll()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            runner = JobRunner([job])
+            runner.runAll()
         self.assertEqual([job], runner.completed_jobs)
 
     def test_10_minute_lease(self):
@@ -341,9 +335,8 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        transaction.commit()
-        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
-        job.acquireLease()
+        with dbuser(config.merge_proposal_jobs.dbuser):
+            job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 

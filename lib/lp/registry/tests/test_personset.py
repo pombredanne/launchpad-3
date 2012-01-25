@@ -33,6 +33,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     PersonVisibility,
+    TeamEmailAddressError,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.model.accesspolicy import AccessPolicyGrant
@@ -792,6 +793,18 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         self.assertIs(found.account, self.identifier.account)
         self.assertIn(self.identifier, list(found.account.openid_identifiers))
+
+    def testTeamEmailAddress(self):
+        # If the EmailAddress is linked to a team, login fails. There is
+        # no way to automatically recover -- someone must manually fix
+        # the email address of the team or the SSO account.
+        self.factory.makeTeam(email="foo@bar.com")
+
+        self.assertRaises(
+            TeamEmailAddressError,
+            self.person_set.getOrCreateByOpenIDIdentifier,
+            u'other-openid-identifier', 'foo@bar.com', 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
 
 
 class TestCreatePersonAndEmail(TestCase):
