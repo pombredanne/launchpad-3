@@ -12,7 +12,7 @@ If know your code needs to change data, or must have the latest posible
 information, you retrieve objects from the master databases that stores
 the data for your database class.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> from lp.registry.model.person import Person
     >>> import transaction
 
@@ -31,7 +31,7 @@ of the master, the better the overall performance of Launchpad will be.
 We can distribute this load over many slave databases but are limited to
 a single master.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+    >>> from lp.services.database.lpstorm import ISlaveStore
     >>> ro_janitor = ISlaveStore(Person).find(
     ...     Person, Person.name == 'janitor').one()
     >>> ro_janitor is writable_janitor
@@ -50,7 +50,7 @@ updatable to or have to be absolutely up to date. In this case, we
 retrieve objects from the default store. What object being returned
 depends on the currently installed database policy.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.services.database.lpstorm import IStore
     >>> default_janitor = IStore(Person).find(
     ...     Person, Person.name == 'janitor').one()
     >>> default_janitor is writable_janitor
@@ -62,7 +62,7 @@ replication was implemented to keep working.
 
 To alter this behavior, you can install a different database policy.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
+    >>> from lp.services.webapp.dbpolicy import SlaveDatabasePolicy
     >>> with SlaveDatabasePolicy():
     ...     default_janitor = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -76,7 +76,7 @@ code we want to prove only accesses slave database resources, we can
 raise an exception if an attempt is made to access master database
 resources.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import (
+    >>> from lp.services.webapp.dbpolicy import (
     ...     SlaveOnlyDatabasePolicy)
     >>> with SlaveOnlyDatabasePolicy():
     ...     whoops = IMasterStore(Person).find(
@@ -90,7 +90,7 @@ if we need to guarantee a potentially long running call doesn't access
 the database at all starting a new and potentially long running
 database transaction.
 
-    >>> from canonical.launchpad.webapp.dbpolicy import DatabaseBlockedPolicy
+    >>> from lp.services.webapp.dbpolicy import DatabaseBlockedPolicy
     >>> with DatabaseBlockedPolicy():
     ...     whoops = IStore(Person).find(
     ...         Person, Person.name == 'janitor').one()
@@ -102,7 +102,7 @@ Database policies can also be installed and uninstalled using the
 IStoreSelector utility for cases where the 'with' syntax cannot
 be used.
 
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(SlaveDatabasePolicy())
     >>> try:
     ...     default_janitor = IStore(Person).find(
@@ -120,7 +120,7 @@ unsure if the object is writable or not, you can easily cast it
 to a writable copy. This is a noop if the object is already writable
 so is good defensive programming.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+    >>> from lp.services.database.lpstorm import IMasterObject
     >>> IMasterObject(ro_janitor) is writable_janitor
     True
 
@@ -131,8 +131,8 @@ During database outages, we run in read-only mode. In this mode, no
 matter what database policy is currently installed, explicit requests
 for a master store fail and the default store is always the slave.
 
-    >>> from canonical.launchpad.tests.readonly import read_only_mode
-    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.database.tests.readonly import read_only_mode
+    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
     >>> from contextlib import nested
 
     >>> with nested(read_only_mode(), MasterDatabasePolicy()):

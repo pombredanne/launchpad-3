@@ -19,7 +19,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import URIField
 
@@ -28,7 +28,7 @@ class IWikiName(IHasOwner):
     """Wiki for Users"""
     export_as_webservice_entry(publish_web_link=False)
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    # schema=Interface will be overriden in person.py because of circular
+    # schema=Interface will be overridden in person.py because of circular
     # dependencies.
     person = exported(
         Reference(

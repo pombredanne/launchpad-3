@@ -9,10 +9,10 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter

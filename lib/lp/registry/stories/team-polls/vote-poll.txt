@@ -76,7 +76,7 @@ For convenience we provide an option for when the user doesn't want to vote
 yet.
 
     >>> team_admin_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> team_admin_browser.open(
     ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote')
     >>> not_yet_voted_message = 'You have not yet voted in this poll.'

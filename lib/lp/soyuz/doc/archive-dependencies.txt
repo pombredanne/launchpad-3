@@ -14,7 +14,7 @@ build candidates for ubuntu/hoary.
     ...     IDistributionSet)
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
 
     >>> login('foo.bar@canonical.com')
 
@@ -81,7 +81,7 @@ pocket dependencies.
 == 'Ogre' components ==
 
 The ubuntu 'ogre-model' ensures that build dependencies are
-consistently spread according the source target component, i.e. a
+consistently spread according to the source target component, i.e. a
 source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in
@@ -89,7 +89,7 @@ published in 'universe' is allowed to depend on binaries published in
 
 A proper name for this "model" would be 'cross-component-dependency'.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu_components = [

@@ -58,28 +58,9 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    IStructuredString,
-    )
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
@@ -108,13 +89,38 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.person import Person
 from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import english_list
+from lp.services.job.model.job import Job
+from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
+from lp.services.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -1027,6 +1033,33 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # This property enables menu items to be shared between
         # context and view menues.
         return self.context.is_copy
+
+    @cachedproperty
+    def package_copy_jobs(self):
+        """Return incomplete PCJs targeted at this archive."""
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        ppcjs = job_source.getIncompleteJobsForArchive(self.context)
+
+        # Convert PPCJ into PCJ.
+        # removeSecurityProxy is only used to fetch pcjs objects and preload
+        # related objects.
+        pcjs = [removeSecurityProxy(ppcj).context for ppcj in ppcjs]
+        # Pre-load related Jobs.
+        jobs = load_related(Job, pcjs, ['job_id'])
+        # Pre-load related requesters.
+        load_related(Person, jobs, ['requester_id'])
+        # Pre-load related source archives.
+        load_related(Archive, pcjs, ['source_archive_id'])
+
+        return ppcjs
+
+    @cachedproperty
+    def has_pending_copy_jobs(self):
+        return self.package_copy_jobs.any()
+
+    @cachedproperty
+    def has_append_perm(self):
+        return check_permission('launchpad.Append', self.context)
 
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):

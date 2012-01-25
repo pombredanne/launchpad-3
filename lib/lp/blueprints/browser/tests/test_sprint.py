@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from storm.locals import Store
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit
 
 
@@ -26,4 +26,4 @@ class TestSprintIndex(TestCaseWithFactory):
                 True)
         Store.of(sprint).flush()
         Store.of(sprint).invalidate()
-        self.assertThat(sprint, BrowsesWithQueryLimit(15, sprint.owner))
+        self.assertThat(sprint, BrowsesWithQueryLimit(17, sprint.owner))

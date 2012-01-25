@@ -78,34 +78,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    sorted_version_numbers,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    UnsafeFormGetSubmissionError,
-    )
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -194,16 +167,42 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    sorted_version_numbers,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
+from lp.services.webapp.menu import NavigationMenu
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
@@ -347,7 +346,7 @@ class ProductLicenseMixin:
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
-        template = helpers.get_email_template(
+        template = get_email_template(
             'product-other-license.txt', app='registry')
         message = template % substitutions
         simple_sendmail(
@@ -1093,7 +1092,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         The home page link is not included because its link must have the
         rel=nofollow attribute.
         """
-        from canonical.launchpad.webapp.menu import MenuLink
+        from lp.services.webapp.menu import MenuLink
         urls = [
             ('Sourceforge project', self.sourceforge_url),
             ('Freshmeat record', self.freshmeat_url),
@@ -1120,7 +1119,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]

@@ -23,8 +23,6 @@ from zope.component import (
     )
 from zope.interface import implementer
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.xmlrpc import faults
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import valid_name
 from lp.code.bzr import (
@@ -54,9 +52,11 @@ from lp.code.model.branchtarget import (
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
 from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing.factory import ObjectFactory
+from lp.xmlrpc import faults
 
 
 class FakeStore:

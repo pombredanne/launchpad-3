@@ -14,9 +14,11 @@ import _pythonpath
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ConvertPersonToTeamScript(LaunchpadScript):

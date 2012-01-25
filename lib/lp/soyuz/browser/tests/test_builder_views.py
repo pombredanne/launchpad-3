@@ -11,13 +11,10 @@ from testtools.matchers import (
     Equals,
     MatchesAll,
     )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -27,15 +24,19 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import getSpecificJobs
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
     celebrity_logged_in,
+    login,
     record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
@@ -159,28 +160,34 @@ class TestgetSpecificJobs(TestCaseWithFactory):
             getSpecificJobs, [build_farm_job])
 
 
-class TestBuilderHistoryView(TestCaseWithFactory):
+class BuildCreationMixin(object):
 
-    layer = LaunchpadFunctionalLayer
+    def markAsBuilt(self, build):
+        lfa = self.factory.makeLibraryFileAlias()
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = lfa
+        naked_build.date_started = self.factory.getUniqueDate()
+        naked_build.date_finished = self.factory.getUniqueDate()
+        naked_build.status = BuildStatus.FULLYBUILT
+        transaction.commit()
 
-    nb_objects = 2
-
-    def setUp(self):
-        super(TestBuilderHistoryView, self).setUp()
-        self.builder = self.factory.makeBuilder()
-
-    def createTranslationTemplateBuildWithBuilder(self):
+    def createTranslationTemplateBuildWithBuilder(self, builder=None):
+        if builder is None:
+            builder = self.factory.makeBuilder()
         build_farm_job_source = getUtility(IBuildFarmJobSource)
         build_farm_job = build_farm_job_source.new(
             BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
         source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
         build = source.create(build_farm_job, branch)
-        removeSecurityProxy(build).builder = self.builder
-        self.addFakeBuildLog(build)
+        removeSecurityProxy(build).builder = builder
+        self.markAsBuilt(build)
         return build
 
-    def createRecipeBuildWithBuilder(self, private_branch=False):
+    def createRecipeBuildWithBuilder(self, private_branch=False,
+                                     builder=None):
+        if builder is None:
+            builder = self.factory.makeBuilder()
         branch2 = self.factory.makeAnyBranch()
         branch1 = self.factory.makeAnyBranch()
         build = self.factory.makeSourcePackageRecipeBuild(
@@ -191,28 +198,34 @@ class TestBuilderHistoryView(TestCaseWithFactory):
                 branch1.setPrivate(
                     True, getUtility(IPersonSet).getByEmail(ADMIN_EMAIL))
         Store.of(build).flush()
-        removeSecurityProxy(build).builder = self.builder
-        self.addFakeBuildLog(build)
+        removeSecurityProxy(build).builder = builder
+        self.markAsBuilt(build)
         return build
 
-    def addFakeBuildLog(self, build):
-        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(build).log = lfa
-        import transaction
-        transaction.commit()
-
-    def createBinaryPackageBuild(self, in_ppa=False):
+    def createBinaryPackageBuild(self, in_ppa=False, builder=None):
+        if builder is None:
+            builder = self.factory.makeBuilder()
         archive = None
         if in_ppa:
             archive = self.factory.makeArchive()
-        build = self.factory.makeBinaryPackageBuild(
-            archive=archive, status=BuildStatus.FULLYBUILT)
+        build = self.factory.makeBinaryPackageBuild(archive=archive)
         naked_build = removeSecurityProxy(build)
-        naked_build.builder = self.builder
+        naked_build.builder = builder
         naked_build.date_started = self.factory.getUniqueDate()
         naked_build.date_finished = self.factory.getUniqueDate()
-        self.addFakeBuildLog(build)
+        self.markAsBuilt(build)
         return build
+
+
+class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
+
+    layer = LaunchpadFunctionalLayer
+
+    nb_objects = 2
+
+    def setUp(self):
+        super(TestBuilderHistoryView, self).setUp()
+        self.builder = self.factory.makeBuilder()
 
     def test_build_history_queries_count_view_recipe_builds(self):
         # The builder's history view creation (i.e. the call to
@@ -221,11 +234,12 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
         recorder1, recorder2 = record_two_runs(
-            builder_history_render, self.createRecipeBuildWithBuilder,
+            builder_history_render,
+            partial(self.createRecipeBuildWithBuilder, builder=self.builder),
             self.nb_objects)
 
-        # XXX: rvb 2011-11-14 bug=890326: The only query remaining is the
-        # one that results from a call to
+        # XXX: rvb 2011-11-14: The only query remaining is the one that
+        # results from a call to
         # sourcepackagerecipebuild.buildqueue_record for each recipe build.
         self.assertThat(
             recorder2,
@@ -237,7 +251,8 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
         recorder1, recorder2 = record_two_runs(
-            builder_history_render, self.createBinaryPackageBuild,
+            builder_history_render,
+            partial(self.createBinaryPackageBuild, builder=self.builder),
             self.nb_objects)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
@@ -248,7 +263,7 @@ class TestBuilderHistoryView(TestCaseWithFactory):
         def builder_history_render():
             create_initialized_view(self.builder, '+history').render()
         createBinaryPackageBuildInPPA = partial(
-            self.createBinaryPackageBuild, in_ppa=True)
+            self.createBinaryPackageBuild, in_ppa=True, builder=self.builder)
         recorder1, recorder2 = record_two_runs(
             builder_history_render, createBinaryPackageBuildInPPA,
             self.nb_objects)
@@ -262,21 +277,26 @@ class TestBuilderHistoryView(TestCaseWithFactory):
             create_initialized_view(self.builder, '+history').render()
         recorder1, recorder2 = record_two_runs(
             builder_history_render,
-            self.createTranslationTemplateBuildWithBuilder, self.nb_objects)
+            partial(
+                self.createTranslationTemplateBuildWithBuilder,
+                builder=self.builder),
+            self.nb_objects)
 
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_build_history_private_build_view(self):
-        self.createRecipeBuildWithBuilder()
-        self.createRecipeBuildWithBuilder(private_branch=True)
+        self.createRecipeBuildWithBuilder(builder=self.builder)
+        self.createRecipeBuildWithBuilder(
+            private_branch=True, builder=self.builder)
         view = create_initialized_view(self.builder, '+history')
         view.setupBuildList()
 
         self.assertIn(None, view.complete_builds)
 
     def test_build_history_private_build_display(self):
-        self.createRecipeBuildWithBuilder()
-        self.createRecipeBuildWithBuilder(private_branch=True)
+        self.createRecipeBuildWithBuilder(builder=self.builder)
+        self.createRecipeBuildWithBuilder(
+            private_branch=True, builder=self.builder)
         view = create_initialized_view(self.builder, '+history')
         private_build_icon_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(

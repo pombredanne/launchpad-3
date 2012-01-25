@@ -17,7 +17,7 @@ rights to administer the queue for the four main components.  This
 permissioning data has no web UI to administer it yet, so we'll create
 a Zope interaction to show it:
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -182,8 +182,8 @@ and an extra, expired, source file.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
-    >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.services.librarian.interfaces.client import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
     >>> login(ANONYMOUS)
     >>> old = main_archive.getPublishedSources(
@@ -278,7 +278,7 @@ And store a chroot for ubuntu breezy-autotest/i386 architectures, so
 the builds can be created.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
@@ -453,7 +453,7 @@ uploads can have all three properties overrdden but can be overridden
 only at their file level.  Currently, this UI only permits overriding
 all of the binary files in an upload at once, or not at all.
 
-Thus, the items that are checked for acceptance will also be overriden
+Thus, the items that are checked for acceptance will also be overridden
 depending on the selected values.  This allows many items to be
 all overridden at once with the same value(s).
 
@@ -595,6 +595,6 @@ button will be disabled.
 Clean up
 ========
 
-    >>> from canonical.testing.layers import LibrarianLayer
+    >>> from lp.testing.layers import LibrarianLayer
     >>> LibrarianLayer.librarian_fixture.clear()
 

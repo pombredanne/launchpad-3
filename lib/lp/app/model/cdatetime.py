@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import IAging
+from lp.app.interfaces.launchpad import IAging
 
 
 SECONDS_PER_HOUR = 3600
@@ -18,6 +18,7 @@ SECONDS_PER_MINUTE = 60
 DAYS_PER_YEAR = 365
 DAYS_PER_MONTH = 30
 DAYS_PER_WEEK = 7
+
 
 class AgingAdapter:
     """Adapt an IHasDateCreated to an IAging."""
@@ -27,7 +28,7 @@ class AgingAdapter:
         self.context = context
 
     def currentApproximateAge(self):
-        """See canonical.launchpad.interfaces.ITimeDelta."""
+        """See `ITimeDelta`."""
         age = ""
         datecreated = self.context.datecreated
         right_now = datetime.now(pytz.timezone('UTC'))

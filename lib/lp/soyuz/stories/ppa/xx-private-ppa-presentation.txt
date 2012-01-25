@@ -31,7 +31,7 @@ When the PPA is private it gains the standard Launchpad
 presentation for private items.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/p3a")
     >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
     >>> body_el = BeautifulSoup(cprov_browser.contents).first('body')

@@ -12,15 +12,6 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -38,12 +29,19 @@ from lp.code.interfaces.branchcollection import (
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
+from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):

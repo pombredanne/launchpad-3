@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from z3c.ptcompat import ViewPageTemplateFile
@@ -44,4 +44,3 @@ class WidgetInputErrorView(object):
         self.request = request
 
     snippet = ViewPageTemplateFile('templates/error.pt')
-

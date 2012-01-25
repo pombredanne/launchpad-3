@@ -10,7 +10,6 @@ import email
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -27,6 +26,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):

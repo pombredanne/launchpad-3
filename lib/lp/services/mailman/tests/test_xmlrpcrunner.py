@@ -19,11 +19,7 @@ from Mailman.Queue.XMLRPCRunner import (
     XMLRPCRunner,
     )
 
-from canonical.config import config
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseFunctionalLayer,
-    )
+from lp.services.config import config
 from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     get_mailing_list_api_proxy,
     )
@@ -33,6 +29,10 @@ from lp.services.mailman.testing import (
     )
 from lp.services.xmlrpc import Transport
 from lp.testing import TestCase
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseFunctionalLayer,
+    )
 
 
 @contextmanager

@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import ArchivePermissionType
 
 

@@ -21,20 +21,20 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.config import config
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.app.browser.launchpadform import (
     has_structured_doc,
     LaunchpadFormView,
     )
+from lp.services.config import config
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     test_tales,
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 
 

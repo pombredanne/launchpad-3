@@ -43,11 +43,10 @@ from bzrlib.urlutils import (
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    run_with_log_observers,
     )
 from twisted.internet import defer
 
-from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
@@ -72,10 +71,12 @@ from lp.codehosting.vfs.branchfs import (
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
 from lp.services.job.runner import TimeoutError
+from lp.services.webapp import errorlog
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 def branch_to_path(branch, add_slash=True):
@@ -1081,7 +1082,8 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # endpoint. We will then check the error handling.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
+        branch = run_with_log_observers(
+            [], self.make_branch, db_branch.unique_name)
         branch.lock_write()
         branch.unlock()
         stderr_text = sys.stderr.getvalue()

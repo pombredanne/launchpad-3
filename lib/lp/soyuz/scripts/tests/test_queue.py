@@ -17,17 +17,6 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.librarian.utils import filechunks
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    LibrarianLayer,
-    )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,
@@ -43,6 +32,12 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.utils import filechunks
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
@@ -69,6 +64,11 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
+    )
 
 
 class TestQueueBase:

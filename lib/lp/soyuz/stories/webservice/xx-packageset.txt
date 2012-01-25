@@ -85,7 +85,7 @@ Here's an example with a funny URL concoted by a "smart" user.
 
 Populate the 'umbrella' package set with source packages.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

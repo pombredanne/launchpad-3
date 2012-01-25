@@ -43,7 +43,7 @@ we want.
 
 MailWrapper to the rescue!
 
-    >>> from canonical.launchpad.mailnotification import MailWrapper
+    >>> from lp.services.mail.mailwrapper import MailWrapper
     >>> mailwrapper = MailWrapper(width=56)
     >>> print mailwrapper.format(description) #doctest: -NORMALIZE_WHITESPACE
     A new description that is quite long. But the nice thing
@@ -247,7 +247,7 @@ dos-style line endings, we get the following result:
 Sometimes certain paragraphs should not be wrapped, e.g. a line containing a
 long hyphenated URL.  Under normal circumstances, this will get wrapped.
 
-    >>> from canonical.launchpad.helpers import get_email_template
+    >>> from lp.services.mail.helpers import get_email_template
     >>> template = get_email_template('new-held-message.txt', app='registry')
     >>> text = template % dict(
     ...     user="Scarlett O'Hara",

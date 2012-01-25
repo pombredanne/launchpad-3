@@ -38,7 +38,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.validation import valid_cve_sequence
 
 
@@ -110,9 +110,9 @@ class ICve(Interface):
         CollectionField(
             title=_('Bugs related to this CVE entry.'),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Redefined in bug.py
+            value_type=Reference(schema=Interface))) # Redefined in bug.py.
 
-    # other attributes
+    # Other attributes.
     url = exported(
         TextLine(title=_('URL'),
                  description=_("Return a URL to the site that has the CVE "
@@ -181,11 +181,14 @@ class ICveSet(Interface):
         message.
         """
 
-    def getBugCvesForBugTasks(bugtasks):
-        """Return BugCve objects that correspond to the supplied bugtasks.
+    def getBugCvesForBugTasks(bugtasks, cve_mapper=None):
+        """Return (Bug, Cve) tuples that correspond to the supplied bugtasks.
 
-        Returns an iterable of BugCve objects for bugs related to the
+        Returns an iterable of (Bug, Cve) tuples for bugs related to the
         supplied sequence of bugtasks.
+
+        If a function cve_mapper is specified, a sequence of tuples
+        (bug, cve_mapper(cve)) is returned.
         """
 
     def getBugCveCount():

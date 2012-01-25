@@ -7,17 +7,17 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     IBugTaskSet,
     )
+from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestStatusCountsForProductSeries(TestCaseWithFactory):

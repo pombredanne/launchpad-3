@@ -28,21 +28,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
@@ -55,6 +40,11 @@ from lp.answers.model.faq import (
 from lp.answers.model.question import QuestionTargetSearch
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -104,6 +94,16 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
@@ -464,19 +464,19 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(True)
+        return self._getMilestones(only_active=True)
 
     @property
     def product_milestones(self):
         """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
         # XXX: bug=644977 Robert Collins - this is a workaround for
-        # insconsistency in project group milestone use.
+        # inconsistency in project group milestone use.
         return self._get_milestones()
 
     @property
     def all_milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(False)
+        return self._getMilestones(only_active=False)
 
     def getMilestone(self, name):
         """See `IProjectGroup`."""

@@ -5,7 +5,7 @@ An Archive models a Debian Archive, providing operations like
 publication lookups and the complete publishing-pipeline from database
 records to disk, including configuration and indexes.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
@@ -756,7 +756,7 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet,
     ...     )
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
@@ -904,7 +904,7 @@ binary is also DELETED.
 Flush the database caches to invalidate old caches from the
 corresponding publishing Postgres views.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 
@@ -2067,7 +2067,7 @@ You'll get the same error if you use a component object that's not main.
 As important as the right to upload packages to Joe's PPA, Carlos
 also got the corresponding permissions on it.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login("carlos@canonical.com")
 
     >>> check_permission('launchpad.View', joes_ppa)
@@ -2341,6 +2341,25 @@ all result in a NotFound exception:
     Traceback (most recent call last):
     ...
     NoSuchDistroSeries: No such distribution series: 'badseries'.
+
+If a package exists in multiple distroseries, we can use the `from_series`
+parameter to select the distroseries to synchronise from:
+
+    >>> test_publisher.addFakeChroots(breezy_autotest)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.0",
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.1",
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> mark.archive.syncSources(
+    ...     ["package-multiseries"], cprov.archive, "release",
+    ...     from_series="hoary", person=mark)
+    >>> mark_multiseries = mark.archive.getPublishedSources(
+    ...     name="package-multiseries").one()
+    >>> print mark_multiseries.sourcepackagerelease.version
+    1.0
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be

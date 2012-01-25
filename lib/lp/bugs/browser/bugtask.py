@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -120,42 +120,7 @@ from zope.security.proxy import (
 from zope.traversing.browser import absoluteURL
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.mailnotification import get_unified_diff
-from canonical.launchpad.searchbuilder import (
-    all,
-    any,
-    NULL,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    redirection,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.interfaces import IObjectPrivacy
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.launchpadform import (
@@ -250,7 +215,10 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IHasExternalBugTracker,
+    )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
@@ -276,13 +244,45 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    BugTargetLatestBugsFeedLink,
+    FeedsMixin,
+    )
 from lp.services.fields import PersonChoice
+from lp.services.helpers import shortlist
+from lp.services.mail.notification import get_unified_diff
+from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from lp.services.utils import obfuscate_structure
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 vocabulary_registry = getVocabularyRegistry()
@@ -347,9 +347,12 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info, show_spam_controls=show_spam_controls,
-        user=user)
+        user=user, hide_first=for_display)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
+    for comment in comments.values():
+        get_property_cache(comment._message).bugattachments = []
+
     for attachment in bugtask.bug.attachments_unpopulated:
         message_id = attachment.message.id
         # All attachments are related to a message, so we can be
@@ -359,8 +362,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             break
         if attachment.type == BugAttachmentType.PATCH:
             comments[message_id].patches.append(attachment)
-        else:
-            comments[message_id].bugattachments.append(attachment)
+        cache = get_property_cache(attachment.message)
+        cache.bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -371,12 +374,6 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index == 0:
-        # We show the text of the first comment as the bug description,
-        # or via the special link "View original description", but we want
-        # to display attachments filed together with the bug in the
-        # comment list.
-        comments[0].text_for_display = ''
     return comments
 
 
@@ -420,7 +417,7 @@ def get_visible_comments(comments, user=None):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
     >>> get_sortorder_from_request(
@@ -1041,15 +1038,25 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def official_tags(self):
         """The list of official tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag not in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag not in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def available_official_tags_js(self):
@@ -1082,11 +1089,16 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if IDistributionSourcePackage.providedBy(self.context.target):
-            return bugtask_heat_html(
-                self.context, target=self.context.distribution)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            return (
+                '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+                'class="sprite flame">%d</a></span>' % self.context.bug.heat)
         else:
-            return bugtask_heat_html(self.context)
+            if IDistributionSourcePackage.providedBy(self.context.target):
+                return bugtask_heat_html(
+                    self.context, target=self.context.distribution)
+            else:
+                return bugtask_heat_html(self.context)
 
     @property
     def privacy_notice_classes(self):
@@ -2212,7 +2224,20 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        return bugtask_heat_html(self.bugtask, target=self.target_context)
+        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
+            if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+                return (
+                    '<span class="sprite flame">%d</span>'
+                    % self.bugtask.bug.heat)
+            else:
+                return str(self.bugtask.bug.heat)
+        else:
+            return bugtask_heat_html(self.bugtask, target=self.target_context)
+
+    @property
+    def center_bug_heat(self):
+        """Returns whether the bug_heat_html should be centered."""
+        return not getFeatureFlag('bugs.heat_ratio_display.disabled')
 
     @property
     def model(self):
@@ -2504,17 +2529,17 @@ class BugTaskSearchListingMenu(NavigationMenu):
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
-    ('id', 'Bug number', 'desc'),
-    ('title', 'Bug title', 'asc'),
+    ('id', 'Number', 'desc'),
+    ('title', 'Title', 'asc'),
     ('targetname', 'Package/Project/Series name', 'asc'),
     ('milestone_name', 'Milestone', 'asc'),
-    ('date_last_updated', 'Date bug last updated', 'desc'),
+    ('date_last_updated', 'Date last updated', 'desc'),
     ('assignee', 'Assignee', 'asc'),
     ('reporter', 'Reporter', 'asc'),
-    ('datecreated', 'Bug age', 'desc'),
-    ('tag', 'Bug Tags', 'asc'),
-    ('heat', 'Bug heat', 'desc'),
-    ('date_closed', 'Date bug closed', 'desc'),
+    ('datecreated', 'Age', 'desc'),
+    ('tag', 'Tags', 'asc'),
+    ('heat', 'Heat', 'desc'),
+    ('date_closed', 'Date closed', 'desc'),
     ('dateassigned', 'Date when the bug task was assigned', 'desc'),
     ('number_of_duplicates', 'Number of duplicates', 'desc'),
     ('latest_patch_uploaded', 'Date latest patch uploaded', 'desc'),
@@ -2554,6 +2579,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('bug_commenter', PersonPickerWidget)
     custom_widget('structural_subscriber', PersonPickerWidget)
     custom_widget('subscriber', PersonPickerWidget)
+
+    _batch_navigator = None
 
     @cachedproperty
     def bug_tracking_usage(self):
@@ -3019,9 +3046,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             the search criteria taken from the request. Params in
             `extra_params` take precedence over request params.
         """
-        unbatchedTasks = self.searchUnbatched(
-            searchtext, context, extra_params)
-        return self._getBatchNavigator(unbatchedTasks)
+        if self._batch_navigator is None:
+            unbatchedTasks = self.searchUnbatched(
+                searchtext, context, extra_params)
+            self._batch_navigator = self._getBatchNavigator(unbatchedTasks)
+        return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -3067,7 +3096,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=12)
+        return shortlist(widget_values, longest_expected=12)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3500,7 +3529,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
               IDistributionSourcePackage.providedBy(self.context)):
             search_params.setSourcePackage(self.context)
         else:
-            raise AssertionError('Uknown context type: %s' % self.context)
+            raise AssertionError('Unknown context type: %s' % self.context)
 
         return u"".join("%d\n" % bug_id for bug_id in
             getUtility(IBugTaskSet).searchBugIds(search_params))
@@ -3572,6 +3601,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # If we have made it to here then the logged in user can see the
         # bug, hence they can see any assignees.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
         authorised_people = [task.assignee for task in self.bugtasks
                              if task.assignee is not None]
         precache_permission_for_objects(
@@ -4226,6 +4257,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    def search_macro_title(self):
+        return u'Search all bugs'
 
     @property
     def label(self):

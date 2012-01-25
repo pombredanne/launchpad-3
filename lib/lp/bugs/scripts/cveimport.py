@@ -7,26 +7,25 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-try:
-    import xml.etree.cElementTree as cElementTree
-except ImportError:
-    import cElementTree
 import gzip
 import StringIO
 import time
 import urllib2
+import xml.etree.cElementTree as cElementTree
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.lifecycleevent import ObjectModifiedEvent
 
-from canonical.config import config
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
 from lp.bugs.interfaces.cve import (
     CveStatus,
     ICveSet,
+    )
+from lp.services.config import config
+from lp.services.looptuner import (
+    ITunableLoop,
+    LoopTuner,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -35,6 +34,7 @@ from lp.services.scripts.base import (
 
 
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads}'
+
 
 def getText(elem):
     """Get the text content of the given element"""
@@ -123,12 +123,12 @@ def update_one_cve(cve_node, log):
         log.info('CVE-%s created' % sequence)
     # update the CVE if needed
     modified = False
-    if cve.status <> new_status:
+    if cve.status != new_status:
         log.info('CVE-%s changed from %s to %s' % (cve.sequence,
             cve.status.title, new_status.title))
         cve.status = new_status
         modified = True
-    if cve.description <> description:
+    if cve.description != description:
         log.info('CVE-%s updated description' % cve.sequence)
         cve.description = description
         modified = True
@@ -212,7 +212,7 @@ class CVEUpdater(LaunchpadCronScript):
                              self.options.cveurl)
             try:
                 url = urllib2.urlopen(self.options.cveurl)
-            except (urllib2.HTTPError, urllib2.URLError), val:
+            except (urllib2.HTTPError, urllib2.URLError):
                 raise LaunchpadScriptFailure(
                     'Unable to connect for CVE database %s'
                     % self.options.cveurl)
@@ -248,4 +248,3 @@ class CVEUpdater(LaunchpadCronScript):
         loop = CveUpdaterTunableLoop(items, self.txn, self.logger)
         loop_tuner = LoopTuner(loop, 2)
         loop_tuner.run()
-

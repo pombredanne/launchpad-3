@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -32,7 +32,7 @@ from zope.interface import (
     )
 from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasSpecifications(Interface):
@@ -102,7 +102,7 @@ class ISpecificationTarget(IHasSpecifications):
 
     @operation_parameters(
         name=TextLine(title=_('The name of the specification')))
-    @operation_returns_entry(Interface) # really ISpecification
+    @operation_returns_entry(Interface)  # really ISpecification
     @export_read_operation()
     @operation_for_version('devel')
     def getSpecification(name):

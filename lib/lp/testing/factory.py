@@ -64,28 +64,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    OAuthPermission,
-    )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -158,7 +136,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDeviceSet,
     IHWSubmissionSet,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -231,6 +209,16 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.config import config
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
@@ -243,6 +231,7 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -252,7 +241,18 @@ from lp.services.messages.model.message import (
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
 from lp.services.utils import AutoDecorate
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    OAuthPermission,
+    )
+from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -528,21 +528,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     @with_celebrity_logged_in('admin')
-    def makeAdministrator(self, name=None, email=None, password=None):
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+    def makeAdministrator(self, name=None, email=None):
+        user = self.makePerson(name=name, email=email)
         administrators = getUtility(ILaunchpadCelebrities).admin
         administrators.addMember(user, administrators.teamowner)
         return user
 
-    def makeRegistryExpert(self, name=None, email='expert@example.com',
-                           password='test'):
+    def makeRegistryExpert(self, name=None, email='expert@example.com'):
         from lp.testing.sampledata import ADMIN_EMAIL
         login(ADMIN_EMAIL)
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+        user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
         return user
@@ -561,22 +556,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname=None, email=None, password=None,
-                    status=AccountStatus.ACTIVE,
+    def makeAccount(self, displayname=None, status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
         if displayname is None:
             displayname = self.getUniqueString('displayname')
-        account = getUtility(IAccountSet).new(
-            rationale, displayname, password=password)
+        account = getUtility(IAccountSet).new(rationale, displayname)
         removeSecurityProxy(account).status = status
-        if email is None:
-            email = self.getUniqueEmailAddress()
-        email_status = EmailAddressStatus.PREFERRED
-        if status != AccountStatus.ACTIVE:
-            email_status = EmailAddressStatus.NEW
-        email = self.makeEmail(
-            email, person=None, account=account, email_status=email_status)
         self.makeOpenIdIdentifier(account)
         return account
 
@@ -610,19 +596,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             can_encrypt=False)
 
     def makePerson(
-        self, email=None, name=None, password=None,
+        self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=(),
-        homepage_content=None):
+        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
         :param name: The name for the new person.
-        :param password: The password for the person.
-            This password can be used in setupBrowser in combination
-            with the email address to create a browser for this new
-            person.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
@@ -637,25 +618,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
-        if password is None:
-            password = self.getUniqueString('password')
         # By default, make the email address preferred.
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
-        # Set the password to test in order to allow people that have
-        # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname,
+            displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        naked_person._password_cleartext_cached = password
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
-
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -679,6 +652,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        if account_status:
+            removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
         for team in member_of:
@@ -729,10 +704,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # setPreferredEmail no longer activates the account
             # automatically.
             account = IMasterStore(Account).get(Account, person.accountID)
-            account.activate(
-                "Activated by factory.makePersonByName",
-                password='foo',
-                preferred_email=email)
+            account.reactivate("Activated by factory.makePersonByName")
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -743,20 +715,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     MailingListAutoSubscribePolicy.NEVER)
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED,
-            account)
+            alternative_address, person, EmailAddressStatus.VALIDATED)
         return person
 
-    def makeEmail(self, address, person, account=None, email_status=None):
+    def makeEmail(self, address, person, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
-        :param account: The account to assign the email address to.  Will use
-            the given person's account if None is provided.
-        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -766,10 +734,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
-        if account is None:
-            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, account)
+            address, person, email_status)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
@@ -1960,9 +1926,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
-        return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=bug_watch,
-                              remote_comment_id=None)
+        with person_logged_in(owner):
+            return bug.newMessage(owner=owner, subject=subject, content=body,
+                                  parent=None, bugwatch=bug_watch,
+                                  remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
@@ -4266,7 +4233,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
-        from canonical.testing import BaseLayer
+        from lp.testing.layers import BaseLayer
         launchpad = launchpadlib_for(
             "test", person, service_root=BaseLayer.appserver_root_url("api"),
             version=version)

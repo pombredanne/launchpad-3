@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
@@ -8,15 +8,15 @@ __metaclass__ = type
 from storm.store import Store
 import transaction
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
+from lp.services.config import config
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestRevisionKarma(TestCaseWithFactory):
@@ -104,7 +104,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author, account=author.account))
+            EmailAddressSet().new(email, author))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()

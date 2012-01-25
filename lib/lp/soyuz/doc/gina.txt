@@ -280,6 +280,8 @@ only imported one:
     -----END PGP SIGNATURE-----
     >>> print cap.maintainer.displayname
     Michael Vogt
+    >>> print cap.dsc_binaries
+    libcap-dev, libcap-bin, libcap1
 
 Test ubuntu-meta in breezy, which was forcefully imported.
 
@@ -574,7 +576,7 @@ Check that the overrides we did were correctly issued. We can't use
 selectOneBy because, of course, there may be multiple rows published for that
 package -- that's what overrides actually do.
 
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> x11_pub = SSPPH.select("""
     ...     sourcepackagerelease = %s AND
     ...     distroseries = %s AND

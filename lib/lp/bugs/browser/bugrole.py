@@ -9,8 +9,8 @@ __all__ = [
     'BugRoleMixin',
     ]
 
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import canonical_url
 
 
 class BugRoleMixin:

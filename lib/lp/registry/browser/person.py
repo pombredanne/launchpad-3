@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -126,41 +126,7 @@ from zope.schema.vocabulary import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.launchpad import (
-    INotificationRecipientSet,
-    UnknownRecipientError,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    IOpenLaunchBag,
-    )
-from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import get_current_view
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -189,7 +155,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.location import LocationWidget
-from lp.app.widgets.password import PasswordChangeWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -252,12 +217,16 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     )
+from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -266,6 +235,10 @@ from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddress,
     IEmailAddressSet,
+    )
+from lp.services.mail.interfaces import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
     )
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
@@ -285,6 +258,30 @@ from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
     SalesforceVoucherProxyException,
     )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
+from lp.services.webapp.login import logoutPerson
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
@@ -500,6 +497,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # In which case we assume it is the archive_id (for the
             # moment, archive name will be an option soon).
             archive_id = self.request.stepstogo.consume()
+            if not archive_id.isdigit():
+                return None
             return traverse_archive_subscription_for_subscriber(
                 self.context, archive_id)
         else:
@@ -973,8 +972,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
+    links = ('personal', 'email_settings', 'sshkeys', 'gpgkeys')
 
     def personal(self):
         target = '+edit'
@@ -1279,7 +1277,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     label = "Review person's account"
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
-    custom_widget('password', PasswordChangeWidget)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1287,12 +1284,12 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces.lpstorm import IMasterObject
+        from lp.services.database.lpstorm import IMasterObject
         self.context = IMasterObject(self.context.account)
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
         if self.viewed_by_admin:
-            self.field_names = ['displayname', 'password'] + self.field_names
+            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1336,10 +1333,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         """Update the IAccount."""
         if (data['status'] == AccountStatus.SUSPENDED
             and self.context.status != AccountStatus.SUSPENDED):
-            # Setting the password to a clear value makes it impossible to
-            # login. The preferred email address is removed to ensure no
-            # email is sent to the user.
-            data['password'] = 'invalid'
+            # The preferred email address is removed to ensure no email
+            # is sent to the user.
             self.person.setPreferredEmail(None)
             self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
@@ -1592,7 +1587,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
 
-        return helpers.shortlist([
+        return shortlist([
             dict(title=milestone.title, value=milestone.token, checked=False)
             for milestone in vocabulary],
             longest_expected=10)
@@ -3949,7 +3944,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            elif email.person is not None:
+            else:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
@@ -3964,17 +3959,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                     canonical_url(owner),
                     owner.displayname,
                     merge_url))
-            elif email.account is not None:
-                account = email.account
-                self.addError(structured(
-                    "The email address '%s' is already registered to an "
-                    "account, %s.",
-                    newemail,
-                    account.displayname))
-            else:
-                self.addError(structured(
-                    "The email address '%s' is already registered.",
-                    newemail))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)

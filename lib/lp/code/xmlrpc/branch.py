@@ -24,14 +24,6 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadXMLRPCView,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.helpers import return_fault
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet
@@ -66,6 +58,14 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.services.config import config
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.xmlrpc import faults
+from lp.xmlrpc.helpers import return_fault
 
 
 class IBranchSetAPI(Interface):

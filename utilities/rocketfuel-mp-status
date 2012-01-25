@@ -1,10 +1,15 @@
 #!/usr/bin/python
 
-from bzrlib import branch, errors
 import commands
-from launchpadlib.launchpad import Launchpad
 import os
 import sys
+
+from bzrlib import (
+    branch,
+    errors,
+    )
+from launchpadlib.launchpad import Launchpad
+
 
 launchpad = Launchpad.login_with('rocketfuel-mp-status', 'production')
 trunk = commands.getoutput(

@@ -78,12 +78,15 @@ COPYRIGHT = (
     'TCPWatch %s Copyright 2001 Shane Hathaway, Zope Corporation'
     % VERSION)
 
-import sys
-import os
-import socket
 import asyncore
 import getopt
-from time import time, localtime
+import os
+import socket
+import sys
+from time import (
+    localtime,
+    time,
+    )
 
 
 RECV_BUFFER_SIZE = 8192
@@ -874,7 +877,7 @@ class HTTPStreamParser:
                 header_plus = s[:index]
                 consumed = len(data) - (len(s) - index)
                 self.in_header = 0
-                # Remove preceeding blank lines.
+                # Remove preceding blank lines.
                 header_plus = header_plus.lstrip()
                 if not header_plus:
                     self.empty = 1

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -21,16 +21,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -40,9 +30,15 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -93,6 +89,10 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
@@ -443,7 +443,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
-            archive, ["foo"])
+            archive, None, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('1.1', pubs[0].source_package_version)
 
@@ -460,9 +460,31 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
-            archive, ["foo"])
+            archive, None, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('1.0', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_multiple_distroseries(self):
+        # The helper method selects the correct publication from multiple
+        # distroseries.
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        archive = self.factory.makeArchive()
+        distroseries_one = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        distroseries_two = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, archive=archive,
+            distroseries=distroseries_one, version="1.0",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, archive=archive,
+            distroseries=distroseries_two, version="1.1",
+            status=PackagePublishingStatus.PUBLISHED)
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, distroseries_one.name, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual("1.0", pubs[0].source_package_version)
 
 
 class TestArchiveCanUpload(TestCaseWithFactory):
@@ -2302,6 +2324,45 @@ class TestSyncSource(TestCaseWithFactory):
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
 
+    def test_copyPackages_with_multiple_distroseries(self):
+        # The from_series parameter selects a source distroseries.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        new_distroseries = self.factory.makeDistroSeries(
+            distribution=source_archive.distribution)
+        new_version = "%s.1" % version
+        new_spr = self.factory.makeSourcePackageRelease(
+            archive=source_archive, distroseries=new_distroseries,
+            sourcepackagename=source_name, version=new_version)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive, distroseries=new_distroseries,
+            sourcepackagerelease=new_spr)
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name,
+                from_series=source.distroseries.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # There should be one copy job with the correct version.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(version, copy_job.package_version)
+
+        # If we now do another copy without the from_series parameter, it
+        # selects the newest version in the source archive.
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(2, copy_jobs.count())
+        self.assertEqual(copy_job, copy_jobs[0])
+        self.assertEqual(new_version, copy_jobs[1].package_version)
+
 
 class TestgetAllPublishedBinaries(TestCaseWithFactory):
 
@@ -2383,3 +2444,62 @@ class TestRemovingPermissions(TestCaseWithFactory):
         # not generate an error if the permission is None.
         ap_set = ArchivePermissionSet()
         ap_set._remove_permission(None)
+
+
+class TestRemovingCopyNotifications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeJob(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        return (distroseries, archive1, archive2, requester, job)
+
+    def test_removeCopyNotification(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        job.start()
+        job.fail()
+
+        with person_logged_in(archive2.owner):
+            archive2.removeCopyNotification(job.id)
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        found_jobs = source.getIncompleteJobsForArchive(archive2)
+        self.assertEqual(None, found_jobs.any())
+
+    def test_removeCopyNotification_raises_for_not_failed(self):
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        
+        self.assertNotEqual(JobStatus.FAILED, job.status)
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job.id)
+
+    def test_removeCopyNotification_raises_for_wrong_archive(self):
+        # If the job ID supplied is not for the context archive, an
+        # error should be raised.
+        distroseries, archive1, archive2, requester, job = self.makeJob()
+        job.start()
+        job.fail()
+
+        # Set up a second job in the other archive.
+        source = getUtility(IPlainPackageCopyJobSource)
+        job2 = source.create(
+            package_name="foo", source_archive=archive2,
+            target_archive=archive1, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+
+        with person_logged_in(archive2.owner):
+            self.assertRaises(
+                AssertionError, archive2.removeCopyNotification, job2.id)

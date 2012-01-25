@@ -17,7 +17,7 @@ Accessing that page gives us the OOPS error page.
 As our test runner runs in 'always show tracebacks' mode, we need to
 switch this off for these tests to work
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from textwrap import dedent
     >>> test_data = dedent("""
     ...     [canonical]

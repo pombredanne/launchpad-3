@@ -25,8 +25,8 @@ We'll make a private archive and add a new build to it to demonstrate this.
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
@@ -95,7 +95,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
 cprov is also allowed to see his own build:
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...
@@ -276,8 +276,8 @@ Let's make the iceweasel package available in breezy-autotest.
 First log in as an admin to be able to manipulate the source publishing.
 
     >>> login("foo.bar@canonical.com")
-    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from lp.services.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)

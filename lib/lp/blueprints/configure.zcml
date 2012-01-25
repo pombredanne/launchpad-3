@@ -36,19 +36,19 @@
         set_schema="lp.blueprints.interfaces.sprint.ISprint"/>
   </class>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.sprint.ISprint"
-      factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+      factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
       permission="zope.Public"/>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.sprint.ISprintSet"
       factory="lp.blueprints.browser.sprint.SprintSetBreadcrumb"
       permission="zope.Public"/>
   <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.specification.ISpecification"
-      factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
+      factory="lp.services.webapp.breadcrumb.TitleBreadcrumb"
       permission="zope.Public"/>
 
   <!-- This is a view used to export data needed by the sprint scheduler.
@@ -103,11 +103,11 @@
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_created"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_created"/>
   <subscriber
       for="lp.blueprints.interfaces.specificationsubscription.ISpecificationSubscription
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_subscription_modified"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_subscription_modified"/>
 
   <!-- SpecificationFeedback -->
 
@@ -202,7 +202,7 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
+      handler="lp.blueprints.mail.notifications.notify_specification_modified"/>
 
   <!-- SpecificationSet -->
 

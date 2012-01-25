@@ -14,9 +14,9 @@ Since the web app is not run in the main thread (unlike the test suite)
 we rely on that to find out whether or not to reset stores.
 
     >>> import threading
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-    >>> from canonical.launchpad.testing.pages import UnstickyCookieHTTPCaller
+    >>> from lp.testing.pages import UnstickyCookieHTTPCaller
     >>> logout()
     >>> alive_items = None
     >>> thread_name = None
@@ -24,7 +24,7 @@ we rely on that to find out whether or not to reset stores.
     ...     global alive_items
     ...     global thread_name
     ...     thread_name = threading.currentThread().getName()
-    ...     from canonical.launchpad.testing.pages import setupBrowser
+    ...     from lp.testing.pages import setupBrowser
     ...     http = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     ...     http.open("http://launchpad.dev/~salgado/+edit")
     ...     http.getControl("Display Name").value = "Changed"

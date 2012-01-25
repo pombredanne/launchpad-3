@@ -26,23 +26,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    flush_database_updates,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import (
@@ -52,11 +35,13 @@ from lp.registry.errors import (
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     ACTIVE_STATES,
     CyclicalTeamMembershipError,
@@ -66,10 +51,27 @@ from lp.registry.interfaces.teammembership import (
     ITeamParticipation,
     TeamMembershipStatus,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_updates,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class TeamMembership(SQLBase):
@@ -83,7 +85,7 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -199,17 +201,9 @@ class TeamMembership(SQLBase):
 
     def canChangeExpirationDate(self, person):
         """See `ITeamMembership`."""
-        person_is_admin = self.team in person.getAdministratedTeams()
-        if (person.inTeam(self.team.teamowner) or
-                person.inTeam(getUtility(ILaunchpadCelebrities).admin)):
-            # The team owner and Launchpad admins can change the expiration
-            # date of anybody's membership.
-            return True
-        elif person_is_admin and person != self.person:
-            # A team admin can only change other member's expiration date.
-            return True
-        else:
-            return False
+        person_is_team_admin = self.team in person.getAdministratedTeams()
+        person_is_lp_admin = IPersonRoles(person).in_admin
+        return person_is_team_admin or person_is_lp_admin
 
     def setExpirationDate(self, date, user):
         """See `ITeamMembership`."""
@@ -273,12 +267,9 @@ class TeamMembership(SQLBase):
                     % (admin.unique_displayname, canonical_url(admin)))
             else:
                 for admin in admins:
-                    # Do not tell the member to contact himself when he can't
-                    # extend his membership.
-                    if admin != member:
-                        admins_names.append(
-                            "%s <%s>" % (admin.unique_displayname,
-                                         canonical_url(admin)))
+                    admins_names.append(
+                        "%s <%s>" % (admin.unique_displayname,
+                                        canonical_url(admin)))
 
                 how_to_renew = (
                     "To prevent this membership from expiring, you should "

@@ -8,38 +8,22 @@ import signal
 import time
 import xmlrpclib
 
+from lpbuildd.tests import BuilddSlaveTestSetup
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-
 import transaction
-
 from twisted.internet import (
     defer,
     reactor,
     task,
     )
-from twisted.internet.task import (
-    deferLater,
-    )
+from twisted.internet.task import deferLater
 from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lpbuildd.tests import BuilddSlaveTestSetup
-
-from canonical.config import config
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from lp.services.log.logger import BufferLogger
-from canonical.testing.layers import (
-    LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -58,13 +42,22 @@ from lp.buildmaster.tests.mock_slaves import (
     OkSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
+    ANONYMOUS,
+    login,
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 

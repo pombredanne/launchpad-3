@@ -42,7 +42,7 @@ IProjectGroup and IProduct inherit from this interface as both projects and
 products can set branch visibility policies.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.code.interfaces.branchvisibilitypolicy import (
     ...     IHasBranchVisibilityPolicy)
@@ -241,7 +241,7 @@ defined, then None is returned.
 The branch visibility policy is checked during branch creation through
 the relevant IBranchNamespace implementation.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
     >>> evolution.setBranchVisibilityTeamPolicy(
     ...     None, BranchVisibilityRule.FORBIDDEN)

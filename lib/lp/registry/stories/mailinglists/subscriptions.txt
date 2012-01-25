@@ -80,7 +80,7 @@ it's currently the team contact method.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink(url="+editemails").click()
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
     Change your e-mail settings...
 
@@ -199,7 +199,7 @@ Admins team, and he should know if the list is available.
 
 Now Jdub can apply for team membership and mailing list access.
 
-    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -400,7 +400,7 @@ If it had subscribers, though, they'd be shown on that page, in a batched
 list.
 
     # Forge two new subscribers to the team's mailing list.
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('default-batch-size', """
     ... [launchpad]
     ... default_batch_size: 1
@@ -529,7 +529,7 @@ team. Users who have chosen the 'On registration' or 'Always'
 subscription settings will see the box checked by default.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+    ...     auth='Basic james.blackwell@ubuntulinux.com:test')
 
     >>> browser.open('http://launchpad.dev/~jblack')
     >>> browser.getLink(url="+editemails").click()

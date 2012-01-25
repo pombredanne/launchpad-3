@@ -11,7 +11,7 @@ to change the bug supervisor.
   ...
   LinkNotFoundError
 
-Collin is an an Ubuntu owner and can set the bug supervisor role.
+Colin is an Ubuntu owner and can set the bug supervisor role.
 
   >>> colin_browser = setupBrowser(
   ...     auth='Basic colin.watson@ubuntulinux.com:test')
@@ -40,7 +40,7 @@ Ubuntu.
   ...     ' colin.watson@ubuntulinux.com ')
   >>> colin_browser.getControl("Change").click()
 
-And then collin is redirected to the distribution bugs page.
+And then Colin is redirected to the distribution bugs page.
 
     >>> print extract_text(find_tag_by_id(
     ...     colin_browser.contents, 'bug-supervisor'))
@@ -118,7 +118,7 @@ Robert Collins (the current bug supervisor) are subscribed to this bug:
     >>> from itertools import chain
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):
     ...     subscribers = chain(
@@ -191,7 +191,7 @@ subscribed to the distribution.
 
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> from lp.testing import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):
     ...     subscribers = chain(

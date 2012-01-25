@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz buildd slave manager logic."""
@@ -23,10 +23,6 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
-from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -34,6 +30,11 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch,
+    )
+from lp.buildmaster.model.builder import Builder
+from lp.services.propertycache import get_property_cache
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
@@ -49,7 +50,9 @@ def get_builder(name):
 def assessFailureCounts(builder, fail_notes):
     """View builder/job failure_count and work out which needs to die.  """
     # builder.currentjob hides a complicated query, don't run it twice.
-    # See bug 623281.
+    # See bug 623281 (Note that currentjob is a cachedproperty).
+
+    del get_property_cache(builder).currentjob
     current_job = builder.currentjob
     if current_job is None:
         job_failure_count = 0
@@ -63,6 +66,7 @@ def assessFailureCounts(builder, fail_notes):
         # we can do is try them both again, and hope that the job
         # runs against a different builder.
         current_job.reset()
+        del get_property_cache(builder).currentjob
         return
 
     if builder.failure_count > job_failure_count:
@@ -95,6 +99,7 @@ def assessFailureCounts(builder, fail_notes):
         # but that would cause us to query the slave for its status
         # again, and if the slave is non-responsive it holds up the
         # next buildd scan.
+    del get_property_cache(builder).currentjob
 
 
 class SlaveScanner:

@@ -1,6 +1,5 @@
-= Demo and launchpad.net =
-
-== Demo sites ==
+Demo and launchpad.net
+======================
 
 Launchpad can brand instances as 'demo' instances to make it obvious to
 users that they are working in a playpen and changes they make do not
@@ -8,7 +7,7 @@ affect the launchpad.net database.
 
 This is controlled by a pair of config variables.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.is_demo
     False
     >>> config.launchpad.site_message

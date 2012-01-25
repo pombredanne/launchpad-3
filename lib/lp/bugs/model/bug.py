@@ -86,29 +86,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    cursor,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -162,6 +139,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugattachment import BugAttachment
@@ -180,6 +158,7 @@ from lp.bugs.model.bugtask import (
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
+    get_structural_subscriptions,
     get_structural_subscriptions_for_bug,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -207,10 +186,25 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
+from lp.services.helpers import shortlist
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
@@ -224,6 +218,13 @@ from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
     )
 
 
@@ -948,8 +949,10 @@ class Bug(SQLBase):
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
+    def getSubscriptionInfo(self, level=None):
         """See `IBug`."""
+        if level is None:
+            level = BugNotificationLevel.LIFECYCLE
         return BugSubscriptionInfo(self, level)
 
     def getDirectSubscriptions(self):
@@ -1002,6 +1005,7 @@ class Bug(SQLBase):
         # the regular proxied object.
         return sorted(
             indirect_subscribers,
+            # XXX: GavinPanella 2011-12-12 bug=911752: Use person_sort_key.
             key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
@@ -1030,14 +1034,13 @@ class Bug(SQLBase):
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
-
         if recipients is not None:
-            # Pre-load duplicate bugs.
-            list(self.duplicates)
+            list(self.duplicates)  # Pre-load duplicate bugs.
+            info.duplicate_only_subscribers  # Pre-load subscribers.
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-        return info.duplicate_only_subscriptions.subscribers.sorted
+        return info.duplicate_only_subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -2389,48 +2392,44 @@ def get_also_notified_subscribers(
     if IBug.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask
         bugtasks = bug.bugtasks
+        info = bug.getSubscriptionInfo(level)
     elif IBugTask.providedBy(bug_or_bugtask):
         bug = bug_or_bugtask.bug
         bugtasks = [bug_or_bugtask]
+        info = bug.getSubscriptionInfo(level).forTask(bug_or_bugtask)
     else:
         raise ValueError('First argument must be bug or bugtask')
 
     if bug.private:
         return []
 
-    # Direct subscriptions always take precedence over indirect
-    # subscriptions.
-    direct_subscribers = set(bug.getDirectSubscribers())
+    # Subscribers to exclude.
+    exclude_subscribers = frozenset().union(
+        info.direct_subscribers_at_all_levels, info.muted_subscribers)
+    # Get also-notified subscribers at the given level for the given tasks.
+    also_notified_subscribers = info.also_notified_subscribers
 
-    also_notified_subscribers = set()
-
-    for bugtask in bugtasks:
-        if (bugtask.assignee and
-            bugtask.assignee not in direct_subscribers):
-            # We have an assignee that is not a direct subscriber.
-            also_notified_subscribers.add(bugtask.assignee)
-            if recipients is not None:
+    if recipients is not None:
+        for bugtask in bugtasks:
+            assignee = bugtask.assignee
+            if assignee in also_notified_subscribers:
+                # We have an assignee that is not a direct subscriber.
                 recipients.addAssignee(bugtask.assignee)
-
-        # If the target's bug supervisor isn't set...
-        pillar = bugtask.pillar
-        if (pillar.bug_supervisor is None and
-            pillar.official_malone and
-            pillar.owner not in direct_subscribers):
-            # ...we add the owner as a subscriber.
-            also_notified_subscribers.add(pillar.owner)
-            if recipients is not None:
-                recipients.addRegistrant(pillar.owner, pillar)
+            # If the target's bug supervisor isn't set...
+            pillar = bugtask.pillar
+            if pillar.official_malone and pillar.bug_supervisor is None:
+                if pillar.owner in also_notified_subscribers:
+                    # ...we add the owner as a subscriber.
+                    recipients.addRegistrant(pillar.owner, pillar)
 
     # This structural subscribers code omits direct subscribers itself.
-    also_notified_subscribers.update(
-        get_structural_subscribers(
-            bug_or_bugtask, recipients, level, direct_subscribers))
+    # TODO: Pass the info object into get_structural_subscribers for
+    # efficiency... or do the recipients stuff here.
+    structural_subscribers = get_structural_subscribers(
+        bug_or_bugtask, recipients, level, exclude_subscribers)
+    assert also_notified_subscribers.issuperset(structural_subscribers)
 
-    # Remove security proxy for the sort key, but return
-    # the regular proxied object.
-    return sorted(also_notified_subscribers,
-                  key=lambda x: removeSecurityProxy(x).displayname)
+    return also_notified_subscribers.sorted
 
 
 def load_people(*where):
@@ -2443,7 +2442,8 @@ def load_people(*where):
         `ValidPersonCache` records are loaded simultaneously.
     """
     return PersonSet()._getPrecachedPersons(
-        origin=[Person], conditions=where, need_validity=True)
+        origin=[Person], conditions=where, need_validity=True,
+        need_preferred_email=True)
 
 
 class BugSubscriberSet(frozenset):
@@ -2573,13 +2573,57 @@ class BugSubscriptionInfo:
 
     def __init__(self, bug, level):
         self.bug = bug
+        self.bugtask = None  # Implies all.
         assert level is not None
         self.level = level
+        # This cache holds related `BugSubscriptionInfo` instances relating to
+        # the same bug but with different levels and/or choice of bugtask.
+        self.cache = {self.cache_key: self}
+        # This is often used in event handlers, many of which block implicit
+        # flushes. However, the data needs to be in the database for the
+        # queries herein to give correct answers.
+        Store.of(bug).flush()
+
+    @property
+    def cache_key(self):
+        """A (bug ID, bugtask ID, level) tuple for use as a hash key.
+
+        This helps `forTask()` and `forLevel()` to be more efficient,
+        returning previously populated instances to avoid running the same
+        queries against the database again and again.
+        """
+        bugtask_id = None if self.bugtask is None else self.bugtask.id
+        return self.bug.id, bugtask_id, self.level
+
+    def forTask(self, bugtask):
+        """Create a new `BugSubscriptionInfo` limited to `bugtask`.
+
+        The given task must refer to this object's bug. If `None` is passed a
+        new `BugSubscriptionInfo` instance is returned with no limit.
+        """
+        info = self.__class__(self.bug, self.level)
+        info.bugtask, info.cache = bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
+
+    def forLevel(self, level):
+        """Create a new `BugSubscriptionInfo` limited to `level`."""
+        info = self.__class__(self.bug, level)
+        info.bugtask, info.cache = self.bugtask, self.cache
+        return self.cache.setdefault(info.cache_key, info)
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def muted_subscribers(self):
+        muted_people = Select(BugMute.person_id, BugMute.bug == self.bug)
+        return load_people(Person.id.is_in(muted_people))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
-    def old_direct_subscriptions(self):
-        """The bug's direct subscriptions."""
+    def direct_subscriptions(self):
+        """The bug's direct subscriptions.
+
+        Excludes muted subscriptions.
+        """
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
@@ -2587,66 +2631,64 @@ class BugSubscriptionInfo:
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
-    @cachedproperty
-    def direct_subscriptions_and_subscribers(self):
-        """The bug's direct subscriptions."""
-        res = IStore(BugSubscription).find(
-            (BugSubscription, Person),
-            BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug,
-            BugSubscription.person_id == Person.id,
-            Not(In(BugSubscription.person_id,
-                   Select(BugMute.person_id,
-                          BugMute.bug_id == self.bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
-
-    @cachedproperty
-    @freeze(BugSubscriptionSet)
-    def direct_subscriptions(self):
-        return self.direct_subscriptions_and_subscribers[0]
-
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+    @property
     def direct_subscribers(self):
-        return self.direct_subscriptions_and_subscribers[1]
+        """The bug's direct subscriptions.
 
-    @cachedproperty
-    def duplicate_subscriptions_and_subscribers(self):
-        """Subscriptions to duplicates of the bug."""
-        if self.bug.private:
-            return ((), ())
-        else:
-            res = IStore(BugSubscription).find(
-                (BugSubscription, Person),
-                BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.person_id == Person.id,
-                Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-        # Here we could test for res.count() but that will execute another
-        # query.  This structure avoids the extra query.
-        return zip(*res) or ((), ())
+        Excludes muted subscribers.
+        """
+        return self.direct_subscriptions.subscribers
+
+    @property
+    def direct_subscriptions_at_all_levels(self):
+        """The bug's direct subscriptions at all levels.
+
+        Excludes muted subscriptions.
+        """
+        return self.forLevel(
+            BugNotificationLevel.LIFECYCLE).direct_subscriptions
+
+    @property
+    def direct_subscribers_at_all_levels(self):
+        """The bug's direct subscribers at all levels.
+
+        Excludes muted subscribers.
+        """
+        return self.direct_subscriptions_at_all_levels.subscribers
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
-        return self.duplicate_subscriptions_and_subscribers[0]
+        """Subscriptions to duplicates of the bug.
 
-    @cachedproperty
-    @freeze(BugSubscriberSet)
+        Excludes muted subscriptions.
+        """
+        if self.bug.private:
+            return ()
+        else:
+            return IStore(BugSubscription).find(
+                BugSubscription,
+                BugSubscription.bug_notification_level >= self.level,
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+
+    @property
     def duplicate_subscribers(self):
-        return self.duplicate_subscriptions_and_subscribers[1]
+        """Subscribers to duplicates of the bug.
+
+        Excludes muted subscribers.
+        """
+        return self.duplicate_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscriptions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug only.
 
-        Excludes subscriptions for people who have a direct subscription or
-        are also notified for another reason.
+        Excludes muted subscriptions, subscriptions for people who have a
+        direct subscription, or who are also notified for another reason.
         """
         self.duplicate_subscribers  # Pre-load subscribers.
         higher_precedence = (
@@ -2656,47 +2698,85 @@ class BugSubscriptionInfo:
             subscription for subscription in self.duplicate_subscriptions
             if subscription.person not in higher_precedence)
 
+    @property
+    def duplicate_only_subscribers(self):
+        """Subscribers to duplicates of the bug only.
+
+        Excludes muted subscribers, subscribers who have a direct
+        subscription, or who are also notified for another reason.
+        """
+        return self.duplicate_only_subscriptions.subscribers
+
     @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
-        """Structural subscriptions to the bug's targets."""
-        return list(get_structural_subscriptions_for_bug(self.bug))
+        """Structural subscriptions to the bug's targets.
+
+        Excludes direct subscriptions.
+        """
+        subject = self.bug if self.bugtask is None else self.bugtask
+        return get_structural_subscriptions(subject, self.level)
+
+    @property
+    def structural_subscribers(self):
+        """Structural subscribers to the bug's targets.
+
+        Excludes direct subscribers.
+        """
+        return self.structural_subscriptions.subscribers
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def all_assignees(self):
-        """Assignees of the bug's tasks."""
-        assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
-        return load_people(Person.id.is_in(assignees))
+        """Assignees of the bug's tasks.
+
+        *Does not* exclude muted subscribers.
+        """
+        if self.bugtask is None:
+            assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
+            return load_people(Person.id.is_in(assignees))
+        else:
+            return load_people(Person.id == self.bugtask.assigneeID)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
     def all_pillar_owners_without_bug_supervisors(self):
-        """Owners of pillars for which no Bug supervisor is configured."""
-        for bugtask in self.bug.bugtasks:
+        """Owners of pillars for which there is no bug supervisor.
+
+        The pillars must also use Launchpad for bug tracking.
+
+        *Does not* exclude muted subscribers.
+        """
+        if self.bugtask is None:
+            bugtasks = self.bug.bugtasks
+        else:
+            bugtasks = [self.bugtask]
+        for bugtask in bugtasks:
             pillar = bugtask.pillar
-            if pillar.bug_supervisor is None:
-                yield pillar.owner
+            if pillar.official_malone:
+                if pillar.bug_supervisor is None:
+                    yield pillar.owner
 
     @cachedproperty
     def also_notified_subscribers(self):
-        """All subscribers except direct and dupe subscribers."""
+        """All subscribers except direct, dupe, and muted subscribers."""
         if self.bug.private:
             return BugSubscriberSet()
         else:
-            muted = IStore(BugMute).find(
-                Person,
-                BugMute.person_id == Person.id,
-                BugMute.bug == self.bug)
-            return BugSubscriberSet().union(
-                self.structural_subscriptions.subscribers,
+            subscribers = BugSubscriberSet().union(
+                self.structural_subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
-                self.all_assignees).difference(
-                self.direct_subscribers).difference(muted)
+                self.all_assignees)
+            return subscribers.difference(
+                self.direct_subscribers_at_all_levels,
+                self.muted_subscribers)
 
     @cachedproperty
     def indirect_subscribers(self):
-        """All subscribers except direct subscribers."""
+        """All subscribers except direct subscribers.
+
+        Excludes muted subscribers.
+        """
         return self.also_notified_subscribers.union(
             self.duplicate_subscribers)
 

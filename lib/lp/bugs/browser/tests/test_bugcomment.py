@@ -19,22 +19,28 @@ from soupmatchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.browser.bugcomment import group_comments_with_activity
+from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.bugs.browser.bugcomment import (
+    BugComment,
+    group_comments_with_activity,
+    )
 from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
+    login_person,
     person_logged_in,
     TestCase,
+    TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import find_tag_by_id
 
 
 class BugActivityStub:
@@ -313,3 +319,15 @@ class TestBugCommentMicroformats(BrowserTestCase):
                     itemprop='commentTime',
                     title=True,
                     datetime=iso_date))))
+
+
+class TestBugCommentImplementsInterface(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_comment_implements_interface(self):
+        """Ensure BugComment implements IBugComment"""
+        bug_message = self.factory.makeBugComment()
+        bugtask = bug_message.bugs[0].bugtasks[0]
+        bug_comment = BugComment(1, bug_message, bugtask)
+        verifyObject(IBugComment, bug_comment)

@@ -36,8 +36,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp import _
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import Title
 from lp.services.messages.interfaces.message import IMessage
 

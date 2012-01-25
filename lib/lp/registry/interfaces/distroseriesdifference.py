@@ -35,8 +35,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from lp.registry.enum import (
+from lp import _
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )

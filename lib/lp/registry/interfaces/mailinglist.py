@@ -45,13 +45,13 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.messages.interfaces.message import IMessage
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 class IMailingListApplication(ILaunchpadApplication):
@@ -405,10 +405,8 @@ class IMailingList(Interface):
     def getSubscribedAddresses():
         """Return the set of subscribed email addresses for members.
 
-        :return: an iterator over the subscribed IEmailAddresses for all
-            subscribed members of the mailing list, in no particular order.
-            This represents all the addresses which will receive messages
-            posted to the mailing list.
+        :return: a list of email addresses (as strings) for all
+            subscribed members of the mailing list.
         """
 
     def getSubscribers():
@@ -421,9 +419,9 @@ class IMailingList(Interface):
     def getSenderAddresses():
         """Return the set of all email addresses for members.
 
-        :return: an iterator over the all the registered and validated
-            IEmailAddresses for all members of the mailing list's team, in
-            no particular order.  These represent all the addresses which are
+        :return: a list of the registered and validated email addresses
+            (as strings) for all members of the mailing list's team, in no
+            particular order.  These represent all the addresses which are
             allowed to post to the mailing list.
         """
 

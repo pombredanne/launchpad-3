@@ -25,9 +25,9 @@ import simplejson as json
 import sre_constants
 import zc.zservertracelog.tracereport
 
-from canonical.config import config
-from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
+from lp.services.config import config
+from lp.services.scripts.logger import log
 
 
 class Request(zc.zservertracelog.tracereport.Request):

@@ -11,24 +11,12 @@ from testtools.matchers import MatchesAll
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.testing.pages import (
-    find_main_content,
-    get_feedback_messages,
-    setupBrowser,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -60,9 +48,19 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import (
     DoesNotSnapshot,
     Provides,
+    )
+from lp.testing.pages import (
+    find_main_content,
+    get_feedback_messages,
+    setupBrowser,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (

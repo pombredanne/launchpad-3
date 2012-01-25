@@ -1,4 +1,5 @@
-= Badges =
+Badges
+======
 
 Badges are nifty user interface elements that are used to indicate to
 the user that there are interesting features about the thing that the
@@ -35,7 +36,8 @@ Iterating over this collection gives:
     security
 
 
-== The Badge class ==
+The Badge class
+---------------
 
 The badge class has two methods of interest:
   * renderIconImage - the HTML for the icon sized image
@@ -72,7 +74,8 @@ the particular size results in the empty string.
     ''
 
 
-== IHasBadges ==
+IHasBadges
+----------
 
 How to determine which badges to show for a given object is defined by
 the IHasBadges interface.
@@ -83,7 +86,7 @@ for Interface, which just provides the privacy badge.
 
     >>> from zope.interface import Interface, Attribute, implements
     >>> from lp.app.browser.badge import IHasBadges, HasBadgeBase
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> class PrivateClass:
     ...     implements(Interface)
     ...     private = True
@@ -137,11 +140,13 @@ NotImplementedError.
     ...     print badge.alt
     Traceback (most recent call last):
     ...
-    AttributeError: 'SimpleBadger' object has no attribute 'isBlueprintBadgeVisible'
+    AttributeError:
+    'SimpleBadger' object has no attribute 'isBlueprintBadgeVisible'
 
 
 
-== Preferred badging methodology ==
+Preferred badging methodology
+-----------------------------
 
 Under normal circumstances the badges for a given content object require
 the accessing or counting of attributes and this almost always requires
@@ -190,7 +195,7 @@ Usually, one would register an adapter in ZCML from the content type to
 IHasBadges.  Here is the sample from the branch.zcml to illustrate.
 
   <adapter
-      for="canonical.launchpad.interfaces.IBranch"
+      for="lp.code.interfaces.branch.IBranch"
       provides="lp.app.browser.badge.IHasBadges"
       factory="lp.code.browser.branchlisting.BranchBadges"
       />
@@ -217,7 +222,8 @@ as illustrated by the printed method calls.
     ...     print badge.renderIconImage()
     Foo.bugs
     Foo.blueprints
-    <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
+    <img alt="bug" width="14" height="14" src="/@@/bug"
+    title="Linked to a bug"/>
 
 When showing listings of Foos, you often want to use
 `lazr.delegates.delegates`. By having the DelegatingFoo inherit from the
@@ -259,10 +265,12 @@ content classes).
 
     >>> for badge in badger.getVisibleBadges():
     ...     print badge.renderIconImage()
-    <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
+    <img alt="bug" width="14" height="14" src="/@@/bug"
+    title="Linked to a bug"/>
 
 
-== Tales expressions ==
+Tales expressions
+-----------------
 
 There is a tales formatter defined for badges.  These can be shown
 as either small or large.

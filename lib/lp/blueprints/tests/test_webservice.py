@@ -8,21 +8,21 @@ __metaclass__ = type
 import transaction
 from zope.security.management import endInteraction
 
-from canonical.launchpad.testing.pages import (
-    LaunchpadWebServiceCaller,
-    webservice_for_person,
-    )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.testing import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
     )
 
 

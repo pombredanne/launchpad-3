@@ -30,15 +30,6 @@ from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    login_person,
-    )
-from canonical.launchpad.ftests.event import TestEventListener
-from canonical.launchpad.webapp.authorization import clear_cache
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
@@ -54,7 +45,16 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.services.webapp.authorization import clear_cache
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    )
+from lp.testing.event import TestEventListener
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):

@@ -13,10 +13,7 @@ from testtools.matchers import (
 import transaction
 from zope.security.management import setSecurityPolicy
 
-from canonical.config import config
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import helpers
 from lp.services.mail.incoming import (
@@ -28,10 +25,13 @@ from lp.services.mail.incoming import (
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 class TestIncoming(TestCaseWithFactory):
@@ -102,13 +102,6 @@ class TestIncoming(TestCaseWithFactory):
         # An unknown email address returns no principal.
         unknown = 'random-unknown@example.com'
         mail = self.factory.makeSignedMessage(email_address=unknown)
-        self.assertThat(authenticateEmail(mail), Is(None))
-
-    def test_accounts_without_person(self):
-        # An account without a person should be the same as an unknown email.
-        email = 'non-person@example.com'
-        self.factory.makeAccount(email=email)
-        mail = self.factory.makeSignedMessage(email_address=email)
         self.assertThat(authenticateEmail(mail), Is(None))
 
 

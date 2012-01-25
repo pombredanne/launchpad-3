@@ -1,4 +1,5 @@
-= XML-RPC Integration with Malone =
+XML-RPC Integration with Malone
+===============================
 
 Malone provides an XML-RPC interface for filing bugs.
 
@@ -9,7 +10,8 @@ Malone provides an XML-RPC interface for filing bugs.
     ...     transport=XMLRPCTestTransport())
 
 
-== The filebug API ==
+The filebug API
+---------------
 
 The filebug API is:
 
@@ -40,13 +42,14 @@ The return value is the bug URL, in short form, e.g.:
 Support for attachments will be added in the near future.
 
 
-== Examples ==
+Examples
+--------
 
 First, let's define a simple event listener to show that the
 IObjectCreatedEvent is being published when a bug is reported through
 the XML-RPC interface.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import IBug
 
@@ -149,7 +152,8 @@ Reporting a package bug.
     evolution
 
 
-== Error Handling ==
+Error Handling
+--------------
 
 Malone's xmlrpc interface provides extensive error handling. The various
 error conditions it recognizes are:
@@ -171,7 +175,7 @@ Specifying *both* a product and distribution.
     Traceback (most recent call last):
     ...
     Fault: <Fault 70: 'Too many arguments.
-            You may specify either a product or a distribution, but not both.'>
+        You may specify either a product or a distribution, but not both.'>
 
 Specifying a non-existent product.
 
@@ -227,17 +231,16 @@ Invalid subscriber.
     >>> on_created_listener.unregister()
 
 
-== Generating bugtracker authentication tokens ==
+Generating bugtracker authentication tokens
+-------------------------------------------
 
 Launchpad Bugs also provides an XML-RPC API for generating login tokens
 for authentication with external bug trackers.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     IPrivateApplication,
-    ...     IPrivateMaloneApplication,
-    ...     )
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.xmlrpc.interfaces import IPrivateApplication
+    >>> from lp.bugs.interfaces.malone import IPrivateMaloneApplication
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(IPrivateMaloneApplication,
@@ -247,9 +250,11 @@ for authentication with external bug trackers.
 The API provides a single method, newBugTrackerToken(), which returns
 the ID of the new LoginToken.
 
-    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
+    >>> from lp.services.verification.interfaces.logintoken import (
+    ...     ILoginTokenSet)
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     IExternalBugTrackerTokenAPI)
     >>> from lp.bugs.xmlrpc.bug import (
     ...     ExternalBugTrackerTokenAPI)
 

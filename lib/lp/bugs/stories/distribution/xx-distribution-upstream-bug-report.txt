@@ -11,8 +11,8 @@ pre-existing linux-source bug 10. We transition the Ubuntu tasks to
 TRIAGED to ensure that they are picked up by the report.
 
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.tests.bug import (
     ...     create_bug_from_strings, create_task_from_strings,
     ...     update_task_status)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
@@ -42,30 +42,12 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
-    enabled_with_permission,
-    GetitemNavigation,
     LaunchpadEditFormView,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
+    ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    ILaunchBag,
-    )
-from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -82,6 +64,24 @@ from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.helpers import is_tar_filename
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -467,7 +467,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     '<a href="%s/+imports">Translation Import Queue</a>',
                         canonical_url(self.context.translationtarget)))
 
-        elif helpers.is_tar_filename(filename):
+        elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             (num, conflicts) = (
                 translation_import_queue.addOrUpdateEntriesFromTarball(

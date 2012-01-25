@@ -37,7 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode;
+      devmode modules/lp.services.config/config/devmode;
       yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
@@ -55,12 +55,6 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-
-    XXX mars 2010-01-21
-    We have to load MochiKit outside of the main javascript rollup so that the
-    rollup's size does not exceed 512Kb.  That magic number triggers a bug
-    somewhere in the automated test system that will prevent Windmill from
-    executing.
   </tal:comment>
   <script type="text/javascript">
     var LP = {
@@ -68,9 +62,6 @@
         links: {}
     };
   </script>
-  <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
 
@@ -91,15 +82,15 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;
+      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/lp.services.config/config/google/maps_api_key};">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-    <script type="text/javascript">
+    <script id="base-layout-load-scripts" type="text/javascript">
       LPS.use('base', 'node', 'oop', 'event', 'lp.app.beta_features',
               'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
                 'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
@@ -112,35 +103,171 @@
               Y.lp.app.beta_features.display_beta_notification();
           });
       });
+
+      LPS.use('node', 'event-delegate', 'lp', 'lp.app.foldables', 'lp.app.links',
+          'lp.app.longpoll', 'lp.app.inlinehelp', 'lp.app.sorttable', function(Y) {
+          Y.on('load', function(e) {
+              Y.lp.app.sorttable.SortTable.init();
+              Y.lp.app.inlinehelp.init_help();
+              Y.lp.activate_collapsibles();
+              Y.lp.app.foldables.activate();
+              Y.lp.app.links.check_valid_lp_links();
+              // Longpolling will only start if
+              // LP.cache.longpoll is populated.
+              // We use Y.later to work around a Safari/Chrome 'feature':
+              // The mouse cursor stays 'busy' until all the requests started during
+              // page load are finished.  Hence we want the long poll request to start
+              // right *after* the page has loaded.
+              Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
+          }, window);
+
+          Y.on('lp:context:web_link:changed', function(e) {
+              window.location = e.new_value;
+          });
+      });
+
+      // This code is pulled from lp.js that needs to be available on every
+      // request. Pulling here to get it outside the scope of the YUI block.
+      // Lint-safe scripting URL.
+      var VOID_URL = '_:void(0);'.replace('_', 'javascript');
+
+      function registerLaunchpadFunction(func) {
+          // registers a function to fire onload.
+          // Use this for initilaizing any javascript that should fire once the page
+          // has been loaded.
+          LPS.use('node', function(Y) {
+              Y.on('load', function(e) {
+                  func();
+              }, window);
+          });
+      }
+
+      // Enable or disable the beta.launchpad.net redirect
+      function setBetaRedirect(enable) {
+          var expire = new Date();
+          if (enable) {
+              expire.setTime(expire.getTime() + 1000);
+              document.cookie = ('inhibit_beta_redirect=0; Expires=' +
+                                 expire.toGMTString() + cookie_scope);
+              alert('Redirection to the beta site has been enabled');
+          } else {
+              expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000);
+              document.cookie = ('inhibit_beta_redirect=1; Expires=' +
+                                 expire.toGMTString() + cookie_scope);
+              alert('You will not be redirected to the beta site for 2 hours');
+          }
+          return false;
+      }
+
+      function setFocusByName(name) {
+          // Focus the first element matching the given name which can be focused.
+          var nodes = document.getElementsByName(name);
+          var i, node;
+          for (i = 0; i < nodes.length; i++) {
+              node = nodes[i];
+              if (node.focus) {
+                  try {
+                      // Trying to focus a hidden element throws an error in IE8.
+                      if (node.offsetHeight !== 0) {
+                          node.focus();
+                      }
+                  } catch (e) {
+                      LPS.use('console', function(Y) {
+                          Y.log('In setFocusByName(<' +
+                              node.tagName + ' type=' + node.type + '>): ' + e);
+                      });
+                  }
+                  break;
+              }
+          }
+      }
+
+      function popup_window(url, name, width, height) {
+          var iframe = document.getElementById('popup_iframe_' + name);
+          if (!iframe.src || iframe.src === VOID_URL) {
+              // The first time this handler runs the window may not have been
+              // set up yet; sort that out.
+              iframe.style.width = width + 'px';
+              iframe.style.height = height + 'px';
+              iframe.style.position = 'absolute';
+              iframe.style.background = 'white';
+              iframe.src = url;
+          }
+          iframe.style.display = 'inline';
+          // I haven't found a way of making the search form focus again when
+          // the popup window is redisplayed. I tried doing an
+          //    iframe.contentDocument.searchform.search.focus()
+          // but nothing happens.. -- kiko, 2007-03-12
+      }
+
+      function selectWidget(widget_name, event) {
+        if (event && (event.keyCode === 9 || event.keyCode === 13)) {
+            // Avoid firing if user is tabbing through or simply pressing
+            // enter to submit the form.
+            return;
+        }
+        document.getElementById(widget_name).checked = true;
+      }
+
+      function switchBugBranchFormAndWhiteboard(id) {
+          var div = document.getElementById('bugbranch' + id);
+          var wb = document.getElementById('bugbranch' + id + '-wb');
+
+          if (div.style.display === "none") {
+              /* Expanding the form */
+              if (wb !== null) {
+                  wb.style.display = "none";
+              }
+              div.style.display = "block";
+              /* Use two focus calls to get the browser to scroll to the end of the
+               * form first, then focus back to the first field of the form.
+               */
+              document.getElementById('field'+id+'.actions.update').focus();
+              document.getElementById('field'+id+'.whiteboard').focus();
+          } else {
+              if (wb !== null) {
+                  wb.style.display = "block";
+              }
+              div.style.display = "none";
+          }
+          return false;
+      }
+
+      function switchSpecBranchFormAndSummary(id) {
+          /* The document has two identifiable elements for each
+           * spec-branch link:
+           *    'specbranchX' which is the div containing the edit form
+           *    'specbranchX-summary' which is the div contining the sumary
+           * where X is the database id of the link.
+           */
+          var div = document.getElementById('specbranch' + id);
+          var wb = document.getElementById('specbranch' + id + '-summary');
+
+          if (div.style.display === "none") {
+              /* Expanding the form */
+              if (wb !== null) {
+                  wb.style.display = "none";
+              }
+              div.style.display = "block";
+              /* Use two focus calls to get the browser to scroll to the end of the
+               * form first, then focus back to the first field of the form.
+               */
+              document.getElementById('field' + id + '.actions.change').focus();
+              document.getElementById('field' + id + '.summary').focus();
+          } else {
+              if (wb !== null) {
+                  wb.style.display = "block";
+              }
+              div.style.display = "none";
+          }
+          return false;
+      }
+
+      function updateField(field, enabled)
+      {
+          field.disabled = !enabled;
+      }
     </script>
-
-  <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
-        Y.on('load', function(e) {
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-            Y.lp.app.links.check_valid_lp_links();
-            // Longpolling will only start if
-            // LP.cache.longpoll is populated.
-            // We use Y.later to work around a Safari/Chrome 'feature':
-            // The mouse cursor stays 'busy' until all the requests started during
-            // page load are finished.  Hence we want the long poll request to start
-            // right *after* the page has loaded.
-            Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
-        }, window);
-
-        // Hook up the function that dismisses the help window if we click
-        // anywhere outside of it.
-        Y.on('click', handleClickOnPage, window);
-
-        Y.on('lp:context:web_link:changed', function(e) {
-            window.location = e.new_value;
-        });
-    });
-  </script>
 </metal:page-javascript>
 
 
@@ -246,7 +373,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2011
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
@@ -288,13 +415,13 @@
 
 
 <metal:debug-timeline define-macro="debug-timeline">
-  <a name="debug_timeline" 
+  <a name="debug_timeline"
     id="debug_timeline"
     class="hidden"
     >
-    <table 
+    <table
       tal:condition="request/features/visible_render_time"
-      tal:define="timeline_actions modules/canonical.launchpad.webapp.adapter/get_timeline_actions"
+      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
       class="debug-timeline listing"
       >
       <thead>
@@ -302,7 +429,7 @@
 	<th>Action</th>
       </thead>
       <tr tal:repeat="action timeline_actions">
-	<td class="amount" tal:content="action/duration/fmt:millisecondduration"/>	  
+	<td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
 	<td style="font-family: monospace; text-align: left;">
           <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
 	</td>

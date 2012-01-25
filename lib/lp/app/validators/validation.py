@@ -22,15 +22,15 @@ from textwrap import dedent
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.cve import valid_cve
 from lp.app.validators.email import valid_email
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 
 def can_be_nominated_for_series(series):
@@ -92,23 +92,12 @@ def _validate_email(email):
 def _check_email_availability(email):
     email_address = getUtility(IEmailAddressSet).getByEmail(email)
     if email_address is not None:
-        # The email already exists; determine what has it.
-        if email_address.person is not None:
-            person = email_address.person
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with <a href="${url}">${person}</a>.',
-                        mapping={'email': escape(email),
-                                'url': canonical_url(person),
-                                'person': escape(person.displayname)})
-        elif email_address.account is not None:
-            account = email_address.account
-            message = _('${email} is already registered in Launchpad and is '
-                        'associated with the ${account} account.',
-                        mapping={'email': escape(email),
-                                'account': escape(account.displayname)})
-        else:
-            message = _('${email} is already registered in Launchpad.',
-                        mapping={'email': escape(email)})
+        person = email_address.person
+        message = _('${email} is already registered in Launchpad and is '
+                    'associated with <a href="${url}">${person}</a>.',
+                    mapping={'email': escape(email),
+                            'url': canonical_url(person),
+                            'person': escape(person.displayname)})
         raise LaunchpadValidationError(structured(message))
 
 
@@ -130,7 +119,7 @@ def validate_new_person_email(email):
     user that the profile he's trying to create already exists, so there's no
     need to create another one.
     """
-    from canonical.launchpad.webapp.publisher import canonical_url
+    from lp.services.webapp.publisher import canonical_url
     from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
