@@ -33,4 +33,4 @@ CREATE TABLE specificationworkitemstats (
     milestone integer REFERENCES milestone,
     count integer NOT NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 13, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 06, 1);
