@@ -21,6 +21,7 @@ __all__ = [
     'stop_lxc',
     'su',
     'user_exists',
+    'ValidationError',
     ]
 
 # To run doctests: python -m doctest -v setuplxc.py
