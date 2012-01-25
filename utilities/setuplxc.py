@@ -100,54 +100,27 @@ class ValidationError(SetupLXCError):
     """Argparse invalid arguments."""
 
 
-@contextmanager
-def ssh(location, user=None):
-    """Return a callable that can be used to run ssh shell commands.
+def _parse_whoami(whoami):
+    """Return a tuple (fullname, email) parsing the output of `bzr whoami`::
 
-    The ssh `location` and, optionally, `user` must be given.
-    If the user is None then the current user is used for the connection.
+        >>> _parse_whoami('Foo Bar <email@example.com>\\n')
+        ('Foo Bar', 'email@example.com')
     """
-    if user is not None:
-        location = '{}@{}'.format(user, location)
-
-    def _sshcall(cmd):
-        sshcmd = (
-            'ssh',
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
-            location,
-            '--', cmd,
-            )
-        if subprocess.call(sshcmd):
-            raise SSHError(
-                'Error running command: {}'.format(' '.join(sshcmd)))
-
-    yield _sshcall
+    fullname, email = whoami.strip().rsplit(None, 1)
+    return fullname, email.strip('<>')
 
 
-def get_user_ids(user):
-    """Return the uid and gid of given `user`, e.g.::
+def bzr_whois(user, parser=_parse_whoami):
+    """Return fullname and email of bzr `user`.
 
-        >>> get_user_ids('root')
-        (0, 0)
+    Return None if the given `user` does not have a bzr user id.
     """
-    userdata = pwd.getpwnam(user)
-    return userdata.pw_uid, userdata.pw_gid
-
-
-@contextmanager
-def su(user):
-    """A context manager to temporary run the script as a different user."""
-    uid, gid = get_user_ids(user)
-    os.setegid(gid)
-    os.seteuid(uid)
-    current_home = os.getenv('HOME')
-    home = os.path.join(os.path.sep, 'home', user)
-    os.environ['HOME'] = home
-    yield Env(uid, gid, home)
-    os.setegid(os.getgid())
-    os.seteuid(os.getuid())
-    os.environ['HOME'] = current_home
+    with su(user):
+        try:
+            whoami = subprocess.check_output(['bzr', 'whoami'])
+        except subprocess.CalledProcessError:
+            return None
+    return parser(whoami)
 
 
 @contextmanager
@@ -167,19 +140,40 @@ def cd(directory):
     os.chdir(cwd)
 
 
-def get_container_path(lxcname, path='', base_path=LXC_PATH):
-    """Return the path of LXC container called `lxcname`.
+def file_append(filename, line):
+    """Append given `line`, if not present, at the end of `filename`.
 
-    If a `path` is given, return that path inside the container, e.g.::
+    Usage example::
 
-        >>> get_container_path('mycontainer')
-        '/var/lib/lxc/mycontainer/rootfs/'
-        >>> get_container_path('mycontainer', '/etc/apt/')
-        '/var/lib/lxc/mycontainer/rootfs/etc/apt/'
-        >>> get_container_path('mycontainer', 'home')
-        '/var/lib/lxc/mycontainer/rootfs/home'
+        >>> import tempfile
+        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
+        >>> f.write('line1\\n')
+        >>> f.close()
+        >>> file_append(f.name, 'new line\\n')
+        >>> open(f.name).read()
+        'line1\\nnew line\\n'
+
+    Nothing happens if the file already contains the given `line`::
+
+        >>> file_append(f.name, 'new line\\n')
+        >>> open(f.name).read()
+        'line1\\nnew line\\n'
+
+    A new line is automatically added before the given `line` if it is not
+    present at the end of current file content::
+
+        >>> import tempfile
+        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
+        >>> f.write('line1')
+        >>> f.close()
+        >>> file_append(f.name, 'new line\\n')
+        >>> open(f.name).read()
+        'line1\\nnew line\\n'
     """
-    return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
+    with open(filename, 'a+') as f:
+        content = f.read()
+        if line not in content:
+            f.write(line if content.endswith('\n') else '\n{}'.format(line))
 
 
 def file_prepend(filename, line):
@@ -218,40 +212,69 @@ def file_prepend(filename, line):
             f.writelines(lines)
 
 
-def file_append(filename, line):
-    """Append given `line`, if not present, at the end of `filename`.
+def get_container_path(lxcname, path='', base_path=LXC_PATH):
+    """Return the path of LXC container called `lxcname`.
 
-    Usage example::
+    If a `path` is given, return that path inside the container, e.g.::
 
-        >>> import tempfile
-        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
-        >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
-        >>> open(f.name).read()
-        'line1\\nnew line\\n'
-
-    Nothing happens if the file already contains the given `line`::
-
-        >>> file_append(f.name, 'new line\\n')
-        >>> open(f.name).read()
-        'line1\\nnew line\\n'
-
-    A new line is automatically added before the given `line` if it is not
-    present at the end of current file content::
-
-        >>> import tempfile
-        >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1')
-        >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
-        >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        >>> get_container_path('mycontainer')
+        '/var/lib/lxc/mycontainer/rootfs/'
+        >>> get_container_path('mycontainer', '/etc/apt/')
+        '/var/lib/lxc/mycontainer/rootfs/etc/apt/'
+        >>> get_container_path('mycontainer', 'home')
+        '/var/lib/lxc/mycontainer/rootfs/home'
     """
-    with open(filename, 'a+') as f:
-        content = f.read()
-        if line not in content:
-            f.write(line if content.endswith('\n') else '\n{}'.format(line))
+    return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
+
+
+def get_user_ids(user):
+    """Return the uid and gid of given `user`, e.g.::
+
+        >>> get_user_ids('root')
+        (0, 0)
+    """
+    userdata = pwd.getpwnam(user)
+    return userdata.pw_uid, userdata.pw_gid
+
+
+@contextmanager
+def ssh(location, user=None):
+    """Return a callable that can be used to run ssh shell commands.
+
+    The ssh `location` and, optionally, `user` must be given.
+    If the user is None then the current user is used for the connection.
+    """
+    if user is not None:
+        location = '{}@{}'.format(user, location)
+
+    def _sshcall(cmd):
+        sshcmd = (
+            'ssh',
+            '-o', 'StrictHostKeyChecking=no',
+            '-o', 'UserKnownHostsFile=/dev/null',
+            location,
+            '--', cmd,
+            )
+        if subprocess.call(sshcmd):
+            raise SSHError(
+                'Error running command: {}'.format(' '.join(sshcmd)))
+
+    yield _sshcall
+
+
+@contextmanager
+def su(user):
+    """A context manager to temporary run the script as a different user."""
+    uid, gid = get_user_ids(user)
+    os.setegid(gid)
+    os.seteuid(uid)
+    current_home = os.getenv('HOME')
+    home = os.path.join(os.path.sep, 'home', user)
+    os.environ['HOME'] = home
+    yield Env(uid, gid, home)
+    os.setegid(os.getgid())
+    os.seteuid(os.getuid())
+    os.environ['HOME'] = current_home
 
 
 def user_exists(username):
