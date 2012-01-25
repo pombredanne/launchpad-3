@@ -11,6 +11,7 @@ from lp.registry.browser.person import PersonView
 from lp.services.config import config
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    BrowserTestCase,
     login_person,
     TestCaseWithFactory,
     )
@@ -50,3 +51,19 @@ class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):
             '''))
         self.assertEquals(
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
+
+
+class TestPersonRdfView(BrowserTestCase):
+    """Test the RDF view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_headers(self):
+        """The headers for the RDF view of a person should be as expected."""
+        person = self.factory.makePerson()
+        content_disposition = 'attachment; filename="%s.rdf"' % person.name
+        browser = self.getViewBrowser(person, view_name='+rdf')
+        self.assertEqual(
+            content_disposition, browser.headers['Content-disposition'])
+        self.assertEqual(
+            'application/rdf+xml', browser.headers['Content-type'])
