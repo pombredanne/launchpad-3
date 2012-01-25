@@ -8,7 +8,7 @@
 
     <metal:block fill-slot="head_epilogue">
         <script type="text/javascript">
-            LPS.use('node', 'lang', function(Y) {
+            YUI().use('node', 'lang', function(Y) {
                 // Constrain enable_bug_expiration to the Launchpad Bugs radio input.
                 // The Launchpad bug tracker is either the first item in a product's
                 // bugtracker field, or it is a distribution's official_malone field.
