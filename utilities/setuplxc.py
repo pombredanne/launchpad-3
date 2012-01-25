@@ -15,7 +15,6 @@ __all__ = [
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
-    'Configuration',
     'SetupLXCError',
     'ssh',
     'SSHError',
@@ -95,6 +94,10 @@ class SetupLXCError(Exception):
 
 class SSHError(SetupLXCError):
     """Errors occurred during SSH connection."""
+
+
+class ValidationError(SetupLXCError):
+    """Argparse invalid arguments."""
 
 
 @contextmanager
@@ -266,80 +269,10 @@ def user_exists(username):
     return True
 
 
-class Configuration(argparse.Namespace):
-    """A namespace for argparse.
-
-    Add methods for further arguments validation.
-    This class implements ssh key validation, e.g.::
-
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
-        ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        True
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -b PUBLIC '
-        ...                          '/home/example_user/launchpad/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        False
-        >>> args.error_message # doctest: +ELLIPSIS
-        'argument private_key ...'
-
-    and directory validation::
-
-        >>> args = parser.parse_args('-u example_user -e example@example.com '
-        ...                          '-f exampleuser -v PRIVATE -b PUBLIC '
-        ...                          '/home/'.split(),
-        ...                          namespace=Configuration())
-        >>> args.are_valid()
-        False
-        >>> args.error_message # doctest: +ELLIPSIS
-        'argument directory ...'
-    """
-    _errors = None
-
-    @property
-    def error_message(self):
-        return '\n'.join(self._errors)
-
-    def _get_ssh_key(self, attr, filename):
-        value = getattr(self, attr)
-        if value:
-            return value.decode('string-escape')
-        try:
-            return open(filename).read()
-        except IOError:
-            self._errors.append(
-                'argument {} is required if the system user '
-                'does not exists with SSH key pair set up.'.format(attr))
-
-    def _get_directory(self, attr, home_dir):
-        directory = getattr(self, attr).replace('~', home_dir)
-        if not directory.startswith(home_dir + os.path.sep):
-            self._errors.append('argument {} does not reside under the home '
-                                'directory of the system user.'.format(attr))
-        return directory
-
-    def are_valid(self):
-        self._errors = []
-        self.run_as_root = not os.geteuid()
-        home_dir = os.path.join(os.path.sep, 'home', self.user)
-        if self.lpuser is None:
-            self.lpuser = self.user
-        self.private_key = self._get_ssh_key(
-            'private_key', os.path.join(home_dir, '.ssh', 'id_rsa'))
-        self.public_key = self._get_ssh_key(
-            'public_key', os.path.join(home_dir, '.ssh', 'id_rsa.pub'))
-        self.directory = self._get_directory('directory', home_dir)
-        self.dependencies_dir = self._get_directory(
-            'dependencies_dir', home_dir)
-        return not self._errors
-
-
 class ArgumentParser(argparse.ArgumentParser):
     """A customized parser for argparse."""
+
+    validators = ()
 
     def get_args_from_namespace(self, namespace):
         """Return a list of arguments taking values from `namespace`.
@@ -369,11 +302,161 @@ class ArgumentParser(argparse.ArgumentParser):
                 args.append(value)
         return args
 
+    def _validate(self, namespace):
+        for validator in self.validators:
+            try:
+                validator(namespace)
+            except ValidationError as err:
+                self.error(err.message)
+
+    def parse_args(self, *args, **kwargs):
+        """Override to add further arguments cleaning and validation.
+
+        `self.validators` can contain an iterable of objects that are called
+        once the arguments namespace is fully populated.
+        This allows cleaning and validating arguments that depend on
+        each other, or on the current environment.
+
+        Each validator is a callable object, takes the current namespace
+        and can raise ValidationError if the arguments are not valid::
+
+            >>> import sys
+            >>> stderr, sys.stderr = sys.stderr, sys.stdout
+            >>> def validator(namespace):
+            ...     raise ValidationError('nothing is going on')
+            >>> parser = ArgumentParser()
+            >>> parser.validators = [validator]
+            >>> parser.parse_args([])
+            Traceback (most recent call last):
+            SystemExit: 2
+            >>> sys.stderr = stderr
+        """
+        namespace = super(ArgumentParser, self).parse_args(*args, **kwargs)
+        self._validate(namespace)
+        return namespace
+
+
+def _clean_users(namespace, euid=None):
+    """Clean user and lpuser arguments.
+
+    If lpuser is not provided by namespace, the user name is used::
+
+        >>> namespace = argparse.Namespace(user='myuser', lpuser=None)
+        >>> _clean_users(namespace)
+        >>> namespace.lpuser
+        'myuser'
+
+    This validator populates namespace with `home_dir` and `run_as_root`
+    names::
+
+        >>> _clean_users(namespace, euid=0)
+        >>> namespace.home_dir
+        '/home/myuser'
+        >>> namespace.run_as_root
+        True
+
+    The validation fails if the current user is root and no user is provided::
+
+        >>> namespace = argparse.Namespace(user=None)
+        >>> _clean_users(namespace, euid=0) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: argument user ...
+    """
+    if euid is None:
+        euid = os.geteuid()
+    if namespace.user is None:
+        if not euid:
+            raise ValidationError('argument user can not be omitted if '
+                                  'the script is run as root.')
+        namespace.user = pwd.getpwuid(euid).pw_name
+    if namespace.lpuser is None:
+        namespace.lpuser = namespace.user
+    namespace.home_dir = os.path.join(os.path.sep, 'home', namespace.user)
+    namespace.run_as_root = not euid
+
+
+def _clean_ssh_keys(namespace):
+    """Clean private and public ssh keys.
+
+    Keys contained in the namespace are escaped::
+
+        >>> private = r'PRIVATE\\nKEY'
+        >>> public = r'PUBLIC\\nKEY'
+        >>> namespace = argparse.Namespace(
+        ...     private_key=private, public_key=public)
+        >>> _clean_ssh_keys(namespace)
+        >>> namespace.private_key == private.decode('string-escape')
+        True
+        >>> namespace.public_key == public.decode('string-escape')
+        True
+
+    The validation fails if keys are not provided and can not be found
+    in the current home directory::
+
+        >>> namespace = argparse.Namespace(
+        ...     private_key=private, public_key=None,
+        ...     home_dir='/tmp/__does_not_exists__')
+        >>> _clean_ssh_keys(namespace) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: argument public_key ...
+    """
+    for attr, filename in (
+        ('private_key', 'id_rsa'),
+        ('public_key', 'id_rsa.pub')):
+        value = getattr(namespace, attr)
+        if value:
+            setattr(namespace, attr, value.decode('string-escape'))
+        else:
+            path = os.path.join(namespace.home_dir, '.ssh', filename)
+            try:
+                value = open(path).read()
+            except IOError:
+                raise ValidationError(
+                    'argument {} is required if the system user does not '
+                    'exists with SSH key pair set up.'.format(attr))
+            setattr(namespace, attr, value)
+
+
+def _clean_directories(namespace):
+    """Clean checkout and dependencies directories.
+
+    The ~ construction is automatically expanded::
+
+        >>> namespace = argparse.Namespace(
+        ...     directory='~/launchpad', dependencies_dir='~/launchpad/deps',
+        ...     home_dir='/home/foo')
+        >>> _clean_directories(namespace)
+        >>> namespace.directory
+        '/home/foo/launchpad'
+        >>> namespace.dependencies_dir
+        '/home/foo/launchpad/deps'
+
+    The validation fails for directories not residing inside the home::
+
+        >>> namespace = argparse.Namespace(
+        ...     directory='/tmp/launchpad',
+        ...     dependencies_dir='~/launchpad/deps',
+        ...     home_dir='/home/foo')
+        >>> _clean_directories(namespace) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: argument directory ...
+    """
+    for attr in ('directory', 'dependencies_dir'):
+        directory = getattr(
+            namespace, attr).replace('~', namespace.home_dir)
+        if not directory.startswith(namespace.home_dir + os.path.sep):
+            raise ValidationError(
+                'argument {} does not reside under the home '
+                'directory of the system user.'.format(attr))
+        setattr(namespace, attr, directory)
+
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument(
-    '-u', '--user', required=True,
-    help='The name of the system user to be created or updated.')
+    '-u', '--user',
+    help='The name of the system user to be created or updated. '
+         'The current user is used if this script is not run as root '
+         'and this argument is omitted.')
 parser.add_argument(
     '-e', '--email', required=True,
     help='The email of the user, used for bzr whoami.')
@@ -413,6 +496,7 @@ parser.add_argument(
     help='The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
+parser.validators = (_clean_users, _clean_ssh_keys, _clean_directories)
 
 
 def initialize_host(
@@ -618,24 +702,21 @@ def main(
 
 
 if __name__ == '__main__':
-    args = parser.parse_args(namespace=Configuration())
-    if args.are_valid():
-        if args.run_as_root:
-            exit_code = main(
-                args.user,
-                args.full_name,
-                args.email,
-                args.lpuser,
-                args.private_key,
-                args.public_key,
-                args.actions,
-                args.lxc_name,
-                args.dependencies_dir,
-                args.directory,
-                )
-        else:
-            exit_code = subprocess.call(
-                ['sudo', sys.argv[0]] + parser.get_args_from_namespace(args))
-        sys.exit(exit_code)
+    args = parser.parse_args()
+    if args.run_as_root:
+        exit_code = main(
+            args.user,
+            args.full_name,
+            args.email,
+            args.lpuser,
+            args.private_key,
+            args.public_key,
+            args.actions,
+            args.lxc_name,
+            args.dependencies_dir,
+            args.directory,
+            )
     else:
-        parser.error(args.error_message)
+        exit_code = subprocess.call(
+            ['sudo', sys.argv[0]] + parser.get_args_from_namespace(args))
+    sys.exit(exit_code)
