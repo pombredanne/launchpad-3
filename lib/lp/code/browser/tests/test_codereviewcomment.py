@@ -108,3 +108,15 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
             'Download', 'a', {'href': download_url},
             text='Download full text')
         self.assertThat(browser.contents, Not(HTMLContains(body)))
+
+    def test_download_view(self):
+        comment = self.factory.makeCodeReviewComment()
+        browser = self.getViewBrowser(comment, view_name='+download')
+        content = comment.message_body
+        self.assertEqual(content, browser.contents)
+        self.assertEqual(
+            'text/plain;charset=utf-8', browser.headers['Content-type'])
+        self.assertEqual(
+            '%d' % len(content), browser.headers['Content-length'])
+        disposition = 'attachment; filename="comment-%d.txt"' % comment.id
+        self.assertEqual(disposition, browser.headers['Content-disposition'])

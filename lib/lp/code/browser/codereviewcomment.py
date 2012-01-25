@@ -45,9 +45,8 @@ from lp.services.webapp import (
     ContextMenu,
     LaunchpadView,
     Link,
-    Navigation,
-    stepto,
     )
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webapp.interfaces import IPrimaryContext
 
 
@@ -55,13 +54,16 @@ class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
     """Marker interface for displaying code review comments."""
 
 
-class CodeReviewDisplayCommentNavigation(Navigation):
+class CommentBodyDownloadView(DataDownloadView):
 
-    usedfor = ICodeReviewComment
+    content_type = 'text/plain'
 
-    @stepto('+download')
-    def download(self):
-        return None
+    @property
+    def filename(self):
+        return 'comment-%d.txt' % self.context.id
+
+    def getBody(self):
+        return self.context.message_body
 
 
 class CodeReviewDisplayComment(MessageComment):
