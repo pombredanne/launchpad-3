@@ -105,7 +105,7 @@ class ValidationError(SetupLXCError):
     """Argparse invalid arguments."""
 
 
-def bzr_whois(user, parser=parseaddr):
+def bzr_whois(user):
     """Return fullname and email of bzr `user`.
 
     Return None if the given `user` does not have a bzr user id.
@@ -115,7 +115,7 @@ def bzr_whois(user, parser=parseaddr):
             whoami = subprocess.check_output(['bzr', 'whoami'])
         except subprocess.CalledProcessError:
             return None
-    return parser(whoami)
+    return parseaddr(whoami)
 
 
 @contextmanager
