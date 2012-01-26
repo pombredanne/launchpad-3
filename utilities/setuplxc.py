@@ -49,6 +49,9 @@ LP_APACHE_ROOTS = (
     '/var/tmp/ppa',
     )
 LP_CHECKOUT = 'devel'
+LP_DEB_DEPENDENCIES = (
+    'bzr launchpad-developer-dependencies apache2 '
+    'apache2-mpm-worker libapache2-mod-wsgi')
 LP_REPOSITORY = 'lp:launchpad'
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
@@ -693,9 +696,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
             'DEBIAN_FRONTEND=noninteractive '
             'apt-get -y --allow-unauthenticated install language-pack-en')
         sshcall(
-            'DEBIAN_FRONTEND=noninteractive '
-            'apt-get -y --allow-unauthenticated install '
-            'bzr launchpad-developer-dependencies apache2 apache2-mpm-worker')
+            'DEBIAN_FRONTEND=noninteractive apt-get -y '
+            '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
         # User configuration.
         sshcall('adduser {} sudo'.format(user))
         pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
