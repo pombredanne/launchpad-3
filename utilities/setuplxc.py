@@ -235,7 +235,6 @@ def get_user_ids(user):
     return userdata.pw_uid, userdata.pw_gid
 
 
-@contextmanager
 def ssh(location, user=None):
     """Return a callable that can be used to run ssh shell commands.
 
@@ -257,7 +256,7 @@ def ssh(location, user=None):
         if subprocess.call(sshcmd):
             raise SSHError('Error running command: ' + ' '.join(sshcmd))
 
-    yield _sshcall
+    return _sshcall
 
 
 @contextmanager
@@ -665,78 +664,74 @@ def create_lxc(user, lxcname):
         os.makedirs(dst)
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container.
-    with ssh(lxcname, user) as sshcall:
-        trials = 60
-        while True:
-            trials -= 1
-            try:
-                sshcall('true')
-            except SSHError:
-                if not trials:
-                    raise
-                time.sleep(1)
-            else:
-                break
+    sshcall = ssh(lxcname, user)
+    trials = 60
+    while True:
+        trials -= 1
+        try:
+            sshcall('true')
+        except SSHError:
+            if not trials:
+                raise
+            time.sleep(1)
+        else:
+            break
 
 
 def initialize_lxc(user, dependencies_dir, directory, lxcname):
     """Set up the Launchpad development environment inside the LXC container.
     """
-    with ssh(lxcname) as sshcall:
-        # APT repository update.
-        sources = get_container_path(lxcname, '/etc/apt/sources.list')
-        with open(sources, 'w') as f:
-            f.write('\n'.join(LXC_REPOS))
-        # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
-        # containers currently does not work.
-        sshcall("echo 'mountall hold' | dpkg --set-selections")
-        # Upgrading packages.
-        sshcall(
-            'apt-get update && '
-            'DEBIAN_FRONTEND=noninteractive '
-            'apt-get -y --allow-unauthenticated install language-pack-en')
-        sshcall(
-            'DEBIAN_FRONTEND=noninteractive apt-get -y '
-            '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
-        # User configuration.
-        sshcall('adduser {} sudo'.format(user))
-        pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
-        gid = "`python -c '{}'`".format(pygetgid)
-        sshcall('addgroup --gid {} {}'.format(gid, user))
-    with ssh(lxcname, user) as sshcall:
-        # Set up Launchpad dependencies.
-        checkout_dir = os.path.join(directory, LP_CHECKOUT)
-        sshcall(
-            'cd {} && utilities/update-sourcecode {}/sourcecode'.format(
-            checkout_dir, dependencies_dir))
-        sshcall(
-            'cd {} && utilities/link-external-sourcecode {}'.format(
-            checkout_dir, dependencies_dir))
-        # Create Apache document roots, to avoid warnings.
-        sshcall(' && '.join('mkdir -p {}'.format(i) for i in LP_APACHE_ROOTS))
-    with ssh(lxcname) as sshcall:
-        # Set up Apache modules.
-        for module in LP_APACHE_MODULES.split():
-            sshcall('a2enmod {}'.format(module))
-        # Launchpad database setup.
-        sshcall(
-            'cd {} && utilities/launchpad-database-setup {}'.format(
-            checkout_dir, user))
-    with ssh(lxcname, user) as sshcall:
-        sshcall('cd {} && make'.format(checkout_dir))
+    root_sshcall = ssh(lxcname)
+    sshcall = ssh(lxcname, user)
+    # APT repository update.
+    sources = get_container_path(lxcname, '/etc/apt/sources.list')
+    with open(sources, 'w') as f:
+        f.write('\n'.join(LXC_REPOS))
+    # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
+    # containers currently does not work.
+    root_sshcall("echo 'mountall hold' | dpkg --set-selections")
+    # Upgrading packages.
+    root_sshcall(
+        'apt-get update && '
+        'DEBIAN_FRONTEND=noninteractive '
+        'apt-get -y --allow-unauthenticated install language-pack-en')
+    root_sshcall(
+        'DEBIAN_FRONTEND=noninteractive apt-get -y '
+        '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
+    # User configuration.
+    root_sshcall('adduser {} sudo'.format(user))
+    pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
+    gid = "`python -c '{}'`".format(pygetgid)
+    root_sshcall('addgroup --gid {} {}'.format(gid, user))
+    # Set up Launchpad dependencies.
+    checkout_dir = os.path.join(directory, LP_CHECKOUT)
+    sshcall(
+        'cd {} && utilities/update-sourcecode {}/sourcecode'.format(
+        checkout_dir, dependencies_dir))
+    sshcall(
+        'cd {} && utilities/link-external-sourcecode {}'.format(
+        checkout_dir, dependencies_dir))
+    # Create Apache document roots, to avoid warnings.
+    sshcall(' && '.join('mkdir -p {}'.format(i) for i in LP_APACHE_ROOTS))
+    # Set up Apache modules.
+    for module in LP_APACHE_MODULES.split():
+        root_sshcall('a2enmod {}'.format(module))
+    # Launchpad database setup.
+    root_sshcall(
+        'cd {} && utilities/launchpad-database-setup {}'.format(
+        checkout_dir, user))
+    sshcall('cd {} && make'.format(checkout_dir))
     # Set up container hosts file.
     lines = ['{}\t{}'.format(ip, names) for ip, names in LXC_HOSTS_CONTENT]
     lxc_hosts_file = get_container_path(lxcname, HOSTS_FILE)
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
-    with ssh(lxcname) as sshcall:
-        sshcall('cd {} && make install'.format(checkout_dir))
+    root_sshcall('cd {} && make install'.format(checkout_dir))
 
 
 def stop_lxc(lxcname):
     """Stop the lxc instance named `lxcname`."""
-    with ssh(lxcname) as sshcall:
-        sshcall('poweroff')
+    ssh(lxcname)('poweroff')
     timeout = 30
     while timeout:
         try:
