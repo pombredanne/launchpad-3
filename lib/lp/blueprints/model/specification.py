@@ -1048,12 +1048,24 @@ class SpecificationWorkItemStatus(DBEnumeratedType):
 class SpecificationWorkItem(SQLBase):
     # TODO
 
-    # XXX: Should NULL here mean the Specification's milestone? I think that's
-    # necessary because otherwise what we'd do when somebody changes the
-    # milestone of a Specification?
+    implements(ISpecificationWorkItem)
+
+    _table = 'SpecificationWorkItem'
+
+    # XXX id
+    # XXX title
+    specification = ForeignKey(dbName='specification',
+        foreignKey='Specification', notNull=True)
+    assignee = ForeignKey(dbName='assignee', notNull=False,
+        foreignKey='Person',
+        storm_validator=validate_public_person, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
-
+    status = ForeignKey(dbName='status',
+        foreignKey='SpecificationWorkItemStatus', notNull=True,
+                        default=SpecificationWorkItemStatus.UNKNOWN)
+    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    # XXX deleted
 
 # Shamelessly stolen from lp-work-items-tracker, with plenty of unnecessary
 # stuff removed.
