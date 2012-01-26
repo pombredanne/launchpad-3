@@ -33,7 +33,7 @@ truncated.
     >>> print_comments(browser.contents) #doctest: -ELLIPSIS
     <div class="boardCommentBody">
     <a href="http://bugs.launchpad.dev/tomcat/+bug/2/comments/1/+download">Download
-    full text</a>
+    full text</a> (363 bytes)
     <div class="comment-text" itemprop="commentText"><p>This
     would be a real killer feature. If there...</p></div>
     <p>
@@ -42,7 +42,7 @@ truncated.
     </div>
     <div class="boardCommentBody">
     <a href="http://bugs.launchpad.dev/tomcat/+bug/2/comments/2/+download">Download
-    full text</a>
+    full text</a> (364 bytes)
     <div class="comment-text" itemprop="commentText"><p>Oddly
     enough the bug system seems only capabl...</p></div>
     <p>

@@ -3,7 +3,7 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <a tal:attributes="href context/download_url"
+  <a tal:replace="structure view/download_link"
      tal:condition="context/too_long">Download full text</a>
   <div class="comment-text" itemprop="commentText" tal:content="structure
       context/text_for_display/fmt:obfuscate-email/fmt:email-to-html" />

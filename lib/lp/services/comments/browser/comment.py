@@ -5,7 +5,12 @@ __metaclass__ = type
 
 __all__ = ['download_body']
 
-from lp.services.webapp.publisher import DataDownloadView
+
+from lp.app.browser.tales import download_link
+from lp.services.webapp.publisher import (
+    DataDownloadView,
+    LaunchpadView,
+    )
 
 
 class CommentBodyDownloadView(DataDownloadView):
@@ -19,6 +24,14 @@ class CommentBodyDownloadView(DataDownloadView):
 
     def getBody(self):
         return self.context.body_text
+
+
+class CommentView(LaunchpadView):
+
+    def download_link(self):
+        url = self.context.download_url()
+        length = len(self.context.body_text)
+        return download_link(url, "Download full text", length)
 
 
 def download_body(comment, request):
