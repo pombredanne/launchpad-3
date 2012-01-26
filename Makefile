@@ -186,11 +186,13 @@ else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
-jsbuild: $(PY) $(JS_OUT)
+combobuild: jsbuild
 	mkdir -p $(CONVOY_ROOT)
 	bin/combo-rootdir $(CONVOY_ROOT)
-	rm -f $(ICING)/yui
 	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
+
+jsbuild: $(PY) $(JS_OUT)
+	rm -f $(ICING)/yui
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -357,10 +359,12 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
+clean_combo: clean_js
+	$(RM) -r $(CONVOY_ROOT)
+
 clean_js:
 	$(RM) $(JS_OUT)
 	$(RM) -r $(ICING)/yui
-	$(RM) -r $(CONVOY_ROOT)
 
 clean_buildout:
 	$(RM) -r bin
