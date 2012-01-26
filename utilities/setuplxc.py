@@ -249,8 +249,7 @@ def ssh(location, user=None):
             '--', cmd,
             )
         if subprocess.call(sshcmd):
-            raise SSHError(
-                'Error running command: {}'.format(' '.join(sshcmd)))
+            raise SSHError('Error running command: ' + ' '.join(sshcmd))
 
     yield _sshcall
 
