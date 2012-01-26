@@ -33,6 +33,7 @@ from lp.app.browser.launchpadform import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAlias
@@ -183,7 +184,8 @@ class CodeReviewCommentView(LaunchpadView):
         return self.context.message_body
 
     def download(self):
-        return CodeReviewDisplayComment(self.context).download(self.request)
+        return download_body(
+            CodeReviewDisplayComment(self.context), self.request)
 
     # Should the comment be shown in full?
     full_comment = True

@@ -8,22 +8,9 @@ __all__ = ['MessageComment']
 
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.publisher import DataDownloadView
 
 
 MAX_RENDERABLE = 10000
-
-
-class CommentBodyDownloadView(DataDownloadView):
-
-    content_type = 'text/plain'
-
-    @property
-    def filename(self):
-        return 'comment-%d.txt' % self.context.index
-
-    def getBody(self):
-        return self.context.body_text
 
 
 class MessageComment:
@@ -81,6 +68,3 @@ class MessageComment:
         # less than 3 (which can happen in a testcase) and it makes
         # counting the strings harder.
         return "%s..." % self.body_text[:self.comment_limit]
-
-    def download(self, request):
-        return CommentBodyDownloadView(self, request)()

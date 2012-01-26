@@ -41,6 +41,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.comments.browser.comment import download_body
 from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
@@ -338,7 +339,7 @@ class BugCommentView(LaunchpadView):
         self.comment = context
 
     def download(self):
-        return self.comment.download(self.request)
+        return download_body(self.comment, self.request)
 
     @property
     def show_spam_controls(self):

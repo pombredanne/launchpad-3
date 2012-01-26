@@ -73,9 +73,6 @@ class IComment(Interface):
         description=_("Should attachments be displayed for this comment."),
         readonly=True)
 
-    def download(request):
-        """Respond to the request with the full message body as a download."""
-
 
 class IConversation(Interface):
     """A conversation has a number of comments."""
