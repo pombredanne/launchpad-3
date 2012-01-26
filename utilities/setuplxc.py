@@ -165,7 +165,10 @@ def file_append(filename, line):
     with open(filename, 'a+') as f:
         content = f.read()
         if line not in content:
-            f.write(line if content.endswith('\n') else '\n{}'.format(line))
+            if content.endswith('\n'):
+                f.write(line)
+            else:
+                f.write('\n' + line)
 
 
 def file_prepend(filename, line):
