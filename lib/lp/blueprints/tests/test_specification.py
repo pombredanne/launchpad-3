@@ -213,13 +213,52 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             """)
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
         work_items = extractWorkItemsFromWhiteboard(spec)
-        self.assertEqual([], work_items)
+        self.assertEqual(
+            [(None, u'A single work item', SpecificationWorkItemStatus.TODO,
+              None)],
+            work_items)
 
     def test_multiple_work_items(self):
-        self.fail('TODO')
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+            Another work item: DONE
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual(
+            [(None, 'A single work item', SpecificationWorkItemStatus.TODO,
+              None),
+             (None, 'Another work item', SpecificationWorkItemStatus.DONE,
+              None)],
+            work_items)
+
+    def test_work_item_with_assignee(self):
+        person = self.factory.makePerson()
+        whiteboard = dedent("""
+            Work items for:
+            [%s] A single work item: TODO
+            """ % person.name)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual(
+            [(person.name, 'A single work item',
+              SpecificationWorkItemStatus.TODO, None)],
+            work_items)
 
     def test_work_item_with_milestone(self):
-        self.fail('TODO')
+        milestone = self.factory.makeMilestone()
+        whiteboard = dedent("""
+            Work items for %s:
+            A single work item: TODO
+            """ % milestone.name)
+        spec = self.factory.makeSpecification(
+            whiteboard=whiteboard, product=milestone.product)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual(
+            [(None, u'A single work item', SpecificationWorkItemStatus.TODO,
+              milestone.name)],
+            work_items)
 
     def test_whiteboard_with_all_possible_sections(self):
         whiteboard = dedent("""
@@ -233,7 +272,24 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             Complexity:
             [user1] milestone1: 10
             """)
-        self.fail('TODO')
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual(
+            [(None, "A single work item", SpecificationWorkItemStatus.TODO,
+              None)],
+            work_items)
+
+        # Now assert that the work items were removed from the whiteboard.
+        self.assertEqual(dedent("""
+            Meta:
+            Headline: Foo bar
+            Acceptance: Baz foo
+
+            Complexity:
+            [user1] milestone1: 10
+            """).strip(), spec.whiteboard.strip())
 
     def test_error_when_parsing(self):
+        """If there's an error when parsing the whiteboard, we leave it
+        unchanged and do not create any SpecificationWorkItem objects."""
         self.fail('TODO')

@@ -38,6 +38,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
@@ -1114,6 +1115,17 @@ class WorkitemParser(object):
         return assignee_name, desc, status
 
 
+# Also shamelessly stolen from lp-wi-tracker
+def milestone_extract(text, valid_milestones):
+    words = text.replace('(', ' ').replace(')', ' ').replace('[', ' ').replace(
+            ']', ' ').replace('<wbr></wbr>', '').split()
+
+    for word in words:
+        if word in valid_milestones:
+            return word
+    return None
+
+
 # XXX: This can be a method on ISpecification, but since the plan is to run
 # this once and throw it away afterwards, we might as well have it as a
 # standalone function to avoid the extra overhead of adding stuff to model
@@ -1129,16 +1141,25 @@ def extractWorkItemsFromWhiteboard(spec):
     complexity_re = re.compile('^Complexity.*?:$', re.I)
     in_block = None
     milestone = None
+    new_whiteboard = []
 
+    target_milestone_names = [
+        milestone.name for milestone in spec.target.milestones]
     # Here we'll just store the lines we care about under the appropriate key
     # of the dictionary below.
     interesting_lines = {'wi': [], 'meta': [], 'complexity': []}
     for line in spec.whiteboard.splitlines():
-        if work_items_re.search(line):
+        new_whiteboard.append(line)
+        if line.strip() == '':
+            continue
+
+        wi_match = work_items_re.search(line)
+        if wi_match:
             in_block = 'wi'
-            # TODO: extract milestone from line, setting it to None if one
-            # wasn't specified.
-            milestone = None
+            milestone = milestone_extract(
+                wi_match.group(1), target_milestone_names)
+            # Remove the current line from the new whiteboard.
+            new_whiteboard.pop()
             continue
         if meta_re.search(line):
             in_block = 'meta'
@@ -1155,6 +1176,10 @@ def extractWorkItemsFromWhiteboard(spec):
 
         item = line
         if in_block == 'wi':
+            # This is a work-item line, which we don't want in the new
+            # whiteboard because we're migrating them into the
+            # SpecificationWorkItem table.
+            new_whiteboard.pop()
             item = (line, milestone)
 
         # XXX: I'm storing complexity/meta as interesting lines because we
@@ -1177,4 +1202,5 @@ def extractWorkItemsFromWhiteboard(spec):
 #             assignee=assignee, milestone=milestone)
 #         work_items.append(workitem)
 
+    removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
     return work_items
