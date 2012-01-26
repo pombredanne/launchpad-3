@@ -155,7 +155,7 @@ class PoppyFileWriter(ftp._FileWriter):
     """An `IWriteFile` that checks for signed changes files."""
 
     # XXX: deryck, 2012-01-26, Bug 798957
-    # Disable close as we search for a better fix to bug.
+    # Disable close() as we search for a better fix to bug.
     def disabled_close(self):
         """Called after the file has been completely downloaded."""
         if self.fObj.name.endswith(".changes"):
