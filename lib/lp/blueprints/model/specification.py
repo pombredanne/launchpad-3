@@ -1048,24 +1048,25 @@ class SpecificationWorkItemStatus(DBEnumeratedType):
 class SpecificationWorkItem(SQLBase):
     # TODO
 
-    implements(ISpecificationWorkItem)
+    #implements(ISpecificationWorkItem)
 
     _table = 'SpecificationWorkItem'
 
     # XXX id
     # XXX title
-    specification = ForeignKey(dbName='specification',
-        foreignKey='Specification', notNull=True)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person',
+    specification = ForeignKey(
+        dbName='specification', foreignKey='Specification', notNull=True)
+    assignee = ForeignKey(
+        dbName='assignee', notNull=False, foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    milestone = ForeignKey(dbName='milestone',
-        foreignKey='Milestone', notNull=False, default=None)
-    status = ForeignKey(dbName='status',
-        foreignKey='SpecificationWorkItemStatus', notNull=True,
-                        default=SpecificationWorkItemStatus.UNKNOWN)
+    milestone = ForeignKey(
+        dbName='milestone', foreignKey='Milestone', notNull=False,
+        default=None)
+    status = ForeignKey(
+        dbName='status', foreignKey='SpecificationWorkItemStatus', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     # XXX deleted
+
 
 # Shamelessly stolen from lp-work-items-tracker, with plenty of unnecessary
 # stuff removed.
