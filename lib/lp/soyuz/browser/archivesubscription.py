@@ -41,9 +41,12 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.webapp.batching import BatchNavigator
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
 from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
@@ -150,7 +153,9 @@ class ArchiveSubscribersView(LaunchpadFormView):
         super(ArchiveSubscribersView, self).initialize()
         subscription_set = getUtility(IArchiveSubscriberSet)
         self.subscriptions = subscription_set.getByArchive(self.context)
-        self.batchnav = BatchNavigator(self.subscriptions, self.request)
+        self.batchnav = BatchNavigator(
+            self.subscriptions, self.request,
+            range_factory=StormRangeFactory(self.subscriptions))
 
     @cachedproperty
     def current_subscriptions_batch(self):
@@ -161,7 +166,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
         batch = list(self.batchnav.currentBatch())
         ids = set(map(attrgetter('subscriber_id'), batch))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
-            need_validity=True))
+           need_validity=True))
         return batch
 
     @cachedproperty

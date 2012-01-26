@@ -220,7 +220,7 @@ class ArchiveSubscriberSet:
         result = store.using(ArchiveSubscriber,
              Join(Person, ArchiveSubscriber.subscriber_id == Person.id)).find(
             (ArchiveSubscriber, Person),
-            *extra_exprs).order_by(Person.displayname)
+            *extra_exprs).order_by(Person.name)
         return DecoratedResultSet(result, itemgetter(0))
 
     def _getExprsForSubscriptionQueries(self, archive=None,
