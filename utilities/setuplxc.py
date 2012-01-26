@@ -28,6 +28,7 @@ __all__ = [
 
 from collections import namedtuple, OrderedDict
 from contextlib import contextmanager
+from email.Utils import parseaddr
 import argparse
 import os
 import pwd
@@ -101,17 +102,7 @@ class ValidationError(SetupLXCError):
     """Argparse invalid arguments."""
 
 
-def _parse_whoami(whoami):
-    """Return a tuple (fullname, email) parsing the output of `bzr whoami`::
-
-        >>> _parse_whoami('Foo Bar <email@example.com>\\n')
-        ('Foo Bar', 'email@example.com')
-    """
-    fullname, email = whoami.strip().rsplit(None, 1)
-    return fullname, email.strip('<>')
-
-
-def bzr_whois(user, parser=_parse_whoami):
+def bzr_whois(user, parser=parseaddr):
     """Return fullname and email of bzr `user`.
 
     Return None if the given `user` does not have a bzr user id.
