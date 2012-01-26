@@ -574,9 +574,15 @@ class CodeReviewNewRevisions:
         self.comment_author = None
         self.body_text = None
         self.text_for_display = None
+        self.download_url = None
         self.too_long = False
+        self.too_long_to_render = False
         self.comment_date = None
         self.display_attachments = False
+        self.index = None
+
+    def download(self, request):
+        pass
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
