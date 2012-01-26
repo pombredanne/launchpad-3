@@ -161,40 +161,35 @@ class TestWorkItemParser(TestCase):
 
     def test_parse_line_basic(self):
         parser = WorkitemParser(FakeSpecification())
-        assignee, description, status, milestone = (
-            parser.parse_blueprint_workitem("A single work item: TODO", None))
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: TODO")
         self.assertEqual(
-            [None, "A single work item", SpecificationWorkItemStatus.TODO,
-             None],
-            [assignee, description, status, milestone])
+            [None, "A single work item", SpecificationWorkItemStatus.TODO],
+            [assignee, description, status])
 
     def test_parse_line_with_assignee(self):
         parser = WorkitemParser(FakeSpecification())
-        assignee, description, status, milestone = (
-            parser.parse_blueprint_workitem(
-                "[salgado] A single work item: TODO", None))
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "[salgado] A single work item: TODO")
         self.assertEqual(
-            ["salgado", "A single work item", SpecificationWorkItemStatus.TODO,
-             None],
-            [assignee, description, status, milestone])
+            ["salgado", "A single work item",
+             SpecificationWorkItemStatus.TODO],
+            [assignee, description, status])
 
     def test_parse_line_without_status(self):
         parser = WorkitemParser(FakeSpecification())
-        assignee, description, status, milestone = (
-            parser.parse_blueprint_workitem("A single work item", None))
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item")
         self.assertEqual(
-            [None, "A single work item", SpecificationWorkItemStatus.TODO,
-             None],
-            [assignee, description, status, milestone])
+            [None, "A single work item", SpecificationWorkItemStatus.TODO],
+            [assignee, description, status])
 
     def test_parse_empty_line(self):
         parser = WorkitemParser(FakeSpecification())
-        assignee, description, status, milestone = (
-            parser.parse_blueprint_workitem("", None))
+        assignee, description, status = parser.parse_blueprint_workitem("")
         self.assertEqual(
-            [None, "A single work item", SpecificationWorkItemStatus.TODO,
-             None],
-            [assignee, description, status, milestone])
+            [None, "A single work item", SpecificationWorkItemStatus.TODO],
+            [assignee, description, status])
 
 
 

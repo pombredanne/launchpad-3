@@ -1081,10 +1081,6 @@ class WorkitemParser(object):
             return valid_statuses[status.upper()]
         return status
 
-    def _get_assignee(self, assignee_name):
-        # TODO: Return the Person with the given name
-        return assignee_name
-
     def _parse_line(self, line):
         try:
             desc, status = line.rsplit(':', 1)
@@ -1101,7 +1097,7 @@ class WorkitemParser(object):
                 raise Exception('FIXME: missing closing "]" for assignee')
         return assignee_name, desc, status
 
-    def parse_blueprint_workitem(self, line, milestone):
+    def parse_blueprint_workitem(self, line):
         line = line.strip()
         if not line:
             # XXX: Returning None here means callsites have to check the
@@ -1115,11 +1111,7 @@ class WorkitemParser(object):
         if status is None:
             # XXX: Should we raise an error here instead?
             return None
-        if assignee_name is not None:
-            assignee = self._get_assignee(assignee_name)
-        else:
-            assignee = self.blueprint.assignee
-        return assignee, desc, status, milestone
+        return assignee_name, desc, status
 
 
 # XXX: This can be a method on ISpecification, but since the plan is to run
@@ -1175,8 +1167,9 @@ def extractWorkItemsFromWhiteboard(spec):
     # Now parse the work item lines.
     parser = WorkitemParser(spec)
     for line, milestone in interesting_lines['wi']:
-        assignee, desc, status, milestone = parser.parse_blueprint_workitem(
-            line, milestone)
+        # Here we get the assignee name so must get the Person with that name
+        # from the DB and pass it to SpecificationWorkItem().
+        assignee, desc, status = parser.parse_blueprint_workitem(line)
         work_items.append((assignee, desc, status, milestone))
         # TODO
 #         workitem = SpecificationWorkItem(
