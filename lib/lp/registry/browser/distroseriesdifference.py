@@ -250,6 +250,10 @@ class DistroSeriesDifferenceDisplayComment(MessageComment):
     """Used simply to provide `IComment` for rendering."""
     implements(IDistroSeriesDifferenceDisplayComment)
 
+    index = None
+
+    download_url = None
+
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""
         super(DistroSeriesDifferenceDisplayComment, self).__init__(None)
