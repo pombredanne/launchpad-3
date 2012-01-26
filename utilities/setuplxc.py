@@ -613,9 +613,9 @@ def initialize_host(
         subprocess.call(['bzr', 'init-repo', directory])
         checkout_dir = os.path.join(directory, LP_CHECKOUT)
     # bzr branch does not work well with seteuid.
-    os.system(
-        "su - {} -c 'bzr branch {} {}'".format(
-        user, LP_REPOSITORY, checkout_dir))
+    subprocess.call([
+        'su', '-', user, '-c',
+        'bzr branch {} "{}"'.format(LP_REPOSITORY, checkout_dir)])
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
