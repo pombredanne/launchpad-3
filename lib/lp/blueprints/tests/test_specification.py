@@ -159,10 +159,38 @@ class FakeSpecification(object):
 # layer and that will make it run much faster than the other.
 class TestWorkItemParser(TestCase):
 
-    def test_parse_line(self):
+    def test_parse_line_basic(self):
         parser = WorkitemParser(FakeSpecification())
         assignee, description, status, milestone = (
             parser.parse_blueprint_workitem("A single work item: TODO", None))
+        self.assertEqual(
+            [None, "A single work item", SpecificationWorkItemStatus.TODO,
+             None],
+            [assignee, description, status, milestone])
+
+    def test_parse_line_with_assignee(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status, milestone = (
+            parser.parse_blueprint_workitem(
+                "[salgado] A single work item: TODO", None))
+        self.assertEqual(
+            ["salgado", "A single work item", SpecificationWorkItemStatus.TODO,
+             None],
+            [assignee, description, status, milestone])
+
+    def test_parse_line_without_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status, milestone = (
+            parser.parse_blueprint_workitem("A single work item", None))
+        self.assertEqual(
+            [None, "A single work item", SpecificationWorkItemStatus.TODO,
+             None],
+            [assignee, description, status, milestone])
+
+    def test_parse_empty_line(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status, milestone = (
+            parser.parse_blueprint_workitem("", None))
         self.assertEqual(
             [None, "A single work item", SpecificationWorkItemStatus.TODO,
              None],

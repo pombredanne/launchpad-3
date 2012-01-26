@@ -1075,11 +1075,10 @@ class WorkitemParser(object):
         elif status in (u'postpone', u'dropped', u'drop'):
             status = SpecificationWorkItemStatus.POSTPONED
         else:
-            valid_statuses = [
-                item.name.lower() for item in SpecificationWorkItemStatus.items]
-            if status not in valid_statuses:
+            valid_statuses = SpecificationWorkItemStatus.items
+            if status not in [item.name.lower() for item in valid_statuses]:
                 raise Exception('FIXME')
-            return SpecificationWorkItemStatus.items[status.upper()]
+            return valid_statuses[status.upper()]
         return status
 
     def _get_assignee(self, assignee_name):
@@ -1105,6 +1104,9 @@ class WorkitemParser(object):
     def parse_blueprint_workitem(self, line, milestone):
         line = line.strip()
         if not line:
+            # XXX: Returning None here means callsites have to check the
+            # return value before unpacking, which is not nice. Maybe we
+            # should raise an exception instead of returning None.
             return None
         assignee_name, desc, status = self._parse_line(line)
         if desc is None:
