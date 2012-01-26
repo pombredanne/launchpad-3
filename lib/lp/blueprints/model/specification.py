@@ -1063,7 +1063,8 @@ class SpecificationWorkItem(SQLBase):
         dbName='milestone', foreignKey='Milestone', notNull=False,
         default=None)
     status = ForeignKey(
-        dbName='status', foreignKey='SpecificationWorkItemStatus', notNull=True)
+        dbName='status', foreignKey='SpecificationWorkItemStatus',
+        notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     # XXX deleted
 
@@ -1130,8 +1131,8 @@ class WorkitemParser(object):
 
 # Also shamelessly stolen from lp-wi-tracker
 def milestone_extract(text, valid_milestones):
-    words = text.replace('(', ' ').replace(')', ' ').replace('[', ' ').replace(
-            ']', ' ').replace('<wbr></wbr>', '').split()
+    words = text.replace('(', ' ').replace(')', ' ').replace(
+        '[', ' ').replace(']', ' ').replace('<wbr></wbr>', '').split()
 
     for word in words:
         if word in valid_milestones:
