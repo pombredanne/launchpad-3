@@ -354,20 +354,20 @@ class ArgumentParser(argparse.ArgumentParser):
         return namespace
 
 
-def _clean_users(namespace, euid=None):
+def clean_users(namespace, euid=None):
     """Clean user and lpuser arguments.
 
     If lpuser is not provided by namespace, the user name is used::
 
         >>> namespace = argparse.Namespace(user='myuser', lpuser=None)
-        >>> _clean_users(namespace)
+        >>> clean_users(namespace)
         >>> namespace.lpuser
         'myuser'
 
     This validator populates namespace with `home_dir` and `run_as_root`
     names::
 
-        >>> _clean_users(namespace, euid=0)
+        >>> clean_users(namespace, euid=0)
         >>> namespace.home_dir
         '/home/myuser'
         >>> namespace.run_as_root
@@ -376,7 +376,7 @@ def _clean_users(namespace, euid=None):
     The validation fails if the current user is root and no user is provided::
 
         >>> namespace = argparse.Namespace(user=None)
-        >>> _clean_users(namespace, euid=0) # doctest: +ELLIPSIS
+        >>> clean_users(namespace, euid=0) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: argument user ...
     """
@@ -393,7 +393,7 @@ def _clean_users(namespace, euid=None):
     namespace.run_as_root = not euid
 
 
-def _clean_userdata(namespace, whois=bzr_whois):
+def clean_userdata(namespace, whois=bzr_whois):
     """Clean full_name and email arguments.
 
     If they are not provided, this function tries to obtain them using
@@ -402,7 +402,7 @@ def _clean_userdata(namespace, whois=bzr_whois):
         >>> namespace = argparse.Namespace(
         ...     full_name=None, email=None, user='foo')
         >>> email = 'email@example.com'
-        >>> _clean_userdata(namespace, lambda user: (user, email))
+        >>> clean_userdata(namespace, lambda user: (user, email))
         >>> namespace.full_name == namespace.user
         True
         >>> namespace.email == email
@@ -413,14 +413,14 @@ def _clean_userdata(namespace, whois=bzr_whois):
 
         >>> namespace = argparse.Namespace(
         ...     full_name=None, email=None, user='foo')
-        >>> _clean_userdata(namespace, lambda user: None) # doctest: +ELLIPSIS
+        >>> clean_userdata(namespace, lambda user: None) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: arguments full-name ...
 
     It does not make sense to provide only one argument::
 
         >>> namespace = argparse.Namespace(full_name='Foo Bar', email=None)
-        >>> _clean_userdata(namespace) # doctest: +ELLIPSIS
+        >>> clean_userdata(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: arguments full-name ...
     """
@@ -438,7 +438,7 @@ def _clean_userdata(namespace, whois=bzr_whois):
         namespace.full_name, namespace.email = userdata
 
 
-def _clean_ssh_keys(namespace):
+def clean_ssh_keys(namespace):
     """Clean private and public ssh keys.
 
     Keys contained in the namespace are escaped::
@@ -447,7 +447,7 @@ def _clean_ssh_keys(namespace):
         >>> public = r'PUBLIC\\nKEY'
         >>> namespace = argparse.Namespace(
         ...     private_key=private, public_key=public)
-        >>> _clean_ssh_keys(namespace)
+        >>> clean_ssh_keys(namespace)
         >>> namespace.private_key == private.decode('string-escape')
         True
         >>> namespace.public_key == public.decode('string-escape')
@@ -459,7 +459,7 @@ def _clean_ssh_keys(namespace):
         >>> namespace = argparse.Namespace(
         ...     private_key=private, public_key=None,
         ...     home_dir='/tmp/__does_not_exists__')
-        >>> _clean_ssh_keys(namespace) # doctest: +ELLIPSIS
+        >>> clean_ssh_keys(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: argument public_key ...
     """
@@ -480,7 +480,7 @@ def _clean_ssh_keys(namespace):
             setattr(namespace, attr, value)
 
 
-def _clean_directories(namespace):
+def clean_directories(namespace):
     """Clean checkout and dependencies directories.
 
     The ~ construction is automatically expanded::
@@ -488,7 +488,7 @@ def _clean_directories(namespace):
         >>> namespace = argparse.Namespace(
         ...     directory='~/launchpad', dependencies_dir='~/launchpad/deps',
         ...     home_dir='/home/foo')
-        >>> _clean_directories(namespace)
+        >>> clean_directories(namespace)
         >>> namespace.directory
         '/home/foo/launchpad'
         >>> namespace.dependencies_dir
@@ -500,7 +500,7 @@ def _clean_directories(namespace):
         ...     directory='/tmp/launchpad',
         ...     dependencies_dir='~/launchpad/deps',
         ...     home_dir='/home/foo')
-        >>> _clean_directories(namespace) # doctest: +ELLIPSIS
+        >>> clean_directories(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: argument directory ...
     """
@@ -562,10 +562,10 @@ parser.add_argument(
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
 parser.validators = (
-    _clean_users,
-    _clean_userdata,
-    _clean_ssh_keys,
-    _clean_directories,
+    clean_users,
+    clean_userdata,
+    clean_ssh_keys,
+    clean_directories,
     )
 
 
