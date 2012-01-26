@@ -41,6 +41,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.batching import BatchNavigator
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import (
@@ -147,21 +148,26 @@ class ArchiveSubscribersView(LaunchpadFormView):
             return
 
         super(ArchiveSubscribersView, self).initialize()
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        self.subscriptions = subscription_set.getByArchive(self.context)
+        self.batchnav = BatchNavigator(self.subscriptions, self.request)
 
     @cachedproperty
-    def subscriptions(self):
-        """Return all the subscriptions for this archive."""
-        result = list(getUtility(IArchiveSubscriberSet
-            ).getByArchive(self.context))
-        ids = set(map(attrgetter('subscriber_id'), result))
+    def current_subscriptions_batch(self):
+        """Return the subscriptions of the current batch.
+
+        Bulk loads the related Person records.
+        """
+        batch = list(self.batchnav.currentBatch())
+        ids = set(map(attrgetter('subscriber_id'), batch))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
-        return result
+        return batch
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        return bool(self.subscriptions)
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
