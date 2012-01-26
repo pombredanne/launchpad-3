@@ -787,6 +787,10 @@ if __name__ == '__main__':
             args.directory,
             )
     else:
+        # If the script is run as normal user, restart it as root using
+        # all the collected arguments. Note that this step requires user
+        # interaction: running this script as root is still required
+        # for non-interactive setup of the Launchpad environment.
         exit_code = subprocess.call(
             ['sudo', sys.argv[0]] + parser.get_args_from_namespace(args))
     sys.exit(exit_code)
