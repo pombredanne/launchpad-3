@@ -189,10 +189,11 @@ endif
 combobuild: jsbuild
 	mkdir -p $(CONVOY_ROOT)
 	bin/combo-rootdir $(CONVOY_ROOT)
+	rm -f $(ICING)/yui
 	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
 
 jsbuild: $(PY) $(JS_OUT)
-	rm -f $(ICING)/yui
+	ln -sf ../../../../build/js/yui/yui-3.3.0 $(ICING)/yui
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
