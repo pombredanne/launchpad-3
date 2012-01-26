@@ -1140,11 +1140,6 @@ def milestone_extract(text, valid_milestones):
     return None
 
 
-# XXX: This can be a method on ISpecification, but since the plan is to run
-# this once and throw it away afterwards, we might as well have it as a
-# standalone function to avoid the extra overhead of adding stuff to model
-# classes. If we do that we should also move everything related to the
-# migration to a separate file as well, to make it easier to remove it later.
 import re
 def extractWorkItemsFromWhiteboard(spec):
     work_items = []
@@ -1153,15 +1148,12 @@ def extractWorkItemsFromWhiteboard(spec):
     work_items_re = re.compile('^work items(.*)\s*:\s*$', re.I)
     meta_re = re.compile('^Meta.*?:$', re.I)
     complexity_re = re.compile('^Complexity.*?:$', re.I)
-    in_block = None
-    milestone = None
+    in_wi_block = False
     new_whiteboard = []
 
     target_milestone_names = [
         milestone.name for milestone in spec.target.milestones]
-    # Here we'll just store the lines we care about under the appropriate key
-    # of the dictionary below.
-    interesting_lines = {'wi': [], 'meta': [], 'complexity': []}
+    wi_lines = []
     for line in spec.whiteboard.splitlines():
         new_whiteboard.append(line)
         if line.strip() == '':
@@ -1169,43 +1161,33 @@ def extractWorkItemsFromWhiteboard(spec):
 
         wi_match = work_items_re.search(line)
         if wi_match:
-            in_block = 'wi'
+            in_wi_block = True
             milestone = milestone_extract(
                 wi_match.group(1), target_milestone_names)
-            # Remove the current line from the new whiteboard.
             new_whiteboard.pop()
             continue
         if meta_re.search(line):
-            in_block = 'meta'
-            # Set milestone back to None.
             milestone = None
+            in_wi_block = False
             continue
         if complexity_re.search(line):
-            # Set milestone back to None.
             milestone = None
-            in_block = 'complexity'
-            continue
-        if not in_block:
+            in_wi_block = False
             continue
 
-        item = line
-        if in_block == 'wi':
-            # This is a work-item line, which we don't want in the new
-            # whiteboard because we're migrating them into the
-            # SpecificationWorkItem table.
-            new_whiteboard.pop()
-            item = (line, milestone)
+        if not in_wi_block:
+            continue
 
-        # XXX: I'm storing complexity/meta as interesting lines because we
-        # might want to extract headline/acceptance from there.
+        # This is a work-item line, which we don't want in the new
+        # whiteboard because we're migrating them into the
+        # SpecificationWorkItem table.
+        new_whiteboard.pop()
 
-        # If we've made this far it means we're in one of the interesting
-        # blocks so we just store the line in interesting_lines[in_block].
-        interesting_lines[in_block].append(item)
+        wi_lines.append((line, milestone))
 
     # Now parse the work item lines.
     parser = WorkitemParser(spec)
-    for line, milestone in interesting_lines['wi']:
+    for line, milestone in wi_lines:
         # Here we get the assignee name so must get the Person with that name
         # from the DB and pass it to SpecificationWorkItem().
         assignee, desc, status = parser.parse_blueprint_workitem(line)
