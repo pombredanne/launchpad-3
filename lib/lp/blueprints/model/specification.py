@@ -1154,6 +1154,10 @@ def extractWorkItemsFromWhiteboard(spec):
     target_milestone_names = [
         milestone.name for milestone in spec.target.milestones]
     wi_lines = []
+    # Iterate over all lines in the whiteboard and whenever we find a line
+    # matching work_items_re we 'continue' and store the following lines
+    # until we reach the end of the whiteboard or a line matching meta_re or
+    # complexity_re.
     for line in spec.whiteboard.splitlines():
         new_whiteboard.append(line)
         if line.strip() == '':
@@ -1185,7 +1189,7 @@ def extractWorkItemsFromWhiteboard(spec):
 
         wi_lines.append((line, milestone))
 
-    # Now parse the work item lines.
+    # Now parse the work item lines and store them in SpecificationWorkItem.
     parser = WorkitemParser(spec)
     for line, milestone in wi_lines:
         # Here we get the assignee name so must get the Person with that name
