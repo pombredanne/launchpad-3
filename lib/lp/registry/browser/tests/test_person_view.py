@@ -136,7 +136,7 @@ class TestPersonIndexVisibilityView(TestCaseWithFactory):
     def test_private_superteams_anonymous(self):
         # If the viewer is anonymous, the portlet is not shown.
         team = self.createTeams()
-        viewer = self.factory.makePerson()
+        self.factory.makePerson()
         view = create_initialized_view(
             team, '+index', server_url=canonical_url(team), path_info='')
         html = view()
@@ -324,18 +324,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         self.failUnless(person_view.should_show_ppa_section)
 
 
-class TestPersonEditView(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.valid_email_address = self.factory.getUniqueEmailAddress()
-        self.person = self.factory.makePerson(email=self.valid_email_address)
-        login_person(self.person)
-        self.ppa = self.factory.makeArchive(owner=self.person)
-        self.view = PersonEditView(
-            self.person, LaunchpadTestRequest())
+class TestPersonRenameFormMixin:
 
     def test_can_rename_with_empty_PPA(self):
         # If a PPA exists but has no packages, we can rename the
@@ -379,6 +368,20 @@ class TestPersonEditView(TestCaseWithFactory):
         self.ppa.status = ArchiveStatus.DELETED
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
+
+
+class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.valid_email_address = self.factory.getUniqueEmailAddress()
+        self.person = self.factory.makePerson(email=self.valid_email_address)
+        login_person(self.person)
+        self.ppa = self.factory.makeArchive(owner=self.person)
+        self.view = PersonEditView(
+            self.person, LaunchpadTestRequest())
 
     def test_add_email_good_data(self):
         email_address = self.factory.getUniqueEmailAddress()
