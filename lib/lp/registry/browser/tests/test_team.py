@@ -173,9 +173,7 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         self.acceptTeam(self.super_team, successful, failed)
 
 
-class TestTeamEditView(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
+class TestTeamPersonRenameFormMixin:
 
     def test_cannot_rename_team_with_active_ppa(self):
         # A team with an active PPA that contains publications cannot be
@@ -246,6 +244,11 @@ class TestTeamEditView(TestCaseWithFactory):
                 'This team has an active PPA with packages published and '
                 'a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
+
+
+class TestTeamEditView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
 
     def test_edit_team_view_permission(self):
         # Only an administrator or the team owner of a team can
