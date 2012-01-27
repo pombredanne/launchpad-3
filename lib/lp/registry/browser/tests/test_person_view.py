@@ -21,10 +21,7 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.browser.person import (
-    PersonEditView,
-    PersonView,
-    )
+from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -376,13 +373,12 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestPersonEditView, self).setUp()
         self.valid_email_address = self.factory.getUniqueEmailAddress()
         self.person = self.factory.makePerson(email=self.valid_email_address)
         login_person(self.person)
         self.ppa = self.factory.makeArchive(owner=self.person)
-        self.view = PersonEditView(
-            self.person, LaunchpadTestRequest())
+        self.view = create_initialized_view(self.person, '+edit')
 
     def test_add_email_good_data(self):
         email_address = self.factory.getUniqueEmailAddress()
