@@ -201,6 +201,9 @@
   <class class="lp.xmlrpc.faults.AccountSuspended">
     <require like_class="xmlrpclib.Fault" />
   </class>
+  <class class="lp.xmlrpc.faults.TeamEmailAddress">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
   <class class="lp.xmlrpc.faults.InvalidSourcePackageName">
     <require like_class="xmlrpclib.Fault" />
   </class>

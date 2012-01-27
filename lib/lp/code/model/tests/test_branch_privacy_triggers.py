@@ -9,6 +9,7 @@ __metaclass__ = type
 import unittest
 
 from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -17,7 +18,7 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.branch_ids = dict()
 
     def createBranches(self):

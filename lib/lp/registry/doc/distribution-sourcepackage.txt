@@ -279,18 +279,15 @@ versions of a given source package have been published in.
     # karma for their efforts.
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
-    >>> transaction.commit()
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('karma')
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> switch_dbuser('karma')
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> cache_entry = KarmaTotalCache(person=ppa_beta_owner_id,
     ...     karma_total=200)
     >>> cache_entry = KarmaTotalCache(person=ppa_nightly_owner_id,
     ...     karma_total=201)
-    >>> import transaction
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
 The results of findRelatedArchives() are sorted so that archive containing
 the package created by the person with the greatest karma is first:
