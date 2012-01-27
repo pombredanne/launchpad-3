@@ -21,7 +21,6 @@ __all__ = [
     'IDescription',
     'ILocationField',
     'INoneableTextLine',
-    'IPasswordField',
     'IPersonChoice',
     'IStrippedTextLine',
     'ISummary',
@@ -37,7 +36,6 @@ __all__ = [
     'MugshotImageUpload',
     'NoneableDescription',
     'NoneableTextLine',
-    'PasswordField',
     'PersonChoice',
     'PillarAliases',
     'PillarNameField',
@@ -81,7 +79,6 @@ from zope.schema import (
     Field,
     Float,
     Int,
-    Password,
     Text,
     TextLine,
     Tuple,
@@ -94,7 +91,6 @@ from zope.schema.interfaces import (
     IField,
     Interface,
     IObject,
-    IPassword,
     IText,
     ITextLine,
     )
@@ -150,11 +146,6 @@ class ITimeInterval(ITextLine):
 
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
-
-
-class IPasswordField(IPassword):
-    """A field that ensures we only use http basic authentication safe
-    ascii characters."""
 
 
 class IAnnouncementDate(IDatetime):
@@ -416,17 +407,6 @@ class SearchTag(Tag):
             return super(SearchTag, self).constraint(value[1:])
         else:
             return super(SearchTag, self).constraint(value)
-
-
-class PasswordField(Password):
-    implements(IPasswordField)
-
-    def _validate(self, value):
-        # Local import to avoid circular imports
-        from lp.app.validators.validation import valid_password
-        if not valid_password(value):
-            raise LaunchpadValidationError(_(
-                "The password provided contains non-ASCII characters."))
 
 
 class UniqueField(TextLine):

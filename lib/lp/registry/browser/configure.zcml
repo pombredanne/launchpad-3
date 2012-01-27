@@ -1140,6 +1140,12 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListArchiveView"
+            permission="zope.Public"
+            name="+mailing-list-archive"
+            template="../templates/team-mailinglist-archive.pt"/>
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamEditView"

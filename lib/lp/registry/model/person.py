@@ -181,6 +181,7 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
+    TeamEmailAddressError,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
@@ -3116,6 +3117,13 @@ class PersonSet:
                 or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
+
+            # XXX wgrant 2012-01-20 bug=556680: This is awful, as it can
+            # lock people out of their account until they change their
+            # SSO address. But stealing addresses from other accounts is
+            # probably worse.
+            if email is not None and email.person.is_team:
+                raise TeamEmailAddressError()
 
             if email is None:
                 if identifier is None:

@@ -39,6 +39,7 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -57,7 +58,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehavior, self).setUp()
-        self.layer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
@@ -280,7 +281,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
-        self.layer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
         self.build = self.factory.makeBinaryPackageBuild(

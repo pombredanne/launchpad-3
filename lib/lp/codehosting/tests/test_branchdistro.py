@@ -42,6 +42,7 @@ from lp.services.log.logger import (
     )
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
@@ -154,8 +155,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         self._log_file = StringIO()
         new_distroseries = self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
-        transaction.commit()
-        self.layer.switchDbUser('branch-distro')
+        switch_dbuser('branch-distro')
         return DistroBrancher(
             FakeLogger(self._log_file), distroseries, new_distroseries)
 
@@ -277,9 +277,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertIs(None, new_branch.stacked_on)
         self.assertEqual(new_branch, db_branch.stacked_on)
         # The script doesn't have permission to create branch jobs, but just
-        # to be insanely paradoid.
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        # to be insanely paranoid.
+        switch_dbuser('launchpad')
         scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(existing_scan_job_count, len(scan_jobs))
 
@@ -450,12 +449,11 @@ class TestDistroBrancher(TestCaseWithFactory):
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         new_db_branch.setTarget(
             new_db_branch.owner,
             source_package=self.factory.makeSourcePackage())
-        transaction.commit()
-        self.layer.switchDbUser('branch-distro')
+        switch_dbuser('branch-distro')
         ok = brancher.checkOneBranch(new_db_branch)
         self.assertFalse(ok)
         self.assertLogMessages(
