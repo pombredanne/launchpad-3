@@ -443,7 +443,7 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
             self.view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do no see the the displayname field.
+        # Registry experts do not see the the displayname field.
         login_celebrity('registry_experts')
         self.view.setUpFields()
         self.assertEqual(

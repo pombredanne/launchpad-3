@@ -460,7 +460,7 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
             ['name', 'displayname'], view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do no see the the displayname field.
+        # Registry experts do not see the the displayname field.
         team = self.factory.makeTeam()
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
