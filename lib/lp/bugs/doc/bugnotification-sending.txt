@@ -349,22 +349,7 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
-We will need some helper functions.
-
-    >>> from lp.services.config import config
-    >>> from lp.services.database.sqlbase import commit
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
-
-We will also need a fresh new bug.
+We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet

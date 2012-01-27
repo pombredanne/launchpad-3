@@ -613,10 +613,10 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = Bool(title=_('Private bugs'),
+    private_bugs = exported(Bool(title=_('Private bugs'),
                         description=_(
                             "Whether or not bugs reported into this project "
-                            "are private by default."))
+                            "are private by default.")))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))

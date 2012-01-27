@@ -12,6 +12,7 @@ from zope.security.management import setSecurityPolicy
 from lp.services.config import config
 from lp.services.testing import build_test_suite
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -37,7 +38,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         connects as a specific DB user.
         """
         cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+        switch_dbuser(config.processmail.dbuser)
 
     @classmethod
     def testTearDown(cls):
