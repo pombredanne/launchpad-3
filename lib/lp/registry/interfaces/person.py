@@ -1632,15 +1632,20 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         branch_names=List(value_type=Text(),
             title=_('List of branch unique names'), required=True))
     @export_read_operation()
     @operation_for_version("devel")
-    def getBranchVisibilityInfo(branch_names):
+    def getBranchVisibilityInfo(user, branch_names):
         """Can this person see the specified named branches?
 
-        :param branch_names: The unique names of the branches to check.
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param branch_names: The unique names of the branches to check. If any
+            of the branch names are invalid or not visible to user, then we
+            return an empty dict.
 
         Return a dict with the following values:
         person_name: the displayname of this person.
