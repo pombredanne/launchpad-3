@@ -7,13 +7,15 @@ __all__ = ['download_body']
 
 
 from lp.app.browser.tales import download_link
+from lp.services.utils import obfuscate_email
 from lp.services.webapp.publisher import (
     DataDownloadView,
     LaunchpadView,
+    UserAttributeCache
     )
 
 
-class CommentBodyDownloadView(DataDownloadView):
+class CommentBodyDownloadView(DataDownloadView, UserAttributeCache):
     """Download the body text of a comment."""
 
     content_type = 'text/plain'
@@ -23,7 +25,10 @@ class CommentBodyDownloadView(DataDownloadView):
         return 'comment-%d.txt' % self.context.index
 
     def getBody(self):
-        return self.context.body_text
+        text = self.context.body_text
+        if self.user is None:
+            text = obfuscate_email(text)
+        return text
 
 
 class CommentView(LaunchpadView):
