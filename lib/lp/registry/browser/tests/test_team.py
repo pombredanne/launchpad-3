@@ -248,7 +248,7 @@ class TestTeamPersonRenameFormMixin:
                 view.widgets['name'].hint)
 
 
-class TestTeamEditView(TestCaseWithFactory):
+class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
     view_name = '+edit'
@@ -441,6 +441,13 @@ class TestTeamEditView(TestCaseWithFactory):
         self.assertEqual(
             'existing is already in use by another person or team.',
             view.errors[0].doc())
+
+
+class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
+                                  TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+review'
 
 
 class TestTeamMenu(TestCaseWithFactory):
