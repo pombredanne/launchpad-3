@@ -10,7 +10,10 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.browser.team import TeamOverviewMenu
+from lp.registry.browser.team import (
+    TeamIndexMenu,
+    TeamOverviewMenu,
+    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -30,6 +33,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -445,6 +449,37 @@ class TestTeamMenu(TestCaseWithFactory):
         super(TestTeamMenu, self).setUp()
         self.team = self.factory.makeTeam()
 
+    def test_TeamIndexMenu(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave'),
+            menu.links)
+
+    def test_TeamIndexMenu_owner(self):
+        login_person(self.team.teamowner)
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'delete', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_admin(self):
+        login_celebrity('admin')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_registry_experts(self):
+        login_celebrity('registry_experts')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
     def test_TeamOverviewMenu_check_menu_links_without_mailing(self):
         menu = TeamOverviewMenu(self.team)
         # Remove moderate_mailing_list because it asserts that there is
@@ -452,7 +487,7 @@ class TestTeamMenu(TestCaseWithFactory):
         no_mailinst_list_links = [
             link for link in menu.links if link != 'moderate_mailing_list']
         menu.links = no_mailinst_list_links
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Create a mailing list', link.text)
 
@@ -460,7 +495,7 @@ class TestTeamMenu(TestCaseWithFactory):
         self.factory.makeMailingList(
             self.team, self.team.teamowner)
         menu = TeamOverviewMenu(self.team)
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
 
