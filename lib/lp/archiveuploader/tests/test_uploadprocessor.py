@@ -17,7 +17,6 @@ import tempfile
 
 from fixtures import MonkeyPatch
 from storm.locals import Store
-import transaction
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -101,6 +100,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -132,12 +132,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def switchToUploader(self):
-        transaction.commit()
-        self.layer.switchDbUser("uploader")
+        switch_dbuser("uploader")
 
     def switchToAdmin(self):
-        transaction.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
     def setUp(self):
         super(TestUploadProcessorBase, self).setUp()

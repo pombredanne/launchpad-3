@@ -311,6 +311,23 @@ class LaunchpadView(UserAttributeCache):
         """The page's template, if configured in zcml."""
         return self.index
 
+    @property
+    def yui_version(self):
+        """The version of YUI we are using."""
+        value = getFeatureFlag('js.yui_version')
+        if not value:
+            return 'yui'
+        else:
+            return value
+
+    @property
+    def yui_console_debug(self):
+        """Hide console debug messages in production."""
+        # We need to import here otherwise sitecustomize can't get imported,
+        # likely due to some non-obvious circular import issues.
+        from lp.services.config import config
+        return 'true' if config.devmode else 'false'
+
     def render(self):
         """Return the body of the response.
 

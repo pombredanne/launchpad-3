@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes related to bug nominations."""
@@ -90,13 +90,12 @@ class BugNominationView(LaunchpadFormView):
 
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
-        return check_permission(
-            "launchpad.Driver", self.current_bugtask.target)
+        return self.current_bugtask.userHasDriverPrivileges(self.user)
 
     def userIsBugSupervisor(self):
         """Is the current user the bug supervisor?"""
-        return check_permission(
-            "launchpad.BugSupervisor", self.current_bugtask.target)
+        return self.current_bugtask.userHasBugSupervisorPrivileges(
+            self.user)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""
