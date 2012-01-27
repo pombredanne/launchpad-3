@@ -434,6 +434,13 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = create_initialized_view(self.person, '+review')
 
+    def test_init_admin(self):
+        self.assertEqual('Review person', self.view.label)
+        self.assertEqual(
+            ['name', 'displayname', 'personal_standing',
+             'personal_standing_reason'],
+            self.view.field_names)
+
 
 class TestTeamCreationView(TestCaseWithFactory):
 
