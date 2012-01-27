@@ -238,7 +238,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         if self.reviewer != self.member:
             self.reviewer_name = self.reviewer.unique_displayname
         else:
-            self.reviewer_name = 'the user themselves'
+            self.reviewer_name = 'the user'
 
         if self.last_change_comment:
             comment = ("\n%s said:\n %s\n" % (
