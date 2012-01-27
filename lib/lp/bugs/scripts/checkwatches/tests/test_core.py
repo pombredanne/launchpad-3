@@ -47,6 +47,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -301,11 +302,10 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         # subscribers from a bug watch.
         question.subscribe(
             getUtility(ILaunchpadCelebrities).launchpad_developers)
-        transaction.commit()
 
         # We now need to switch to the checkwatches DB user so that
         # we're testing with the correct set of permissions.
-        self.layer.switchDbUser(config.checkwatches.dbuser)
+        switch_dbuser(config.checkwatches.dbuser)
 
         # For test_can_update_bug_with_questions we also need a bug
         # watch and by extension a bug tracker.

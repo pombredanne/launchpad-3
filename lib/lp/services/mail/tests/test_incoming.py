@@ -27,6 +27,7 @@ from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -147,7 +148,7 @@ class TestExtractAddresses(TestCaseWithFactory):
 
 def setUp(test):
     test._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-    LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    switch_dbuser(config.processmail.dbuser)
 
 
 def tearDown(test):

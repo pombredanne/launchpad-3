@@ -62,7 +62,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -574,7 +577,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         super(TestNativePublishingBase, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()

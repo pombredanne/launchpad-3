@@ -35,6 +35,7 @@ __all__ = [
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
+    'TeamEmailAddressError',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
@@ -2540,6 +2541,10 @@ class NoSuchPerson(NameLookupFailed):
     """Raised when we try to look up an IPerson that doesn't exist."""
 
     _message_prefix = "No such person"
+
+
+class TeamEmailAddressError(Exception):
+    """The person cannot be created as a team owns its email address."""
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

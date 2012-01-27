@@ -488,7 +488,7 @@ class TestWebService(WebServiceTestCase):
         now = datetime.datetime.now(tz=pytz.utc)
         day = datetime.timedelta(days=1)
         self.failUnlessEqual(
-            [oopsid.upper()],
+            [oopsid],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
         self.failUnlessEqual(
             [],
