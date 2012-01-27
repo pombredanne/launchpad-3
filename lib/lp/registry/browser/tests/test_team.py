@@ -175,6 +175,8 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
 
 class TestTeamPersonRenameFormMixin:
 
+    view_name = None
+
     def test_cannot_rename_team_with_active_ppa(self):
         # A team with an active PPA that contains publications cannot be
         # renamed.
@@ -184,7 +186,7 @@ class TestTeamPersonRenameFormMixin:
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
@@ -199,7 +201,7 @@ class TestTeamPersonRenameFormMixin:
         removeSecurityProxy(archive).status = ArchiveStatus.DELETED
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
@@ -209,7 +211,7 @@ class TestTeamPersonRenameFormMixin:
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has a mailing list and may not be renamed.',
@@ -224,7 +226,7 @@ class TestTeamPersonRenameFormMixin:
         team_list.transitionToStatus(MailingListStatus.INACTIVE)
         team_list.purge()
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_multiple_reasons(self):
@@ -238,7 +240,7 @@ class TestTeamPersonRenameFormMixin:
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
@@ -249,6 +251,7 @@ class TestTeamPersonRenameFormMixin:
 class TestTeamEditView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+    view_name = '+edit'
 
     def test_edit_team_view_permission(self):
         # Only an administrator or the team owner of a team can
