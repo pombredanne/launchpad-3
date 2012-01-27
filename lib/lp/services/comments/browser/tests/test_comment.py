@@ -20,19 +20,21 @@ class TestCommentBodyDownloadView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def view(self, body):
+        comment = FakeComment(body)
+        request = LaunchpadTestRequest()
+        view = CommentBodyDownloadView(comment, request)
+        return view()
+
     def test_anonymous_body_obfuscated(self):
         """For anonymous users, email addresses are obfuscated."""
-        comment = FakeComment('example@example.org')
-        view = CommentBodyDownloadView(comment, LaunchpadTestRequest())
-        output = view()
+        output = self.view()
         self.assertNotIn(output, 'example@example.org')
         self.assertIn(output, '<email address hidden>')
 
     def test_logged_in_not_obfuscated(self):
         """For logged-in users, email addresses are not obfuscated."""
-        comment = FakeComment('example@example.org')
         with person_logged_in(self.factory.makePerson()):
-            view = CommentBodyDownloadView(comment, LaunchpadTestRequest())
-            output = view()
+            output = self.view('example@example.org')
             self.assertIn(output, 'example@example.org')
             self.assertNotIn(output, '<email address hidden>')
