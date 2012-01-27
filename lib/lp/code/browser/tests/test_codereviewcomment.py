@@ -80,24 +80,15 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
         body = Tag('Body text', 'p', text='x y' * 2000)
         self.assertThat(browser.contents, HTMLContains(body))
 
-    def test_excessive_comments_download_link(self):
-        """Excessive comments have a download link displayed."""
+    def test_excessive_comments_redirect_to_download(self):
+        """View for excessive comments redirects to download page."""
         comment = self.factory.makeCodeReviewComment(body='x ' * 5001)
+        view_url = canonical_url(comment)
         download_url = canonical_url(comment, view_name='+download')
-        browser = self.getViewBrowser(comment)
-        body = Tag(
-            'Download', 'a', {'href': download_url},
-            text='Download full text')
-        self.assertThat(browser.contents, HTMLContains(body))
-
-    def test_excessive_comments_no_read_more(self):
-        """Excessive comments have no "Read more" link."""
-        comment = self.factory.makeCodeReviewComment(body='x ' * 5001)
-        url = canonical_url(comment, force_local_path=True)
-        browser = self.getViewBrowser(comment)
-        read_more = Tag(
-            'Read more link', 'a', {'href': url}, text='Read more...')
-        self.assertThat(browser.contents, Not(HTMLContains(read_more)))
+        browser = self.getUserBrowser(view_url)
+        self.assertNotEqual(view_url, browser.url)
+        self.assertEqual(download_url, browser.url)
+        self.assertEqual('x ' * 5001, browser.contents)
 
     def test_short_comment_no_download_link(self):
         """Long comments displayed by themselves are not truncated."""
