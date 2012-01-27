@@ -338,6 +338,11 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
 
+    def __call__(self):
+        if self.comment.too_long_to_render:
+            return self.request.response.redirect(self.comment.download_url())
+        return super(BugCommentView, self).__call__()
+
     def download(self):
         return download_body(self.comment, self.request)
 

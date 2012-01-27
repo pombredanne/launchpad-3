@@ -334,8 +334,27 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         verifyObject(IBugComment, bug_comment)
 
     def test_download_url(self):
-        bug_message = self.factory.makeBugComment()
-        bugtask = bug_message.bugs[0].bugtasks[0]
-        bug_comment = BugComment(1, bug_message, bugtask)
+        bug_comment = make_bug_comment(self.factory)
         url = canonical_url(bug_comment, view_name='+download')
         self.assertEqual(url, bug_comment.download_url())
+
+
+def make_bug_comment(factory, *args, **kwargs):
+    bug_message = factory.makeBugComment(*args, **kwargs)
+    bugtask = bug_message.bugs[0].bugtasks[0]
+    return BugComment(1, bug_message, bugtask)
+
+
+class TestBugCommentInBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_excessive_comments_redirect_to_download(self):
+        """View for excessive comments redirects to download page."""
+        comment = make_bug_comment(self.factory, body='x ' * 5001)
+        view_url = canonical_url(comment)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getUserBrowser(view_url)
+        self.assertNotEqual(view_url, browser.url)
+        self.assertEqual(download_url, browser.url)
+        self.assertEqual('x ' * 5001, browser.contents)
