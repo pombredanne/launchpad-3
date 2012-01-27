@@ -76,6 +76,6 @@ def referenced_oops(start_date, end_date, context_clause, context_params):
     cur.execute(query)
     for content in (row[0] for row in cur.fetchall()):
         for oops in oops_re.findall(content):
-            referenced_codes.add(oops.upper())
+            referenced_codes.add(oops)
 
     return referenced_codes

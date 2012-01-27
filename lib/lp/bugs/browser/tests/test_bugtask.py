@@ -2282,6 +2282,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
                 key[2] in ('asc', 'desc'),
                 'Invalid order value: %r' % (key, ))
 
+    def test_tags_encoded_in_model(self):
+        # The tag name is encoded properly in the JSON.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        with dynamic_listings():
+            view = self.makeView(bugtask=bug.default_bugtask)
+        cache = IJSONRequestCache(view.request)
+        tags = cache.objects['mustache_model']['items'][0]['tags']
+        expected_url = (
+            canonical_url(product, view_name='+bugs') +
+            '/?field.tag=depends-on%2B987')
+        self.assertEqual(
+            [{'url': expected_url, 'tag': u'depends-on+987'}], tags)
+
 
 class TestBugTaskExpirableListingView(BrowserTestCase):
     """Test BugTaskExpirableListingView."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -497,6 +497,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # In which case we assume it is the archive_id (for the
             # moment, archive name will be an option soon).
             archive_id = self.request.stepstogo.consume()
+            if not archive_id.isdigit():
+                return None
             return traverse_archive_subscription_for_subscriber(
                 self.context, archive_id)
         else:
@@ -3005,7 +3007,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
