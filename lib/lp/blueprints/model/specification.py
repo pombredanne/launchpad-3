@@ -75,7 +75,7 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import IPersonSet, validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.database.constants import (
@@ -85,6 +85,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -1031,29 +1032,25 @@ class SpecificationWorkItem(SQLBase):
     implements(ISpecificationWorkItem)
 
     title = StringCol(notNull=True)
-    specification = ForeignKey(
-        dbName='specification', foreignKey='Specification', notNull=True)
+    specification = ForeignKey(foreignKey='Specification', notNull=True)
     assignee = ForeignKey(
-        dbName='assignee', notNull=False, foreignKey='Person',
+        notNull=False, foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     milestone = ForeignKey(
-        dbName='milestone', foreignKey='Milestone', notNull=False,
-        default=None)
-    status = ForeignKey(
-        dbName='status', foreignKey='SpecificationWorkItemStatus',
+        foreignKey='Milestone', notNull=False, default=None)
+    status = EnumCol(
+        schema=SpecificationWorkItemStatus,
         notNull=True, default=SpecificationWorkItemStatus.TODO)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     deleted = BoolCol(notNull=True, default=False)
 
 
-# Shamelessly stolen from lp-work-items-tracker, with plenty of unnecessary
-# stuff removed.
-class WorkitemParser(object):
-    """A class that construct Workitems from Blueprint information.
+class WorkItemParseError(Exception):
+    """An error when parsing a work item line from a blueprint's whiteboard."""
 
-    Workitems are created from a blueprint, based primarily on the
-    whiteboard.
-    """
+
+class WorkitemParser(object):
+    """A parser to extract work items from Blueprint whiteboards."""
 
     def __init__(self, blueprint):
         self.blueprint = blueprint
@@ -1069,7 +1066,7 @@ class WorkitemParser(object):
         else:
             valid_statuses = SpecificationWorkItemStatus.items
             if status not in [item.name.lower() for item in valid_statuses]:
-                raise Exception('FIXME')
+                raise WorkItemParseError('Unknown status: %s' % status)
             return valid_statuses[status.upper()]
         return status
 
@@ -1086,34 +1083,28 @@ class WorkitemParser(object):
                 assignee_name = desc[1:off]
                 desc = desc[off + 1:].strip()
             else:
-                raise Exception('FIXME: missing closing "]" for assignee')
+                raise WorkItemParseError('Missing closing "]" for assignee')
         return assignee_name, desc, status
 
     def parse_blueprint_workitem(self, line):
         line = line.strip()
-        if not line:
-            # XXX: Returning None here means callsites have to check the
-            # return value before unpacking, which is not nice. Maybe we
-            # should raise an exception instead of returning None.
-            return None
+        assert line, "Please don't give us an empty line"
         assignee_name, desc, status = self._parse_line(line)
-        if desc is None:
-            return None
+        if not desc:
+            raise WorkItemParseError(
+                'No work item description found on "%s"' % line)
         status = self._normalize_status(status, desc)
-        if status is None:
-            # XXX: Should we raise an error here instead?
-            return None
         return assignee_name, desc, status
 
 
-# Also shamelessly stolen from lp-wi-tracker
 def milestone_extract(text, valid_milestones):
     words = text.replace('(', ' ').replace(')', ' ').replace(
         '[', ' ').replace(']', ' ').replace('<wbr></wbr>', '').split()
 
-    for word in words:
-        if word in valid_milestones:
-            return word
+    for milestone in valid_milestones:
+        for word in words:
+            if word == milestone.name:
+                return milestone
     return None
 
 
@@ -1128,8 +1119,7 @@ def extractWorkItemsFromWhiteboard(spec):
     in_wi_block = False
     new_whiteboard = []
 
-    target_milestone_names = [
-        milestone.name for milestone in spec.target.milestones]
+    target_milestones = list(spec.target.milestones)
     wi_lines = []
     # Iterate over all lines in the whiteboard and whenever we find a line
     # matching work_items_re we 'continue' and store the following lines
@@ -1144,7 +1134,7 @@ def extractWorkItemsFromWhiteboard(spec):
         if wi_match:
             in_wi_block = True
             milestone = milestone_extract(
-                wi_match.group(1), target_milestone_names)
+                wi_match.group(1), target_milestones)
             new_whiteboard.pop()
             continue
         if meta_re.search(line):
@@ -1169,15 +1159,21 @@ def extractWorkItemsFromWhiteboard(spec):
     # Now parse the work item lines and store them in SpecificationWorkItem.
     parser = WorkitemParser(spec)
     for line, milestone in wi_lines:
-        # Here we get the assignee name so must get the Person with that name
-        # from the DB and pass it to SpecificationWorkItem().
-        assignee, desc, status = parser.parse_blueprint_workitem(line)
-        work_items.append((assignee, desc, status, milestone))
-        # TODO
-#         workitem = SpecificationWorkItem(
-#             blueprint=spec, status=status, description=desc,
-#             assignee=assignee, milestone=milestone)
-#         work_items.append(workitem)
+        assignee_name, title, status = parser.parse_blueprint_workitem(line)
+        if assignee_name is not None:
+            assignee = getUtility(IPersonSet).getByName(assignee_name)
+            if assignee is None:
+                raise ValueError("Unknown person name: %s" % assignee_name)
+        else:
+            assignee = None
+        workitem = removeSecurityProxy(spec).newWorkItem(
+            status=status, title=title, assignee=assignee,
+            milestone=milestone)
+        work_items.append(workitem)
 
     removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
+    # TODO: Must make sure the SpecificationWorkItem objects created in the
+    # loop above are not committed unless we reach this point.  Maybe what we
+    # need is just a transaction.abort() on the callsite if this raises an
+    # exception.
     return work_items

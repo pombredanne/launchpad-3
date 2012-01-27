@@ -74,7 +74,7 @@ class ImplementsISpecificationWorkItemTests(TestCaseWithFactory):
     """Test that various objects implement ISpecificationWorkItem."""
 
     layer = DatabaseFunctionalLayer
-    
+
     def test_distroseries_implements_ISpecificationTarget(self):
         specificationworkitem = self.factory.makeSpecificationWorkItem()
         self.assertProvides(specificationworkitem, ISpecificationWorkItem)
