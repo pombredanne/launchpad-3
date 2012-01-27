@@ -276,6 +276,7 @@ class BugComment(MessageComment):
     def add_comment_url(self):
         return canonical_url(self.bugtask, view_name='+addcomment')
 
+    @property
     def download_url(self):
         return canonical_url(self, view_name='+download')
 
@@ -339,8 +340,9 @@ class BugCommentView(LaunchpadView):
         self.comment = context
 
     def __call__(self):
+        """View redirects to +download if comment is too long to render."""
         if self.comment.too_long_to_render:
-            return self.request.response.redirect(self.comment.download_url())
+            return self.request.response.redirect(self.comment.download_url)
         return super(BugCommentView, self).__call__()
 
     def download(self):

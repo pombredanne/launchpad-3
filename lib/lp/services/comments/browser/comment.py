@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
-__all__ = ['download_body']
+__all__ = [
+    'download_body',
+    'MAX_RENDERABLE',
+    ]
 
 
 from lp.app.browser.tales import download_link
@@ -13,6 +16,9 @@ from lp.services.webapp.publisher import (
     LaunchpadView,
     UserAttributeCache
     )
+
+
+MAX_RENDERABLE = 10000
 
 
 class CommentBodyDownloadView(DataDownloadView, UserAttributeCache):
@@ -25,6 +31,7 @@ class CommentBodyDownloadView(DataDownloadView, UserAttributeCache):
         return 'comment-%d.txt' % self.context.index
 
     def getBody(self):
+        """The body of the HTTP response is the message body."""
         text = self.context.body_text
         if self.user is None:
             text = obfuscate_email(text)
@@ -32,9 +39,11 @@ class CommentBodyDownloadView(DataDownloadView, UserAttributeCache):
 
 
 class CommentView(LaunchpadView):
+    """Base class for viewing IComment implementations."""
 
     def download_link(self):
-        url = self.context.download_url()
+        """Return an HTML link to download this comment's body."""
+        url = self.context.download_url
         length = len(self.context.body_text)
         return download_link(url, "Download full text", length)
 

@@ -334,9 +334,10 @@ class TestBugCommentImplementsInterface(TestCaseWithFactory):
         verifyObject(IBugComment, bug_comment)
 
     def test_download_url(self):
+        """download_url is provided and works as expected."""
         bug_comment = make_bug_comment(self.factory)
         url = canonical_url(bug_comment, view_name='+download')
-        self.assertEqual(url, bug_comment.download_url())
+        self.assertEqual(url, bug_comment.download_url)
 
 
 def make_bug_comment(factory, *args, **kwargs):

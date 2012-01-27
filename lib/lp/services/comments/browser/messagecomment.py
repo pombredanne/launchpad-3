@@ -6,11 +6,9 @@ __metaclass__ = type
 __all__ = ['MessageComment']
 
 
+from lp.services.comments.browser.comment import MAX_RENDERABLE
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import cachedproperty
-
-
-MAX_RENDERABLE = 10000
 
 
 class MessageComment:
@@ -21,8 +19,6 @@ class MessageComment:
     has_footer = False
 
     def __init__(self, comment_limit):
-        if comment_limit is None:
-            comment_limit = MAX_RENDERABLE
         self.comment_limit = comment_limit
 
     @property

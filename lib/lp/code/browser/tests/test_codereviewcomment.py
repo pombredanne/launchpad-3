@@ -101,6 +101,7 @@ class TestCodeReviewCommentHtml(BrowserTestCase):
         self.assertThat(browser.contents, Not(HTMLContains(body)))
 
     def test_download_view(self):
+        """The download view has the expected contents and header."""
         comment = self.factory.makeCodeReviewComment(body=u'\u1234')
         browser = self.getViewBrowser(comment, view_name='+download')
         contents = u'\u1234'.encode('utf-8')

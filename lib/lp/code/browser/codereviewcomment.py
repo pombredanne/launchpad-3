@@ -109,6 +109,7 @@ class CodeReviewDisplayComment(MessageComment):
         # Attachments to not show.
         return self.all_attachments[1]
 
+    @property
     def download_url(self):
         return canonical_url(self.comment, view_name='+download')
 
@@ -188,8 +189,9 @@ class CodeReviewCommentView(LaunchpadView):
             CodeReviewDisplayComment(self.context), self.request)
 
     def __call__(self):
+        """View redirects to +download if comment is too long to render."""
         if self.comment.too_long_to_render:
-            return self.request.response.redirect(self.comment.download_url())
+            return self.request.response.redirect(self.comment.download_url)
         return super(CodeReviewCommentView, self).__call__()
 
     # Should the comment be shown in full?
