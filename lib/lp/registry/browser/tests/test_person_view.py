@@ -441,6 +441,13 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
              'personal_standing_reason'],
             self.view.field_names)
 
+    def test_init_registry_expert(self):
+        login_celebrity('registry_experts')
+        self.view.setUpFields()
+        self.assertEqual(
+            ['name', 'personal_standing', 'personal_standing_reason'],
+            self.view.field_names)
+
 
 class TestTeamCreationView(TestCaseWithFactory):
 
