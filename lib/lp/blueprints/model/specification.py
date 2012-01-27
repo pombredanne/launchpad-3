@@ -13,10 +13,6 @@ __all__ = [
     'extractWorkItemsFromWhiteboard',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -51,8 +47,12 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItem,
+    )
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
@@ -233,6 +233,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         return self.distribution
+
+    def newWorkItem(self, title, status=SpecificationWorkItemStatus.TODO,
+                    assignee=None, milestone=None):
+        """See ISpecification."""
+
+        # TODO we need to add tests for this
+
+        return SpecificationWorkItem(
+            title=title, status=status, specification=self, assignee=assignee,
+            milestone=milestone)
 
     def setTarget(self, target):
         """See ISpecification."""
@@ -1017,43 +1027,10 @@ class SpecificationSet(HasSpecificationsMixin):
         return Specification.get(spec_id)
 
 
-class SpecificationWorkItemStatus(DBEnumeratedType):
-    TODO = DBItem(0, """
-        TODO
-
-        A work item that's not done yet.
-        """)
-    DONE = DBItem(1, """
-        DONE
-
-        A work item that's done.
-        """)
-    POSTPONED = DBItem(2, """
-        POSTPONED
-
-        A work item that has been postponed.
-        """)
-    INPROGRESS = DBItem(3, """
-        INPROGRESS
-
-        A work item that is inprogress.
-        """)
-    BLOCKED = DBItem(4, """
-        BLOCKED
-
-        A work item that is blocked.
-        """)
-
-
 class SpecificationWorkItem(SQLBase):
-    # TODO
+    implements(ISpecificationWorkItem)
 
-    #implements(ISpecificationWorkItem)
-
-    _table = 'SpecificationWorkItem'
-
-    # XXX id
-    # XXX title
+    title = StringCol(notNull=True)
     specification = ForeignKey(
         dbName='specification', foreignKey='Specification', notNull=True)
     assignee = ForeignKey(
@@ -1064,9 +1041,9 @@ class SpecificationWorkItem(SQLBase):
         default=None)
     status = ForeignKey(
         dbName='status', foreignKey='SpecificationWorkItemStatus',
-        notNull=True)
+        notNull=True, default=SpecificationWorkItemStatus.TODO)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    # XXX deleted
+    deleted = BoolCol(notNull=True, default=False)
 
 
 # Shamelessly stolen from lp-work-items-tracker, with plenty of unnecessary
