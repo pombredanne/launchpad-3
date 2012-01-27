@@ -57,6 +57,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login,
+    login_celebrity,
     login_person,
     person_logged_in,
     StormStatementRecorder,
@@ -424,6 +425,18 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             "field.dupe_person=deadaccount\">merge it</a> into your account."
             % email_address)
         self.assertEqual(expected_msg, error_msg)
+
+
+class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
+                                   TestCaseWithFactory):
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(PersonAdministerViewTestCase, self).setUp()
+        self.person = self.factory.makePerson()
+        login_celebrity('admin')
+        self.ppa = self.factory.makeArchive(owner=self.person)
+        self.view = create_initialized_view(self.person, '+review')
 
 
 class TestTeamCreationView(TestCaseWithFactory):

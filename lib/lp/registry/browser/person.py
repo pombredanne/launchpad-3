@@ -1225,7 +1225,24 @@ class PersonRdfContentsView:
         return encodeddata
 
 
-class PersonAdministerView(LaunchpadEditFormView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
@@ -3473,23 +3490,6 @@ class PersonEditHomePageView(BasePersonEditView):
         return 'Change home page for %s' % self.context.displayname
 
     page_title = label
-
-
-class PersonRenameFormMixin(LaunchpadEditFormView):
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        Renames are prohibited if a person/team has an active PPA or an
-        active mailing list.
-        """
-        reason = self.context.checkRename()
-        if reason:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonRenameFormMixin, self).setUpWidgets()
-        if reason:
-            self.widgets['name'].hint = reason
 
 
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
