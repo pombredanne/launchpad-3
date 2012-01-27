@@ -1234,6 +1234,8 @@ class PersonRenameFormMixin(LaunchpadEditFormView):
         active mailing list.
         """
         reason = self.context.checkRename()
+        # Reason is a message about why a rename cannot happen.
+        # No message means renames are permitted.
         if reason:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
