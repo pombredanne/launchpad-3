@@ -41,11 +41,14 @@
         var vocabulary_filters = config.vocabulary_filters;
         var input_element = config.input_element;
         var show_widget_id = '${view/show_widget_id}';
-        var namespace = Y.namespace('lp.app.picker.connect');
-        namespace[show_widget_id] = function() {
+        var body = Y.one('body');
+        body.on('lp.widget.connect', function(ev) {
             // Sort out the Choose... link.
+            var show_widget_id = ev.details[0];
             var show_widget_node = Y.one('#'+show_widget_id);
-
+            if (show_widget_node === null ) {
+                return;
+            }
             show_widget_node.set('innerHTML', 'Choose&hellip;');
             show_widget_node.addClass('js-action');
             show_widget_node.get('parentNode').removeClass('unseen');
@@ -58,9 +61,9 @@
                 picker.show();
                 e.preventDefault();
             });
-        };
+        });
         Y.on('domready', function(e) {
-            namespace[show_widget_id]();
+            body.fire('lp.widget.connect', show_widget_id);
         });
     });
     "/>
