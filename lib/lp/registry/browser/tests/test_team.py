@@ -30,6 +30,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -448,6 +449,20 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
 
     layer = LaunchpadFunctionalLayer
     view_name = '+review'
+
+    def test_init_admin(self):
+        team = self.factory.makeTeam()
+        login_celebrity('admin')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual('Review team', view.label)
+        self.assertEqual(
+            ['name', 'displayname'], view.field_names)
+
+    def test_init_registry_expert(self):
+        team = self.factory.makeTeam()
+        login_celebrity('registry_experts')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual(['name'], view.field_names)
 
 
 class TestTeamMenu(TestCaseWithFactory):
