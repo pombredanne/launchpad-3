@@ -81,7 +81,7 @@ from lp.testing.systemdocs import (
 class TestTeamMembershipSetScripts(TestCaseWithFactory):
     """Separate Testcase to separate out examples required dbuser switches.
 
-    This uses the LaunchpadZoplelessLayer to provide layer.switchDbUser
+    This uses the LaunchpadZopelessLayer to provide switch_dbuser.
     """
 
     layer = LaunchpadZopelessLayer

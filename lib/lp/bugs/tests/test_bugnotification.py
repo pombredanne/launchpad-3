@@ -40,6 +40,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -131,8 +132,7 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         question.linkBug(self.bug)
         # Flush pending jobs for question creation.
         pop_questionemailjobs()
-        transaction.commit()
-        self.layer.switchDbUser(config.malone.expiration_dbuser)
+        switch_dbuser(config.malone.expiration_dbuser)
 
     def test_notifications_for_question_subscribers(self):
         # Ensure that notifications are sent to subscribers of a

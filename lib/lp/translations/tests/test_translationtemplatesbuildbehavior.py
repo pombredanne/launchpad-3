@@ -9,7 +9,6 @@ import os
 
 import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -28,6 +27,7 @@ from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
@@ -106,11 +106,6 @@ class TestTranslationTemplatesBuildBehavior(
         super(TestTranslationTemplatesBuildBehavior, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    def _becomeBuilddMaster(self):
-        """Log into the database as the buildd master."""
-        transaction.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
-
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
@@ -123,7 +118,7 @@ class TestTranslationTemplatesBuildBehavior(
         behavior = self.makeBehavior()
         buildqueue_item = self._getBuildQueueItem(behavior)
 
-        self._becomeBuilddMaster()
+        switch_dbuser(config.builddmaster.dbuser)
         d = behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
         def got_dispatch((status, info)):

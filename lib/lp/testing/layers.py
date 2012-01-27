@@ -149,7 +149,6 @@ from lp.testing import (
     logout,
     reset_logging,
     )
-from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -1552,12 +1551,6 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     @profiled
     def abort(cls):
         transaction.abort()
-
-    @classmethod
-    @profiled
-    def switchDbUser(cls, dbuser):
-        # DEPRECATED: use switch_dbuser directly.
-        switch_dbuser(dbuser)
 
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
