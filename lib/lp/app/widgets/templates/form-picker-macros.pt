@@ -41,12 +41,9 @@
         var vocabulary_filters = config.vocabulary_filters;
         var input_element = config.input_element;
         var show_widget_id = '${view/show_widget_id}';
-        Y.publish(
-            'lp.widget.connect.' + show_widget_id,
-             {broadcast: 1})
-        Y.on('lp.widget.connect.' + show_widget_id, function() {
+        Y.Global.on('lp.widget.connect.' + show_widget_id, function(e) {
             // Sort out the Choose... link.
-            var show_widget_node = Y.one('#'+show_widget_id);
+            var show_widget_node = Y.one('#' + show_widget_id);
             if (!Y.Lang.isValue(show_widget_node) ) {
                 return;
             }
@@ -62,9 +59,6 @@
                 picker.show();
                 e.preventDefault();
             });
-        });
-        Y.on('domready', function(e) {
-            Y.fire('lp.widget.connect.' + show_widget_id);
         });
     });
     "/>
