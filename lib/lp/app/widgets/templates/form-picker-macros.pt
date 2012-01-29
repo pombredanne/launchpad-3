@@ -46,7 +46,7 @@
             // Sort out the Choose... link.
             var show_widget_id = ev.details[0];
             var show_widget_node = Y.one('#'+show_widget_id);
-            if (show_widget_node === null ) {
+            if (!Y.Lang.isValue(show_widget_node) ) {
                 return;
             }
             show_widget_node.set('innerHTML', 'Choose&hellip;');
