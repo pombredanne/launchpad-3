@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -1213,8 +1213,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         # Present a page notification describing the action.
         messages = []
         messages.append(
-            '<p>Source and binaries deleted by %s request:'
-            % self.user.displayname)
+            '<p>Source and binaries deleted by %s:' % self.user.displayname)
         for source in selected_sources:
             messages.append('<br/>%s' % source.displayname)
         messages.append('</p>')

@@ -111,7 +111,7 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
 
@@ -155,7 +155,7 @@ entirely readable content.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
 
@@ -242,7 +242,7 @@ Multiple packages can be deleted in one single batch.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
@@ -459,7 +459,7 @@ source and binaries are marked as DELETED and the corresponding
     >>> messages = get_feedback_messages(user_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by No Privileges Person request:
+    Source and binaries deleted by No Privileges Person:
     foo 1.0 in hoary
     Deletion comment: Deletion of a number of base pairs that is ...
 
