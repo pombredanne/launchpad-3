@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
@@ -73,6 +74,7 @@ from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -2103,6 +2105,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spec
 
     makeBlueprint = makeSpecification
+
+    def makeSpecificationWorkItem(self, title=None, specification=None,
+                                  assignee=None, milestone=None, deleted=False,
+                                  status=SpecificationWorkItemStatus.TODO):
+        if title is None:
+            title = self.getUniqueString('title')
+        if specification is None:
+            specification = self.makeSpecification()
+        work_item = specification.newWorkItem(title=title, status=status,
+                                              assignee=assignee,
+                                              milestone=milestone)
+        work_item.deleted = deleted
+        return work_item
 
     def makeQuestion(self, target=None, title=None,
                      owner=None, description=None, language=None):

@@ -45,6 +45,7 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -60,6 +61,7 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -227,6 +229,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         return self.distribution
+
+    def newWorkItem(self, title, status=SpecificationWorkItemStatus.TODO,
+                    assignee=None, milestone=None):
+        """See ISpecification."""
+
+        # TODO we need to add tests for this
+
+        return SpecificationWorkItem(
+            title=title, status=status, specification=self, assignee=assignee,
+            milestone=milestone)
 
     def setTarget(self, target):
         """See ISpecification."""
@@ -1009,19 +1021,3 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
-    implements(ISpecificationWorkItem)
-
-    _table = 'SpecificationWorkItem'
-
-    # XXX id
-    # XXX title
-    specification = ForeignKey(dbName='specification',
-        foreignKey='Specification', notNull=True)
-    assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
-    status = ForeignKey(dbName='status',
-        foreignKey='SpecificationWorkItemStatus', notNull=True,
-                        default=SpecificationWorkItemStatus.UNKNOWN)
-    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    # XXX deleted
