@@ -10,7 +10,6 @@ __all__ = [
     'recursive_dependent_query',
     'Specification',
     'SpecificationSet',
-    'extractWorkItemsFromWhiteboard',
     ]
 
 from lazr.lifecycle.event import (
@@ -34,7 +33,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
@@ -73,7 +71,7 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet, validate_public_person
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.database.constants import (
@@ -1023,137 +1021,3 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
-
-
-class WorkItemParseError(Exception):
-    """An error when parsing a work item line from a blueprint's whiteboard."""
-
-
-class WorkitemParser(object):
-    """A parser to extract work items from Blueprint whiteboards."""
-
-    def __init__(self, blueprint):
-        self.blueprint = blueprint
-
-    def _normalize_status(self, status, desc):
-        status = status.strip().lower()
-        if not status:
-            status = SpecificationWorkItemStatus.TODO
-        elif status == u'completed':
-            status = SpecificationWorkItemStatus.DONE
-        elif status in (u'postpone', u'dropped', u'drop'):
-            status = SpecificationWorkItemStatus.POSTPONED
-        else:
-            valid_statuses = SpecificationWorkItemStatus.items
-            if status not in [item.name.lower() for item in valid_statuses]:
-                raise WorkItemParseError('Unknown status: %s' % status)
-            return valid_statuses[status.upper()]
-        return status
-
-    def _parse_line(self, line):
-        try:
-            desc, status = line.rsplit(':', 1)
-        except ValueError:
-            desc = line
-            status = ""
-        assignee_name = None
-        if desc.startswith('['):
-            if ']' in desc:
-                off = desc.index(']')
-                assignee_name = desc[1:off]
-                desc = desc[off + 1:].strip()
-            else:
-                raise WorkItemParseError('Missing closing "]" for assignee')
-        return assignee_name, desc, status
-
-    def parse_blueprint_workitem(self, line):
-        line = line.strip()
-        assert line, "Please don't give us an empty line"
-        assignee_name, desc, status = self._parse_line(line)
-        if not desc:
-            raise WorkItemParseError(
-                'No work item description found on "%s"' % line)
-        status = self._normalize_status(status, desc)
-        return assignee_name, desc, status
-
-
-def milestone_extract(text, valid_milestones):
-    words = text.replace('(', ' ').replace(')', ' ').replace(
-        '[', ' ').replace(']', ' ').replace('<wbr></wbr>', '').split()
-
-    for milestone in valid_milestones:
-        for word in words:
-            if word == milestone.name:
-                return milestone
-    return None
-
-
-import re
-def extractWorkItemsFromWhiteboard(spec):
-    work_items = []
-    if not spec.whiteboard:
-        return work_items
-    work_items_re = re.compile('^work items(.*)\s*:\s*$', re.I)
-    meta_re = re.compile('^Meta.*?:$', re.I)
-    complexity_re = re.compile('^Complexity.*?:$', re.I)
-    in_wi_block = False
-    new_whiteboard = []
-
-    target_milestones = list(spec.target.milestones)
-    wi_lines = []
-    # Iterate over all lines in the whiteboard and whenever we find a line
-    # matching work_items_re we 'continue' and store the following lines
-    # until we reach the end of the whiteboard or a line matching meta_re or
-    # complexity_re.
-    for line in spec.whiteboard.splitlines():
-        new_whiteboard.append(line)
-        if line.strip() == '':
-            continue
-
-        wi_match = work_items_re.search(line)
-        if wi_match:
-            in_wi_block = True
-            milestone = milestone_extract(
-                wi_match.group(1), target_milestones)
-            new_whiteboard.pop()
-            continue
-        if meta_re.search(line):
-            milestone = None
-            in_wi_block = False
-            continue
-        if complexity_re.search(line):
-            milestone = None
-            in_wi_block = False
-            continue
-
-        if not in_wi_block:
-            continue
-
-        # This is a work-item line, which we don't want in the new
-        # whiteboard because we're migrating them into the
-        # SpecificationWorkItem table.
-        new_whiteboard.pop()
-
-        wi_lines.append((line, milestone))
-
-    # Now parse the work item lines and store them in SpecificationWorkItem.
-    parser = WorkitemParser(spec)
-    for line, milestone in wi_lines:
-        assignee_name, title, status = parser.parse_blueprint_workitem(line)
-        if assignee_name is not None:
-            assignee = getUtility(IPersonSet).getByName(assignee_name)
-            if assignee is None:
-                raise ValueError("Unknown person name: %s" % assignee_name)
-        else:
-            assignee = None
-        workitem = removeSecurityProxy(spec).newWorkItem(
-            status=status, title=title, assignee=assignee,
-            milestone=milestone)
-        work_items.append(workitem)
-
-    removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
-    # TODO: Must make sure the SpecificationWorkItem objects created in the
-    # loop above are not committed unless we reach this point.  Maybe what we
-    # need is just a transaction.abort() on the callsite if this raises an
-    # exception.
-    return work_items
