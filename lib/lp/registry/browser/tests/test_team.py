@@ -722,3 +722,58 @@ class TestTeamIndexView(TestCaseWithFactory):
         self.assertEndsWith(
             extract_text(document.find(True, id='maincontent')),
             'The information in this page is not shared with you.')
+
+
+class TestPersonIndexVisibilityView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def createTeams(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        private = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, name='private-team',
+            members=[team])
+        with person_logged_in(team.teamowner):
+            team.acceptInvitationToBeMemberOf(private, '')
+        return team
+
+    def test_private_superteams_anonymous(self):
+        # If the viewer is anonymous, the portlet is not shown.
+        team = self.createTeams()
+        self.factory.makePerson()
+        view = create_initialized_view(
+            team, '+index', server_url=canonical_url(team), path_info='')
+        html = view()
+        superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+        self.assertEqual([], view.super_teams)
+
+    def test_private_superteams_hidden(self):
+        # If the viewer has no permission to see any superteams, the portlet
+        # is not shown.
+        team = self.createTeams()
+        viewer = self.factory.makePerson()
+        with person_logged_in(viewer):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=viewer)
+            html = view()
+            self.assertEqual([], view.super_teams)
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+
+    def test_private_superteams_shown(self):
+        # When the viewer has permission, the portlet is shown.
+        team = self.createTeams()
+        with person_logged_in(team.teamowner):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=team.teamowner)
+            html = view()
+            self.assertEqual(view.super_teams, list(team.super_teams))
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertFalse('&lt;hidden&gt;' in superteams)
+        self.assertEqual(
+            '<a href="/~private-team" class="sprite team">Private Team</a>',
+            str(superteams.findNext('a')))
