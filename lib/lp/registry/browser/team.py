@@ -1538,7 +1538,10 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         # do not want them to see this link because it is for Lp admins
         # and registry experts.
         checker = ModerateByRegistryExpertsOrAdmins(self)
-        enabled = checker.checkAuthenticated(IPersonRoles(self.user))
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = checker.checkAuthenticated(IPersonRoles(self.user))
         summary = 'Administer this team on behalf of a user'
         return Link(target, text, summary, icon='edit', enabled=enabled)
 

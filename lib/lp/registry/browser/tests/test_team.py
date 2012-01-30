@@ -456,6 +456,13 @@ class TestTeamMenu(TestCaseWithFactory):
             ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave'),
             menu.links)
 
+    def test_TeamIndexMenu_anonymous(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
     def test_TeamIndexMenu_owner(self):
         login_person(self.team.teamowner)
         view = create_view(self.team, '+index')
