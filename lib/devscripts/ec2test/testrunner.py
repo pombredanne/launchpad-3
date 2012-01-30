@@ -330,12 +330,12 @@ class EC2TestRunner:
             as_user(
                 "sudo mkdir -p %s && sudo mount -t tmpfs none %s" % (d, d))
         as_user(
-            "sudo service postgresql-8.4 stop"
+            "sudo service postgresql stop"
             "; sudo mv /var/lib/postgresql /tmp/postgresql-tmp"
             "&& sudo mkdir /var/lib/postgresql"
             "&& sudo mount -t tmpfs none /var/lib/postgresql"
             "&& sudo mv /tmp/postgresql-tmp/* /var/lib/postgresql"
-            "&& sudo service postgresql-8.4 start")
+            "&& sudo service postgresql start")
         as_user("sudo add-apt-repository ppa:bzr")
         as_user("sudo add-apt-repository ppa:launchpad")
         as_user("sudo aptitude update")
