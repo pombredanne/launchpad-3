@@ -1341,6 +1341,38 @@ class IBranchSet(Interface):
             eager load related objects (products, code imports etc).
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose branch visibility is being "
+                    "checked."),
+            schema=IPerson),
+        branch_names=List(value_type=Text(),
+            title=_('List of branch unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBranchVisibilityInfo(user, person, branch_names):
+        """Can this person see the specified named branches?
+
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param person: The person whose branch visibility we wish to check.
+        :param branch_names: The unique names of the branches to check. If any
+            of the branch names are invalid or not visible to user, then we
+            return an empty dict.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        invisible_branches: a list of the unique names of the branches which
+        the specified person cannot see (so long as all branch_names are
+        visible to the specified user).
+
+        This API call is provided for use by the client Javascript. It is not
+        designed to efficiently scale to handle requests for large numbers of
+        branches.
+        """
+
 
 class IBranchListingQueryOptimiser(Interface):
     """Interface for a helper utility to do efficient queries for branches.
