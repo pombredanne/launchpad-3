@@ -74,26 +74,3 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
-
-
-class TestPersonWebService(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getBranchVisibilityInfo(self):
-        """Test the test_getBranchVisibilityInfo API."""
-        self.factory.makePerson(name='fred')
-        owner = self.factory.makePerson()
-        visible_branch = self.factory.makeBranch()
-        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
-        invisible_name = removeSecurityProxy(invisible_branch).unique_name
-        branches = [
-            visible_branch.unique_name,
-            invisible_name]
-        endInteraction()
-
-        lp = launchpadlib_for("test", person=owner)
-        person = lp.people['fred']
-        info = person.getBranchVisibilityInfo(branch_names=branches)
-        self.assertEqual('Fred', info['person_name'])
-        self.assertEqual([invisible_name], info['invisible_branches'])

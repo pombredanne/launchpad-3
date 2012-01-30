@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
+from zope.security.interfaces import Unauthorized
 
 __metaclass__ = type
 __all__ = [
@@ -1411,6 +1412,28 @@ class BranchSet:
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
         return branches
+
+    def getBranchVisibilityInfo(self, user, person, branch_names):
+        """See `IBranchSet`."""
+        if user is None:
+            return dict()
+        branch_set = getUtility(IBranchLookup)
+        invisible_branches = []
+        for name in branch_names:
+            branch = branch_set.getByUniqueName(name)
+            # If any branch name is invalid, because it can't be seen by the
+            # current logged in user for example, we return nothing to avoid
+            # leaking information by confirming a branch's existence.
+            try:
+                if branch is None or not branch.visibleByUser(user):
+                    return dict()
+            except Unauthorized:
+                return dict()
+            if not branch.visibleByUser(person):
+                invisible_branches.append(branch.unique_name)
+        return {
+            'person_name': person.displayname,
+            'invisible_branches': invisible_branches}
 
 
 def update_trigger_modified_fields(branch):
