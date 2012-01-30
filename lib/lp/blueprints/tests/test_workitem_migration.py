@@ -70,6 +70,50 @@ class TestWorkItemParser(TestCase):
             WorkItemParseError, parser.parse_blueprint_workitem,
             " : TODO")
 
+    def test_parse_line_with_completed_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: Completed")
+        self.assertEqual(
+            [None, "A single work item", SpecificationWorkItemStatus.DONE],
+            [assignee, description, status])
+
+    def test_parse_line_with_inprogress_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: INPROGRESS")
+        self.assertEqual(
+            [None, "A single work item",
+             SpecificationWorkItemStatus.INPROGRESS],
+            [assignee, description, status])
+
+    def test_parse_line_with_postpone_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: POSTPONE")
+        self.assertEqual(
+            [None, "A single work item",
+             SpecificationWorkItemStatus.POSTPONED],
+            [assignee, description, status])
+
+    def test_parse_line_with_drop_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: DROP")
+        self.assertEqual(
+            [None, "A single work item",
+             SpecificationWorkItemStatus.POSTPONED],
+            [assignee, description, status])
+
+    def test_parse_line_with_dropped_status(self):
+        parser = WorkitemParser(FakeSpecification())
+        assignee, description, status = parser.parse_blueprint_workitem(
+            "A single work item: DROPPED")
+        self.assertEqual(
+            [None, "A single work item",
+             SpecificationWorkItemStatus.POSTPONED],
+            [assignee, description, status])
+
     def test_parse_empty_line(self):
         parser = WorkitemParser(FakeSpecification())
         self.assertRaises(
