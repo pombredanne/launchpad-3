@@ -95,6 +95,7 @@ from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.person import (
     CommonMenuLinks,
+    PersonAdministerView,
     PersonIndexView,
     PersonNavigation,
     PersonRenameFormMixin,
@@ -353,6 +354,12 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class TeamAdministerView(PersonAdministerView):
+    """A view to administer teams on behalf of users."""
+    label = "Review team"
+    default_field_names = ['name', 'displayname']
 
 
 def generateTokenAndValidationEmail(email, team):
