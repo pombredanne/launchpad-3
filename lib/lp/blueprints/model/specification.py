@@ -50,9 +50,6 @@ from lp.blueprints.enums import (
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
-from lp.blueprints.interfaces.specificationworkitem import (
-    ISpecificationWorkItem,
-    )
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
@@ -66,6 +63,7 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -85,7 +83,6 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -1026,23 +1023,6 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
-
-
-class SpecificationWorkItem(SQLBase):
-    implements(ISpecificationWorkItem)
-
-    title = StringCol(notNull=True)
-    specification = ForeignKey(foreignKey='Specification', notNull=True)
-    assignee = ForeignKey(
-        notNull=False, foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
-    milestone = ForeignKey(
-        foreignKey='Milestone', notNull=False, default=None)
-    status = EnumCol(
-        schema=SpecificationWorkItemStatus,
-        notNull=True, default=SpecificationWorkItemStatus.TODO)
-    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    deleted = BoolCol(notNull=True, default=False)
 
 
 class WorkItemParseError(Exception):
