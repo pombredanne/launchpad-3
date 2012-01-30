@@ -132,6 +132,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
@@ -139,6 +140,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
@@ -1536,6 +1538,20 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         summary = 'Change the owner of the team'
         return Link(target, text, summary, icon='edit')
 
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        # Team owners and admins have launchpad.Moderate on ITeam, but we
+        # do not want them to see this link because it is for Lp admins
+        # and registry experts.
+        checker = ModerateByRegistryExpertsOrAdmins(self)
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = checker.checkAuthenticated(IPersonRoles(self.user))
+        summary = 'Administer this team on behalf of a user'
+        return Link(target, text, summary, icon='edit', enabled=enabled)
+
     @enabled_with_permission('launchpad.Moderate')
     def delete(self):
         target = '+delete'
@@ -2181,7 +2197,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'delete', 'join', 'add_my_teams', 'leave')
+    links = ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):
