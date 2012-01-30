@@ -1,4 +1,5 @@
-= PPA package deletion =
+PPA package deletion
+====================
 
 The PPA 'Delete packages' view allows users to delete packages form
 their PPAs via the web UI. Only the owner of the PPA and Launchpad
@@ -307,7 +308,8 @@ message is presented.
     ...
     This PPA does not contain any source packages published.
 
-== Removing source partially deleted ==
+Removing source partially deleted
+---------------------------------
 
 The 'delete-packages' interface should allow users to enforce removal
 of packages partially removed or superseded. It happens, for instance,
@@ -470,7 +472,7 @@ section is omitted, however the source and binary files can be
 downloaded from librarian.
 
 Please note also how the deletion comment is diplayed in its entirety as
-opposed to being truncated after the fisrt 20 characters.
+opposed to being truncated after the first 20 characters.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
@@ -488,7 +490,8 @@ opposed to being truncated after the fisrt 20 characters.
     >>> print extract_text(anon_browser.contents)
     Publishing details
     Deleted ... ago by No Privileges Person
-    Deletion of a number of base pairs that is not evenly divisible by three will lead to a frameshift mutation.
+    Deletion of a number of base pairs that is not evenly divisible by three
+    will lead to a frameshift mutation.
     Changelog
     Builds
       i386
