@@ -54,6 +54,7 @@ class TestBranchOperations(TestCaseWithFactory):
         self.factory.makePerson(name='fred')
         owner = self.factory.makePerson()
         visible_branch = self.factory.makeBranch()
+        visible_name = visible_branch.unique_name
         invisible_branch = self.factory.makeBranch(owner=owner, private=True)
         invisible_name = removeSecurityProxy(invisible_branch).unique_name
         branches = [
@@ -66,7 +67,7 @@ class TestBranchOperations(TestCaseWithFactory):
         info = lp.branches.getBranchVisibilityInfo(
             person=person, branch_names=branches)
         self.assertEqual('Fred', info['person_name'])
-        self.assertEqual([invisible_name], info['invisible_branches'])
+        self.assertEqual([visible_name], info['visible_branches'])
 
 
 class TestBranchDeletes(TestCaseWithFactory):

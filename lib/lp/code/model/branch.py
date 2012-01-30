@@ -1418,22 +1418,20 @@ class BranchSet:
         if user is None:
             return dict()
         branch_set = getUtility(IBranchLookup)
-        invisible_branches = []
+        visible_branches = []
         for name in branch_names:
             branch = branch_set.getByUniqueName(name)
-            # If any branch name is invalid, because it can't be seen by the
-            # current logged in user for example, we return nothing to avoid
-            # leaking information by confirming a branch's existence.
             try:
-                if branch is None or not branch.visibleByUser(user):
-                    return dict()
+                if (branch is not None
+                        and branch.visibleByUser(user)
+                        and branch.visibleByUser(person)):
+                    visible_branches.append(branch.unique_name)
             except Unauthorized:
-                return dict()
-            if not branch.visibleByUser(person):
-                invisible_branches.append(branch.unique_name)
+                # We don't include branches user cannot see.
+                pass
         return {
             'person_name': person.displayname,
-            'invisible_branches': invisible_branches}
+            'visible_branches': visible_branches}
 
 
 def update_trigger_modified_fields(branch):

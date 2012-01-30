@@ -67,7 +67,7 @@ class TestBranchSet(TestCaseWithFactory):
         info = BranchSet().getBranchVisibilityInfo(
             person, person, branch_names=[])
         self.assertEqual('Fred', info['person_name'])
-        self.assertEqual([], info['invisible_branches'])
+        self.assertEqual([], info['visible_branches'])
 
     def test_getBranchVisibilityInfo(self):
         """Test the test_getBranchVisibilityInfo API."""
@@ -84,13 +84,14 @@ class TestBranchSet(TestCaseWithFactory):
         info = BranchSet().getBranchVisibilityInfo(
             owner, person, branch_names=branches)
         self.assertEqual('Fred', info['person_name'])
-        self.assertEqual([invisible_name], info['invisible_branches'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])
 
     def test_getBranchVisibilityInfo_unauthorised_user(self):
         """Test the test_getBranchVisibilityInfo API.
 
-        If the user making the API request cannot see any of the branch names,
-        then no visibility information is available at all.
+        If the user making the API request cannot see one of the branches,
+        that branch is not included in the results.
         """
         person = self.factory.makePerson(name='fred')
         owner = self.factory.makePerson()
@@ -105,7 +106,9 @@ class TestBranchSet(TestCaseWithFactory):
         login_person(someone)
         info = BranchSet().getBranchVisibilityInfo(
             someone, person, branch_names=branches)
-        self.assertEqual({}, info)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])
 
     def test_getBranchVisibilityInfo_anonymous(self):
         """Test the test_getBranchVisibilityInfo API.
@@ -126,8 +129,7 @@ class TestBranchSet(TestCaseWithFactory):
     def test_getBranchVisibilityInfo_invalid_branch_name(self):
         """Test the test_getBranchVisibilityInfo API.
 
-        If there is an invalid branch name specified, no visibility info is
-        available, even if other valid branch names are specified.
+        If there is an invalid branch name specified, it is not included.
         """
         person = self.factory.makePerson(name='fred')
         owner = self.factory.makePerson()
@@ -139,4 +141,6 @@ class TestBranchSet(TestCaseWithFactory):
         login_person(owner)
         info = BranchSet().getBranchVisibilityInfo(
             owner, person, branch_names=branches)
-        self.assertEqual({}, info)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual(
+            [visible_branch.unique_name], info['visible_branches'])
