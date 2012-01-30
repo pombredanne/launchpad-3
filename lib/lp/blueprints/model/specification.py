@@ -1009,3 +1009,19 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
+    implements(ISpecificationWorkItem)
+
+    _table = 'SpecificationWorkItem'
+
+    # XXX id
+    # XXX title
+    specification = ForeignKey(dbName='specification',
+        foreignKey='Specification', notNull=True)
+    assignee = ForeignKey(dbName='assignee', notNull=False,
+        foreignKey='Person',
+        storm_validator=validate_public_person, default=None)
+    status = ForeignKey(dbName='status',
+        foreignKey='SpecificationWorkItemStatus', notNull=True,
+                        default=SpecificationWorkItemStatus.UNKNOWN)
+    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    # XXX deleted
