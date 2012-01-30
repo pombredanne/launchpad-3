@@ -375,7 +375,7 @@ Then delete the 'source2' package.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     source2 666 in breezy-autotest
     Deletion comment: Bug 184490
 
