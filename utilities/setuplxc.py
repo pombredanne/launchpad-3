@@ -113,7 +113,7 @@ def bzr_whois(user):
     with su(user):
         try:
             whoami = subprocess.check_output(['bzr', 'whoami'])
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, OSError):
             return None
     return parseaddr(whoami)
 
@@ -235,11 +235,28 @@ def get_user_ids(user):
     return userdata.pw_uid, userdata.pw_gid
 
 
-def ssh(location, user=None):
+def ssh(location, user=None, caller=subprocess.call):
     """Return a callable that can be used to run ssh shell commands.
 
     The ssh `location` and, optionally, `user` must be given.
     If the user is None then the current user is used for the connection.
+
+    The callable internally uses the given `caller`::
+
+        >>> def caller(cmd):
+        ...     print cmd
+        >>> sshcall = ssh('example.com', 'myuser', caller=caller)
+        >>> root_sshcall = ssh('example.com', caller=caller)
+        >>> sshcall('ls -l') # doctest: +ELLIPSIS
+        ('ssh', '-t', ..., 'myuser@example.com', '--', 'ls -l')
+        >>> root_sshcall('ls -l') # doctest: +ELLIPSIS
+        ('ssh', '-t', ..., 'example.com', '--', 'ls -l')
+
+    If the ssh command exits with an error code, an `SSHError` is raised::
+
+        >>> ssh('loc', caller=lambda cmd: 1)('ls -l') # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        SSHError: ...
     """
     if user is not None:
         location = '{}@{}'.format(user, location)
@@ -253,7 +270,7 @@ def ssh(location, user=None):
             location,
             '--', cmd,
             )
-        if subprocess.call(sshcmd):
+        if caller(sshcmd):
             raise SSHError('Error running command: ' + ' '.join(sshcmd))
 
     return _sshcall
@@ -505,7 +522,16 @@ def handle_directories(namespace):
         >>> handle_directories(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: argument directory ...
+
+    The validation fails if the directory contains spaces::
+
+        >>> namespace = argparse.Namespace(directory='my directory')
+        >>> handle_directories(namespace) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: argument directory ...
     """
+    if ' ' in namespace.directory:
+        raise ValidationError('argument directory can not contain spaces.')
     for attr in ('directory', 'dependencies_dir'):
         directory = getattr(
             namespace, attr).replace('~', namespace.home_dir)
@@ -706,10 +732,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode {}/sourcecode'.format(
+        'cd {} && utilities/update-sourcecode "{}/sourcecode"'.format(
         checkout_dir, dependencies_dir))
     sshcall(
-        'cd {} && utilities/link-external-sourcecode {}'.format(
+        'cd {} && utilities/link-external-sourcecode "{}"'.format(
         checkout_dir, dependencies_dir))
     # Create Apache document roots, to avoid warnings.
     sshcall(' && '.join('mkdir -p {}'.format(i) for i in LP_APACHE_ROOTS))
