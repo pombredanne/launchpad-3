@@ -42,7 +42,7 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
-CONVOY_ROOT=/var/tmp/convoy
+CONVOY_ROOT?=/var/tmp/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 

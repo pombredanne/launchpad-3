@@ -37,7 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
-      combo_url string:/+combo/rev${revno};
+      combo_url view/combo_url;
       devmode modules/lp.services.config/config/devmode;
       yui_version view/yui_version;
       yui_console_debug view/yui_console_debug;"
