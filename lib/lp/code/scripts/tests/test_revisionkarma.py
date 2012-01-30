@@ -16,6 +16,7 @@ from lp.services.config import config
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -51,7 +52,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
@@ -76,7 +77,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
@@ -115,8 +116,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
         # Commit and switch to the script db user.
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()

@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+import contextlib
+from lazr.restful.interfaces import IJSONRequestCache
+import simplejson
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -21,11 +24,13 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.browser.team import TeamMailingListArchiveView
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -169,9 +174,9 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         self.acceptTeam(self.super_team, successful, failed)
 
 
-class TestTeamEditView(TestCaseWithFactory):
+class TestTeamPersonRenameFormMixin:
 
-    layer = LaunchpadFunctionalLayer
+    view_name = None
 
     def test_cannot_rename_team_with_active_ppa(self):
         # A team with an active PPA that contains publications cannot be
@@ -182,7 +187,7 @@ class TestTeamEditView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
@@ -197,7 +202,7 @@ class TestTeamEditView(TestCaseWithFactory):
         removeSecurityProxy(archive).status = ArchiveStatus.DELETED
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
@@ -207,7 +212,7 @@ class TestTeamEditView(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has a mailing list and may not be renamed.',
@@ -222,7 +227,7 @@ class TestTeamEditView(TestCaseWithFactory):
         team_list.transitionToStatus(MailingListStatus.INACTIVE)
         team_list.purge()
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_multiple_reasons(self):
@@ -236,12 +241,18 @@ class TestTeamEditView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
                 'a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
+
+
+class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+edit'
 
     def test_edit_team_view_permission(self):
         # Only an administrator or the team owner of a team can
@@ -433,6 +444,29 @@ class TestTeamEditView(TestCaseWithFactory):
             view.errors[0].doc())
 
 
+class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
+                                  TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+review'
+
+    def test_init_admin(self):
+        # An admin sees all the fields.
+        team = self.factory.makeTeam()
+        login_celebrity('admin')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual('Review team', view.label)
+        self.assertEqual(
+            ['name', 'displayname'], view.field_names)
+
+    def test_init_registry_expert(self):
+        # Registry experts do not see the the displayname field.
+        team = self.factory.makeTeam()
+        login_celebrity('registry_experts')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual(['name'], view.field_names)
+
+
 class TestTeamMenu(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -459,6 +493,43 @@ class TestTeamMenu(TestCaseWithFactory):
         self.assertEqual(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
+
+
+class TestMailingListArchiveView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_messages(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        view = create_view(team, name='+mailing-list-archive')
+        messages = IJSONRequestCache(view.request).objects['mail']
+        self.assertEqual(0, len(messages))
+
+    @contextlib.contextmanager
+    def _override_messages(self, view_class, messages):
+        def _message_shim(self):
+            return simplejson.loads(messages)
+        tmp = TeamMailingListArchiveView._get_messages
+        TeamMailingListArchiveView._get_messages = _message_shim
+        yield TeamMailingListArchiveView
+        TeamMailingListArchiveView._get_messages = tmp
+
+    def test_messages_are_in_json(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        messages = '''[{
+            "headers": {
+                "To": "somelist@example.com",
+                "From": "someguy@example.com",
+                "Subject": "foobar"},
+            "message_id": "foo"}]'''
+
+        with self._override_messages(TeamMailingListArchiveView, messages):
+            view = create_view(team, name='+mailing-list-archive')
+            messages = IJSONRequestCache(view.request).objects['mail']
+            self.assertEqual(1, len(messages))
+            self.assertEqual('foo', messages[0]['message_id'])
 
 
 class TestModeration(TestCaseWithFactory):

@@ -21,10 +21,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
-  <head tal:define="
-    yui string:${icingroot}/yui/current/build;
-    lazr_js string:${icingroot}/lazr/build;
-    lp_js string:${icingroot}/build">
+  <head>
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <link
@@ -209,7 +206,7 @@
     replace='structure string:&lt;script type="text/javascript"&gt;
   start_ajax_logging();
   var render_time = "${render_time}";
-  LPS.use("node", function(Y) {
+  YUI().use("node", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");
       node.set("innerHTML", render_time);
