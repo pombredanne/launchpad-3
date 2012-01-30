@@ -1217,8 +1217,9 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
             messages.append(structured('<br/>%s', source.displayname))
         messages.append(structured(
             '</p>\n<p>Deletion comment: %s</p>', comment))
-        notification = '\n'.join([msg.escapedtext for msg in messages])
-        self.request.response.addNotification(structured(notification))
+        notification = structured(
+            '\n'.join([msg.escapedtext for msg in messages]))
+        self.request.response.addNotification(notification)
 
         self.setNextURL()
 
