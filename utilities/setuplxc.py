@@ -52,7 +52,10 @@ LP_CHECKOUT = 'devel'
 LP_DEB_DEPENDENCIES = (
     'bzr launchpad-developer-dependencies apache2 '
     'apache2-mpm-worker libapache2-mod-wsgi')
-LP_REPOSITORY = 'lp:launchpad'
+LP_REPOSITORIES = (
+    'http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel',
+    'lp:launchpad',
+    )
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
@@ -607,6 +610,17 @@ def initialize_host(
     # Create the user (if he does not exist).
     if not user_exists(user):
         subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
+    # Generate user ssh keys if none are supplied.
+    valid_ssh_keys = True
+    if private_key is None:
+        with su(user) as env:
+            subprocess.call([
+                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
+                '-f', '~/.ssh/id_rsa'])
+            ssh_dir = os.path.join(env.home, '.ssh')
+            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
+            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
+            valid_ssh_keys = False
     # Generate root ssh keys if they do not exist.
     if not os.path.exists('/root/.ssh/id_rsa.pub'):
         subprocess.call([
@@ -637,7 +651,8 @@ def initialize_host(
         # Set up bzr and Launchpad authentication.
         subprocess.call([
             'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
-        subprocess.call(['bzr', 'lp-login', lpuser])
+        if valid_ssh_keys:
+            subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -646,7 +661,7 @@ def initialize_host(
     # bzr branch does not work well with seteuid.
     subprocess.call([
         'su', '-', user, '-c',
-        'bzr branch {} "{}"'.format(LP_REPOSITORY, checkout_dir)])
+        'bzr branch {} "{}"'.format(LP_REPOSITORIES[valid_ssh_keys], checkout_dir)])
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
