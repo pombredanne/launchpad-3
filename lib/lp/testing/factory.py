@@ -2113,9 +2113,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if specification is None:
             specification = self.makeSpecification()
-        work_item = specification.newWorkItem(title=title, status=status,
-                                              assignee=assignee,
-                                              milestone=milestone)
+        work_item = removeSecurityProxy(specification).newWorkItem(
+            title=title, status=status, assignee=assignee, milestone=milestone)
         work_item.deleted = deleted
         return work_item
 
