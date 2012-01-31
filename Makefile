@@ -143,7 +143,7 @@ inplace: build logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-build: compile apidoc jsbuild css_combine sprite_image
+build: compile apidoc jsbuild combobuild css_combine sprite_image
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
