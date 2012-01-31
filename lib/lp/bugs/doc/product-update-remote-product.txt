@@ -129,34 +129,20 @@ arbitrary bug watch will be retrieved, and queried for its remote
 product. Products having a bug tracker of a different type than the
 given one are ignored.
 
-    >>> import transaction
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_updateremoteproduct():
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.updateremoteproduct.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(), BufferLogger())
 
-    >>> switch_db_to_launchpad()
-
-    >>> bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
-    >>> bugzilla_bugwatch = factory.makeBugWatch(
-    ...     '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
-    >>> bugzilla_bugtask.bugwatch = bugzilla_bugwatch
-    >>> rt_bugtask = factory.makeBugTask(target=rt_product)
-    >>> rt_bugwatch = factory.makeBugWatch(
-    ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
-    >>> rt_bugtask.bugwatch = rt_bugwatch
-
-    >>> switch_db_to_updateremoteproduct()
+    >>> with lp_dbuser():
+    ...     bugzilla_bugtask = factory.makeBugTask(target=bugzilla_product)
+    ...     bugzilla_bugwatch = factory.makeBugWatch(
+    ...         '42', bugtracker=bugzilla, bug=bugzilla_bugtask.bug)
+    ...     bugzilla_bugtask.bugwatch = bugzilla_bugwatch
+    ...     rt_bugtask = factory.makeBugTask(target=rt_product)
+    ...     rt_bugwatch = factory.makeBugWatch(
+    ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
+    ...     rt_bugtask.bugwatch = rt_bugwatch
 
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].
@@ -173,18 +159,15 @@ remote_product already set
 
 If a product already has remote_product set, it will not be updated.
 
-    >>> switch_db_to_launchpad()
-
-    >>> rt_product = factory.makeProduct(official_malone=False)
-    >>> rt = factory.makeBugTracker(
-    ...     bugtrackertype=BugTrackerType.RT)
-    >>> rt_product.bugtracker = rt
-    >>> rt_bugtask = factory.makeBugTask(target=rt_product)
-    >>> rt_bugwatch = factory.makeBugWatch(
-    ...     '84', bugtracker=rt, bug=rt_bugtask.bug)
-    >>> rt_bugtask.bugwatch = rt_bugwatch
-
-    >>> switch_db_to_updateremoteproduct()
+    >>> with lp_dbuser():
+    ...     rt_product = factory.makeProduct(official_malone=False)
+    ...     rt = factory.makeBugTracker(
+    ...         bugtrackertype=BugTrackerType.RT)
+    ...     rt_product.bugtracker = rt
+    ...     rt_bugtask = factory.makeBugTask(target=rt_product)
+    ...     rt_bugwatch = factory.makeBugWatch(
+    ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
+    ...     rt_bugtask.bugwatch = rt_bugwatch
 
     >>> rt_product.remote_product = u'already-set'
     >>> updater = NoNetworkRemoteProductUpdater(
@@ -200,19 +183,16 @@ Transaction handling
 To avoid long-running write transactions, the transaction is committed
 after each product's remote_product has been updated.
 
-    >>> switch_db_to_launchpad()
-
-    >>> for index in range(3):
-    ...     rt_product = factory.makeProduct(official_malone=False)
-    ...     rt = factory.makeBugTracker(
-    ...         bugtrackertype=BugTrackerType.RT)
-    ...     rt_product.bugtracker = rt
-    ...     rt_bugtask = factory.makeBugTask(target=rt_product)
-    ...     rt_bugwatch = factory.makeBugWatch(
-    ...         '84', bugtracker=rt, bug=rt_bugtask.bug)
-    ...     rt_bugtask.bugwatch = rt_bugwatch
-
-    >>> switch_db_to_updateremoteproduct()
+    >>> with lp_dbuser():
+    ...     for index in range(3):
+    ...         rt_product = factory.makeProduct(official_malone=False)
+    ...         rt = factory.makeBugTracker(
+    ...             bugtrackertype=BugTrackerType.RT)
+    ...         rt_product.bugtracker = rt
+    ...         rt_bugtask = factory.makeBugTask(target=rt_product)
+    ...         rt_bugwatch = factory.makeBugWatch(
+    ...             '84', bugtracker=rt, bug=rt_bugtask.bug)
+    ...         rt_bugtask.bugwatch = rt_bugwatch
 
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(log_calls=True), BufferLogger())
@@ -234,17 +214,15 @@ updateByBugTrackerType() will simply log the error and then continue.
 This is a simplistic approach but it means that problems with one bug
 tracker don't break the run for all bug trackers.
 
-    >>> switch_db_to_launchpad()
+    >>> with lp_dbuser():
+    ...     new_rt_product = factory.makeProduct(
+    ...         name='fooix', official_malone=False)
+    ...     new_rt_product.bugtracker = rt
+    ...     new_rt_bugtask = factory.makeBugTask(target=new_rt_product)
+    ...     new_rt_bugwatch = factory.makeBugWatch(
+    ...         '42', bugtracker=rt, bug=new_rt_bugtask.bug)
+    ...     new_rt_bugtask.bugwatch = new_rt_bugwatch
 
-    >>> new_rt_product = factory.makeProduct(
-    ...     name='fooix', official_malone=False)
-    >>> new_rt_product.bugtracker = rt
-    >>> new_rt_bugtask = factory.makeBugTask(target=new_rt_product)
-    >>> new_rt_bugwatch = factory.makeBugWatch(
-    ...     '42', bugtracker=rt, bug=new_rt_bugtask.bug)
-    >>> new_rt_bugtask.bugwatch = new_rt_bugwatch
-
-    >>> switch_db_to_updateremoteproduct()
     >>> from lp.bugs.externalbugtracker.base import (
     ...     BugNotFound, BugWatchUpdateError)
     >>> class BrokenOnInitExternalBugTracker(

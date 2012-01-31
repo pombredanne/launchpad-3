@@ -805,7 +805,7 @@ will only be sent to the team administrators.
     Subject: Membership change: jdub in ubuntu-team
     <BLANKLINE>
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
-    (ubuntu-team) was changed by the user himself from Administrator to
+    (ubuntu-team) was changed by the user from Administrator to
     Approved.
     <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------

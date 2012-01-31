@@ -1140,11 +1140,23 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListArchiveView"
+            permission="zope.Public"
+            name="+mailing-list-archive"
+            template="../templates/team-mailinglist-archive.pt"/>
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamEditView"
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
+        <browser:page
+            name="+review"
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamAdministerView"
+            permission="launchpad.Moderate"
+            template="../templates/person-review.pt"/>
         <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"

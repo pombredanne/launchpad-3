@@ -304,6 +304,18 @@
 
 
   <securedutility
+    name="AllUserTeamsParticipationPlusSelf"
+    component="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.AllUserTeamsParticipationPlusSelfVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+  <securedutility
     name="ActiveMailingList"
     component="lp.registry.vocabularies.ActiveMailingListVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
