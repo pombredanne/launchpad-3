@@ -41,7 +41,7 @@ class ISpecificationWorkItem(Interface):
             "The person responsible for implementing the work item."),
         vocabulary='ValidPersonOrTeam')
 
-    datecreated = Datetime(
+    date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
     milestone = Choice(

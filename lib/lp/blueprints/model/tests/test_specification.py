@@ -10,7 +10,11 @@ from testtools.matchers import Equals
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    ANONYMOUS,
+    login,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -132,3 +136,27 @@ class TestSpecificationValidation(TestCaseWithFactory):
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
+
+class TestSpecificationWorkItems(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_newworkitem_anon(self):
+        spec = self.factory.makeSpecification()
+        login(ANONYMOUS)
+        # XXX doesn't seem to work, get ForbiddenAttribute
+        e = self.assertRaises(Exception, spec.newWorkitem,
+            'new-work-item')
+        self.assertEqual(
+            '%s' % ('error'), str(e))
+        
+        self.fail()
+
+    def test_newworkitem_owner(self):
+        spec = self.factory.makeSpecification()
+        login(spec.owner)
+        title = 'new-work-item'
+        # XXX still get ForbiddenAttribute error here
+        work_item = spec.newWorkitem(title)
+        self.assertThat(work_item.title, Equals(title))
+
