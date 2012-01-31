@@ -472,15 +472,17 @@ def handle_ssh_keys(namespace):
         >>> namespace.public_key == public.decode('string-escape')
         True
 
-    The validation fails if keys are not provided and can not be found
-    in the current home directory::
+    Keys are None if they are not provided and can not be found in the
+    current home directory::
 
         >>> namespace = argparse.Namespace(
-        ...     private_key=private, public_key=None,
+        ...     private_key=None, public_key=None,
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ValidationError: argument public_key ...
+        >>> print namespace.private_key
+        None
+        >>> print namespace.public_key
+        None
     """
     for attr, filename in (
         ('private_key', 'id_rsa'),
@@ -493,9 +495,7 @@ def handle_ssh_keys(namespace):
             try:
                 value = open(path).read()
             except IOError:
-                raise ValidationError(
-                    'argument {} is required if the system user does not '
-                    'exists with SSH key pair set up.'.format(attr))
+                value = None
             setattr(namespace, attr, value)
 
 
