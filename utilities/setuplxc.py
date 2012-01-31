@@ -260,11 +260,17 @@ def ssh(location, user=None, caller=subprocess.call):
         >>> ssh('loc', caller=lambda cmd: 1)('ls -l') # doctest: +ELLIPSIS
         Traceback (most recent call last):
         SSHError: ...
+
+    If ignore_errors is set to True when executing the command, no error
+    will be raised, even if the command itself returns an error code.
+
+        >>> sshcall = ssh('loc', caller=lambda cmd: 1)
+        >>> sshcall('ls -l', ignore_errors=True)
     """
     if user is not None:
         location = '{}@{}'.format(user, location)
 
-    def _sshcall(cmd):
+    def _sshcall(cmd, ignore_errors=False):
         sshcmd = (
             'ssh',
             '-t',
@@ -273,7 +279,7 @@ def ssh(location, user=None, caller=subprocess.call):
             location,
             '--', cmd,
             )
-        if caller(sshcmd):
+        if caller(sshcmd) and not ignore_errors:
             raise SSHError('Error running command: ' + ' '.join(sshcmd))
 
     return _sshcall
@@ -614,17 +620,6 @@ def initialize_host(
     # Create the user (if he does not exist).
     if not user_exists(user):
         subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
-    # Generate user ssh keys if none are supplied.
-    valid_ssh_keys = True
-    if private_key is None:
-        with su(user) as env:
-            subprocess.call([
-                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
-                '-f', '~/.ssh/id_rsa'])
-            ssh_dir = os.path.join(env.home, '.ssh')
-            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
-            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
-            valid_ssh_keys = False
     # Generate root ssh keys if they do not exist.
     if not os.path.exists('/root/.ssh/id_rsa.pub'):
         subprocess.call([
@@ -636,6 +631,15 @@ def initialize_host(
         ssh_dir = os.path.join(env.home, '.ssh')
         if not os.path.exists(ssh_dir):
             os.makedirs(ssh_dir)
+        # Generate user ssh keys if none are supplied.
+        valid_ssh_keys = True
+        if private_key is None:
+            subprocess.call([
+                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
+                '-f', os.path.join(ssh_dir, 'id_rsa')])
+            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
+            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
+            valid_ssh_keys = False
         priv_file = os.path.join(ssh_dir, 'id_rsa')
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
@@ -747,7 +751,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall('adduser {} sudo'.format(user))
     pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
     gid = "`python -c '{}'`".format(pygetgid)
-    root_sshcall('addgroup --gid {} {}'.format(gid, user))
+    root_sshcall('addgroup --gid {} {}'.format(gid, user), ignore_errors=True)
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
