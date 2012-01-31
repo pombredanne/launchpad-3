@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2006-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug comment browser view classes."""
@@ -41,6 +41,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.comments.browser.comment import download_body
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -176,7 +178,7 @@ def group_comments_with_activity(comments, activities):
             yield [event for (kind, event) in window_group]
 
 
-class BugComment:
+class BugComment(MessageComment):
     """Data structure that holds all data pertaining to a bug comment.
 
     It keeps track of which index it has in the bug comment list and
@@ -194,6 +196,11 @@ class BugComment:
     def __init__(
             self, index, message, bugtask, activity=None,
             show_spam_controls=False, user=None, display='full'):
+        if display == 'truncate':
+            comment_limit = config.malone.max_comment_size
+        else:
+            comment_limit = None
+        super(BugComment, self).__init__(comment_limit)
 
         self.index = index
         self.bugtask = bugtask
@@ -216,10 +223,6 @@ class BugComment:
         if bool(getFeatureFlag(flag)):
             user_owns_comment = user is not None and user == self.owner
         self.show_spam_controls = show_spam_controls or user_owns_comment
-        if display == 'truncate':
-            self.comment_limit = config.malone.max_comment_size
-        else:
-            self.comment_limit = None
         self.hide_text = (display == 'hide')
 
     @cachedproperty
@@ -239,28 +242,12 @@ class BugComment:
         """
         return not self.visible
 
-    @property
-    def needs_truncation(self):
-        if self.comment_limit is None:
-            return False
-        return len(self.text_contents) > self.comment_limit
-
-    @property
-    def was_truncated(self):
-        return self.needs_truncation
-
     @cachedproperty
     def text_for_display(self):
         if self.hide_text:
             return ''
-        if not self.needs_truncation:
-            return self.text_contents
-        # Note here that we truncate at comment_limit, and not
-        # comment_limit - 3; while it would be nice to account for
-        # the ellipsis, this breaks down when the comment limit is
-        # less than 3 (which can happen in a testcase) and it makes
-        # counting the strings harder.
-        return "%s..." % self.text_contents[:self.comment_limit]
+        else:
+            return super(BugComment, self).text_for_display
 
     def isIdenticalTo(self, other):
         """Compare this BugComment to another and return True if they are
@@ -288,6 +275,10 @@ class BugComment:
     @property
     def add_comment_url(self):
         return canonical_url(self.bugtask, view_name='+addcomment')
+
+    @property
+    def download_url(self):
+        return canonical_url(self, view_name='+download')
 
     @property
     def show_footer(self):
@@ -347,6 +338,15 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+
+    def __call__(self):
+        """View redirects to +download if comment is too long to render."""
+        if self.comment.too_long_to_render:
+            return self.request.response.redirect(self.comment.download_url)
+        return super(BugCommentView, self).__call__()
+
+    def download(self):
+        return download_body(self.comment, self.request)
 
     @property
     def show_spam_controls(self):
