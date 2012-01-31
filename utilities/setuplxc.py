@@ -566,13 +566,17 @@ parser.add_argument(
 parser.add_argument(
     '-v', '--private-key',
     help='The SSH private key for the Launchpad user (without passphrase). '
-         'If the system user already exists with SSH key pair set up, '
-         'this argument can be omitted.')
+         'If this argument is omitted and a keypair is not found in the '
+         'home directory of the system user a new SSH keypair will be '
+         'generated and the checkout of the Launchpad code will use HTTP '
+         'rather than bzr+ssh.')
 parser.add_argument(
     '-b', '--public-key',
     help='The SSH public key for the Launchpad user. '
-         'If the system user already exists with SSH key pair set up, '
-         'this argument can be omitted.')
+         'If this argument is omitted and a keypair is not found in the '
+         'home directory of the system user a new SSH keypair will be '
+         'generated and the checkout of the Launchpad code will use HTTP '
+         'rather than bzr+ssh.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
