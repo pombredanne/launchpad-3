@@ -31,44 +31,10 @@
     <tal:chooseLink replace="structure view/chooseLink" />
     <script tal:content="structure string:
     YUI().use('node', 'lp.app.picker', function(Y) {
-        if (Y.UA.ie) {
-            return;
-        }
-
-        var picker = null;
         var config = ${view/json_config};
-        var vocabulary = config.vocabulary_name;
-        var vocabulary_filters = config.vocabulary_filters;
-        var input_element = config.input_element;
         var show_widget_id = '${view/show_widget_id}';
-        var connect_widget = function(show_widget_id) {
-            // Sort out the Choose... link.
-            var show_widget_node = Y.one('#' + show_widget_id);
-            if (!Y.Lang.isValue(show_widget_node) ) {
-                return;
-            }
-            // The node may already have been processed.
-            if (show_widget_node.hasClass('js-action')) {
-                return;
-            }
-            show_widget_node.set('innerHTML', 'Choose&hellip;');
-            show_widget_node.addClass('js-action');
-            show_widget_node.get('parentNode').removeClass('unseen');
-            show_widget_node.on('click', function (e) {
-                if (picker === null) {
-                    picker = Y.lp.app.picker.create(
-                        vocabulary, config, input_element,
-                        vocabulary_filters);
-                }
-                picker.show();
-                e.preventDefault();
-            });
-        };
-        Y.Global.on('lp.widget.connect.' + show_widget_id, function(e) {
-            connect_widget(show_widget_id);
-        });
         Y.on('domready', function(e) {
-            connect_widget(show_widget_id);
+            Y.lp.app.picker.addPicker(config, show_widget_id);
         });
     });
     "/>
