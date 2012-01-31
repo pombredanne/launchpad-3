@@ -39,7 +39,7 @@ class SpecificationWorkItem(SQLBase):
     status = EnumCol(
         schema=SpecificationWorkItemStatus,
         notNull=True, default=SpecificationWorkItemStatus.TODO)
-    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     deleted = BoolCol(notNull=True, default=False)
 
     def __repr__(self):
