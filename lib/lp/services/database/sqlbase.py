@@ -30,7 +30,6 @@ __all__ = [
 
 from datetime import datetime
 
-from lazr.restful.interfaces import IRepresentationCache
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -247,11 +246,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __ne__(self, other):
         """Inverse of __eq__."""
         return not (self == other)
-
-    def __storm_flushed__(self):
-        """Invalidate the web service cache."""
-        cache = getUtility(IRepresentationCache)
-        cache.delete(self)
 
     def __storm_invalidated__(self):
         """Flush cached properties."""

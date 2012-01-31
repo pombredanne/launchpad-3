@@ -177,6 +177,13 @@
             permission="launchpad.View"/>
         <browser:page
             for="lp.bugs.interfaces.bugmessage.IBugComment"
+            name="+download"
+            class="lp.bugs.browser.bugcomment.BugCommentView"
+            attribute="download"
+            permission="launchpad.View"
+        />
+        <browser:page
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxView"

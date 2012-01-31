@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -650,6 +650,10 @@
         <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+download"
+            attribute="download"
+        />
     </browser:pages>
     <browser:pages
         for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
@@ -666,6 +670,11 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
+    <adapter
+      provides="lp.services.messages.interfaces.message.IMessage"
+      for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+      factory="lp.code.browser.codereviewcomment.get_message"/>
+
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
         layer="lp.code.publisher.CodeLayer"

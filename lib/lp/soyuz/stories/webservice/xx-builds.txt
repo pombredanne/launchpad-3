@@ -105,7 +105,6 @@ same library file, so both can be verified.
 
     >>> build = getUtility(IBinaryPackageBuildSet).getByID(26)
     >>> build.upload_log = build.log
-    >>> ws_uncache(build)
 
     >>> logout()
 
