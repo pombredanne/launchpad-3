@@ -28,7 +28,7 @@ class TestCommentBodyDownloadView(TestCaseWithFactory):
 
     def test_anonymous_body_obfuscated(self):
         """For anonymous users, email addresses are obfuscated."""
-        output = self.view()
+        output = self.view('example@example.org')
         self.assertNotIn(output, 'example@example.org')
         self.assertIn(output, '<email address hidden>')
 
