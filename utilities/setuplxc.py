@@ -345,6 +345,8 @@ class ArgumentParser(argparse.ArgumentParser):
             if value:
                 if option_strings:
                     args.append(option_strings[0])
+                if isinstance(value, list):
+                    value = ','.join(value)
                 args.append(value)
         return args
 
