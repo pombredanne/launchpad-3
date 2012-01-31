@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ModerateByRegistryExpertsOrAdmins',
     ]
 
 from zope.component import (
