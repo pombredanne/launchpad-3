@@ -1152,6 +1152,12 @@
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
         <browser:page
+            name="+review"
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamAdministerView"
+            permission="launchpad.Moderate"
+            template="../templates/person-review.pt"/>
+        <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamBrandingView"
