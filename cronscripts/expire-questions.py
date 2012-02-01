@@ -34,7 +34,6 @@ class ExpireQuestions(LaunchpadCronScript):
     usage = "usage: %prog [options]"
     description =  __doc__
 
-
     def main(self):
         """Expire old questions."""
         janitor = QuestionJanitor(log=self.logger)
@@ -42,7 +41,7 @@ class ExpireQuestions(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = ExpireQuestions('expire-questions',
-        dbuser=config.answertracker.dbuser)
+    script = ExpireQuestions(
+        'expire-questions', dbuser='expire_questions')
     script.lock_and_run()
 
