@@ -686,6 +686,14 @@ def initialize_host(
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
+    # Disable the apparmor profiles for lxc so that we don't have
+    # problems installing postgres.
+    subprocess.call([
+        'ln', '-s',
+        '/etc/apparmor.d/usr.bin.lxc-start',
+        '/etc/apparmor.d/disable/'])
+    subprocess.call([
+        'apparmor_parser', '-R', '/etc/apparmor.d/usr.bin.lxc-start'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
     file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
