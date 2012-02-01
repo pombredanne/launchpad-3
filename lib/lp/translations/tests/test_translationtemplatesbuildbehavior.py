@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -24,7 +25,6 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -82,7 +82,9 @@ class MakeBehaviorMixin(object):
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
-            behavior._getChroot = lambda: lf
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            das = ubuntu.currentseries.nominatedarchindep
+            das.addOrUpdateChroot(lf)
         return behavior
 
     def makeProductSeriesWithBranchForTranslation(self):
@@ -111,6 +113,16 @@ class TestTranslationTemplatesBuildBehavior(
         job = removeSecurityProxy(behavior.buildfarmjob.job)
         return getUtility(IBuildQueueSet).getByJob(job.id)
 
+    def test_dispatchBuildToSlave_no_chroot_fails(self):
+        # dispatchBuildToSlave will fail if the chroot does not exist.
+        behavior = self.makeBehavior(use_fake_chroot=False)
+        buildqueue_item = self._getBuildQueueItem(behavior)
+
+        switch_dbuser(config.builddmaster.dbuser)
+        self.assertRaises(
+            CannotBuild, behavior.dispatchBuildToSlave, buildqueue_item,
+            logging)
+
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
         # method to be invoked.  The slave receives the URL of the
@@ -135,24 +147,6 @@ class TestTranslationTemplatesBuildBehavior(
                 branch_url,
                 behavior.buildfarmjob.branch.composePublicURL())
         return d.addCallback(got_dispatch)
-
-    def test_getChroot(self):
-        # _getChroot produces the current chroot for the current Ubuntu
-        # release, on the nominated architecture for
-        # architecture-independent builds.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        current_ubuntu = ubuntu.currentseries
-        distroarchseries = current_ubuntu.nominatedarchindep
-
-        # Set an arbitrary chroot file.
-        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
-        distroarchseries.addOrUpdateChroot(fake_chroot_file)
-
-        behavior = self.makeBehavior(use_fake_chroot=False)
-        chroot = behavior._getChroot()
-
-        self.assertNotEqual(None, chroot)
-        self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
         behavior = self.makeBehavior()
