@@ -20,7 +20,6 @@ __all__ = ['ExpireQuestions']
 import _pythonpath
 
 from lp.answers.scripts.questionexpiration import QuestionJanitor
-from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -32,7 +31,7 @@ class ExpireQuestions(LaunchpadCronScript):
     configured through config.answertracker.days_before_expiration.
     """
     usage = "usage: %prog [options]"
-    description =  __doc__
+    description = __doc__
 
     def main(self):
         """Expire old questions."""
@@ -44,4 +43,3 @@ if __name__ == '__main__':
     script = ExpireQuestions(
         'expire-questions', dbuser='expire_questions')
     script.lock_and_run()
-
