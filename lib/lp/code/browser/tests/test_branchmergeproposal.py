@@ -1163,6 +1163,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         self.assertThat(browser.contents, Not(has_read_more))
         self.assertEqual(mp_url, browser.url)
 
+
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
     """Confirm that the latest branch is returned."""
 
