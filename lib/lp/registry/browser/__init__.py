@@ -118,7 +118,7 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            YUI().use(
+            LPJS.use(
                 'node', 'lp.registry.milestoneoverlay',
                 'lp.registry.milestonetable',
                 function (Y) {
