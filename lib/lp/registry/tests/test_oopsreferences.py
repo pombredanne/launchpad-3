@@ -40,7 +40,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -54,7 +54,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -69,7 +69,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -84,7 +84,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set(),
@@ -97,7 +97,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -125,7 +125,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -142,7 +142,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
         self.failUnlessEqual(
@@ -160,7 +160,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "distribution=%(distribution)s",
             {'distribution': distro.id}))
         self.failUnlessEqual(
@@ -183,7 +183,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.failUnlessEqual(
-            set([oopsid.upper()]),
+            set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
         self.failUnlessEqual(
             set([]),

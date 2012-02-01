@@ -8,7 +8,7 @@
 from sys import argv
 
 
-yui_root = 'lib/canonical/launchpad/icing/yui'
+yui_root = 'build/js/yui/yui-3.3.0'
 yui_deps = [
     'yui/yui',
     'oop/oop',
