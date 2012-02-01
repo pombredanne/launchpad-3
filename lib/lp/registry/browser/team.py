@@ -973,7 +973,22 @@ class TeamMailingListArchiveView(LaunchpadView):
         # XXX: jcsackett 18-1-2012: This needs to be updated to use the
         # grackle client, once that is available, instead of returning
         # an empty list as it does now.
-        return simplejson.loads('[]')
+        messages = [
+            {'message-id': 'one',
+            'headers': {
+                'From': 'someguy@example.com',
+                'To': 'somelist@example.com',
+                'Subject': 'Stuff is broken'
+            },
+            'nested-messages': ['two']},
+            {'message-id': 'two',
+             'headers': {
+                'From': 'someotherguy@example.com',
+                'To': 'somelist@example.com',
+                'Subject': 'Re: Stuff is broken'
+             }}]
+        return messages
+        #return simplejson.loads('[]')
 
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
