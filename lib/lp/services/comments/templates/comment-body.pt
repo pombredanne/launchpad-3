@@ -3,13 +3,6 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <a tal:replace="structure view/download_link"
-     tal:condition="context/too_long">Download full text</a>
-  <div class="comment-text" itemprop="commentText" tal:content="structure
-      context/text_for_display/fmt:obfuscate-email/fmt:email-to-html" />
-  <tal:renderable condition="not: context/too_long_to_render">
-  <p tal:condition="context/too_long">
-    <a tal:attributes="href context/fmt:url">Read more...</a>
-  </p>
-  </tal:renderable >
+  <tal:message replace="structure context/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+
 </tal:root>

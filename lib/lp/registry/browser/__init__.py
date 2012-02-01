@@ -37,7 +37,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.services.webapp.publisher import (
     canonical_url,
-    DataDownloadView,
     LaunchpadView,
     )
 
@@ -119,7 +118,7 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            YUI().use(
+            LPJS.use(
                 'node', 'lp.registry.milestoneoverlay',
                 'lp.registry.milestonetable',
                 function (Y) {
@@ -272,15 +271,17 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class BaseRdfView(DataDownloadView):
+class BaseRdfView:
     """A view that sets its mime-type to application/rdf+xml."""
 
     template = None
     filename = None
 
-    content_type = 'application/rdf+xml'
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
-    def getBody(self):
+    def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
 
         Render the page template to produce RDF output.
@@ -288,6 +289,10 @@ class BaseRdfView(DataDownloadView):
 
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
