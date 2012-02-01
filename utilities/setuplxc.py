@@ -297,7 +297,8 @@ def su(user):
     yield Env(uid, gid, home)
     os.setegid(os.getgid())
     os.seteuid(os.getuid())
-    os.environ['HOME'] = current_home
+    if current_home is not None:
+        os.environ['HOME'] = current_home
 
 
 def user_exists(username):
