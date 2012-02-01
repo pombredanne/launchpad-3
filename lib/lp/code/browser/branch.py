@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -1314,7 +1314,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     page_title = label = 'Propose branch for merging'
 

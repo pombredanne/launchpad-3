@@ -45,7 +45,6 @@ from lp.services.webapp import (
     Link,
     )
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.publisher import DataDownloadView
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
@@ -133,25 +132,34 @@ class CodeOfConductView(LaunchpadView):
         return self.context.title
 
 
-class CodeOfConductDownloadView(DataDownloadView):
+class CodeOfConductDownloadView:
     """Download view class for CoC page.
 
-    This view provides a text file with "Content-disposition: attachment",
-    causing browsers to download rather than display it.
+    This view does not use a template, but uses a __call__ method
+    that returns a file to the browser.
     """
 
-    content_type = 'text/plain'
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
-    def getBody(self):
+    def __call__(self):
+        """Set response headers to download an attachment, and return
+        CoC file data.
+        """
         # Use the context attribute 'content' as data to return.
         # Avoid open the CoC file again.
-        return self.context.content
+        content = self.context.content
 
-    @property
-    def filename(self):
         # Build a fancy filename:
         # - Use title with no spaces and append '.txt'
-        return self.context.title.replace(' ', '') + '.txt'
+        filename = self.context.title.replace(' ', '') + '.txt'
+
+        self.request.response.setHeader('Content-Type', 'application/text')
+        self.request.response.setHeader('Content-Length', len(content))
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % filename)
+        return content
 
 
 class CodeOfConductSetView(LaunchpadView):
