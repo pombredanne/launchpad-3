@@ -60,7 +60,7 @@
 
       <tal:script>
         <script type="text/javascript">
-          YUI().use('lp.code.branchmergeproposal.nominate', function(Y) {
+          LPJS.use('lp.code.branchmergeproposal.nominate', function(Y) {
               Y.on('domready',
                   function(e) {
                     Y.lp.code.branchmergeproposal.nominate.setup();
