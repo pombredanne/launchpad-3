@@ -3,7 +3,8 @@
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
 
-  <div tal:content="structure context/@@+comment-body-text" />
+  <tal:message replace="structure view/comment/body_text/fmt:obfuscate-email/fmt:nice_pre" />
+
   <tal:good-attachments repeat="attachment view/comment/display_attachments">
     <div class="boardComment attachment">
       <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>

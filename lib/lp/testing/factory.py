@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -2323,10 +2323,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
-        with person_logged_in(sender):
-            return merge_proposal.createComment(
-                sender, subject, body, vote, vote_tag, parent,
-                _date_created=date_created)
+        return merge_proposal.createComment(
+            sender, subject, body, vote, vote_tag, parent,
+            _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
