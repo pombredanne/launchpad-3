@@ -21,6 +21,7 @@
                 };
                 var mailinglist_module = Y.lp.registry.team.mailinglists;
                 var message_list = new mailinglist_module.MessageList(config);
+                message_list.display_messages();
               });
             });
         </script>
