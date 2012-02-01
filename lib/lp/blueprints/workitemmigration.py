@@ -77,12 +77,11 @@ class WorkitemParser(object):
 def milestone_extract(text, valid_milestones):
     words = text.replace('(', ' ').replace(')', ' ').replace(
         '[', ' ').replace(']', ' ').replace('<wbr></wbr>', '').split()
-
     for milestone in valid_milestones:
         for word in words:
             if word == milestone.name:
                 return milestone
-    return None
+    raise WorkItemParseError("No valid milestones found in %s" % words)
 
 
 def extractWorkItemsFromWhiteboard(spec):
@@ -103,14 +102,14 @@ def extractWorkItemsFromWhiteboard(spec):
     # complexity_re.
     for line in spec.whiteboard.splitlines():
         new_whiteboard.append(line)
-        if line.strip() == '':
-            continue
-
         wi_match = work_items_re.search(line)
         if wi_match:
             in_wi_block = True
-            milestone = milestone_extract(
-                wi_match.group(1), target_milestones)
+            milestone = None
+            milestone_part = wi_match.group(1).strip()
+            if milestone_part:
+                milestone = milestone_extract(
+                    milestone_part, target_milestones)
             new_whiteboard.pop()
             continue
         if meta_re.search(line):
@@ -123,6 +122,14 @@ def extractWorkItemsFromWhiteboard(spec):
             continue
 
         if not in_wi_block:
+            # We only care about work-item lines.
+            continue
+
+        if line.strip() == '':
+            # An empty line signals the end of the work-item block:
+            # https://wiki.ubuntu.com/WorkItemsHowto.
+            in_wi_block = False
+            milestone = None
             continue
 
         # This is a work-item line, which we don't want in the new
@@ -137,6 +144,7 @@ def extractWorkItemsFromWhiteboard(spec):
     for line, milestone in wi_lines:
         assignee_name, title, status = parser.parse_blueprint_workitem(line)
         if assignee_name is not None:
+            assignee_name = assignee_name.strip()
             assignee = getUtility(IPersonSet).getByName(assignee_name)
             if assignee is None:
                 raise ValueError("Unknown person name: %s" % assignee_name)
@@ -148,8 +156,4 @@ def extractWorkItemsFromWhiteboard(spec):
         work_items.append(workitem)
 
     removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
-    # TODO: Must make sure the SpecificationWorkItem objects created in the
-    # loop above are not committed unless we reach this point.  Maybe what we
-    # need is just a transaction.abort() on the callsite if this raises an
-    # exception.
     return work_items

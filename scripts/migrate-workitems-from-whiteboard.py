@@ -11,24 +11,36 @@ from lp.blueprints.workitemmigration import extractWorkItemsFromWhiteboard
 
 
 class WorkitemMigrator(LaunchpadScript):
+    """Migrate work-items from Specification.whiteboard to
+    SpecificationWorkItem.
 
-    def add_my_options(self):
-        # TODO: add option to limit to only BPs of the given project/distro.
-        pass
+    Migrating work items from the whiteboard is an all-or-nothing thing; if we
+    encounter any errors when parsing the whiteboard of a spec, we abort the
+    transaction and leave its whiteboard unchanged.
+
+    On a test with production data, only 100 whiteboards (out of almost 2500)
+    could not be migrated. On 24 of those the assignee in at least one work
+    item is not valid, on 33 the status of a work item is not valid and on 42
+    one or more milestones are not valid.
+    """
 
     def main(self):
         for specification in SpecificationSet():
             if not specification.whiteboard:
                 continue
 
-            self.txn.begin()
+            #self.txn.begin()
             try:
                 work_items = extractWorkItemsFromWhiteboard(specification)
             except Exception, e:
                 self.logger.error(
                     "Failed to parse whiteboard of %s: %s" % (
-                        specification, str(e)))
-                self.txn.abort()
+                        specification, unicode(e)))
+                #self.txn.abort()
+                continue
+
+            # XXX: Short-circuit while testing
+            continue
 
             if len(work_items) > 0:
                 self.logger.info(
@@ -41,6 +53,8 @@ class WorkitemMigrator(LaunchpadScript):
                     "No work items found on the whiteboard of %s" %
                         specification)
                 self.txn.abort()
+
+        self.txn.abort()
 
 
 if __name__ == '__main__':

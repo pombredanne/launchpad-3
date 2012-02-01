@@ -25,6 +25,9 @@ class FakeSpecification(object):
     assignee = None
 
 
+# TODO: Send email notifications when we fail to migrate the whiteboard.
+
+
 class TestWorkItemParser(TestCase):
 
     def test_parse_line_basic(self):
@@ -170,7 +173,7 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
     def test_work_item_with_assignee(self):
         person = self.factory.makePerson()
         whiteboard = dedent("""
-            Work items for:
+            Work items:
             [%s] A single work item: TODO
             """ % person.name)
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
@@ -184,7 +187,7 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
 
     def test_work_item_with_nonexistent_assignee(self):
         whiteboard = dedent("""
-            Work items for:
+            Work items:
             [nonono] A single work item: TODO
             """)
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
@@ -204,6 +207,32 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             assignee=None, title="A single work item",
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone,
+            specification=spec))
+
+    def test_work_item_with_unknown_milestone(self):
+        whiteboard = dedent("""
+            Work items for foo:
+            A single work item: TODO
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        self.assertRaises(
+            WorkItemParseError, extractWorkItemsFromWhiteboard, spec)
+
+    def test_blank_line_signals_end_of_work_item_block(self):
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+
+            Some random notes about this BP.
+              * This is what was discussed during UDS
+              * Oh, yeah, we need to do that too
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        work_items = extractWorkItemsFromWhiteboard(spec)
+        self.assertEqual(1, len(work_items))
+        self.assertThat(work_items[0], MatchesStructure.byEquality(
+            assignee=None, title="A single work item",
+            status=SpecificationWorkItemStatus.TODO,
             specification=spec))
 
     def test_whiteboard_with_all_possible_sections(self):
@@ -236,8 +265,3 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             Complexity:
             [user1] milestone1: 10
             """).strip(), spec.whiteboard.strip())
-
-    def test_error_when_parsing(self):
-        """If there's an error when parsing the whiteboard, we leave it
-        unchanged and do not create any SpecificationWorkItem objects."""
-        self.fail('TODO')
