@@ -25,6 +25,7 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -82,9 +83,7 @@ class MakeBehaviorMixin(object):
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            das = ubuntu.currentseries.nominatedarchindep
-            das.addOrUpdateChroot(lf)
+            behavior._getChroot = lambda: lf
         return behavior
 
     def makeProductSeriesWithBranchForTranslation(self):
@@ -147,6 +146,24 @@ class TestTranslationTemplatesBuildBehavior(
                 branch_url,
                 behavior.buildfarmjob.branch.composePublicURL())
         return d.addCallback(got_dispatch)
+
+    def test_getChroot(self):
+        # _getChroot produces the current chroot for the current Ubuntu
+        # release, on the nominated architecture for
+        # architecture-independent builds.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        current_ubuntu = ubuntu.currentseries
+        distroarchseries = current_ubuntu.nominatedarchindep
+
+        # Set an arbitrary chroot file.
+        fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
+        distroarchseries.addOrUpdateChroot(fake_chroot_file)
+
+        behavior = self.makeBehavior(use_fake_chroot=False)
+        chroot = behavior._getChroot()
+
+        self.assertNotEqual(None, chroot)
+        self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
         behavior = self.makeBehavior()

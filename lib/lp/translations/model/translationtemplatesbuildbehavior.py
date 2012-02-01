@@ -47,9 +47,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
-        distroarchseries = self._getDistroArchSeries()
-        chroot = distroarchseries.getChroot()
+        chroot = self._getChroot()
         if chroot is None:
+            distroarchseries = self._getDistroArchSeries()
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
@@ -68,6 +68,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return self._builder.slave.build(
                 cookie, self.build_type, chroot_sha1, filemap, args)
         return d.addCallback(got_cache_file)
+
+    def _getChroot(self):
+        return self._getDistroArchSeries().getChroot()
 
     def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
