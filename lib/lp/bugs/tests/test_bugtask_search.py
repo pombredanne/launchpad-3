@@ -1228,7 +1228,107 @@ class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
         self.assertSearchFinds(params, [self.bugtasks[-1]])
 
 
-class SourcePackageTarget(BugTargetTestBase):
+class UpstreamFilterTests:
+    """Tests related to restircted upstream filtering.
+
+    These tests make sense only for the targets SourcePackage
+    DistributionSourcePackage.
+    """
+
+    def setUpUpstreamTests(self, upstream_target):
+        # The default test bugs have two tasks for DistributionSourcePackage
+        # tests: one task for the DSP and another task for a product;
+        # they have three tasks for SourcePackage tests: for a product,
+        # for a DSP and for a sourcepackage.
+        # Tests in this class are about searching bug tasks, where the
+        # bug has a task for any upstream target or for a given upstream
+        # target and where the bug task for the upstream target has certain
+        # properties.
+        with person_logged_in(self.searchtarget.distribution.owner):
+            self.searchtarget.distribution.official_malone = True
+        for existing_task in self.bugtasks:
+            bug = existing_task.bug
+            self.factory.makeBugTask(bug, target=upstream_target)
+
+    def addWatch(self, bug, target=None):
+        # Add a bug watch to the bugtask for the given target. If no
+        # target is specified, the bug watch is added to the default
+        # bugtask, which is a different product for each bug.
+        if target is None:
+            task = bug.bugtasks[0]
+        else:
+            for task in bug.bugtasks:
+                if task.target == target:
+                    break
+        with person_logged_in(task.target.owner):
+            watch = self.factory.makeBugWatch(bug=bug)
+            task.bugwatch = watch
+
+    def test_pending_bugwatch_elsewhere__no_upstream_specified(self):
+        # By default, those bugs are returned where
+        #   - an upstream task exists
+        #   - the upstream product does not use LP for bug tracking
+        #   - the bug task has no bug watch.
+        # All test bugs fulfill this condition.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If a bug watch is added to only one of the product related
+        # bug tasks, the bug is still returned.
+        self.addWatch(self.bugtasks[0].bug)
+        self.addWatch(self.bugtasks[1].bug, target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If bugwatches are added to the other product related bug task
+        # too, the bugs are not included in the search result.
+        self.addWatch(self.bugtasks[0].bug, target=upstream_target)
+        self.addWatch(self.bugtasks[1].bug)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_pending_bugwatch_elsewhere__upstream_product(self):
+        # If an upstream target using Malone is specified, a search
+        # returns all bugs with a bug task for this target, if the
+        # task does not have a bug watch.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        # The first bug task of all test bugs is targeted to its
+        # own Product instance.
+        bug = self.bugtasks[0].bug
+        single_bugtask_product = bug.bugtasks[0].target
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=single_bugtask_product)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        # If a bug watch is added to this task, the search returns an
+        # empty result set.
+        self.addWatch(self.bugtasks[0].bug)
+        self.assertSearchFinds(params, [])
+
+    def test_pending_bugwatch_elsewhere__upstream_product_uses_lp(self):
+        # If an upstream target not using Malone is specified, a search
+        # alsways returns an empty result set.
+        upstream_target = self.factory.makeProduct()
+        self.setUpUpstreamTests(upstream_target)
+        with person_logged_in(upstream_target.owner):
+            upstream_target.official_malone = True
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, [])
+
+    def test_pending_bugwatch_elsewhere__upstream_distribution(self):
+        # If an upstream target not using Malone is specified, a search
+        # alsways returns an empty result set.
+        upstream_target = self.factory.makeDistribution()
+        self.setUpUpstreamTests(upstream_target)
+        params = self.getBugTaskSearchParams(
+            user=None, pending_bugwatch_elsewhere=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+
+
+class SourcePackageTarget(BugTargetTestBase, UpstreamFilterTests):
     """Use a source package as the bug target."""
 
     def setUp(self):
@@ -1275,7 +1375,8 @@ class SourcePackageTarget(BugTargetTestBase):
 
 
 class DistributionSourcePackageTarget(BugTargetTestBase,
-                                      BugTargetWithBugSuperVisor):
+                                      BugTargetWithBugSuperVisor,
+                                      UpstreamFilterTests):
     """Use a distribution source package as the bug target."""
 
     def setUp(self):
