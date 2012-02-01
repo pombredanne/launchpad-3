@@ -1120,15 +1120,19 @@ class TestBranchMergeProposal(BrowserTestCase):
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertIn('x y' * 100, browser.contents)
 
+    def has_read_more(self, comment):
+        url = canonical_url(comment, force_local_path=True)
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        return HTMLContains(read_more)
+
     def test_long_conversation_comments_truncated(self):
         """Long comments in a conversation should be truncated."""
         comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
-        url = canonical_url(comment, force_local_path=True)
+        has_read_more = self.has_read_more(comment)
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertNotIn('x y' * 2000, browser.contents)
-        read_more = Tag(
-            'Read more link', 'a', {'href': url}, text='Read more...')
-        self.assertThat(browser.contents, HTMLContains(read_more))
+        self.assertThat(browser.contents, has_read_more)
 
     def test_short_conversation_comments_no_download(self):
         """Short comments should not have a download link."""
@@ -1150,6 +1154,14 @@ class TestBranchMergeProposal(BrowserTestCase):
             text='Download full text')
         self.assertThat(browser.contents, HTMLContains(body))
 
+    def test_excessive_conversation_comments_no_redirect(self):
+        """An excessive comment does not force a redict on proposal page."""
+        comment = self.factory.makeCodeReviewComment(body='x' * 10001)
+        mp_url = canonical_url(comment.branch_merge_proposal)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getUserBrowser(mp_url)
+        self.assertThat(browser.contents, Not(has_read_more))
+        self.assertEqual(mp_url, browser.url)
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):
     """Confirm that the latest branch is returned."""

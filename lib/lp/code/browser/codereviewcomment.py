@@ -188,16 +188,19 @@ class CodeReviewCommentView(LaunchpadView):
         return download_body(
             CodeReviewDisplayComment(self.context), self.request)
 
-    def __call__(self):
-        """View redirects to +download if comment is too long to render."""
-        if self.comment.too_long_to_render:
-            return self.request.response.redirect(self.comment.download_url)
-        return super(CodeReviewCommentView, self).__call__()
-
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?
     show_expanders = False
+
+
+class CodeReviewCommentIndexView(CodeReviewCommentView):
+
+    def __call__(self):
+        """View redirects to +download if comment is too long to render."""
+        if self.comment.too_long_to_render:
+            return self.request.response.redirect(self.comment.download_url)
+        return super(CodeReviewCommentIndexView, self).__call__()
 
 
 class CodeReviewCommentSummary(CodeReviewCommentView):

@@ -645,9 +645,6 @@
         class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/codereviewcomment-index.pt"/>
-        <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
         <browser:page
@@ -655,6 +652,13 @@
             attribute="download"
         />
     </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
+        name="+index"
+        template="../templates/codereviewcomment-index.pt"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentIndexView"
+        permission="zope.Public"
+        />
     <browser:pages
         for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
         layer="lp.code.publisher.CodeLayer"
