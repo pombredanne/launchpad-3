@@ -677,7 +677,8 @@ def initialize_host(
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
             os.makedirs(os.path.join(dependencies_dir, subdir))
-        with cd(dependencies_dir):
+    with cd(dependencies_dir):
+        with su(user) as env:
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
