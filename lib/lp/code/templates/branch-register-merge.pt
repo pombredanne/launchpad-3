@@ -65,7 +65,7 @@
       -->
       <tal:script>
         <script type="text/javascript" tal:content="string:
-          YUI().use('node', 'event', function(Y) {
+          LPJS.use('node', 'event', function(Y) {
               function reviewer_changed(value) {
                 reviewer = Y.Lang.trim(value);
                 review_type = document.getElementById('field.review_type');
