@@ -615,7 +615,6 @@ COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the bin
 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 COMMENT ON INDEX emailaddress__person__key IS 'Ensures that a Person only has one preferred email address';
-COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has one preferred email address';
 
 
 -- FeaturedProject
@@ -1288,11 +1287,6 @@ COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the ac
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
-
-
--- AccountPassword
-COMMENT ON TABLE AccountPassword IS 'A password used to authenticate an Account.';
-COMMENT ON COLUMN AccountPassword.password IS 'SSHA digest encrypted password.';
 
 
 -- Person

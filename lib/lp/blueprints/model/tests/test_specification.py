@@ -9,13 +9,16 @@ from testtools.matchers import Equals
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.services.webapp import canonical_url
 from lp.testing import (
     TestCaseWithFactory,
     ANONYMOUS,
     login,
+    login_person,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from zope.security.interfaces import Unauthorized
 
 
 class TestSpecificationDependencies(TestCaseWithFactory):
@@ -137,26 +140,18 @@ class TestSpecificationValidation(TestCaseWithFactory):
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
 
+
 class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_newworkitem_anon(self):
+    def test_anonymous_newworkitem_not_allowed(self):
         spec = self.factory.makeSpecification()
         login(ANONYMOUS)
-        # XXX doesn't seem to work, get ForbiddenAttribute
-        e = self.assertRaises(Exception, spec.newWorkitem,
-            'new-work-item')
-        self.assertEqual(
-            '%s' % ('error'), str(e))
-        
-        self.fail()
+        self.assertRaises(Unauthorized, getattr, spec, 'newWorkItem')
 
-    def test_newworkitem_owner(self):
+    def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
-        login(spec.owner)
-        title = 'new-work-item'
-        # XXX still get ForbiddenAttribute error here
-        work_item = spec.newWorkitem(title)
-        self.assertThat(work_item.title, Equals(title))
-
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(title='new-work-item')
+        self.assertIsInstance(work_item, SpecificationWorkItem)

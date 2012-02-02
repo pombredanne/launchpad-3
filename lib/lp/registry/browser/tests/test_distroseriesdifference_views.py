@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )

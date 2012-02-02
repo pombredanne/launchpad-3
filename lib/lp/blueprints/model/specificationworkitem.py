@@ -43,6 +43,7 @@ class SpecificationWorkItem(SQLBase):
     deleted = BoolCol(notNull=True, default=False)
 
     def __repr__(self):
+        title = self.title.encode('ASCII', 'backslashreplace')
         return '<SpecificationWorkItem [%s] %s: %s of %s>' % (
-            self.assignee, self.title, self.status, self.specification)
+            self.assignee, title, self.status, self.specification)
 

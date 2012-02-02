@@ -51,6 +51,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -139,8 +140,7 @@ class TestSlaveScannerScan(TestCase):
         builder.failure_count = 1
 
         # Run 'scan' and check its result.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
@@ -178,7 +178,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
@@ -219,7 +219,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -254,7 +254,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
@@ -445,7 +445,7 @@ class TestSlaveScannerScan(TestCase):
         build.status = BuildStatus.CANCELLING
 
         # Run 'scan' and check its results.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = scanner.scan()
 

@@ -12,7 +12,6 @@ __all__ = [
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'valid_password',
     'validate_date_interval',
     ]
 
@@ -130,38 +129,6 @@ def validate_new_person_email(email):
                              'owner': escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
-
-
-def valid_password(password):
-    """Return True if the argument is a valid password.
-
-    A valid password contains only ASCII characters in range(32,127).
-    No ASCII control characters are allowed.
-
-    password that contains only valid ASCII characters
-    >>> valid_password(u"All ascii password with spaces.:\\&/")
-    True
-
-    password that contains some non-ASCII character (value > 127)
-    >>> valid_password(u"password with some non-ascii" + unichr(195))
-    False
-
-    password that contains ASCII control characters (0 >= value >= 31)
-    >>> valid_password(u"password with control chars" + chr(20))
-    False
-
-    empty password.
-    >>> valid_password(u"")
-    True
-
-    """
-    assert isinstance(password, unicode)
-    valid_chars = [chr(x) for x in range(32, 127)]
-    invalid = set(password) - set(valid_chars)
-    if invalid:
-        return False
-    else:
-        return True
 
 
 def validate_date_interval(start_date, end_date, error_msg=None):

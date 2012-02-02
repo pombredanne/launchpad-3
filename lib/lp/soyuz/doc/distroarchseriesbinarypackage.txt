@@ -205,8 +205,9 @@ DistroArchSeriesBinaryPackage.summary should be simplified.
 First, update the cache tables for Celso's PPA:
 
     >>> from lp.services.config import config
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+    >>> switch_dbuser(config.statistician.dbuser)
 
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.model.distributionsourcepackagecache import (
@@ -234,7 +235,7 @@ First, update the cache tables for Celso's PPA:
 Then, supersede all pmount publications in warty for pmount (this sets
 us up to demonstrate bug 208233).
 
-    >>> LaunchpadZopelessLayer.switchDbUser('archivepublisher')
+    >>> switch_dbuser('archivepublisher')
     >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
     >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
     >>> from lp.soyuz.model.distroarchseriesbinarypackage import (
@@ -253,7 +254,7 @@ us up to demonstrate bug 208233).
     ...          s = p.supersede()
     >>> commit()
     >>> flush_database_updates()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+    >>> switch_dbuser(config.statistician.dbuser)
 
 Now, if that bug is actually fixed, this works:
 
