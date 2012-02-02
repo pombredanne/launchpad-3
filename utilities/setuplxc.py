@@ -802,7 +802,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode "{}/sourcecode"'.format(
+        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
         checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(
