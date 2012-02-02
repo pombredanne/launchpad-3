@@ -221,8 +221,7 @@ notice but not the link to the project's settings.
     >>> login(admin_email)
     >>> admin_user = getUtility(IPersonSet).getByEmail(admin_email)
 
-    >>> jtv = factory.makePerson(
-    ...     email='jtv-sample@canonical.com', password='test')
+    >>> jtv = factory.makePerson(email='jtv-sample@canonical.com')
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> membership = getUtility(ITeamMembershipSet).new(
     ...     jtv, celebs.rosetta_experts, TeamMembershipStatus.APPROVED,
@@ -316,9 +315,9 @@ release series should be translated.
     >>> distribution = factory.makeDistribution(name='earthian')
     >>> distroseries = factory.makeDistroSeries(
     ...     name='1.4', distribution=distribution)
-    >>> logout()
     >>> print distribution.translation_focus
     None
+    >>> logout()
     >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
     >>> print find_tag_by_id(admin_browser.contents, 'translation-focus')
     None

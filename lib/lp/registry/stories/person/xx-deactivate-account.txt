@@ -1,4 +1,5 @@
-= Deactivating user accounts =
+Deactivating user accounts
+==========================
 
 Users who don't want to use Launchpad anymore can easily deactivate their
 accounts so they stop receiving emails from Launchpad and make it impossible

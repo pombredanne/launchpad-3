@@ -12,12 +12,6 @@ from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.cve import (
     CveStatus,
     ICve,
@@ -31,6 +25,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
+from lp.services.database.lpstorm import IStore
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.enums import (
     BinaryPackageFileType,
@@ -58,6 +54,10 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import ComponentSelection
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import (
     IsProxied,
     Provides,
@@ -175,6 +175,12 @@ class TestFactory(TestCaseWithFactory):
     def test_makeBinaryPackagePublishingHistory_sets_datecreated(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         self.assertNotEqual(None, bpph.datecreated)
+
+    def test_makeBinaryPackagePublishingHistory_uses_datecreated(self):
+        datecreated = self.factory.getUniqueDate()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            datecreated=datecreated)
+        self.assertEqual(datecreated, bpph.datecreated)
 
     def test_makeBinaryPackagePublishingHistory_sets_datepub_PENDING(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(

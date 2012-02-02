@@ -56,7 +56,7 @@ XXX: This doctest needs a lot of cleanups!
     >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
     >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
     >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 
@@ -193,7 +193,7 @@ returns a tuple with False and the current status of the membership.
 
 As expected, the membership object implements ITeamMembership.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
@@ -539,7 +539,8 @@ the new expiry date is not in the past.
     AssertionError: ...
     >>> foobar_on_buildd.setExpirationDate(tomorrow, foobar)
 
-Team owners can also renew any memberships of the team they own.
+Team owners and admins can also renew any memberships of the team they
+own or administer.
 
     >>> landscape = getUtility(IPersonSet).getByName(
     ...     'landscape-developers')
@@ -553,26 +554,15 @@ Team owners can also renew any memberships of the team they own.
     True
     >>> sampleperson_on_landscape.setExpirationDate(tomorrow, sampleperson)
 
-In the case of a mere team admin, though, he can only change the expiry
-date of other's memberships, not his own.
-
     >>> cprov_on_buildd = membershipset.getByPersonAndTeam(
     ...     cprov, buildd_admins)
     >>> buildd_admins.teamowner.name
     u'name16'
     >>> print cprov_on_buildd.status.title
     Administrator
-
     >>> foobar_on_buildd.canChangeExpirationDate(cprov)
     True
     >>> foobar_on_buildd.setExpirationDate(tomorrow, cprov)
-
-    >>> cprov_on_buildd.canChangeExpirationDate(cprov)
-    False
-    >>> cprov_on_buildd.setExpirationDate(tomorrow, cprov)
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
 
 
 Flagging expired memberships
@@ -685,7 +675,7 @@ on the expiration day.
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
-Bug 3989 -- StuarBishop 20060713
+Bug 3989 -- StuartBishop 20060713
 
     >>> flush_database_updates()
     >>> transaction.commit()
@@ -888,7 +878,7 @@ is a direct administrator of the guadamen team):
     >>> [person.name for person in guadamen_team.getDirectAdministrators()]
     [u'name16', u'ubuntu-team']
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> cprov.inTeam(ubuntu_team)
     True

@@ -306,7 +306,7 @@ in the page he is viewing and submit the form to see the results.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print anon_browser.title
-    Bugs in Mozilla Firefox
+    Bugs : Mozilla Firefox
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/firefox
@@ -342,7 +342,7 @@ the logged in users has the permission to see it.
     ...     displayname="Private Benjamin",
     ...     visibility=PersonVisibility.PRIVATE)
     >>> logout()
-    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:test')
     >>> browser.open('http://launchpad.dev/+search')
     >>> search_for('Private Benjamin', browser=browser)
     >>> print_search_results(browser.contents)

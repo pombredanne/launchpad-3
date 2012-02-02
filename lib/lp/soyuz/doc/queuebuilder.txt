@@ -27,8 +27,7 @@ Import the bunch of required database classes:
     ...     DistroArchSeries, PocketChroot)
 
 The Master side of Buildd requires access to Launchpad Database, the
-user designed for this kind of access is 'fiera', see
-test_system_documentation.py for more information.
+user designed for this kind of access is 'fiera'.
 
     >>> from lp.services.log.logger import DevNullLogger
     >>> logger = DevNullLogger()
@@ -131,13 +130,11 @@ exact circumstances we want to test below.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.database.sqlbase import commit
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
 Let's use SoyuzTestPublisher to create a set of publications in the
 exact state to expose the features that we want to test.
@@ -289,8 +286,7 @@ checks/counters within this test.
     >>> old_build_ids.append(failed_build.id)
     >>> old_build_ids.append(ok_build.id)
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
 
 == Create and verify the new builds ==

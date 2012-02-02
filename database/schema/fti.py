@@ -11,6 +11,8 @@ Add full text indexes to the launchpad database
 """
 __metaclass__ = type
 
+import _pythonpath
+
 from distutils.version import LooseVersion
 from optparse import OptionParser
 import os.path
@@ -20,24 +22,23 @@ from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import time
 
-import _pythonpath
 import psycopg2.extensions
-import replication.helpers
 
-from canonical.config import config
-from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
+from lp.services.config import config
+from lp.services.database.postgresql import ConnectionString
+from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
     ISOLATION_LEVEL_READ_COMMITTED,
     quote,
     quote_identifier,
     )
-from canonical.launchpad.scripts import (
+from lp.services.scripts import (
     db_options,
     logger,
     logger_options,
     )
+import replication.helpers
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
@@ -61,10 +62,6 @@ ALL_FTI = [
             ('name', A),
             ('title', B),
             ('description', D),
-            ]),
-
-    ('bugtask', [
-            ('targetnamecache', B),
             ]),
 
     ('binarypackagerelease', [

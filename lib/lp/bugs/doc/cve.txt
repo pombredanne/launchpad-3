@@ -19,7 +19,7 @@ The ICveSet utility is used to create and get CVEs and BugCves.
 
 CVE references can be created with the ICveSet utility.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("test@canonical.com")
 
     >>> from zope.component import getUtility
@@ -112,14 +112,14 @@ ICveSet.getBugCvesForBugTasks:
     >>> ubuntu = Distribution.selectOneBy(name="ubuntu")
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> bugcves = cveset.getBugCvesForBugTasks(ubuntu_tasks)
-    >>> [(bugcve.bug.id, bugcve.cve.title) for bugcve in bugcves]
+    >>> [(bug.id, cve.title) for (bug, cve) in bugcves]
     [(1, u'CVE-1999-8979 (Entry)'),
      (2, u'CVE-1999-2345 (Candidate)')]
 
 This method is used in the CVEReportView:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> cve_report = getMultiAdapter((ubuntu, request), name="+cve")
     >>> cve_report.initialize()
@@ -130,11 +130,11 @@ surprisingly, the same the method above returned:
 
     >>> for bugtaskcve in cve_report.open_cve_bugtasks:
     ...    ([bugtask.title for bugtask in bugtaskcve.bugtasks],
-    ...     [cve.title for cve in bugtaskcve.cves])
+    ...     [cve['displayname'] for cve in bugtaskcve.cves])
     ([u'Bug #1 in mozilla-firefox (Ubuntu): "Firefox does not support SVG"'],
-     [u'CVE-1999-8979 (Entry)'])
+     [u'CVE-1999-8979'])
     ([u'Bug #2 in Ubuntu: "Blackhole Trash folder"'],
-     [u'CVE-1999-2345 (Candidate)'])
+     [u'CVE-1999-2345'])
 
 There are no resolved bugtasks linked to CVEs in Ubuntu:
 

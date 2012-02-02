@@ -9,19 +9,6 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -32,7 +19,21 @@ from lp.soyuz.tests.test_doc import (
     uploaderSetUp,
     uploadQueueSetUp,
     )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -82,7 +83,7 @@ def bugLinkedToQuestionSetUp(test):
 
 
 def uploaderBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploaderSetUp(test)
@@ -90,7 +91,7 @@ def uploaderBugLinkedToQuestionSetUp(test):
 
 
 def uploadQueueBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)

@@ -3,7 +3,7 @@ Gina over Multiple Architectures (and Pockets, and Components)
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild

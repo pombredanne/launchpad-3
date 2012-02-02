@@ -1,26 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
 import gzip
+from operator import itemgetter
 import os
 from StringIO import StringIO
 import tempfile
-from operator import itemgetter
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessLayer,
-    )
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
     get_day,
@@ -31,8 +20,20 @@ from lp.services.apachelogparser.base import (
     parse_file,
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from lp.services.config import config
+from lp.services.librarianserver.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.testing import TestCase
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessLayer,
+    )
 
 
 here = os.path.dirname(__file__)
@@ -388,7 +389,7 @@ class TestParsedFilesDetection(TestCase):
 
     def setUp(self):
         super(TestParsedFilesDetection, self).setUp()
-        self.layer.switchDbUser(DBUSER)
+        switch_dbuser(DBUSER)
 
     def test_not_parsed_file(self):
         # A file that has never been parsed will have to be parsed from the
@@ -470,7 +471,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
 
     def setUp(self):
         super(Test_create_or_update_parsedlog_entry, self).setUp()
-        self.layer.switchDbUser(DBUSER)
+        switch_dbuser(DBUSER)
 
     def test_creation_of_new_entries(self):
         # When given a first_line that doesn't exist in the ParsedApacheLog

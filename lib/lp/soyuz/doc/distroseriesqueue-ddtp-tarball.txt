@@ -29,7 +29,7 @@ For further info about DDTP see:
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> from lp.archiveuploader.tests import datadir, getPolicy
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Login as an admin (or ubuntutest.archive_admin if we have one), since
@@ -41,7 +41,7 @@ Set the email address for announcements:
 
     >>> breezy_autotest.changeslist = 'test@example.com'
 
-First, test the rejection of a missapplied changesfile name, which
+First, test the rejection of a misapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
     >>> sync_policy = getPolicy(
@@ -143,7 +143,7 @@ Let's use the script to fetch the ddtp-tarball upload:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...    config.root, "scripts", "ftpmaster-tools", "queue")

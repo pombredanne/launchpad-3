@@ -120,12 +120,12 @@ set the milestone.
 The rendered template includes a script that adds a js-action link to
 show a formoverlay that updates the milestone_for_release field.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        LPS.use(... 'lp.registry.milestoneoverlay'...
+        YUI().use(... 'lp.registry.milestoneoverlay'...
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var series_uri = '/app/simple';
             ...

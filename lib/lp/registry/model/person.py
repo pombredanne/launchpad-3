@@ -69,7 +69,9 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Union,
     Upper,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -103,75 +105,14 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad import _
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.account import (
-    Account,
-    AccountPassword,
-    )
-from canonical.launchpad.database.emailaddress import (
-    EmailAddress,
-    HasOwnerMixin,
-    )
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import (
-    OAuthAccessToken,
-    OAuthRequestToken,
-    )
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    get_contact_email_addresses,
-    get_email_template,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale,
-    AccountStatus,
-    AccountSuspendedError,
-    IAccount,
-    IAccountSet,
-    INACTIVE_ACCOUNT_STATUSES,
-    )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddress,
-    IEmailAddressSet,
-    InvalidEmailAddress,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.answers.model.questionsperson import QuestionsPersonMixin
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -206,6 +147,7 @@ from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
+    TeamSubscriptionPolicyError,
     )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -228,17 +170,21 @@ from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     ImmutableVisibilityError,
     IPerson,
     IPersonSet,
     IPersonSettings,
     ITeam,
+    OPEN_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
+    TeamEmailAddressError,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
+    validate_subscription_policy,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
@@ -279,6 +225,56 @@ from lp.registry.model.teammembership import (
     TeamMembershipSet,
     TeamParticipation,
     )
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    AccountSuspendedError,
+    IAccount,
+    IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import (
+    EmailAddress,
+    HasOwnerMixin,
+    )
+from lp.services.librarian.model import LibraryFileAlias
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.oauth.model import (
+    OAuthAccessToken,
+    OAuthRequestToken,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
@@ -289,6 +285,12 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.dbpolicy import MasterDatabasePolicy
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -524,24 +526,6 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    def _get_password(self):
-        # We have to remove the security proxy because the password is
-        # needed before we are authenticated. I'm not overly worried because
-        # this method is scheduled for demolition -- StuartBishop 20080514
-        password = IStore(AccountPassword).find(
-            AccountPassword, accountID=self.accountID).one()
-        if password is None:
-            return None
-        else:
-            return password.password
-
-    def _set_password(self, value):
-        account = IMasterStore(Account).get(Account, self.accountID)
-        assert account is not None, 'No account for this Person.'
-        account.password = value
-
-    password = property(_get_password, _set_password)
-
     def _get_account_status(self):
         account = IStore(Account).get(Account, self.accountID)
         if account is not None:
@@ -585,7 +569,8 @@ class Person(
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         enum=TeamSubscriptionPolicy,
-        default=TeamSubscriptionPolicy.MODERATED)
+        default=TeamSubscriptionPolicy.MODERATED,
+        storm_validator=validate_subscription_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
@@ -1022,10 +1007,6 @@ class Person(
         """See `IPerson`."""
         return self.teamownerID is not None
 
-    def isTeam(self):
-        """Deprecated. Use is_team instead."""
-        return self.is_team
-
     @property
     def mailing_list(self):
         """See `IPerson`."""
@@ -1171,6 +1152,58 @@ class Person(
                                  orderBy=['displayname'])
         return results
 
+    def isAnyPillarOwner(self):
+        """See IPerson."""
+
+        with_sql = [
+            With("teams", SQL("""
+                 SELECT team FROM TeamParticipation
+                 WHERE TeamParticipation.person = %d
+                """ % self.id)),
+            With("owned_entities", SQL("""
+                 SELECT Product.id
+                 FROM Product
+                 WHERE Product.owner IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Project.id
+                 FROM Project
+                 WHERE Project.owner IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Distribution.id
+                 FROM Distribution
+                 WHERE Distribution.owner IN (SELECT team FROM teams)
+                """))
+           ]
+        store = IStore(self)
+        rs = store.with_(with_sql).using("owned_entities").find(
+            SQL("count(*) > 0"),
+        )
+        return rs.one()
+
+    def isAnySecurityContact(self):
+        """See IPerson."""
+        with_sql = [
+            With("teams", SQL("""
+                 SELECT team FROM TeamParticipation
+                 WHERE TeamParticipation.person = %d
+                """ % self.id)),
+            With("owned_entities", SQL("""
+                 SELECT Product.id
+                 FROM Product
+                 WHERE Product.security_contact IN (SELECT team FROM teams)
+                 UNION ALL
+                 SELECT Distribution.id
+                 FROM Distribution
+                 WHERE Distribution.security_contact
+                    IN (SELECT team FROM teams)
+                """))
+           ]
+        store = IStore(self)
+        rs = store.with_(with_sql).using("owned_entities").find(
+            SQL("count(*) > 0"),
+        )
+        return rs.one()
+
     def getAllCommercialSubscriptionVouchers(self, voucher_proxy=None):
         """See `IPerson`."""
         if voucher_proxy is None:
@@ -1261,7 +1294,7 @@ class Person(
     def is_valid_person_or_team(self):
         """See `IPerson`."""
         # Teams are always valid
-        if self.isTeam():
+        if self.is_team:
             return True
 
         return self.is_valid_person
@@ -1285,7 +1318,7 @@ class Person(
         Users without karma have not demostrated their intentions may not
         have the same privileges as users who have made contributions.
         """
-        return not self.isTeam() and self.karma == 0
+        return not self.is_team and self.karma == 0
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -1355,7 +1388,7 @@ class Person(
             # Initialize cache
             self._inTeam_cache = {}
         else:
-            # Retun from cache or fall through.
+            # Return from cache or fall through.
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:
@@ -1420,12 +1453,15 @@ class Person(
     @property
     def super_teams(self):
         """See `IPerson`."""
-        query = """
-            Person.id = TeamParticipation.team AND
-            TeamParticipation.person = %s AND
-            TeamParticipation.team != %s
-            """ % sqlvalues(self.id, self.id)
-        return Person.select(query, clauseTables=['TeamParticipation'])
+        return Store.of(self).using(
+            Join(
+                Person,
+                TeamParticipation,
+                Person.id == TeamParticipation.teamID
+            )).find(
+                Person,
+                TeamParticipation.personID == self.id,
+                TeamParticipation.teamID != self.id)
 
     @property
     def sub_teams(self):
@@ -1440,7 +1476,8 @@ class Person(
 
     def getTeamAdminsEmailAddresses(self):
         """See `IPerson`."""
-        assert self.is_team
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
         to_addrs = set()
         for admin in self.adminmembers:
             to_addrs.update(get_contact_email_addresses(admin))
@@ -1450,11 +1487,13 @@ class Person(
                   status=TeamMembershipStatus.APPROVED,
                   may_subscribe_to_list=True):
         """See `IPerson`."""
-        assert self.is_team, "You cannot add members to a person."
-        assert status in [TeamMembershipStatus.APPROVED,
+        if not self.is_team:
+            raise ValueError("You cannot add members to a person.")
+        if status not in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
-                          TeamMembershipStatus.ADMIN], (
-            "You can't add a member with this status: %s." % status.name)
+                          TeamMembershipStatus.ADMIN]:
+            raise ValueError("You can't add a member with this status: %s."
+                             % status.name)
 
         event = JoinTeamEvent
         tm = TeamMembership.selectOneBy(person=person, team=self)
@@ -1617,7 +1656,8 @@ class Person(
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
-        assert self.is_team, 'Method should only be called on a team.'
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         return self.adminmembers.union(
             owner, orderBy=self._sortingColumnsForSetOperations)
@@ -1637,6 +1677,78 @@ class Person(
             EmailAddress,
             EmailAddress.personID == self.id,
             EmailAddress.status == status)
+
+    def checkOpenSubscriptionPolicyAllowed(self, policy='open'):
+        """See `ITeam`"""
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
+
+        # Does this team own or is the security contact for any pillars?
+        if self.isAnyPillarOwner():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it "
+                "maintains one ore more products, project groups, or "
+                "distributions." % policy)
+        if self.isAnySecurityContact():
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it "
+                "is the security contact for one ore more products, "
+                "project groups, or distributions." % policy)
+
+        # Does this team have any PPAs
+        for ppa in self.ppas:
+            if ppa.status != ArchiveStatus.DELETED:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because it "
+                    "has one or more active PPAs." % policy)
+
+        # Does this team have any super teams that are closed?
+        for team in self.super_teams:
+            if team.subscriptionpolicy in CLOSED_TEAM_POLICY:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its super teams are not open." % policy)
+
+        # Does this team subscribe or is assigned to any private bugs.
+        # Circular imports.
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugsubscription import BugSubscription
+        from lp.bugs.model.bugtask import BugTask
+        # The team cannot be open if it is subscribed to or assigned to
+        # private bugs.
+        private_bugs_involved = IStore(Bug).execute(Union(
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
+                where=And(
+                    Bug.private == True,
+                    BugSubscription.person_id == self.id)),
+            Select(
+                Bug.id,
+                tables=(
+                    Bug,
+                    Join(BugTask, BugTask.bugID == Bug.id)),
+                where=And(Bug.private == True, BugTask.assignee == self.id)),
+            limit=1))
+        if private_bugs_involved.rowcount:
+            raise TeamSubscriptionPolicyError(
+                "The team subscription policy cannot be %s because it is "
+                "subscribed to or assigned to one or more private "
+                "bugs." % policy)
+
+    def checkClosedSubscriptionPolicyAllowed(self, policy='closed'):
+        """See `ITeam`"""
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
+
+        # The team must be open if any of it's members are open.
+        for member in self.activemembers:
+            if member.subscriptionpolicy in OPEN_TEAM_POLICY:
+                raise TeamSubscriptionPolicyError(
+                    "The team subscription policy cannot be %s because one "
+                    "or more if its member teams are Open." % policy)
 
     @property
     def wiki_names(self):
@@ -1915,6 +2027,13 @@ class Person(
                     ]))).order_by(
                         Upper(Team.displayname),
                         Upper(Team.name))
+
+    def anyone_can_join(self):
+        open_types = (
+            TeamSubscriptionPolicy.OPEN,
+            TeamSubscriptionPolicy.DELEGATED
+            )
+        return (self.subscriptionpolicy in open_types)
 
     def _getMappedParticipantsLocations(self, limit=None):
         """See `IPersonViewRestricted`."""
@@ -2398,10 +2517,11 @@ class Person(
         else:
             return None
 
-    def reactivate(self, comment, password, preferred_email):
+    def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
         account = IMasterObject(self.account)
-        account.reactivate(comment, password, preferred_email)
+        account.reactivate(comment)
+        self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
             # name, but we must ensure it does not conflict with a current
@@ -2447,7 +2567,8 @@ class Person(
 
     def setContactAddress(self, email):
         """See `IPerson`."""
-        assert self.is_team, "This method must be used only for teams."
+        if not self.is_team:
+            raise ValueError("This method must only be used for teams.")
 
         if email is None:
             self._unsetPreferredEmail()
@@ -2911,6 +3032,10 @@ class Person(
         else:
             return None
 
+    def canCreatePPA(self):
+        """See `IPerson.`"""
+        return self.subscriptionpolicy in CLOSED_TEAM_POLICY
+
 
 class PersonSet:
     """The set of persons."""
@@ -2964,97 +3089,86 @@ class PersonSet:
         # possible replication lag issues but this might actually be
         # unnecessary.
         with MasterDatabasePolicy():
-            store = IMasterStore(EmailAddress)
-            join = store.using(
-                EmailAddress,
-                LeftJoin(Account, EmailAddress.accountID == Account.id))
-            email, account = (
-                join.find(
-                    (EmailAddress, Account),
-                    EmailAddress.email.lower() ==
-                        ensure_unicode(email_address).lower()).one()
+            email, person = (
+                getUtility(IPersonSet).getByEmails([email_address]).one()
                 or (None, None))
-            identifier = store.find(
+            identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
 
-            if email is None and identifier is None:
-                # Neither the Email Address not the OpenId Identifier
-                # exist in the database. Create the email address,
-                # account, and associated info. OpenIdIdentifier is
-                # created later.
-                account_set = getUtility(IAccountSet)
-                account, email = account_set.createAccountAndEmail(
-                    email_address, creation_rationale, full_name,
-                    password=None)
-                db_updated = True
+            # XXX wgrant 2012-01-20 bug=556680: This is awful, as it can
+            # lock people out of their account until they change their
+            # SSO address. But stealing addresses from other accounts is
+            # probably worse.
+            if email is not None and email.person.is_team:
+                raise TeamEmailAddressError()
 
-            elif email is None:
-                # The Email Address does not exist in the database,
-                # but the OpenId Identifier does. Create the Email
-                # Address and link it to the account.
-                assert account is None, 'Retrieved an account but not email?'
-                account = identifier.account
-                emailaddress_set = getUtility(IEmailAddressSet)
-                email = emailaddress_set.new(
-                    email_address, account=account)
-                db_updated = True
-
-            elif account is None:
-                # Email address exists, but there is no Account linked
-                # to it. Create the Account and link it to the
-                # EmailAddress.
+            if email is None:
+                if identifier is None:
+                    # Neither the Email Address not the OpenId Identifier
+                    # exist in the database. Create the email address,
+                    # account, and associated info. OpenIdIdentifier is
+                    # created later.
+                    person_set = getUtility(IPersonSet)
+                    person, email = person_set.createPersonAndEmail(
+                        email_address, creation_rationale, comment=comment,
+                        displayname=full_name)
+                    db_updated = True
+                else:
+                    # The Email Address does not exist in the database,
+                    # but the OpenId Identifier does. Create the Email
+                    # Address and link it to the person.
+                    person = IPerson(identifier.account, None)
+                    assert person is not None, (
+                        'Received a personless account.')
+                    emailaddress_set = getUtility(IEmailAddressSet)
+                    email = emailaddress_set.new(email_address, person=person)
+                    db_updated = True
+            elif email.person.account is None:
+                # Email address and person exist, but there is no
+                # account. Create and link it.
                 account_set = getUtility(IAccountSet)
                 account = account_set.new(
                     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
                     full_name)
-                email.account = account
+                removeSecurityProxy(email.person).account = account
                 db_updated = True
+
+            person = email.person
+            assert person.account is not None
 
             if identifier is None:
                 # This is the first time we have seen that
                 # OpenIdIdentifier. Link it.
                 identifier = OpenIdIdentifier()
-                identifier.account = account
+                identifier.account = person.account
                 identifier.identifier = openid_identifier
-                store.add(identifier)
+                IStore(OpenIdIdentifier).add(identifier)
                 db_updated = True
-
-            elif identifier.account != account:
+            elif identifier.account != person.account:
                 # The ISD OpenId server may have linked this OpenId
                 # identifier to a new email address, or the user may
                 # have transfered their email address to a different
                 # Launchpad Account. If that happened, repair the
                 # link - we trust the ISD OpenId server.
-                identifier.account = account
+                identifier.account = person.account
                 db_updated = True
 
             # We now have an account, email address, and openid identifier.
 
-            if account.status == AccountStatus.SUSPENDED:
+            if person.account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
                     "The account matching the identifier is suspended.")
 
-            elif account.status in [AccountStatus.DEACTIVATED,
-                                    AccountStatus.NOACCOUNT]:
-                password = ''  # Needed just to please reactivate() below.
-                removeSecurityProxy(account).reactivate(
-                    comment, password, removeSecurityProxy(email))
+            elif person.account.status in [AccountStatus.DEACTIVATED,
+                                           AccountStatus.NOACCOUNT]:
+                removeSecurityProxy(person.account).reactivate(comment)
+                removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
                 # Account is active, so nothing to do.
                 pass
 
-            if IPerson(account, None) is None:
-                removeSecurityProxy(account).createPerson(
-                    creation_rationale, comment=comment)
-                db_updated = True
-
-            person = IPerson(account)
-            if email.personID != person.id:
-                removeSecurityProxy(email).person = person
-                db_updated = True
-
-            return person, db_updated
+            return email.person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -3078,8 +3192,7 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None,
-            displayname=None, password=None, passwordEncrypted=False,
+            self, email, rationale, comment=None, name=None, displayname=None,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
 
@@ -3100,19 +3213,13 @@ class PersonSet:
         # Convert the PersonCreationRationale to an AccountCreationRationale
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
-        account = getUtility(IAccountSet).new(
-                account_rationale, displayname, password=password,
-                password_is_encrypted=passwordEncrypted)
+        account = getUtility(IAccountSet).new(account_rationale, displayname)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
             comment=comment, registrant=registrant, account=account)
+        email = getUtility(IEmailAddressSet).new(email, person)
 
-        email = getUtility(IEmailAddressSet).new(
-                email, person, account=account)
-
-        assert email.accountID is not None, (
-            'Failed to link EmailAddress to Account')
         return person, email
 
     def createPersonWithoutEmail(
@@ -3155,55 +3262,14 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        # Start by checking if there is an `EmailAddress` for the given
-        # text address.  There are many cases where an email address can be
-        # created without an associated `Person`. For instance, we created
-        # an account linked to the address through an external system such
-        # SSO or ShipIt.
-        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        person = getUtility(IPersonSet).getByEmail(email)
 
-        # There is no `EmailAddress` for this text address, so we need to
-        # create both the `Person` and `EmailAddress` here and we are done.
-        if email_address is None:
+        if person is None:
             person, email_address = self.createPersonAndEmail(
                 email, rationale, comment=comment, displayname=displayname,
                 registrant=registrant, hide_email_addresses=True)
-            return person
 
-        # There is an `EmailAddress` for this text address, but no
-        # associated `Person`.
-        if email_address.person is None:
-            assert email_address.accountID is not None, (
-                '%s is not associated to a person or account'
-                % email_address.email)
-            account = IMasterStore(Account).get(
-                Account, email_address.accountID)
-            account_person = self.getByAccount(account)
-            if account_person is None:
-                # There is no associated `Person` to the email `Account`.
-                # This is probably because the account was created externally
-                # to Launchpad. Create just the `Person`, associate it with
-                # the `EmailAddress` and return it.
-                name = generate_nick(email)
-                account_person = self._newPerson(
-                    name, displayname, hide_email_addresses=True,
-                    rationale=rationale, comment=comment,
-                    registrant=registrant, account=email_address.account)
-            # There is (now) a `Person` linked to the `Account`, link the
-            # `EmailAddress` to this `Person` and return it.
-            master_email = IMasterStore(EmailAddress).get(
-                EmailAddress, email_address.id)
-            master_email.personID = account_person.id
-            # Populate the previously empty 'preferredemail' cached
-            # property, so the Person record is up-to-date.
-            if master_email.status == EmailAddressStatus.PREFERRED:
-                cache = get_property_cache(account_person)
-                cache.preferredemail = master_email
-            return account_person
-
-        # Easy, return the `Person` associated with the existing
-        # `EmailAddress`.
-        return IMasterStore(Person).get(Person, email_address.personID)
+        return person
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
@@ -3443,8 +3509,15 @@ class PersonSet:
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
-        return Person.select("Person.teamowner IS NOT NULL",
-            orderBy=['-datecreated'], limit=limit)
+        orderby = (Desc(Person.datecreated), Desc(Person.id))
+        result = IStore(Person).find(
+            Person,
+            And(
+                self._teamPrivacyQuery(),
+                TeamParticipation.team == Person.id,
+                Person.teamowner != None,
+                Person.merged == None))
+        return result.order_by(orderby).config(distinct=True)[:limit]
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
@@ -3508,6 +3581,31 @@ class PersonSet:
                     'column': additional_column})
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
+
+    def _mergeAccessPolicyGrant(self, cur, from_id, to_id):
+        # Update only the AccessPolicyGrants that will not conflict.
+        cur.execute('''
+            UPDATE AccessPolicyGrant
+            SET grantee=%(to_id)d
+            WHERE grantee = %(from_id)d AND (
+                policy NOT IN
+                    (
+                    SELECT policy
+                    FROM AccessPolicyGrant
+                    WHERE grantee = %(to_id)d
+                    )
+                OR artifact NOT IN
+                    (
+                    SELECT artifact
+                    FROM AccessPolicyGrant
+                    WHERE grantee = %(to_id)d
+                    )
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AccessPolicyGrant WHERE grantee = %(from_id)d
+            ''' % vars())
 
     def _mergeBranches(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
@@ -4062,6 +4160,9 @@ class PersonSet:
             % vars())
         skip.append(('gpgkey', 'owner'))
 
+        self._mergeAccessPolicyGrant(cur, from_id, to_id)
+        skip.append(('accesspolicygrant', 'grantee'))
+
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
         self._mergeBranches(from_person, to_person)
@@ -4195,7 +4296,7 @@ class PersonSet:
             return
 
         # Inform the user of the merge changes.
-        if to_person.isTeam():
+        if to_person.is_team:
             mail_text = get_email_template(
                 'team-merged.txt', app='registry')
             subject = 'Launchpad teams merged'

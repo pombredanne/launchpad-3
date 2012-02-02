@@ -6,9 +6,8 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
 from storm.store import Store
+import transaction
 
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.windmill.testing import CodeWindmillLayer
@@ -24,7 +23,7 @@ class TestRecipeSetDaily(WindmillTestCase):
 
     def test_inline_recipe_daily_build(self):
         eric = self.factory.makePerson(
-            name="eric", displayname="Eric the Viking", password="test",
+            name="eric", displayname="Eric the Viking",
             email="eric@example.com")
         recipe = self.factory.makeSourcePackageRecipe(owner=eric)
         transaction.commit()
@@ -48,7 +47,7 @@ class TestRecipeSetDaily(WindmillTestCase):
     def test_inline_recipe_text_errors(self):
         # XXX: do we really want to error check here?
         eric = self.factory.makePerson(
-            name="eric", displayname="Eric the Viking", password="test",
+            name="eric", displayname="Eric the Viking",
             email="eric@example.com")
         recipe = self.factory.makeSourcePackageRecipe(owner=eric)
         recipe_text = recipe.recipe_text + 'merge WTF?'

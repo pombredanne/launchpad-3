@@ -64,7 +64,7 @@
         <dd
           tal:attributes="title context/subscriptionpolicy/description">
           <span tal:replace="context/subscriptionpolicy/title" />
-          <a class="sprite maybe" href="/+help/team-subscription-policy.html"
+          <a class="sprite maybe" href="/+help-registry/team-subscription-policy.html"
             target="help">&nbsp;</a>
         </dd>
       </dl>
@@ -92,18 +92,18 @@
        >
     <h2>Subteam of</h2>
 
-    <p tal:condition="not: context/super_teams">
+    <p tal:condition="not: view/super_teams">
       &#8220;<span tal:replace="context/displayname"/>&#8221;
       itself is not a member of any other team.
     </p>
 
-    <tal:is-a-subteam condition="context/super_teams">
+    <tal:is-a-subteam condition="view/super_teams">
       <p>
         &#8220;<span tal:replace="context/displayname"/>&#8221;
         is a member of these teams:
       </p>
       <ul class="iconed">
-        <li tal:repeat="team context/super_teams">
+        <li tal:repeat="team view/super_teams">
           <tal:block replace="structure team/fmt:link" />
         </li>
       </ul>
@@ -111,7 +111,7 @@
 
     <ul class="horizontal">
       <li
-        tal:condition="context/super_teams"
+        tal:condition="view/super_teams"
         tal:replace="structure overview_menu/memberships/fmt:link" />
       <li
         tal:condition="context/open_membership_invitations"
@@ -253,7 +253,7 @@
               condition="private_prefix">
   <script type="text/javascript"
           tal:content="string:
-    LPS.use('node', 'event', function(Y) {
+    YUI().use('node', 'event', function(Y) {
       // Prepend/remove 'private-' from team name based on visibility
       // setting.  User can choose to edit it back out, if they wish.
       function visibility_on_change(e) {

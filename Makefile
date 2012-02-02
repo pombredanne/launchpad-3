@@ -1,7 +1,9 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python2.6
+PYTHON:=$(shell sed -e \
+    '/RELEASE/!d; s/.*=12.*/python2.7/; s/.*=.*/python2.6/' /etc/lsb-release)
+
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -32,14 +34,15 @@ lib -path 'lib/lp/*/javascript/*' \
 endef
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
-JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
+CONVOY_ROOT=/var/tmp/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -79,13 +82,18 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
-	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
+	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
 	    --force "$(APIDOC_TMPDIR)"
 	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
-apidoc: compile $(API_INDEX)
+apidoc:
+ifdef LP_MAKE_NO_WADL
+	@echo "Skipping WADL generation."
+else
+	$(MAKE) compile $(API_INDEX)
+endif
 
 # Used to generate HTML developer documentation for Launchpad.
 doc:
@@ -93,7 +101,7 @@ doc:
 
 # Run by PQM.
 check_config: build
-	bin/test -m canonical.config.tests -vvt test_config
+	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
@@ -178,7 +186,14 @@ else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
+combobuild: jsbuild
+	mkdir -p $(CONVOY_ROOT)
+	bin/combo-rootdir $(CONVOY_ROOT)
+	rm -f $(ICING)/yui
+	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
+
 jsbuild: $(PY) $(JS_OUT)
+	ln -sf ../../../../build/js/yui/yui-3.3.0 $(ICING)/yui
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -231,7 +246,6 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
 compile: $(PY) $(BZR_VERSION_INFO)
-	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -346,23 +360,35 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
+clean_combo: clean_js
+	$(RM) -r $(CONVOY_ROOT)
+
 clean_js:
 	$(RM) $(JS_OUT)
-	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+	$(RM) -r $(ICING)/yui
 
 clean_buildout:
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
 
-clean: clean_js clean_buildout clean_logs
+clean_mailman:
+	$(RM) -r \
+			  /var/tmp/mailman \
+			  /var/tmp/mailman-xmlrpc.test
+ifdef LP_MAKE_KEEP_MAILMAN
+	@echo "Keeping previously built mailman."
+else
+	$(RM) -r lib/mailman
+endif
+
+clean: clean_js clean_mailman clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -375,14 +401,14 @@ clean: clean_js clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r lib/mailman
-	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
-	$(RM) -rf $(CODEHOSTING_ROOT)
-	$(RM) -rf $(APIDOC_DIR)
-	$(RM) -rf $(APIDOC_DIR).tmp
+	$(RM) -r $(LP_BUILT_JS_ROOT)/*
+	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -r $(APIDOC_DIR)
+	$(RM) -r $(APIDOC_DIR).tmp
+	$(RM) -r build
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -rf \
+	$(RM) -r \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
@@ -398,7 +424,7 @@ clean: clean_js clean_buildout clean_logs
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then \
-		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+		$(RM) -r /var/tmp/launchpad_mailqueue; \
 	fi
 
 
@@ -432,14 +458,11 @@ copy-apache-config:
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache \
-		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
-	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

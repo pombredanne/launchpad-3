@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing registry-related xmlrpc calls."""
@@ -10,10 +10,6 @@ import xmlrpclib
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import IPrivateApplication
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
     IPersonSet,
     ISoftwareCenterAgentAPI,
@@ -21,8 +17,12 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
@@ -86,12 +86,13 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             removeSecurityProxy(
                 person.account).openid_identifiers.any().identifier)
 
-    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_error(self):
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_suspended(self):
         # A suspended account results in an appropriate xmlrpc fault.
-        suspended_account = self.factory.makeAccount(
-            'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
+        suspended_person = self.factory.makePerson(
+            displayname='Joe Blogs', email='a@b.com',
+            account_status=AccountStatus.SUSPENDED)
         openid_identifier = removeSecurityProxy(
-            suspended_account).openid_identifiers.any().identifier
+            suspended_person.account).openid_identifiers.any().identifier
 
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False
@@ -102,6 +103,22 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
             fault_raised = True
             self.assertEqual(370, e.faultCode)
             self.assertIn(openid_identifier, e.faultString)
+
+        self.assertTrue(fault_raised)
+
+    def test_getOrCreateSoftwareCenterCustomer_xmlrpc_team(self):
+        # A team email address results in an appropriate xmlrpc fault.
+        self.factory.makeTeam(email='a@b.com')
+
+        # assertRaises doesn't let us check the type of Fault.
+        fault_raised = False
+        try:
+            self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
+                'foo', 'a@b.com', 'Joe Blogs')
+        except xmlrpclib.Fault, e:
+            fault_raised = True
+            self.assertEqual(400, e.faultCode)
+            self.assertIn('a@b.com', e.faultString)
 
         self.assertTrue(fault_raised)
 

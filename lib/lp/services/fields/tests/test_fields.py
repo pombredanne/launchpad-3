@@ -13,14 +13,18 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema.interfaces import TooShort
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
+    OPEN_TEAM_POLICY,
+    )
+from lp.services.database.lpstorm import IStore
 from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,
     FormattableDate,
+    is_public_person_or_closed_team,
     StrippableText,
     )
 from lp.testing import (
@@ -28,6 +32,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 def make_target():
@@ -159,7 +164,7 @@ class TestBaseImageUpload(TestCase):
 
     class ExampleImageUpload(BaseImageUpload):
         dimensions = (192, 192)
-        max_size = 100*1024
+        max_size = 100 * 1024
 
     def test_validation_corrupt_image(self):
         # ValueErrors raised by PIL become LaunchpadValidationErrors.
@@ -182,3 +187,30 @@ class TestBaseImageUpload(TestCase):
         image.filename = 'foo.jpg'
         self.assertRaises(
             LaunchpadValidationError, field.validate, image)
+
+
+class Test_is_person_or_closed_team(TestCaseWithFactory):
+    """ Tests for is_person_or_closed_team()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_person(self):
+        self.assertFalse(is_public_person_or_closed_team(0))
+
+    def test_person(self):
+        person = self.factory.makePerson()
+        self.assertTrue(is_public_person_or_closed_team(person))
+
+    def test_open_team(self):
+        for policy in OPEN_TEAM_POLICY:
+            open_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertFalse(
+                is_public_person_or_closed_team(open_team),
+                "%s is not open" % policy)
+
+    def test_closed_team(self):
+        for policy in CLOSED_TEAM_POLICY:
+            closed_team = self.factory.makeTeam(subscription_policy=policy)
+            self.assertTrue(
+                is_public_person_or_closed_team(closed_team),
+                "%s is not closed" % policy)

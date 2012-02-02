@@ -9,20 +9,30 @@ Apply all outstanding schema patches to an existing launchpad database
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
-import _pythonpath  # Sort PYTHONPATH
+import _pythonpath
 
 from cStringIO import StringIO
 import glob
-import os.path
 from optparse import OptionParser
+import os.path
 import re
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
-from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.database.postgresql import fqn
+from bzrlib.branch import Branch
+from bzrlib.errors import NotBranchError
+
+from lp.services.database.postgresql import fqn
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    sqlvalues,
+    )
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 import replication.helpers
 
 
@@ -90,7 +100,11 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
         AND LaunchpadDatabaseRevision.start_time <> prev_end_time;
 
     UPDATE LaunchpadDatabaseRevision
-    SET start_time=_start_time.start_time
+    SET
+        start_time=_start_time.start_time,
+        branch_nick = %s,
+        revno = %s,
+        revid = %s
     FROM _start_time
     WHERE
         LaunchpadDatabaseRevision.start_time
@@ -153,7 +167,8 @@ def apply_patches_normal(con):
     apply_other(con, 'trusted.sql')
 
     # Prepare to repair patch timestamps if necessary.
-    con.cursor().execute(FIX_PATCH_TIMES_PRE_SQL)
+    cur = con.cursor()
+    cur.execute(FIX_PATCH_TIMES_PRE_SQL)
 
     # Apply the patches
     patches = get_patchlist(con)
@@ -161,7 +176,8 @@ def apply_patches_normal(con):
         apply_patch(con, major, minor, patch, patch_file)
 
     # Repair patch timestamps if necessary.
-    con.cursor().execute(FIX_PATCH_TIMES_POST_SQL)
+    cur.execute(
+        FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
 
     # Update comments.
     apply_comments(con)
@@ -181,73 +197,50 @@ def apply_patches_replicated():
     log.info("Waiting for cluster to sync, pre-update.")
     replication.helpers.sync(timeout=600)
 
+    # Slonik script we are generating.
     outf = StringIO()
 
     # Start a transaction block.
     print >> outf, "try {"
 
-    sql_to_run = []
+    # All the SQL we need to run, combined into one file. This minimizes
+    # Slony-I syncs and downtime.
+    combined_sql = NamedTemporaryFile(prefix='dbupdate', suffix='.sql')
 
-    def run_sql(script):
-        if os.path.isabs(script):
-            full_path = script
-        else:
-            full_path = os.path.abspath(os.path.join(SCHEMA_DIR, script))
-        assert os.path.exists(full_path), "%s doesn't exist." % full_path
-        sql_to_run.append(full_path)
-
-    # We are going to generate some temporary files using
-    # NamedTempoararyFile. Store them here so we can control when
-    # they get closed and cleaned up.
-    temporary_files = []
+    def add_sql(sql):
+        sql = sql.strip()
+        if sql != '':
+            assert sql.endswith(';'), "SQL not terminated with ';': %s" % sql
+            print >> combined_sql, sql
+            # Flush or we might lose statements from buffering.
+            combined_sql.flush()
 
     # Apply trusted.sql
-    run_sql('trusted.sql')
-
-    # We are going to generate some temporary files using
-    # NamedTempoararyFile. Store them here so we can control when
-    # they get closed and cleaned up.
-    temporary_files = []
-
-    # Apply DB patches as one big hunk.
-    combined_script = NamedTemporaryFile(prefix='patch', suffix='.sql')
-    temporary_files.append(combined_script)
+    add_sql(open(os.path.join(SCHEMA_DIR, 'trusted.sql'), 'r').read())
 
     # Prepare to repair the start timestamps in
     # LaunchpadDatabaseRevision.
-    print >> combined_script, FIX_PATCH_TIMES_PRE_SQL
+    add_sql(FIX_PATCH_TIMES_PRE_SQL)
 
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
-        print >> combined_script, open(patch_file, 'r').read()
+        add_sql(open(patch_file, 'r').read())
 
         # Trigger a failure if the patch neglected to update
         # LaunchpadDatabaseRevision.
-        print >> combined_script, (
+        add_sql(
             "SELECT assert_patch_applied(%d, %d, %d);"
             % (major, minor, patch))
 
     # Fix the start timestamps in LaunchpadDatabaseRevision.
-    print >> combined_script, FIX_PATCH_TIMES_POST_SQL
-
-    combined_script.flush()
-    run_sql(combined_script.name)
-
-    # Now combine all the written SQL (probably trusted.sql and
-    # patch*.sql) into one big file, which we execute with a single
-    # slonik execute_script statement to avoid multiple syncs.
-    single = NamedTemporaryFile(prefix='single', suffix='.sql')
-    for path in sql_to_run:
-        print >> single, open(path, 'r').read()
-        print >> single, ""
-    single.flush()
+    add_sql(FIX_PATCH_TIMES_POST_SQL % sqlvalues(*get_bzr_details()))
 
     print >> outf, dedent("""\
         execute script (
             set id = @lpmain_set, event node = @master_node,
             filename='%s'
             );
-        """ % single.name)
+        """ % combined_sql.name)
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
@@ -264,11 +257,6 @@ def apply_patches_replicated():
         log.fatal("Aborting.")
         raise SystemExit(4)
     log.info("slonik(1) schema upgrade script completed.")
-
-    # Cleanup our temporary files - they applied successfully.
-    for temporary_file in temporary_files:
-        temporary_file.close()
-    del temporary_files
 
     # Wait for replication to sync.
     log.info("Waiting for patches to apply to slaves and cluster to sync.")
@@ -596,6 +584,28 @@ def apply_other(con, script, no_commit=False):
 
 def apply_comments(con):
     apply_other(con, 'comments.sql')
+
+
+_bzr_details_cache = None
+
+
+def get_bzr_details():
+    """Return (branch_nick, revno, revision_id) of this Bazaar branch.
+
+    Returns (None, None, None) if the tree this code is running from
+    is not a Bazaar branch.
+    """
+    global _bzr_details_cache
+    if _bzr_details_cache is None:
+        try:
+            branch = Branch.open_containing(SCHEMA_DIR)[0]
+            revno, revision_id = branch.last_revision_info()
+            branch_nick = branch.get_config().get_nickname()
+        except NotBranchError:
+            log.warning("Not a Bazaar branch - branch details unavailable")
+            revision_id, revno, branch_nick = None, None, None
+        _bzr_details_cache = (branch_nick, revno, revision_id)
+    return _bzr_details_cache
 
 
 if __name__ == '__main__':

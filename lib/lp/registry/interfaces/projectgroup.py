@@ -41,14 +41,14 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
+from lp import _
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IServiceUsage,
     )
-from lp.app.interfaces.headings import IRootContext
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
@@ -131,9 +131,10 @@ class IProjectGroupPublic(
         PublicPersonChoice(
             title=_('Maintainer'),
             required=True,
-            vocabulary='ValidOwner',
-            description=_("Project group owner. Must be either a "
-                          "Launchpad Person or Team.")))
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project group information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(

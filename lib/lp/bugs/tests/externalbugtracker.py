@@ -26,15 +26,6 @@ import xmlrpclib
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
     BugNotFound,
@@ -69,6 +60,10 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.testing import celebrity_logged_in
+from lp.testing.dbuser import lp_dbuser
+from lp.testing.systemdocs import ordered_dict_as_string
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
@@ -79,31 +74,26 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     closed. After returning from this function, a new connection using
     the checkwatches db user is created.
     """
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
-    owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    bugtracker_set = getUtility(IBugTrackerSet)
-    index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower())
-    while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
-        index += 1
-    name += '-%d' % index
-    BugTracker(
-        name=name,
-        title='%s *TESTING*' % (bugtracker_type.title),
-        bugtrackertype=bugtracker_type,
-        baseurl=base_url,
-        summary='-', contactdetails='-',
-        owner=owner)
-    commit()
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    with lp_dbuser():
+        owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        bugtracker_set = getUtility(IBugTrackerSet)
+        index = 1
+        name = '%s-checkwatches' % (bugtracker_type.name.lower())
+        while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
+            index += 1
+        name += '-%d' % index
+        BugTracker(
+            name=name,
+            title='%s *TESTING*' % (bugtracker_type.title),
+            bugtrackertype=bugtracker_type,
+            baseurl=base_url,
+            summary='-', contactdetails='-',
+            owner=owner)
     return getUtility(IBugTrackerSet).getByName(name)
 
 
 def read_test_file(name):
-    """Return the contents of the test file named :name:
-
-    Test files are located in lib/canonical/launchpad/ftests/testfiles
-    """
+    """Return the contents of the test file named :name:"""
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
 
     test_file = open(file_path, 'r')
@@ -161,11 +151,10 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('foo.bar@canonical.com')
-    bug_watch.remotestatus = None
-    bug_watch.last_error_type = error_type
-    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
-    logout()
+    with celebrity_logged_in('admin'):
+        bug_watch.remotestatus = None
+        bug_watch.last_error_type = error_type
+        bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -1202,11 +1191,8 @@ class TestInternalXMLRPCTransport:
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
-        result = method(*args)
-        LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-        return result
+        with lp_dbuser():
+            return method(*args)
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)

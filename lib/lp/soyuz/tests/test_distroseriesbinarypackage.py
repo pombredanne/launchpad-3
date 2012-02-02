@@ -12,10 +12,8 @@ from testtools.matchers import (
     Equals,
     NotEquals,
     )
-import transaction
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -24,6 +22,8 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -59,15 +59,14 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
             archive=distro_archive_2)
 
         logger = BufferLogger()
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
-        DistroSeriesPackageCache._update(
-            self.distroseries, self.binary_package_name, distro_archive_1,
-            logger)
+        with dbuser(config.statistician.dbuser):
+            DistroSeriesPackageCache._update(
+                self.distroseries, self.binary_package_name, distro_archive_1,
+                logger)
 
-        DistroSeriesPackageCache._update(
-            self.distroseries, self.binary_package_name, distro_archive_2,
-            logger)
+            DistroSeriesPackageCache._update(
+                self.distroseries, self.binary_package_name, distro_archive_2,
+                logger)
 
         self.failUnlessEqual(
             'Foo is the best', self.distroseries_binary_package.summary)

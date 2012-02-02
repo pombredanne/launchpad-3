@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -10,12 +10,11 @@
 
 import _pythonpath
 
-from canonical.config import config
-from lp.soyuz.scripts.ftpmaster import PackageRemover
+from lp.services.config import config
+from lp.soyuz.scripts.packageremover import PackageRemover
 
 
 if __name__ == '__main__':
     script = PackageRemover(
         'lp-remove-package', dbuser=config.archivepublisher.dbuser)
     script.lock_and_run()
-

@@ -8,6 +8,8 @@
   >
 <body>
   <tal:heading metal:fill-slot="heading">
+    <meta itemprop="name"
+      tal:attributes="content context/displayname">
     <h1 tal:condition="context/enabled"
         tal:replace="structure view/displayname_edit_widget">
       PPA for user
@@ -91,7 +93,7 @@
           this untrusted PPA by adding <strong
           tal:content="context/fmt:reference">ppa:cprov/ppa</strong>
           to your system's Software Sources.
-          (<a href="/+help/soyuz/ppa-sources-list.html"
+          (<a href="/+help-soyuz/ppa-sources-list.html"
               target="help">Read about installing</a>)
         </p>
 
@@ -113,7 +115,7 @@
                 <code tal:content="signing_key/displayname"
                   >1024R/23456789</code>
               </a>
-              (<a href="/+help/soyuz/ppa-sources-list.html"
+              (<a href="/+help-soyuz/ppa-sources-list.html"
                   target="help">What is this?</a>)
             </dd>
             <dt>Fingerprint:</dt>
@@ -146,7 +148,7 @@
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-          LPS.use('lp.app.widgets.expander', function(Y) {
+          YUI().use('lp.app.widgets.expander', function(Y) {
               var widget_header = Y.one('#ppa-install .widget-header');
               var content = Y.one('.widget-body');
               var expander = new Y.lp.app.widgets.expander.Expander(

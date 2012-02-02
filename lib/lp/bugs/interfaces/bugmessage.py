@@ -26,13 +26,13 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.services.messages.interfaces.message import IMessage
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import Title
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IBugMessage(IHasBug):

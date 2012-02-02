@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,22 +19,20 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    GetitemNavigation,
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
     LaunchpadEditFormView,
+    LaunchpadFormView,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp import GetitemNavigation
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -86,6 +84,10 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
 class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
+
+    @property
+    def page_title(self):
+        return self.context.title
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

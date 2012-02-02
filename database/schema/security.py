@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from collections import defaultdict
@@ -17,18 +16,19 @@ import sys
 
 import psycopg2
 
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger_options, logger, db_options
 from fti import quote_identifier
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 import replication.helpers
-
 
 # The 'read' group does not get given select permission on the following
 # tables. This is to stop the ro user being given access to secrurity
 # sensitive information that interactive sessions don't need.
 SECURE_TABLES = set((
-    'public.accountpassword',
-    'public.accountpassword_id_seq',
     'public.oauthnonce',
     'public.oauthnonce_id_seq',
     'public.openidnonce',

@@ -5,8 +5,9 @@ __metaclass__ = type
 
 from datetime import timedelta
 
-from canonical.testing import AppServerLayer
-from lp.registry.enum import (
+from zope.security.proxy import removeSecurityProxy
+
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -14,6 +15,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import AppServerLayer
 
 
 class DistroSeriesWebServiceTestCase(TestCaseWithFactory):
@@ -57,3 +59,11 @@ class DistroSeriesWebServiceTestCase(TestCaseWithFactory):
         search_results = ds_ws.getDifferenceComments(
             since=yesterday, source_package_name=package_name)
         self.assertContentEqual([self._wsFor(comment)], search_results)
+
+    def test_nominatedarchindep(self):
+        # nominatedarchindep is exposed on IDistroseries.
+        distroseries = self.factory.makeDistroSeries()
+        arch = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        removeSecurityProxy(distroseries).nominatedarchindep = arch
+        ds_ws = self._wsFor(distroseries)
+        self.assertEqual(self._wsFor(arch), ds_ws.nominatedarchindep)

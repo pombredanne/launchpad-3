@@ -12,13 +12,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -37,6 +31,8 @@ from lp.registry.model.distroseriesdifference import (
     most_recent_publications,
     )
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.packagesetsources import PackagesetSources
@@ -44,6 +40,10 @@ from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

@@ -23,14 +23,14 @@
 
         <script tal:replace="structure view/tags_js_data" />
         <script type="text/javascript">
-            LPS.use('event', 'lp.bugs.official_bug_tags', function(Y) {
+            YUI().use('event', 'lp.bugs.official_bug_tags', function(Y) {
                 Y.on('domready', function(e) {
                    Y.lp.bugs.official_bug_tags.setup_official_bug_tag_management();
                 });
             });
         </script>
 
-        <table id="layout-table" class="official-tags-layout-table" style="display:none">
+        <table id="layout-table" class="official-tags-layout-table hidden">
           <tr>
             <th>Official tags</th>
             <th />

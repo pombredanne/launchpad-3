@@ -15,14 +15,6 @@ from datetime import datetime
 import bzrlib
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects,
-    )
 from lp.code.enums import CodeImportReviewStatus
 from lp.code.interfaces.branch import (
     IBranchCloud,
@@ -31,10 +23,18 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import precache_permission_for_objects
 
 
 class BazaarApplicationView(LaunchpadView):
+
+    page_title = 'Launchpad Branches'
 
     @property
     def branch_count(self):
@@ -152,6 +152,8 @@ class BazaarProjectsRedirect(LaunchpadView):
 
 class BazaarProductView(LaunchpadView):
     """Browser class for products gettable with Bazaar."""
+
+    page_title = 'Projects with active branches'
 
     def _make_distribution_map(self, values, percentile_map):
         """Given some values and a map of percentiles to other values, return

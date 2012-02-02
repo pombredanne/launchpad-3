@@ -18,13 +18,14 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 from zope.interface import Attribute
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [
     'IMaloneApplication',
+    'IPrivateMaloneApplication',
     ]
 
 
@@ -79,3 +80,7 @@ class IMaloneApplication(ILaunchpadApplication):
           * for public upstreams bugs where there is no upstream bug contact,
             the product owner will be subscribed instead
         """
+
+
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""

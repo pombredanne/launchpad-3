@@ -487,16 +487,16 @@ Only PENDING and PUBLISHED publications are considered.
 
 We will use `SoyuzTestPublisher` for creating convenient publications.
 
-    >>> from canonical.database.sqlbase import commit
-    >>> from lp.soyuz.enums import (
-    ...              PackagePublishingStatus)
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...              SoyuzTestPublisher)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.testing.dbuser import (
+    ...     lp_dbuser,
+    ...     switch_dbuser,
+    ...     )
 
     >>> test_publisher = SoyuzTestPublisher()
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> unused = test_publisher.setUpDefaultDistroSeries(warty)
     >>> test_publisher.addFakeChroots()
@@ -529,8 +529,7 @@ And one source with a single binary in PUBLISHED status.
     ...      set(pub.binarypackagerelease.name for pub in published_binaries))
     1
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
 Exactly 2 new sources and 2 new binaries will be accounted.
 
@@ -543,7 +542,7 @@ Exactly 2 new sources and 2 new binaries will be accounted.
 
 Let's create one source with a single binary in DELETED status.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> deleted_source = test_publisher.getPubSource(
     ...              sourcename = 'pending-source',
@@ -557,7 +556,7 @@ Let's create one source with a single binary in DELETED status.
     ...      set(pub.binarypackagerelease.name for pub in deleted_binaries))
     1
 
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
 Distroseries package counters will not account DELETED publications.
 
@@ -702,23 +701,9 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...      print '%d binaries cached [%d]' % (
     ...          archive.binaries_cached, binary_caches.count())
     >>> def print_search_results(text, user=None):
-    ...      commit()
-    ...      LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...      for ppa in ubuntu.searchPPAs(text, user=user):
-    ...          print ppa.displayname
-    ...      LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    >>> def enable_archive(archive):
-    ...      commit()
-    ...      LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...      archive.enable()
-    ...      commit()
-    ...      LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    >>> def disable_archive(archive):
-    ...      commit()
-    ...      LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...      archive.disable()
-    ...      commit()
-    ...      LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    ...      with lp_dbuser():
+    ...          for ppa in ubuntu.searchPPAs(text, user=user):
+    ...              print ppa.displayname
 
     >>> rebuild_caches(cprov.archive)
 
@@ -731,7 +716,8 @@ First, we rebuild and examinate the caches for Celso's PPA.
 
 When Celso's PPA gets disabled, the indexes remain in the DB.
 
-    >>> disable_archive(cprov.archive)
+    >>> with lp_dbuser():
+    ...     cprov.archive.disable()
 
     >>> print_caches(cprov.archive)
     3 sources cached [3]
@@ -766,7 +752,8 @@ If by any chance, the disabled PPA gets re-enabled, the cache records
 will be re-created when the indexes are rebuilt and the ppa becomes
 publicly searchable again.
 
-    >>> enable_archive(cprov.archive)
+    >>> with lp_dbuser():
+    ...     cprov.archive.enable()
 
     >>> rebuild_caches(cprov.archive)
 

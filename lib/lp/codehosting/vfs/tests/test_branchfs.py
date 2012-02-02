@@ -10,9 +10,9 @@ __metaclass__ = type
 import codecs
 import os
 import re
+from StringIO import StringIO
 import sys
 import xmlrpclib
-from StringIO import StringIO
 
 from bzrlib import errors
 from bzrlib.bzrdir import (
@@ -40,19 +40,13 @@ from bzrlib.urlutils import (
     escape,
     local_path_to_url,
     )
-
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    run_with_log_observers,
     )
-
 from twisted.internet import defer
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.testing.layers import (
-    ZopelessDatabaseLayer,
-    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
@@ -77,11 +71,14 @@ from lp.codehosting.vfs.branchfs import (
     UnknownTransportType,
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.services.config import config
 from lp.services.job.runner import TimeoutError
+from lp.services.webapp import errorlog
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 def branch_to_path(branch, add_slash=True):
@@ -865,7 +862,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
     """Test notification of branch changes."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestBranchChangedNotification, self).setUp()
         self._server = None
         self._branch_changed_log = []
         frontend = InMemoryFrontend()
@@ -1036,7 +1033,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
     """Test handling of errors when branchChange is called."""
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestBranchChangedErrorHandling, self).setUp()
         self._server = None
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
@@ -1087,7 +1084,8 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # endpoint. We will then check the error handling.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
+        branch = run_with_log_observers(
+            [], self.make_branch, db_branch.unique_name)
         branch.lock_write()
         branch.unlock()
         stderr_text = sys.stderr.getvalue()

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes for Soyuz tests."""
@@ -14,23 +14,21 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.ftests import (
-    import_public_test_keys,
-    )
-from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.packagediff import IPackageDiffSet
+from lp.services.config import config
+from lp.services.librarian.model import LibraryFileAlias
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
+from lp.soyuz.tests.fakepackager import FakePackager
 from lp.testing.dbuser import dbuser
+from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.sampledata import (
     BUILDD_ADMIN_USERNAME,
     CHROOT_LIBRARYFILEALIAS,
@@ -88,7 +86,7 @@ class SoyuzTestHelper:
                                         distroseries):
         """Return a list of `SourcePackagePublishingHistory`.
 
-        The publishing records are created according the given
+        The publishing records are created according to the given
         `SourcePackageRelease` and `DistroSeries` for all
         (status, archive, pocket) returned from `sample_publishing_data`.
         """
@@ -96,6 +94,7 @@ class SoyuzTestHelper:
         for status, archive, pocket in self.sample_publishing_data:
             pub = SourcePackagePublishingHistory(
                 sourcepackagerelease=sourcepackagerelease,
+                sourcepackagename=sourcepackagerelease.sourcepackagename,
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
                 section=sourcepackagerelease.section,
@@ -111,7 +110,7 @@ class SoyuzTestHelper:
                                             distroarchseries):
         """Return a list of `BinaryPackagePublishingHistory`.
 
-        The publishing records are created according the given
+        The publishing records are created according to the given
         `BinaryPackageRelease` and `DistroArchSeries` for all
         (status, archive, pocket) returned from `sample_publishing_data`.
         """
@@ -119,6 +118,7 @@ class SoyuzTestHelper:
         for status, archive, pocket in self.sample_publishing_data:
             pub = BinaryPackagePublishingHistory(
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 distroarchseries=distroarchseries,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,

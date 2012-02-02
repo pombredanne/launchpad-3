@@ -12,22 +12,23 @@ from optparse import (
     OptionParser,
     OptionValueError,
     )
-from testtools.matchers import MatchesStructure
 from unittest import TestLoader
 
 from storm.store import Store
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.loghandler import Handler
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
@@ -58,7 +59,7 @@ class TestRemoveTranslationsConstraints(TestCase):
         super(TestRemoveTranslationsConstraints, self).setUp()
         # Acquire privileges to delete TranslationMessages.  We won't
         # actually do that here, but we'll go through all the motions.
-        self.layer.switchDbUser('postgres')
+        switch_dbuser('postgres')
 
     def _check_options(self, opts):
         """Get `_check_constraints_safety`'s answer for given options."""
@@ -247,7 +248,7 @@ class TestRemoveTranslations(TestCase):
         # remove-translations-by.txt tests a realistic run of the
         # remove-translations-by.py script under the actual rosettaadmin
         # db user.
-        self.layer.switchDbUser('postgres')
+        switch_dbuser('postgres')
 
         # Set up a template with Dutch and German translations.  The
         # messages we set up here are invariant; they remain untouched
@@ -586,7 +587,7 @@ class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
 
     def setUp(self):
         super(TestRemoveTranslationsUnmasking, self).setUp()
-        self.layer.switchDbUser('postgres')
+        switch_dbuser('postgres')
 
         # Set up a template with a Laotian translation file.  There's
         # one message to be translated.

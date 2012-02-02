@@ -42,8 +42,8 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
-	the\n-- GNU Affero General Public License version 3 (see the file \
+HEADER="-- Copyright 2010-2011 Canonical Ltd.  This software is licensed \
+  under the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
 # The command used (in conjunction with $(call)) to dump the contents of the
@@ -53,7 +53,7 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
     echo -n "-- Created using " >> $(2) && \
     pg_dump --version >> $(2) && \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
-    | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+    | grep -v "\( TOC \|INSERT INTO launchpaddatabase\|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
     | $(PYTHON) sort_sql.py >> $(2) && \
     $(PYTHON) fti.py --force -d ${1} -q
 
@@ -64,9 +64,9 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 #
-REV=2208
+REV=2209
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=12a258f8651ae3bba0c96ec8e62be1dd  launchpad-2208-00-0.sql
+MD5SUM=cc7a493c924196409a22392a16443d52  launchpad-2209-00-0.sql
 
 default: all
 
@@ -116,26 +116,10 @@ create:
 	@ echo
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
 	@ ${CREATEDB} template0 ${EMPTY_DBNAME}
-	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
-		echo "* Installing PL/PythonU"; \
-		createlang -d ${EMPTY_DBNAME} plpythonu; \
-	fi
-	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpgsql`; then \
-		echo "* Installing PL/PgSQL"; \
-	    	createlang -d ${EMPTY_DBNAME} plpgsql; \
-	fi
-	@ echo "* Creating todrop schema"
-	@ psql -d ${EMPTY_DBNAME} -q -c "CREATE SCHEMA todrop;"
-	@ echo "* Creating functions"
-	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
-	@ echo "* Installing tsearch2 into ts2 schema"
-	@ ${PYTHON} fti.py -q --setup-only -d ${EMPTY_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${EMPTY_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
 	@ ${PYTHON} upgrade.py -d ${EMPTY_DBNAME}
-	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Disabling autovacuum"

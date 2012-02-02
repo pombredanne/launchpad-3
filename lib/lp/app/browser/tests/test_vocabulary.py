@@ -20,27 +20,27 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    VocabularyFilter,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.browser.vocabulary import (
     IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    VocabularyFilter,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.testing.views import create_view
 
@@ -197,12 +197,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistributionSourcePackagePickerEntrySourceAdapter,
-              self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
-
     def getPickerEntry(self, dsp):
         return get_picker_entry(dsp, object())
 
@@ -276,11 +270,6 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestProductPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
-
     def getPickerEntry(self, product):
         return get_picker_entry(product, object())
 
@@ -333,11 +322,6 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestProjectGroupPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, projectgroup):
         return get_picker_entry(projectgroup, object())
@@ -392,11 +376,6 @@ class TestProjectGroupPickerEntrySourceAdapter(TestCaseWithFactory):
 class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDistributionPickerEntrySourceAdapter, self).setUp()
-        flag = {'disclosure.target_picker_enhancements.enabled': 'on'}
-        self.useFixture(FeatureFixture(flag))
 
     def getPickerEntry(self, distribution):
         return get_picker_entry(distribution, object())
@@ -532,15 +511,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        feature_flag = {
-            'disclosure.picker_enhancements.enabled': 'on',
-            'disclosure.picker_expander.enabled': 'on',
-            'disclosure.personpicker_affiliation.enabled': 'on',
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -589,7 +562,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_vocab_filter(self):
         # The vocab filter is used to filter results.
-        team = self.factory.makeTeam(name='xpting-team')
+        team = self.factory.makeTeam(
+            name='xpting-team',
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         person = self.factory.makePerson(name='xpting-person')
         TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)

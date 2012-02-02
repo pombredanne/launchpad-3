@@ -16,7 +16,7 @@
       <tal:enabled condition="view/show_derivation_form">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
-        <a href="/+help/init-series-title-help.html"
+        <a href="/+help-registry/init-series-title-help.html"
            target="help" class="sprite maybe">&nbsp;
           <span class="invisible-link">Initialization help</span></a>
       </div>
@@ -30,7 +30,7 @@
         <metal:form use-macro="context/@@launchpad_form/form" />
       </div>
       <script type="text/javascript">
-        LPS.use('lp.registry.distroseries.initseries', function(Y) {
+        YUI().use('lp.registry.distroseries.initseries', function(Y) {
           Y.on('domready', Y.lp.registry.distroseries.initseries.setup);
         });
       </script>

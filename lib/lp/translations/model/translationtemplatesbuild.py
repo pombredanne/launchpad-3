@@ -13,19 +13,22 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from storm.store import Store
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,
     )
+from lp.registry.model.product import Product
+from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
@@ -48,6 +51,11 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')
+
+    @property
+    def title(self):
+        return u'Translation template build for %s' % (
+            self.branch.displayname)
 
     def __init__(self, build_farm_job, branch):
         super(TranslationTemplatesBuild, self).__init__()
@@ -104,9 +112,45 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return match.one()
 
     @classmethod
+    def getByBuildFarmJobs(cls, buildfarmjobs, store=None):
+        buildfarmjob_ids = [buildfarmjob.id for buildfarmjob in buildfarmjobs]
+        """See `ITranslationTemplatesBuildSource`."""
+        store = cls._getStore(store)
+
+        resultset = store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.build_farm_job_id.is_in(
+                buildfarmjob_ids))
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=cls.preloadBuildsData)
+
+    @classmethod
+    def preloadBuildsData(cls, builds):
+        # Circular imports.
+        from lp.services.librarian.model import LibraryFileAlias
+        # Load the related branches, products.
+        branches = load_related(
+            Branch, builds, ['branch_id'])
+        load_related(
+            Product, branches, ['productID'])
+        # Preload branches cached associated product series and
+        # suite source packages for all the related branches.
+        GenericBranchCollection.preloadDataForBranches(branches)
+        build_farm_jobs = [
+            build.build_farm_job for build in builds]
+        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
+
+    @classmethod
     def findByBranch(cls, branch, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         return store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == branch)
+
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`."""
+        if self.log is None:
+            return None
+        return self.log.http_url

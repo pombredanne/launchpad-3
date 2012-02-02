@@ -8,15 +8,16 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.database.sqlbase import cursor
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class PillarNameTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
     def testDistributionTable(self):
         cur = cursor()

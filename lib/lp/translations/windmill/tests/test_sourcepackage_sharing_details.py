@@ -9,30 +9,22 @@ __metaclass__ = type
 
 import transaction
 
-from lp.app.enums import (
-    ServiceUsage,
-    )
+from lp.app.enums import ServiceUsage
 from lp.testing import (
     feature_flags,
     set_feature_flag,
     WindmillTestCase,
-)
-from lp.testing.windmill import (
-    lpuser,
-)
-from lp.testing.windmill.constants import (
-    FOR_ELEMENT,
-)
+    )
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import FOR_ELEMENT
 from lp.testing.windmill.widgets import (
     OnPageWidget,
     search_and_select_picker_widget,
-)
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
-)
-from lp.translations.windmill.testing import (
-    TranslationsWindmillLayer,
-)
+    )
+from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
 class TestSharingDetails(WindmillTestCase):

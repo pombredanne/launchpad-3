@@ -13,10 +13,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -25,10 +21,16 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    celebrity_logged_in,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestBugChanges(TestCaseWithFactory):
@@ -1084,7 +1086,7 @@ class TestBugChanges(TestCaseWithFactory):
             bug, maintainer, bug_supervisor)
 
         # Now make the bug visible to the bug supervisor and re-test.
-        with person_logged_in(bug.default_bugtask.pillar.owner):
+        with celebrity_logged_in('admin'):
             bug.default_bugtask.transitionToAssignee(bug_supervisor)
 
         # Test with bug supervisor = maintainer.
@@ -1402,6 +1404,32 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
+
+    def test_bugtask_deleted(self):
+        # Deleting a bug task adds entries in both BugActivity and
+        # BugNotification.
+        target = self.factory.makeProduct()
+        task_to_delete = self.bug.addTask(self.user, target)
+        self.saveOldChanges()
+
+        login_person(self.user)
+        task_to_delete.delete()
+
+        task_deleted_activity = {
+            'person': self.user,
+            'whatchanged': 'bug task deleted',
+            'oldvalue': target.bugtargetname,
+            }
+
+        task_deleted_notification = {
+            'person': self.user,
+            'text': (
+                "** No longer affects: %s" % target.bugtargetname),
+            }
+
+        self.assertRecordedChange(
+            expected_notification=task_deleted_notification,
+            expected_activity=task_deleted_activity)
 
     def test_product_series_nominated(self):
         # Nominating a bug to be fixed in a product series adds an item

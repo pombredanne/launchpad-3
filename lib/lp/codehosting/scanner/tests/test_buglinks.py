@@ -10,8 +10,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
@@ -20,11 +18,17 @@ from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class RevisionPropertyParsing(TestCase):
@@ -163,14 +167,10 @@ class TestBugLinking(BzrSyncTestCase):
         self.assertBugBranchLinked(self.bug1, self.db_branch)
 
     def makePackageBranch(self):
-        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
-        try:
+        with lp_dbuser():
             branch = self.factory.makePackageBranch()
             branch.sourcepackage.setBranch(
                 PackagePublishingPocket.RELEASE, branch, branch.owner)
-            LaunchpadZopelessLayer.txn.commit()
-        finally:
-            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         return branch
 
     def test_linking_bug_to_official_package_branch(self):
@@ -264,8 +264,7 @@ class TestSubscription(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         bug = self.factory.makeBug()
-        self.layer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
         with override_environ(BZR_EMAIL='me@example.com'):

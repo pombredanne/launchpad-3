@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builds."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildBreadcrumb',
+    'BuildCancelView',
     'BuildContextMenu',
     'BuildNavigation',
     'BuildNavigationMixin',
@@ -17,34 +18,22 @@ __all__ = [
     'DistributionBuildRecordsView',
     ]
 
+
+from itertools import groupby
+from operator import attrgetter
+
 from lazr.batchnavigator import ListRangeFactory
 from lazr.delegates import delegates
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    BatchNavigator,
-    StormRangeFactory,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -54,11 +43,38 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobSet,
+    InconsistentBuildFarmJobError,
+    ISpecificBuildFarmJobSource,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
@@ -156,7 +172,7 @@ class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
     usedfor = IBinaryPackageBuild
 
-    links = ['ppa', 'records', 'retry', 'rescore']
+    links = ['ppa', 'records', 'retry', 'rescore', 'cancel']
 
     @property
     def is_ppa_build(self):
@@ -189,6 +205,14 @@ class BuildContextMenu(ContextMenu):
             '+rescore', text, icon='edit',
             enabled=self.context.can_be_rescored)
 
+    @enabled_with_permission('launchpad.Edit')
+    def cancel(self):
+        """Only enabled for pending/active virtual builds."""
+        text = 'Cancel build'
+        return Link(
+            '+cancel', text, icon='edit',
+            enabled=self.context.can_be_cancelled)
+
 
 class BuildBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IBinaryPackageBuild`."""
@@ -213,6 +237,8 @@ class BuildView(LaunchpadView):
     @property
     def label(self):
         return self.context.title
+
+    page_title = label
 
     @property
     def user_can_retry_build(self):
@@ -276,8 +302,14 @@ class BuildView(LaunchpadView):
         return self.context.buildqueue_record
 
     @cachedproperty
-    def component(self):
-        return self.context.current_component
+    def component_name(self):
+        # Production has some buggy historic builds without
+        # source publications.
+        component = self.context.current_component
+        if component is not None:
+            return component.name
+        else:
+            return 'unknown'
 
     @cachedproperty
     def files(self):
@@ -397,6 +429,32 @@ class BuildRescoringView(LaunchpadFormView):
             "Build rescored to %s." % score)
 
 
+class BuildCancelView(LaunchpadFormView):
+    """View class for build cancellation."""
+
+    class schema(Interface):
+        """Schema for cancelling a build."""
+
+    page_title = label = "Cancel build"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+    next_url = cancel_url
+
+    @action("Cancel build", name="cancel")
+    def request_action(self, action, data):
+        """Cancel the build."""
+        self.context.cancel()
+        if self.context.status == BuildStatus.CANCELLING:
+            self.request.response.addNotification(
+                "Build cancellation in progress.")
+        elif self.context.status == BuildStatus.CANCELLED:
+            self.request.response.addNotification("Build cancelled.")
+        else:
+            self.request.response.addNotification("Unable to cancel build.")
+
+
 class CompleteBuild:
     """Super object to store related IBinaryPackageBuild & IBuildQueue."""
     delegates(IBinaryPackageBuild)
@@ -420,7 +478,9 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = [build.getSpecificJob() for build in batch]
+    builds = getSpecificJobs(
+        [build.build_farm_job if IPackageBuild.providedBy(build) else build
+            for build in batch])
     if not builds:
         return []
 
@@ -444,6 +504,45 @@ def setupCompleteBuilds(batch):
         else:
             complete_builds.append(build)
     return complete_builds
+
+
+def getSpecificJobs(jobs):
+    """Return the specific build jobs associated with each of the jobs
+        in the provided job list.
+    """
+    builds = []
+    key = attrgetter('job_type.name')
+    sorted_jobs = sorted(jobs, key=key)
+    job_builds = {}
+    for job_type_name, grouped_jobs in groupby(sorted_jobs, key=key):
+        # Fetch the jobs in batches grouped by their job type.
+        source = getUtility(
+            ISpecificBuildFarmJobSource, job_type_name)
+        builds = [build for build
+            in source.getByBuildFarmJobs(list(grouped_jobs))
+            if build is not None]
+        is_binary_package_build = IBinaryPackageBuildSet.providedBy(
+            source)
+        for build in builds:
+            if is_binary_package_build:
+                job_builds[build.package_build.build_farm_job.id] = build
+            else:
+                try:
+                    job_builds[build.build_farm_job.id] = build
+                except Unauthorized:
+                    # If the build farm job is private, we will get an
+                    # Unauthorized exception; we only use
+                    # removeSecurityProxy to get the id of build_farm_job
+                    # but the corresponding build returned in the list
+                    # will be 'None'.
+                    naked_build = removeSecurityProxy(build)
+                    job_builds[naked_build.build_farm_job.id] = None
+    # Return the corresponding builds.
+    try:
+        return [job_builds[job.id] for job in jobs]
+    except KeyError:
+        raise InconsistentBuildFarmJobError(
+            "Could not find all the related specific jobs.")
 
 
 class BuildRecordsView(LaunchpadView):
@@ -489,7 +588,7 @@ class BuildRecordsView(LaunchpadView):
         if self.text is not None or self.arch_tag is not None:
             binary_only = True
 
-        # request context build records according the selected state
+        # request context build records according to the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
             user=self.user, binary_only=binary_only)

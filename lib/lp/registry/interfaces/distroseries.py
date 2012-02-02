@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -53,7 +53,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
@@ -284,9 +284,14 @@ class IDistroSeriesPublic(
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    nominatedarchindep = Attribute(
-        "DistroArchSeries designed to build architecture-independent "
-        "packages whithin this distroseries context.")
+    nominatedarchindep = exported(
+        Reference(
+            Interface,  # IDistroArchSeries.
+            title=_("DistroArchSeries designed to build "
+                    "architecture-independent packages whithin this "
+                    "distroseries context."),
+            default=None,
+            required=False))
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
@@ -598,8 +603,7 @@ class IDistroSeriesPublic(
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Deprecated.  Use IArchive.getPublishedSources instead.
@@ -609,9 +613,6 @@ class IDistroSeriesPublic(
         If pocket is not specified, we look in all pockets.
 
         If version is not specified, return packages with any version.
-
-        If exclude_pocket is specified we exclude results matching that
-        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher
@@ -628,8 +629,24 @@ class IDistroSeriesPublic(
         Return publications in the main archives only.
         """
 
+    def getAllUncondemnedSources():
+        """Return all uncondemned sources for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
+
+        Return publications in the main archives only.
+        """
+
     def getAllPublishedBinaries():
         """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllUncondemnedBinaries():
+        """Return all uncondemned binaries for the distroseries.
+
+        An uncondemned publication is one without scheduleddeletiondate set.
 
         Return publications in the main archives only.
         """
@@ -936,19 +953,25 @@ class IDistroSeriesEditRestricted(Interface):
             required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
-            "distroseries."), value_type=TextLine(),
+                    "distroseries."),
+            value_type=TextLine(),
+            required=False),
+        archindep_archtag=TextLine(
+            title=_("Architecture tag to build architecture-independent "
+                    "packages."),
             required=False),
         packagesets=List(
             title=_("The list of packagesets to copy to the derived "
-            "distroseries"), value_type=TextLine(),
+                    "distroseries"),
+            value_type=TextLine(),
             required=False),
         rebuild=Bool(
             title=_("If binaries will be copied to the derived "
-            "distroseries."),
+                    "distroseries."),
             required=True),
         overlays=List(
             title=_("The list of booleans indicating, for each parent, if "
-            "the parent/child relationship should be an overlay."),
+                    "the parent/child relationship should be an overlay."),
             value_type=Bool(),
             required=False),
         overlay_pockets=List(
@@ -963,7 +986,8 @@ class IDistroSeriesEditRestricted(Interface):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def initDerivedDistroSeries(user, parents, architectures=[],
-                                packagesets=[], rebuild=False, overlays=[],
+                                archindep_archtag=None, packagesets=[],
+                                rebuild=False, overlays=[],
                                 overlay_pockets=[], overlay_components=[]):
         """Initialize this series from parents.
 
@@ -974,6 +998,9 @@ class IDistroSeriesEditRestricted(Interface):
             from.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.
+        :param archindep_archtag: The architecture tag used to build
+            architecture-independent packages. If not specified, one from
+            the parents' will be used.
         :param packagesets: The packagesets to copy to the derived series.
             If not specified, all of the packagesets are copied.
         :param rebuild: Whether binaries will be copied to the derived

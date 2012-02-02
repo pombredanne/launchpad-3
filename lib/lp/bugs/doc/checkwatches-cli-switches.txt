@@ -6,8 +6,8 @@ bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import cursor, sqlvalues
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.sqlbase import cursor, sqlvalues
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
@@ -27,16 +27,13 @@ external connections.
 
 If a bug tracker is disabled checkwatches won't try to update it.
 
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> bug_tracker = factory.makeBugTracker('http://example.com')
-    >>> bug_tracker.active = False
-    >>> bug_tracker_name = bug_tracker.name
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     bug_tracker = factory.makeBugTracker('http://example.com')
+    ...     bug_tracker.active = False
+    ...     bug_tracker_name = bug_tracker.name
 
     >>> updater.updateBugTrackers([bug_tracker_name])
     DEBUG...Updates are disabled for bug tracker at http://example.com
@@ -46,6 +43,8 @@ allowing a user to pass a list of bugtrackers to check at the command
 line.
 
     >>> from lp.bugs.scripts.checkwatches import CheckWatchesCronScript
+    >>> from lp.services.config import config
+
     >>> class TestCheckWatchesCronScript(CheckWatchesCronScript):
     ...
     ...     def __init__(self, name, dbuser=None, test_args=None):
@@ -93,14 +92,12 @@ demonstrate this.
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> login('foo.bar@canonical.com')
-    >>> savannah = getUtility(IBugTrackerSet).getByName('savannah')
-    >>> for i in range(5):
-    ...     bug_watch = factory.makeBugWatch(bugtracker=savannah)
-    ...     bug_watch.lastchecked = datetime.now(pytz.timezone('UTC'))
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     savannah = getUtility(IBugTrackerSet).getByName('savannah')
+    ...     for i in range(5):
+    ...         bug_watch = factory.makeBugWatch(bugtracker=savannah)
+    ...         bug_watch.lastchecked = datetime.now(pytz.timezone('UTC'))
 
     >>> run_cronscript_with_args(['-vvt', 'savannah', '--reset'])
     DEBUG Enabled by DEFAULT section

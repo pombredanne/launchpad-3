@@ -7,18 +7,17 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.delegates import delegates
+from storm.store import Store
 from zope.interface import implements
 
-from storm.store import Store
-
-from lazr.delegates import delegates
-
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BugUpdateHeat(TestCaseWithFactory):
@@ -40,11 +39,15 @@ class BugUpdateHeat(TestCaseWithFactory):
             def recalculateBugHeatCache(self):
                 self.called = True
 
-        self.target = TestTarget(
-            self.factory.makeDistributionSourcePackage(with_db=True))
-        self.bugtask = self.factory.makeBugTask(target=self.target)
-        self.bugtask.bug.updateHeat()
-        self.assertTrue(self.target.called)
+        distro = self.factory.makeDistribution()
+        target = TestTarget(
+            self.factory.makeDistributionSourcePackage(
+                distribution=distro, with_db=True))
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        bugtask = self.factory.makeBugTask(target=dsp)
+        another_task = bugtask.bug.addTask(bugtask.bug.owner, target)
+        another_task.bug.updateHeat()
+        self.assertTrue(target.called)
 
 
 class MaxHeatByTargetBase:

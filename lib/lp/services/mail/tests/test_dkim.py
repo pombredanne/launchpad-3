@@ -11,13 +11,13 @@ from StringIO import StringIO
 import dkim
 import dns.resolver
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
 # rsa -pubout'.  Not really the key for canonical.com ;-)
@@ -118,6 +118,22 @@ class TestDKIM(TestCaseWithFactory):
         l = self.get_dkim_log()
         if l.find(substring) == -1:
             self.fail("didn't find %r in log: %s" % (substring, l))
+
+    def test_dkim_broken_pubkey(self):
+        """Handle a subtly-broken pubkey like qq.com, see bug 881237.
+
+        The message is not trusted but inbound message processing does not
+        abort either.
+        """
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns.replace(';', '')
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertEqual(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
+        self.assertDkimLogContains('unexpected error in DKIM verification')
 
     def test_dkim_garbage_pubkey(self):
         signed_message = self.fake_signing(plain_content)

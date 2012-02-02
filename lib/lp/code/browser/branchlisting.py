@@ -31,6 +31,7 @@ __all__ = [
     ]
 
 from operator import attrgetter
+import urlparse
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -41,6 +42,7 @@ from storm.expr import (
     Asc,
     Desc,
     )
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import (
@@ -49,34 +51,11 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
-    FeedsMixin,
-    PersonBranchesFeedLink,
-    PersonRevisionsFeedLink,
-    ProductBranchesFeedLink,
-    ProductRevisionsFeedLink,
-    ProjectBranchesFeedLink,
-    ProjectRevisionsFeedLink,
-    )
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    Link,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.badge import (
+from lp import _
+from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
     )
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -133,7 +112,31 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.browser_helpers import get_plural_text
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
+from lp.services.feeds.browser import (
+    FeedsMixin,
+    PersonBranchesFeedLink,
+    PersonRevisionsFeedLink,
+    ProductBranchesFeedLink,
+    ProductRevisionsFeedLink,
+    ProjectBranchesFeedLink,
+    ProjectRevisionsFeedLink,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class CodeVHostBreadcrumb(Breadcrumb):
@@ -560,6 +563,19 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         """
         return self.label
 
+    table_only_template = ViewPageTemplateFile(
+        '../templates/branches-table-include.pt')
+
+    @property
+    def template(self):
+        query_string = self.request.get('QUERY_STRING') or ''
+        query_params = urlparse.parse_qs(query_string)
+        render_table_only = 'batch_request' in query_params
+        if render_table_only:
+            return self.table_only_template
+        else:
+            return super(BranchListingView, self).template
+
     @property
     def initial_values(self):
         return {
@@ -597,7 +613,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self.branch_count > 0
+        return not self.is_branch_count_zero
 
     def _getCollection(self):
         """Override this to say what branches will be in the listing."""
@@ -607,6 +623,16 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
     def branch_count(self):
         """The number of total branches the user can see."""
         return self._getCollection().visibleByUser(self.user).count()
+
+    @cachedproperty
+    def is_branch_count_zero(self):
+        """Is the number of total branches the user can see zero?."""
+        # If the batch itself is not empty, we don't need to check
+        # the whole collection count (it might be expensive to compute if the
+        # total number of branches is huge).
+        return (
+            len(self.branches().visible_branches_for_view) == 0 and
+            not self.branch_count)
 
     def _branches(self, lifecycle_status):
         """Return a sequence of branches.
@@ -835,7 +861,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues']
+             'active_reviews', 'mergequeues',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
@@ -843,6 +871,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         'show_summary',
         'subscribed_branch_count',
         'mergequeue_count',
+        'simplified_branches_menu',
         ]
 
     def _getCountCollection(self):
@@ -852,7 +881,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         branches registered by a particular user for the counts that
         appear at the top of a branch listing page.
 
-        This should be overriden in subclasses to restrict to, for
+        This should be overridden in subclasses to restrict to, for
         example, the set of branches of a particular product.
         """
         return getUtility(IAllBranches).visibleByUser(self.user)
@@ -869,10 +898,53 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     @property
     def show_summary(self):
         """Should the template show the summary view with the links."""
-        return (self.owned_branch_count or
+
+        if self.simplified_branches_menu:
+            return True
+        else:
+            return (
+                self.owned_branch_count or
                 self.registered_branch_count or
                 self.subscribed_branch_count or
-                self.active_review_count)
+                self.active_review_count
+                )
+
+    @cachedproperty
+    def simplified_branches_menu(self):
+        return getFeatureFlag('code.simplified_branches_menu.enabled')
+
+    @cachedproperty
+    def registered_branches_not_empty(self):
+        """False if the number of branches registered by self.person
+        is zero.
+        """
+        return (
+            not self._getCountCollection().registeredBy(
+                self.person).is_empty())
+
+    def simplified_owned(self):
+        return Link(
+            canonical_url(self.context, rootsite='code'),
+            'Owned branches')
+
+    def simplified_registered(self):
+        person_is_individual = (not self.person.is_team)
+        return Link(
+            '+registeredbranches',
+            'Registered branches',
+            enabled=(
+                person_is_individual and
+                self.registered_branches_not_empty))
+
+    def simplified_subscribed(self):
+        return Link(
+            '+subscribedbranches',
+            'Subscribed branches')
+
+    def simplified_active_reviews(self):
+        return Link(
+            '+activereviews',
+            'Active reviews')
 
     @cachedproperty
     def registered_branch_count(self):
@@ -939,7 +1011,9 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
-    links = ['registered', 'owned', 'subscribed', 'active_reviews']
+    links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'simplified_subscribed', 'simplified_registered',
+             'simplified_owned', 'simplified_active_reviews']
 
     def _getCountCollection(self):
         """See `PersonBranchesMenu`."""
@@ -1166,7 +1240,7 @@ class ProductBranchListingView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project.')
@@ -1200,9 +1274,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
-        self.product = self.context
         revision_cache = getUtility(IRevisionCache)
-        self.revision_cache = revision_cache.inProduct(self.product)
+        self.revision_cache = revision_cache.inProduct(self.context)
 
     @property
     def branch(self):
@@ -1241,13 +1314,13 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def person_owner_count(self):
         """The number of individual people who own branches."""
         return len([person for person in self._branch_owners
-                    if not person.isTeam()])
+                    if not person.is_team])
 
     @cachedproperty
     def team_owner_count(self):
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
-                    if person.isTeam()])
+                    if person.is_team])
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
@@ -1343,6 +1416,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def configure_codehosting(self):
         """Get the menu link for configuring code hosting."""
+        if not check_permission(
+            'launchpad.Edit', self.context.development_focus):
+            return None
         series_menu = MenuAPI(self.context.development_focus).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure code hosting'
@@ -1398,7 +1474,7 @@ class ProjectBranchesView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project group.')

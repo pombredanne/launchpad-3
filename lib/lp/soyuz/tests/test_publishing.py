@@ -17,27 +17,19 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    reconnect_stores,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -70,7 +62,16 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -274,6 +275,7 @@ class SoyuzTestPublisher:
         spph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
+            sourcepackagename=spr.sourcepackagename,
             component=spr.component,
             section=spr.section,
             status=status,
@@ -461,6 +463,7 @@ class SoyuzTestPublisher:
             pub = BinaryPackagePublishingHistory(
                 distroarchseries=arch,
                 binarypackagerelease=binarypackagerelease,
+                binarypackagename=binarypackagerelease.binarypackagename,
                 component=binarypackagerelease.component,
                 section=binarypackagerelease.section,
                 priority=binarypackagerelease.priority,
@@ -554,23 +557,13 @@ class SoyuzTestPublisher:
             distroseries=source_pub.distroseries,
             source_package=source_pub.meta_sourcepackage)
 
-    def updateDistroSeriesPackageCache(
-        self, distroseries, restore_db_connection='launchpad'):
-        # XXX: EdwinGrubbs 2010-08-04 bug=396419. Currently there is no
-        # test api call to switchDbUser that works for non-zopeless layers.
-        # When bug 396419 is fixed, we can instead use
-        # DatabaseLayer.switchDbUser() instead of reconnect_stores()
-        transaction.commit()
-        reconnect_stores(config.statistician.dbuser)
-        distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
-
-        DistroSeriesPackageCache.updateAll(
-            distroseries,
-            archive=distroseries.distribution.main_archive,
-            ztm=transaction,
-            log=DevNullLogger())
-        transaction.commit()
-        reconnect_stores(restore_db_connection)
+    def updateDistroSeriesPackageCache(self, distroseries):
+        with dbuser(config.statistician.dbuser):
+            DistroSeriesPackageCache.updateAll(
+                distroseries,
+                archive=distroseries.distribution.main_archive,
+                ztm=transaction,
+                log=DevNullLogger())
 
 
 class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
@@ -584,7 +577,7 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         super(TestNativePublishingBase, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
@@ -701,9 +694,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue("PoolFileOverwriteError" in str(error_report))
+        self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
         self.assertEqual(
@@ -1458,17 +1449,55 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
 
 
-class TestSPPHModel(TestCaseWithFactory):
-    """Test parts of the SourcePackagePublishingHistory model."""
+class TestGetOtherPublicationsForSameSource(TestNativePublishingBase):
+    """Test parts of the BinaryPackagePublishingHistory model.
+
+    See also lib/lp/soyuz/doc/publishing.txt
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def testAncestry(self):
-        """Ancestry can be traversed."""
-        ancestor = self.factory.makeSourcePackagePublishingHistory()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+    def _makeMixedSingleBuildPackage(self, version="1.0"):
+        # Set up a source with a build that generated four binaries,
+        # two of them an arch-all.
+        foo_src_pub = self.getPubSource(
+            sourcename="foo", version=version, architecturehintlist="i386",
+            status=PackagePublishingStatus.PUBLISHED)
+        [foo_bin_pub] = self.getPubBinaries(
+            binaryname="foo-bin", status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True, version=version,
+            pub_source=foo_src_pub)
+        # Now need to grab the build for the source so we can add
+        # more binaries to it.
+        [build] = foo_src_pub.getBuilds()
+        foo_one_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-one-common", version=version, build=build,
+            architecturespecific=False)
+        foo_one_common_pubs = self.publishBinaryInArchive(
+            foo_one_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_two_common = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-two-common", version=version, build=build,
+            architecturespecific=False)
+        foo_two_common_pubs = self.publishBinaryInArchive(
+            foo_two_common, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        foo_three = self.factory.makeBinaryPackageRelease(
+            binarypackagename="foo-three", version=version, build=build,
+            architecturespecific=True)
+        [foo_three_pub] = self.publishBinaryInArchive(
+            foo_three, self.ubuntutest.main_archive,
+            pocket=foo_src_pub.pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        # So now we have source foo, which has arch specific binaries
+        # foo-bin and foo-three, and arch:all binaries foo-one-common and
+        # foo-two-common. The latter two will have multiple publications,
+        # one for each DAS in the series.
+        return (
+            foo_src_pub, foo_bin_pub, foo_one_common_pubs,
+            foo_two_common_pubs, foo_three_pub)
 
 
 class TestGetBuiltBinaries(TestNativePublishingBase):

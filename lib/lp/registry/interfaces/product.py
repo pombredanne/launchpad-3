@@ -68,17 +68,14 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -92,6 +89,7 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
@@ -114,6 +112,7 @@ from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
     )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
@@ -414,8 +413,8 @@ class IProductPublic(
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     IHasTranslationImports, ITranslationPolicy, IKarmaContext,
     ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
-    IServiceUsage):
+    IHasOOPSReferences, IPillar, ISpecificationTarget, IHasRecipes,
+    IHasCodeImports, IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
@@ -440,9 +439,10 @@ class IProductPublic(
         PersonChoice(
             title=_('Maintainer'),
             required=True,
-            vocabulary='ValidOwner',
-            description=_("The person or team who maintains the project "
-                          "information in Launchpad.")))
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the project information in "
+                          "Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -613,10 +613,10 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = Bool(title=_('Private bugs'),
+    private_bugs = exported(Bool(title=_('Private bugs'),
                         description=_(
                             "Whether or not bugs reported into this project "
-                            "are private by default."))
+                            "are private by default.")))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -917,10 +917,9 @@ class IProductSet(Interface):
         project_reviewed=Bool(title=_("Is the project license reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
-        license_info_is_empty=Bool(title=_("License info is empty")),
-        has_zero_licenses=Bool(title=_("Has zero licenses")),
         created_after=Date(title=_("Created after date")),
         created_before=Date(title=_("Created before date")),
+        has_subscription=Bool(title=_("Has a commercial subscription")),
         subscription_expires_after=Date(
             title=_("Subscription expires after")),
         subscription_expires_before=Date(
@@ -936,10 +935,9 @@ class IProductSet(Interface):
                   active=None,
                   project_reviewed=None,
                   licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None,
                   created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1064,20 +1062,14 @@ class IProductReviewSearch(Interface):
         title=_('Project Approved'), values=[True, False],
         required=False, default=False)
 
-    license_info_is_empty = Choice(
-        title=_('Description of additional licenses'),
-        description=_('Either this field or any one of the selected licenses'
-                      ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=None)
-
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
         default=set())
 
-    has_zero_licenses = Choice(
-        title=_('Or has no license specified'),
+    has_subscription = Choice(
+        title=_('Has Commercial Subscription'),
         values=[True, False], required=False)
 
     created_after = Date(title=_("Created between"), required=False)

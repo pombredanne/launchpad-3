@@ -23,11 +23,7 @@ from zope.component import (
     )
 from zope.interface import implementer
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.xmlrpc import faults
-from lp.app.validators import (
-    LaunchpadValidationError,
-    )
+from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import valid_name
 from lp.code.bzr import (
     BranchFormat,
@@ -56,9 +52,11 @@ from lp.code.model.branchtarget import (
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
 from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing.factory import ObjectFactory
+from lp.xmlrpc import faults
 
 
 class FakeStore:
@@ -271,23 +269,22 @@ class FakeBranch(FakeDatabaseObject):
 
 class FakePerson(FakeDatabaseObject):
     """Fake person object."""
+    is_team = False
 
     def __init__(self, name):
         self.name = self.displayname = name
 
-    def isTeam(self):
-        return False
-
     def inTeam(self, person_or_team):
         if self is person_or_team:
             return True
-        if not person_or_team.isTeam():
+        if not person_or_team.is_team:
             return False
         return self in person_or_team._members
 
 
 class FakeTeam(FakePerson):
     """Fake team."""
+    is_team = True
 
     def __init__(self, name, members=None):
         super(FakeTeam, self).__init__(name)
@@ -295,9 +292,6 @@ class FakeTeam(FakePerson):
             self._members = []
         else:
             self._members = list(members)
-
-    def isTeam(self):
-        return True
 
 
 class FakeProduct(FakeDatabaseObject):

@@ -18,8 +18,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator,
@@ -27,6 +25,7 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -35,6 +34,11 @@ from lp.soyuz.enums import (
     ArchiveSubscriberStatus,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -63,8 +67,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = HtaccessTokenGenerator("test tokens", test_args=test_args)
         script.logger = BufferLogger()
         script.txn = self.layer.txn
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         return script
 
     def runScript(self):
@@ -272,10 +275,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Now remove someone from team1, he will lose his token but
         # everyone else keeps theirs.
-        self.layer.switchDbUser("launchpad")
-        team1_person.leave(team1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            team1_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
 
@@ -293,11 +294,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # Promiscuous_person now leaves team1, but does not lose his
         # token because he's also in team2. No other tokens are
         # affected.
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad")
-        promiscuous_person.leave(team1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            promiscuous_person.leave(team1)
         # Clear out emails generated when leaving a team.
         pop_notifications()
         script.deactivateTokens(send_email=True)
@@ -312,15 +310,13 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
-        self.layer.switchDbUser("launchpad")
-        name12 = getUtility(IPersonSet).getByName("name12")
-        parent_team.setMembershipData(
-            team2, TeamMembershipStatus.APPROVED, name12)
-        parent_team.setMembershipData(
-            team2, TeamMembershipStatus.DEACTIVATED, name12)
-        self.assertFalse(team2.inTeam(parent_team))
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        with lp_dbuser():
+            name12 = getUtility(IPersonSet).getByName("name12")
+            parent_team.setMembershipData(
+                team2, TeamMembershipStatus.APPROVED, name12)
+            parent_team.setMembershipData(
+                team2, TeamMembershipStatus.DEACTIVATED, name12)
+            self.assertFalse(team2.inTeam(parent_team))
         script.deactivateTokens()
         for person in persons2:
             self.assertDeactivated(tokens[person])
@@ -547,7 +543,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # This happens even if they have no tokens.
 
         # Create a public PPA that should not be in the list.
-        public_ppa = self.factory.makeArchive(private=False)
+        self.factory.makeArchive(private=False)
 
         script = self.getScript()
         self.assertContentEqual([self.ppa], script.getNewPrivatePPAs())
@@ -570,7 +566,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
-        now = datetime.now(pytz.UTC)
         tokens = self.setupDummyTokens()[1]
 
         # If there is no record of the script running previously, all
@@ -587,7 +582,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         getUtility(IScriptActivitySet).recordSuccess(
             'generate-ppa-htaccess', date_started=script_start_time,
-            date_completed = script_end_time)
+            date_completed=script_end_time)
         tokens = self.setupDummyTokens()[1]
         # This token will not be included.
         removeSecurityProxy(tokens[0]).date_created = before_previous_start
@@ -632,7 +627,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def test_getNewTokensSinceLastRun_only_active_tokens(self):
         """Only active tokens are returned."""
-        now = datetime.now(pytz.UTC)
         tokens = self.setupDummyTokens()[1]
         tokens[0].deactivate()
 

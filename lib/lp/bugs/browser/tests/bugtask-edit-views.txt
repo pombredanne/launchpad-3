@@ -10,7 +10,7 @@ Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)

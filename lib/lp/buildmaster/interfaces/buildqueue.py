@@ -27,12 +27,10 @@ from zope.schema import (
     Timedelta,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -105,6 +103,9 @@ class IBuildQueue(Interface):
 
     def reset():
         """Reset this job, so it can be re-dispatched."""
+
+    def cancel():
+        """Cancel this job, it will not be re-dispatched."""
 
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),

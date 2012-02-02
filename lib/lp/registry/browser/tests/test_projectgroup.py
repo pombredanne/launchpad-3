@@ -5,18 +5,19 @@
 
 __metaclass__ = type
 
+from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
-from testtools.matchers import Not
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
+
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view

@@ -13,14 +13,10 @@ import subprocess
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    DatabaseLayer,
-    )
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
@@ -29,6 +25,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fixture import PGBouncerFixture
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    )
 
 
 class TestBranchRewriter(TestCaseWithFactory):

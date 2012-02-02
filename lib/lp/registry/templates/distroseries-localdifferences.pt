@@ -60,7 +60,7 @@
       </span>
       <div metal:fill-slot="buttons">
         <script type="text/javascript">
-          LPS.use(
+          YUI().use(
             'node', 'event', 'lp.registry.distroseriesdifferences_details',
             'lp.app.confirmationoverlay',function(Y) {
             Y.on('domready', function() {
@@ -101,6 +101,15 @@
                             id upgrade/__name__;" />
         </div>
       </div>
+
+      <metal:bottom fill-slot="extra_bottom">
+        <tal:sponsored-person
+            define="widget nocall:view/widgets/sponsored_person;
+                    sync view/actions/byname/field.actions.sync|nothing"
+            condition="python:sync and sync.available()">
+          <metal:widget-div use-macro="widget/@@launchpad_form/widget_div" />
+        </tal:sponsored-person>
+      </metal:bottom>
 
       <div metal:fill-slot="widgets">
         <tal:navigation_top
@@ -286,14 +295,14 @@
       </div>
     </div>
 <script type="text/javascript">
-LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
+YUI().use('lp.registry.distroseriesdifferences_details', function(Y) {
   Y.on('domready', function() {
     Y.lp.registry.distroseriesdifferences_details.setup();
   });
 });
 </script>
 <script type="text/javascript">
-  LPS.use("lp.registry.distroseries.differences", function(Y) {
+  YUI().use("lp.registry.distroseries.differences", function(Y) {
     Y.on("domready", function() {
       var form = Y.one("form#distroseries-localdiff-search-filter");
       var differences = Y.lp.registry.distroseries.differences;

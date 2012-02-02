@@ -27,27 +27,26 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enums import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -60,7 +59,10 @@ from lp.soyuz.adapters.overrides import (
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageCopyPolicy,
+    )
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
@@ -71,6 +73,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
@@ -235,24 +238,31 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
-    def _makeMetadata(cls, target_pocket, package_version, include_binaries):
+    def _makeMetadata(cls, target_pocket, package_version,
+                      include_binaries, sponsored=None):
         """Produce a metadata dict for this job."""
+        if sponsored:
+            sponsored_name = sponsored.name
+        else:
+            sponsored_name = None
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
             'include_binaries': bool(include_binaries),
+            'sponsored': sponsored_name,
         }
 
     @classmethod
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None,
+               sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -267,7 +277,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
-                                  include_binaries, job_id, copy_task):
+                                  include_binaries, job_id, copy_task,
+                                  sponsored):
         """Create an SQL fragment for inserting a job into the database.
 
         :return: A string representing an SQL tuple containing initializers
@@ -282,7 +293,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             target_pocket,
         ) = copy_task
         metadata = cls._makeMetadata(
-            target_pocket, package_version, include_binaries)
+            target_pocket, package_version, include_binaries, sponsored)
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
@@ -293,14 +304,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def createMultiple(cls, target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
-                       include_binaries=False):
+                       include_binaries=False, sponsored=None):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
-                task)
+                task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
         result = store.execute("""
             INSERT INTO PackageCopyJob (
@@ -353,6 +364,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             result.setdefault(job.package_name, job)
         return result
 
+    @classmethod
+    def getIncompleteJobsForArchive(cls, archive):
+        """See `IPlainPackageCopyJobSource`."""
+        jobs = IStore(PackageCopyJob).find(
+            PackageCopyJob,
+            PackageCopyJob.target_archive == archive,
+            PackageCopyJob.job_type == cls.class_job_type,
+            Job.id == PackageCopyJob.job_id,
+            Job._status.is_in(
+                [JobStatus.WAITING, JobStatus.RUNNING, JobStatus.FAILED])
+            )
+        return DecoratedResultSet(jobs, cls)
+
     @property
     def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
@@ -360,6 +384,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def include_binaries(self):
         return self.metadata['include_binaries']
+
+    @property
+    def error_message(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("error_message")
+
+    @property
+    def sponsored(self):
+        name = self.metadata['sponsored']
+        if name is None:
+            return None
+        return getUtility(IPersonSet).getByName(name)
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
@@ -376,6 +412,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if override.section is not None:
             metadata_changes['section_override'] = override.section.name
         self.context.extendMetadata(metadata_changes)
+
+    def setErrorMessage(self, message):
+        """See `IPackageCopyJob`."""
+        self.metadata["error_message"] = message
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
@@ -498,15 +538,29 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 source_name, source_package.sourcepackagerelease.component)
 
         # The package is free to go right in, so just copy it now.
+        ancestry = self.target_archive.getPublishedSources(
+            name=name, distroseries=self.target_distroseries,
+            pocket=self.target_pocket, exact_match=True).first()
         override = self.getSourceOverride()
         copy_policy = self.getPolicyImplementation()
         send_email = copy_policy.send_email(self.target_archive)
-        do_copy(
+        copied_sources = do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
-            send_email=send_email, announce_from_person=self.requester)
+            send_email=send_email, announce_from_person=self.requester,
+            sponsored=self.sponsored)
+
+        # Add a PackageDiff for this new upload if it has ancestry.
+        if ancestry is not None:
+            to_sourcepackagerelease = ancestry.sourcepackagerelease
+            copied_source = copied_sources[0]
+            try:
+                to_sourcepackagerelease.requestDiffTo(
+                    self.requester, copied_source.sourcepackagerelease)
+            except PackageDiffAlreadyRequested:
+                pass
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be
@@ -539,18 +593,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
         message = unicode(cannotcopy_exception)
-        dsds = self.findMatchingDSDs()
-        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        if self.target_archive.purpose != ArchivePurpose.PPA:
+            dsds = self.findMatchingDSDs()
+            comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
 
-        # Register the error comment in the name of the Janitor.  Not a
-        # great choice, but we have no user identity to represent
-        # Launchpad; it's far too costly to create one; and
-        # impersonating the requester can be misleading and would also
-        # involve extra bookkeeping.
-        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+            # Register the error comment in the name of the Janitor.  Not a
+            # great choice, but we have no user identity to represent
+            # Launchpad; it's far too costly to create one; and
+            # impersonating the requester can be misleading and would also
+            # involve extra bookkeeping.
+            reporting_persona = getUtility(ILaunchpadCelebrities).janitor
 
-        for dsd in dsds:
-            comment_source.new(dsd, reporting_persona, message)
+            for dsd in dsds:
+                comment_source.new(dsd, reporting_persona, message)
+        else:
+            self.setErrorMessage(message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

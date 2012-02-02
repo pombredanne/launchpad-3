@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test mailing list stuff."""
@@ -18,24 +18,24 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.ftests import (
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.scripts.mlistimport import Importer
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
     login,
     login_person,
     )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts.mlistimport import Importer
-from canonical.testing.layers import (
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
     AppServerLayer,
     BaseLayer,
     DatabaseFunctionalLayer,
     LayerProcessController,
     )
-from lp.registry.interfaces.person import (
-    PersonVisibility,
-    TeamSubscriptionPolicy,
-    )
-from lp.services.log.logger import BufferLogger
-from lp.testing.factory import LaunchpadObjectFactory
 
 
 factory = LaunchpadObjectFactory()
@@ -90,9 +90,7 @@ class BaseMailingListImportTest(unittest.TestCase):
 
     def assertAddresses(self, *addresses):
         """Assert that `addresses` are subscribed to the mailing list."""
-        subscribers = set(
-            email.email
-            for email in self.mailing_list.getSubscribedAddresses())
+        subscribers = set(self.mailing_list.getSubscribedAddresses())
         expected = set(addresses)
         self.assertEqual(subscribers, expected)
 

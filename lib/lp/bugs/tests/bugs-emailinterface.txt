@@ -64,7 +64,7 @@ to sign each email, we'll create a class which fakes a signed email:
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
@@ -86,7 +86,7 @@ bug got submitted correctly:
 
     >>> process_email(submit_mail)
 
-    >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -193,19 +193,16 @@ package:
 It's possible to file a bug on more than product/package at once:
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -636,7 +633,7 @@ otherwise permission to complete the operation will be denied.)
 
 We flush the database caches to ensure that the timestamp is set:
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 A timestamp and the user that sets the bug private is also recorded:
@@ -1194,7 +1191,6 @@ nominate bugs for a release.
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu = removeSecurityProxy(ubuntu)
     >>> ubuntu.bug_supervisor = sample_person
-    >>> logout()
 
     >>> login(sampledata.USER_EMAIL)
 
@@ -1391,7 +1387,6 @@ will be created if one doesn't exist.
     >>> evolution = getUtility(IProductSet).getByName("evolution")
     >>> evolution = removeSecurityProxy(evolution)
     >>> evolution.bug_supervisor = no_priv
-    >>> logout()
 
     >>> login('no-priv@canonical.com')
     >>> bug = new_firefox_bug()
@@ -1602,7 +1597,7 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.importance.title)
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)
@@ -2034,7 +2029,7 @@ error, so let's create one.
 Now we can send an error mail, passing the created message to
 send_process_error_notification().
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
@@ -2105,7 +2100,9 @@ the original message.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> msg = original_msg.get_payload()[0]
-    >>> # Fudge due to new line added to the payload.
+
+Fudge due to new line added to the payload.
+
     >>> len(str(msg)) <= (max_return_size + 1)
     True
 
@@ -2369,7 +2366,7 @@ Email attachments are stored as bug attachments (provided that they match the
 criteria described below).
 
     >>> def print_attachments(attachments):
-    ...     if attachments.count() == 0:
+    ...     if len(list(attachments)) == 0:
     ...         print "No attachments"
     ...         return
     ...     commit()

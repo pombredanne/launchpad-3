@@ -24,16 +24,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp import _
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -112,10 +103,16 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
+from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -131,6 +128,11 @@ from lp.testing import (
     ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
@@ -1068,7 +1070,6 @@ class TestBzrIdentity(TestCaseWithFactory):
         registrant = branch.sourcepackage.distribution.owner
         login_person(registrant)
         linked_branch.setBranch(branch, registrant)
-        logout()
         login(ANONYMOUS)
         self.assertBzrIdentity(branch, linked_branch.bzr_path)
 
@@ -1136,6 +1137,12 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(
             branch.canBeDeleted(), True,
             "A branch that has a import is deletable.")
+
+    def test_accessPolicyArtifactDoesntDisableDeletion(self):
+        """A branch referenced by an AccessPolicyArtifact can be deleted."""
+        artifact = self.factory.makeAccessPolicyArtifact(self.branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
@@ -1270,6 +1277,17 @@ class TestBranchDeletion(TestCaseWithFactory):
         other_buildqueue = store.find(
             BuildQueue, BuildQueue.job == other_job.job)
         self.assertNotEqual([], list(other_buildqueue))
+
+    def test_AccessPolicyArtifact_deleted(self):
+        # Any AccessPolicyArtifact referencing the branch is removed.
+        branch = self.factory.makeAnyBranch()
+        artifact = self.factory.makeAccessPolicyArtifact(branch)
+        self.factory.makeAccessPolicyGrant(object=artifact)
+        self.assertIsNot(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
+        branch.destroySelf()
+        self.assertIs(
+            None, getUtility(IAccessPolicyArtifactSource).get(branch))
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -2250,6 +2268,11 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
+
+    def test_personal_branches_for_private_teams_are_private(self):
+        team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makePersonalBranch(owner=team)
+        self.assertTrue(branch.private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):

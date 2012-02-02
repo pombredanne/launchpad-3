@@ -7,7 +7,7 @@ First, we need some imports.
 
     >>> from zope.publisher.browser import FileUpload
     >>> from StringIO import StringIO
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage, DummyTranslationMessage)
     >>> from lp.translations.interfaces.translationimportqueue import (
@@ -432,7 +432,7 @@ ones.
 
 First, what happens if we get any method that is not supported?
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> request.method = 'PUT'
     >>> navigation = POFileNavigation(pofile_es, request)

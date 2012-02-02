@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -26,15 +26,8 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import (
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.launchpadform import custom_widget
 from lp.app.browser.launchpadform import LaunchpadFormView
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -53,6 +46,13 @@ from lp.services.comments.interfaces.conversation import (
     IConversation,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.app.browser.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):

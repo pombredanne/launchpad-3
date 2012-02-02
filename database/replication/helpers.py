@@ -10,13 +10,24 @@ import subprocess
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
-from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
-from canonical.database.postgresql import (
-    fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
-    )
-from canonical.launchpad.scripts.logger import log, DEBUG2
+import psycopg2
 
+from lp.services.config import config
+from lp.services.database.postgresql import (
+    all_sequences_in_schema,
+    all_tables_in_schema,
+    ConnectionString,
+    fqn,
+    )
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_DEFAULT,
+    sqlvalues,
+    )
+from lp.services.scripts.logger import (
+    DEBUG2,
+    log,
+    )
 
 # The Slony-I clustername we use with Launchpad. Hardcoded because there
 # is no point changing this, ever.
@@ -38,7 +49,6 @@ LPMAIN_SEED = frozenset([
     ('public', 'openidnonce'),
     ('public', 'openidassociation'),
     ('public', 'person'),
-    ('public', 'launchpaddatabaserevision'),
     ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
@@ -57,6 +67,16 @@ LPMAIN_SEED = frozenset([
     # suggestivepotemplate.potemplate foreign key constraint exists on
     # production.
     ('public', 'suggestivepotemplate'),
+    # These are odd. They are updated via slonik & EXECUTE SCRIPT, and
+    # the contents of these tables will be different on each node
+    # because we store timestamps when the patches were applied.
+    # However, we want the tables listed as replicated so that, when
+    # building a new replica, the data that documents the schema patch
+    # level matches the schema patch level and upgrade.py does the right
+    # thing. This is a bad thing to do, but we are safe in this
+    # particular case.
+    ('public', 'launchpaddatabaserevision'),
+    ('public', 'launchpaddatabaseupdatelog'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -223,6 +243,11 @@ class Node:
         self.nickname = nickname
         self.connection_string = connection_string
         self.is_master = is_master
+
+    def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
+        con = psycopg2.connect(self.connection_string)
+        con.set_isolation_level(isolation)
+        return con
 
 
 def _get_nodes(con, query):

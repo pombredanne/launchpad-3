@@ -15,7 +15,7 @@
 #
 #  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
-#  $ pg_dump --format=c launchpad_dev > launchpad.dump
+#  $ pg_dump --exclude-schema=_sl --format=c launchpad_dev > launchpad.dump
 #  $ make stagingsetup \
 #        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
@@ -55,10 +55,9 @@ CREATEDB_83=createdb --encoding=UTF8
 CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
 CREATEDB=${CREATEDB_84}
 
-# Set this to --exit-on-error once our dumps are coming from a PG 8.4
-# source. Currently, the PG 8.3 dumps generate some spurious errors
-# when being restored into a PG 8.4 database.
-EXIT_ON_ERROR=--exit-on-error
+# Set this to --exit-on-error once we have migrated Launchpad production
+# to Slony-I 2.0.x.
+EXIT_ON_ERROR=
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment
@@ -105,6 +104,7 @@ devsetup:
 
 
 # Build _new staging databases from a production dump.
+stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	make _prelim LPCONFIG=${NEW_STAGING_CONFIG} \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
@@ -114,10 +114,23 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
+	# Unfortunately, we need to dump production databases using
+	# --exclude-schema=_sl, or the read locks opened by pg_dump will
+	# cause the replication to appear lagged and set off alerts.
+	# This makes the restoration process more complex - a human being
+	# can just restore the dump, scan the errors and confirm it worked.
+	# For this automation, we need to massage the list of data to
+	# restore from the dump to avoid the spurious errors and get a
+	# valid error code.
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
 	pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR} \
-	    ${MULTIPROC} ${STAGING_DUMP}
+	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	rm ${DUMPLIST}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
-	# Slony-I installed isn't usable without this step.
+	# Slony-I installed isn't usable without this step. This is likely
+	# irrelevant, as if our dump was created with --exclude-schema=_sl
+	# it will not contain anything to remove.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
 	# Setup replication
 	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
@@ -146,14 +159,16 @@ stagingswitch:
 	# Start the slon daemons, with requested lag.
 	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
+dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
-	# Stop ignoring error code after are dumps come from an 8.4 system.
-	-pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	rm ${DUMPLIST}
 	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
-	../schema/fti.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}
 
 _prelim:
@@ -186,9 +201,6 @@ _replicate:
 	# Upgrade all databases in the cluster and reset security.
 	@echo Running upgrade.py `date`
 	${SHHH} ../schema/upgrade.py \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	@echo Running fti.py `date`
-	${SHHH} ../schema/fti.py \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	@echo Running security.py `date`
 	./slon_ctl.py stop # security.py can deadlock with slony

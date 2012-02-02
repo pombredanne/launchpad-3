@@ -14,9 +14,9 @@ import pytz
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.translatablemessage import TranslatableMessage
 

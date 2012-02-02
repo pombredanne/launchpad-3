@@ -1,20 +1,20 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from lazr.restfulclient.errors import (
     BadRequest,
-    NotFound,
     HTTPError,
+    NotFound,
     Unauthorized as LRUnauthorized,
-)
+    )
 from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
@@ -31,6 +31,8 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestArchiveWebservice(TestCaseWithFactory):
@@ -322,6 +324,7 @@ class TestCopyPackage(WebServiceTestCase):
     def setup_data(self):
         self.ws_version = "devel"
         uploader_dude = self.factory.makePerson()
+        sponsored_dude = self.factory.makePerson()
         source_archive = self.factory.makeArchive()
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PRIMARY)
@@ -335,21 +338,24 @@ class TestCopyPackage(WebServiceTestCase):
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(uploader_dude, "universe")
         transaction.commit()
-        return (source_archive, source_name, target_archive, to_pocket,
-                to_series, uploader_dude, version)
+        return (source, source_archive, source_name, target_archive,
+                to_pocket, to_series, uploader_dude, sponsored_dude, version)
 
     def test_copyPackage(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
+        ws_sponsored_dude = self.wsObject(sponsored_dude)
 
         ws_target_archive.copyPackage(
             source_name=source_name, version=version,
             from_archive=ws_source_archive, to_pocket=to_pocket.name,
-            to_series=to_series.name, include_binaries=False)
+            to_series=to_series.name, include_binaries=False,
+            sponsored=ws_sponsored_dude)
         transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -358,18 +364,85 @@ class TestCopyPackage(WebServiceTestCase):
 
     def test_copyPackages(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
+        ws_sponsored_dude = self.wsObject(sponsored_dude)
 
         ws_target_archive.copyPackages(
             source_names=[source_name], from_archive=ws_source_archive,
             to_pocket=to_pocket.name, to_series=to_series.name,
-            include_binaries=False)
+            from_series=source.distroseries.name, include_binaries=False,
+            sponsored=ws_sponsored_dude)
         transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(target_archive, copy_job.target_archive)
+
+
+class TestgetPublishedBinaries(WebServiceTestCase):
+    """test getPublishedSources."""
+
+    def setUp(self):
+        super(TestgetPublishedBinaries, self).setUp()
+        self.ws_version = 'beta'
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive()
+
+    def test_getPublishedBinaries(self):
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        self.assertEqual(1, len(ws_archive.getPublishedBinaries()))
+
+    def test_getPublishedBinaries_created_since_date(self):
+        datecreated = self.factory.getUniqueDate()
+        later_date = datecreated + timedelta(minutes=1)
+        self.factory.makeBinaryPackagePublishingHistory(
+                archive=self.archive, datecreated=datecreated)
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        publications = ws_archive.getPublishedBinaries(
+                created_since_date=later_date)
+        self.assertEqual(0, len(publications))
+
+    def test_getPublishedBinaries_no_ordering(self):
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        self.factory.makeBinaryPackagePublishingHistory(archive=self.archive)
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        publications = ws_archive.getPublishedBinaries(ordered=False)
+        self.assertEqual(2, len(publications))
+
+
+class TestremoveCopyNotification(WebServiceTestCase):
+    """Test removeCopyNotification."""
+
+    def setUp(self):
+        super(TestremoveCopyNotification, self).setUp()
+        self.ws_version = 'devel'
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=self.person)
+
+    def test_removeCopyNotification(self):
+        distroseries = self.factory.makeDistroSeries()
+        source_archive = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=source_archive,
+            target_archive=self.archive, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        job.start()
+        job.fail()
+
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        ws_archive.removeCopyNotification(job_id=job.id)
+        transaction.commit()
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            None, source.getIncompleteJobsForArchive(self.archive).any())

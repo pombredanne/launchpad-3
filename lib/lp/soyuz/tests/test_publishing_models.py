@@ -6,14 +6,22 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.services.database.constants import UTC_NOW
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
+from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -45,7 +53,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
         bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        bpph = self.publisher.publishBinaryInArchive(
+        self.publisher.publishBinaryInArchive(
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -86,3 +94,84 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
         self.assert_(urls[2].endswith(
             '/98/getting-things-gnome_666_source.changes'))
+
+
+class TestSourcePackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_ancestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+
+    def test_changelogUrl_missing(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(None, spph.changelogUrl())
+
+    def test_changelogUrl(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeChangelog('foo', ['1.0']))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(
+            canonical_url(spph) + '/+files/%s' % spr.changelog.filename,
+            spph.changelogUrl())
+
+    def test_getFileByName_changelog(self):
+        spr = self.factory.makeSourcePackageRelease(
+            changelog=self.factory.makeLibraryFileAlias(filename='changelog'))
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertEqual(spr.changelog, spph.getFileByName('changelog'))
+
+    def test_getFileByName_changelog_absent(self):
+        spr = self.factory.makeSourcePackageRelease(changelog=None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        self.assertRaises(NotFoundError, spph.getFileByName, 'changelog')
+
+    def test_getFileByName_unhandled_name(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertRaises(NotFoundError, spph.getFileByName, 'not-changelog')
+
+
+class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpr = self.factory.makeBinaryPackageRelease()
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr)
+        expected_urls = []
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def get_urls_for_binarypackagerelease(self, bpr, archive):
+        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+            for f in bpr.files]
+
+    def test_binaryFileUrls_one_binary(self):
+        archive = self.factory.makeArchive(private=False)
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_two_binaries(self):
+        archive = self.factory.makeArchive(private=False)
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
+        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())

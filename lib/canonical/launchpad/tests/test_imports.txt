@@ -1,5 +1,0 @@
-
-
->>> import canonical.launchpad.database
->>> import canonical.launchpad.interfaces
-

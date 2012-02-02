@@ -9,18 +9,19 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
-from canonical.config import config
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.config import config
+from lp.services.testing import build_test_suite
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -37,7 +38,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         connects as a specific DB user.
         """
         cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+        switch_dbuser(config.processmail.dbuser)
 
     @classmethod
     def testTearDown(cls):

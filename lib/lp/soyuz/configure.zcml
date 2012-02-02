@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -6,12 +6,17 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <include
+        file="vocabularies.zcml"/>
     <authorizations module=".security" />
+
+    <lp:help-folder folder="help" name="+help-soyuz" />
 
     <!-- PackageCloner -->
 
@@ -21,8 +26,6 @@
         <allow
             interface="lp.soyuz.interfaces.packagecloner.IPackageCloner"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- BinaryPackagePublishingHistory -->
 
@@ -51,8 +54,6 @@
             <!-- XXX cprov 2006-06-14: missing security adapter -->
 
         </class>
-
-    </facet>
 
     <!-- ArchiveArch -->
     <class
@@ -95,8 +96,6 @@
             permission="launchpad.Edit"
             set_attributes="changelog"/>
     </class>
-    <facet
-        facet="overview">
 
         <!-- SourcePackagePublishingHistory -->
 
@@ -139,7 +138,6 @@
             <allow
                 interface="lp.soyuz.interfaces.publishing.IPublishingSet"/>
         </securedutility>
-    </facet>
     <class
         class="lp.soyuz.model.queue.PackageUploadQueue">
         <implements
@@ -234,8 +232,6 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadSet"/>
     </securedutility>
-    <facet
-        facet="overview">
 
         <!-- BinaryPackagename -->
 
@@ -252,7 +248,7 @@
         </securedutility>
 
         <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
-          <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+          <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
         </class>
 
         <!-- BinaryPackagenameIterator -->
@@ -260,7 +256,7 @@
         <class
             class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
             <allow
-                interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+                interface="lp.services.webapp.vocabulary.ICountableIterator"/>
         </class>
 
         <!-- BinaryPackageNameSet -->
@@ -276,7 +272,6 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"/>
         </class>
-    </facet>
 
     <!-- ArchiveDependency -->
 
@@ -385,7 +380,7 @@
     </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         factory="lp.soyuz.browser.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageReleaseBreadcrumb"
         permission="zope.Public" />
 
@@ -429,13 +424,13 @@
         factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
-        provides="canonical.launchpad.webapp.badge.IHasBadges"
+        provides="lp.app.browser.badge.IHasBadges"
         factory="lp.soyuz.browser.archive.ArchiveBadges"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archive.IArchive"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ArchiveSet -->
@@ -510,7 +505,7 @@
 
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
@@ -539,8 +534,8 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
 
     <!-- ArchiveSubscriber -->
@@ -578,14 +573,14 @@
         provides="lp.soyuz.browser.archivesubscription.IArchiveSubscriberUI"
         factory="lp.soyuz.browser.archivesubscription.archive_subscription_ui_adapter"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
-        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
+        factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_new_ppa_subscription"/>
+        handler="lp.soyuz.mail.notifications.notify_new_ppa_subscription"/>
 
     <!-- DistributionSourcePackageRelease -->
 
@@ -595,7 +590,7 @@
             interface="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
         factory="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseBreadcrumb"
         permission="zope.Public"/>
@@ -608,13 +603,10 @@
             interface="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"/>
     </class>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         factory="lp.soyuz.browser.distroseriesbinarypackage.DistroSeriesBinaryPackageBreadcrumb"
         permission="zope.Public"/>
-
-    <facet
-        facet="overview">
 
         <!-- DistroArchSeries -->
 
@@ -632,10 +624,9 @@
         </class>
         <adapter
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            provides="lp.services.webapp.interfaces.IBreadcrumb"
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
-    </facet>
 
     <!-- DistroArchSeriesSet -->
 
@@ -862,7 +853,7 @@
     </class>
 
     <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
-        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+        <allow interface="lp.services.webapp.vocabulary.ICountableIterator" />
     </class>
 
     <securedutility
@@ -874,7 +865,7 @@
     </securedutility>
 
     <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
-      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+      <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
     </class>
 
     <!-- DistributionJob -->

@@ -20,8 +20,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeries,
@@ -167,7 +167,7 @@ Not found as empty list:
 See distroseries-publishing-lookups.txt for more information.
 
 canUploadToPocket method helps us to decide if an upload is allowed or
-not, according the distroseries status and the upload target pocket.
+not, according to the distroseries status and the upload target pocket.
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -332,8 +332,8 @@ again" type set of assertions.
 
 Check if the attributes of an DRSPR instance for the just initialized
 distroseries are sane. A DRSPR instance should filter attributes of
-a SPR according the distroseries in question (practically according
-what is published in this distrorelelase)
+a SPR according to the distroseries in question (practically according
+what is published in this distrorelease)
 
 Since the initialize-from-parent procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting
@@ -606,7 +606,7 @@ Supersede previous netapplet publication:
     >>> print last_published.status.name
     SUPERSEDED
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> last_published.datesuperseded == get_transaction_timestamp()
     True
 

@@ -7,7 +7,7 @@ interface.
     >>> from lp.code.interfaces.codeimportresult import (
     ...     ICodeImportResult, ICodeImportResultSet)
     >>> result_set = getUtility(ICodeImportResultSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(ICodeImportResultSet, result_set)
     True
 
@@ -35,7 +35,7 @@ it.
 
     >>> from transaction import commit
     >>> commit()
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
 

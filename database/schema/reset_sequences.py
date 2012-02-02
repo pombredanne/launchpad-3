@@ -18,9 +18,11 @@ __metaclass__ = type
 import _pythonpath
 
 from optparse import OptionParser
-from canonical.database.postgresql import resetSequences
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options
+
+from lp.services.database.postgresql import resetSequences
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import db_options
+
 
 if __name__ == '__main__':
     parser = OptionParser()

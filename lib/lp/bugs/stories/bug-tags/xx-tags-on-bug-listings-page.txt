@@ -10,8 +10,8 @@ using Javascript after page load.
     >>> for a_tag in tags_portlet('a'):
     ...     print a_tag.renderContents()
     crash
-    dataloss
     pebcak
+    dataloss
 
 If we click on a tag, only bugs with that tag are displayed:
 
@@ -49,4 +49,4 @@ not available when no tags are relevant:
     >>> anon_browser.open(
     ...     'http://launchpad.dev/tomcat/+bugtarget-portlet-tags-content')
     >>> print extract_text(anon_browser.contents)
-    <BLANKLINE>
+    Tags

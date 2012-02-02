@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -16,10 +15,12 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatusSearchDisplay,
     UserCannotEditBugTaskStatus,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
@@ -371,7 +372,9 @@ class TestBugTaskStatusTransitionOwnerTeam(
 
     def makePersonAndTask(self):
         self.person = self.factory.makePerson()
-        self.team = self.factory.makeTeam(members=[self.person])
+        self.team = self.factory.makeTeam(
+            members=[self.person],
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         self.product = self.factory.makeProduct(owner=self.team)
         self.task = self.factory.makeBugTask(target=self.product)
 

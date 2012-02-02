@@ -29,7 +29,7 @@ sourcepackagename, tag, milestone, status, importance, has_patch,
 fixed_upstream, viewed_by and the count. viewed_by is a team reference
 and used to query private bug counts.
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.bugs.model.bugsummary import BugSummary
     >>> from lp.testing import login_celebrity
@@ -402,8 +402,15 @@ Create some teams too. team_a just has person_a as a member. team_c
 has both person_a and person_b as members. These teams will be subscribed
 to private bugs.
 
-    >>> team_a = factory.makeTeam(name='t-a', members=[person_a])
-    >>> team_c = factory.makeTeam(name='t-c', members=[person_a, person_b])
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
+    >>> team_a = factory.makeTeam(
+    ...     name='t-a',
+    ...     members=[person_a],
+    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
+    >>> team_c = factory.makeTeam(
+    ...     name='t-c',
+    ...     members=[person_a, person_b],
+    ...     subscription_policy=TeamSubscriptionPolicy.MODERATED)
 
 Create some bugs.
     - bug_a is a private distribution bug, subscribed by team_a

@@ -10,22 +10,22 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.pages import (
-    find_main_content,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import (
     FileBugInlineFormView,
     FileBugViewBase,
     )
 from lp.bugs.interfaces.bug import IBugAddForm
 from lp.bugs.publisher import BugsLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
+    login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
 
@@ -292,9 +292,9 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         self.assertIsNot(None, filebug_form)
         filebug_form_container = filebug_form.findParents(
             id='filebug-form-container')[0]
-        style_attrs = [item.strip()
-                       for item in filebug_form_container['style'].split(";")]
-        self.assertTrue('display: none' in style_attrs)
+        class_attrs = [item.strip()
+                       for item in filebug_form_container['class'].split(" ")]
+        self.assertTrue('hidden' in class_attrs)
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for

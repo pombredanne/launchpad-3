@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -72,22 +72,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
+from lp import _
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -123,7 +108,22 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class INewSpecification(Interface):
@@ -200,17 +200,17 @@ class NewSpecificationView(LaunchpadFormView):
         """Registers a new specification."""
         self.transform(data)
         spec = getUtility(ISpecificationSet).new(
-            owner = self.user,
-            name = data.get('name'),
-            title = data.get('title'),
-            specurl = data.get('specurl'),
-            summary = data.get('summary'),
-            product = data.get('product'),
-            drafter = data.get('drafter'),
-            assignee = data.get('assignee'),
-            approver = data.get('approver'),
-            distribution = data.get('distribution'),
-            definition_status = data.get('definition_status'))
+            owner=self.user,
+            name=data.get('name'),
+            title=data.get('title'),
+            specurl=data.get('specurl'),
+            summary=data.get('summary'),
+            product=data.get('product'),
+            drafter=data.get('drafter'),
+            assignee=data.get('assignee'),
+            approver=data.get('approver'),
+            distribution=data.get('distribution'),
+            definition_status=data.get('definition_status'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -561,6 +561,10 @@ class SpecificationView(SpecificationSimpleView):
     @property
     def page_title(self):
         return self.label
+
+    @property
+    def page_description(self):
+        return self.context.summary
 
     def initialize(self):
         # The review that the user requested on this spec, if any.

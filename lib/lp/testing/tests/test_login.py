@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the login helpers."""
@@ -9,10 +9,9 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.security.management import getInteraction
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.testing import (
     ANONYMOUS,
     anonymous_logged_in,
@@ -29,6 +28,7 @@ from lp.testing import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestLoginHelpers(TestCaseWithFactory):
@@ -103,13 +103,6 @@ class TestLoginHelpers(TestCaseWithFactory):
         team = self.factory.makeTeam()
         e = self.assertRaises(ValueError, login_person, team)
         self.assertEqual(str(e), "Got team, expected person: %r" % (team,))
-
-    def test_login_account(self):
-        # Calling login_person with an account logs you in with that account.
-        person = self.factory.makePerson()
-        account = person.account
-        login_person(account)
-        self.assertLoggedIn(person)
 
     def test_login_with_email(self):
         # login() logs a person in by email.
@@ -268,19 +261,23 @@ class TestLoginHelpers(TestCaseWithFactory):
         # with_celebrity_logged_in decorates a function so that it runs with
         # the given person logged in.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+
         @with_celebrity_logged_in('vcs_imports')
         def f():
             return self.getLoggedInPerson()
-        logout()
+
+        login_as(None)
         person = f()
         self.assertTrue(person.inTeam, vcs_imports)
 
     def test_with_person_logged_in(self):
         person = self.factory.makePerson()
+
         @with_person_logged_in(person)
         def f():
             return self.getLoggedInPerson()
-        logout()
+
+        login_as(None)
         logged_in = f()
         self.assertEqual(person, logged_in)
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -21,19 +21,16 @@ __all__ = [
     'WaitingSlave',
     ]
 
-import fixtures
 import os
 import types
-
 import xmlrpclib
 
+import fixtures
+from lpbuildd.tests.harness import BuilddSlaveTestSetup
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-
 from twisted.internet import defer
 from twisted.web import xmlrpc
-
-from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -150,9 +147,11 @@ class OkSlave:
 
     def sendFileToSlave(self, sha1, url, username="", password=""):
         d = self.ensurepresent(sha1, url, username, password)
+
         def check_present((present, info)):
             if not present:
                 raise CannotFetchFile(url, info)
+
         return d.addCallback(check_present)
 
     def cacheFile(self, logger, libraryfilealias):

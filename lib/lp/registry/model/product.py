@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -54,31 +54,6 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
@@ -95,6 +70,9 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
@@ -138,9 +116,11 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_person,
+    validate_person_or_closed_team,
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -160,6 +140,7 @@ from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
+from lp.registry.model.oopsreferences import referenced_oops
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.pillar import HasAliasMixin
@@ -169,9 +150,25 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
@@ -309,7 +306,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
-        ILaunchpadUsage, IProduct, IServiceUsage)
+        IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -318,7 +315,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person,
+        storm_validator=validate_person_or_closed_team,
         notNull=True)
     registrant = ForeignKey(
         dbName="registrant", foreignKey="Person",
@@ -331,7 +328,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False,
+        storm_validator=validate_person_or_closed_team, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -826,7 +823,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def name_with_project(self):
-        """See lib.canonical.launchpad.interfaces.IProduct"""
+        """See `IProduct`"""
         if self.project and self.project.name != self.name:
             return self.project.name + ": " + self.name
         return self.name
@@ -929,10 +926,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+        return results
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""
@@ -974,6 +972,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return FAQ.new(
             owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=self)
+
+    def findReferencedOOPS(self, start_date, end_date):
+        """See `IHasOOPSReferences`."""
+        return list(referenced_oops(
+            start_date, end_date, "product=%(product)s", {'product': self.id}
+            ))
 
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""
@@ -1450,9 +1454,8 @@ class ProductSet:
 
     def forReview(self, search_text=None, active=None,
                   project_reviewed=None, license_approved=None, licenses=None,
-                  license_info_is_empty=None,
-                  has_zero_licenses=None,
                   created_after=None, created_before=None,
+                  has_subscription=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
                   subscription_modified_after=None,
@@ -1473,8 +1476,10 @@ class ProductSet:
         if search_text is not None and search_text.strip() != '':
             conditions.append(SQL('''
                 Product.fti @@ ftq(%(text)s) OR
-                Product.name = lower(%(text)s)
-                ''' % sqlvalues(text=search_text)))
+                Product.name = %(text)s OR
+                strpos(lower(Product.license_info), %(text)s) > 0 OR
+                strpos(lower(Product.reviewer_whiteboard), %(text)s) > 0
+                ''' % sqlvalues(text=search_text.lower())))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
@@ -1536,58 +1541,28 @@ class ProductSet:
                     subscription_modified_before)
             needs_join = True
 
-        if needs_join:
+        if needs_join or has_subscription:
             conditions.append(
                 CommercialSubscription.productID == Product.id)
 
-        or_conditions = []
-        if license_info_is_empty is True:
-            # Match products whose license_info doesn't contain
-            # any non-space characters.
-            or_conditions.append("Product.license_info IS NULL")
-            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
-        elif license_info_is_empty is False:
-            # license_info contains something besides spaces.
-            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
-        elif license_info_is_empty is None:
-            # Don't restrict result if license_info_is_empty is None.
-            pass
-        else:
-            raise AssertionError('license_info_is_empty invalid: %r'
-                                 % license_info_is_empty)
-
-        has_license_subquery = '''%s (
-            SELECT 1
-            FROM ProductLicense
-            WHERE ProductLicense.product = Product.id
-            LIMIT 1
-            )
-            '''
-        if has_zero_licenses is True:
-            # The subquery finds zero rows.
-            or_conditions.append(has_license_subquery % 'NOT EXISTS')
-        elif has_zero_licenses is False:
-            # The subquery finds at least one row.
-            or_conditions.append(has_license_subquery % 'EXISTS')
-        elif has_zero_licenses is None:
-            # Don't restrict results if has_zero_licenses is None.
-            pass
-        else:
-            raise AssertionError('has_zero_licenses is invalid: %r'
-                                 % has_zero_licenses)
+        if has_subscription is False:
+            conditions.append(SQL('''
+                NOT EXISTS (
+                    SELECT 1
+                    FROM CommercialSubscription
+                    WHERE CommercialSubscription.product = Product.id
+                    LIMIT 1)
+                '''))
 
         if licenses is not None and len(licenses) > 0:
-            or_conditions.append('''EXISTS (
+            conditions.append(SQL('''EXISTS (
                 SELECT 1
                 FROM ProductLicense
                 WHERE ProductLicense.product = Product.id
                     AND license IN %s
                 LIMIT 1
                 )
-                ''' % sqlvalues(tuple(licenses)))
-
-        if len(or_conditions) != 0:
-            conditions.append(SQL('(%s)' % '\nOR '.join(or_conditions)))
+                ''' % sqlvalues(tuple(licenses))))
 
         result = IStore(Product).find(
             Product, *conditions).config(

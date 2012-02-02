@@ -25,6 +25,7 @@ from itertools import (
     )
 from operator import itemgetter
 
+from lazr.delegates import delegates
 from lazr.restful.interfaces import IWebServiceClientRequest
 from pytz import utc
 from zope.component import (
@@ -36,23 +37,32 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp import (
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
+from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugmessage import IBugComment
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
 def build_comments_from_chunks(
-        bugtask, truncate=False, slice_info=None, show_spam_controls=False):
+        bugtask, truncate=False, slice_info=None, show_spam_controls=False,
+        user=None, hide_first=False):
     """Build BugComments from MessageChunks.
 
     :param truncate: Perform truncation of large messages.
@@ -62,11 +72,22 @@ def build_comments_from_chunks(
     # This would be better as part of indexed_messages eager loading.
     comments = {}
     for bugmessage, message, chunk in chunks:
+        cache = get_property_cache(message)
+        if getattr(cache, 'chunks', None) is None:
+            cache.chunks = []
+        cache.chunks.append(removeSecurityProxy(chunk))
         bug_comment = comments.get(message.id)
         if bug_comment is None:
+            if bugmessage.index == 0 and hide_first:
+                display = 'hide'
+            elif truncate:
+                display = 'truncate'
+            else:
+                display = 'full'
             bug_comment = BugComment(
-                bugmessage.index, message, bugtask, visible=message.visible,
-                show_spam_controls=show_spam_controls)
+                bugmessage.index, message, bugtask,
+                show_spam_controls=show_spam_controls, user=user,
+                display=display)
             comments[message.id] = bug_comment
             # This code path is currently only used from a BugTask view which
             # has already loaded all the bug watches. If we start lazy loading
@@ -76,12 +97,6 @@ def build_comments_from_chunks(
                 bug_comment.bugwatch = bugmessage.bugwatch
                 bug_comment.synchronized = (
                     bugmessage.remote_comment_id is not None)
-        bug_comment.chunks.append(chunk)
-
-    for comment in comments.values():
-        # Once we have all the chunks related to a comment populated,
-        # we get the text set up for display.
-        comment.setupText(truncate=truncate)
     return comments
 
 
@@ -174,22 +189,19 @@ class BugComment:
     """
     implements(IBugComment)
 
+    delegates(IMessage, '_message')
+
     def __init__(
             self, index, message, bugtask, activity=None,
-            visible=True, show_spam_controls=False):
+            show_spam_controls=False, user=None, display='full'):
 
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
 
-        self.title = message.title
+        self._message = message
         self.display_title = False
-        self.datecreated = message.datecreated
-        self.owner = message.owner
-        self.rfc822msgid = message.rfc822msgid
 
-        self.chunks = []
-        self.bugattachments = []
         self.patches = []
 
         if activity is None:
@@ -198,8 +210,22 @@ class BugComment:
         self.activity = activity
 
         self.synchronized = False
-        self.visible = visible
-        self.show_spam_controls = show_spam_controls
+        # We use a feature flag to control users deleting their own comments.
+        user_owns_comment = False
+        flag = 'disclosure.users_hide_own_bug_comments.enabled'
+        if bool(getFeatureFlag(flag)):
+            user_owns_comment = user is not None and user == self.owner
+        self.show_spam_controls = show_spam_controls or user_owns_comment
+        if display == 'truncate':
+            self.comment_limit = config.malone.max_comment_size
+        else:
+            self.comment_limit = None
+        self.hide_text = (display == 'hide')
+
+    @cachedproperty
+    def bugattachments(self):
+        return [attachment for attachment in self._message.bugattachments if
+         attachment.type != BugAttachmentType.PATCH]
 
     @property
     def show_for_admin(self):
@@ -213,31 +239,28 @@ class BugComment:
         """
         return not self.visible
 
-    def setupText(self, truncate=False):
-        """Set the text for display and truncate it if necessary.
+    @property
+    def needs_truncation(self):
+        if self.comment_limit is None:
+            return False
+        return len(self.text_contents) > self.comment_limit
 
-        Note that this method must be called before either isIdenticalTo() or
-        isEmpty() are called, since to do otherwise would mean that they could
-        return false positives and negatives respectively.
-        """
-        comment_limit = config.malone.max_comment_size
+    @property
+    def was_truncated(self):
+        return self.needs_truncation
 
-        bits = [unicode(chunk.content)
-                for chunk in self.chunks
-                if chunk.content is not None and len(chunk.content) > 0]
-        text = self.text_contents = '\n\n'.join(bits)
-
-        if truncate and comment_limit and len(text) > comment_limit:
-            # Note here that we truncate at comment_limit, and not
-            # comment_limit - 3; while it would be nice to account for
-            # the ellipsis, this breaks down when the comment limit is
-            # less than 3 (which can happen in a testcase) and it makes
-            # counting the strings harder.
-            self.text_for_display = "%s..." % text[:comment_limit]
-            self.was_truncated = True
-        else:
-            self.text_for_display = text
-            self.was_truncated = False
+    @cachedproperty
+    def text_for_display(self):
+        if self.hide_text:
+            return ''
+        if not self.needs_truncation:
+            return self.text_contents
+        # Note here that we truncate at comment_limit, and not
+        # comment_limit - 3; while it would be nice to account for
+        # the ellipsis, this breaks down when the comment limit is
+        # less than 3 (which can happen in a testcase) and it makes
+        # counting the strings harder.
+        return "%s..." % self.text_contents[:self.comment_limit]
 
     def isIdenticalTo(self, other):
         """Compare this BugComment to another and return True if they are
@@ -332,6 +355,10 @@ class BugCommentView(LaunchpadView):
     def page_title(self):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
+
+    @property
+    def page_description(self):
+        return self.comment.text_contents
 
     @property
     def privacy_notice_classes(self):

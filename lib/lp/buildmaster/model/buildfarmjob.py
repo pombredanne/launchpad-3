@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -32,7 +32,6 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import (
     ComponentLookupError,
-    getAdapter,
     getUtility,
     )
 from zope.interface import (
@@ -42,17 +41,6 @@ from zope.interface import (
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -69,6 +57,17 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class BuildFarmJobOld:
@@ -101,6 +100,10 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
+    def getByJobs(self, job):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
         pass
@@ -110,6 +113,10 @@ class BuildFarmJobOld:
         pass
 
     def jobAborted(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
+    def jobCancel(self):
         """See `IBuildFarmJobOld`."""
         pass
 
@@ -157,11 +164,27 @@ class BuildFarmJobOldDerived:
         """
         raise NotImplementedError
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        """Preload the build farm jobs to which the given jobs will delegate.
+
+        """
+        pass
+
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJobOld`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_ids = [job.id for job in jobs]
+        return store.find(
+            cls, cls.job_id.is_in(job_ids))
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -299,6 +322,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     # a job.
     jobAborted = jobReset
 
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.status = BuildStatus.CANCELLED
+
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJob`."""
@@ -346,6 +373,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.CANCELLED,
+                                   BuildStatus.CANCELLING,
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 

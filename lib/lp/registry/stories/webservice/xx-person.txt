@@ -738,8 +738,8 @@ REST API propose other people (as opposed to teams) as part of a
 mentoring process (Bug 498181).
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')

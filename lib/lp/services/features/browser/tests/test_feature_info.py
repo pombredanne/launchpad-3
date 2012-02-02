@@ -10,9 +10,6 @@ from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.flags import (
     documented_flags,
@@ -25,11 +22,14 @@ from lp.services.features.scopes import (
     HANDLERS,
     undocumented_scopes,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     TestCase,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 
 
@@ -44,27 +44,23 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getUserBrowserAsAdmin(self):
         """Make a new TestBrowser logged in as an admin user."""
-        url = self.getFeatureInfoUrl()
         admin_team = getUtility(ILaunchpadCelebrities).admin
         return self.getUserBrowserAsTeamMember([admin_team])
 
     def getUserBrowserAsTeamMember(self, teams):
         """Make a TestBrowser authenticated as a team member."""
-        # XXX Martin Pool 2010-09-23 bug=646563: To make a UserBrowser, you
-        # must know the password; we can't get the password for an existing
-        # user so we have to make a new one.
-        user = self.factory.makePerson(password='test')
+        user = self.factory.makePerson()
         for team in teams:
             with person_logged_in(team.teamowner):
                 team.addMember(user, reviewer=team.teamowner)
-        return self.getUserBrowser(url=None, user=user, password='test')
+        return self.getUserBrowser(url=None, user=user)
 
     def test_feature_documentation_displayed(self):
         """The feature flag documentation is displayed on the page."""
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())
         for record in flag_info:
-            for item in record:
+            for item in record[:4]:
                 self.assertThat(browser.contents, Contains(item))
 
     def test_value_domain_documentation_displayed(self):

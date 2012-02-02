@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -11,8 +11,9 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from lazr.delegates import delegates
 from operator import itemgetter
+
+from lazr.delegates import delegates
 from storm.expr import (
     And,
     Desc,
@@ -22,11 +23,9 @@ from storm.store import Store
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,

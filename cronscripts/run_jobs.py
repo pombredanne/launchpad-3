@@ -11,6 +11,7 @@ import _pythonpath
 
 from lp.services.job.runner import JobCronScript
 
+
 if __name__ == '__main__':
     script = JobCronScript(commandline_config=True)
     script.lock_and_run()

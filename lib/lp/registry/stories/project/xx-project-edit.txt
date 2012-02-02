@@ -59,9 +59,15 @@ Other users cannot see the Project group status in the details portlet.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
     Project group information
-    Maintainer: Sample Person
-    Driver: Not yet appointed
-    Bug tracker: The Mozilla.org Bug Tracker
+    Maintainer:
+    Sample Person
+    Edit
+    Driver:
+    Not yet selected
+    Edit
+    Driver help
+    Bug tracker:
+    The Mozilla.org Bug Tracker
     Download RDF metadata
 
 Administrators can also change the maintainer and registrant independent
@@ -87,8 +93,9 @@ The project maintainer and registrant are now updated.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'maintainer'))
-    Maintainer: Celso Providelo
-    Change maintainer
+    Maintainer:
+    Celso Providelo
+    Edit
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'registration'))
@@ -113,11 +120,9 @@ Registry experts
 Registry experts are not allowed access to the +edit page.
 
     >>> email = "expert@example.com"
-    >>> password = "test"
-    >>> registry_expert= factory.makeRegistryExpert(email=email,
-    ...                                             password=password)
+    >>> registry_expert= factory.makeRegistryExpert(email=email)
     >>> logout()
-    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
+    >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
 
     >>> expert_browser.open('http://launchpad.dev/new-name')
     >>> expert_browser.getLink('Change details').click()

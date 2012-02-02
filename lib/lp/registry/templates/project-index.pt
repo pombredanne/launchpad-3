@@ -12,7 +12,7 @@
       <tal:uses_launchpad_bugtracker
          condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
         <script type="text/javascript">
-            LPS.use('lp.registry.structural_subscription', function(Y) {
+            YUI().use('lp.registry.structural_subscription', function(Y) {
                 var module = Y.lp.registry.structural_subscription;
                 Y.on('domready', function() {
                   module.setup({content_box: "#structural-subscription-content-box"});
@@ -109,6 +109,13 @@
         <tal:has-many-project condition="view/has_many_projects">
           <tal:sprints content="structure context/@@+portlet-coming-sprints" />
         </tal:has-many-project>
+
+        <h2>Milestones</h2>
+        <p>
+          <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+        </p>
+        <tal:search_by_tags_form
+          content="structure view/project_group_milestone_tag/@@+portlet-milestone-tag-search" />
       </div>
 
       <div class="yui-u" id="products">
@@ -127,9 +134,6 @@
           <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
-            </li>
-            <li>
-              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
             </li>
           </ul>
         </div>

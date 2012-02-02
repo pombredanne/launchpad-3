@@ -5,12 +5,18 @@
 
 __metaclass__ = type
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
-from lp.testing import TestCase # or TestCaseWithFactory
-from lp.testing.dbuser import dbuser, lp_dbuser
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+# or TestCaseWithFactory
+from lp.testing import TestCase
+from lp.testing.dbuser import (
+    dbuser,
+    lp_dbuser,
+    switch_dbuser,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
+
 
 class TestDbUser(TestCase):
 
@@ -24,7 +30,7 @@ class TestDbUser(TestCase):
         return result
 
     def test_dbuser(self):
-        LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+        switch_dbuser(config.uploader.dbuser)
         self.assertEqual(config.uploader.dbuser, self.get_current_dbuser())
         with dbuser(config.archivepublisher.dbuser):
             self.assertEqual(config.archivepublisher.dbuser,
@@ -32,9 +38,8 @@ class TestDbUser(TestCase):
         self.assertEqual(config.uploader.dbuser, self.get_current_dbuser())
 
     def test_lp_dpuser(self):
-        LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+        switch_dbuser(config.uploader.dbuser)
         self.assertEqual(config.uploader.dbuser, self.get_current_dbuser())
         with lp_dbuser():
             self.assertEqual('launchpad', self.get_current_dbuser())
         self.assertEqual(config.uploader.dbuser, self.get_current_dbuser())
-

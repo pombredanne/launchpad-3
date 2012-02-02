@@ -18,26 +18,26 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.security import AccessBranch
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    clear_cache,
-    )
-from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel,
     BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
 from lp.code.interfaces.branch import IBranchSet
+from lp.registry.interfaces.role import IPersonRoles
+from lp.security import AccessBranch
+from lp.services.webapp.authorization import (
+    check_permission,
+    clear_cache,
+    )
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBranchVisibility(TestCaseWithFactory):
@@ -70,7 +70,7 @@ class TestBranchVisibility(TestCaseWithFactory):
         self.assertTrue(access.checkUnauthenticated())
         person = self.factory.makePerson()
         self.assertTrue(
-            access.checkAccountAuthenticated(person.account))
+            access.checkAuthenticated(IPersonRoles(person)))
 
     def test_visible_to_owner(self):
         # The owners of a branch always have visibility of their own branches.
@@ -79,11 +79,11 @@ class TestBranchVisibility(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=owner, private=True)
         naked_branch = removeSecurityProxy(branch)
 
-        clear_cache() # clear authorization cache for check_permission
+        clear_cache()  # Clear authorization cache for check_permission.
         access = AccessBranch(naked_branch)
         self.assertFalse(access.checkUnauthenticated())
         self.assertTrue(
-            access.checkAccountAuthenticated(owner.account))
+            access.checkAuthenticated(IPersonRoles(owner)))
         self.assertFalse(check_permission('launchpad.View', branch))
 
     def test_visible_to_administrator(self):
@@ -93,7 +93,7 @@ class TestBranchVisibility(TestCaseWithFactory):
         naked_branch = removeSecurityProxy(branch)
         admin = getUtility(ILaunchpadCelebrities).admin.teamowner
         access = AccessBranch(naked_branch)
-        self.assertTrue(access.checkAccountAuthenticated(admin.account))
+        self.assertTrue(access.checkAuthenticated(IPersonRoles(admin)))
 
     def test_visible_to_subscribers(self):
         # Branches that are not public are viewable by members of the
@@ -106,7 +106,7 @@ class TestBranchVisibility(TestCaseWithFactory):
 
         # Not visible to an unsubscribed person.
         access = AccessBranch(naked_branch)
-        self.assertFalse(access.checkAccountAuthenticated(person.account))
+        self.assertFalse(access.checkAuthenticated(IPersonRoles(person)))
 
         # Subscribing the team to the branch will allow access to the branch.
         naked_branch.subscribe(
@@ -114,7 +114,7 @@ class TestBranchVisibility(TestCaseWithFactory):
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL, teamowner)
-        self.assertTrue(access.checkAccountAuthenticated(person.account))
+        self.assertTrue(access.checkAuthenticated(IPersonRoles(person)))
 
     def test_branchset_restricted_queries(self):
         # All of the BranchSet queries that are used to populate user viewable
