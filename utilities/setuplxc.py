@@ -287,6 +287,7 @@ def ssh(location, user=None, caller=subprocess.call):
         sshcmd = (
             'ssh',
             '-t',
+            '-t', # Yes, this second -t is deliberate. See `man ssh`.
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
