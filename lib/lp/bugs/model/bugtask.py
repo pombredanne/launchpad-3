@@ -1742,19 +1742,35 @@ class BugTaskSet:
     _ORDERBY_COLUMN = None
 
     _open_resolved_upstream = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND ((
-                            RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s)
-                            OR (
-                            RelatedBugTask.product IS NOT NULL AND
-                            RelatedBugTask.bugwatch IS NULL AND
-                            RelatedBugTask.status %s))
-                    )
-                """
+        EXISTS (
+            SELECT TRUE FROM BugTask AS RelatedBugTask
+            WHERE RelatedBugTask.bug = BugTask.bug
+                AND RelatedBugTask.id != BugTask.id
+                AND ((
+                    RelatedBugTask.bugwatch IS NOT NULL AND
+                    RelatedBugTask.status %s)
+                    OR (
+                    RelatedBugTask.product IS NOT NULL AND
+                    RelatedBugTask.bugwatch IS NULL AND
+                    RelatedBugTask.status %s))
+            )
+        """
+
+    _open_resolved_upstream_with_target = """
+        EXISTS (
+            SELECT TRUE FROM BugTask AS RelatedBugTask
+            WHERE RelatedBugTask.bug = BugTask.bug
+                AND RelatedBugTask.id != BugTask.id
+                AND ((
+                    RelatedBugTask.%(target_column)s = %(target_id)s AND
+                    RelatedBugTask.bugwatch IS NOT NULL AND
+                    RelatedBugTask.status %(status_with_watch)s)
+                    OR (
+                    RelatedBugTask.%(target_column)s = %(target_id)s AND
+                    RelatedBugTask.bugwatch IS NULL AND
+                    RelatedBugTask.status %(status_without_watch)s))
+            )
+        """
 
     title = "A set of bug tasks"
 
@@ -2481,7 +2497,7 @@ class BugTaskSet:
                 """ % (target_clause, sqlvalues(BugTaskStatus.INVALID)[0])
 
     def buildNoUpstreamBugtaskClause(self, params):
-        """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask"""
+        """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask."""
         if params.upstream_target is None:
             # Find all bugs that has no product bugtask. We limit the
             # SELECT by matching against BugTask.bug to make the query
@@ -2492,25 +2508,55 @@ class BugTaskSet:
                             WHERE OtherBugTask.bug = BugTask.bug
                                 AND OtherBugTask.product IS NOT NULL)
             """
+        elif IProduct.providedBy(params.upstream_target):
+            return """
+                NOT EXISTS (SELECT TRUE
+                            FROM BugTask AS OtherBugTask
+                            WHERE OtherBugTask.bug = BugTask.bug
+                                AND OtherBugTask.product=%s)
+            """ % sqlvalues(params.upstream_target.id)
+        elif IDistribution.providedBy(params.upstream_target):
+            return """
+                NOT EXISTS (SELECT TRUE
+                            FROM BugTask AS OtherBugTask
+                            WHERE OtherBugTask.bug = BugTask.bug
+                                AND OtherBugTask.distribution=%s)
+            """ % sqlvalues(params.upstream_target.id)
         else:
-            if IProduct.providedBy(params.upstream_target):
-                return """
-                    NOT EXISTS (SELECT TRUE
-                                FROM BugTask AS OtherBugTask
-                                WHERE OtherBugTask.bug = BugTask.bug
-                                    AND OtherBugTask.product=%s)
-                """ % sqlvalues(params.upstream_target.id)
-            elif IDistribution.providedBy(params.upstream_target):
-                return """
-                    NOT EXISTS (SELECT TRUE
-                                FROM BugTask AS OtherBugTask
-                                WHERE OtherBugTask.bug = BugTask.bug
-                                    AND OtherBugTask.distribution=%s)
-                """ % sqlvalues(params.upstream_target.id)
-            else:
-                raise AssertionError(
-                    'params.upstream_target must be a Distribution or '
-                    'a Product')
+            raise AssertionError(
+                'params.upstream_target must be a Distribution or '
+                'a Product')
+
+    def buildOpenUpstreamClause(self, params):
+        """Return a clause for BugTaskSearchParams.open_upstream."""
+        statuses_for_open_tasks = [
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.UNKNOWN]
+        if params.upstream_target is None:
+            return self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)))
+        elif IProduct.providedBy(params.upstream_target):
+            query_values = {'target_column': 'product'}
+        elif IDistribution.providedBy(params.upstream_target):
+            query_values = {'target_column': 'distribution'}
+        else:
+            raise AssertionError(
+                'params.upstream_target must be a Distribution or '
+                'a Product')
+        query_values['target_id'] = sqlvalues(params.upstream_target.id)[0]
+        query_values['status_with_watch'] = search_value_to_where_condition(
+            any(*statuses_for_open_tasks))
+        query_values['status_without_watch'] = (
+            query_values['status_with_watch'])
+        return self._open_resolved_upstream_with_target % query_values
 
     def buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
@@ -2554,20 +2600,7 @@ class BugTaskSet:
                         any(*statuses_for_upstream_tasks)))
             upstream_clauses.append(only_resolved_upstream_clause)
         if params.open_upstream:
-            statuses_for_open_tasks = [
-                BugTaskStatus.NEW,
-                BugTaskStatus.INCOMPLETE,
-                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                BugTaskStatus.CONFIRMED,
-                BugTaskStatus.INPROGRESS,
-                BugTaskStatus.UNKNOWN]
-            only_open_upstream_clause = self._open_resolved_upstream % (
-                    search_value_to_where_condition(
-                        any(*statuses_for_open_tasks)),
-                    search_value_to_where_condition(
-                        any(*statuses_for_open_tasks)))
-            upstream_clauses.append(only_open_upstream_clause)
+            upstream_clauses.append(self.buildOpenUpstreamClause(params))
 
         if upstream_clauses:
             upstream_clause = " OR ".join(upstream_clauses)

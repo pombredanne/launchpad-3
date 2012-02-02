@@ -1340,7 +1340,7 @@ class UpstreamFilterTests:
             upstream_target=upstream_target)
         self.assertSearchFinds(params, self.bugtasks[1:])
         # If a new distribution is specified as the upstream target,
-        # all bugs are returned, since there are now tasks for this
+        # all bugs are returned, since there are no tasks for this
         # distribution.
         upstream_target = self.factory.makeDistribution()
         params = self.getBugTaskSearchParams(
@@ -1350,6 +1350,55 @@ class UpstreamFilterTests:
         # When we add bugtasks for this distribution, the search returns
         # an empty result.
         self.setUpUpstreamTests(upstream_target)
+        self.assertSearchFinds(params, [])
+
+    def xxxShowBugTasks(self):
+        for bt in self.bugtasks:
+            print "bug", bt.bug.id
+            for task in bt.bug.bugtasks:
+                print "  ", task.id, task.status, task.target.name,
+                print task.target.__class__.__name__
+
+    def test_open_upstream(self):
+        # It is possible to search for bugs with open upstream bugtasks.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_owner = upstream_task.target.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks[:2])
+
+    def test_open_upstream__upstream_product_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream product.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_product = upstream_task.target
+        params = self.getBugTaskSearchParams(
+            user=None, open_upstream=True, upstream_target=upstream_product)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+        upstream_owner = upstream_product.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        self.assertSearchFinds(params, [])
+
+    def test_open_upstream__upstream_distribution_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream distribution.
+        upstream_distro = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, open_upstream=True, upstream_target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        bug = self.bugtasks[0].bug
+        distro_task = self.factory.makeBugTask(
+            bug=bug, target=upstream_distro)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        with person_logged_in(upstream_distro.owner):
+            distro_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_distro.owner)
         self.assertSearchFinds(params, [])
 
 
