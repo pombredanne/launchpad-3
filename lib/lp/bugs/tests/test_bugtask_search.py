@@ -1352,13 +1352,6 @@ class UpstreamFilterTests:
         self.setUpUpstreamTests(upstream_target)
         self.assertSearchFinds(params, [])
 
-    def xxxShowBugTasks(self):
-        for bt in self.bugtasks:
-            print "bug", bt.bug.id
-            for task in bt.bug.bugtasks:
-                print "  ", task.id, task.status, task.target.name,
-                print task.target.__class__.__name__
-
     def test_open_upstream(self):
         # It is possible to search for bugs with open upstream bugtasks.
         bug = self.bugtasks[2].bug
