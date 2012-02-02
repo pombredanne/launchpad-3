@@ -715,7 +715,7 @@ def initialize_host(
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
-    # XXX 2012-02-02 gmb:
+    # XXX 2012-02-02 gmb bug=925024:
     #     These calls need to be removed once the lxc vs. apparmor bug
     #     is resolved, since having apparmor enabled for lxc is very
     #     much a Good Thing.
