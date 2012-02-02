@@ -5,17 +5,23 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    IsInstance,
+    )
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.services.webapp import canonical_url
 from lp.testing import (
     TestCaseWithFactory,
     ANONYMOUS,
     login,
+    login_person,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from zope.security.interfaces import Unauthorized
 
 
 class TestSpecificationDependencies(TestCaseWithFactory):
@@ -141,22 +147,15 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_newworkitem_anon(self):
+    def test_anonymous_newworkitem_not_allowed(self):
         spec = self.factory.makeSpecification()
         login(ANONYMOUS)
-        # XXX doesn't seem to work, get ForbiddenAttribute
-        e = self.assertRaises(Exception, spec.newWorkitem,
-            'new-work-item')
-        self.assertEqual(
-            '%s' % ('error'), str(e))
-        
-        self.fail()
+        self.assertRaises(Unauthorized, spec.newWorkItem,
+            title='new-work-item')
 
-    def test_newworkitem_owner(self):
+    def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
-        login(spec.owner)
+        login_person(spec.owner)
         title = 'new-work-item'
-        # XXX still get ForbiddenAttribute error here
-        work_item = spec.newWorkitem(title)
-        self.assertThat(work_item.title, Equals(title))
-
+        work_item = spec.newWorkItem(title=title)
+        self.assertThat(work_item, IsInstance(SpecificationWorkItem))
