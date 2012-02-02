@@ -1814,7 +1814,7 @@ class ProductRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s.rdf' % self.context.name
+        return self.context.name
 
 
 class Icon:
