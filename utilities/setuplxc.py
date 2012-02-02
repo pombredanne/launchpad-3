@@ -31,6 +31,7 @@ from contextlib import contextmanager
 from email.Utils import parseaddr
 import argparse
 import os
+import platform
 import pwd
 import shutil
 import subprocess
@@ -59,7 +60,6 @@ LP_REPOSITORIES = (
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
-LXC_GATEWAY = '10.0.3.1'
 LXC_GUEST_OS = 'lucid'
 LXC_HOSTS_CONTENT = (
     ('127.0.0.88',
@@ -74,11 +74,11 @@ LXC_HOSTS_CONTENT = (
     ('127.0.0.99', 'bazaar.launchpad.dev'),
     )
 LXC_NAME = 'lptests'
-LXC_OPTIONS = (
-    ('lxc.network.type', 'veth'),
-    ('lxc.network.link', 'lxcbr0'),
-    ('lxc.network.flags', 'up'),
-    )
+LXC_OPTIONS = """
+lxc.network.type = veth
+lxc.network.link = {interface}
+lxc.network.flags = up
+"""
 LXC_PATH = '/var/lib/lxc/'
 LXC_REPOS = (
     'deb http://archive.ubuntu.com/ubuntu '
@@ -226,6 +226,19 @@ def get_container_path(lxcname, path='', base_path=LXC_PATH):
         '/var/lib/lxc/mycontainer/rootfs/home'
     """
     return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
+
+
+def get_lxc_gateway():
+    """Return a tuple of gateway name and address.
+
+    The gateway name and address will change depending on which version
+    of Ubuntu the script is running on.
+    """
+    release_name = platform.linux_distribution()[2]
+    if release_name == 'oneiric':
+        return 'virbr0', '192.168.122.1'
+    else:
+        return 'lxcbr0', '10.0.3.1'
 
 
 def get_user_ids(user):
@@ -686,6 +699,10 @@ def initialize_host(
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
+    # XXX 2012-02-02 gmb:
+    #     These calls need to be removed once the lxc vs. apparmor bug
+    #     is resolved, since having apparmor enabled for lxc is very
+    #     much a Good Thing.
     # Disable the apparmor profiles for lxc so that we don't have
     # problems installing postgres.
     subprocess.call([
@@ -696,11 +713,13 @@ def create_lxc(user, lxcname):
         'apparmor_parser', '-R', '/etc/apparmor.d/usr.bin.lxc-start'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
+    lxc_gateway_name, lxc_gateway_address = get_lxc_gateway()
+    file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(lxc_gateway_address))
     file_append(
-        DHCP_FILE, 'prepend domain-name-servers {};\n'.format(LXC_GATEWAY))
+        DHCP_FILE,
+        'prepend domain-name-servers {};\n'.format(lxc_gateway_address))
     # Container configuration template.
-    content = ''.join('{}={}\n'.format(*i) for i in LXC_OPTIONS)
+    content = LXC_OPTIONS.format(interface=lxc_gateway_name)
     with open(LXC_CONFIG_TEMPLATE, 'w') as f:
         f.write(content)
     # Creating container.
