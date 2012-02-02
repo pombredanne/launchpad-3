@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    Equals,
-    IsInstance,
-    )
+from testtools.matchers import Equals
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
@@ -143,6 +140,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
 
+
 class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -150,12 +148,10 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_anonymous_newworkitem_not_allowed(self):
         spec = self.factory.makeSpecification()
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, spec.newWorkItem,
-            title='new-work-item')
+        self.assertRaises(Unauthorized, getattr, spec, 'newWorkItem')
 
     def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
-        title = 'new-work-item'
-        work_item = spec.newWorkItem(title=title)
-        self.assertThat(work_item, IsInstance(SpecificationWorkItem))
+        work_item = spec.newWorkItem(title='new-work-item')
+        self.assertIsInstance(work_item, SpecificationWorkItem)
