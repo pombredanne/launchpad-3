@@ -508,6 +508,16 @@ def handle_ssh_keys(namespace):
         None
         >>> print namespace.public_key
         None
+
+    If only one of private_key and public_key is provided, a
+    ValidationError will be raised.
+
+        >>> namespace = argparse.Namespace(
+        ...     private_key=private, public_key=None,
+        ...     home_dir='/tmp/__does_not_exists__')
+        >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ValidationError: arguments private-key...
     """
     for attr, filename in (
         ('private_key', 'id_rsa'),
@@ -522,6 +532,10 @@ def handle_ssh_keys(namespace):
             except IOError:
                 value = None
             setattr(namespace, attr, value)
+    if bool(namespace.private_key) != bool(namespace.public_key):
+        raise ValidationError(
+            "arguments private-key and public-key: "
+            "both must be provided or neither must be provided.")
 
 
 def handle_directories(namespace):
