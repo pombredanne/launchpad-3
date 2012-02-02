@@ -69,6 +69,8 @@ def login(email, participation=None):
     setPrincipal(), otherwise it must allow setting its principal attribute.
     """
 
+    if not isinstance(email, str):
+        raise ValueError("Expected email parameter to be a string.")
     participation = _test_login_impl(participation)
     setupInteractionByEmail(email, participation)
 
