@@ -39,7 +39,7 @@ def referenced_oops(start_date, end_date, context_clause, context_params):
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
-    posix_oops_match = (r"~* '^(oops-\\w+)|(\\moops-\\w+)'")
+    posix_oops_match = (r"~* E'^(oops-\\w+)|(\\moops-\\w+)'")
     params = dict(start_date=start_date, end_date=end_date)
     params.update(context_params)
     sql_params = sqlvalues(**params)
