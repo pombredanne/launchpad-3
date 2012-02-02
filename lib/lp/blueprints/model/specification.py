@@ -233,9 +233,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def newWorkItem(self, title, status=SpecificationWorkItemStatus.TODO,
                     assignee=None, milestone=None):
         """See ISpecification."""
-
-        # TODO we need to add tests for this
-
         return SpecificationWorkItem(
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone)
