@@ -1327,6 +1327,31 @@ class UpstreamFilterTests:
             upstream_target=upstream_target)
         self.assertSearchFinds(params, self.bugtasks)
 
+    def test_has_no_upstream_bugtask__target_specified(self):
+        # The target of the default bugtask of the first test bug
+        # (a product) does not appear in other bugs, thus a search
+        # returns all other bugtasks if we specify the search parameters
+        # has_no_upstream_bugtask and use the target described above
+        # as the upstream_target.
+        bug = self.bugtasks[0].bug
+        upstream_target = bug.bugtasks[0].target
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+        # If a new distribution is specified as the upstream target,
+        # all bugs are returned, since there are now tasks for this
+        # distribution.
+        upstream_target = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True,
+            upstream_target=upstream_target)
+        self.assertSearchFinds(params, self.bugtasks)
+        # When we add bugtasks for this distribution, the search returns
+        # an empty result.
+        self.setUpUpstreamTests(upstream_target)
+        self.assertSearchFinds(params, [])
+
 
 class SourcePackageTarget(BugTargetTestBase, UpstreamFilterTests):
     """Use a source package as the bug target."""
