@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -1038,15 +1038,25 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def official_tags(self):
         """The list of official tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def unofficial_tags(self):
         """The list of unofficial tags for this bug."""
         target_official_tags = set(self.context.bug.official_tags)
-        return [tag for tag in self.context.bug.tags
-                if tag not in target_official_tags]
+        links = []
+        for tag in self.context.bug.tags:
+            if tag not in target_official_tags:
+                links.append((tag, '%s?field.tag=%s' % (
+                    canonical_url(self.context.target, view_name='+bugs',
+                        force_local_path=True), urllib.quote(tag))))
+        return links
 
     @property
     def available_official_tags_js(self):
@@ -2270,7 +2280,7 @@ class BugTaskListingItem:
             'reporter': self.bug.owner.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
-            'tags': [{'url': base_tag_url + tag, 'tag': tag}
+            'tags': [{'url': base_tag_url + urllib.quote(tag), 'tag': tag}
                 for tag in self.bug.tags],
             'title': self.bug.title,
             }

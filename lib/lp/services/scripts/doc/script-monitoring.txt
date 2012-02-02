@@ -25,10 +25,10 @@ IScriptActivitySet.recordSuccess():
   >>> from zope.component import getUtility
   >>> from lp.services.scripts.interfaces.scriptactivity import (
   ...     IScriptActivitySet)
-  >>> from lp.testing.layers import LaunchpadZopelessLayer
+  >>> from lp.testing.dbuser import switch_dbuser
 
   >>> UTC = pytz.timezone('UTC')
-  >>> LaunchpadZopelessLayer.switchDbUser('garbo_daily') # A script db user
+  >>> switch_dbuser('garbo_daily') # A script db user
 
   >>> activity = getUtility(IScriptActivitySet).recordSuccess(
   ...     name='script-name',

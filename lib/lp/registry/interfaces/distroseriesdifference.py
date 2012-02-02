@@ -36,7 +36,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )

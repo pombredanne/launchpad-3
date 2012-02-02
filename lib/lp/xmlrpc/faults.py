@@ -39,6 +39,7 @@ __all__ = [
     'NotInTeam',
     'NoUrlForBranch',
     'RequiredParameterMissing',
+    'TeamEmailAddress',
     'UnexpectedStatusReport',
     ]
 
@@ -487,3 +488,17 @@ class InvalidSourcePackageName(LaunchpadFault):
     def __init__(self, name):
         self.name = name
         LaunchpadFault.__init__(self, name=name)
+
+
+class TeamEmailAddress(LaunchpadFault):
+    """Raised by `ISoftwareCenterAgentAPI` when an email address is a team."""
+
+    error_code = 400
+    msg_template = (
+        'The email address \'%(email)s\' '
+        '(openid_identifier \'%(openid_identifier)s\') '
+        'is linked to a Launchpad team.')
+
+    def __init__(self, email, openid_identifier):
+        LaunchpadFault.__init__(
+            self, email=email, openid_identifier=openid_identifier)

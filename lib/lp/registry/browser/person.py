@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -497,6 +497,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # In which case we assume it is the archive_id (for the
             # moment, archive name will be an option soon).
             archive_id = self.request.stepstogo.consume()
+            if not archive_id.isdigit():
+                return None
             return traverse_archive_subscription_for_subscriber(
                 self.context, archive_id)
         else:
@@ -1223,7 +1225,26 @@ class PersonRdfContentsView:
         return encodeddata
 
 
-class PersonAdministerView(LaunchpadEditFormView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        # Reason is a message about why a rename cannot happen.
+        # No message means renames are permitted.
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
@@ -3005,7 +3026,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                YUI().use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3471,23 +3492,6 @@ class PersonEditHomePageView(BasePersonEditView):
         return 'Change home page for %s' % self.context.displayname
 
     page_title = label
-
-
-class PersonRenameFormMixin(LaunchpadEditFormView):
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        Renames are prohibited if a person/team has an active PPA or an
-        active mailing list.
-        """
-        reason = self.context.checkRename()
-        if reason:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonRenameFormMixin, self).setUpWidgets()
-        if reason:
-            self.widgets['name'].hint = reason
 
 
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
