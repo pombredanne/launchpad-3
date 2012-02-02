@@ -2527,22 +2527,17 @@ class BugTaskSet:
                 'params.upstream_target must be a Distribution or '
                 'a Product')
 
-    def buildOpenUpstreamClause(self, params):
-        """Return a clause for BugTaskSearchParams.open_upstream."""
-        statuses_for_open_tasks = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.INCOMPLETE,
-            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-            BugTaskStatus.CONFIRMED,
-            BugTaskStatus.INPROGRESS,
-            BugTaskStatus.UNKNOWN]
+    def buildOpenOrResolvedUpstreamClause(self, params,
+                                          statuses_for_watch_tasks,
+                                          statuses_for_upstream_tasks):
+        """Return a clause for BugTaskSearchParams.open_upstream or
+        BugTaskSearchParams.resolved_upstream."""
         if params.upstream_target is None:
             return self._open_resolved_upstream % (
                     search_value_to_where_condition(
-                        any(*statuses_for_open_tasks)),
+                        any(*statuses_for_watch_tasks)),
                     search_value_to_where_condition(
-                        any(*statuses_for_open_tasks)))
+                        any(*statuses_for_upstream_tasks)))
         elif IProduct.providedBy(params.upstream_target):
             query_values = {'target_column': 'product'}
         elif IDistribution.providedBy(params.upstream_target):
@@ -2553,10 +2548,45 @@ class BugTaskSet:
                 'a Product')
         query_values['target_id'] = sqlvalues(params.upstream_target.id)[0]
         query_values['status_with_watch'] = search_value_to_where_condition(
-            any(*statuses_for_open_tasks))
-        query_values['status_without_watch'] = (
-            query_values['status_with_watch'])
+            any(*statuses_for_watch_tasks))
+        query_values['status_without_watch'] = search_value_to_where_condition(
+            any(*statuses_for_upstream_tasks))
         return self._open_resolved_upstream_with_target % query_values
+
+    def buildOpenUpstreamClause(self, params):
+        """Return a clause for BugTaskSearchParams.open_upstream."""
+        statuses_for_open_tasks = [
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.UNKNOWN]
+        return self.buildOpenOrResolvedUpstreamClause(
+            params, statuses_for_open_tasks, statuses_for_open_tasks)
+
+    def buildResolvedUpstreamClause(self, params):
+        """Return a clause for BugTaskSearchParams.open_upstream."""
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are invalid,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
+        statuses_for_watch_tasks = [
+            BugTaskStatus.INVALID,
+            BugTaskStatus.FIXCOMMITTED,
+            BugTaskStatus.FIXRELEASED]
+        statuses_for_upstream_tasks = [
+            BugTaskStatus.FIXCOMMITTED,
+            BugTaskStatus.FIXRELEASED]
+        return self.buildOpenOrResolvedUpstreamClause(
+            params, statuses_for_watch_tasks, statuses_for_upstream_tasks)
 
     def buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
@@ -2569,36 +2599,11 @@ class BugTaskSet:
         if params.pending_bugwatch_elsewhere:
             upstream_clauses.append(
                 self.buildPendingBugwatchElsewhereClause(params))
-
         if params.has_no_upstream_bugtask:
             upstream_clauses.append(
                 self.buildNoUpstreamBugtaskClause(params))
-
-        # Our definition of "resolved upstream" means:
-        #
-        # * bugs with bugtasks linked to watches that are invalid,
-        #   fixed committed or fix released
-        #
-        # * bugs with upstream bugtasks that are fix committed or fix released
-        #
-        # This definition of "resolved upstream" should address the use
-        # cases we gathered at UDS Paris (and followup discussions with
-        # seb128, sfllaw, et al.)
         if params.resolved_upstream:
-            statuses_for_watch_tasks = [
-                BugTaskStatus.INVALID,
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-            statuses_for_upstream_tasks = [
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-
-            only_resolved_upstream_clause = self._open_resolved_upstream % (
-                    search_value_to_where_condition(
-                        any(*statuses_for_watch_tasks)),
-                    search_value_to_where_condition(
-                        any(*statuses_for_upstream_tasks)))
-            upstream_clauses.append(only_resolved_upstream_clause)
+            upstream_clauses.append(self.buildResolvedUpstreamClause(params))
         if params.open_upstream:
             upstream_clauses.append(self.buildOpenUpstreamClause(params))
 

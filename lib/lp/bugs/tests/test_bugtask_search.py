@@ -1401,6 +1401,53 @@ class UpstreamFilterTests:
                 BugTaskStatus.FIXRELEASED, upstream_distro.owner)
         self.assertSearchFinds(params, [])
 
+    def test_resolved_upstream(self):
+        # It is possible to search for bugs with resolved upstream bugtasks.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_owner = upstream_task.target.owner
+        with person_logged_in(upstream_owner):
+            upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        params = self.getBugTaskSearchParams(user=None, resolved_upstream=True)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_resolved_upstream__upstream_product_specified(self):
+        # A search for bugs having a resolved upstream bugtask can be
+        # limited to a specific upstream product.
+        bug = self.bugtasks[2].bug
+        upstream_task = bug.bugtasks[0]
+        upstream_product = upstream_task.target
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True,
+            upstream_target=upstream_product)
+        self.assertSearchFinds(params, [])
+        upstream_owner = upstream_product.owner
+        for bug in [task.bug for task in self.bugtasks]:
+            upstream_task = bug.bugtasks[0]
+            upstream_owner = upstream_task.owner
+            with person_logged_in(upstream_owner):
+                upstream_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_owner)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+
+    def test_resolved_upstream__upstream_distribution_specified(self):
+        # A search for bugs having an open upstream bugtask can be
+        # limited to a specific upstream distribution.
+        upstream_distro = self.factory.makeDistribution()
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True,
+            upstream_target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        bug = self.bugtasks[0].bug
+        distro_task = self.factory.makeBugTask(
+            bug=bug, target=upstream_distro)
+        self.assertSearchFinds(params, [])
+        with person_logged_in(upstream_distro.owner):
+            distro_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, upstream_distro.owner)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+
 
 class SourcePackageTarget(BugTargetTestBase, UpstreamFilterTests):
     """Use a source package as the bug target."""
