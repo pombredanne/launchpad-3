@@ -1229,7 +1229,9 @@ class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
 
 
 class UpstreamFilterTests:
-    """Tests related to restircted upstream filtering.
+    """A mixin class with tests related to restircted upstream filtering.
+
+    Classes derived from this class must also derive from SearchTestBase.
 
     These tests make sense only for the targets SourcePackage
     DistributionSourcePackage.
