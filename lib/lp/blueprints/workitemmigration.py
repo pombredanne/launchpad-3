@@ -10,14 +10,21 @@ This will be removed once the migration is done.
 __metaclass__ = type
 __all__ = [
     'extractWorkItemsFromWhiteboard',
+    'SpecificationWorkitemMigratorProcess',
     ]
 
 import re
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote_like
+from lp.services.looptuner import DBLoopTuner, ITunableLoop
+
 from lp.blueprints.enums import SpecificationWorkItemStatus
+from lp.blueprints.model.specification import Specification
 
 from lp.registry.interfaces.person import IPersonSet
 
@@ -157,3 +164,86 @@ def extractWorkItemsFromWhiteboard(spec):
 
     removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
     return work_items
+
+
+class SpecificationWorkitemMigrator:
+    """Migrate work-items from Specification.whiteboard to
+    SpecificationWorkItem.
+
+    Migrating work items from the whiteboard is an all-or-nothing thing; if we
+    encounter any errors when parsing the whiteboard of a spec, we abort the
+    transaction and leave its whiteboard unchanged.
+
+    On a test with production data, only 100 whiteboards (out of almost 2500)
+    could not be migrated. On 24 of those the assignee in at least one work
+    item is not valid, on 33 the status of a work item is not valid and on 42
+    one or more milestones are not valid.
+    """
+    implements(ITunableLoop)
+
+    def __init__(self, transaction, logger, start_at=0):
+        self.transaction = transaction
+        self.logger = logger
+        self.start_at = start_at
+        query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
+            'work items')
+        self.specs = IStore(Specification).find(Specification, query)
+        self.total = self.specs.count()
+        self.logger.info(
+            "Migrating work items from the whiteboard of %d specs"
+            % self.total)
+
+    def getNextBatch(self, chunk_size):
+        end_at = self.start_at + int(chunk_size)
+        return self.specs[self.start_at:end_at]
+
+    def isDone(self):
+        # When the main loop hits the end of the Specifications with work
+        # items to migrate it sets start_at to None.  Until we know we hit the
+        # end, it always has a numerical value.
+        return self.start_at is None
+
+    def __call__(self, chunk_size):
+        specs = self.getNextBatch(chunk_size)
+        specs_count = specs.count()
+        if specs_count == 0:
+            self.start_at = None
+            return
+
+        for spec in specs:
+            try:
+                work_items = extractWorkItemsFromWhiteboard(spec)
+            except Exception, e:
+                self.logger.info(
+                    "Failed to parse whiteboard of %s: %s" % (
+                        spec, unicode(e)))
+                #self.transaction.abort()
+                #self.transaction.begin()
+                continue
+
+            if len(work_items) > 0:
+                self.logger.info(
+                    "Migrated %d work items from the whiteboard of %s" % (
+                        len(work_items), spec))
+                #self.transaction.commit()
+                #self.transaction.begin()
+            else:
+                self.logger.info(
+                    "No work items found on the whiteboard of %s" %
+                        spec)
+
+        self.transaction.abort()
+        self.transaction.begin()
+        self.start_at += specs_count
+
+
+class SpecificationWorkitemMigratorProcess:
+
+    def __init__(self, transaction, logger):
+        self.transaction = transaction
+        self.logger = logger
+
+    def run(self):
+        loop = SpecificationWorkitemMigrator(self.transaction, self.logger)
+        DBLoopTuner(loop, 3, log=self.logger).run()
+        self.logger.info("Done.")
