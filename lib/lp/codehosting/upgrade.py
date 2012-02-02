@@ -15,7 +15,7 @@ from bzrlib.plugins.loom.formats import (
 from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2aSubtree
 from bzrlib.upgrade import upgrade
 
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
 from lp.code.bzr import (
     branch_changed,
     RepositoryFormat,

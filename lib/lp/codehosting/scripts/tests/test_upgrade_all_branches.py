@@ -10,7 +10,6 @@ import logging
 from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 import transaction
 
-from canonical.testing.layers import AppServerLayer
 from lp.code.bzr import branch_changed
 from lp.codehosting.upgrade import Upgrader
 from lp.testing import (
@@ -18,6 +17,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.layers import AppServerLayer
 
 
 class TestUpgradeAllBranchesScript(TestCaseWithFactory):

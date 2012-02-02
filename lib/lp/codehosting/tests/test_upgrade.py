@@ -10,7 +10,6 @@ from bzrlib.repofmt.groupcompress_repo import (
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.code.bzr import (
     BranchFormat,
     branch_changed,
@@ -25,6 +24,7 @@ from lp.testing import (
     temp_dir,
     TestCaseWithFactory,
     )
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestUpgrader(TestCaseWithFactory):
