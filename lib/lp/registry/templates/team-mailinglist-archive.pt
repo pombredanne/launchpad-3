@@ -32,29 +32,27 @@
 <body>
   <div metal:fill-slot="main">
 
-    <div id="batch">
-      <table style="width: 100%;" class="upper-batch-nav">
-        <tbody>
-          <tr>
-            <td style="white-space: nowrap" class="batch-navigation-index">
-              <strong>1</strong>&rarr;<strong>2</strong> of 2 results</td>
-              
-            <td style="text-align: right; white-space: nowrap"
-              class="batch-navigation-links">
-              <a href="#" class="first js-action inactive">First</a>
-              &#149;
-              <a href="#" class="previous js-action inactive">Previous</a>
-              &#149;
-              <a href="#" class="next js-action inactive">
-                <strong>Next</strong>
-              </a>
-              &#149;
-              <a href="#" class="last js-action inactive">Last</a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <table style="width: 100%;" class="upper-batch-nav">
+      <tbody>
+        <tr>
+          <td style="white-space: nowrap" class="batch-navigation-index">
+            <strong>1</strong>&rarr;<strong>2</strong> of 2 results</td>
+
+          <td style="text-align: right; white-space: nowrap"
+            class="batch-navigation-links">
+            <a href="#" class="first js-action inactive">First</a>
+            &#149;
+            <a href="#" class="previous js-action inactive">Previous</a>
+            &#149;
+            <a href="#" class="next js-action inactive">
+              <strong>Next</strong>
+            </a>
+            &#149;
+            <a href="#" class="last js-action inactive">Last</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
     <div id="messagelist">
       <tal:comment replace="nothing">
