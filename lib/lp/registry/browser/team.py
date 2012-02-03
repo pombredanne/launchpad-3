@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,8 +45,9 @@ from urllib import unquote
 
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import simplejson
 import pytz
+import simplejson
+from storm.expr import Join
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -140,8 +141,14 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -221,8 +228,11 @@ class HasRenewalPolicyMixin:
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visibility.
 
-    The visibility field should only be shown to users with
-    launchpad.Commercial permission on the team.
+    The visibility field is shown if
+    * The user has launchpad.Commercial permission.
+    * Or the feature flag
+    disclosure.show_visibility_for_team_add.enabled is on, and the user has
+    a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -265,9 +275,31 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def conditionallyOmitVisibility(self):
+    def conditionallyOmitVisibility(self, user):
         """Remove the visibility field if not authorized."""
-        if not check_permission('launchpad.Commercial', self.context):
+        if check_permission('launchpad.Commercial', self.context):
+            return None
+        if getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled'):
+            store = IStore(Person)
+            person = store.using(
+                Person,
+                Join(
+                    TeamParticipation,
+                    Person.id == TeamParticipation.personID),
+                Join(
+                    Product, TeamParticipation.teamID == Product._ownerID),
+                Join(
+                    CommercialSubscription,
+                    CommercialSubscription.productID == Product.id)
+                ).find(
+                    Person,
+                    CommercialSubscription.date_expires > datetime.now(
+                        pytz.UTC),
+                    Person.id == user.id)
+            if person.is_empty():
+                self.form_fields = self.form_fields.omit('visibility')
+        else:
             self.form_fields = self.form_fields.omit('visibility')
 
 
@@ -301,7 +333,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.conditionallyOmitVisibility(self.user)
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -997,7 +1029,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         Only Launchpad Admins get to see the visibility field.
         """
         super(TeamAddView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.conditionallyOmitVisibility(self.user)
 
     @action('Create Team', name='create')
     def create_action(self, action, data):
