@@ -374,6 +374,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
