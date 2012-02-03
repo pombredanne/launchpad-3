@@ -116,7 +116,7 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
-    IBranchSet)
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -135,7 +135,7 @@ from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
-from lp.services.helpers import truncate_text, english_list
+from lp.services.helpers import truncate_text
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -1345,13 +1345,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         if reviewer is not None:
             review_requests.append((reviewer, review_type))
 
-        branch_names = [branch.unique_name
-                        for branch in [source_branch, target_branch]]
-        visibility_info = getUtility(IBranchSet).getBranchVisibilityInfo(
-            self.user, reviewer, branch_names)
-        if self.request.is_ajax:
-            return visibility_info
-
         try:
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
@@ -1363,16 +1356,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-
-        visible_branches = visibility_info['visible_branches']
-        if len(visible_branches) < 2:
-            invisible_branches = [branch.unique_name
-                        for branch in [source_branch, target_branch]
-                        if branch.unique_name not in visible_branches]
-            self.request.response.addNotification(
-                'To ensure visibility, %s is now subscribed to: %s'
-                % (visibility_info['person_name'],
-                   english_list(invisible_branches)))
 
     def validate(self, data):
         source_branch = self.context

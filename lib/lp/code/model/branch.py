@@ -1423,7 +1423,6 @@ class BranchSet:
             branch = branch_set.getByUniqueName(name)
             try:
                 if (branch is not None
-                        and False
                         and branch.visibleByUser(user)
                         and branch.visibleByUser(person)):
                     visible_branches.append(branch.unique_name)
