@@ -2,18 +2,20 @@
 
 YUI.add('lp.${LIBRARY}.test', function (Y) {
 
-var tests = Y.namespace('lp.${LIBRARY}.test');
-tests.suite = new Y.Test.Suite('${LIBRARY} Tests');
+    var tests = Y.namespace('lp.${LIBRARY}.test');
+    tests.suite = new Y.Test.Suite('${LIBRARY} Tests');
 
-tests.suite.add(new Y.Test.Case({
-    name: '${LIBRARY}_tests',
+    tests.suite.add(new Y.Test.Case({
+        name: '${LIBRARY}_tests',
 
-    setUp: function () {},
-    tearDown: function () {},
+        setUp: function () {},
+        tearDown: function () {},
 
-    test_library_exists: function () {
-        Y.Assert.isObject(lp.${LIBRARY},
-            "We should be able to locate the lp.${LIBRARY} module");
-    }
+        test_library_exists: function () {
+            Y.Assert.isObject(Y.lp.${LIBRARY},
+                "We should be able to locate the lp.${LIBRARY} module");
+        }
+
+    }));
 
 }, '0.1', {'requires': ['test', 'console', 'lp.${LIBRARY}']});
