@@ -47,7 +47,6 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 import pytz
 import simplejson
-from storm.expr import Join
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -141,13 +140,8 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.person import Person
-from lp.registry.model.product import Product
-from lp.registry.model.teammembership import TeamParticipation
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
 from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
@@ -278,29 +272,12 @@ class TeamFormMixin:
     def conditionallyOmitVisibility(self):
         """Remove the visibility field if not authorized."""
         if check_permission('launchpad.Commercial', self.context):
-            return None
+            return
         if getFeatureFlag(
             'disclosure.show_visibility_for_team_add.enabled'):
-            store = IStore(Person)
-            person = store.using(
-                Person,
-                Join(
-                    TeamParticipation,
-                    Person.id == TeamParticipation.personID),
-                Join(
-                    Product, TeamParticipation.teamID == Product._ownerID),
-                Join(
-                    CommercialSubscription,
-                    CommercialSubscription.productID == Product.id)
-                ).find(
-                    Person,
-                    CommercialSubscription.date_expires > datetime.now(
-                        pytz.UTC),
-                    Person.id == self.user.id)
-            if person.is_empty():
-                self.form_fields = self.form_fields.omit('visibility')
-        else:
-            self.form_fields = self.form_fields.omit('visibility')
+            if self.user.hasCurrentCommercialSubscription():
+                return
+        self.form_fields = self.form_fields.omit('visibility')
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,

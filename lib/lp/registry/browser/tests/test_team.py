@@ -3,14 +3,8 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
 import contextlib
 from lazr.restful.interfaces import IJSONRequestCache
-import pytz
 import simplejson
 import transaction
 from zope.component import getUtility
@@ -35,7 +29,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
@@ -512,26 +505,12 @@ class TestTeamAddView(TestCaseWithFactory):
                     'visibility',
                     [field.__name__ for field in view.form_fields])
 
-    def create_subscription(self, product, expired=False):
-        if expired:
-            expiry = datetime.now(pytz.UTC) - timedelta(days=1)
-        else:
-            expiry = datetime.now(pytz.UTC) + timedelta(days=30)
-        CommercialSubscription(
-            product=product,
-            date_starts=datetime.now(pytz.UTC) - timedelta(days=90),
-            date_expires=expiry,
-            registrant=product.owner,
-            purchaser=product.owner,
-            sales_system_id='new',
-            whiteboard='')
-
     def test_person_with_cs_sees_visibility_field_with_flag(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
-        self.create_subscription(product)
+        self.factory.makeCommercialSubscription(product)
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
                 view = create_initialized_view(
@@ -546,7 +525,7 @@ class TestTeamAddView(TestCaseWithFactory):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
-        self.create_subscription(product, expired=True)
+        self.factory.makeCommercialSubscription(product, expired=True)
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
                 view = create_initialized_view(
