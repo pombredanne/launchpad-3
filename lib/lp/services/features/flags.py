@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -267,6 +267,13 @@ flag_info = sorted([
      'boolean',
      ('Enables soft OOPSes for code that is mixing visibility rules, such '
       'as disclosing private teams, so the data can be analyzed.'),
+     '',
+     '',
+     ''),
+    ('disclosure.show_visibility_for_team_add.enabled',
+     'boolean',
+     ('If true, will show the visibility field for IPersonSet:+newteam if '
+      'the user has a current commercial subscription.'),
      '',
      '',
      ''),
