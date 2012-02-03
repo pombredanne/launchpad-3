@@ -283,7 +283,8 @@ class RootApp:
                 view = BranchWSGIApp(
                     bzr_branch, branch_name, {'cachepath': cachepath},
                     self.graph_cache, branch_link=branch_link,
-                    served_url=None, private=private)
+                    served_url=None, private=private,
+                    export_tarballs=False)
                 return view.app(environ, start_response)
             finally:
                 bzr_branch.unlock()
