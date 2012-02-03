@@ -87,8 +87,7 @@ class TestMListSync(MailmanTestCase):
              self.host_name, source_dir),
             stdout=PIPE, stderr=PIPE,
             cwd=config.root,
-            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name,
-                     PATH=os.environ.get('PATH')))
+            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name))
         stdout, stderr = proc.communicate()
         return proc.returncode, stderr
 
