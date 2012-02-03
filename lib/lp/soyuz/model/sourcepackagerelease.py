@@ -206,7 +206,7 @@ class SourcePackageRelease(SQLBase):
         store.flush()
         store.execute(
             "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
-            (content, self.id))
+            (unicode(content), self.id))
 
     @property
     def user_defined_fields(self):
