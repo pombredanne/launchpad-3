@@ -6,8 +6,6 @@ Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
 environment variable, and defaults to 'development'
-
-XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 '''
 
 __metaclass__ = type
