@@ -419,7 +419,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
-            "(Person.id, Person.name) > (1, 'foo')",
+            "(Person.id, Person.name) > (1, E'foo')",
             compile(limit_expression))
 
     def test_lessThanOrGreaterThanExpression__desc(self):
@@ -432,7 +432,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
-            "(Person.id, Person.name) < (1, 'foo')",
+            "(Person.id, Person.name) < (1, E'foo')",
             compile(limit_expression))
 
     def test_equalsExpressionsFromLimits(self):
@@ -483,7 +483,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause] = range_factory.whereExpressions(
             [Person.id, Person.name], [1, 'foo'])
         self.assertEquals(
-            "(Person.id, Person.name) > (1, 'foo')", compile(where_clause))
+            "(Person.id, Person.name) > (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_desc_desc(self):
         """If the descending sort columns c1, c2 and the memo values
@@ -498,7 +498,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause] = range_factory.whereExpressions(
             [Desc(Person.id), Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            "(Person.id, Person.name) < (1, 'foo')", compile(where_clause))
+            "(Person.id, Person.name) < (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_asc_desc(self):
         """If the ascending sort column c1, the descending sort column
@@ -516,7 +516,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause_1, where_clause_2] = range_factory.whereExpressions(
             [Person.id, Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            "Person.id = ? AND ((Person.name) < ('foo'))",
+            "Person.id = ? AND ((Person.name) < (E'foo'))",
             compile(where_clause_1))
         self.assertEquals('(Person.id) > (1)', compile(where_clause_2))
 
