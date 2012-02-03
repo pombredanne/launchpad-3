@@ -273,7 +273,7 @@ flag_info = sorted([
     ('disclosure.show_visibility_for_team_add.enabled',
      'boolean',
      ('If true, will show the visibility field for IPersonSet:+newteam if '
-      ' the user has a current commercial subscription.'),
+      'the user has a current commercial subscription.'),
      '',
      '',
      ''),
