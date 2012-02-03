@@ -41,13 +41,11 @@ from datetime import (
     timedelta,
     )
 import math
-import os
 from urllib import unquote
 
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 import simplejson
-from simplejson.encoder import JSONEncoderForHTML
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
@@ -991,18 +989,6 @@ class TeamMailingListArchiveView(LaunchpadView):
              }}]
         return messages
         #return simplejson.loads('[]')
-
-    @cachedproperty
-    def mustache_template(self):
-        template_path = os.path.join(
-            config.root, 'lib/lp/registry/templates/messagelist.mustache')
-        with open(template_path) as template_file:
-            return template_file.read()
-
-    @property
-    def mustache_listings(self):
-        return 'LP.mustache_listings = %s;' % simplejson.dumps(
-            self.mustache_template, cls=JSONEncoderForHTML)
 
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
