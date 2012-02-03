@@ -275,7 +275,7 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def conditionallyOmitVisibility(self, user):
+    def conditionallyOmitVisibility(self):
         """Remove the visibility field if not authorized."""
         if check_permission('launchpad.Commercial', self.context):
             return None
@@ -296,7 +296,7 @@ class TeamFormMixin:
                     Person,
                     CommercialSubscription.date_expires > datetime.now(
                         pytz.UTC),
-                    Person.id == user.id)
+                    Person.id == self.user.id)
             if person.is_empty():
                 self.form_fields = self.form_fields.omit('visibility')
         else:
@@ -333,7 +333,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.conditionallyOmitVisibility(self.user)
+        self.conditionallyOmitVisibility()
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -1029,7 +1029,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         Only Launchpad Admins get to see the visibility field.
         """
         super(TeamAddView, self).setUpFields()
-        self.conditionallyOmitVisibility(self.user)
+        self.conditionallyOmitVisibility()
 
     @action('Create Team', name='create')
     def create_action(self, action, data):
