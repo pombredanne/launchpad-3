@@ -88,7 +88,6 @@ class TestMListSync(MailmanTestCase):
             stdout=PIPE, stderr=PIPE,
             cwd=config.root,
             env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name,
-                     PYTHONPATH=os.pathsep.join(sys.path),
                      PATH=os.environ.get('PATH')))
         stdout, stderr = proc.communicate()
         return proc.returncode, stderr
