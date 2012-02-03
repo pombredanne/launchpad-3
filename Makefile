@@ -41,7 +41,7 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
-CONVOY_ROOT?=/var/tmp/convoy
+CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -456,6 +456,10 @@ copy-apache-config:
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	if [ ! -d /srv/launchpad.dev ]; then \
+		mkdir /srv/launchpad.dev; \
+		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
+	fi	
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
