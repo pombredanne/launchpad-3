@@ -12,7 +12,6 @@ from subprocess import (
     PIPE,
     Popen,
     )
-import sys
 import tempfile
 
 from Mailman import mm_cfg
