@@ -273,10 +273,10 @@ class TeamFormMixin:
         """Remove the visibility field if not authorized."""
         if check_permission('launchpad.Commercial', self.context):
             return
-        if getFeatureFlag(
-            'disclosure.show_visibility_for_team_add.enabled'):
-            if self.user.hasCurrentCommercialSubscription():
-                return
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag and self.user.hasCurrentCommercialSubscription():
+            return
         self.form_fields = self.form_fields.omit('visibility')
 
 
