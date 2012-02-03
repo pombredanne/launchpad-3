@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,8 +45,8 @@ from urllib import unquote
 
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import simplejson
 import pytz
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -142,6 +142,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -221,8 +222,11 @@ class HasRenewalPolicyMixin:
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visibility.
 
-    The visibility field should only be shown to users with
-    launchpad.Commercial permission on the team.
+    The visibility field is shown if
+    * The user has launchpad.Commercial permission.
+    * Or the feature flag
+    disclosure.show_visibility_for_team_add.enabled is on, and the user has
+    a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -267,8 +271,13 @@ class TeamFormMixin:
 
     def conditionallyOmitVisibility(self):
         """Remove the visibility field if not authorized."""
-        if not check_permission('launchpad.Commercial', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
+        if check_permission('launchpad.Commercial', self.context):
+            return
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag and self.user.hasCurrentCommercialSubscription():
+            return
+        self.form_fields = self.form_fields.omit('visibility')
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
