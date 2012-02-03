@@ -12,7 +12,9 @@ GNU Affero General Public License version 3 (see the file LICENSE).
     </script>
     <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
     <script type="text/javascript"
-            src="../../../../app/javascript/testing/testrunner.js"></script>
+            src="../../../app/javascript/testing/testrunner.js"></script>
+    <script type="text/javascript"
+            src="../../../contrib/javascript/lp.mustache.js"></script>
 
     <!-- The module under test -->
     <script type="text/javascript" src="../team_mailinglists.js"></script>
@@ -23,6 +25,27 @@ GNU Affero General Public License version 3 (see the file LICENSE).
   <body class="yui-skin-sam">
 
     <!-- The example markup required by the script to run -->
+    <table style="width: 100%;" class="upper-batch-nav">
+      <tbody>
+        <tr>
+          <td style="white-space: nowrap" class="batch-navigation-index">
+            <strong>1</strong>&rarr;<strong>2</strong> of 2 results</td>
+            
+          <td style="text-align: right; white-space: nowrap"
+            class="batch-navigation-links">
+            <a href="#" class="first js-action inactive">First</a>
+            &#149;
+            <a href="#" class="previous js-action inactive">Previous</a>
+            &#149;
+            <a href="#" class="next js-action inactive">
+              <strong>Next</strong>
+            </a>
+            &#149;
+            <a href="#" class="last js-action inactive">Last</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
     <div id="messagelist">
     </div>
   </body>
