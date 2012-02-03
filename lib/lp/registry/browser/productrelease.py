@@ -263,7 +263,7 @@ class ProductReleaseRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s-%s' % (
+        return '%s-%s-%s.rdf' % (
             self.context.product.name,
             self.context.productseries.name,
             self.context.version)

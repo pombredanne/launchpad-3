@@ -1195,7 +1195,7 @@ class PersonRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return self.context.name
+        return '%s.rdf' % self.context.name
 
 
 class PersonRdfContentsView:
