@@ -20,6 +20,7 @@ from lp.registry.interfaces.product import (
 from lp.services.config import config
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    BrowserTestCase,
     login_celebrity,
     login_person,
     person_logged_in,
@@ -386,3 +387,19 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
                 content.find(id='fnord-edit-license-approved').parent))
+
+
+class TestProductRdfView(BrowserTestCase):
+    """Test the Product RDF view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_headers(self):
+        """The headers for the RDF view of a product should be as expected."""
+        product = self.factory.makeProduct()
+        browser = self.getViewBrowser(product, view_name='+rdf')
+        content_disposition = 'attachment; filename="%s.rdf"' % product.name
+        self.assertEqual(
+            content_disposition, browser.headers['Content-disposition'])
+        self.assertEqual(
+            'application/rdf+xml', browser.headers['Content-type'])

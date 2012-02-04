@@ -26,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     BranchVisibilityRule,
     CodeReviewNotificationLevel,
@@ -1484,6 +1485,57 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             review_type='Specific')
         # Note we're using the reference from the first call
         self.assertEqual('specific', reference.review_type)
+
+    def _check_mp_branch_visibility(self, branch, reviewer):
+        # The reviewer is subscribed to the branch and can see it.
+        sub = branch.getSubscription(reviewer)
+        self.assertEqual(
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            sub.notification_level)
+        self.assertEqual(
+            BranchSubscriptionDiffSize.NODIFF,
+            sub.max_diff_lines)
+        self.assertEqual(
+            CodeReviewNotificationLevel.FULL,
+            sub.review_level)
+        # The reviewer can see the branch.
+        self.assertTrue(branch.visibleByUser(reviewer))
+        if branch.stacked_on is not None:
+            self._check_mp_branch_visibility(branch.stacked_on, reviewer)
+
+    def _test_nominate_grants_visibility(self, reviewer):
+        """Nominated reviewers can see the source and target branches."""
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        # We make a source branch stacked on a private one.
+        base_branch = self.factory.makeBranch(
+            owner=owner, private=True, product=product)
+        source_branch = self.factory.makeBranch(
+            stacked_on=base_branch, product=product)
+        target_branch = self.factory.makeBranch(owner=owner, product=product)
+        target_branch.product.setBranchVisibilityTeamPolicy(
+            owner, BranchVisibilityRule.PRIVATE)
+        login_person(owner)
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            source_branch=source_branch,
+            target_branch=target_branch)
+        target_branch.setPrivate(True, owner)
+        # The reviewer can't see the source or target branches.
+        self.assertFalse(source_branch.visibleByUser(reviewer))
+        self.assertFalse(target_branch.visibleByUser(reviewer))
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner)
+        for branch in [source_branch, target_branch]:
+            self._check_mp_branch_visibility(branch, reviewer)
+
+    def test_nominate_person_grants_visibility(self):
+        reviewer = self.factory.makePerson()
+        self._test_nominate_grants_visibility(reviewer)
+
+    def test_nominate_team_grants_visibility(self):
+        reviewer = self.factory.makeTeam()
+        self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""
