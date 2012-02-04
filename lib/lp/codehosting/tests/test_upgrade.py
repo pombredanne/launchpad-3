@@ -34,7 +34,8 @@ class TestUpgrader(TestCaseWithFactory):
     def prepare(self, format='pack-0.92', loomify_branch=False):
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format=format)
-        tree.commit('foo', rev_id='prepare-commit')
+        tree.commit(
+            'foo', rev_id='prepare-commit', committer='jrandom@example.com')
         if loomify_branch:
             loomify(tree.branch)
             bzr_branch = tree.bzrdir.open_branch()
@@ -51,7 +52,7 @@ class TestUpgrader(TestCaseWithFactory):
         sub_branch = BzrDir.create_branch_convenience(
             tree.bzrdir.root_transport.clone('sub').base)
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
-        tree.commit('added tree reference')
+        tree.commit('added tree reference', committer='jrandom@example.com')
 
     def check_branch(self, upgraded, branch_format=BranchFormat.BZR_BRANCH_7,
                      repository_format=RepositoryFormat.BZR_CHK_2A):
@@ -175,7 +176,7 @@ class TestUpgrader(TestCaseWithFactory):
         sub_branch = BzrDir.create_branch_convenience(
             tree.bzrdir.root_transport.clone('sub').base, format=format)
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
-        tree.commit('added tree reference')
+        tree.commit('added tree reference', committer='jrandom@example.org')
         upgrader = self.getUpgrader(tree.branch, branch)
         with read_locked(tree.branch):
             upgrader.create_upgraded_repository()
@@ -214,7 +215,7 @@ class TestUpgrader(TestCaseWithFactory):
         upgrader = self.prepare()
         upgrader.start_upgrade()
         tree = upgrader.bzr_branch.create_checkout('tree', lightweight=True)
-        bar_id = tree.commit('bar')
+        bar_id = tree.commit('bar', committer='jrandom@example.org')
         upgrader.finish_upgrade()
         upgraded = upgrader.branch.getBzrBranch()
         self.assertEqual(
