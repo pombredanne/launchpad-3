@@ -1,9 +1,18 @@
-#!/usr/bin/python -S
-#
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+#!${buildout:executable} -S
+
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
+
+# Initialize our paths.
+${python-relative-path-setup}
+
+import sys
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
+
+# Run the script.
 
 # XXX BarryWarsaw 2008-02-12:
 # Things this script does NOT do correctly.
