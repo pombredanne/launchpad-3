@@ -267,7 +267,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -284,8 +285,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -374,6 +375,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
