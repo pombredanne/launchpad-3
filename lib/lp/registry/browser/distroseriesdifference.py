@@ -45,6 +45,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     LaunchpadView,
@@ -241,20 +242,27 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             self.show_package_diffs_request_link)
 
 
-class DistroSeriesDifferenceDisplayComment:
-    """Used simply to provide `IComment` for rendering."""
-    implements(IComment)
+class IDistroSeriesDifferenceDisplayComment(IComment):
+    """Marker interface."""
 
-    has_body = True
-    has_footer = False
-    display_attachments = False
-    extra_css_class = ''
+
+class DistroSeriesDifferenceDisplayComment(MessageComment):
+    """Used simply to provide `IComment` for rendering."""
+    implements(IDistroSeriesDifferenceDisplayComment)
+
+    index = None
+
+    download_url = None
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""
-        self.comment_author = comment.comment_author
-        self.comment_date = comment.comment_date
-        self.body_text = comment.body_text
+        super(DistroSeriesDifferenceDisplayComment, self).__init__(None)
+        self.comment = comment
+
+
+def get_message(comment):
+    """Adapter from IDistroSeriesDifferenceDisplayComment to IMessage."""
+    return comment.comment.message
 
 
 class CommentXHTMLRepresentation(LaunchpadView):

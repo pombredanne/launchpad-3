@@ -44,6 +44,11 @@ def sanitize_apt_ftparchive_Sources_output(text):
     return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
 
 
+def skip_sha512(text):
+    """Ignore SHA512 lines, which are present only in newer distroseries."""
+    return re.sub('SHA512: [0-9a-f]*\n', '', text)
+
+
 class SamplePublisher:
     """Publisher emulation test class."""
 
@@ -312,7 +317,8 @@ class TestFTPArchive(TestCaseWithFactory):
         # regressions.
         fa.runApt(apt_conf)
         self._verifyFile("Packages",
-            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
+            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"),
+            skip_sha512)
         self._verifyEmpty(
             os.path.join(
                 self._distsdir, "hoary-test", "main", "debian-installer",

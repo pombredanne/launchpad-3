@@ -12,7 +12,6 @@ from subprocess import (
     PIPE,
     Popen,
     )
-import sys
 import tempfile
 
 from Mailman import mm_cfg
@@ -87,9 +86,7 @@ class TestMListSync(MailmanTestCase):
              self.host_name, source_dir),
             stdout=PIPE, stderr=PIPE,
             cwd=config.root,
-            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name,
-                     PYTHONPATH=os.pathsep.join(sys.path),
-                     PATH=os.environ.get('PATH')))
+            env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name))
         stdout, stderr = proc.communicate()
         return proc.returncode, stderr
 
