@@ -48,7 +48,6 @@ from lazr.restful.interface import (
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
-import simplejson
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
@@ -116,7 +115,6 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import (
     IBranch,
-    IBranchSet,
     user_has_special_branch_access,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -137,10 +135,7 @@ from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
     )
-from lp.services.helpers import (
-    english_list,
-    truncate_text,
-    )
+from lp.services.helpers import truncate_text
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -1350,18 +1345,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         if reviewer is not None:
             review_requests.append((reviewer, review_type))
 
-        branch_names = [branch.unique_name
-                        for branch in [source_branch, target_branch]]
-        visibility_info = getUtility(IBranchSet).getBranchVisibilityInfo(
-            self.user, reviewer, branch_names)
-        visible_branches = list(visibility_info['visible_branches'])
-        if self.request.is_ajax and len(visible_branches) < 2:
-            return simplejson.dumps({
-                'person_name': visibility_info['person_name'],
-                'branches_to_check': branch_names,
-                'visible_branches': visible_branches,
-            })
-
         try:
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
@@ -1371,14 +1354,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
-            if len(visible_branches) < 2:
-                invisible_branches = [branch.unique_name
-                            for branch in [source_branch, target_branch]
-                            if branch.unique_name not in visible_branches]
-                self.request.response.addNotification(
-                    'To ensure visibility, %s is now subscribed to: %s'
-                    % (visibility_info['person_name'],
-                       english_list(invisible_branches)))
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
 

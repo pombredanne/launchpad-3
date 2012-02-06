@@ -16,7 +16,6 @@ from difflib import unified_diff
 
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
-import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -413,9 +412,9 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def _makeTargetBranch(self, **kwargs):
+    def _makeTargetBranch(self):
         return self.factory.makeProductBranch(
-            product=self.source_branch.product, **kwargs)
+            product=self.source_branch.product)
 
     def _makeTargetBranchWithReviewer(self):
         albert = self.factory.makePerson(name='albert')
@@ -423,11 +422,10 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
             reviewer=albert, product=self.source_branch.product)
         return target_branch, albert
 
-    def _createView(self, request=None):
+    def _createView(self):
         # Construct the view and initialize it.
-        if not request:
-            request = LaunchpadTestRequest()
-        view = RegisterBranchMergeProposalView(self.source_branch, request)
+        view = RegisterBranchMergeProposalView(
+            self.source_branch, LaunchpadTestRequest())
         view.initialize()
         return view
 
@@ -464,31 +462,6 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
-
-    def test_register_ajax_request(self):
-        # Ajax submits return json data containing info about what the visible
-        # branches are if they are not all visible to the reviewer.
-
-        # Make a branch the reviewer cannot see.
-        owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(owner=owner, private=True)
-        reviewer = self.factory.makePerson()
-        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
-        view = self._createView(request=request)
-        with person_logged_in(owner):
-            branches_to_check = [self.source_branch.unique_name,
-                target_branch.unique_name]
-            expected_data = {
-                'person_name': reviewer.displayname,
-                'branches_to_check': branches_to_check,
-                'visible_branches': [self.source_branch.unique_name]}
-            result_data = view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
-        self.assertEqual(expected_data, simplejson.loads(result_data))
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in
@@ -610,26 +583,6 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
         matcher = Not(HTMLContains(reviewer.within(extra)))
         self.assertThat(browser.contents, matcher)
-
-    def test_branch_visibility_notification(self):
-        # If the reviewer cannot see the source and/or target branches, a
-        # notification message is displayed.
-        owner = self.factory.makePerson()
-        target_branch = self._makeTargetBranch(
-            private=True, owner=owner)
-        reviewer = self.factory.makePerson()
-        with person_logged_in(owner):
-            view = self._createView()
-            view.register_action.success(
-                {'target_branch': target_branch,
-                 'reviewer': reviewer,
-                 'needs_review': True})
-
-        (notification,) = view.request.response.notifications
-        self.assertThat(
-            notification.message, MatchesRegex(
-                'To ensure visibility, .* is now subscribed to:.*'))
-        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
