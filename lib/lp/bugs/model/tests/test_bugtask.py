@@ -549,15 +549,15 @@ class TestBugTaskTagSearchClauses(TestCase):
             """(EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = E'eric'
+                      AND BugTag.tag = 'eric'
                    INTERSECT
                    SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = E'fred')
+                      AND BugTag.tag = 'fred')
                 AND NOT EXISTS
                   (SELECT TRUE FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag IN (E'bob', E'harry')))""",
+                      AND BugTag.tag IN ('bob', 'harry')))""",
             self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is superfluous in the presence of
         # other positive tags.
