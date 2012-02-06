@@ -916,7 +916,7 @@ COMMENT ON COLUMN specificationworkitemchange.work_item IS 'The work item for wh
 COMMENT ON COLUMN specificationworkitemchange.new_status IS 'The new status for the work item.';
 COMMENT ON COLUMN specificationworkitemchange.new_milestone IS 'The new milestone the work item has been targetted to.';
 COMMENT ON COLUMN specificationworkitemchange.new_assignee IS 'The person which the work item has be assigned to.';
-COMMENT ON COLUMN specificationworkitemchange.date IS 'The time of the change.';
+COMMENT ON COLUMN specificationworkitemchange.date_created IS 'The time of the change.';
 
 -- specificationworkitemstats
 COMMENT ON TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
