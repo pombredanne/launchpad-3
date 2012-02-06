@@ -53,6 +53,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
+    BrowserTestCase,
     login,
     login_celebrity,
     login_person,
@@ -1262,3 +1263,19 @@ class TestPersonAffectingBugTaskSearchListingView(
             self.owned_bug.default_bugtask,
             self.affecting_bug.default_bugtask,
             ]
+
+
+class TestPersonRdfView(BrowserTestCase):
+    """Test the RDF view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_headers(self):
+        """The headers for the RDF view of a person should be as expected."""
+        person = self.factory.makePerson()
+        content_disposition = 'attachment; filename="%s.rdf"' % person.name
+        browser = self.getViewBrowser(person, view_name='+rdf')
+        self.assertEqual(
+            content_disposition, browser.headers['Content-disposition'])
+        self.assertEqual(
+            'application/rdf+xml', browser.headers['Content-type'])
