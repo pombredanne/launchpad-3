@@ -106,7 +106,7 @@
             </table>
           </form>
           <script type="text/javascript">
-              YUI().use('lp', function (Y) {
+              LPJS.use('lp', function (Y) {
                   setFocusByName('name');
               });
           </script>
