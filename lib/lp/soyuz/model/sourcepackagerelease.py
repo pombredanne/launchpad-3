@@ -204,9 +204,11 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePackageRelease`."""
         store = Store.of(self)
         store.flush()
+        if content is not None:
+            content = unicode(content)
         store.execute(
             "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
-            (unicode(content), self.id))
+            (content, self.id))
 
     @property
     def user_defined_fields(self):
