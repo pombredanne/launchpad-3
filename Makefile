@@ -141,7 +141,9 @@ inplace: build combobuild logs clean_logs
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
-	ln -sf $(WD)/build/js $(CONVOY_ROOT) 
+	if [ -d /srv/launchpad.dev ]; then \
+		ln -sf $(WD)/build/js $(CONVOY_ROOT); \
+	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
 
@@ -455,7 +457,7 @@ copy-apache-config:
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
