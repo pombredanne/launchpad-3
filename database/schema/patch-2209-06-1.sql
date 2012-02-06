@@ -12,6 +12,7 @@ CREATE TABLE specificationworkitem (
     date_created timestamp without time zone DEFAULT 
         timezone('UTC'::text, now()) NOT NULL,
     status integer NOT NULL,
+    sequence integer NOT NULL,
     deleted boolean NOT NULL DEFAULT FALSE);
 
 CREATE TABLE specificationworkitemchange (
