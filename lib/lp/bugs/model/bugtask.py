@@ -3329,7 +3329,7 @@ class BugTaskSet:
                          # tag that comes first in alphabetic order.
                          BugTag.id == SQL("""
                              SELECT id FROM BugTag AS bt
-                             WHERE bt.bug=bug.id ORDER BY bt.name LIMIT 1
+                             WHERE bt.bug=bug.id ORDER BY bt.tag LIMIT 1
                              """))),
                     ]
                 ),
