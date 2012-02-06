@@ -30,7 +30,7 @@
   </style>
   <script type="text/javascript"
           tal:content="string:
-    YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
+    LPJS.use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit',
               'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
