@@ -48,7 +48,7 @@ def get_cve_display_data(cve):
         }
 
 cve_link_template = (
-    '<a style="text-decoration: none" href=%s">'
+    '<a style="text-decoration: none" href="%s">'
     '<img src="/@@/link" alt="" />'
     '<span style="text-decoration: underline">%s</span></a>')
 

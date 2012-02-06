@@ -186,11 +186,14 @@ else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
-jsbuild: $(PY) $(JS_OUT)
+combobuild: jsbuild
 	mkdir -p $(CONVOY_ROOT)
 	bin/combo-rootdir $(CONVOY_ROOT)
 	rm -f $(ICING)/yui
 	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
+
+jsbuild: $(PY) $(JS_OUT)
+	ln -sf ../../../../build/js/yui/yui-3.3.0 $(ICING)/yui
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -264,7 +267,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -281,8 +285,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -357,10 +361,12 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
+clean_combo: clean_js
+	$(RM) -r $(CONVOY_ROOT)
+
 clean_js:
 	$(RM) $(JS_OUT)
 	$(RM) -r $(ICING)/yui
-	$(RM) -r $(CONVOY_ROOT)
 
 clean_buildout:
 	$(RM) -r bin
@@ -369,6 +375,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request

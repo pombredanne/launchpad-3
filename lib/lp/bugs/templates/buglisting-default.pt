@@ -18,7 +18,7 @@ i18n:domain="malone"
 </tal:comment>
 <script type="text/javascript"
   tal:condition="not: view/shouldShowAdvancedForm">
-    YUI().use('lp.registry.structural_subscription', function(Y) {
+    LPJS.use('lp.registry.structural_subscription', function(Y) {
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});

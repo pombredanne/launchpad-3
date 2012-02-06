@@ -108,6 +108,7 @@ new subscriber.
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    Launchpad developer access.
     ...
 
@@ -148,6 +149,7 @@ about the update.
     http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    a different description
     ...
     >>> for msg in get_feedback_messages(cprov_browser.contents):
