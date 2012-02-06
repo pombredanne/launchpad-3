@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -1113,6 +1113,55 @@ class TestBranchMergeProposal(BrowserTestCase):
             "An updated diff is being calculated and will appear "
                 "automatically when ready.",
             browser.contents)
+
+    def test_short_conversation_comments_not_truncated(self):
+        """Short comments should not be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertIn('x y' * 100, browser.contents)
+
+    def has_read_more(self, comment):
+        url = canonical_url(comment, force_local_path=True)
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        return HTMLContains(read_more)
+
+    def test_long_conversation_comments_truncated(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        self.assertNotIn('x y' * 2000, browser.contents)
+        self.assertThat(browser.contents, has_read_more)
+
+    def test_short_conversation_comments_no_download(self):
+        """Short comments should not have a download link."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 100)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, Not(HTMLContains(body)))
+
+    def test_long_conversation_comments_download_link(self):
+        """Long comments in a conversation should be truncated."""
+        comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
+        download_url = canonical_url(comment, view_name='+download')
+        browser = self.getViewBrowser(comment.branch_merge_proposal)
+        body = Tag(
+            'Download', 'a', {'href': download_url},
+            text='Download full text')
+        self.assertThat(browser.contents, HTMLContains(body))
+
+    def test_excessive_conversation_comments_no_redirect(self):
+        """An excessive comment does not force a redict on proposal page."""
+        comment = self.factory.makeCodeReviewComment(body='x' * 10001)
+        mp_url = canonical_url(comment.branch_merge_proposal)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getUserBrowser(mp_url)
+        self.assertThat(browser.contents, Not(has_read_more))
+        self.assertEqual(mp_url, browser.url)
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

@@ -1240,7 +1240,7 @@ class ProductSeriesRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s' % (self.context.product.name, self.context.name)
+        return '%s-%s.rdf' % (self.context.product.name, self.context.name)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):
