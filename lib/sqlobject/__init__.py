@@ -42,7 +42,7 @@ def sqlrepr(value, dbname=None):
     elif isinstance(value, (str, unicode)):
         for orig, repl in _sqlStringReplace:
             value = value.replace(orig, repl)
-        return "E'%s'" % value
+        return "'%s'" % value
     elif isinstance(value, bool):
         if value:
             return "'t'"
