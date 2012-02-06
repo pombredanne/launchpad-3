@@ -41,13 +41,13 @@
           <td style="text-align: right; white-space: nowrap"
             class="batch-navigation-links">
             <a href="#" class="first js-action inactive">First</a>
-            &#149;
+            &bull;
             <a href="#" class="previous js-action inactive">Previous</a>
-            &#149;
+            &bull;
             <a href="#" class="next js-action inactive">
               <strong>Next</strong>
             </a>
-            &#149;
+            &bull;
             <a href="#" class="last js-action inactive">Last</a>
           </td>
         </tr>
