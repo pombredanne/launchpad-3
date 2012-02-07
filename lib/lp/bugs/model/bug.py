@@ -1229,13 +1229,7 @@ class Bug(SQLBase):
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
-
-        # When a new task is added the bug's heat becomes relevant to the
-        # target's max_bug_heat.
-        target.recalculateBugHeatCache()
-
-        return new_task
+        return getUtility(IBugTaskSet).createTask(self, owner, target)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -2122,8 +2116,6 @@ class Bug(SQLBase):
         affected_targets = self._markAsDuplicate(duplicate_of)
         if duplicate_of is not None:
             duplicate_of.updateHeat(affected_targets)
-        for target in affected_targets:
-            target.recalculateBugHeatCache()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -2285,10 +2277,7 @@ class Bug(SQLBase):
 
         self.heat = heat
         self.heat_last_updated = timestamp
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
+        if affected_targets is not None:
             affected_targets.update(task.target for task in self.bugtasks)
 
     def updateHeat(self, affected_targets=None):
@@ -2305,10 +2294,7 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
+        if affected_targets is not None:
             affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
 

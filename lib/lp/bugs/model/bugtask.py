@@ -693,9 +693,6 @@ class BugTask(SQLBase):
             # We don't care if there isn't a nomination
             pass
 
-        # When a task is deleted the bug's heat needs to be recalculated.
-        target.recalculateBugHeatCache()
-
     def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""
         if self.product is not None:
@@ -1246,17 +1243,13 @@ class BugTask(SQLBase):
             self.bug.access_policy.pillar != target.pillar):
             self.bug.setAccessPolicy(self.bug.access_policy.type)
 
-        # After the target has changed, we need to recalculate the maximum bug
-        # heat for the new and old targets.
-        if self.target != target_before_change:
-            target_before_change.recalculateBugHeatCache()
-            self.target.recalculateBugHeatCache()
-            # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
-            # We also should see if we ought to auto-transition to the
-            # CONFIRMED status.
-            if self.bug.shouldConfirmBugtasks():
-                self.maybeConfirm()
-            # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+        # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+        # We also should see if we ought to auto-transition to the
+        # CONFIRMED status.
+        if (self.target != target_before_change and
+            self.bug.shouldConfirmBugtasks()):
+            self.maybeConfirm()
+        # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
