@@ -573,7 +573,7 @@ class FTPArchiveHandler:
             SourcePackageName.name,
             LibraryFileAlias.filename,
             Component.name,
-            Concatenate("binary-", DistroArchSeries.architecturetag),
+            Concatenate(u"binary-", DistroArchSeries.architecturetag),
             )
         join_conditions = [
             BinaryPackageRelease.id ==
