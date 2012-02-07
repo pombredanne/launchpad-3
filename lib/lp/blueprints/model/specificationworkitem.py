@@ -11,6 +11,7 @@ from zope.interface import implements
 from sqlobject import (
     BoolCol,
     ForeignKey,
+    IntCol,
     StringCol,
     )
 
@@ -40,6 +41,7 @@ class SpecificationWorkItem(SQLBase):
         schema=SpecificationWorkItemStatus,
         notNull=True, default=SpecificationWorkItemStatus.TODO)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    sequence = IntCol(notNull=True)
     deleted = BoolCol(notNull=True, default=False)
 
     def __repr__(self):

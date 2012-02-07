@@ -68,3 +68,9 @@ class ISpecificationWorkItem(Interface):
         title=_('Is this work item deleted?'),
         required=True, readonly=False, default=False,
         description=_("Marks the work item as deleted."))
+
+    sequence = Int(
+        title=_("Work Item Sequence."),
+        required=True, default=None, description=_(
+            "The sequence in which the work items are to be displayed in the "
+            "UI."))
