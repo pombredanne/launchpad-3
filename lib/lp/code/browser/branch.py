@@ -1356,6 +1356,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.user, reviewer, branch_names)
         visible_branches = list(visibility_info['visible_branches'])
         if self.request.is_ajax and len(visible_branches) < 2:
+            self.request.response.setHeader(
+                'Content-Type', 'application/json')
             return simplejson.dumps({
                 'person_name': visibility_info['person_name'],
                 'branches_to_check': branch_names,
