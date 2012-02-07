@@ -89,7 +89,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
@@ -97,7 +96,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
@@ -300,11 +298,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 

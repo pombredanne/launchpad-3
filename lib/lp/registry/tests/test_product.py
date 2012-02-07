@@ -22,7 +22,6 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.registry.errors import OpenTeamLinkageError
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
@@ -85,7 +84,6 @@ class TestProduct(TestCaseWithFactory):
             IProduct,
             IBugSummaryDimension,
             IFAQTarget,
-            IHasBugHeat,
             IHasBugSupervisor,
             IHasCustomLanguageCodes,
             IHasIcon,

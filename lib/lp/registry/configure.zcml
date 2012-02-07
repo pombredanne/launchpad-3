@@ -203,8 +203,6 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
@@ -367,8 +365,6 @@
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
@@ -453,8 +449,6 @@
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow interface="lp.bugs.interfaces.bugtarget.IBugTarget"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
@@ -1188,8 +1182,6 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.View"
@@ -1439,8 +1431,6 @@
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1514,8 +1504,6 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1650,8 +1638,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackagePublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow

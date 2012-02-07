@@ -55,16 +55,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -206,11 +200,12 @@ from lp.translations.model.potemplate import (
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
-                   StructuralSubscriptionTargetMixin, HasBugHeatMixin):
+                   StructuralSubscriptionTargetMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IBugSummaryDimension, IDistroSeries, IHasBugHeat,
-        IHasBuildRecords, IHasQueueItems, IServiceUsage, ISeriesBugTarget)
+        ICanPublishPackages, IBugSummaryDimension, IDistroSeries,
+        IHasBuildRecords, IHasQueueItems, IServiceUsage,
+        ISeriesBugTarget)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']

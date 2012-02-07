@@ -57,11 +57,9 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTag,
     )
 from lp.bugs.model.structuralsubscription import (
@@ -114,14 +112,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasBranchesMixin, HasMergeProposalsMixin,
                    HasMilestonesMixin, HasDriversMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
 
     implements(
-        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
-        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasIcon,
+        IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 

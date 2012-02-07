@@ -50,16 +50,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -121,13 +115,13 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
-                    HasMilestonesMixin, HasSpecificationsMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
+                    HasSpecificationsMixin, HasTranslationImportsMixin,
+                    HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
-        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        IBugSummaryDimension, IProductSeries, IServiceUsage,
         ISeriesBugTarget)
 
     _table = 'ProductSeries'

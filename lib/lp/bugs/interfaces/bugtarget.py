@@ -12,7 +12,6 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
-    'IHasBugHeat',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
@@ -342,24 +341,6 @@ class IBugTarget(IHasBugs):
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
-
-
-class IHasBugHeat(Interface):
-    """An entity which has bug heat."""
-
-    max_bug_heat = Attribute(
-        "The current highest bug heat value for this entity.")
-
-    def setMaxBugHeat(heat):
-        """Set the max_bug_heat for this context."""
-
-    def recalculateBugHeatCache():
-        """Recalculate and set the various bug heat values for this context.
-
-        Several different objects cache max_bug_heat.
-        When DistributionSourcePackage is the target, the total_bug_heat
-        and bug_count are also cached.
-        """
 
 
 class BugDistroSeriesTargetDetails:

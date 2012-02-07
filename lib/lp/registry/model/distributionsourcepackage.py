@@ -21,10 +21,7 @@ from lazr.restful.utils import smartquote
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
-    Count,
     Desc,
-    Max,
-    Sum,
     )
 from storm.locals import (
     Bool,
@@ -38,15 +35,9 @@ import transaction
 from zope.interface import implements
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtask import DB_UNRESOLVED_BUGTASK_STATUSES
-from lp.bugs.model.bug import (
-    Bug,
-    BugSet,
-    )
+from lp.bugs.model.bug import BugSet
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
@@ -132,7 +123,6 @@ class DistributionSourcePackage(BugTargetBase,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
-                                HasBugHeatMixin,
                                 HasDriversMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
@@ -142,7 +132,7 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IBugSummaryDimension, IDistributionSourcePackage, IHasBugHeat,
+        IBugSummaryDimension, IDistributionSourcePackage,
         IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
@@ -235,24 +225,6 @@ class DistributionSourcePackage(BugTargetBase,
             store.remove(dsp_in_db)
             return True
         return False
-
-    def recalculateBugHeatCache(self):
-        """See `IHasBugHeat`."""
-        row = IStore(Bug).find(
-            (Max(Bug.heat), Sum(Bug.heat), Count(Bug.id)),
-            BugTask.bug == Bug.id,
-            BugTask.distributionID == self.distribution.id,
-            BugTask.sourcepackagenameID == self.sourcepackagename.id,
-            Bug.duplicateof == None,
-            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)).one()
-
-        # Aggregate functions return NULL if zero rows match.
-        row = list(row)
-        for i in range(len(row)):
-            if row[i] is None:
-                row[i] = 0
-
-        self.max_bug_heat, self.total_bug_heat, self.bug_count = row
 
     @property
     def latest_overall_publication(self):
