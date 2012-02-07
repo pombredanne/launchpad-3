@@ -1,3 +1,15 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Provide Upgrader to upgrade any branch to a 2a format.
+
+Provides special support for looms and subtree formats.
+
+Repositories that have no tree references are always upgraded to the standard
+2a format, even if they are in a subtree-supporting format.  Repositories that
+actually have tree references are converted to RepositoryFormat2aSubtree.
+"""
+
 __metaclass__ = type
 
 __all__ = ['Upgrader']
@@ -26,7 +38,7 @@ from lp.codehosting.vfs.branchfs import get_real_branch_path
 
 
 class AlreadyUpgraded(Exception):
-    pass
+    """Attempted to upgrade a branch that had already been upgraded."""
 
 
 class Upgrader:
@@ -70,6 +82,7 @@ class Upgrader:
 
     @classmethod
     def iter_upgraders(cls, target_dir, logger):
+        """Iterate through Upgraders given a target and logger."""
         store = IStore(Branch)
         branches = store.find(
             Branch, Branch.repository_format != RepositoryFormat.BZR_CHK_2A)
@@ -136,6 +149,7 @@ class Upgrader:
         return bd
 
     def start_upgrade(self):
+        """Do the slow part of the upgrade process."""
         if os.path.exists(self.target_subdir):
             raise AlreadyUpgraded
         with read_locked(self.bzr_branch):
@@ -167,7 +181,7 @@ class Upgrader:
         os.rename(self.target_subdir, real_location)
 
     def has_tree_references(self):
-        """Determine whether a repository contains tree references.
+        """Determine whether the repository contains tree references.
 
         :return: True if it contains tree references, False otherwise.
         """

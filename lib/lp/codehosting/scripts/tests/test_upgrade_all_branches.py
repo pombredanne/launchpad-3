@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -30,6 +30,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         self.cwd = os.getcwd()
 
     def upgrade_all_branches(self, target, finish=False):
+        """Run the script to upgrade all branches."""
         transaction.commit()
         if finish:
             flags = ' --finish '
@@ -39,6 +40,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
             'scripts/upgrade_all_branches.py' + flags + target, cwd=self.cwd)
 
     def prepare(self):
+        """Prepare to run the script."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format='pack-0.92')
         tree.commit('foo')
@@ -49,6 +51,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         return upgrader
 
     def test_start_upgrade(self):
+        """Test that starting the upgrade behaves as expected."""
         upgrader = self.prepare()
         stdout, stderr, retcode = self.upgrade_all_branches(
             upgrader.target_dir)
@@ -64,6 +67,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         self.assertIs(RepositoryFormat2a, upgraded._format.__class__)
 
     def test_finish_upgrade(self):
+        """Test that finishing the upgrade behaves as expected."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
         stdout, stderr, retcode = self.upgrade_all_branches(

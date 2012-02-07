@@ -32,6 +32,11 @@ class TestUpgrader(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def prepare(self, format='pack-0.92', loomify_branch=False):
+        """Prepare an upgrade test.
+
+        :param format: The branch format to use, as a string.
+        :param loomify_branch: If true, convert the branch to a loom.
+        """
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format=format)
         tree.commit(
@@ -44,11 +49,20 @@ class TestUpgrader(TestCaseWithFactory):
         return self.getUpgrader(bzr_branch, branch)
 
     def getUpgrader(self, bzr_branch, branch):
+        """Return an upgrader for the specified branches.
+
+        :param bzr_branch: the bzr branch to use.
+        :param branch: The DB branch to use.
+        """
         target_dir = self.useContext(temp_dir())
         return Upgrader(
             branch, target_dir, logging.getLogger(), bzr_branch)
 
     def addTreeReference(self, tree):
+        """Add a tree reference to a tree and commit.
+
+        :param tree: A Bazaar WorkingTree to add a tree to.
+        """
         sub_branch = BzrDir.create_branch_convenience(
             tree.bzrdir.root_transport.clone('sub').base)
         tree.add_reference(sub_branch.bzrdir.open_workingtree())
@@ -142,6 +156,7 @@ class TestUpgrader(TestCaseWithFactory):
             'foo', upgraded.get_revision('prepare-commit').message)
 
     def test_create_upgraded_repository_uses_target_subdir(self):
+        """The repository is created in the right place."""
         upgrader = self.prepare()
         with read_locked(upgrader.bzr_branch):
             upgrader.create_upgraded_repository()
@@ -184,6 +199,7 @@ class TestUpgrader(TestCaseWithFactory):
         self.assertIs(RepositoryFormat2aSubtree, upgraded._format.__class__)
 
     def test_swap_in(self):
+        """Swap in swaps a branch into the original place."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
         upgrader.add_upgraded_branch()
@@ -191,6 +207,7 @@ class TestUpgrader(TestCaseWithFactory):
         self.check_branch(upgrader.branch.getBzrBranch())
 
     def test_swap_in_retains_original(self):
+        """Swap in retains the original branch in backup.bzr."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
         upgrader.add_upgraded_branch()
@@ -202,6 +219,7 @@ class TestUpgrader(TestCaseWithFactory):
                           RepositoryFormat.BZR_KNITPACK_1)
 
     def test_start_all_upgrades(self):
+        """Start all upgrades starts upgrading all branches."""
         upgrader = self.prepare()
         branch_changed(upgrader.branch, upgrader.bzr_branch)
         Upgrader.start_all_upgrades(
@@ -212,6 +230,7 @@ class TestUpgrader(TestCaseWithFactory):
             'foo', upgraded.get_revision('prepare-commit').message)
 
     def test_finish_upgrade_fetches(self):
+        """finish_upgrade fetches new changes into the branch."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
         tree = upgrader.bzr_branch.create_checkout('tree', lightweight=True)
@@ -222,6 +241,7 @@ class TestUpgrader(TestCaseWithFactory):
             'bar', upgraded.repository.get_revision(bar_id).message)
 
     def test_finish_upgrade_updates_formats(self):
+        """finish_upgrade updates branch and repository formats."""
         upgrader = self.prepare()
         upgrader.start_upgrade()
         upgrader.finish_upgrade()
@@ -231,6 +251,7 @@ class TestUpgrader(TestCaseWithFactory):
             upgrader.branch.repository_format, RepositoryFormat.BZR_CHK_2A)
 
     def test_finish_all_upgrades(self):
+        """Finish all upgrades behaves as expected."""
         upgrader = self.prepare()
         branch_changed(upgrader.branch, upgrader.bzr_branch)
         upgrader.start_upgrade()

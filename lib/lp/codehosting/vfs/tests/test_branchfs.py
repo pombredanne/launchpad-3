@@ -1203,6 +1203,7 @@ class TestGetLPServer(TestCase):
 class TestRealBranchLocation(TestCase):
 
     def test_get_real_branch_path(self):
+        """Correctly calculates the on-disk location of a branch."""
         path = get_real_branch_path(0x00abcdef)
         self.assertTrue(path.startswith(
             config.codehosting.mirrored_branches_root))
