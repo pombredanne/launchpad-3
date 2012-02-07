@@ -107,10 +107,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
 
-    total_bug_heat = Attribute(
-        "Sum of the bug heat for all the bugs matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
     bug_count = Attribute(
         "Number of bugs matching the distribution and sourcepackagename "
         "of the IDistributionSourcePackage.")

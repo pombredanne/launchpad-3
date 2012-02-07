@@ -488,7 +488,6 @@
                 subscribers
                 summary
                 title
-                total_bug_heat
                 upstream_product"/>
 
         <!-- IStructuralSubscriptionTarget -->

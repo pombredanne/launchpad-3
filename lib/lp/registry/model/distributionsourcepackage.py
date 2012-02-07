@@ -139,7 +139,6 @@ class DistributionSourcePackage(BugTargetBase,
         'bug_reporting_guidelines')
     bug_reported_acknowledgement = DistributionSourcePackageProperty(
         'bug_reported_acknowledgement')
-    total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
     bug_count = DistributionSourcePackageProperty('bug_count')
     po_message_count = DistributionSourcePackageProperty('po_message_count')
     is_upstream_link_allowed = DistributionSourcePackageProperty(
@@ -602,7 +601,6 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_reporting_guidelines = Unicode()
     bug_reported_acknowledgement = Unicode()
 
-    total_bug_heat = Int()
     bug_count = Int()
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
