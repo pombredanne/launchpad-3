@@ -258,7 +258,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
-    max_bug_heat = Int()
     package_derivatives_email = StringCol(notNull=False, default=None)
 
     def __repr__(self):

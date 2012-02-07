@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+ Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -806,11 +806,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtarget_parent(self):
         """See `ISeriesBugTarget`."""
         return self.parent
-
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.distribution.max_bug_heat
 
     @property
     def last_full_language_pack_exported(self):

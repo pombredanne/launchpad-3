@@ -166,7 +166,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
-    max_bug_heat = Int()
 
     @property
     def pillar_category(self):

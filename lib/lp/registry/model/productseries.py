@@ -252,11 +252,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """See `ISeriesBugTarget`."""
         return self.parent
 
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.product.max_bug_heat
-
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(

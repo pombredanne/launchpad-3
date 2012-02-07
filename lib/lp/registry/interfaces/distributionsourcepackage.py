@@ -111,10 +111,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "Sum of the bug heat for all the bugs matching the distribution "
         "and sourcepackagename of the IDistributionSourcePackage.")
 
-    max_bug_heat = Attribute(
-        "Maximum bug heat for a single bug matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
     bug_count = Attribute(
         "Number of bugs matching the distribution and sourcepackagename "
         "of the IDistributionSourcePackage.")

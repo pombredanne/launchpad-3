@@ -139,7 +139,6 @@ class DistributionSourcePackage(BugTargetBase,
         'bug_reporting_guidelines')
     bug_reported_acknowledgement = DistributionSourcePackageProperty(
         'bug_reported_acknowledgement')
-    max_bug_heat = DistributionSourcePackageProperty('max_bug_heat')
     total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
     bug_count = DistributionSourcePackageProperty('bug_count')
     po_message_count = DistributionSourcePackageProperty('po_message_count')
@@ -603,7 +602,6 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_reporting_guidelines = Unicode()
     bug_reported_acknowledgement = Unicode()
 
-    max_bug_heat = Int()
     total_bug_heat = Int()
     bug_count = Int()
     po_message_count = Int()

@@ -518,11 +518,6 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.distribution_sourcepackage.max_bug_heat
-
-    @property
     def drivers(self):
         """See `IHasDrivers`."""
         return self.distroseries.drivers
