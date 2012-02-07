@@ -48,4 +48,3 @@ class SpecificationWorkItem(SQLBase):
         title = self.title.encode('ASCII', 'backslashreplace')
         return '<SpecificationWorkItem [%s] %s: %s of %s>' % (
             self.assignee, title, self.status, self.specification)
-

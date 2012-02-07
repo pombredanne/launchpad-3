@@ -71,6 +71,6 @@ class ISpecificationWorkItem(Interface):
 
     sequence = Int(
         title=_("Work Item Sequence."),
-        required=True, default=None, description=_(
+        required=True, description=_(
             "The sequence in which the work items are to be displayed in the "
             "UI."))

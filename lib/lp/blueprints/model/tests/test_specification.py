@@ -153,5 +153,5 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
-        work_item = spec.newWorkItem(title='new-work-item')
+        work_item = spec.newWorkItem(title='new-work-item', sequence=0)
         self.assertIsInstance(work_item, SpecificationWorkItem)

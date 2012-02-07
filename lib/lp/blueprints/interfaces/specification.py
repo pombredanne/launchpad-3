@@ -571,7 +571,7 @@ class ISpecificationEditRestricted(Interface):
         """Mutator for implementation_status that calls updateLifeCycle."""
 
     def newWorkItem(title, status=SpecificationWorkItemStatus.TODO,
-                    assignee=None, milestone=None):
+                    assignee=None, milestone=None, sequence=None):
         """Create a new SpecificationWorkItem."""
 
     def setTarget(target):

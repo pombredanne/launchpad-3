@@ -2108,13 +2108,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecificationWorkItem(self, title=None, specification=None,
                                   assignee=None, milestone=None, deleted=False,
-                                  status=SpecificationWorkItemStatus.TODO):
+                                  status=SpecificationWorkItemStatus.TODO,
+                                  sequence=None):
         if title is None:
             title = self.getUniqueString('title')
         if specification is None:
             specification = self.makeSpecification()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
         work_item = removeSecurityProxy(specification).newWorkItem(
-            title=title, status=status, assignee=assignee, milestone=milestone)
+            title=title, sequence=sequence, status=status, assignee=assignee,
+            milestone=milestone)
         work_item.deleted = deleted
         return work_item
 
