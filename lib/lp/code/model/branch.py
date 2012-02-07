@@ -42,6 +42,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -1411,6 +1412,26 @@ class BranchSet:
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
         return branches
+
+    def getBranchVisibilityInfo(self, user, person, branch_names):
+        """See `IBranchSet`."""
+        if user is None:
+            return dict()
+        branch_set = getUtility(IBranchLookup)
+        visible_branches = []
+        for name in branch_names:
+            branch = branch_set.getByUniqueName(name)
+            try:
+                if (branch is not None
+                        and branch.visibleByUser(user)
+                        and branch.visibleByUser(person)):
+                    visible_branches.append(branch.unique_name)
+            except Unauthorized:
+                # We don't include branches user cannot see.
+                pass
+        return {
+            'person_name': person.displayname,
+            'visible_branches': visible_branches}
 
 
 def update_trigger_modified_fields(branch):
