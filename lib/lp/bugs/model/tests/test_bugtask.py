@@ -1512,17 +1512,6 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
 
-    def test_bug_heat_updated(self):
-        # Test that the bug heat is updated when a bugtask is deleted.
-        bug = self.factory.makeBug()
-        distro = self.factory.makeDistribution()
-        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
-        login_person(distro.owner)
-        dsp_task = bug.addTask(bug.owner, dsp)
-        self.assertTrue(dsp.total_bug_heat > 0)
-        dsp_task.delete()
-        self.assertTrue(dsp.total_bug_heat == 0)
-
 
 class TestConjoinedBugTasks(TestCaseWithFactory):
     """Tests for conjoined bug task functionality."""
