@@ -140,7 +140,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             show_assign_me_button=self.show_assign_me_button,
             vocabulary_name=self.vocabulary_name,
             vocabulary_filters=self.vocabulary_filters,
-            input_element=self.input_id)
+            input_element=self.input_id,
+            show_widget_id=self.show_widget_id)
 
     @property
     def json_config(self):

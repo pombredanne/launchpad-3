@@ -55,7 +55,7 @@
     </tbody>
   </table>
   <script type="text/javascript">
-    YUI().use('io-base', 'node', function(Y) {
+    LPJS.use('io-base', 'node', function(Y) {
         Y.on('domready', function() {
             var url = Y.one('#bugtarget-bugfilters-link').getAttribute('href');
             var handlers = {

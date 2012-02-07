@@ -56,10 +56,6 @@ ALL_FTI = [
             ('description', D),
             ]),
 
-    ('bugtask', [
-            ('targetnamecache', B),
-            ]),
-
     ('binarypackagerelease', [
             ('summary', B),
             ('description', C),

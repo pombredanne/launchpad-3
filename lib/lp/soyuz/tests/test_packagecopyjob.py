@@ -1108,7 +1108,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob()
-        switch_dbuser('sync_packages')
+        switch_dbuser('copy_packages')
 
         override = SourceOverride(
             source_package_name=name,
@@ -1167,7 +1167,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob(
             package_name=name.name, package_version="1.0")
-        switch_dbuser('sync_packages')
+        switch_dbuser('copy_packages')
 
         override = SourceOverride(
             source_package_name=name,

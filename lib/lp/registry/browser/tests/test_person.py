@@ -28,7 +28,6 @@ from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -54,6 +53,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
+    BrowserTestCase,
     login,
     login_celebrity,
     login_person,
@@ -70,7 +70,6 @@ from lp.testing.layers import (
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
-    find_tag_by_id,
     )
 from lp.testing.views import (
     create_initialized_view,
@@ -151,61 +150,6 @@ class TestPersonIndexView(TestCaseWithFactory):
         self.assertThat(
             view.page_description,
             Equals(description))
-
-
-class TestPersonIndexVisibilityView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def createTeams(self):
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        private = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE, name='private-team',
-            members=[team])
-        with person_logged_in(team.teamowner):
-            team.acceptInvitationToBeMemberOf(private, '')
-        return team
-
-    def test_private_superteams_anonymous(self):
-        # If the viewer is anonymous, the portlet is not shown.
-        team = self.createTeams()
-        self.factory.makePerson()
-        view = create_initialized_view(
-            team, '+index', server_url=canonical_url(team), path_info='')
-        html = view()
-        superteams = find_tag_by_id(html, 'subteam-of')
-        self.assertIs(None, superteams)
-        self.assertEqual([], view.super_teams)
-
-    def test_private_superteams_hidden(self):
-        # If the viewer has no permission to see any superteams, the portlet
-        # is not shown.
-        team = self.createTeams()
-        viewer = self.factory.makePerson()
-        with person_logged_in(viewer):
-            view = create_initialized_view(
-                team, '+index', server_url=canonical_url(team), path_info='',
-                principal=viewer)
-            html = view()
-            self.assertEqual([], view.super_teams)
-            superteams = find_tag_by_id(html, 'subteam-of')
-        self.assertIs(None, superteams)
-
-    def test_private_superteams_shown(self):
-        # When the viewer has permission, the portlet is shown.
-        team = self.createTeams()
-        with person_logged_in(team.teamowner):
-            view = create_initialized_view(
-                team, '+index', server_url=canonical_url(team), path_info='',
-                principal=team.teamowner)
-            html = view()
-            self.assertEqual(view.super_teams, list(team.super_teams))
-            superteams = find_tag_by_id(html, 'subteam-of')
-        self.assertFalse('&lt;hidden&gt;' in superteams)
-        self.assertEqual(
-            '<a href="/~private-team" class="sprite team">Private Team</a>',
-            str(superteams.findNext('a')))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -1319,3 +1263,19 @@ class TestPersonAffectingBugTaskSearchListingView(
             self.owned_bug.default_bugtask,
             self.affecting_bug.default_bugtask,
             ]
+
+
+class TestPersonRdfView(BrowserTestCase):
+    """Test the RDF view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_headers(self):
+        """The headers for the RDF view of a person should be as expected."""
+        person = self.factory.makePerson()
+        content_disposition = 'attachment; filename="%s.rdf"' % person.name
+        browser = self.getViewBrowser(person, view_name='+rdf')
+        self.assertEqual(
+            content_disposition, browser.headers['Content-disposition'])
+        self.assertEqual(
+            'application/rdf+xml', browser.headers['Content-type'])

@@ -90,6 +90,7 @@ from lp.services.webapp.interfaces import (
 from lp.services.webapp.menu import (
     get_current_view,
     get_facet,
+    structured,
     )
 from lp.services.webapp.publisher import (
     get_current_browser_request,
@@ -2680,6 +2681,14 @@ class POFileFormatterAPI(ObjectFormatterAPI):
         return self._context.title
 
 
+def download_link(url, description, file_size):
+    """Return HTML for downloading an item."""
+    file_size = NumberFormatterAPI(file_size).bytes()
+    formatted = structured(
+        '<a href="%s">%s</a> (%s)', url, description, file_size)
+    return formatted.escapedtext
+
+
 class PackageDiffFormatterAPI(ObjectFormatterAPI):
 
     def link(self, view_name, rootsite=None):
@@ -2687,11 +2696,9 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
         if not diff.date_fulfilled:
             return '%s (pending)' % cgi.escape(diff.title)
         else:
-            file_size = NumberFormatterAPI(
-                diff.diff_content.content.filesize).bytes()
-            return '<a href="%s">%s</a> (%s)' % (
-                cgi.escape(diff.diff_content.http_url),
-                cgi.escape(diff.title), file_size)
+            return download_link(
+                diff.diff_content.http_url, diff.title,
+                diff.diff_content.content.filesize)
 
 
 class CSSFormatter:

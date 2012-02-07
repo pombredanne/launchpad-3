@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,10 +10,15 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.browser.team import TeamOverviewMenu
+from lp.registry.browser.team import (
+    TeamIndexMenu,
+    TeamOverviewMenu,
+    TeamMailingListArchiveView,
+    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
+    IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
@@ -24,7 +29,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.browser.team import TeamMailingListArchiveView
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -467,6 +472,69 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
         self.assertEqual(['name'], view.field_names)
 
 
+class TestTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+newteam'
+    feature_flag = {'disclosure.show_visibility_for_team_add.enabled': 'on'}
+
+    def test_random_does_not_see_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=person)
+        self.assertNotIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+
+    def test_admin_sees_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        admin = login_celebrity('admin')
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=admin)
+        self.assertIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+        
+    def test_random_does_not_see_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=person)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+    def test_person_with_cs_sees_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+
+    def test_person_with_expired_cs_does_not_see_visibility(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+
 class TestTeamMenu(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -475,6 +543,44 @@ class TestTeamMenu(TestCaseWithFactory):
         super(TestTeamMenu, self).setUp()
         self.team = self.factory.makeTeam()
 
+    def test_TeamIndexMenu(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave'),
+            menu.links)
+
+    def test_TeamIndexMenu_anonymous(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_owner(self):
+        login_person(self.team.teamowner)
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'delete', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_admin(self):
+        login_celebrity('admin')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_registry_experts(self):
+        login_celebrity('registry_experts')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
     def test_TeamOverviewMenu_check_menu_links_without_mailing(self):
         menu = TeamOverviewMenu(self.team)
         # Remove moderate_mailing_list because it asserts that there is
@@ -482,7 +588,7 @@ class TestTeamMenu(TestCaseWithFactory):
         no_mailinst_list_links = [
             link for link in menu.links if link != 'moderate_mailing_list']
         menu.links = no_mailinst_list_links
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Create a mailing list', link.text)
 
@@ -490,7 +596,7 @@ class TestTeamMenu(TestCaseWithFactory):
         self.factory.makeMailingList(
             self.team, self.team.teamowner)
         menu = TeamOverviewMenu(self.team)
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
 
@@ -681,3 +787,58 @@ class TestTeamIndexView(TestCaseWithFactory):
         self.assertEndsWith(
             extract_text(document.find(True, id='maincontent')),
             'The information in this page is not shared with you.')
+
+
+class TestPersonIndexVisibilityView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def createTeams(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        private = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, name='private-team',
+            members=[team])
+        with person_logged_in(team.teamowner):
+            team.acceptInvitationToBeMemberOf(private, '')
+        return team
+
+    def test_private_superteams_anonymous(self):
+        # If the viewer is anonymous, the portlet is not shown.
+        team = self.createTeams()
+        self.factory.makePerson()
+        view = create_initialized_view(
+            team, '+index', server_url=canonical_url(team), path_info='')
+        html = view()
+        superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+        self.assertEqual([], view.super_teams)
+
+    def test_private_superteams_hidden(self):
+        # If the viewer has no permission to see any superteams, the portlet
+        # is not shown.
+        team = self.createTeams()
+        viewer = self.factory.makePerson()
+        with person_logged_in(viewer):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=viewer)
+            html = view()
+            self.assertEqual([], view.super_teams)
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+
+    def test_private_superteams_shown(self):
+        # When the viewer has permission, the portlet is shown.
+        team = self.createTeams()
+        with person_logged_in(team.teamowner):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=team.teamowner)
+            html = view()
+            self.assertEqual(view.super_teams, list(team.super_teams))
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertFalse('&lt;hidden&gt;' in superteams)
+        self.assertEqual(
+            '<a href="/~private-team" class="sprite team">Private Team</a>',
+            str(superteams.findNext('a')))
