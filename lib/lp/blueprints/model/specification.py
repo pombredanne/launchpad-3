@@ -230,12 +230,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return self.product
         return self.distribution
 
-    def newWorkItem(self, title, status=SpecificationWorkItemStatus.TODO,
-                    assignee=None, milestone=None):
+    def newWorkItem(self, title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
         """See ISpecification."""
         return SpecificationWorkItem(
             title=title, status=status, specification=self, assignee=assignee,
-            milestone=milestone)
+            milestone=milestone, sequence=sequence)
 
     def setTarget(self, target):
         """See ISpecification."""

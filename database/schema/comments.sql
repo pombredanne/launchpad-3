@@ -907,6 +907,7 @@ COMMENT ON COLUMN specificationworkitem.specification IS 'The blueprint that thi
 COMMENT ON COLUMN specificationworkitem.assignee IS 'The person who is assigned to complete the work item.';
 COMMENT ON COLUMN specificationworkitem.milestone IS 'The milestone this work item is targetted to.';
 COMMENT ON COLUMN specificationworkitem.date_created IS 'The date on which the work item was created.';
+COMMENT ON COLUMN specificationworkitem.sequence IS 'The sequence number specifies the order of work items in the UI.';
 COMMENT ON COLUMN specificationworkitem.deleted IS 'Marks if the work item has been deleted. To be able to keep history we do not want to actually delete them from the database.';
 
 -- specificationworkitemchange
@@ -916,7 +917,7 @@ COMMENT ON COLUMN specificationworkitemchange.work_item IS 'The work item for wh
 COMMENT ON COLUMN specificationworkitemchange.new_status IS 'The new status for the work item.';
 COMMENT ON COLUMN specificationworkitemchange.new_milestone IS 'The new milestone the work item has been targetted to.';
 COMMENT ON COLUMN specificationworkitemchange.new_assignee IS 'The person which the work item has be assigned to.';
-COMMENT ON COLUMN specificationworkitemchange.date IS 'The time of the change.';
+COMMENT ON COLUMN specificationworkitemchange.date_created IS 'The time of the change.';
 
 -- specificationworkitemstats
 COMMENT ON TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
