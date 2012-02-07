@@ -2166,12 +2166,12 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 SELECT DISTINCT ON (spn.id)
                     spn.id, spn.name, dspc.binpkgnames,
                     CASE WHEN spn.name = ? THEN 100
-                        WHEN dspc.binpkgnames SIMILAR TO
-                            '(^| )' || ? || '( |$)' THEN 75
-                        WHEN spn.name SIMILAR TO
-                            '(^|.*-)' || ? || '(-|$)' THEN 50
-                        WHEN dspc.binpkgnames SIMILAR TO
-                            '(^|.*-)' || ? || '(-| |$)' THEN 25
+                        WHEN dspc.binpkgnames
+                            ~ ('(^| )' || ? || '( |$)') THEN 75
+                        WHEN spn.name
+                            ~ ('(^|.*-)' || ? || '(-|$)') THEN 50
+                        WHEN dspc.binpkgnames
+                            ~ ('(^|.*-)' || ? || '(-| |$)') THEN 25
                         ELSE 1
                         END AS rank
                 FROM SourcePackageName spn
