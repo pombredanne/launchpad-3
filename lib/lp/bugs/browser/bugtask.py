@@ -2630,14 +2630,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         else:
             return 'None specified'
 
-    @property
-    def upstream_launchpad_project(self):
+    @cachedproperty
+    def upstream_project(self):
         """The linked upstream `IProduct` for the package.
 
         If this `IBugTarget` is a `IDistributionSourcePackage` or an
-        `ISourcePackage` and it is linked to an upstream project that uses
-        Launchpad to track bugs, return the `IProduct`. Otherwise,
-        return None
+        `ISourcePackage` and it is linked to an upstream project, return
+        the `IProduct`. Otherwise, return None
 
         :returns: `IProduct` or None
         """
@@ -2650,9 +2649,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if sp is not None:
             packaging = sp.packaging
             if packaging is not None:
-                product = packaging.productseries.product
-                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-                    return product
+                return packaging.productseries.product
+        return None
+
+    @cachedproperty
+    def upstream_launchpad_project(self):
+        """The linked upstream `IProduct` for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        product = self.upstream_project
+        if (product is not None and
+            product.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return product
         return None
 
     @property
