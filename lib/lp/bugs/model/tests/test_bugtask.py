@@ -42,7 +42,7 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
-    build_tag_search_clause,
+    _build_tag_search_clause,
     get_bug_privacy_filter,
     )
 from lp.bugs.tests.bug import create_old_bug
@@ -283,7 +283,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
 class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
-        return build_tag_search_clause(tag_spec)
+        return _build_tag_search_clause(tag_spec)
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
