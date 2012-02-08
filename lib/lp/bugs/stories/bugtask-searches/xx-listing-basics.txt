@@ -275,5 +275,5 @@ as a number.
     >>> user_browser.open("http://launchpad.dev/firefox/+bugs?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all")
     >>> print_bugtasks(user_browser.contents, show_heat=True)
     5 Firefox install instructions should be complete Critical New 0
-    1 Firefox does not support SVG Low New 0
+    1 Firefox does not support SVG Low New 4
 
