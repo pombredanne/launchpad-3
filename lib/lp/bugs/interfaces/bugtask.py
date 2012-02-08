@@ -1066,6 +1066,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
         vocabulary=BugTagsSearchCombinator, required=False,
         default=BugTagsSearchCombinator.ANY)
 
+    upstream_target = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
+
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
