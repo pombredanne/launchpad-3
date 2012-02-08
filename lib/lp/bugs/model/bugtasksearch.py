@@ -211,6 +211,8 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
     if with_clause:
         store = store.with_(with_clause)
     orderby_expression, orderby_joins = _process_order_by(params)
+    decorators = [bugtask_decorator]
+
     if len(args) == 0:
         if has_duplicate_results:
             origin = _build_origin(join_tables, [], clauseTables)
@@ -223,16 +225,11 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
             origin = _build_origin(
                 join_tables + orderby_joins, prejoins, clauseTables)
             result = store.using(*origin).find(resultrow, query)
-        if prejoins:
-            decorator = lambda row: bugtask_decorator(row[0])
-        else:
-            decorator = bugtask_decorator
     else:
         inner_resultrow = (BugTask,)
         origin = _build_origin(join_tables, [], clauseTables)
         resultset = store.using(*origin).find(inner_resultrow, query)
 
-        decorators = [bugtask_decorator]
         for arg in args:
             [query, clauseTables, decorator, join_tables,
                 has_duplicate_results, with_clause] = _build_query(arg)
@@ -248,26 +245,26 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
             # users are combined.
             decorators.append(decorator)
 
-        def prejoin_decorator(row):
-            bugtask = row[0]
-            for decorator in decorators:
-                bugtask = decorator(bugtask)
-            return bugtask
-
-        def simple_decorator(bugtask):
-            for decorator in decorators:
-                bugtask = decorator(bugtask)
-            return bugtask
-
         origin = _build_origin(
             orderby_joins, prejoins, [],
             start_with=Alias(resultset._get_select(), "BugTask"))
-        if prejoins:
-            decorator = prejoin_decorator
-        else:
-            decorator = simple_decorator
-
         result = store.using(*origin).find(resultrow)
+
+    def prejoin_decorator(row):
+        bugtask = row[0]
+        for decorator in decorators:
+            bugtask = decorator(bugtask)
+        return bugtask
+
+    def simple_decorator(bugtask):
+        for decorator in decorators:
+            bugtask = decorator(bugtask)
+        return bugtask
+
+    if prejoins:
+        decorator = prejoin_decorator
+    else:
+        decorator = simple_decorator
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(result, result_decorator=decorator,
