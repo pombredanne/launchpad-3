@@ -10,6 +10,8 @@ __all__ = [
     'search_value_to_where_condition',
     ]
 
+from operator import itemgetter
+
 from lazr.enum import BaseItem
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
@@ -249,7 +251,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, paramses):
         result = store.using(*origin).find(resultrow)
 
     if prejoins:
-        decorators.insert(0, lambda row: row[0])
+        decorators.insert(0, itemgetter(0))
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
