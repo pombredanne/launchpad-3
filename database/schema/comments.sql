@@ -899,6 +899,36 @@ COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a so
 COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
 COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
 
+-- specificationworkitem
+COMMENT ON TABLE specificationworkitem IS 'A work item which is a piece of work relating to a blueprint.';
+COMMENT ON COLUMN specificationworkitem.id IS 'The id of the work item.';
+COMMENT ON COLUMN specificationworkitem.title IS 'The title of the work item.';
+COMMENT ON COLUMN specificationworkitem.specification IS 'The blueprint that this work item is a part of.';
+COMMENT ON COLUMN specificationworkitem.assignee IS 'The person who is assigned to complete the work item.';
+COMMENT ON COLUMN specificationworkitem.milestone IS 'The milestone this work item is targetted to.';
+COMMENT ON COLUMN specificationworkitem.date_created IS 'The date on which the work item was created.';
+COMMENT ON COLUMN specificationworkitem.sequence IS 'The sequence number specifies the order of work items in the UI.';
+COMMENT ON COLUMN specificationworkitem.deleted IS 'Marks if the work item has been deleted. To be able to keep history we do not want to actually delete them from the database.';
+
+-- specificationworkitemchange
+COMMENT ON TABLE specificationworkitemchange IS 'A property change on a work item.';
+COMMENT ON COLUMN specificationworkitemchange.id IS 'Id of the change.';
+COMMENT ON COLUMN specificationworkitemchange.work_item IS 'The work item for which a propery has changed.';
+COMMENT ON COLUMN specificationworkitemchange.new_status IS 'The new status for the work item.';
+COMMENT ON COLUMN specificationworkitemchange.new_milestone IS 'The new milestone the work item has been targetted to.';
+COMMENT ON COLUMN specificationworkitemchange.new_assignee IS 'The person which the work item has be assigned to.';
+COMMENT ON COLUMN specificationworkitemchange.date_created IS 'The time of the change.';
+
+-- specificationworkitemstats
+COMMENT ON TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
+COMMENT ON COLUMN specificationworkitemstats.id IS 'The id for this stats collection.';
+COMMENT ON COLUMN specificationworkitemstats.specification IS 'The related blueprint.';
+COMMENT ON COLUMN specificationworkitemstats.day IS 'Day when the stats where collected.';
+COMMENT ON COLUMN specificationworkitemstats.status IS 'The work item status that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.assignee IS 'The assignee that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.milestone IS 'The milestone that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.count IS 'The number of work items for the blueprint with the particular status, assignee and milestone.';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
