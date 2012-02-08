@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for linking bugtasks and branches."""
+from lp.bugs.model.bugtask import BugTask
 
 __metaclass__ = type
 
@@ -21,7 +22,7 @@ from storm.expr import (
     Exists,
     Or,
     Select,
-    )
+    Union)
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -97,21 +98,34 @@ class BugBranchSet:
             visible = True
         else:
             # Anyone else can know about public bugs plus any private
-            # ones they may be directly or indirectly subscribed to.
+            # ones they may be directly or indirectly subscribed/assigned to.
             subscribed = And(
                 TeamParticipation.teamID == BugSubscription.person_id,
                 TeamParticipation.personID == user.id,
                 Bug.id == BugSubscription.bug_id)
 
+            assigned = And(
+                TeamParticipation.teamID == BugTask.assigneeID,
+                TeamParticipation.personID == user.id,
+                Bug.id == BugTask.bugID)
+
             visible = And(
                 Bug.id == BugBranch.bugID,
                 Or(
                     Bug.private == False,
-                    Exists(Select(
-                        columns=[True],
-                        tables=[BugSubscription, TeamParticipation],
-                        where=subscribed))))
-
+                    Exists(Union(
+                        Select(
+                            columns=[True],
+                            tables=[BugSubscription, TeamParticipation],
+                            where=subscribed),
+                        Select(
+                            columns=[True],
+                            tables=[BugTask, TeamParticipation],
+                            where=assigned),
+                        all=True)
+                    )
+                )
+            )
         return IStore(BugBranch).find(
             BugBranch.branchID,
             BugBranch.branch_id.is_in(branch_ids),
