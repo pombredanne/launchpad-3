@@ -40,7 +40,7 @@ from lp.bugs.model.bugtask import (
     validate_new_target,
     validate_target,
     )
-from lp.bugs.model.search import (
+from lp.bugs.model.bugtasksearch import (
     _buildStatusClause,
     build_tag_search_clause,
     get_bug_privacy_filter,

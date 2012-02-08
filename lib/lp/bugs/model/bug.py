@@ -2169,7 +2169,7 @@ class Bug(SQLBase):
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
-        from lp.bugs.model.search import get_bug_privacy_filter
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         if not self.private:
             # This is a public bug.
@@ -2813,7 +2813,7 @@ class BugSet:
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See `IBugSet`."""
-        from lp.bugs.model.search import get_bug_privacy_filter
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         where_clauses = []
         if duplicateof:

@@ -67,7 +67,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
-from lp.bugs.model.search import orderby_expression
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet

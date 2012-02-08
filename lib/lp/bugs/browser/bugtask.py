@@ -222,7 +222,7 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.search import orderby_expression
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,

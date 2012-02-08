@@ -1499,7 +1499,7 @@ class BugTaskSet:
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
-        from lp.bugs.model.search import search_bugs
+        from lp.bugs.model.bugtasksearch import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
         if _noprejoins:
             prejoins = []
@@ -1535,7 +1535,7 @@ class BugTaskSet:
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        from lp.bugs.model.search import search_bugs
+        from lp.bugs.model.bugtasksearch import search_bugs
         return search_bugs(BugTask.bugID, [], None, params).result_set
 
     def countBugs(self, user, contexts, group_on):
@@ -1757,7 +1757,7 @@ class BugTaskSet:
         Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
-        from lp.bugs.model.search import get_bug_privacy_filter
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         if bug is None:
             bug_clause = ''
@@ -1925,7 +1925,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         # Local import of Bug to avoid import loop.
         from lp.bugs.model.bug import Bug
-        from lp.bugs.model.search import get_bug_privacy_filter
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [
@@ -1967,7 +1967,7 @@ class BugTaskSet:
 
         See `IBugTask.getBugCountsForPackages` for more information.
         """
-        from lp.bugs.model.search import (
+        from lp.bugs.model.bugtasksearch import (
             get_bug_privacy_filter,
             search_value_to_where_condition,
             )
