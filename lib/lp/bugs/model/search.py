@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
-    '_search',
     'get_bug_privacy_filter',
     'orderby_expression',
+    'search_bugs',
     'search_value_to_where_condition',
     ]
 
@@ -1311,7 +1311,7 @@ def buildOrigin(join_tables, prejoin_tables, clauseTables,
     return origin
 
 
-def _search(resultrow, prejoins, pre_iter_hook, params, *args):
+def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
     """Return a Storm result set for the given search parameters.
 
     :param resultrow: The type of data returned by the query.

@@ -1499,7 +1499,7 @@ class BugTaskSet:
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
-        from lp.bugs.model.search import _search
+        from lp.bugs.model.search import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
         if _noprejoins:
             prejoins = []
@@ -1531,12 +1531,12 @@ class BugTaskSet:
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return _search(resultrow, prejoins, eager_load, params, *args)
+        return search_bugs(resultrow, prejoins, eager_load, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        from lp.bugs.model.search import _search
-        return _search(BugTask.bugID, [], None, params).result_set
+        from lp.bugs.model.search import search_bugs
+        return search_bugs(BugTask.bugID, [], None, params).result_set
 
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
