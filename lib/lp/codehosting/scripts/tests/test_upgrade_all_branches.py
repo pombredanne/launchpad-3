@@ -43,7 +43,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         """Prepare to run the script."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree(format='pack-0.92')
-        tree.commit('foo')
+        tree.commit('foo', committer='jrandom@example.org')
         with person_logged_in(branch.owner):
             branch_changed(branch, tree.branch)
         target = self.makeTemporaryDirectory()

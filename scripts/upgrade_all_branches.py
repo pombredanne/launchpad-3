@@ -32,7 +32,6 @@ class UpgradeAllBranches(LaunchpadScript):
 
 
 if __name__ == "__main__":
-    sys.stderr.write(repr(sys.argv))
     script = UpgradeAllBranches(
         "upgrade-all-branches", dbuser='upgrade-branches')
     script.lock_and_run()
