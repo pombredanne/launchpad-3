@@ -1531,12 +1531,12 @@ class BugTaskSet:
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return search_bugs(resultrow, prejoins, eager_load, params, *args)
+        return search_bugs(resultrow, prejoins, eager_load, (params,) + args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         from lp.bugs.model.bugtasksearch import search_bugs
-        return search_bugs(BugTask.bugID, [], None, params).result_set
+        return search_bugs(BugTask.bugID, [], None, [params]).result_set
 
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""

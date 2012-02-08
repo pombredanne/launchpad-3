@@ -194,7 +194,7 @@ def search_value_to_where_condition(search_value):
         return "IS NULL"
 
 
-def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
+def search_bugs(resultrow, prejoins, pre_iter_hook, paramses):
     """Return a Storm result set for the given search parameters.
 
     :param resultrow: The type of data returned by the query.
@@ -202,16 +202,15 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
         pre-joined.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
-    :param params: A BugTaskSearchParams instance.
-    :param args: optional additional BugTaskSearchParams instances,
+    :param paramses: One or more BugTaskSearchParams instances.
     """
     store = IStore(BugTask)
-    orderby_expression, orderby_joins = _process_order_by(params)
+    orderby_expression, orderby_joins = _process_order_by(paramses[0])
     decorators = []
 
-    if len(args) == 0:
+    if len(paramses) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
-        has_duplicate_results, with_clause] = _build_query(params)
+         has_duplicate_results, with_clause] = _build_query(paramses[0])
         if with_clause:
             store = store.with_(with_clause)
         decorators.append(bugtask_decorator)
@@ -229,9 +228,9 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
     else:
         results = []
 
-        for arg in (params,) + args:
+        for params in paramses:
             [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(arg)
+             has_duplicate_results, with_clause] = _build_query(params)
             origin = _build_origin(join_tables, [], clauseTables)
             localstore = store
             if with_clause:
