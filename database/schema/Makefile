@@ -127,7 +127,7 @@ create:
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${EMPTY_DBNAME}
 
-	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
+	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
