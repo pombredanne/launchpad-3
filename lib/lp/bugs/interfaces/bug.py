@@ -994,10 +994,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat, timestamp=None, affected_targets=None):
+    def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
-    def updateHeat(affected_targets=None):
+    def updateHeat():
         """Update the heat for the bug."""
 
     @operation_parameters(
