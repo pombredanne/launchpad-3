@@ -12,6 +12,7 @@ __all__ = [
     'file_append',
     'file_prepend',
     'get_container_path',
+    'get_user_home',
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
@@ -251,6 +252,15 @@ def get_user_ids(user):
     return userdata.pw_uid, userdata.pw_gid
 
 
+def get_user_home(user):
+    """Return the home directory of the given `user`.
+
+        >>> get_user_home('root')
+        '/root'
+    """
+    return pwd.getpwnam(user).pw_dir
+
+
 def ssh(location, user=None, caller=subprocess.call):
     """Return a callable that can be used to run ssh shell commands.
 
@@ -306,7 +316,7 @@ def su(user):
     os.setegid(gid)
     os.seteuid(uid)
     current_home = os.getenv('HOME')
-    home = os.path.join(os.path.sep, 'home', user)
+    home = get_user_home(user)
     os.environ['HOME'] = home
     yield Env(uid, gid, home)
     os.setegid(os.getgid())
