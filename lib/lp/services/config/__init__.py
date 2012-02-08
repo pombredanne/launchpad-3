@@ -6,8 +6,6 @@ Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
 environment variable, and defaults to 'development'
-
-XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 '''
 
 __metaclass__ = type
@@ -365,7 +363,7 @@ def urlbase(value):
 
 
 def commalist(value):
-    """ZConfig validator for a comma seperated list"""
+    """ZConfig validator for a comma separated list"""
     return [v.strip() for v in value.split(',')]
 
 
@@ -450,7 +448,7 @@ class DatabaseConfig:
         """
         for attr, value in kwargs.iteritems():
             assert attr in self._db_config_attrs, (
-                "%s cannot be overriden" % attr)
+                "%s cannot be overridden" % attr)
             if value is None:
                 if hasattr(self.overrides, attr):
                     delattr(self.overrides, attr)

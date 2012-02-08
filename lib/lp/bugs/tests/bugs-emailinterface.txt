@@ -193,19 +193,16 @@ package:
 It's possible to file a bug on more than product/package at once:
 
     # Make sane data to play this test.
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2103,7 +2100,9 @@ the original message.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> msg = original_msg.get_payload()[0]
-    >>> # Fudge due to new line added to the payload.
+
+Fudge due to new line added to the payload.
+
     >>> len(str(msg)) <= (max_return_size + 1)
     True
 
@@ -2367,7 +2366,7 @@ Email attachments are stored as bug attachments (provided that they match the
 criteria described below).
 
     >>> def print_attachments(attachments):
-    ...     if attachments.count() == 0:
+    ...     if len(list(attachments)) == 0:
     ...         print "No attachments"
     ...         return
     ...     commit()

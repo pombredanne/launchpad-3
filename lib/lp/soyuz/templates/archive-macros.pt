@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-LPS.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
+LPJS.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
         'lp.app.widgets.expander', function(Y) {
 
 

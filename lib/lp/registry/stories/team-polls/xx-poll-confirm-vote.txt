@@ -1,10 +1,12 @@
   Logged in as 'jdub' (which voted in the director-2004 poll), let's see the
   results of the director-2004 poll.
 
+  >>> import base64
+  >>> jdub_auth = base64.b64encode('jeff.waugh@ubuntulinux.com:test')
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/director-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
-  ... """)
+  ... Authorization: Basic %s
+  ... """ % jdub_auth)
   HTTP/1.1 200 Ok
   ...
   ...2004 Director's Elections...
@@ -22,10 +24,10 @@
 
   >>> print http(r"""
   ... POST /~ubuntu-team/+poll/director-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
+  ... Authorization: Basic %s
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... token=9WjxQq2V9p&showvote=Show+My+Vote""")
+  ... token=9WjxQq2V9p&showvote=Show+My+Vote""" % jdub_auth)
   HTTP/1.1 200 Ok
   ...
                 <p>Your vote was as follows:</p>
@@ -61,8 +63,8 @@
 
   >>> print http(r"""
   ... GET /~ubuntu-team/+poll/leader-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
-  ... """)
+  ... Authorization: Basic %s
+  ... """ % jdub_auth)
   HTTP/1.1 200 Ok
   ...
   ...2004 Leader's Elections...
@@ -77,10 +79,10 @@
 
   >>> print http(r"""
   ... POST /~ubuntu-team/+poll/leader-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
+  ... Authorization: Basic %s
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... token=W7gR5mjNrX&showvote=Show+My+Vote""")
+  ... token=W7gR5mjNrX&showvote=Show+My+Vote""" % jdub_auth)
   HTTP/1.1 200 Ok
   ...
               <p>Your vote was for

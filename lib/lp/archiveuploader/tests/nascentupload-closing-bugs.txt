@@ -25,20 +25,17 @@ Publishing package and creating a bugtask
     >>> bar_src.queue_root.setAccepted()
     >>> pub_records = bar_src.queue_root.realiseUpload()
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
-
 Check the current status of the bug we are supposed to fix:
 
     >>> the_bug_id = 6
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -60,9 +57,8 @@ Inspect the current bugtasks for bug #6:
 
 Return to the original test environment:
 
-    >>> commit()
     >>> from lp.services.config import config
-    >>> LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+    >>> switch_dbuser(config.uploader.dbuser)
     >>> login('foo.bar@canonical.com')
 
 

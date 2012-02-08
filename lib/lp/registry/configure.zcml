@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -203,8 +203,6 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
@@ -367,8 +365,6 @@
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
@@ -404,8 +400,8 @@
                 setAliases"/>
 
         <!-- IProjectGroupModerate -->
-	<allow
-	    interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
+        <allow
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
@@ -454,8 +450,6 @@
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow interface="lp.bugs.interfaces.bugtarget.IBugTarget"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
         <allow
@@ -494,7 +488,6 @@
                 subscribers
                 summary
                 title
-                total_bug_heat
                 upstream_product"/>
 
         <!-- IStructuralSubscriptionTarget -->
@@ -1006,6 +999,7 @@
                 series_target
                 displayname
                 title
+                bugtasks
                 specifications
                 product_release"/>
         <require
@@ -1013,7 +1007,15 @@
             attributes="
                 createProductRelease
                 closeBugsAndBlueprints
-                destroySelf"/>
+                destroySelf
+                setTags
+                "/>
+        <require
+            permission="zope.Public"
+            attributes="
+                getTags
+                getTagsData
+                "/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1051,6 +1053,11 @@
         class="lp.registry.model.milestone.ProjectMilestone">
         <allow
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
+    </class>
+    <class
+        class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
+        <allow
+            interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
@@ -1174,8 +1181,6 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.View"
@@ -1245,7 +1250,7 @@
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
-	<!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
+        <!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
         <require
             permission="launchpad.Moderate"
             set_attributes="name autoupdate registrant"/>
@@ -1425,8 +1430,6 @@
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1500,8 +1503,6 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1636,8 +1637,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackagePublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow

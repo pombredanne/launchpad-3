@@ -578,10 +578,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
-    def getSubscriptionInfo(level):
+    def getSubscriptionInfo(level=None):
         """Return a `BugSubscriptionInfo` at the given `level`.
 
-        :param level: A member of `BugNotificationLevel`.
+        :param level: A member of `BugNotificationLevel`. Defaults to
+            `BugSubscriptionLevel.LIFECYCLE` if unspecified.
         """
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
@@ -993,10 +994,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat, timestamp=None, affected_targets=None):
+    def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
-    def updateHeat(affected_targets=None):
+    def updateHeat():
         """Update the heat for the bug."""
 
     @operation_parameters(

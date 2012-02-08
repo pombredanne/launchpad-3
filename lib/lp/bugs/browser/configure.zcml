@@ -177,6 +177,13 @@
             permission="launchpad.View"/>
         <browser:page
             for="lp.bugs.interfaces.bugmessage.IBugComment"
+            name="+download"
+            class="lp.bugs.browser.bugcomment.BugCommentView"
+            attribute="download"
+            permission="launchpad.View"
+        />
+        <browser:page
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxView"
@@ -369,7 +376,7 @@
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.BugSupervisor"
         name="+configure-bugtracker"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/bugtracker-configure.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"

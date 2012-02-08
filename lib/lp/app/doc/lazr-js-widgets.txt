@@ -331,7 +331,7 @@ rendered to hook up the widget.
       </span>
     </span>
     <script>
-    LPS.use('lp.app.choice', function(Y) {
+    LPJS.use('lp.app.choice', function(Y) {
     ...
     </script>
 
@@ -390,7 +390,7 @@ rendered to hook up the widget.
         </span>
     </span>
     <script>
-    LPS.use('lp.app.choice', function(Y) {
+    LPJS.use('lp.app.choice', function(Y) {
     ...
     </script>
 
@@ -478,7 +478,7 @@ rendered to hook up the widget.
       <div class="yui3-activator-message-box yui3-activator-hidden" />
       </span>
       <script>
-      LPS.use('lp.app.multicheckbox', function(Y) {
+      LPJS.use('lp.app.multicheckbox', function(Y) {
       ...
       </script>
 

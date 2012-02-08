@@ -13,7 +13,7 @@ easily, the numbers are displayed in the comment header.
     ...     number_node = comment.find(None, 'bug-comment-index')
     ...     person_node = comment.find(
     ...         lambda node: 'person' in node.get('class', ''))
-    ...     comment_node = comment.find(None, 'bug-comment')
+    ...     comment_node = comment.find(None, 'comment-text')
     ...     print "%s: %s\n  %s" % (
     ...         extract_text(number_node),
     ...         extract_text(person_node),

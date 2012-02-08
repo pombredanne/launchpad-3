@@ -35,7 +35,7 @@ Karma is added for registering a branch.
 
     >>> login('test@canonical.com')
     >>> fooix = factory.makeProduct(name='fooix')
-    >>> eric = factory.makePerson(name='eric', password='test')
+    >>> eric = factory.makePerson(name='eric')
     >>> branch = factory.makeProductBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
 

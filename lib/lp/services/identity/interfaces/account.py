@@ -23,28 +23,19 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.restful.fields import (
-    CollectionField,
-    Reference,
-    )
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
-    Bool,
     Choice,
     Datetime,
     Int,
     Text,
-    TextLine,
     )
 
 from lp import _
-from lp.services.fields import (
-    PasswordField,
-    StrippedTextLine,
-    )
+from lp.services.fields import StrippedTextLine
 
 
 class AccountSuspendedError(Exception):
@@ -223,58 +214,6 @@ class IAccountPublic(Interface):
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
-    is_valid = Bool(
-        title=_("True if this account is active and has a valid email."),
-        required=True, readonly=True)
-
-    # We should use schema=IEmailAddress here, but we can't because that would
-    # cause circular dependencies.
-    preferredemail = Reference(
-        title=_("Preferred email address"),
-        description=_("The preferred email address for this person. "
-                      "The one we'll use to communicate with them."),
-        readonly=True, required=False, schema=Interface)
-
-    validated_emails = CollectionField(
-        title=_("Confirmed e-mails of this account."),
-        description=_(
-            "Confirmed e-mails are the ones in the VALIDATED state.  The "
-            "user has confirmed that they are active and that they control "
-            "them."),
-        readonly=True, required=False,
-        value_type=Reference(schema=Interface))
-
-    guessed_emails = CollectionField(
-        title=_("Guessed e-mails of this account."),
-        description=_(
-            "Guessed e-mails are the ones in the NEW state.  We believe "
-            "that the user owns the address, but they have not confirmed "
-            "the fact."),
-        readonly=True, required=False,
-        value_type=Reference(schema=Interface))
-
-    def setPreferredEmail(email):
-        """Set the given email address as this account's preferred one.
-
-        If ``email`` is None, the preferred email address is unset, which
-        will make the account invalid.
-        """
-
-    def validateAndEnsurePreferredEmail(email):
-        """Ensure this account has a preferred email.
-
-        If this account doesn't have a preferred email, <email> will be set as
-        this account's preferred one. Otherwise it'll be set as VALIDATED and
-        this account will keep their old preferred email.
-
-        This method is meant to be the only one to change the status of an
-        email address, but as we all know the real world is far from ideal
-        and we have to deal with this in one more place, which is the case
-        when people explicitly want to change their preferred email address.
-        On that case, though, all we have to do is use
-        account.setPreferredEmail().
-        """
-
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -286,19 +225,6 @@ class IAccountPrivate(Interface):
         readonly=True, values=AccountCreationRationale.items)
 
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
-
-    password = PasswordField(
-        title=_("Password."), readonly=False, required=True)
-
-    def createPerson(rationale, name=None, comment=None):
-        """Create and return a new `IPerson` associated with this account.
-
-        :param rationale: A member of `AccountCreationRationale`.
-        :param name: Specify a name for the `IPerson` instead of
-            using an automatically generated one.
-        :param comment: Populate `IPerson.creation_comment`. See
-            `IPerson`.
-        """
 
 
 class IAccountSpecialRestricted(Interface):
@@ -312,28 +238,12 @@ class IAccountSpecialRestricted(Interface):
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
 
-    # XXX sinzui 2008-07-14 bug=248518:
-    # This method would assert the password is not None, but
-    # setPreferredEmail() passes the Person's current password, which may
-    # be None.  Once that callsite is fixed, we will be able to check that the
-    # password is not None here and get rid of the reactivate() method below.
-    def activate(comment, password, preferred_email):
+    def reactivate(comment):
         """Activate this account.
 
-        Set the account status to ACTIVE, the account's password to the given
-        one and its preferred email address.
+        Set the account status to ACTIVE.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
-        :param preferred_email: The `EmailAddress` to set as the account's
-            preferred email address. It cannot be None.
-        """
-
-    def reactivate(comment, password, preferred_email):
-        """Reactivate this account.
-
-        Just like `IAccountSpecialRestricted`.activate() above, but here the
-        password can't be None or the empty string.
         """
 
 
@@ -344,40 +254,17 @@ class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname, password=None,
-            password_is_encrypted=False):
+    def new(rationale, displayname):
         """Create a new `IAccount`.
 
         :param rationale: An `AccountCreationRationale` value.
         :param displayname: The user's display name.
-        :param password: A password.
-        :param password_is_encrypted: If True, the password parameter has
-            already been encrypted using the `IPasswordEncryptor` utility.
-            If False, the password will be encrypted automatically.
 
         :return: The newly created `IAccount` provider.
         """
 
     def get(id):
         """Return the `IAccount` with the given id.
-
-        :raises LookupError: If the account is not found.
-        """
-
-    def createAccountAndEmail(email, rationale, displayname, password,
-                              password_is_encrypted=False):
-        """Create and return both a new `IAccount` and `IEmailAddress`.
-
-        The account will be in the ACTIVE state, with the email address set as
-        its preferred email address.
-        """
-
-    def getByEmail(email):
-        """Return the `IAccount` linked to the given email address.
-
-        :param email: A string, not an `IEmailAddress` provider.
-
-        :return: An `IAccount`.
 
         :raises LookupError: If the account is not found.
         """
@@ -390,4 +277,3 @@ class IAccountSet(Interface):
          :return: An `IAccount`
          :raises LookupError: If the account is not found.
          """
-

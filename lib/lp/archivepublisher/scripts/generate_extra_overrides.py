@@ -17,7 +17,10 @@ import re
 from germinate.archive import TagFile
 from germinate.germinator import Germinator
 from germinate.log import GerminateFormatter
-from germinate.seeds import SeedStructure
+from germinate.seeds import (
+    SeedError,
+    SeedStructure,
+    )
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -51,16 +54,14 @@ class AtomicFile:
 
 
 def find_operable_series(distribution):
-    """Find a series we can operate on in this distribution.
+    """Find all the series we can operate on in this distribution.
 
     We are allowed to modify DEVELOPMENT or FROZEN series, but should leave
     series with any other status alone.
     """
-    series = distribution.currentseries
-    if series.status in (SeriesStatus.DEVELOPMENT, SeriesStatus.FROZEN):
-        return series
-    else:
-        return None
+    return [
+        series for series in distribution.series
+        if series.status in (SeriesStatus.DEVELOPMENT, SeriesStatus.FROZEN)]
 
 
 class GenerateExtraOverrides(LaunchpadScript):
@@ -96,16 +97,10 @@ class GenerateExtraOverrides(LaunchpadScript):
                 "Distribution '%s' not found." % self.options.distribution)
 
         self.series = find_operable_series(self.distribution)
-        if self.series is None:
+        if not self.series:
             raise LaunchpadScriptFailure(
-                "There is no DEVELOPMENT distroseries for %s." %
+                "There is no DEVELOPMENT or FROZEN distroseries for %s." %
                 self.options.distribution)
-
-        # Even if DistroSeries.component_names starts including partner, we
-        # don't want it; this applies to the primary archive only.
-        self.components = [component
-                           for component in self.series.component_names
-                           if component != "partner"]
 
     def getConfig(self):
         """Set up a configuration object for this archive."""
@@ -148,11 +143,32 @@ class GenerateExtraOverrides(LaunchpadScript):
         self.setUpDirs()
         self.addLogHandler()
 
+    def getComponents(self, series):
+        """Get the list of components to process for a given distroseries.
+
+        Even if DistroSeries.component_names starts including partner,
+        we don't want it; this applies to the primary archive only.
+        """
+        return [component
+                for component in series.component_names
+                if component != "partner"]
+
     def makeSeedStructures(self, series_name, flavours, seed_bases=None):
         structures = {}
         for flavour in flavours:
-            structures[flavour] = SeedStructure(
-                "%s.%s" % (flavour, series_name), seed_bases=seed_bases)
+            try:
+                structure = SeedStructure(
+                    "%s.%s" % (flavour, series_name), seed_bases=seed_bases)
+                if len(structure):
+                    structures[flavour] = structure
+                else:
+                    self.logger.warning(
+                        "Skipping empty seed structure for %s.%s",
+                        flavour, series_name)
+            except SeedError, e:
+                self.logger.warning(
+                    "Failed to fetch seeds for %s.%s: %s",
+                    flavour, series_name, e)
         return structures
 
     def logGerminateProgress(self, *args):
@@ -278,14 +294,14 @@ class GenerateExtraOverrides(LaunchpadScript):
         if "build-essential" in structure.names and primary_flavour:
             write_overrides("build-essential", "Build-Essential", "yes")
 
-    def germinateArch(self, override_file, series_name, arch, flavours,
-                      structures):
+    def germinateArch(self, override_file, series_name, components, arch,
+                      flavours, structures):
         """Germinate seeds on all flavours for a single architecture."""
         germinator = Germinator(arch)
 
         # Read archive metadata.
         archive = TagFile(
-            series_name, self.components, arch,
+            series_name, components, arch,
             "file://%s" % self.config.archiveroot, cleanup=True)
         germinator.parse_archive(archive)
 
@@ -302,34 +318,38 @@ class GenerateExtraOverrides(LaunchpadScript):
                 override_file, germinator, series_name, arch, flavour,
                 structures[flavour], flavour == flavours[0])
 
-    def generateExtraOverrides(self, series_name, series_architectures,
+    def generateExtraOverrides(self, series_name, components, architectures,
                                flavours, seed_bases=None):
         structures = self.makeSeedStructures(
             series_name, flavours, seed_bases=seed_bases)
 
-        override_path = os.path.join(
-            self.config.miscroot,
-            "more-extra.override.%s.main" % series_name)
-        with AtomicFile(override_path) as override_file:
-            for arch in series_architectures:
-                self.germinateArch(
-                    override_file, series_name, arch, flavours, structures)
+        if structures:
+            override_path = os.path.join(
+                self.config.miscroot,
+                "more-extra.override.%s.main" % series_name)
+            with AtomicFile(override_path) as override_file:
+                for arch in architectures:
+                    self.germinateArch(
+                        override_file, series_name, components, arch,
+                        flavours, structures)
 
     def process(self, seed_bases=None):
         """Do the bulk of the work."""
         self.setUp()
 
-        series_name = self.series.name
-        series_architectures = sorted(
-            [arch.architecturetag for arch in self.series.architectures])
+        for series in self.series:
+            series_name = series.name
+            components = self.getComponents(series)
+            architectures = sorted(
+                [arch.architecturetag for arch in series.architectures])
 
-        # This takes a while.  Ensure that we do it without keeping a
-        # database transaction open.
-        self.txn.commit()
-        with DatabaseBlockedPolicy():
-            self.generateExtraOverrides(
-                series_name, series_architectures, self.args,
-                seed_bases=seed_bases)
+            # This takes a while.  Ensure that we do it without keeping a
+            # database transaction open.
+            self.txn.commit()
+            with DatabaseBlockedPolicy():
+                self.generateExtraOverrides(
+                    series_name, components, architectures, self.args,
+                    seed_bases=seed_bases)
 
     def main(self):
         """See `LaunchpadScript`."""

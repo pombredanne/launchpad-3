@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -29,7 +29,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.services.fields import PasswordField
 
 
 class LoginTokenType(DBEnumeratedType):
@@ -154,8 +153,6 @@ class IAuthToken(Interface):
     requester = Int(
         title=_('The Person that made this request.'), required=True,
         )
-    requester_account = Int(
-        title=_('The account that made this request.'), required=True)
     requesteremail = Text(
         title=_('The email address that was used to login when making this '
                 'request.'),
@@ -176,10 +173,6 @@ class IAuthToken(Interface):
     # used for launchpad page layout
     title = Attribute('Title')
 
-    # Quick fix for Bug #2481
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
-
     def consume():
         """Mark this token as consumed by setting date_consumed.
 
@@ -190,13 +183,3 @@ class IAuthToken(Interface):
 
     def sendEmailValidationRequest():
         """Send an email message with a magic URL to validate self.email."""
-
-    def sendPasswordResetEmail():
-        """Send an email message to the requester with a magic URL that allows
-        him to reset his password.
-        """
-
-    def sendNewUserEmail():
-        """Send an email message to the requester with a magic URL that allows
-        him to finish the Launchpad registration process.
-        """

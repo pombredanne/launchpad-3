@@ -49,10 +49,10 @@ the form is not rendered, instead he is advised to activate his own
 PPA in order to be able to copy packages.
 
     >>> jblack_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_extra_browser = setupBrowser(
-    ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
+    ...     auth="Basic james.blackwell@ubuntulinux.com:test")
 
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')

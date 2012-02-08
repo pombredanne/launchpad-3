@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -65,6 +65,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
@@ -307,6 +308,22 @@ class OAuthNoncePruner(BulkPruner):
         SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
+
+
+class UnlinkedAccountPruner(BulkPruner):
+    """Remove Account records not linked to a Person."""
+    target_table_class = Account
+    # We join with EmailAddress to ensure we only attempt removal after
+    # the EmailAddress rows have been removed by
+    # AccountOnlyEmailAddressPruner. We join with Person to work around
+    # records with bad crosslinks. These bad crosslinks will be fixed by
+    # dropping the EmailAddress.account column.
+    ids_to_prune_query = """
+        SELECT Account.id
+        FROM Account
+        LEFT OUTER JOIN Person ON Account.id = Person.account
+        WHERE Person.id IS NULL
         """
 
 
@@ -674,7 +691,7 @@ class PersonPruner(TunableLoop):
                     AND Person.id IN (%s)
                 """ % people_ids)
             self.store.execute("""
-                UPDATE EmailAddress SET person=NULL
+                DELETE FROM EmailAddress
                 WHERE person IN (%s)
                 """ % people_ids)
             # This cascade deletes any PersonSettings records.
@@ -1119,7 +1136,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1127,7 +1144,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
@@ -1242,6 +1259,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
+        UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

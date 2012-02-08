@@ -36,12 +36,14 @@ from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
     BugTask,
-    BugTaskSet,
-    build_tag_search_clause,
-    get_bug_privacy_filter,
     IllegalTarget,
     validate_new_target,
     validate_target,
+    )
+from lp.bugs.model.bugtasksearch import (
+    _build_status_clause,
+    _build_tag_search_clause,
+    get_bug_privacy_filter,
     )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
@@ -81,6 +83,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -211,7 +217,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
     # used to find sets of bugs.  These tests exercise that utility function.
 
     def searchClause(self, status_spec):
-        return BugTaskSet._buildStatusClause(status_spec)
+        return _build_status_clause(status_spec)
 
     def test_simple_queries(self):
         # WHERE clauses for simple status values are straightforward.
@@ -277,7 +283,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
 class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
-        return build_tag_search_clause(tag_spec)
+        return _build_tag_search_clause(tag_spec)
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
@@ -634,7 +640,7 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskHardwareSearch, self).setUp()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_search_results_without_duplicates(self):
         # Searching for hardware related bugtasks returns each
@@ -645,11 +651,9 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
         self.layer.txn.commit()
         device = getUtility(IHWDeviceSet).getByDeviceID(
             HWBus.PCI, '0x10de', '0x0455')
-        self.layer.switchDbUser('hwdb-submission-processor')
-        self.factory.makeHWSubmissionDevice(
-            new_submission, device, None, None, 1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        with dbuser('hwdb-submission-processor'):
+            self.factory.makeHWSubmissionDevice(
+                new_submission, device, None, None, 1)
         search_params = BugTaskSearchParams(
             user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
             hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
@@ -769,24 +773,16 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.assertTrue(
                 self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
 
-    def test_userCanUnassign_regular_user(self):
-        # Ordinary users can unassign themselves...
-        login_person(self.regular_user)
-        self.assertEqual(self.target_bugtask.assignee, self.regular_user)
-        self.assertEqual(self.series_bugtask.assignee, self.regular_user)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.regular_user))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.regular_user))
-        # ...but not other assignees.
+    def test_userCanUnassign_logged_in_user(self):
+        # Ordinary users can unassign any user or team.
         login_person(self.target_owner_member)
         other_user = self.factory.makePerson()
         self.series_bugtask.transitionToAssignee(other_user)
         self.target_bugtask.transitionToAssignee(other_user)
         login_person(self.regular_user)
-        self.assertFalse(
+        self.assertTrue(
             self.target_bugtask.userCanUnassign(self.regular_user))
-        self.assertFalse(
+        self.assertTrue(
             self.series_bugtask.userCanUnassign(self.regular_user))
 
     def test_userCanSetAnyAssignee_target_owner(self):
@@ -796,14 +792,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(self.target.owner))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(self.target.owner))
-
-    def test_userCanUnassign_target_owner(self):
-        # The target owner can unassign anybody.
-        login_person(self.target_owner_member)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.target_owner_member))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.target_owner_member))
 
     def test_userCanSetAnyAssignee_bug_supervisor(self):
         # A bug supervisor can assign anybody.
@@ -816,15 +804,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
                 self.series_bugtask.userCanSetAnyAssignee(
                     self.supervisor_member))
 
-    def test_userCanUnassign_bug_supervisor(self):
-        # A bug supervisor can unassign anybody.
-        if self.supervisor_member is not None:
-            login_person(self.supervisor_member)
-            self.assertTrue(
-                self.target_bugtask.userCanUnassign(self.supervisor_member))
-            self.assertTrue(
-                self.series_bugtask.userCanUnassign(self.supervisor_member))
-
     def test_userCanSetAnyAssignee_driver(self):
         # A project driver can assign anybody.
         login_person(self.driver_member)
@@ -832,14 +811,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(self.driver_member))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(self.driver_member))
-
-    def test_userCanUnassign_driver(self):
-        # A project driver can unassign anybody.
-        login_person(self.driver_member)
-        self.assertTrue(
-            self.target_bugtask.userCanUnassign(self.driver_member))
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.driver_member))
 
     def test_userCanSetAnyAssignee_series_driver(self):
         # A series driver can assign anybody to series bug tasks.
@@ -858,15 +829,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
                 self.target_bugtask.userCanSetAnyAssignee(
                     self.series_driver_member))
 
-    def test_userCanUnassign_series_driver(self):
-        # The target owner can unassign anybody from series bug tasks...
-        login_person(self.series_driver_member)
-        self.assertTrue(
-            self.series_bugtask.userCanUnassign(self.series_driver_member))
-        # ...but not from tasks of the main product/distribution.
-        self.assertFalse(
-            self.target_bugtask.userCanUnassign(self.series_driver_member))
-
     def test_userCanSetAnyAssignee_launchpad_admins(self):
         # Launchpad admins can assign anybody.
         login_person(self.target_owner_member)
@@ -874,14 +836,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
         login_person(foo_bar)
         self.assertTrue(self.target_bugtask.userCanSetAnyAssignee(foo_bar))
         self.assertTrue(self.series_bugtask.userCanSetAnyAssignee(foo_bar))
-
-    def test_userCanUnassign_launchpad_admins(self):
-        # Launchpad admins can unassign anybody.
-        login_person(self.target_owner_member)
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        login_person(foo_bar)
-        self.assertTrue(self.target_bugtask.userCanUnassign(foo_bar))
-        self.assertTrue(self.series_bugtask.userCanUnassign(foo_bar))
 
     def test_userCanSetAnyAssignee_bug_importer(self):
         # The bug importer celebrity can assign anybody.
@@ -892,14 +846,6 @@ class TestBugTaskPermissionsToSetAssigneeMixin:
             self.target_bugtask.userCanSetAnyAssignee(bug_importer))
         self.assertTrue(
             self.series_bugtask.userCanSetAnyAssignee(bug_importer))
-
-    def test_userCanUnassign_launchpad_bug_importer(self):
-        # The bug importer celebrity can unassign anybody.
-        login_person(self.target_owner_member)
-        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        login_person(bug_importer)
-        self.assertTrue(self.target_bugtask.userCanUnassign(bug_importer))
-        self.assertTrue(self.series_bugtask.userCanUnassign(bug_importer))
 
 
 class TestProductBugTaskPermissionsToSetAssignee(
@@ -1567,17 +1513,6 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug.default_bugtask.delete()
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
-
-    def test_bug_heat_updated(self):
-        # Test that the bug heat is updated when a bugtask is deleted.
-        bug = self.factory.makeBug()
-        distro = self.factory.makeDistribution()
-        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
-        login_person(distro.owner)
-        dsp_task = bug.addTask(bug.owner, dsp)
-        self.assertTrue(dsp.total_bug_heat > 0)
-        dsp_task.delete()
-        self.assertTrue(dsp.total_bug_heat == 0)
 
 
 class TestConjoinedBugTasks(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ModerateByRegistryExpertsOrAdmins',
     ]
 
 from zope.component import (
@@ -42,7 +43,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
-from lp.bugs.model.bugtask import get_bug_privacy_filter
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -107,6 +108,7 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.milestone import (
+    IAbstractMilestone,
     IMilestone,
     IProjectGroupMilestone,
     )
@@ -147,10 +149,12 @@ from lp.registry.interfaces.projectgroup import (
 from lp.registry.interfaces.role import (
     IHasDrivers,
     IHasOwner,
-    IPersonRoles,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.teammembership import ITeamMembership
+from lp.registry.interfaces.teammembership import (
+    ITeamMembership,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
 from lp.services.config import config
@@ -166,6 +170,7 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -232,6 +237,30 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
+
+
+class LimitedViewDeferredToView(AuthorizationBase):
+    """The default ruleset for the launchpad.LimitedView permission.
+
+    Few objects define LimitedView permission because it is only needed
+    in cases where a user may know something about a private object. The
+    default behaviour is to check if the user has launchpad.View permission;
+    private objects must define their own launchpad.LimitedView checker to
+    trully check the permission.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = Interface
+
+    def checkUnauthenticated(self):
+        # The forward adapter approach is not reliable because the object
+        # might not define a permission checker for launchpad.View.
+        # eg. IHasMilestones is implicitly public to anonymous users,
+        #     there is no nearest adapter to call checkUnauthenticated.
+        return check_permission('launchpad.View', self.obj)
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -312,14 +341,8 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
-    def checkAccountAuthenticated(self, account):
-        if account == self.obj:
-            return True
-        return super(
-            EditAccountBySelfOrAdmin, self).checkAccountAuthenticated(account)
-
     def checkAuthenticated(self, user):
-        return user.in_admin
+        return user.in_admin or user.person.accountID == self.obj.id
 
 
 class ViewAccount(EditAccountBySelfOrAdmin):
@@ -330,12 +353,8 @@ class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IOpenIdIdentifier
 
-    def checkAccountAuthenticated(self, account):
-        if account == self.obj.account:
-            return True
-        return super(
-            ViewOpenIdIdentifierBySelfOrAdmin,
-            self).checkAccountAuthenticated(account)
+    def checkAuthenticated(self, user):
+        return user.in_admin or user.person.accountID == self.obj.accountID
 
 
 class SpecialAccount(EditAccountBySelfOrAdmin):
@@ -343,7 +362,9 @@ class SpecialAccount(EditAccountBySelfOrAdmin):
 
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
-        return user.in_admin or user.in_registry_experts
+        return (
+            super(SpecialAccount, self).checkAuthenticated(user)
+            or user.in_registry_experts)
 
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
@@ -430,8 +451,8 @@ class ViewDistributionMirror(AnonymousAuthorization):
 
 
 class ViewMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone."""
-    usedfor = IMilestone
+    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
+    usedfor = IAbstractMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -740,7 +761,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        return self.obj.id == user.person.id or user.in_admin
+        return self.obj.id == user.id or user.in_admin
 
 
 class EditTranslationsPersonByPerson(AuthorizationBase):
@@ -832,9 +853,12 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
         """By default, we simply perform a View permission check.
 
         We also grant limited viewability to users who can see PPAs and
-        branches owned by the team. In other scenarios, the context in which
-        the permission is required is responsible for pre-caching the
-        launchpad.LimitedView permission on each team which requires it.
+        branches owned by the team, and members of parent teams so they can
+        see the member-listings.
+
+        In other scenarios, the context in which the permission is required is
+        responsible for pre-caching the launchpad.LimitedView permission on
+        each team which requires it.
         """
         if self.forwardCheckAuthenticated(
             user, self.obj, 'launchpad.View'):
@@ -871,6 +895,43 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             visible_branches = branches.visibleByUser(user.person)
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
             if mp.count() > 0:
+                return True
+
+            # Grant visibility to users in a team that has the private team as
+            # a member, so that they can see the team properly in member
+            # listings.
+
+            # The easiest check is just to see if the user is in a team that
+            # is a super team for the private team.
+
+            # Do comparison by ids because they may be needed for comparison
+            # to membership.team.ids later.
+            user_teams = [
+                team.id for team in user.person.teams_participated_in]
+            super_teams = [team.id for team in self.obj.super_teams]
+            intersection_teams = set(user_teams) & set(super_teams)
+
+            if len(intersection_teams) > 0:
+                return True
+
+            # If it's not, the private team may still be a pending membership,
+            # which still needs to be visible to team members.
+            BAD_STATES = (
+                TeamMembershipStatus.DEACTIVATED.value,
+                TeamMembershipStatus.EXPIRED.value,
+                TeamMembershipStatus.DECLINED.value,
+                TeamMembershipStatus.INVITATION_DECLINED.value,
+                )
+            team_memberships_query = """
+                SELECT team from TeamMembership WHERE person = %s AND
+                status NOT IN %s
+                """ % (self.obj.id, BAD_STATES)
+            store = IStore(Person)
+            future_super_teams = [team[0] for team in
+                    store.execute(team_memberships_query)]
+            intersection_teams = set(user_teams) & set(future_super_teams)
+
+            if len(intersection_teams) > 0:
                 return True
 
             # There are a number of other conditions under which a private
@@ -2590,7 +2651,7 @@ class ViewEmailAddress(AuthorizationBase):
         # Anonymous users can never see email addresses.
         return False
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         """Can the user see the details of this email address?
 
         If the email address' owner doesn't want his email addresses to be
@@ -2598,16 +2659,12 @@ class ViewEmailAddress(AuthorizationBase):
         admins can see them.
         """
         # Always allow users to see their own email addresses.
-        if self.obj.account == account:
+        if self.obj.person == user:
             return True
 
         if not (self.obj.person is None or
                 self.obj.person.hide_email_addresses):
             return True
-
-        user = IPersonRoles(IPerson(account, None), None)
-        if user is None:
-            return False
 
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.in_commercial_admin
@@ -2619,12 +2676,11 @@ class EditEmailAddress(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IEmailAddress
 
-    def checkAccountAuthenticated(self, account):
+    def checkAuthenticated(self, user):
         # Always allow users to see their own email addresses.
-        if self.obj.account == account:
+        if self.obj.person == user:
             return True
-        return super(EditEmailAddress, self).checkAccountAuthenticated(
-            account)
+        return super(EditEmailAddress, self).checkAuthenticated(user)
 
 
 class ViewGPGKey(AnonymousAuthorization):

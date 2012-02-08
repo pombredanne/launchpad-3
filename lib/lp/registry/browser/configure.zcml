@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -1140,11 +1140,23 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListArchiveView"
+            permission="zope.Public"
+            name="+mailing-list-archive"
+            template="../templates/team-mailinglist-archive.pt"/>
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamEditView"
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
+        <browser:page
+            name="+review"
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamAdministerView"
+            permission="launchpad.Moderate"
+            template="../templates/person-review.pt"/>
         <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"
@@ -1279,15 +1291,20 @@
             MilestoneNavigation"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
         permission="zope.Public"/>
     <browser:defaultView
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         name="+index"/>
     <browser:url
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         path_expression="string:+milestone/${name}"
+        rootsite="mainsite"
+        attribute_to_parent="target"/>
+    <browser:url
+        for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
+        path_expression="string:+tags/${name}"
         rootsite="mainsite"
         attribute_to_parent="target"/>
     <browser:page
@@ -1297,7 +1314,7 @@
         template="../templates/milestone-macros.pt"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:pages
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         class="lp.registry.browser.milestone.MilestoneView"
         permission="zope.Public">
         <browser:page
@@ -1322,6 +1339,20 @@
         class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
+    <browser:pages
+        for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
+        class="lp.registry.browser.milestone.MilestoneTagView"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/milestone-index.pt"/>
+
+        <!-- Project Group Milestone Tag Portlets -->
+
+        <browser:page
+            name="+portlet-milestone-tag-search"
+            template="../templates/milestone-tag-search.pt"/>
+    </browser:pages>
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
@@ -2213,4 +2244,8 @@
         attribute_to_parent="owner" />
 
 </facet>
+<adapter
+  provides="lp.services.messages.interfaces.message.IMessage"
+  for="lp.registry.browser.distroseriesdifference.IDistroSeriesDifferenceDisplayComment"
+  factory="lp.registry.browser.distroseriesdifference.get_message"/>
 </configure>

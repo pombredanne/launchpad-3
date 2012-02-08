@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -27,7 +27,7 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -238,8 +238,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
         if self.reviewer != self.member:
             self.reviewer_name = self.reviewer.unique_displayname
         else:
-            # The user himself changed his self.membership.
-            self.reviewer_name = 'the user himself'
+            self.reviewer_name = 'the user'
 
         if self.last_change_comment:
             comment = ("\n%s said:\n %s\n" % (

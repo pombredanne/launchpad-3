@@ -20,6 +20,8 @@ import socket
 import tempfile
 import xmlrpclib
 
+from urlparse import urlparse
+
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
@@ -256,8 +258,11 @@ class BuilderSlave(object):
         :return: a Deferred that returns a
             (stdout, stderr, subprocess exitcode) triple
         """
+        url_components = urlparse(self.url)
+        buildd_name = url_components.hostname.split('.')[0]
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self._vm_host}
+            'vm_host': self._vm_host,
+            'buildd_name': buildd_name}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]
@@ -314,8 +319,8 @@ class BuilderSlave(object):
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
-    # token in the sentence received from status(), according the
-    # two status we care about. See lp:launchpad-buildd
+    # token in the sentence received from status(), according to the
+    # two statuses we care about. See lp:launchpad-buildd
     # for further information about sentence format.
     ident_position = {
         'BuilderStatus.BUILDING': 1,
@@ -430,6 +435,7 @@ class Builder(SQLBase):
 
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
+        self._clean_currentjob_cache()
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
@@ -478,10 +484,12 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
+        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+        self._clean_currentjob_cache()
 
     def rescueIfLost(self, logger=None):
         """See `IBuilder`."""
@@ -497,10 +505,13 @@ class Builder(SQLBase):
 
     # XXX 2010-08-24 Julian bug=623281
     # This should not be a property!  It's masking a complicated query.
-    @property
+    @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def _clean_currentjob_cache(self):
+        del get_property_cache(self).currentjob
 
     def requestAbort(self):
         """See IBuilder."""

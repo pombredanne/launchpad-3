@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -136,7 +136,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDeviceSet,
     IHWSubmissionSet,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -207,6 +207,7 @@ from lp.registry.interfaces.sourcepackage import (
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.config import config
@@ -528,21 +529,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     @with_celebrity_logged_in('admin')
-    def makeAdministrator(self, name=None, email=None, password=None):
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+    def makeAdministrator(self, name=None, email=None):
+        user = self.makePerson(name=name, email=email)
         administrators = getUtility(ILaunchpadCelebrities).admin
         administrators.addMember(user, administrators.teamowner)
         return user
 
-    def makeRegistryExpert(self, name=None, email='expert@example.com',
-                           password='test'):
+    def makeRegistryExpert(self, name=None, email='expert@example.com'):
         from lp.testing.sampledata import ADMIN_EMAIL
         login(ADMIN_EMAIL)
-        user = self.makePerson(name=name,
-                               email=email,
-                               password=password)
+        user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
         return user
@@ -561,22 +557,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname=None, email=None, password=None,
-                    status=AccountStatus.ACTIVE,
+    def makeAccount(self, displayname=None, status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
         if displayname is None:
             displayname = self.getUniqueString('displayname')
-        account = getUtility(IAccountSet).new(
-            rationale, displayname, password=password)
+        account = getUtility(IAccountSet).new(rationale, displayname)
         removeSecurityProxy(account).status = status
-        if email is None:
-            email = self.getUniqueEmailAddress()
-        email_status = EmailAddressStatus.PREFERRED
-        if status != AccountStatus.ACTIVE:
-            email_status = EmailAddressStatus.NEW
-        email = self.makeEmail(
-            email, person=None, account=account, email_status=email_status)
         self.makeOpenIdIdentifier(account)
         return account
 
@@ -610,19 +597,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             can_encrypt=False)
 
     def makePerson(
-        self, email=None, name=None, password=None,
+        self, email=None, name=None, displayname=None, account_status=None,
         email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=(),
-        homepage_content=None):
+        time_zone=None, latitude=None, longitude=None, homepage_content=None,
+        selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
         :param name: The name for the new person.
-        :param password: The password for the person.
-            This password can be used in setupBrowser in combination
-            with the email address to create a browser for this new
-            person.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
@@ -637,25 +619,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
-        if password is None:
-            password = self.getUniqueString('password')
         # By default, make the email address preferred.
         if (email_address_status is None
                 or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
-        # Set the password to test in order to allow people that have
-        # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname,
+            displayname=displayname,
             hide_email_addresses=hide_email_addresses)
         naked_person = removeSecurityProxy(person)
-        naked_person._password_cleartext_cached = password
         if homepage_content is not None:
             naked_person.homepage_content = homepage_content
-
-        assert person.password is not None, (
-            'Password not set. Wrong default auth Store?')
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -679,6 +653,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         removeSecurityProxy(email).status = email_address_status
 
+        if account_status:
+            removeSecurityProxy(person.account).status = account_status
         self.makeOpenIdIdentifier(person.account)
 
         for team in member_of:
@@ -729,10 +705,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # setPreferredEmail no longer activates the account
             # automatically.
             account = IMasterStore(Account).get(Account, person.accountID)
-            account.activate(
-                "Activated by factory.makePersonByName",
-                password='foo',
-                preferred_email=email)
+            account.reactivate("Activated by factory.makePersonByName")
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -743,20 +716,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     MailingListAutoSubscribePolicy.NEVER)
         account = IMasterStore(Account).get(Account, person.accountID)
         getUtility(IEmailAddressSet).new(
-            alternative_address, person, EmailAddressStatus.VALIDATED,
-            account)
+            alternative_address, person, EmailAddressStatus.VALIDATED)
         return person
 
-    def makeEmail(self, address, person, account=None, email_status=None):
+    def makeEmail(self, address, person, email_status=None):
         """Create a new email address for a person.
 
         :param address: The email address to create.
         :type address: string
         :param person: The person to assign the email address to.
         :type person: `IPerson`
-        :param account: The account to assign the email address to.  Will use
-            the given person's account if None is provided.
-        :type person: `IAccount`
         :param email_status: The default status of the email address,
             if given.  If not given, `EmailAddressStatus.VALIDATED`
             will be used.
@@ -766,10 +735,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if email_status is None:
             email_status = EmailAddressStatus.VALIDATED
-        if account is None:
-            account = person.account
         return getUtility(IEmailAddressSet).new(
-            address, person, email_status, account)
+            address, person, email_status)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
                  description=None, icon=None, logo=None,
@@ -1960,9 +1927,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString()
         if body is None:
             body = self.getUniqueString()
-        return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=bug_watch,
-                              remote_comment_id=None)
+        with person_logged_in(owner):
+            return bug.newMessage(owner=owner, subject=subject, content=body,
+                                  parent=None, bugwatch=bug_watch,
+                                  remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
@@ -2356,9 +2324,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
-        return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent,
-            _date_created=date_created)
+        with person_logged_in(sender):
+            return merge_proposal.createComment(
+                sender, subject, body, vote, vote_tag, parent,
+                _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
@@ -4420,6 +4389,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Content-Disposition': 'attachment; filename="%s"' % filename
             }
         return fileupload
+
+    def makeCommercialSubscription(self, product, expired=False):
+        """Create a commercial subscription for the given product."""
+        if expired:
+            expiry = datetime.now(pytz.UTC) - timedelta(days=1)
+        else:
+            expiry = datetime.now(pytz.UTC) + timedelta(days=30)
+        CommercialSubscription(
+            product=product,
+            date_starts=datetime.now(pytz.UTC) - timedelta(days=90),
+            date_expires=expiry,
+            registrant=product.owner,
+            purchaser=product.owner,
+            sales_system_id='new',
+            whiteboard='')
 
 
 # Some factory methods return simple Python types. We don't add

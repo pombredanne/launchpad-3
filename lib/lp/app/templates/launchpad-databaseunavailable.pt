@@ -159,7 +159,7 @@ lp_status_cors_feed = '${view/cors_feed}';
 "
 ></script>
     <script id="load-status" type="text/javascript">
-LPS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
+LPJS.use('node', 'io-xdr', 'json-parse', 'datatype-date', function(Y) {
   var tag = function(name) {
     return Y.Node.create('<'+name+'/>');
   }

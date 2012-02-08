@@ -40,6 +40,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.layers import (
@@ -164,15 +165,10 @@ class TestMaloneHandler(TestCaseWithFactory):
         transaction.commit()
         return stub.test_emails[:]
 
-    def switchDbUser(self, user):
-        """Commit the transaction and switch to the new user."""
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(user)
-
     def getFailureForMessage(self, to_address, from_address=None, body=None):
         mail = self.factory.makeSignedMessage(
             body=body, email_address=from_address)
-        self.switchDbUser(config.processmail.dbuser)
+        switch_dbuser(config.processmail.dbuser)
         # Rejection email goes to the preferred email of the current user.
         # The current user is extracted from the current interaction, which is
         # set up using the authenticateEmail method.  However that expects

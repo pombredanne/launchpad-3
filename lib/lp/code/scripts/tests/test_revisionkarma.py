@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
@@ -16,6 +16,7 @@ from lp.services.config import config
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -51,7 +52,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
@@ -76,7 +77,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
@@ -104,7 +105,7 @@ class TestRevisionKarma(TestCaseWithFactory):
 
         # Now link the revision author to the author.
         author.validateAndEnsurePreferredEmail(
-            EmailAddressSet().new(email, author, account=author.account))
+            EmailAddressSet().new(email, author))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
         RevisionAuthorEmailLinker(log=DevNullLogger()).run()
@@ -115,8 +116,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
         # Commit and switch to the script db user.
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
+        switch_dbuser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()

@@ -29,7 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enums import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -59,7 +59,10 @@ from lp.soyuz.adapters.overrides import (
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageCopyPolicy,
+    )
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
@@ -383,6 +386,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return self.metadata['include_binaries']
 
     @property
+    def error_message(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("error_message")
+
+    @property
     def sponsored(self):
         name = self.metadata['sponsored']
         if name is None:
@@ -404,6 +412,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if override.section is not None:
             metadata_changes['section_override'] = override.section.name
         self.context.extendMetadata(metadata_changes)
+
+    def setErrorMessage(self, message):
+        """See `IPackageCopyJob`."""
+        self.metadata["error_message"] = message
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
@@ -581,18 +593,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
         message = unicode(cannotcopy_exception)
-        dsds = self.findMatchingDSDs()
-        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        if self.target_archive.purpose != ArchivePurpose.PPA:
+            dsds = self.findMatchingDSDs()
+            comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
 
-        # Register the error comment in the name of the Janitor.  Not a
-        # great choice, but we have no user identity to represent
-        # Launchpad; it's far too costly to create one; and
-        # impersonating the requester can be misleading and would also
-        # involve extra bookkeeping.
-        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+            # Register the error comment in the name of the Janitor.  Not a
+            # great choice, but we have no user identity to represent
+            # Launchpad; it's far too costly to create one; and
+            # impersonating the requester can be misleading and would also
+            # involve extra bookkeeping.
+            reporting_persona = getUtility(ILaunchpadCelebrities).janitor
 
-        for dsd in dsds:
-            comment_source.new(dsd, reporting_persona, message)
+            for dsd in dsds:
+                comment_source.new(dsd, reporting_persona, message)
+        else:
+            self.setErrorMessage(message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

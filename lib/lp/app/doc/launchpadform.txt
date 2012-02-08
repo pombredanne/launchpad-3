@@ -20,7 +20,7 @@ a LaunchpadFormView based view class:
    support submission.
 
  * if form wide validation is needed, the validate() method should be
-   overriden. Errors are reported using the addError() and
+   overridden. Errors are reported using the addError() and
    setFieldError() methods.
 
  * if a form contains multiple actions, the validate_widgets method
@@ -131,12 +131,10 @@ field.  These can be installed easily with the "custom_widgets"
 attribute:
 
   >>> from zope.app.form.browser import TextWidget
-  >>> from lp.services.webapp import custom_widget
-  >>> from lp.app.widgets.password import PasswordChangeWidget
+  >>> from lp.app.browser.launchpadform import custom_widget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
-  ...     custom_widget('password', PasswordChangeWidget)
   ...     custom_widget('displayname', TextWidget, displayWidth=50)
 
   >>> context = FormTest()
@@ -149,7 +147,7 @@ attribute:
   >>> view.widgets['displayname'].displayWidth
   50
   >>> view.widgets['password']
-  <...PasswordChangeWidget object at ...>
+  <...TextWidget object at ...>
 
 
 == Using Another Context ==
@@ -175,7 +173,7 @@ In order for a form to accept submissions, it will need one or more
 submit actions.  These are added to the view class using the "action"
 decorator:
 
-  >>> from lp.services.webapp import action
+  >>> from lp.app.browser.launchpadform import action
   >>> class FormTestView4(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']
@@ -528,7 +526,7 @@ via POST requests.  There are a number of reasons for this:
 However, there are cases where a form action is safe (e.g. a "search"
 action).  Those actions can be marked as such:
 
-  >>> from lp.services.webapp import safe_action
+  >>> from lp.app.browser.launchpadform import safe_action
   >>> class UnsafeActionTestView(LaunchpadFormView):
   ...     schema = IFormTest
   ...     field_names = ['name']
@@ -588,7 +586,7 @@ following ways:
 
 In other respects, it is used the same way as LaunchpadFormView:
 
-  >>> from lp.services.webapp import LaunchpadEditFormView
+  >>> from lp.app.browser.launchpadform import LaunchpadEditFormView
   >>> class FormTestView8(LaunchpadEditFormView):
   ...     schema = IFormTest
   ...     field_names = ['displayname']

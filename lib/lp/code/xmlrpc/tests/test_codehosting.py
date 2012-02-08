@@ -1169,13 +1169,13 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.codehosting_api = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
-    def assertNoBranchIsAquired(self, *branch_types):
+    def assertNoBranchIsAcquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch_types = tuple(branch_type.name for branch_type in branch_types)
         pull_info = self.codehosting_api.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
-    def assertBranchIsAquired(self, branch, *branch_types):
+    def assertBranchIsAcquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
         branch_types = tuple(branch_type.name for branch_type in branch_types)
@@ -1197,7 +1197,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         # This is a bit random, but it works.  acquireBranchToPull marks the
         # branch it returns as started mirroring, but we should check that the
         # one we want is returned...
-        self.assertBranchIsAquired(branch, branch.branch_type)
+        self.assertBranchIsAcquired(branch, branch.branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)

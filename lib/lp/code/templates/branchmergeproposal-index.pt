@@ -206,7 +206,7 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
+  LPJS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
           'lp.code.branch.revisionexpander', function(Y) {
@@ -230,7 +230,10 @@
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var updater = new Y.lp.code.branchmergeproposal.updater.UpdaterWidget(
-                {srcNode: Y.one('#diff-area')});
+                {
+                 srcNode: Y.one('#diff-area'),
+                 summary_node: Y.one('#proposal-summary')
+                });
             Y.on(LP.cache.merge_proposal_event_key, function(data) {
                 if (Y.lp.code.branchmergeproposal.updater.is_mp_diff_updated(data)) {
                     updater.update();

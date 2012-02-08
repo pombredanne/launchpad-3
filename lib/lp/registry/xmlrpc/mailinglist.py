@@ -225,7 +225,6 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
-                email_address.personID is not None and
                 not email_address.person.is_team and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))

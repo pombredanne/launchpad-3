@@ -615,7 +615,6 @@ COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the bin
 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 COMMENT ON INDEX emailaddress__person__key IS 'Ensures that a Person only has one preferred email address';
-COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has one preferred email address';
 
 
 -- FeaturedProject
@@ -1259,11 +1258,6 @@ COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the ac
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
-
-
--- AccountPassword
-COMMENT ON TABLE AccountPassword IS 'A password used to authenticate an Account.';
-COMMENT ON COLUMN AccountPassword.password IS 'SSHA digest encrypted password.';
 
 
 -- Person
@@ -2425,3 +2419,8 @@ COMMENT ON TABLE OpenIdIdentifier IS
 'OpenId Identifiers that can be used to log into an Account.';
 COMMENT ON COLUMN OpenIdIdentifier.identifier IS
 'OpenId Identifier. This should be a URL, but is currently just a token that can be used to generate the Identity URL for the Canonical SSO OpenId Provider.';
+
+-- MilestoneTag
+COMMENT ON TABLE milestonetag IS 'Attaches simple text tags to a milestone.';
+COMMENT ON COLUMN milestonetag.milestone IS 'The milestone the tag is attached to.';
+COMMENT ON COLUMN milestonetag.tag IS 'The text representation of the tag.';

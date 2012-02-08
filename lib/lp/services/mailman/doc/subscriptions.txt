@@ -110,8 +110,7 @@ the membership list, either as an enabled or disabled address.
     >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
     >>> login('admin@canonical.com')
     >>> email_set = getUtility(IEmailAddressSet)
-    >>> email = email_set.new(
-    ...     'anne.x.person@example.net', anne, account=anne.account)
+    >>> email = email_set.new('anne.x.person@example.net', anne)
     >>> transaction.commit()
     >>> helpers.ensure_membership('itest-one', anne)
 
@@ -160,8 +159,7 @@ email address.
 
     >>> login('admin@canonical.com')
     >>> emma = factory.makePersonByName('Emma')
-    >>> email = email_set.new(
-    ...     'EmmaXPerson@example.org', emma, account=emma.account)
+    >>> email = email_set.new('EmmaXPerson@example.org', emma)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet

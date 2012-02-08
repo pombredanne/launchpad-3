@@ -149,7 +149,7 @@
   </div>
 
   <script type="text/javascript">
-    LPS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
+    LPJS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
 
         Y.on('lp:context:deb_version_template:changed', function(e) {
             Y.lp.ui.update_field('#debian-version dd', e.new_value);

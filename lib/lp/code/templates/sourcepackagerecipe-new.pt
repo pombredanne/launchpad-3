@@ -86,7 +86,7 @@
               </tr>
 
               <script type="text/javascript">
-                LPS.use('lp.code.sourcepackagerecipe.new', function(Y) {
+                LPJS.use('lp.code.sourcepackagerecipe.new', function(Y) {
                   Y.on('domready', Y.lp.code.sourcepackagerecipe.new.setup);
                 });
               </script>

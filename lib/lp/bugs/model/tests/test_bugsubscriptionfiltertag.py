@@ -53,7 +53,7 @@ class TestBugSubscriptionFilterTag(TestCaseWithFactory):
     def test_qualified_tag(self):
         """
         `BugSubscriptionFilterTag.qualified_tag` returns a tag with a
-        preceeding hyphen if `include` is `False`.
+        preceding hyphen if `include` is `False`.
         """
         bug_sub_filter_tag = BugSubscriptionFilterTag()
         bug_sub_filter_tag.tag = u"foo"
