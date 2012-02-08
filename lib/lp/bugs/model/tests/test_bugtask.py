@@ -36,12 +36,14 @@ from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
     BugTask,
-    BugTaskSet,
-    build_tag_search_clause,
-    get_bug_privacy_filter,
     IllegalTarget,
     validate_new_target,
     validate_target,
+    )
+from lp.bugs.model.search import (
+    _buildStatusClause,
+    build_tag_search_clause,
+    get_bug_privacy_filter,
     )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
@@ -215,7 +217,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
     # used to find sets of bugs.  These tests exercise that utility function.
 
     def searchClause(self, status_spec):
-        return BugTaskSet._buildStatusClause(status_spec)
+        return _buildStatusClause(status_spec)
 
     def test_simple_queries(self):
         # WHERE clauses for simple status values are straightforward.

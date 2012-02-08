@@ -67,6 +67,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
+from lp.bugs.model.search import orderby_expression
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
@@ -2260,7 +2261,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(getUtility(IBugTaskSet).orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "

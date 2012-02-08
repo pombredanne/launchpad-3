@@ -43,7 +43,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
-from lp.bugs.model.bugtask import get_bug_privacy_filter
+from lp.bugs.model.search import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
