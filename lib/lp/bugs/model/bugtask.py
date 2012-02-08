@@ -122,6 +122,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     ILaunchBag,
@@ -1365,6 +1366,8 @@ class BugTask(SQLBase):
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
+
+    title = "A set of bug tasks"
 
     @property
     def open_bugtask_search(self):
