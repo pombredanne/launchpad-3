@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -169,8 +169,8 @@ from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (

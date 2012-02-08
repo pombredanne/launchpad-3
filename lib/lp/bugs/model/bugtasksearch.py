@@ -36,8 +36,8 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BugBranchSearch,
     BugBlueprintSearch,
+    BugBranchSearch,
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -55,8 +55,8 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.model.person import Person
 from lp.registry.model.milestone import Milestone
+from lp.registry.model.person import Person
 from lp.services import features
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
