@@ -22,7 +22,6 @@ from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,
     )
-from lp.bugs.model.bugtask import get_bug_privacy_filter
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
@@ -72,7 +71,8 @@ class BugBranchSet:
         """See `IBugBranchSet`."""
         # Avoid circular imports.
         from lp.bugs.model.bug import Bug
-
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:
             return []
