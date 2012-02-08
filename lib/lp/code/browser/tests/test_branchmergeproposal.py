@@ -16,6 +16,7 @@ from difflib import unified_diff
 
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
+import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -412,9 +413,9 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def _makeTargetBranch(self):
+    def _makeTargetBranch(self, **kwargs):
         return self.factory.makeProductBranch(
-            product=self.source_branch.product)
+            product=self.source_branch.product, **kwargs)
 
     def _makeTargetBranchWithReviewer(self):
         albert = self.factory.makePerson(name='albert')
@@ -422,10 +423,11 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
             reviewer=albert, product=self.source_branch.product)
         return target_branch, albert
 
-    def _createView(self):
+    def _createView(self, request=None):
         # Construct the view and initialize it.
-        view = RegisterBranchMergeProposalView(
-            self.source_branch, LaunchpadTestRequest())
+        if not request:
+            request = LaunchpadTestRequest()
+        view = RegisterBranchMergeProposalView(self.source_branch, request)
         view.initialize()
         return view
 
@@ -462,6 +464,31 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
+
+    def test_register_ajax_request(self):
+        # Ajax submits return json data containing info about what the visible
+        # branches are if they are not all visible to the reviewer.
+
+        # Make a branch the reviewer cannot see.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            branches_to_check = [self.source_branch.unique_name,
+                target_branch.unique_name]
+            expected_data = {
+                'person_name': reviewer.displayname,
+                'branches_to_check': branches_to_check,
+                'visible_branches': [self.source_branch.unique_name]}
+            result_data = view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+        self.assertEqual(expected_data, simplejson.loads(result_data))
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in
@@ -583,6 +610,26 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         reviewer = Tag('reviewer', 'input', attrs={'id': 'field.reviewer'})
         matcher = Not(HTMLContains(reviewer.within(extra)))
         self.assertThat(browser.contents, matcher)
+
+    def test_branch_visibility_notification(self):
+        # If the reviewer cannot see the source and/or target branches, a
+        # notification message is displayed.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(
+            private=True, owner=owner)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(owner):
+            view = self._createView()
+            view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex(
+                'To ensure visibility, .* is now subscribed to:.*'))
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
@@ -1120,15 +1167,19 @@ class TestBranchMergeProposal(BrowserTestCase):
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertIn('x y' * 100, browser.contents)
 
+    def has_read_more(self, comment):
+        url = canonical_url(comment, force_local_path=True)
+        read_more = Tag(
+            'Read more link', 'a', {'href': url}, text='Read more...')
+        return HTMLContains(read_more)
+
     def test_long_conversation_comments_truncated(self):
         """Long comments in a conversation should be truncated."""
         comment = self.factory.makeCodeReviewComment(body='x y' * 2000)
-        url = canonical_url(comment, force_local_path=True)
+        has_read_more = self.has_read_more(comment)
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertNotIn('x y' * 2000, browser.contents)
-        read_more = Tag(
-            'Read more link', 'a', {'href': url}, text='Read more...')
-        self.assertThat(browser.contents, HTMLContains(read_more))
+        self.assertThat(browser.contents, has_read_more)
 
     def test_short_conversation_comments_no_download(self):
         """Short comments should not have a download link."""
@@ -1149,6 +1200,15 @@ class TestBranchMergeProposal(BrowserTestCase):
             'Download', 'a', {'href': download_url},
             text='Download full text')
         self.assertThat(browser.contents, HTMLContains(body))
+
+    def test_excessive_conversation_comments_no_redirect(self):
+        """An excessive comment does not force a redict on proposal page."""
+        comment = self.factory.makeCodeReviewComment(body='x' * 10001)
+        mp_url = canonical_url(comment.branch_merge_proposal)
+        has_read_more = self.has_read_more(comment)
+        browser = self.getUserBrowser(mp_url)
+        self.assertThat(browser.contents, Not(has_read_more))
+        self.assertEqual(mp_url, browser.url)
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

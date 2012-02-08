@@ -207,6 +207,7 @@ from lp.registry.interfaces.sourcepackage import (
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.config import config
@@ -4388,6 +4389,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Content-Disposition': 'attachment; filename="%s"' % filename
             }
         return fileupload
+
+    def makeCommercialSubscription(self, product, expired=False):
+        """Create a commercial subscription for the given product."""
+        if expired:
+            expiry = datetime.now(pytz.UTC) - timedelta(days=1)
+        else:
+            expiry = datetime.now(pytz.UTC) + timedelta(days=30)
+        CommercialSubscription(
+            product=product,
+            date_starts=datetime.now(pytz.UTC) - timedelta(days=90),
+            date_expires=expiry,
+            registrant=product.owner,
+            purchaser=product.owner,
+            sales_system_id='new',
+            whiteboard='')
 
 
 # Some factory methods return simple Python types. We don't add
