@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -35,6 +35,7 @@ __all__ = [
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
+    'TeamEmailAddressError',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
@@ -1241,6 +1242,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         The result is a list of vouchers.
         :return: list
         """
+
+    def hasCurrentCommercialSubscription():
+        """Return if the user has a current commercial subscription."""
 
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -2540,6 +2544,10 @@ class NoSuchPerson(NameLookupFailed):
     """Raised when we try to look up an IPerson that doesn't exist."""
 
     _message_prefix = "No such person"
+
+
+class TeamEmailAddressError(Exception):
+    """The person cannot be created as a team owns its email address."""
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

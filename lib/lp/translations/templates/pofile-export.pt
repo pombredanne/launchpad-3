@@ -13,7 +13,7 @@
     }
     </style>
     <script type="text/javascript">
-    LPS.use('node', 'event', function(Y){
+    LPJS.use('node', 'event', function(Y){
         Y.on('domready', function(){
             // The pochanged option is only available for the PO format.
             var formatlist = Y.one('#div_format select');

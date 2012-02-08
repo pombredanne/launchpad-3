@@ -1909,11 +1909,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.useContext(person_logged_in(owner))
         with dynamic_listings():
             view = self.makeView(item.bugtask)
-        cache = IJSONRequestCache(view.request)
-        items = cache.objects['mustache_model']['items']
-        self.assertEqual(1, len(items))
-        combined = dict(item.model)
-        combined.update(view.search().field_visibility)
+            cache = IJSONRequestCache(view.request)
+            items = cache.objects['mustache_model']['items']
+            self.assertEqual(1, len(items))
+            combined = dict(item.model)
+            combined.update(view.search().field_visibility)
         self.assertEqual(combined, items[0])
 
     def test_no_next_prev_for_single_batch(self):
@@ -2282,6 +2282,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
                 key[2] in ('asc', 'desc'),
                 'Invalid order value: %r' % (key, ))
 
+    def test_tags_encoded_in_model(self):
+        # The tag name is encoded properly in the JSON.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        with dynamic_listings():
+            view = self.makeView(bugtask=bug.default_bugtask)
+        cache = IJSONRequestCache(view.request)
+        tags = cache.objects['mustache_model']['items'][0]['tags']
+        expected_url = (
+            canonical_url(product, view_name='+bugs') +
+            '/?field.tag=depends-on%2B987')
+        self.assertEqual(
+            [{'url': expected_url, 'tag': u'depends-on+987'}], tags)
+
 
 class TestBugTaskExpirableListingView(BrowserTestCase):
     """Test BugTaskExpirableListingView."""
@@ -2393,15 +2407,3 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
-
-    def test_model_numeric_heat(self):
-        """bug_heat_html contains just the number if the flag is enabled."""
-        with FeatureFixture({'bugs.heat_ratio_display.disabled': 'true'}):
-            with dynamic_listings():
-                owner, item = make_bug_task_listing_item(self.factory)
-                self.assertNotIn('/@@/bug-heat', item.bug_heat_html)
-                self.assertIn('sprite flame', item.bug_heat_html)
-                with person_logged_in(owner):
-                    model = item.model
-                    self.assertEqual(
-                        item.bug_heat_html, model['bug_heat_html'])

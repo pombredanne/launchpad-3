@@ -1,16 +1,24 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+import contextlib
+from lazr.restful.interfaces import IJSONRequestCache
+import simplejson
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.browser.team import TeamOverviewMenu
+from lp.registry.browser.team import (
+    TeamIndexMenu,
+    TeamOverviewMenu,
+    TeamMailingListArchiveView,
+    )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
+    IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
@@ -21,11 +29,13 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -169,9 +179,9 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         self.acceptTeam(self.super_team, successful, failed)
 
 
-class TestTeamEditView(TestCaseWithFactory):
+class TestTeamPersonRenameFormMixin:
 
-    layer = LaunchpadFunctionalLayer
+    view_name = None
 
     def test_cannot_rename_team_with_active_ppa(self):
         # A team with an active PPA that contains publications cannot be
@@ -182,7 +192,7 @@ class TestTeamEditView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
@@ -197,7 +207,7 @@ class TestTeamEditView(TestCaseWithFactory):
         removeSecurityProxy(archive).status = ArchiveStatus.DELETED
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
@@ -207,7 +217,7 @@ class TestTeamEditView(TestCaseWithFactory):
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has a mailing list and may not be renamed.',
@@ -222,7 +232,7 @@ class TestTeamEditView(TestCaseWithFactory):
         team_list.transitionToStatus(MailingListStatus.INACTIVE)
         team_list.purge()
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertFalse(view.form_fields['name'].for_display)
 
     def test_cannot_rename_team_with_multiple_reasons(self):
@@ -236,12 +246,18 @@ class TestTeamEditView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         get_property_cache(team).archive = archive
         with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
+            view = create_initialized_view(team, name=self.view_name)
             self.assertTrue(view.form_fields['name'].for_display)
             self.assertEqual(
                 'This team has an active PPA with packages published and '
                 'a mailing list and may not be renamed.',
                 view.widgets['name'].hint)
+
+
+class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+edit'
 
     def test_edit_team_view_permission(self):
         # Only an administrator or the team owner of a team can
@@ -433,6 +449,92 @@ class TestTeamEditView(TestCaseWithFactory):
             view.errors[0].doc())
 
 
+class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
+                                  TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+review'
+
+    def test_init_admin(self):
+        # An admin sees all the fields.
+        team = self.factory.makeTeam()
+        login_celebrity('admin')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual('Review team', view.label)
+        self.assertEqual(
+            ['name', 'displayname'], view.field_names)
+
+    def test_init_registry_expert(self):
+        # Registry experts do not see the the displayname field.
+        team = self.factory.makeTeam()
+        login_celebrity('registry_experts')
+        view = create_initialized_view(team, name=self.view_name)
+        self.assertEqual(['name'], view.field_names)
+
+
+class TestTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+newteam'
+    feature_flag = {'disclosure.show_visibility_for_team_add.enabled': 'on'}
+
+    def test_random_does_not_see_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=person)
+        self.assertNotIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+
+    def test_admin_sees_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        admin = login_celebrity('admin')
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=admin)
+        self.assertIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+        
+    def test_random_does_not_see_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=person)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+    def test_person_with_cs_sees_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+
+    def test_person_with_expired_cs_does_not_see_visibility(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+
 class TestTeamMenu(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -441,6 +543,44 @@ class TestTeamMenu(TestCaseWithFactory):
         super(TestTeamMenu, self).setUp()
         self.team = self.factory.makeTeam()
 
+    def test_TeamIndexMenu(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave'),
+            menu.links)
+
+    def test_TeamIndexMenu_anonymous(self):
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_owner(self):
+        login_person(self.team.teamowner)
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'delete', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_admin(self):
+        login_celebrity('admin')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['edit', 'administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
+    def test_TeamIndexMenu_registry_experts(self):
+        login_celebrity('registry_experts')
+        view = create_view(self.team, '+index')
+        menu = TeamIndexMenu(view)
+        self.assertEqual(
+            ['administer', 'delete', 'join', 'add_my_teams'],
+            [link.name for link in menu.iterlinks() if link.enabled])
+
     def test_TeamOverviewMenu_check_menu_links_without_mailing(self):
         menu = TeamOverviewMenu(self.team)
         # Remove moderate_mailing_list because it asserts that there is
@@ -448,7 +588,7 @@ class TestTeamMenu(TestCaseWithFactory):
         no_mailinst_list_links = [
             link for link in menu.links if link != 'moderate_mailing_list']
         menu.links = no_mailinst_list_links
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Create a mailing list', link.text)
 
@@ -456,9 +596,46 @@ class TestTeamMenu(TestCaseWithFactory):
         self.factory.makeMailingList(
             self.team, self.team.teamowner)
         menu = TeamOverviewMenu(self.team)
-        self.assertEqual(True, check_menu_links(menu))
+        self.assertIs(True, check_menu_links(menu))
         link = menu.configure_mailing_list()
         self.assertEqual('Configure mailing list', link.text)
+
+
+class TestMailingListArchiveView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_messages(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        view = create_view(team, name='+mailing-list-archive')
+        messages = IJSONRequestCache(view.request).objects['mail']
+        self.assertEqual(0, len(messages))
+
+    @contextlib.contextmanager
+    def _override_messages(self, view_class, messages):
+        def _message_shim(self):
+            return simplejson.loads(messages)
+        tmp = TeamMailingListArchiveView._get_messages
+        TeamMailingListArchiveView._get_messages = _message_shim
+        yield TeamMailingListArchiveView
+        TeamMailingListArchiveView._get_messages = tmp
+
+    def test_messages_are_in_json(self):
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        messages = '''[{
+            "headers": {
+                "To": "somelist@example.com",
+                "From": "someguy@example.com",
+                "Subject": "foobar"},
+            "message_id": "foo"}]'''
+
+        with self._override_messages(TeamMailingListArchiveView, messages):
+            view = create_view(team, name='+mailing-list-archive')
+            messages = IJSONRequestCache(view.request).objects['mail']
+            self.assertEqual(1, len(messages))
+            self.assertEqual('foo', messages[0]['message_id'])
 
 
 class TestModeration(TestCaseWithFactory):
@@ -610,3 +787,58 @@ class TestTeamIndexView(TestCaseWithFactory):
         self.assertEndsWith(
             extract_text(document.find(True, id='maincontent')),
             'The information in this page is not shared with you.')
+
+
+class TestPersonIndexVisibilityView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def createTeams(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        private = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE, name='private-team',
+            members=[team])
+        with person_logged_in(team.teamowner):
+            team.acceptInvitationToBeMemberOf(private, '')
+        return team
+
+    def test_private_superteams_anonymous(self):
+        # If the viewer is anonymous, the portlet is not shown.
+        team = self.createTeams()
+        self.factory.makePerson()
+        view = create_initialized_view(
+            team, '+index', server_url=canonical_url(team), path_info='')
+        html = view()
+        superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+        self.assertEqual([], view.super_teams)
+
+    def test_private_superteams_hidden(self):
+        # If the viewer has no permission to see any superteams, the portlet
+        # is not shown.
+        team = self.createTeams()
+        viewer = self.factory.makePerson()
+        with person_logged_in(viewer):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=viewer)
+            html = view()
+            self.assertEqual([], view.super_teams)
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertIs(None, superteams)
+
+    def test_private_superteams_shown(self):
+        # When the viewer has permission, the portlet is shown.
+        team = self.createTeams()
+        with person_logged_in(team.teamowner):
+            view = create_initialized_view(
+                team, '+index', server_url=canonical_url(team), path_info='',
+                principal=team.teamowner)
+            html = view()
+            self.assertEqual(view.super_teams, list(team.super_teams))
+            superteams = find_tag_by_id(html, 'subteam-of')
+        self.assertFalse('&lt;hidden&gt;' in superteams)
+        self.assertEqual(
+            '<a href="/~private-team" class="sprite team">Private Team</a>',
+            str(superteams.findNext('a')))

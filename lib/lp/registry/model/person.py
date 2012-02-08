@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -180,6 +180,7 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
+    TeamEmailAddressError,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
@@ -1228,6 +1229,32 @@ class Person(
                 "Voucher %s has invalid status %s" %
                 (voucher.voucher_id, voucher.status))
         return vouchers
+
+    def hasCurrentCommercialSubscription(self):
+        """See `IPerson`."""
+        # Circular imports.
+        from lp.registry.model.commercialsubscription import (
+            CommercialSubscription,
+            )
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.teammembership import TeamParticipation
+        person = Store.of(self).using(
+            Person,
+            Join(
+                TeamParticipation,
+                Person.id == TeamParticipation.personID),
+            Join(
+                Product, TeamParticipation.teamID == Product._ownerID),
+            Join(
+                CommercialSubscription,
+                CommercialSubscription.productID == Product.id)
+            ).find(
+                Person,
+                CommercialSubscription.date_expires > datetime.now(
+                    pytz.UTC),
+                Person.id == self.id)
+        return not person.is_empty()
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -3093,6 +3120,13 @@ class PersonSet:
                 or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
+
+            # XXX wgrant 2012-01-20 bug=556680: This is awful, as it can
+            # lock people out of their account until they change their
+            # SSO address. But stealing addresses from other accounts is
+            # probably worse.
+            if email is not None and email.person.is_team:
+                raise TeamEmailAddressError()
 
             if email is None:
                 if identifier is None:

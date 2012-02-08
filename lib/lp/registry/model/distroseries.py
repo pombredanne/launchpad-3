@@ -483,13 +483,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPrioritizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
 
-        The prioritization is a heuristic rule using bug heat,
+        The prioritization is a heuristic rule using bug count,
         translatable messages, and the source package release's component.
         """
         find_spec = (
             SourcePackageName,
             SQL("""
-                coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
+                coalesce(bug_count * 10, 0) + coalesce(po_messages, 0) +
                 CASE WHEN component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
@@ -502,7 +502,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         spr.sourcepackagename,
         spr.component,
         bug_count,
-        total_bug_heat,
         SUM(POTemplate.messagecount) * %(po_message_weight)s AS po_messages,
         SUM(POTemplate.messagecount) AS total_messages
     FROM
@@ -532,7 +531,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 Packaging.sourcepackagename = spr.sourcepackagename
                 AND Packaging.distroseries = spph.distroseries)
     GROUP BY
-        spr.sourcepackagename, spr.component, bug_count, total_bug_heat
+        spr.sourcepackagename, spr.component, bug_count
     ) AS spn_info""" % sqlvalues(
             po_message_weight=self._current_sourcepackage_po_weight,
             distroseries=self,
@@ -571,7 +570,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 Packaging.*,
                 spr.component AS spr_component,
                 SourcePackageName.name AS spn_name,
-                total_bug_heat,
+                bug_count,
                 po_messages
             FROM %(joins)s
             WHERE %(conditions)s
@@ -585,7 +584,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return IStore(self).using(origin).find(Packaging).order_by('''
                 (CASE WHEN spr_component = 1 THEN 1000 ELSE 0 END
                 + CASE WHEN Product.bugtracker IS NULL
-                    THEN coalesce(total_bug_heat, 10) ELSE 0 END
+                    THEN coalesce(bug_count * 10, 10) ELSE 0 END
                 + CASE WHEN ProductSeries.translations_autoimport_mode = 1
                     THEN coalesce(po_messages, 10) ELSE 0 END
                 + CASE WHEN ProductSeries.branch IS NULL THEN 500 ELSE 0 END

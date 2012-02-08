@@ -9,7 +9,7 @@
 </span>
 <script tal:condition="view/can_write"
         tal:content="structure string:
-LPS.use('lp.app.choice', function(Y) {
+LPJS.use('lp.app.choice', function(Y) {
     Y.lp.app.choice.addEnumChoice(
         ${view/json_config},
         ${view/json_resource_uri},

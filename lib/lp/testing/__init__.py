@@ -175,6 +175,7 @@ from lp.testing._webservice import (
     launchpadlib_for,
     oauth_access_token_for,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fixture import CaptureOops
 from lp.testing.karma import KarmaRecorder
 
@@ -421,8 +422,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         user, or you'll hit privilege violations later on.
         """
         assert self.layer, "becomeDbUser requires a layer."
-        transaction.commit()
-        self.layer.switchDbUser(dbuser)
+        switch_dbuser(dbuser)
 
     def __str__(self):
         """The string representation of a test is its id.

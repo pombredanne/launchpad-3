@@ -46,9 +46,11 @@
         value="Search projects"
         />
     </form>
-    <script type="text/javascript"><!--
-        setFocusByName('text');
-        // --></script>
+    <script type="text/javascript">
+        LPJS.use('lp', function (Y) {
+            setFocusByName('text');
+        });
+    </script>
 
   <tal:searching condition="view/search_requested">
 

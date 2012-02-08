@@ -82,6 +82,10 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -634,7 +638,7 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskHardwareSearch, self).setUp()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_search_results_without_duplicates(self):
         # Searching for hardware related bugtasks returns each
@@ -645,11 +649,9 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
         self.layer.txn.commit()
         device = getUtility(IHWDeviceSet).getByDeviceID(
             HWBus.PCI, '0x10de', '0x0455')
-        self.layer.switchDbUser('hwdb-submission-processor')
-        self.factory.makeHWSubmissionDevice(
-            new_submission, device, None, None, 1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        with dbuser('hwdb-submission-processor'):
+            self.factory.makeHWSubmissionDevice(
+                new_submission, device, None, None, 1)
         search_params = BugTaskSearchParams(
             user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
             hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)

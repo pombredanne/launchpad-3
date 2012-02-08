@@ -12,6 +12,7 @@ import unittest
 from lp.services.config import config
 from lp.services.database.sqlbase import commit
 from lp.testing import logout
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -53,21 +54,21 @@ def lobotomize_stevea():
 def uploaderSetUp(test):
     """setup the package uploader script tests."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('uploader')
+    switch_dbuser('uploader')
 
 
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setGlobs(test)
 
 
 def statisticianSetUp(test):
     test_dbuser = config.statistician.dbuser
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
 
 
@@ -96,7 +97,7 @@ def distroseriesqueueTearDown(test):
 def uploadQueueSetUp(test):
     lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
@@ -110,7 +111,7 @@ def uploaderBugsSetUp(test):
     """
     lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
@@ -126,7 +127,7 @@ def uploadQueueTearDown(test):
 def manageChrootSetup(test):
     """Set up the manage-chroot.txt test."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser("fiera")
+    switch_dbuser("fiera")
 
 
 special = {

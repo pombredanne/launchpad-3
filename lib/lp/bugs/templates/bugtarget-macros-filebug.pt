@@ -330,7 +330,7 @@
 <metal:privacy define-macro="bug-reporting-privacy">
     <tal:private condition="view/isPrivate">
         <script type="text/javascript">
-            LPS.use('lp.app.privacy',  function(Y) {
+            LPJS.use('lp.app.privacy',  function(Y) {
                 Y.on('domready', function() {
                    var cfg = {
                         notification_text: "This report will be private. "
@@ -344,7 +344,7 @@
     </tal:private>
     <tal:not-private condition="not:view/isPrivate">
         <script type="text/javascript">
-            LPS.use('lp.app.privacy', 'lp.bugs.filebug_dupefinder', function(Y) {
+            LPJS.use('lp.app.privacy', 'lp.bugs.filebug_dupefinder', function(Y) {
                 Y.on('domready', function() {
                    var cfg = {
                         notification_text: "This report will be private "

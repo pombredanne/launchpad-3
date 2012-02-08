@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ __all__ = [
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
+    'TeamMailingListArchiveView',
     'TeamMapData',
     'TeamMapLtdData',
     'TeamMapView',
@@ -42,8 +43,10 @@ from datetime import (
 import math
 from urllib import unquote
 
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 import pytz
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -92,6 +95,7 @@ from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.person import (
     CommonMenuLinks,
+    PersonAdministerView,
     PersonIndexView,
     PersonNavigation,
     PersonRenameFormMixin,
@@ -128,6 +132,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
@@ -135,7 +140,9 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -215,8 +222,11 @@ class HasRenewalPolicyMixin:
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visibility.
 
-    The visibility field should only be shown to users with
-    launchpad.Commercial permission on the team.
+    The visibility field is shown if
+    * The user has launchpad.Commercial permission.
+    * Or the feature flag
+    disclosure.show_visibility_for_team_add.enabled is on, and the user has
+    a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -261,8 +271,13 @@ class TeamFormMixin:
 
     def conditionallyOmitVisibility(self):
         """Remove the visibility field if not authorized."""
-        if not check_permission('launchpad.Commercial', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
+        if check_permission('launchpad.Commercial', self.context):
+            return
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag and self.user.hasCurrentCommercialSubscription():
+            return
+        self.form_fields = self.form_fields.omit('visibility')
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
@@ -348,6 +363,12 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class TeamAdministerView(PersonAdministerView):
+    """A view to administer teams on behalf of users."""
+    label = "Review team"
+    default_field_names = ['name', 'displayname']
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -947,6 +968,23 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
 
+class TeamMailingListArchiveView(LaunchpadView):
+
+    label = "Mailing list archive"
+
+    def __init__(self, context, request):
+        super(TeamMailingListArchiveView, self).__init__(context, request)
+        self.messages = self._get_messages()
+        cache = IJSONRequestCache(request).objects
+        cache['mail'] = self.messages
+
+    def _get_messages(self):
+        # XXX: jcsackett 18-1-2012: This needs to be updated to use the
+        # grackle client, once that is available, instead of returning
+        # an empty list as it does now.
+        return simplejson.loads('[]')
+
+
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
@@ -1215,7 +1253,7 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
@@ -1230,7 +1268,7 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -1508,6 +1546,20 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Change owner'
         summary = 'Change the owner of the team'
         return Link(target, text, summary, icon='edit')
+
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        # Team owners and admins have launchpad.Moderate on ITeam, but we
+        # do not want them to see this link because it is for Lp admins
+        # and registry experts.
+        checker = ModerateByRegistryExpertsOrAdmins(self)
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = checker.checkAuthenticated(IPersonRoles(self.user))
+        summary = 'Administer this team on behalf of a user'
+        return Link(target, text, summary, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Moderate')
     def delete(self):
@@ -2154,7 +2206,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'delete', 'join', 'add_my_teams', 'leave')
+    links = ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):

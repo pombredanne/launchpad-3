@@ -30,7 +30,6 @@ from contrib.oauth import (
     OAuthSignatureMethod_PLAINTEXT,
     OAuthToken,
     )
-from lazr.restful.interfaces import IRepresentationCache
 from lazr.restful.testing.webservice import WebServiceCaller
 import transaction
 from zope.app.testing.functional import (
@@ -712,16 +711,6 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
-def ws_uncache(obj):
-    """Manually remove an object from the web service representation cache.
-
-    Directly modifying a data model object during a test may leave
-    invalid data in the representation cache.
-    """
-    cache = getUtility(IRepresentationCache)
-    cache.delete(obj)
-
-
 def setupDTCBrowser():
     """Testbrowser configured for Distribution Translations Coordinators.
 
@@ -824,7 +813,6 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-    test.globs['ws_uncache'] = ws_uncache
 
 
 # This function name doesn't follow our standard naming conventions,

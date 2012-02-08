@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="head_epilogue">
   <script type="text/javascript">
-    LPS.use('node', 'lp.app.widgets.expander', function(Y) {
+    LPJS.use('node', 'lp.app.widgets.expander', function(Y) {
       Y.on('domready', function() {
         var all_expanders = Y.all('.expander-icon');
         all_expanders.each(function(icon) {

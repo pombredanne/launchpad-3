@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -1140,11 +1140,23 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListArchiveView"
+            permission="zope.Public"
+            name="+mailing-list-archive"
+            template="../templates/team-mailinglist-archive.pt"/>
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamEditView"
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
+        <browser:page
+            name="+review"
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamAdministerView"
+            permission="launchpad.Moderate"
+            template="../templates/person-review.pt"/>
         <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"
@@ -2232,4 +2244,8 @@
         attribute_to_parent="owner" />
 
 </facet>
+<adapter
+  provides="lp.services.messages.interfaces.message.IMessage"
+  for="lp.registry.browser.distroseriesdifference.IDistroSeriesDifferenceDisplayComment"
+  factory="lp.registry.browser.distroseriesdifference.get_message"/>
 </configure>
