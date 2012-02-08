@@ -1228,13 +1228,7 @@ class Bug(SQLBase):
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
-
-        # When a new task is added the bug's heat becomes relevant to the
-        # target's max_bug_heat.
-        target.recalculateBugHeatCache()
-
-        return new_task
+        return getUtility(IBugTaskSet).createTask(self, owner, target)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
@@ -2063,15 +2057,12 @@ class Bug(SQLBase):
     def _markAsDuplicate(self, duplicate_of):
         """Mark this bug as a duplicate of another.
 
-        Marking a bug as a duplicate requires a recalculation
-        of the heat of this bug and of the master bug, and it
-        requires a recalulation of the heat cache of the
-        affected bug targets. None of this is done here in order
-        to avoid unnecessary repetitions in recursive calls
-        for duplicates of this bug, which also become duplicates
+        Marking a bug as a duplicate requires a recalculation of the
+        heat of this bug and of the master bug. None of this is done
+        here in order to avoid unnecessary repetitions in recursive
+        calls for duplicates of this bug, which also become duplicates
         of the new master bug.
         """
-        affected_targets = set()
         field = DuplicateBug()
         field.context = self
         current_duplicateof = self.duplicateof
@@ -2082,9 +2073,7 @@ class Bug(SQLBase):
                 user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
                     old_value = duplicate.duplicateof
-                    affected_targets.update(
-                        duplicate._markAsDuplicate(duplicate_of))
-
+                    duplicate._markAsDuplicate(duplicate_of)
                     # Put an entry into the BugNotification table for
                     # later processing.
                     change = BugDuplicateChange(
@@ -2103,7 +2092,7 @@ class Bug(SQLBase):
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
-            self.setHeat(0, affected_targets=affected_targets)
+            self.setHeat(0)
             # Maybe confirm bug tasks, now that more people might be affected
             # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
@@ -2111,18 +2100,15 @@ class Bug(SQLBase):
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
-            self.updateHeat(affected_targets)
+            self.updateHeat()
             if current_duplicateof is not None:
-                current_duplicateof.updateHeat(affected_targets)
-        return affected_targets
+                current_duplicateof.updateHeat()
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
-        affected_targets = self._markAsDuplicate(duplicate_of)
+        self._markAsDuplicate(duplicate_of)
         if duplicate_of is not None:
-            duplicate_of.updateHeat(affected_targets)
-        for target in affected_targets:
-            target.recalculateBugHeatCache()
+            duplicate_of.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -2275,7 +2261,7 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None, affected_targets=None):
+    def setHeat(self, heat, timestamp=None):
         """See `IBug`."""
         """See `IBug`."""
         if timestamp is None:
@@ -2286,13 +2272,8 @@ class Bug(SQLBase):
 
         self.heat = heat
         self.heat_last_updated = timestamp
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
-            affected_targets.update(task.target for task in self.bugtasks)
 
-    def updateHeat(self, affected_targets=None):
+    def updateHeat(self):
         """See `IBug`."""
         if self.duplicateof is not None:
             # If this bug is a duplicate we don't try to calculate its
@@ -2306,11 +2287,6 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        if affected_targets is None:
-            for task in self.bugtasks:
-                task.target.recalculateBugHeatCache()
-        else:
-            affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
 
     def _attachments_query(self):

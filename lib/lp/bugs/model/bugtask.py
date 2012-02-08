@@ -122,6 +122,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     ILaunchBag,
@@ -641,9 +642,6 @@ class BugTask(SQLBase):
         except NotFoundError:
             # We don't care if there isn't a nomination
             pass
-
-        # When a task is deleted the bug's heat needs to be recalculated.
-        target.recalculateBugHeatCache()
 
     def findSimilarBugs(self, user, limit=10):
         """See `IBugTask`."""
@@ -1187,17 +1185,13 @@ class BugTask(SQLBase):
             self.bug.access_policy.pillar != target.pillar):
             self.bug.setAccessPolicy(self.bug.access_policy.type)
 
-        # After the target has changed, we need to recalculate the maximum bug
-        # heat for the new and old targets.
-        if self.target != target_before_change:
-            target_before_change.recalculateBugHeatCache()
-            self.target.recalculateBugHeatCache()
-            # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
-            # We also should see if we ought to auto-transition to the
-            # CONFIRMED status.
-            if self.bug.shouldConfirmBugtasks():
-                self.maybeConfirm()
-            # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+        # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+        # We also should see if we ought to auto-transition to the
+        # CONFIRMED status.
+        if (self.target != target_before_change and
+            self.bug.shouldConfirmBugtasks()):
+            self.maybeConfirm()
+        # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1365,6 +1359,8 @@ class BugTask(SQLBase):
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
+
+    title = "A set of bug tasks"
 
     @property
     def open_bugtask_search(self):
