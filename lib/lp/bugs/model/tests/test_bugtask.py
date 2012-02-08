@@ -41,7 +41,7 @@ from lp.bugs.model.bugtask import (
     validate_target,
     )
 from lp.bugs.model.bugtasksearch import (
-    _buildStatusClause,
+    _build_status_clause,
     build_tag_search_clause,
     get_bug_privacy_filter,
     )
@@ -217,7 +217,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
     # used to find sets of bugs.  These tests exercise that utility function.
 
     def searchClause(self, status_spec):
-        return _buildStatusClause(status_spec)
+        return _build_status_clause(status_spec)
 
     def test_simple_queries(self):
         # WHERE clauses for simple status values are straightforward.
