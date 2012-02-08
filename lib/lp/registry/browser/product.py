@@ -1602,15 +1602,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
 class ProductValidationMixin:
 
-    def validate_private_bugs(self, data):
-        """Perform validation for the private bugs setting."""
-        if data.get('private_bugs') and self.context.bug_supervisor is None:
-            self.setFieldError('private_bugs',
-                structured(
-                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
-                    'for this project first.',
-                    canonical_url(self.context, rootsite="bugs")))
-
     def validate_deactivation(self, data):
         """Verify whether a product can be safely deactivated."""
         if data['active'] == False and self.context.active == True:
@@ -1631,7 +1622,6 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         "owner",
         "active",
         "autoupdate",
-        "private_bugs",
         ]
 
     @property
@@ -1691,7 +1681,6 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        self.validate_private_bugs(data)
         self.validate_deactivation(data)
 
     @property
@@ -1737,9 +1726,6 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
                 # approved.
                 pass
 
-        # Private bugs can only be enabled if the product has a bug
-        # supervisor.
-        self.validate_private_bugs(data)
         self.validate_deactivation(data)
 
 

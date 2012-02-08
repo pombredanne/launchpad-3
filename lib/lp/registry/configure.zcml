@@ -1282,7 +1282,11 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active private_bugs "/>
+            set_attributes="active"/>
+
+        <require
+            permission="launchpad.Commercial"
+            set_attributes="private_bugs"/>
 
         <!-- IHasAliases -->
 

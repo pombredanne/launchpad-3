@@ -320,6 +320,17 @@ class ModeratePerson(ModerateByRegistryExpertsOrAdmins):
     usedfor = IPerson
 
 
+class EditCommercialFeatures(AuthorizationBase):
+    permission = 'launchpad.Commercial'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        person = user.person
+        return (person.hasCurrentCommercialSubscription(self.obj)
+            or self.forwardCheckAuthenticated(
+                user, self.obj, 'launchpad.Moderate'))
+
+
 class ViewPillar(AuthorizationBase):
     usedfor = IPillar
     permission = 'launchpad.View'

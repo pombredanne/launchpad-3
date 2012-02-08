@@ -90,6 +90,10 @@ class BugRoleMixin:
         if self.context.security_contact != security_contact:
             self.context.security_contact = security_contact
 
+    def changePrivateBugs(self, private_bugs):
+        if self.context.private_bugs != private_bugs:
+            self.context.private_bugs = private_bugs
+
     def validateSecurityContact(self, data):
         """Validates the new security contact.
 

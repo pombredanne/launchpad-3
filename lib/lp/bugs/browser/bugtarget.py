@@ -151,6 +151,8 @@ class IProductBugConfiguration(Interface):
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
     security_contact = copy_field(IHasSecurityContact['security_contact'])
+    private_bugs = copy_field(
+        IProduct['private_bugs'], readonly=False)
     official_malone = copy_field(ILaunchpadUsage['official_malone'])
     enable_bug_expiration = copy_field(
         ILaunchpadUsage['enable_bug_expiration'])
@@ -195,6 +197,8 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
+        if check_permission("launchpad.Commercial", self.context):
+            field_names.extend(["private_bugs"])
 
         return field_names
 
@@ -222,6 +226,9 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             del data['bug_supervisor']
             self.changeSecurityContact(data['security_contact'])
             del data['security_contact']
+        if check_permission("launchpad.Commercial", self.context):
+            self.changePrivateBugs(data['private_bugs'])
+            del data['private_bugs']
         self.updateContextFromData(data)
 
 
