@@ -130,18 +130,6 @@ from lp.services.webapp.interfaces import (
     )
 
 
-debbugsseveritymap = {
-    None: BugTaskImportance.UNDECIDED,
-    'wishlist': BugTaskImportance.WISHLIST,
-    'minor': BugTaskImportance.LOW,
-    'normal': BugTaskImportance.MEDIUM,
-    'important': BugTaskImportance.HIGH,
-    'serious': BugTaskImportance.HIGH,
-    'grave': BugTaskImportance.HIGH,
-    'critical': BugTaskImportance.CRITICAL,
-    }
-
-
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
 
@@ -836,14 +824,6 @@ class BugTask(SQLBase):
         else:
             self.importance = new_importance
 
-    def setImportanceFromDebbugs(self, severity):
-        """See `IBugTask`."""
-        try:
-            self.importance = debbugsseveritymap[severity]
-        except KeyError:
-            raise ValueError('Unknown debbugs severity "%s".' % severity)
-        return self.importance
-
     # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
     _parse_launchpad_names = re.compile(r"[a-z0-9][a-z0-9\+\.\-]+").findall
 
@@ -1385,10 +1365,6 @@ class BugTask(SQLBase):
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
-
-    _ORDERBY_COLUMN = None
-
-    title = "A set of bug tasks"
 
     @property
     def open_bugtask_search(self):
@@ -1944,34 +1920,6 @@ class BugTaskSet:
             raise AssertionError("Unknown BugTarget type.")
 
         return (target_join, target_clause)
-
-    def maintainedBugTasks(self, person, minimportance=None,
-                           showclosed=False, orderBy=None, user=None):
-        """See `IBugTaskSet`."""
-        from lp.bugs.model.search import get_bug_privacy_filter
-
-        filters = ['BugTask.bug = Bug.id',
-                   'BugTask.product = Product.id',
-                   'Product.owner = TeamParticipation.team',
-                   'TeamParticipation.person = %s' % person.id]
-
-        if not showclosed:
-            committed = BugTaskStatus.FIXCOMMITTED
-            filters.append('BugTask.status < %s' % sqlvalues(committed))
-
-        if minimportance is not None:
-            filters.append(
-                'BugTask.importance >= %s' % sqlvalues(minimportance))
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            filters.append(privacy_filter)
-
-        # We shouldn't show duplicate bug reports.
-        filters.append('Bug.duplicateof IS NULL')
-
-        return BugTask.select(" AND ".join(filters),
-            clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
