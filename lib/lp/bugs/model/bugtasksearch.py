@@ -217,61 +217,58 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
             outer_origin = _build_origin(
                     orderby_joins, prejoins, [])
             subquery = Select(BugTask.id, where=SQL(query), tables=origin)
-            resultset = store.using(*outer_origin).find(
+            result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
             origin = _build_origin(
                 join_tables + orderby_joins, prejoins, clauseTables)
-            resultset = store.using(*origin).find(resultrow, query)
+            result = store.using(*origin).find(resultrow, query)
         if prejoins:
             decorator = lambda row: bugtask_decorator(row[0])
         else:
             decorator = bugtask_decorator
-
-        resultset.order_by(orderby_expression)
-        return DecoratedResultSet(resultset, result_decorator=decorator,
-            pre_iter_hook=pre_iter_hook)
-
-    inner_resultrow = (BugTask,)
-    origin = _build_origin(join_tables, [], clauseTables)
-    resultset = store.using(*origin).find(inner_resultrow, query)
-
-    decorators = [bugtask_decorator]
-    for arg in args:
-        [query, clauseTables, decorator, join_tables,
-            has_duplicate_results, with_clause] = _build_query(arg)
-        origin = _build_origin(join_tables, [], clauseTables)
-        localstore = store
-        if with_clause:
-            localstore = orig_store.with_(with_clause)
-        next_result = localstore.using(*origin).find(
-            inner_resultrow, query)
-        resultset = resultset.union(next_result)
-        # NB: assumes the decorators are all compatible.
-        # This may need revisiting if e.g. searches on behalf of different
-        # users are combined.
-        decorators.append(decorator)
-
-    def prejoin_decorator(row):
-        bugtask = row[0]
-        for decorator in decorators:
-            bugtask = decorator(bugtask)
-        return bugtask
-
-    def simple_decorator(bugtask):
-        for decorator in decorators:
-            bugtask = decorator(bugtask)
-        return bugtask
-
-    origin = _build_origin(
-        orderby_joins, prejoins, [],
-        start_with=Alias(resultset._get_select(), "BugTask"))
-    if prejoins:
-        decorator = prejoin_decorator
     else:
-        decorator = simple_decorator
+        inner_resultrow = (BugTask,)
+        origin = _build_origin(join_tables, [], clauseTables)
+        resultset = store.using(*origin).find(inner_resultrow, query)
 
-    result = store.using(*origin).find(resultrow)
+        decorators = [bugtask_decorator]
+        for arg in args:
+            [query, clauseTables, decorator, join_tables,
+                has_duplicate_results, with_clause] = _build_query(arg)
+            origin = _build_origin(join_tables, [], clauseTables)
+            localstore = store
+            if with_clause:
+                localstore = orig_store.with_(with_clause)
+            next_result = localstore.using(*origin).find(
+                inner_resultrow, query)
+            resultset = resultset.union(next_result)
+            # NB: assumes the decorators are all compatible.
+            # This may need revisiting if e.g. searches on behalf of different
+            # users are combined.
+            decorators.append(decorator)
+
+        def prejoin_decorator(row):
+            bugtask = row[0]
+            for decorator in decorators:
+                bugtask = decorator(bugtask)
+            return bugtask
+
+        def simple_decorator(bugtask):
+            for decorator in decorators:
+                bugtask = decorator(bugtask)
+            return bugtask
+
+        origin = _build_origin(
+            orderby_joins, prejoins, [],
+            start_with=Alias(resultset._get_select(), "BugTask"))
+        if prejoins:
+            decorator = prejoin_decorator
+        else:
+            decorator = simple_decorator
+
+        result = store.using(*origin).find(resultrow)
+
     result.order_by(orderby_expression)
     return DecoratedResultSet(result, result_decorator=decorator,
         pre_iter_hook=pre_iter_hook)
