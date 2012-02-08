@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -36,9 +36,7 @@ from zope.interface import implements
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.model.bug import BugSet
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
