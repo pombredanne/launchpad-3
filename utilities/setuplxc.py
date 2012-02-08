@@ -414,17 +414,20 @@ def handle_users(namespace, euid=None):
 
     If lpuser is not provided by namespace, the user name is used::
 
-        >>> namespace = argparse.Namespace(user='myuser', lpuser=None)
+        >>> import getpass
+        >>> username = getpass.getuser()
+
+        >>> namespace = argparse.Namespace(user=username, lpuser=None)
         >>> handle_users(namespace)
-        >>> namespace.lpuser
-        'myuser'
+        >>> namespace.lpuser == username
+        True
 
     This validator populates namespace with `home_dir` and `run_as_root`
     names::
 
         >>> handle_users(namespace, euid=0)
-        >>> namespace.home_dir
-        '/home/myuser'
+        >>> namespace.home_dir == '/home/' + username
+        True
         >>> namespace.run_as_root
         True
 
@@ -444,7 +447,7 @@ def handle_users(namespace, euid=None):
         namespace.user = pwd.getpwuid(euid).pw_name
     if namespace.lpuser is None:
         namespace.lpuser = namespace.user
-    namespace.home_dir = os.path.join(os.path.sep, 'home', namespace.user)
+    namespace.home_dir = get_user_home(namespace.user)
     namespace.run_as_root = not euid
 
 
