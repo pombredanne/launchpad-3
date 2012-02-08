@@ -228,13 +228,13 @@ def search_value_to_where_condition(search_value):
 
 def get_bug_privacy_filter(user, private_only=False):
     """An SQL filter for search results that adds privacy-awareness."""
-    return get_bug_privacy_filter_with_decorator(user, private_only)[0]
+    return _get_bug_privacy_filter_with_decorator(user, private_only)[0]
 
 
 def _nocache_bug_decorator(obj):
     """A pass through decorator for consistency.
 
-    :seealso: get_bug_privacy_filter_with_decorator
+    :seealso: _get_bug_privacy_filter_with_decorator
     """
     return obj
 
@@ -242,7 +242,7 @@ def _nocache_bug_decorator(obj):
 def _make_cache_user_can_view_bug(user):
     """Curry a decorator for bugtask queries to cache permissions.
 
-    :seealso: get_bug_privacy_filter_with_decorator
+    :seealso: _get_bug_privacy_filter_with_decorator
     """
     userid = user.id
 
@@ -252,7 +252,7 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def get_bug_privacy_filter_with_decorator(user, private_only=False):
+def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
@@ -394,10 +394,10 @@ def get_bug_privacy_filter_with_decorator(user, private_only=False):
     return query, _make_cache_user_can_view_bug(user)
 
 
-def _buildStatusClause(status):
+def _build_status_clause(status):
     """Return the SQL query fragment for search by status.
 
-    Called from `buildQuery` or recursively."""
+    Called from `_build_query` or recursively."""
     if zope_isinstance(status, any):
         values = list(status.query_values)
         # Since INCOMPLETE isn't stored as a single value we need to
@@ -408,7 +408,7 @@ def _buildStatusClause(status):
         return '(BugTask.status {0})'.format(
             search_value_to_where_condition(any(*values)))
     elif zope_isinstance(status, not_equals):
-        return '(NOT {0})'.format(_buildStatusClause(status.value))
+        return '(NOT {0})'.format(_build_status_clause(status.value))
     elif zope_isinstance(status, BaseItem):
         # INCOMPLETE is not stored in the DB, instead one of
         # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
@@ -423,7 +423,7 @@ def _buildStatusClause(status):
         raise ValueError('Unrecognized status value: %r' % (status,))
 
 
-def _buildExcludeConjoinedClause(milestone):
+def _build_exclude_conjoined_clause(milestone):
     """Exclude bugtasks with a conjoined master.
 
     This search option only makes sense when searching for bugtasks
@@ -505,7 +505,7 @@ def _require_params(params):
     return params
 
 
-def buildQuery(params):
+def _build_query(params):
     """Build and return an SQL query with the given parameters.
 
     Also return the clauseTables and orderBy for the generated query.
@@ -562,7 +562,7 @@ def buildQuery(params):
             extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
     if params.status is not None:
-        extra_clauses.append(_buildStatusClause(params.status))
+        extra_clauses.append(_build_status_clause(params.status))
 
     if params.exclude_conjoined_tasks:
         # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
@@ -591,7 +591,7 @@ def buildQuery(params):
         extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.exclude_conjoined_tasks:
-            tables, clauses = _buildExcludeConjoinedClause(
+            tables, clauses = _build_exclude_conjoined_clause(
                 params.milestone)
             join_tables += tables
             extra_clauses += clauses
@@ -614,7 +614,7 @@ def buildQuery(params):
         # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
         # bugtasks is not currently supported for milestone tags.
         # if params.exclude_conjoined_tasks:
-        #     tables, clauses = _buildExcludeConjoinedClause(
+        #     tables, clauses = _build_exclude_conjoined_clause(
         #         params.milestone_tag)
         #     join_tables += tables
         #     extra_clauses += clauses
@@ -659,10 +659,10 @@ def buildQuery(params):
             extra_clauses.append(attachment_clause % where_cond)
 
     if params.searchtext:
-        extra_clauses.append(_buildSearchTextClause(params))
+        extra_clauses.append(_build_search_text_clause(params))
 
     if params.fast_searchtext:
-        extra_clauses.append(_buildFastSearchTextClause(params))
+        extra_clauses.append(_build_fast_search_text_clause(params))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -791,12 +791,12 @@ def buildQuery(params):
             """BugTask.sourcepackagename in (
                 select sourcepackagename from spns)""")
 
-    upstream_clause = buildUpstreamClause(params)
+    upstream_clause = _build_upstream_clause(params)
     if upstream_clause:
         extra_clauses.append(upstream_clause)
 
     if params.tag:
-        tag_clause = build_tag_search_clause(params.tag)
+        tag_clause = _build_tag_search_clause(params.tag)
         if tag_clause is not None:
             extra_clauses.append(tag_clause)
 
@@ -868,12 +868,12 @@ def buildQuery(params):
         extra_clauses.append(nominated_for_clause)
         clauseTables.append(BugNomination)
 
-    clause, decorator = get_bug_privacy_filter_with_decorator(params.user)
+    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
         extra_clauses.append(clause)
         decorators.append(decorator)
 
-    hw_clause = _buildHardwareRelatedClause(params)
+    hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
         extra_clauses.append(hw_clause)
 
@@ -897,7 +897,7 @@ def buildQuery(params):
                 BugBranch.branch %s)
             """ % search_value_to_where_condition(params.linked_branches))
 
-    linked_blueprints_clause = _buildBlueprintRelatedClause(params)
+    linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:
         extra_clauses.append(linked_blueprints_clause)
 
@@ -930,7 +930,7 @@ def buildQuery(params):
         has_duplicate_results, with_clause)
 
 
-def buildPendingBugwatchElsewhereClause(params):
+def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
     if params.product:
@@ -1000,7 +1000,7 @@ def buildPendingBugwatchElsewhereClause(params):
             """ % (target_clause, sqlvalues(BugTaskStatus.INVALID)[0])
 
 
-def buildNoUpstreamBugtaskClause(params):
+def _build_no_upstream_bugtask_clause(params):
     """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask."""
     if params.upstream_target is None:
         # Find all bugs that has no product bugtask. We limit the
@@ -1032,7 +1032,7 @@ def buildNoUpstreamBugtaskClause(params):
             'a Product')
 
 
-def buildOpenOrResolvedUpstreamClause(params,
+def _build_open_or_resolved_upstream_clause(params,
                                       statuses_for_watch_tasks,
                                       statuses_for_upstream_tasks):
     """Return a clause for BugTaskSearchParams.open_upstream or
@@ -1059,7 +1059,7 @@ def buildOpenOrResolvedUpstreamClause(params,
     return _open_resolved_upstream_with_target % query_values
 
 
-def buildOpenUpstreamClause(params):
+def _build_open_upstream_clause(params):
     """Return a clause for BugTaskSearchParams.open_upstream."""
     statuses_for_open_tasks = [
         BugTaskStatus.NEW,
@@ -1069,11 +1069,11 @@ def buildOpenUpstreamClause(params):
         BugTaskStatus.CONFIRMED,
         BugTaskStatus.INPROGRESS,
         BugTaskStatus.UNKNOWN]
-    return buildOpenOrResolvedUpstreamClause(
+    return _build_open_or_resolved_upstream_clause(
         params, statuses_for_open_tasks, statuses_for_open_tasks)
 
 
-def buildResolvedUpstreamClause(params):
+def _build_resolved_upstream_clause(params):
     """Return a clause for BugTaskSearchParams.open_upstream."""
     # Our definition of "resolved upstream" means:
     #
@@ -1092,11 +1092,11 @@ def buildResolvedUpstreamClause(params):
     statuses_for_upstream_tasks = [
         BugTaskStatus.FIXCOMMITTED,
         BugTaskStatus.FIXRELEASED]
-    return buildOpenOrResolvedUpstreamClause(
+    return _build_open_or_resolved_upstream_clause(
         params, statuses_for_watch_tasks, statuses_for_upstream_tasks)
 
 
-def buildUpstreamClause(params):
+def _build_upstream_clause(params):
     """Return an clause for returning upstream data if the data exists.
 
     This method will handles BugTasks that do not have upstream BugTasks
@@ -1106,14 +1106,14 @@ def buildUpstreamClause(params):
     upstream_clauses = []
     if params.pending_bugwatch_elsewhere:
         upstream_clauses.append(
-            buildPendingBugwatchElsewhereClause(params))
+            _build_pending_bugwatch_elsewhere_clause(params))
     if params.has_no_upstream_bugtask:
         upstream_clauses.append(
-            buildNoUpstreamBugtaskClause(params))
+            _build_no_upstream_bugtask_clause(params))
     if params.resolved_upstream:
-        upstream_clauses.append(buildResolvedUpstreamClause(params))
+        upstream_clauses.append(_build_resolved_upstream_clause(params))
     if params.open_upstream:
-        upstream_clauses.append(buildOpenUpstreamClause(params))
+        upstream_clauses.append(_build_open_upstream_clause(params))
 
     if upstream_clauses:
         upstream_clause = " OR ".join(upstream_clauses)
@@ -1121,7 +1121,7 @@ def buildUpstreamClause(params):
     return None
 
 
-def _buildSearchTextClause(params):
+def _build_search_text_clause(params):
     """Build the clause for searchtext."""
     assert params.fast_searchtext is None, (
         'Cannot use fast_searchtext at the same time as searchtext.')
@@ -1159,7 +1159,7 @@ def _buildSearchTextClause(params):
     return "(%s)" % " OR ".join(text_search_clauses)
 
 
-def _buildFastSearchTextClause(params):
+def _build_fast_search_text_clause(params):
     """Build the clause to use for the fast_searchtext criteria."""
     assert params.searchtext is None, (
         'Cannot use searchtext at the same time as fast_searchtext.')
@@ -1176,7 +1176,7 @@ def _buildFastSearchTextClause(params):
     return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
 
-def _buildHardwareRelatedClause(params):
+def _build_hardware_related_clause(params):
     """Hardware related SQL expressions and tables for bugtask searches.
 
     :return: (tables, clauses) where clauses is a list of SQL expressions
@@ -1250,7 +1250,7 @@ def _buildHardwareRelatedClause(params):
     return clause
 
 
-def _buildBlueprintRelatedClause(params):
+def _build_blueprint_related_clause(params):
     """Find bugs related to Blueprints, or not."""
     linked_blueprints = params.linked_blueprints
     if linked_blueprints is None:
@@ -1274,12 +1274,12 @@ def _buildBlueprintRelatedClause(params):
             """ % search_value_to_where_condition(linked_blueprints)
 
 
-def buildOrigin(join_tables, prejoin_tables, clauseTables,
+def _buildOrigin(join_tables, prejoin_tables, clauseTables,
                 start_with=BugTask):
     """Build the parameter list for Store.using().
 
     :param join_tables: A sequence of tables that should be joined
-        as returned by buildQuery(). Each element has the form
+        as returned by _build_query(). Each element has the form
         (table, join), where table is the table to join and join
         is a Storm Join or LeftJoin instance.
     :param prejoin_tables: A sequence of tables that should additionally
@@ -1324,20 +1324,20 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
     """
     orig_store = store = IStore(BugTask)
     [query, clauseTables, bugtask_decorator, join_tables,
-    has_duplicate_results, with_clause] = buildQuery(params)
+    has_duplicate_results, with_clause] = _build_query(params)
     if with_clause:
         store = store.with_(with_clause)
-    orderby_expression, orderby_joins = _processOrderBy(params)
+    orderby_expression, orderby_joins = _process_order_by(params)
     if len(args) == 0:
         if has_duplicate_results:
-            origin = buildOrigin(join_tables, [], clauseTables)
-            outer_origin = buildOrigin(
+            origin = _buildOrigin(join_tables, [], clauseTables)
+            outer_origin = _buildOrigin(
                     orderby_joins, prejoins, [])
             subquery = Select(BugTask.id, where=SQL(query), tables=origin)
             resultset = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
-            origin = buildOrigin(
+            origin = _buildOrigin(
                 join_tables + orderby_joins, prejoins, clauseTables)
             resultset = store.using(*origin).find(resultrow, query)
         if prejoins:
@@ -1350,14 +1350,14 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
             pre_iter_hook=pre_iter_hook)
 
     inner_resultrow = (BugTask,)
-    origin = buildOrigin(join_tables, [], clauseTables)
+    origin = _buildOrigin(join_tables, [], clauseTables)
     resultset = store.using(*origin).find(inner_resultrow, query)
 
     decorators = [bugtask_decorator]
     for arg in args:
         [query, clauseTables, decorator, join_tables,
-            has_duplicate_results, with_clause] = buildQuery(arg)
-        origin = buildOrigin(join_tables, [], clauseTables)
+            has_duplicate_results, with_clause] = _build_query(arg)
+        origin = _buildOrigin(join_tables, [], clauseTables)
         localstore = store
         if with_clause:
             localstore = orig_store.with_(with_clause)
@@ -1380,7 +1380,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
             bugtask = decorator(bugtask)
         return bugtask
 
-    origin = buildOrigin(
+    origin = _buildOrigin(
         orderby_joins, prejoins, [],
         start_with=Alias(resultset._get_select(), "BugTask"))
     if prejoins:
@@ -1394,7 +1394,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
         pre_iter_hook=pre_iter_hook)
 
 
-def build_tag_set_query(joiner, tags):
+def _build_tag_set_query(joiner, tags):
     """Return an SQL snippet to find whether a bug matches the given tags.
 
     The tags are sorted so that testing the generated queries is
@@ -1437,7 +1437,7 @@ def _build_tag_set_query_any(tags):
         " AND BugTag.tag IN %s") % sqlvalues(tags)
 
 
-def build_tag_search_clause(tags_spec):
+def _build_tag_search_clause(tags_spec):
     """Return a tag search clause.
 
     :param tags_spec: An instance of `any` or `all` containing tag
@@ -1461,7 +1461,7 @@ def build_tag_search_clause(tags_spec):
         combine_with = 'AND'
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = build_tag_set_query("INTERSECT", include)
+        include_clause = _build_tag_set_query("INTERSECT", include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
         exclude_clause = _build_tag_set_query_any(exclude)
@@ -1474,7 +1474,7 @@ def build_tag_search_clause(tags_spec):
         include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = build_tag_set_query("INTERSECT", exclude)
+        exclude_clause = _build_tag_set_query("INTERSECT", exclude)
 
     # Search for the *presence* of any tag.
     if '*' in wildcards:
@@ -1504,7 +1504,7 @@ def build_tag_search_clause(tags_spec):
         return None
 
 
-def _processOrderBy(params):
+def _process_order_by(params):
     """Process the orderby parameter supplied to search().
 
     This method ensures the sort order will be stable, and converting
