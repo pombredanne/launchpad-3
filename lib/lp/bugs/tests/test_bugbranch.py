@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,
@@ -142,6 +143,17 @@ class TestBugBranchSet(TestCaseWithFactory):
         utility = getUtility(IBugBranchSet)
         self.assertContentEqual(
             [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
+
+    def test_getBranchesWithVisibleBugs_shows_private_bugs_to_admins(self):
+        # getBranchesWithVisibleBugs will show private bugs to admins.
+        branch = self.factory.makeBranch()
+        bug = self.factory.makeBug(private=True)
+        with celebrity_logged_in('admin'):
+            bug.linkBranch(branch, self.factory.makePerson())
+        utility = getUtility(IBugBranchSet)
+        admin = getUtility(ILaunchpadCelebrities).admin
+        self.assertContentEqual(
+            [branch.id], utility.getBranchesWithVisibleBugs([branch], admin))
 
     def test_getBugBranchesForBugTasks(self):
         # IBugBranchSet.getBugBranchesForBugTasks returns all of the BugBranch

@@ -4,7 +4,7 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for linking bugtasks and branches."""
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import BugTask, get_bug_privacy_filter
 
 __metaclass__ = type
 
@@ -74,65 +74,27 @@ class BugBranchSet:
     implements(IBugBranchSet)
 
     def getBugBranch(self, bug, branch):
-        "See `IBugBranchSet`."
+        """See `IBugBranchSet`."""
         return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)
 
     def getBranchesWithVisibleBugs(self, branches, user):
         """See `IBugBranchSet`."""
         # Avoid circular imports.
         from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugsubscription import BugSubscription
 
         branch_ids = [branch.id for branch in branches]
-        if branch_ids == []:
+        if not branch_ids:
             return []
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user is None:
-            # Anonymous visitors only get to know about public bugs.
-            visible = And(
-                Bug.id == BugBranch.bugID,
-                Bug.private == False)
-        elif user.inTeam(admins):
-            # Administrators know about all bugs.
-            visible = True
-        else:
-            # Anyone else can know about public bugs plus any private
-            # ones they may be directly or indirectly subscribed/assigned to.
-            subscribed = And(
-                TeamParticipation.teamID == BugSubscription.person_id,
-                TeamParticipation.personID == user.id,
-                Bug.id == BugSubscription.bug_id)
-
-            assigned = And(
-                TeamParticipation.teamID == BugTask.assigneeID,
-                TeamParticipation.personID == user.id,
-                Bug.id == BugTask.bugID)
-
-            visible = And(
-                Bug.id == BugBranch.bugID,
-                Or(
-                    Bug.private == False,
-                    Exists(Union(
-                        Select(
-                            columns=[True],
-                            tables=[BugSubscription, TeamParticipation],
-                            where=subscribed),
-                        Select(
-                            columns=[True],
-                            tables=[BugTask, TeamParticipation],
-                            where=assigned),
-                        all=True)
-                    )
-                )
-            )
+        visible = get_bug_privacy_filter(user) or True
         return IStore(BugBranch).find(
             BugBranch.branchID,
             BugBranch.branch_id.is_in(branch_ids),
+            Bug.id == BugBranch.bugID,
             visible).config(distinct=True)
 
     def getBugBranchesForBugTasks(self, tasks):
-        "See IBugBranchSet."
+        """See `IBugBranchSet`."""
         bug_ids = [task.bugID for task in tasks]
         if not bug_ids:
             return []
