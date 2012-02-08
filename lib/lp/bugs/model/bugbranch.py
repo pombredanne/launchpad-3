@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for linking bugtasks and branches."""
-from lp.bugs.model.bugtask import BugTask, get_bug_privacy_filter
 
 __metaclass__ = type
 
@@ -17,23 +16,15 @@ from sqlobject import (
     IntCol,
     StringCol,
     )
-from storm.expr import (
-    And,
-    Exists,
-    Or,
-    Select,
-    Union)
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,
     )
+from lp.bugs.model.bugtask import get_bug_privacy_filter
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.lpstorm import IStore
