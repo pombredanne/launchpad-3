@@ -90,14 +90,8 @@
       </li>
     </ul>
 
-    <div class="bug-comment" itemprop="commentText"
-      tal:content="structure
-        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
-      Comment text.
-    </div>
-    <p tal:condition="comment/was_truncated">
-      <a tal:attributes="href comment/fmt:url">Read more...</a>
-    </p>
+    <tal:text
+      replace="structure comment/@@+comment-body-text" />
   </div>
 
   <div class="boardCommentFooter" tal:condition="comment/show_footer">

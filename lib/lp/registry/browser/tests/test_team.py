@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,10 +13,12 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.browser.team import (
     TeamIndexMenu,
     TeamOverviewMenu,
+    TeamMailingListArchiveView,
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
+    IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
@@ -27,7 +29,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.browser.team import TeamMailingListArchiveView
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -468,6 +470,69 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
         self.assertEqual(['name'], view.field_names)
+
+
+class TestTeamAddView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+    view_name = '+newteam'
+    feature_flag = {'disclosure.show_visibility_for_team_add.enabled': 'on'}
+
+    def test_random_does_not_see_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=person)
+        self.assertNotIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+
+    def test_admin_sees_visibility_field(self):
+        personset = getUtility(IPersonSet)
+        admin = login_celebrity('admin')
+        view = create_initialized_view(
+            personset, name=self.view_name, principal=admin)
+        self.assertIn(
+            'visibility', [field.__name__ for field in view.form_fields])
+        
+    def test_random_does_not_see_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=person)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+    def test_person_with_cs_sees_visibility_field_with_flag(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
+
+
+    def test_person_with_expired_cs_does_not_see_visibility(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner)
+                self.assertNotIn(
+                    'visibility',
+                    [field.__name__ for field in view.form_fields])
 
 
 class TestTeamMenu(TestCaseWithFactory):

@@ -33,9 +33,9 @@ CREATE TABLE specificationworkitemstats (
     milestone integer REFERENCES milestone,
     count integer NOT NULL);
 
--- Foreign key, selecting by specification and sorting by date_created.
-CREATE INDEX specificationworkitem__specification__date_created__idx
-    ON SpecificationWorkItem(specification, date_created);
+-- Foreign key, selecting by specification and sorting by sequence.
+CREATE INDEX specificationworkitem__specification__sequence__idx
+   ON SpecificationWorkItem(specification, sequence);
 
 -- Foreign key.
 CREATE INDEX specificationworkitem__milestone__idx

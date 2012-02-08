@@ -14,7 +14,6 @@ __all__ = [
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'bugtask_heat_html',
     'BugTaskBreadcrumb',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
@@ -32,7 +31,6 @@ __all__ = [
     'BugTaskTableRowView',
     'BugTaskTextView',
     'BugTaskView',
-    'calculate_heat_display',
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
@@ -222,6 +220,7 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -1089,16 +1088,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @property
     def bug_heat_html(self):
         """HTML representation of the bug heat."""
-        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
-            return (
-                '<span><a href="/+help-bugs/bug-heat.html" target="help" '
-                'class="sprite flame">%d</a></span>' % self.context.bug.heat)
-        else:
-            if IDistributionSourcePackage.providedBy(self.context.target):
-                return bugtask_heat_html(
-                    self.context, target=self.context.distribution)
-            else:
-                return bugtask_heat_html(self.context)
+        return (
+            '<span><a href="/+help-bugs/bug-heat.html" target="help" '
+            'class="sprite flame">%d</a></span>' % self.context.bug.heat)
 
     @property
     def privacy_notice_classes(self):
@@ -1106,40 +1098,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             return 'hidden'
         else:
             return ''
-
-
-def calculate_heat_display(heat, max_bug_heat):
-    """Calculate the number of heat 'flames' to display."""
-    heat = float(heat)
-    max_bug_heat = float(max_bug_heat)
-    if max_bug_heat == 0:
-        return 0
-    if heat / max_bug_heat < 0.33333:
-        return 0
-    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
-        return int(floor((heat / max_bug_heat) * 4))
-    else:
-        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
-        # ensure that we never return a value > 4, even if
-        # max_bug_heat is outdated.
-        return min(heat_index, 4)
-
-
-def bugtask_heat_html(bugtask, target=None):
-    """Render the HTML representing bug heat for a given bugask."""
-    if target is None:
-        target = bugtask.target
-    max_bug_heat = target.max_bug_heat
-    if max_bug_heat is None:
-        max_bug_heat = 5000
-    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
-    html = (
-        '<span><a href="/+help-bugs/bug-heat.html" target="help" '
-        'class="icon"><img src="/@@/bug-heat-%(ratio)i.png" '
-        'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
-        '</span>'
-        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
-    return html
 
 
 class BugTaskBatchedCommentsAndActivityView(BugTaskView):
@@ -2224,20 +2182,12 @@ class BugTaskListingItem:
     @property
     def bug_heat_html(self):
         """Returns the bug heat flames HTML."""
-        if getFeatureFlag('bugs.heat_ratio_display.disabled'):
-            if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
-                return (
-                    '<span class="sprite flame">%d</span>'
-                    % self.bugtask.bug.heat)
-            else:
-                return str(self.bugtask.bug.heat)
+        if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
+            return (
+                '<span class="sprite flame">%d</span>'
+                % self.bugtask.bug.heat)
         else:
-            return bugtask_heat_html(self.bugtask, target=self.target_context)
-
-    @property
-    def center_bug_heat(self):
-        """Returns whether the bug_heat_html should be centered."""
-        return not getFeatureFlag('bugs.heat_ratio_display.disabled')
+            return str(self.bugtask.bug.heat)
 
     @property
     def model(self):
@@ -2630,14 +2580,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         else:
             return 'None specified'
 
-    @property
-    def upstream_launchpad_project(self):
+    @cachedproperty
+    def upstream_project(self):
         """The linked upstream `IProduct` for the package.
 
         If this `IBugTarget` is a `IDistributionSourcePackage` or an
-        `ISourcePackage` and it is linked to an upstream project that uses
-        Launchpad to track bugs, return the `IProduct`. Otherwise,
-        return None
+        `ISourcePackage` and it is linked to an upstream project, return
+        the `IProduct`. Otherwise, return None
 
         :returns: `IProduct` or None
         """
@@ -2650,9 +2599,24 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         if sp is not None:
             packaging = sp.packaging
             if packaging is not None:
-                product = packaging.productseries.product
-                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-                    return product
+                return packaging.productseries.product
+        return None
+
+    @cachedproperty
+    def upstream_launchpad_project(self):
+        """The linked upstream `IProduct` for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        product = self.upstream_project
+        if (product is not None and
+            product.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return product
         return None
 
     @property
@@ -2813,13 +2777,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     field_name)
 
         orderby = get_sortorder_from_request(self.request)
-        bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.orderby_expression[orderby_col]
+                orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
