@@ -546,15 +546,41 @@
       </table>
     </fieldset>
 
-    <fieldset tal:condition="view/shouldShowUpstreamStatusBox">
-      <legend>Upstream status</legend>
-          <table>
-            <tr>
-              <td style="white-space: nowrap"
-                  tal:content="structure view/widgets/status_upstream" />
-            </tr>
-          </table>
-    </fieldset>
+    <tal:show_upstream_widgets condition="view/shouldShowUpstreamStatusBox">
+      <fieldset>
+        <legend>Upstream status</legend>
+            <table>
+              <tr>
+                <td style="white-space: nowrap"
+                    tal:content="structure view/widgets/status_upstream" />
+              </tr>
+            </table>
+      </fieldset>
+
+      <fieldset tal:condition="view/upstream_project">
+        <legend>Upstream target</legend>
+            <table>
+              <tr>
+                <td style="white-space: nowrap">
+                  <label>
+                    <input id="field.upstream_target"
+                           name="field.upstream_target"
+                           value="" checked="checked" class="radioType"
+                           type="radio" />
+                    All possible upstream targets
+                  </label><br />
+                  <label>
+                    <input id="field.upstream_target"
+                           name="field.upstream_target"
+                           class="radioType" type="radio"
+                           tal:attributes="value view/upstream_project/name" />
+                    <span tal:replace="view/upstream_project/displayname" />
+                  </label>
+                </td>
+              </tr>
+            </table>
+      </fieldset>
+    </tal:show_upstream_widgets>
 
     <fieldset>
       <legend>Bug relationships</legend>
