@@ -35,6 +35,7 @@ from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     IPersonSet,
     PersonVisibility,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
@@ -535,6 +536,29 @@ class TestPerson(TestCaseWithFactory):
         self.factory.makeDistribution(security_contact=contact)
         self.assertTrue(contact.isAnySecurityContact())
         self.assertFalse(person.isAnySecurityContact())
+
+    def test_has_current_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() checks for one. 
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        self.assertTrue(team.teamowner.hasCurrentCommercialSubscription())
+
+    def test_does_not_have_current_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() is false if it has
+        # expired.
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self.assertFalse(team.teamowner.hasCurrentCommercialSubscription())
+
+    def test_does_not_have_commercial_subscription(self):
+        # IPerson.hasCurrentCommercialSubscription() is false if they do
+        # not have one.
+        person = self.factory.makePerson()
+        self.assertFalse(person.hasCurrentCommercialSubscription())
 
 
 class TestPersonStates(TestCaseWithFactory):

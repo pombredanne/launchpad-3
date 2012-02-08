@@ -20,6 +20,8 @@ import socket
 import tempfile
 import xmlrpclib
 
+from urlparse import urlparse
+
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
@@ -256,8 +258,11 @@ class BuilderSlave(object):
         :return: a Deferred that returns a
             (stdout, stderr, subprocess exitcode) triple
         """
+        url_components = urlparse(self.url)
+        buildd_name = url_components.hostname.split('.')[0]
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self._vm_host}
+            'vm_host': self._vm_host,
+            'buildd_name': buildd_name}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]

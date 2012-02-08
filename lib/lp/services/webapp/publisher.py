@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DataDownloadView',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -220,6 +221,29 @@ class redirection:
         return cls
 
 
+class DataDownloadView:
+    """Download data without templating.
+
+    Subclasses must provide getBody, content_type and filename.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Set the headers and return the body.
+
+        It is not necessary to supply Content-length, because this is added by
+        the caller.
+        """
+        self.request.response.setHeader('Content-Type', self.content_type)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % (
+             self.filename))
+        return self.getBody()
+
+
 class UserAttributeCache:
     """Mix in to provide self.user, cached."""
 
@@ -310,6 +334,23 @@ class LaunchpadView(UserAttributeCache):
     def template(self):
         """The page's template, if configured in zcml."""
         return self.index
+
+    @property
+    def yui_version(self):
+        """The version of YUI we are using."""
+        value = getFeatureFlag('js.yui_version')
+        if not value:
+            return 'yui'
+        else:
+            return value
+
+    @property
+    def yui_console_debug(self):
+        """Hide console debug messages in production."""
+        # We need to import here otherwise sitecustomize can't get imported,
+        # likely due to some non-obvious circular import issues.
+        from lp.services.config import config
+        return 'true' if config.devmode else 'false'
 
     def render(self):
         """Return the body of the response.

@@ -105,7 +105,7 @@
           tal:condition="link/enabled">
         <script type="text/javascript"
                 tal:content="string:
-          LPS.use('lp.registry.team', function(Y) {
+          LPJS.use('lp.registry.team', function(Y) {
               Y.on('load',
                   function(e) {
                       Y.lp.registry.team.setup_add_member_handler(

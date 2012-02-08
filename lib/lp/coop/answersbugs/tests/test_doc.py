@@ -23,6 +23,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -82,7 +83,7 @@ def bugLinkedToQuestionSetUp(test):
 
 
 def uploaderBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploaderSetUp(test)
@@ -90,7 +91,7 @@ def uploaderBugLinkedToQuestionSetUp(test):
 
 
 def uploadQueueBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    switch_dbuser('launchpad')
     bugLinkedToQuestionSetUp(test)
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)

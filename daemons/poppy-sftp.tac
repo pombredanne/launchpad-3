@@ -18,7 +18,10 @@ from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
-from lp.services.config import config
+from lp.services.config import (
+    config,
+    dbconfig,
+    )
 from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 
@@ -33,6 +36,10 @@ from lp.services.sshserver.auth import (
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
+
+
+# Use a unique db user per policy and Bug #732510.
+dbconfig.override(dbuser='poppy_sftp')
 
 
 def make_portal():
@@ -98,6 +105,7 @@ observer = set_up_oops_reporting(
 application.addComponent(observer, ignoreClass=1)
 
 ftpservice.setServiceParent(application)
+
 
 def timeout_decorator(factory):
     """Add idle timeouts to a factory."""

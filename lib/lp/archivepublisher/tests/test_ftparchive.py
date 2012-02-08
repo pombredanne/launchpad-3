@@ -30,6 +30,7 @@ from lp.services.log.logger import (
     DevNullLogger,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -41,6 +42,11 @@ def sanitize_apt_ftparchive_Sources_output(text):
     # apt-ftparchive Sources file content, such that the output of lucid
     # apt-ftparchive is the same as on karmic.
     return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
+
+
+def skip_sha512(text):
+    """Ignore SHA512 lines, which are present only in newer distroseries."""
+    return re.sub('SHA512: [0-9a-f]*\n', '', text)
 
 
 class SamplePublisher:
@@ -71,7 +77,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFTPArchive, self).setUp()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        switch_dbuser(config.archivepublisher.dbuser)
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive
@@ -311,7 +317,8 @@ class TestFTPArchive(TestCaseWithFactory):
         # regressions.
         fa.runApt(apt_conf)
         self._verifyFile("Packages",
-            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
+            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"),
+            skip_sha512)
         self._verifyEmpty(
             os.path.join(
                 self._distsdir, "hoary-test", "main", "debian-installer",

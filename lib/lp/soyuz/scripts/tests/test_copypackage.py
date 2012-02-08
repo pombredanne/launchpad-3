@@ -83,6 +83,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
@@ -1397,8 +1398,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             archive=archive, version='1.0-2', architecturehintlist='any')
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
@@ -1417,8 +1417,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         [copied_source] = do_copy(
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
@@ -1735,14 +1734,13 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
     def do_delayed_copy(self, source):
         """Execute and return the delayed copy."""
 
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         delayed_copy = _do_delayed_copy(
             source, self.copy_archive, self.copy_series, self.copy_pocket,
             True)
 
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         return delayed_copy
 
     def test_do_delayed_copy_simple(self):
@@ -2003,7 +2001,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
 
         # Run test cases in the production context.
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
@@ -3364,14 +3362,11 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test2_tar = test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
         test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-        # And set test1 source tarball to be expired
-        self.layer.switchDbUser('librarian')
+        # Set test1 source tarball to be expired.
+        switch_dbuser('librarian')
         naked_test1 = removeSecurityProxy(test1_tar)
         naked_test1.content = None
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         checker = CopyChecker(dest_ppa, include_binaries=False)
         self.assertIs(

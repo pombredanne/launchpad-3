@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -37,8 +37,12 @@ value_domain_info = sorted([
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour, title,
-# URL to a page with more information about the feature.
+# 1. flag name
+# 2. value domain
+# 3. prose documentation
+# 4. default behaviour
+# 5. title
+# 6. URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
@@ -103,6 +107,18 @@ flag_info = sorted([
      'float',
      'Sets the hard request timeout in milliseconds.',
      '',
+     '',
+     ''),
+    ('js.combo_loader.enabled',
+     'boolean',
+     'Determines if we use a js combo loader or not.',
+     '',
+     '',
+     ''),
+    ('js.yui-version',
+     'space delimited',
+     'Allows us to change the YUI version we run against, e.g. yui-3.4.',
+     'As speficied in versions.cfg',
      '',
      ''),
     ('mail.dkim_authentication.disabled',
@@ -251,6 +267,13 @@ flag_info = sorted([
      'boolean',
      ('Enables soft OOPSes for code that is mixing visibility rules, such '
       'as disclosing private teams, so the data can be analyzed.'),
+     '',
+     '',
+     ''),
+    ('disclosure.show_visibility_for_team_add.enabled',
+     'boolean',
+     ('If true, will show the visibility field for IPersonSet:+newteam if '
+      'the user has a current commercial subscription.'),
      '',
      '',
      ''),

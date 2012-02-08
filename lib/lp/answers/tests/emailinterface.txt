@@ -109,18 +109,15 @@ possibilities for the user.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
     >>> import transaction
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> question = ubuntu.newQuestion(
-    ...     no_priv, 'Unable to boot installer',
-    ...     "I've tried installing Ubuntu on a Mac. But the installer never "
-    ...     "boots.", datecreated=now.next())
-    >>> question_id = question.id
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     ubuntu = getUtility(IDistributionSet)['ubuntu']
+    ...     question = ubuntu.newQuestion(
+    ...         no_priv, 'Unable to boot installer',
+    ...         "I've tried installing Ubuntu on a Mac. But the installer "
+    ...         "never boots.", datecreated=now.next())
+    ...     question_id = question.id
 
     # We need to refetch the question, since a new transaction was started.
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
@@ -371,17 +368,15 @@ Answers linked to FAQ questions
 
 Answers may also be linked to FAQ questions.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> login('foo.bar@canonical.com')
-    >>> faq = question.target.newFAQ(
-    ...     no_priv, 'Why everyone think this is weird.',
-    ...     "That's an easy one. It's because it is!")
-    >>> removeSecurityProxy(question).faq = faq
-    >>> transaction.commit()
 
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     login('foo.bar@canonical.com')
+    ...     faq = question.target.newFAQ(
+    ...         no_priv, 'Why everyone think this is weird.',
+    ...         "That's an easy one. It's because it is!")
+    ...     removeSecurityProxy(question).faq = faq
+
     >>> login('no-priv@canonical.com')
 
     # Make sure that the database security and permissions are set up

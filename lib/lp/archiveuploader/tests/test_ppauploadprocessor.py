@@ -43,6 +43,7 @@ from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.dbuser import switch_dbuser
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -802,7 +803,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.switchToAdmin()
         self.breezy['i386'].supports_virtualized = False
         self.switchToUploader()
-        self.layer.commit()
 
         # Next version can't be accepted because it can't be built.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
@@ -1126,7 +1126,6 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         bar_src.requestDeletion(self.name16)
         bar_src.dateremoved = UTC_NOW
         self.switchToUploader()
-        self.layer.txn.commit()
 
         # bar_1.0-3 contains an orig file of the same version with
         # different contents than the one we previously uploaded.
@@ -1196,7 +1195,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the given size in bytes.
 
         Uses `SoyuzTestPublisher` class to create the corresponding publishing
-        record, then switchDbUser as 'librariangc' and update the size of the
+        record, then switch_dbuser as 'librariangc' and update the size of the
         source file to the given value.
         """
         self.switchToAdmin()
@@ -1207,18 +1206,16 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             status=PackagePublishingStatus.PUBLISHED)
         alias_id = pub_src.sourcepackagerelease.files[0].libraryfile.id
 
-        self.layer.commit()
-        self.layer.switchDbUser('librariangc')
+        switch_dbuser('librariangc')
         content = getUtility(ILibraryFileAliasSet)[alias_id].content
         content = removeSecurityProxy(content)
         # Decrement the archive index parcel automatically added by
         # IArchive.estimated_size.
         content.filesize = size - 1024
-        self.layer.commit()
         self.switchToUploader()
 
         # Re-initialize uploadprocessor since it depends on the new
-        # transaction reset by switchDbUser.
+        # transaction reset by switch_dbuser.
         self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def testPPASizeQuotaSourceRejection(self):

@@ -64,9 +64,11 @@
           </tbody>
         </table>
       </form>
-      <script type="text/javascript"><!--
-         setFocusByName('field.search_text');
-       // --></script>
+      <script type="text/javascript">
+          LPJS.use('lp', function (Y) {
+              setFocusByName('field.search_text');
+          });
+      </script>
 
       <tal:searchresults condition="view/searchrequested"
                          define="specs view/specs" >

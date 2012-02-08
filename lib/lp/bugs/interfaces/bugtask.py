@@ -1066,6 +1066,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
         vocabulary=BugTagsSearchCombinator, required=False,
         default=BugTagsSearchCombinator.ANY)
 
+    upstream_target = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
+
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
@@ -1204,7 +1207,8 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False, cve=None):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None,
+                 upstream_target=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1254,6 +1258,7 @@ class BugTaskSearchParams:
         self.created_since = created_since
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
+        self.upstream_target = upstream_target
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""

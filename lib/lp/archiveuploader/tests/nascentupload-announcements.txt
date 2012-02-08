@@ -33,8 +33,8 @@ containing the target PPA owner name, see bug #172377.
 
 We need to be logged into the security model in order to get any further
 
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> switch_dbuser('launchpad')
     >>> login('foo.bar@canonical.com')
 
 Helper functions to examine emails that were sent:

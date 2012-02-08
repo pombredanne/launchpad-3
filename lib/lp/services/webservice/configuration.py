@@ -29,6 +29,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     view_permission = "launchpad.LimitedView"
     require_explicit_versions = True
     compensate_for_mod_compress_etag_modification = True
+    enable_server_side_representation_cache = False
 
     service_description = """The Launchpad web service allows automated
         clients to access most of the functionality available on the
@@ -68,10 +69,6 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
         request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request
-
-    @property
-    def enable_server_side_representation_cache(self):
-        return config.vhost.api.enable_server_side_representation_cache
 
     @property
     def default_batch_size(self):
