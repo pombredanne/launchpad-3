@@ -99,18 +99,13 @@ class BzrSync:
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
         for revids in iter_list_chunks(list(new_db_revs), 1000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
-#############
-            revision_set = getUtility(IRevisionSet)
-            ##import pdb; pdb.set_trace()
-            revision_set.newFromBazaarRevisionBatch(revisions)
-#############
-##            for revision in revisions:
-##                # This would probably go much faster if we found some way to
-##                # bulk-load multiple revisions at once, but as this is only
-##                # executed for revisions new to Launchpad, it doesn't seem
-##                # worth it at this stage.
-##                self.syncOneRevision(
-##                    bzr_branch, revision, revids_to_insert)
+            for revision in revisions:
+                # This would probably go much faster if we found some way to
+                # bulk-load multiple revisions at once, but as this is only
+                # executed for revisions new to Launchpad, it doesn't seem
+                # worth it at this stage.
+                self.syncOneRevision(
+                    bzr_branch, revision, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         transaction.commit()
@@ -257,7 +252,8 @@ class BzrSync:
         revision_set = getUtility(IRevisionSet)
         # Revision not yet in the database. Load it.
         self.logger.debug("Inserting revision: %s", revision_id)
-        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
+        revision_set.newFromBazaarRevisionBatch([bzr_revision])
+        db_revision = revision_set.getByRevisionId(revision_id)
         notify(
             events.NewRevision(
                 self.db_branch, bzr_branch, db_revision, bzr_revision,
