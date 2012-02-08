@@ -9,14 +9,14 @@ from datetime import (
     timedelta,
     )
 import re
-import simplejson
 import urllib
 
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
+import simplejson
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -32,25 +32,6 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import PersonVisibility
-from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    login_person,
-    )
-from lp.testing.pages import find_tag_by_id
-from lp.services.webapp import canonical_url
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    ILaunchpadRoot,
-    )
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
@@ -67,22 +48,40 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    ANONYMOUS,
     BrowserTestCase,
     celebrity_logged_in,
     feature_flags,
+    login,
+    login_person,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
@@ -1909,11 +1908,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.useContext(person_logged_in(owner))
         with dynamic_listings():
             view = self.makeView(item.bugtask)
-        cache = IJSONRequestCache(view.request)
-        items = cache.objects['mustache_model']['items']
-        self.assertEqual(1, len(items))
-        combined = dict(item.model)
-        combined.update(view.search().field_visibility)
+            cache = IJSONRequestCache(view.request)
+            items = cache.objects['mustache_model']['items']
+            self.assertEqual(1, len(items))
+            combined = dict(item.model)
+            combined.update(view.search().field_visibility)
         self.assertEqual(combined, items[0])
 
     def test_no_next_prev_for_single_batch(self):
@@ -2260,7 +2259,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(getUtility(IBugTaskSet).orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "
@@ -2407,15 +2406,3 @@ class TestBugTaskListingItem(TestCaseWithFactory):
                 2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
-
-    def test_model_numeric_heat(self):
-        """bug_heat_html contains just the number if the flag is enabled."""
-        with FeatureFixture({'bugs.heat_ratio_display.disabled': 'true'}):
-            with dynamic_listings():
-                owner, item = make_bug_task_listing_item(self.factory)
-                self.assertNotIn('/@@/bug-heat', item.bug_heat_html)
-                self.assertIn('sprite flame', item.bug_heat_html)
-                with person_logged_in(owner):
-                    model = item.model
-                    self.assertEqual(
-                        item.bug_heat_html, model['bug_heat_html'])
