@@ -764,8 +764,8 @@ def create_lxc(user, lxcname):
         raise SetupLXCError('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
-    user_authorized_keys = os.path.join(
-        os.path.sep, 'home', user, '.ssh/authorized_keys')
+    user_authorized_keys = os.path.expanduser(
+        '~' + user + '/.ssh/authorized_keys')
     with open(user_authorized_keys, 'a') as f:
         f.write(open('/root/.ssh/id_rsa.pub').read())
     dst = get_container_path(lxcname, '/root/.ssh/')
