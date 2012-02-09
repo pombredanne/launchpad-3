@@ -125,13 +125,14 @@
         }">
    </script>
 
-   <script type="text/javascript">
-       // we need this to create a single YUI instance all events and code
-       // talks across. All instances of YUI().use should be based off of
-       // LPJS instead.
-       LPJS = new YUI();
-   </script>
   </tal:js-loader>
+  <script type="text/javascript">
+      // we need this to create a single YUI instance all events and code
+      // talks across. All instances of YUI().use should be based off of
+      // LPJS instead.
+      LPJS = new YUI();
+  </script>
+
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
