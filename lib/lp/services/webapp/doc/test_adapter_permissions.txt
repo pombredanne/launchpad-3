@@ -23,7 +23,7 @@ If a SLAVE_FLAVOR store is requested, it should trap all writes.
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: transaction is read-only
+    InternalError: ...
 
 Test this once more to ensure the settings stick across transactions.
 
@@ -33,7 +33,7 @@ Test this once more to ensure the settings stick across transactions.
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: transaction is read-only
+    InternalError: ...
 
 If a MASTER_FLAVOR is requested, it should allow writes to table in that
 Store's replication set.

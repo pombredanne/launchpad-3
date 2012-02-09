@@ -970,7 +970,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
                 SourcePackageName.id == POTemplate.sourcepackagenameID))
 
         return join.select(POTemplate, Packaging, ProductSeries, Product,
-            OtherTemplate, SourcePackageName)
+            OtherTemplate, SourcePackageName).order_by(
+                SourcePackageName.name, POTemplate.priority, POTemplate.name)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
