@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_changed',
     'BranchFormat',
     'ControlFormat',
     'CURRENT_BRANCH_FORMATS',
@@ -17,6 +18,8 @@ __all__ = [
 # FIRST Ensure correct plugins are loaded. Do not delete this comment or the
 # line below this comment.
 import lp.codehosting
+# Silence lint warning.
+lp.codehosting
 
 from bzrlib.branch import (
     BranchReferenceFormat,
@@ -25,6 +28,10 @@ from bzrlib.branch import (
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.errors import (
+    NotStacked,
+    UnstackableBranchFormat,
+    )
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
@@ -291,3 +298,21 @@ def get_branch_formats(bzr_branch):
     return (ControlFormat.get_enum(control_string),
             BranchFormat.get_enum(branch_string),
             RepositoryFormat.get_enum(repository_string))
+
+
+def branch_changed(db_branch, bzr_branch=None):
+    """Mark a database branch as changed.
+
+    :param db_branch: The branch to mark changed.
+    :param bzr_branch: (optional) The bzr branch to use to mark the branch
+        changed.
+    """
+    if bzr_branch is None:
+        bzr_branch = db_branch.getBzrBranch()
+    try:
+        stacked_on = bzr_branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        stacked_on = None
+    last_revision = bzr_branch.last_revision()
+    formats = get_branch_formats(bzr_branch)
+    db_branch.branchChanged(stacked_on, last_revision, *formats)
