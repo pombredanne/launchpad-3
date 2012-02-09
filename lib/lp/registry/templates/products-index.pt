@@ -129,11 +129,6 @@
       href="/rosetta/+addquestion">ask the Translations staff</a>.
     </p>
 
-    <div class="left">
-
-
-    <div class="right">
-
       <div class="portlet">
         <h2>Latest projects registered</h2>
         <table>
@@ -147,7 +142,6 @@
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
-    </div>
   </tal:no_search>
 </div>
 </body>
