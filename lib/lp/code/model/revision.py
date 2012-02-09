@@ -280,13 +280,13 @@ class RevisionSet:
             properties = {}
         if _date_created is None:
             _date_created = UTC_NOW
-        author = self.acquireRevisionAuthor(revision_author)
+        authors = self.acquireRevisionAuthors([revision_author])
 
         revision = Revision(
             revision_id=revision_id,
             log_body=log_body,
             revision_date=revision_date,
-            revision_author=author,
+            revision_author=authors[revision_author],
             date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
@@ -306,22 +306,29 @@ class RevisionSet:
 
         return revision
 
-    def acquireRevisionAuthor(self, name):
-        """Find or create the RevisionAuthor with the specified name.
+    def acquireRevisionAuthors(self, author_names):
+        """Find or create the RevisionAuthors with the specified names.
 
-        Name may be any arbitrary string, but if it is an email-id, and
+        A name may be any arbitrary string, but if it is an email-id, and
         its email address is a verified email address, it will be
         automatically linked to the corresponding Person.
 
         Email-ids come in two major forms:
             "Foo Bar" <foo@bar.com>
             foo@bar.com (Foo Bar)
+        :return: a dict of name -> RevisionAuthor
         """
-        # create a RevisionAuthor if necessary:
-        try:
-            return RevisionAuthor.byName(name)
-        except SQLObjectNotFound:
-            return self._createRevisionAuthor(name)
+        store = IMasterStore(Revision)
+        author_names = set(author_names)
+        authors = {}
+        for author in store.find(RevisionAuthor,
+                RevisionAuthor.name.is_in(author_names)):
+            authors[author.name] = author
+        missing = author_names - set(authors.keys())
+        # create missing RevisionAuthors
+        for name in missing:
+            authors[name] = self._createRevisionAuthor(name)
+        return authors
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -364,29 +371,29 @@ class RevisionSet:
             )
             """)
         data = []
+
+        author_names = []
         for bzr_revision in revisions:
-            revision_id = bzr_revision.revision_id
-            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
             authors = bzr_revision.get_apparent_authors()
             try:
                 author = authors[0]
             except IndexError:
                 author = None
-            revision_author = self.acquireRevisionAuthor(author)
+            author_names.append(author)
+        revision_authors = self.acquireRevisionAuthors(author_names)
+
+        property_data = []
+        parent_data = []
+        for bzr_revision, author_name in zip(revisions, author_names):
+            revision_id = bzr_revision.revision_id
+            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+            revision_author = revision_authors[author_name]
 
             if bzr_revision.properties:
-                property_data = []
                 for name, value in bzr_revision.properties.iteritems():
                     property_data.append(
                         "(%s, %s, %s)" % sqlvalues(revision_id, name, value))
-                property_data = ', '.join(property_data)
-                store.execute("""
-                    INSERT INTO NewRevisionProperties (
-                        revision_id, name, value)
-                    VALUES %s
-                    """ % property_data)
             if bzr_revision.parent_ids:
-                parent_data = []
                 parent_ids = bzr_revision.parent_ids
                 seen_parents = set()
                 for sequence, parent_id in enumerate(parent_ids):
@@ -396,12 +403,6 @@ class RevisionSet:
                     parent_data.append(
                         "(%s, %s, %s)" %
                         sqlvalues(revision_id, sequence, parent_id))
-                parent_data = ', '.join(parent_data)
-                store.execute("""
-                    INSERT INTO NewRevisionParents (
-                        revision_id, sequence, parent_id)
-                    VALUES %s
-                    """ % parent_data)
 
             data.append(
                 '(%s, %s, %s, %s)' %
@@ -410,6 +411,16 @@ class RevisionSet:
                     bzr_revision.message,
                     revision_date,
                     revision_author))
+        store.execute("""
+            INSERT INTO NewRevisionParents (
+                revision_id, sequence, parent_id)
+            VALUES %s
+            """ % ', '.join(parent_data))
+        store.execute("""
+            INSERT INTO NewRevisionProperties (
+                revision_id, name, value)
+            VALUES %s
+            """ % ', '.join(property_data))
         data = ', '.join(data)
         store.execute(
             """
