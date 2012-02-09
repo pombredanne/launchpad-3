@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
