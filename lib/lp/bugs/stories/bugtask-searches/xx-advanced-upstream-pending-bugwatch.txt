@@ -48,7 +48,6 @@ He sees one match.
     ...     'bug tracker')
     >>> browser.getControl(pending_bugwatch_label).selected = True
     >>> browser.getControl('Search', index=0).click()
-    >>> bug_listing = find_tag_by_id(browser.contents, 'buglisting')
-    >>> print extract_text(bug_listing)
-    Summary        Importance  Status
-    ...Test Bug 1  Undecided   New
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> print_bugtasks(browser.contents)
+    16  Test Bug 1  Undecided   New
