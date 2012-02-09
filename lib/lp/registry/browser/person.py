@@ -2087,11 +2087,6 @@ class PersonVouchersView(LaunchpadFormView):
         return 'Commercial subscription vouchers'
 
     @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context, view_name='+vouchers')
-
-    @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -2182,6 +2177,10 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
+            # Force the page to reload so the just consumed voucher is
+            # not displayed again (since the field has already been
+            # created).
+            self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
