@@ -16,6 +16,7 @@ __all__ = [
 
 import logging
 
+from bzrlib.errors import NoSuchRevision
 from bzrlib.graph import DictParentsProvider
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -115,7 +116,7 @@ class BzrSync:
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
-        initial_scan = (len(db_history) == 0)
+        initial_scan = db_history.is_empty()
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
         # The Branch table is modified by other systems, including the web UI,
@@ -171,20 +172,22 @@ class BzrSync:
 
     def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, db_history):
         self.logger.info("Calculating history delta.")
-        common_len = min(bzr_last_revinfo[0], len(db_history))
+        removed_history = []
         common_revid = NULL_REVISION
-        while common_len > 0:
-            if db_history[common_len - 1] == bzr_branch.get_rev_id(common_len - 1):
-                common_revid = db_history[common_len - 1]
-                break
-            common_len -= 1
+        for (revno, revid) in db_history:
+            try:
+                if bzr_branch.get_rev_id(revno) == revid:
+                    common_revid = revid
+                    common_len = revno
+                    break
+            except NoSuchRevision:
+                pass
+            removed_history.append(revid)
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
-        removed_history = db_history[common_len:]
         bzr_graph = bzr_branch.repository.get_graph()
         added_history = list(bzr_graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
             (common_revid, )))
-        added_history.reverse()
         return added_history, removed_history
 
     def planDatabaseChanges(self, bzr_branch, bzr_last_revinfo, db_history):
@@ -260,13 +263,13 @@ class BzrSync:
         """Calculate the revisions to insert and their revnos.
 
         :param added_history: A list of revision ids added to the revision
-            history in parent-to-child order.
+            history in child-to-parent order.
         :param last_revno: The revno of the last revision.
         :param added_ancestry: A set of revisions that have been added to the
             ancestry of the branch.  May overlap with added_history.
         """
         start_revno = last_revno - len(added_history) + 1
-        for (revno, revision_id) in enumerate(added_history, start_revno):
+        for (revno, revision_id) in enumerate(reversed(added_history), start_revno):
             yield revision_id, revno
         for revision_id in added_ancestry.difference(added_history):
             yield revision_id, None

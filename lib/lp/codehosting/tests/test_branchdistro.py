@@ -269,7 +269,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         # Make sure that the branch revisions have been copied.
         old_history = removeSecurityProxy(db_branch).getScannerData()
         new_history = removeSecurityProxy(new_branch).getScannerData()
-        self.assertEqual(old_history, new_history)
+        self.assertEqual(list(old_history), list(new_history))
         self.assertFalse(new_branch.pending_writes)
         self.assertIs(None, new_branch.stacked_on)
         self.assertEqual(new_branch, db_branch.stacked_on)

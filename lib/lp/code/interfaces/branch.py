@@ -896,7 +896,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         branches is into the tens of thousands we don't want to materialise
         BranchRevision instances for each of these.
 
-        :return: History list of bzr revision-ids, oldest first.
+        :return: Iterator over bzr revision-ids in history, newest first.
         """
 
     def getInternalBzrUrl():

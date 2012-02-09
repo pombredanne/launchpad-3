@@ -17,6 +17,7 @@ from bzrlib.revision import (
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
 import pytz
+from storm.expr import Desc
 from storm.locals import Store
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
@@ -485,7 +486,7 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_history = ['base', 'trunk', 'merge']
+        bzr_history = ['merge', 'trunk', 'base']
         added_ancestry = bzrsync.getAncestryDelta(
             bzr_tree.branch, bzr_tree.branch.last_revision_info())[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
@@ -544,8 +545,9 @@ class TestBzrSync(BzrSyncTestCase):
             '~name12/+junk/junk.contrib')
         branch_revisions = IStore(BranchRevision).find(
             BranchRevision, BranchRevision.branch == branch)
-        sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
-        expected_history = [branch_revision.revision.revision_id
+        sampledata = list(branch_revisions.order_by(Desc(BranchRevision.sequence)))
+        expected_history = [
+            (branch_revision.sequence, branch_revision.revision.revision_id)
             for branch_revision in sampledata
             if branch_revision.sequence is not None]
 

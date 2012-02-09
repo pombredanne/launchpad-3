@@ -975,17 +975,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
-            columns,
+            (BranchRevision.sequence, Revision.revision_id),
             Revision.id == BranchRevision.revision_id,
             BranchRevision.branch_id == self.id,
             BranchRevision.sequence != None)
-        rows = rows.order_by(BranchRevision.sequence)
-        history = []
-        for sequence, revision_id in rows:
-            history.append(revision_id)
-        return history
+        return rows.order_by(Desc(BranchRevision.sequence))
 
     def getPullURL(self):
         """See `IBranch`."""
