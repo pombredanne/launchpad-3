@@ -92,3 +92,12 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertIs(False, other_project in self.vocab)
         self.assertIs(False, self.deactivated_project in self.vocab)
         self.assertIs(True, self.maintained_project in self.vocab)
+
+    def test_contains_commercial_admin(self):
+        # The vocabulary contains all active projects for commercial.
+        other_project = self.factory.makeProduct()
+        with celebrity_logged_in('registry_experts') as expert:
+            self.vocab = CommercialProjectsVocabulary(context=expert)
+            self.assertIs(True, other_project in self.vocab)
+            self.assertIs(False, self.deactivated_project in self.vocab)
+            self.assertIs(True, self.maintained_project in self.vocab)

@@ -1578,6 +1578,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """See `IVocabulary`."""
         if not project.active:
             return False
+        product_set = getUtility(IProductSet)
+        if check_permission('launchpad.Moderate', product_set):
+            return True
         return self.context.inTeam(project.owner)
 
 
