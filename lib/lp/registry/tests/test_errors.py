@@ -16,6 +16,7 @@ from httplib import (
 
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
+    CommercialSubscribersOnly,
     DeleteSubscriptionError,
     DistroSeriesDifferenceError,
     JoinNotAllowed,
@@ -90,3 +91,7 @@ class TestWebServiceErrors(TestCase):
     def test_NameAlreadyTaken_bad_request(self):
         error_view = create_webservice_error_view(NameAlreadyTaken())
         self.assertEqual(CONFLICT, error_view.status)
+
+    def test_CommercialSubscribersOnly_bad_request(self):
+        error_view = create_webservice_error_view(CommercialSubscribersOnly())
+        self.assertEqual(UNAUTHORIZED, error_view.status)

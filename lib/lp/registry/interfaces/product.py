@@ -363,6 +363,10 @@ class IProductDriverRestricted(Interface):
         """
 
 
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
+    """`IProduct` properties which require launchpad.Edit permission."""
+
+
 class IProductModerateRestricted(Interface):
     """`IProduct` properties which require launchpad.Moderate."""
 
@@ -747,6 +751,14 @@ class IProductPublic(
         maintainers with active commercial subscriptions.
         """
 
+    @mutator_for(private_bugs)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(private_bugs=copy_field(private_bugs))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setPrivateBugs(user, private_bugs):
+        """Mutator for private_bugs that checks entitlement."""
+
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
@@ -820,19 +832,6 @@ class IProductPublic(
 
         The number of milestones returned per series is limited.
         """
-
-
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
-
-    @mutator_for(IProductPublic['private_bugs'])
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        private_bugs=copy_field(IProductPublic['private_bugs']))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivateBugs(user, private_bugs):
-        """Mutator for private_bugs that checks entitlement."""
 
 
 class IProduct(

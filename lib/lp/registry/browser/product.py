@@ -26,6 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
+    'ProductPrivateBugsMixin',
     'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
@@ -1524,6 +1525,34 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
+class ProductPrivateBugsMixin():
+    """A mixin for setting the product private_bugs field."""
+    def setUpFields(self):
+        # private_bugs is readonly since we are using a mutator but we need
+        # to edit it on the form.
+        super(ProductPrivateBugsMixin, self).setUpFields()
+        self.form_fields['private_bugs'].field.readonly = False
+
+    def validate(self, data):
+        super(ProductPrivateBugsMixin, self).validate(data)
+        if (data.get('private_bugs', False) and
+            not self.context.privateBugsAllowed(self.user)):
+            self.setFieldError(
+                'private_bugs',
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
+
+    def updateContextFromData(self, data, context=None, notify_modified=True):
+        # private_bugs uses a mutator to check permissions, so it needs to
+        # be handled separately.
+        if (data.get('private_bugs') is not None
+                and data['private_bugs'] != self.context.private_bugs):
+            self.context.setPrivateBugs(self.user, data['private_bugs'])
+            del data['private_bugs']
+        parent = super(ProductPrivateBugsMixin, self)
+        return parent.updateContextFromData(data, context, notify_modified)
+
+
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1614,7 +1643,8 @@ class ProductValidationMixin:
                         canonical_url(self.context, view_name='+packages')))
 
 
-class ProductAdminView(ProductEditView, ProductValidationMixin):
+class ProductAdminView(ProductEditView, ProductValidationMixin,
+                       ProductPrivateBugsMixin):
     """View for $project/+admin"""
     label = "Administer project details"
     default_field_names = [
@@ -1647,9 +1677,6 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         if admin:
             self.form_fields = (
                 self.form_fields + self._createRegistrantField())
-        # private_bugs is readonly since we are using a mutator but we need
-        # to edit it on the form.
-        self.form_fields['private_bugs'].field.readonly = False
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProduct.aliases."""
@@ -1685,6 +1712,7 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        super(ProductAdminView, self).validate(data)
         self.validate_deactivation(data)
 
     @property
@@ -1694,7 +1722,8 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
 
 
 class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, ProductValidationMixin):
+                               ProductEditView, ProductValidationMixin,
+                               ProductPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1713,6 +1742,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     def validate(self, data):
         """See `LaunchpadFormView`."""
 
+        super(ProductReviewLicenseView, self).validate(data)
         # A project can only be approved if it has OTHER_OPEN_SOURCE as one of
         # its licenses and not OTHER_PROPRIETARY.
         licenses = self.context.licenses

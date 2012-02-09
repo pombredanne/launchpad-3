@@ -39,6 +39,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             'field.bug_reporting_guidelines': 'guidelines',
             'field.bug_reported_acknowledgement': 'acknowledgement message',
             'field.enable_bugfiling_duplicate_search': False,
+            'field.private_bugs': 'off',
             'field.actions.change': 'Change',
             }
 
@@ -50,8 +51,8 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         fields = [
             'bugtracker', 'enable_bug_expiration', 'remote_product',
             'bug_reporting_guidelines', 'bug_reported_acknowledgement',
-            'enable_bugfiling_duplicate_search', 'bug_supervisor',
-            'security_contact']
+            'enable_bugfiling_duplicate_search', 'private_bugs',
+            'bug_supervisor', 'security_contact']
         self.assertEqual(fields, view.field_names)
         self.assertEqual('http://launchpad.dev/boing', view.next_url)
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
@@ -65,7 +66,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         fields = [
             'bugtracker', 'enable_bug_expiration', 'remote_product',
             'bug_reporting_guidelines', 'bug_reported_acknowledgement',
-            'enable_bugfiling_duplicate_search']
+            'enable_bugfiling_duplicate_search', 'private_bugs']
         self.assertEqual(fields, view.field_names)
         self.assertEqual('http://launchpad.dev/boing', view.next_url)
         self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
@@ -186,3 +187,35 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(
             'new guidelines', self.product.bug_reporting_guidelines)
+
+    def test_commercial_subscriber_can_turn_on_private_bugs(self):
+        # Verify commercial subscribers can set private_bugs to on.
+        form = self._makeForm()
+        self.factory.makeCommercialSubscription(self.product)
+        form['field.private_bugs'] = 'on'
+        login_person(self.product.owner)
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual([], view.errors)
+        self.assertTrue(self.product.private_bugs)
+
+    def test_unauthorised_cannot_turn_on_private_bugs(self):
+        # Verify unauthorised users cannot set private_bugs to on.
+        form = self._makeForm()
+        form['field.private_bugs'] = 'on'
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual(
+            [u'A valid commercial subscription is required to turn on '
+             u'default private bugs.'],
+            view.errors)
+
+    def test_anyone_can_turn_off_private_bugs(self):
+        # Verify any user who can edit the product can set private_bugs off.
+        registry_expert= self.factory.makeRegistryExpert()
+        self.product.setPrivateBugs(registry_expert, True)
+        form = self._makeForm()
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual([], view.errors)
+        self.assertFalse(self.product.private_bugs)

@@ -515,6 +515,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def privateBugsAllowed(self, user):
         """See `IProductPublic`."""
+        if user is None:
+            return False
         return (
             check_permission('launchpad.Moderate', self) or
             user.hasCurrentCommercialSubscription(self))

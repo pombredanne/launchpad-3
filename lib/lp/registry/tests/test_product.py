@@ -260,6 +260,25 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(subscription_policy=policy)
             self.factory.makeProduct(security_contact=closed_team)
 
+    def test_private_bugs_not_allowed_for_anonymous(self):
+        product = self.factory.makeProduct()
+        self.assertFalse(product.privateBugsAllowed(None))
+
+    def test_private_bugs_not_allowed_for_unauthorised(self):
+        product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
+        self.assertFalse(product.privateBugsAllowed(someone))
+
+    def test_private_bugs_allowed_for_moderators(self):
+        product = self.factory.makeProduct()
+        registry_expert= self.factory.makeRegistryExpert()
+        self.assertTrue(product.privateBugsAllowed(registry_expert))
+
+    def test_private_bugs_allowed_for_commercial_subscribers(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self.assertTrue(product.privateBugsAllowed(product.owner))
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""

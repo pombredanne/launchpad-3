@@ -113,7 +113,7 @@ from lp.bugs.model.structuralsubscription import (
 from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from lp.registry.browser.product import ProductConfigureBase
+from lp.registry.browser.product import ProductConfigureBase, ProductPrivateBugsMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -173,7 +173,9 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
+class ProductConfigureBugTrackerView(BugRoleMixin,
+                                     ProductPrivateBugsMixin,
+                                     ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
@@ -194,24 +196,17 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             "bug_reporting_guidelines",
             "bug_reported_acknowledgement",
             "enable_bugfiling_duplicate_search",
+            "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
-            field_names.extend([
-                "bug_supervisor", "security_contact", "private_bugs"])
-        return field_names
+            field_names.extend(["bug_supervisor", "security_contact"])
 
-    def validatePrivateBugs(self, data):
-        if (data.get('private_bugs', False) and
-            not self.context.privateBugsAllowed(self.user)):
-            self.setFieldError(
-                'private_bugs',
-                'A valid commercial subscription is required to turn on '
-                'default private bugs.')
+        return field_names
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
+        super(ProductConfigureBugTrackerView, self).validate(data)
         if check_permission("launchpad.Edit", self.context):
-            self.validatePrivateBugs(data)
             self.validateBugSupervisor(data)
             self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
@@ -228,17 +223,11 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
-        # private_bugs uses a mutator to check permissions, so it needs to
-        # be removed too.
         if check_permission("launchpad.Edit", self.context):
             self.changeBugSupervisor(data['bug_supervisor'])
             del data['bug_supervisor']
             self.changeSecurityContact(data['security_contact'])
             del data['security_contact']
-            if (data.get('private_bugs')
-                    and data['private_bugs'] != self.context.private_bugs):
-                self.context.setPrivateBugs(self.user, data['private_bugs'])
-                del data['private_bugs']
         self.updateContextFromData(data)
 
 
