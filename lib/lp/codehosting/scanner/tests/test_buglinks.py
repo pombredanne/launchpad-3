@@ -271,7 +271,7 @@ class TestSubscription(TestCaseWithFactory):
                     'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
         bzr_revision = tree.branch.repository.get_revision(revision_id)
         revision_set = getUtility(IRevisionSet)
-        revision_set.newFromBazaarRevision(bzr_revision)
+        revision_set.newFromBazaarRevisions([bzr_revision])
         notify(events.NewMainlineRevisions(
             db_branch, tree.branch, [bzr_revision]))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)

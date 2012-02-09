@@ -342,29 +342,9 @@ class RevisionSet:
         revision_date += timedelta(seconds=timestamp - int_timestamp)
         return revision_date
 
-    def newFromBazaarRevision(self, bzr_revision):
+    def newFromBazaarRevisions(self, revisions):
         """See `IRevisionSet`."""
-        revision_id = bzr_revision.revision_id
-        revision_date = self._timestampToDatetime(bzr_revision.timestamp)
-        authors = bzr_revision.get_apparent_authors()
-        # XXX: JonathanLange 2009-05-01 bug=362686: We can only have one
-        # author per revision, so we use the first on the assumption that
-        # this is the primary author.
-        try:
-            author = authors[0]
-        except IndexError:
-            author = None
-        return self.new(
-            revision_id=revision_id,
-            log_body=bzr_revision.message,
-            revision_date=revision_date,
-            revision_author=author,
-            parent_ids=bzr_revision.parent_ids,
-            properties=bzr_revision.properties)
-
-    def newFromBazaarRevisionBatch(self, revision_batch):
-        """See `IRevisionSet`."""
-        if not revision_batch:
+        if not revisions:
             return
         store = IMasterStore(Revision)
         store.execute(
@@ -384,7 +364,7 @@ class RevisionSet:
             )
             """)
         data = []
-        for bzr_revision in revision_batch:
+        for bzr_revision in revisions:
             revision_id = bzr_revision.revision_id
             revision_date = self._timestampToDatetime(bzr_revision.timestamp)
             authors = bzr_revision.get_apparent_authors()

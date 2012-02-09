@@ -134,11 +134,8 @@ class IRevisionSet(Interface):
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
 
-    def newFromBazaarRevision(bzr_revision):
-        """Create a new Revision from the given Bazaar Revision object."""
-
-    def newFromBazaarRevisionBatch(revision_batch):
-        """Create new Revisions from the given batch of Bazaar Revisions.
+    def newFromBazaarRevisions(revision_batch):
+        """Create new Revisions from the given Bazaar Revisions.
 
         This method allows us to insert Revisions in bulk, which is
         important for larger branches.

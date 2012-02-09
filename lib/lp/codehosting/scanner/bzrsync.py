@@ -243,7 +243,7 @@ class BzrSync:
         :param revids_to_insert: a dict of revision ids to integer
             revno. Non-mainline revisions will be mapped to None.
         """
-        self.revision_set.newFromBazaarRevisionBatch(bzr_revisions)
+        self.revision_set.newFromBazaarRevisions(bzr_revisions)
         mainline_revisions = []
         for bzr_revision in bzr_revisions:
             if revids_to_insert[bzr_revision.revision_id] is None:
