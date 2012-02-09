@@ -75,7 +75,7 @@ from a store other than the correct Master.
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: transaction is read-only
+    InternalError: ...
 
     >>> transaction.abort()
     >>> t = transaction.begin()

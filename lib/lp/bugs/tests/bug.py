@@ -140,13 +140,8 @@ def extract_bugtasks(text, show_heat=None):
     for tr in table('tr'):
         if tr.td is not None:
             row_text = extract_text(tr)
-            if show_heat:
-                for img in tr.findAll('img'):
-                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
-                    if mo:
-                        flames = int(mo.group(1))
-                        heat_text = flames * '*' + (4 - flames) * '-'
-                        row_text += '\n' + heat_text
+            if row_text.rsplit('\n')[-1].strip().isdigit() and not show_heat:
+                row_text = row_text[:row_text.rfind('\n')].rstrip()
             rows.append(row_text)
     return rows
 
