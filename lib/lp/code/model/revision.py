@@ -411,16 +411,18 @@ class RevisionSet:
                     bzr_revision.message,
                     revision_date,
                     revision_author))
-        store.execute("""
-            INSERT INTO NewRevisionParents (
-                revision_id, sequence, parent_id)
-            VALUES %s
-            """ % ', '.join(parent_data))
-        store.execute("""
-            INSERT INTO NewRevisionProperties (
-                revision_id, name, value)
-            VALUES %s
-            """ % ', '.join(property_data))
+        if len(parent_data) > 0:
+            store.execute("""
+                INSERT INTO NewRevisionParents (
+                    revision_id, sequence, parent_id)
+                VALUES %s
+                """ % ', '.join(parent_data))
+        if len(property_data) > 0:
+            store.execute("""
+                INSERT INTO NewRevisionProperties (
+                    revision_id, name, value)
+                VALUES %s
+                """ % ', '.join(property_data))
         data = ', '.join(data)
         store.execute(
             """
