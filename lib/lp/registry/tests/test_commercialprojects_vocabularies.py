@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestCase
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,46 +15,41 @@ from lp.registry.interfaces.product import (
 from lp.registry.vocabularies import CommercialProjectsVocabulary
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (
-    ANONYMOUS,
-    login,
-    logout,
+    celebrity_logged_in,
+    TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestCommProjVocabulary(TestCase):
+class TestCommProjVocabulary(TestCaseWithFactory):
     """Test that the CommercialProjectsVocabulary behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        login(ANONYMOUS)
+        super(TestCommProjVocabulary, self).setUp()
         self._createProjects()
         self.vocab = CommercialProjectsVocabulary(context=self.owner)
 
-    def tearDown(self):
-        logout()
-
     def _createProjects(self):
         """Create a proprietary projects."""
-        factory = LaunchpadObjectFactory()
-        # Create a person to own the projects.
-        self.owner = factory.makePerson(
+        self.owner = self.factory.makePerson(
             email_address_status=EmailAddressStatus.VALIDATED)
-
-        # Create some proprietary projects.
+        # Create 5 proprietary projects.
         self.num_proprietary = 5
         for i in range(self.num_proprietary):
-            widget = factory.makeProduct(name='widget%d' % i,
-                                         licenses=[License.OTHER_PROPRIETARY])
-            naked_widget = removeSecurityProxy(widget)
-            naked_widget.owner = self.owner
-        # Create an open source project with a GNU license.
-        widget = factory.makeProduct(name='openwidget',
-                                     licenses=[License.GNU_GPL_V3])
-        naked_widget = removeSecurityProxy(widget)
-        naked_widget.owner = self.owner
+            self.factory.makeProduct(
+                name='widget%d' % i, owner=self.owner,
+                 licenses=[License.OTHER_PROPRIETARY])
+        # Create an open source project.
+        self.factory.makeProduct(
+            name='open-widget', owner=self.owner,
+            licenses=[License.GNU_GPL_V3])
+        # Create a deactivated open source project.
+        with celebrity_logged_in('admin'):
+            self.factory.makeProduct(
+                name='norwegian-blue-widget', owner=self.owner,
+                licenses=[License.GNU_GPL_V3]).active = False
 
     def test_emptySearch(self):
         """An empty search should return all commercial projects."""
