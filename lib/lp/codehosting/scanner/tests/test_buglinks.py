@@ -270,10 +270,9 @@ class TestSubscription(TestCaseWithFactory):
                 revprops={
                     'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
         bzr_revision = tree.branch.repository.get_revision(revision_id)
-        revno = 1
         revision_set = getUtility(IRevisionSet)
-        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
-        notify(events.NewRevision(
-            db_branch, tree.branch, db_revision, bzr_revision, revno))
+        revision_set.newFromBazaarRevision(bzr_revision)
+        notify(events.NewMainlineRevisions(
+            db_branch, tree.branch, [bzr_revision]))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
         self.assertIsNot(None, bug_branch)

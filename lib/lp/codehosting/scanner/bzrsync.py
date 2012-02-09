@@ -234,34 +234,23 @@ class BzrSync:
         revisions = bzr_branch.repository.get_parent_map(revisions)
         return bzr_branch.repository.get_revisions(revisions.keys())
 
-    def getDBPairs(self, bzr_revisions):
-        revision_ids = [bzr_revision.revision_id for bzr_revision in
-                        bzr_revisions]
-        result = self.revision_set.getByRevisionIds(revision_ids)
-        db_revision = dict((rev.revision_id, rev) for rev in result)
-        return [(bzr, db_revision[bzr.revision_id]) for bzr in bzr_revisions]
-
     def syncRevisions(self, bzr_branch, bzr_revisions, revids_to_insert):
-        self.revision_set.newFromBazaarRevisionBatch(bzr_revisions)
-        pairs = self.getDBPairs(bzr_revisions)
-        for bzr_revision, db_revision in pairs:
-            revision_id = bzr_revision.revision_id
-            # Revision not yet in the database. Load it.
-            self.logger.debug("Inserting revision: %s", revision_id)
-            revno = revids_to_insert[revision_id]
-            notify(events.NewRevision(
-                self.db_branch, bzr_branch, db_revision, bzr_revision, revno))
-
-    def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
-        """Import the revision with the given revision_id.
+        """Import the supplied revisions.
 
         :param bzr_branch: The Bazaar branch that's being scanned.
-        :param bzr_revision: the revision to import
+        :param bzr_revisions: the revisions to import
         :type bzr_revision: bzrlib.revision.Revision
         :param revids_to_insert: a dict of revision ids to integer
             revno. Non-mainline revisions will be mapped to None.
         """
-        self.syncRevisions(bzr_branch, [bzr_revision], revids_to_insert)
+        self.revision_set.newFromBazaarRevisionBatch(bzr_revisions)
+        mainline_revisions = []
+        for bzr_revision in bzr_revisions:
+            if revids_to_insert[bzr_revision.revision_id] is None:
+                continue
+            mainline_revisions.append(bzr_revision)
+        notify(events.NewMainlineRevisions(
+            self.db_branch, bzr_branch, mainline_revisions))
 
     @staticmethod
     def revisionsToInsert(added_history, last_revno, added_ancestry):

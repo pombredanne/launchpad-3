@@ -127,15 +127,6 @@ class IRevisionSet(Interface):
         None if the revision is not known.
         """
 
-    def getByRevisionIds(self, revision_ids):
-        """Find revisions with supplied revision_ids.
-
-        Missing revision_ids are ignored.
-        """
-
-    def getDBPairs(self, bzr_revisions):
-        """Return a list of (bzr_revision, db_revision) tuples."""
-
     def onlyPresent(revids):
         """Return the revision ids from `revids` that are present."""
 
