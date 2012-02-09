@@ -271,7 +271,7 @@ class TestProduct(TestCaseWithFactory):
 
     def test_private_bugs_allowed_for_moderators(self):
         product = self.factory.makeProduct()
-        registry_expert= self.factory.makeRegistryExpert()
+        registry_expert = self.factory.makeRegistryExpert()
         self.assertTrue(product.privateBugsAllowed(registry_expert))
 
     def test_private_bugs_allowed_for_commercial_subscribers(self):

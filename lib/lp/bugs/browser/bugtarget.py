@@ -113,7 +113,10 @@ from lp.bugs.model.structuralsubscription import (
 from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from lp.registry.browser.product import ProductConfigureBase, ProductPrivateBugsMixin
+from lp.registry.browser.product import (
+    ProductConfigureBase,
+    ProductPrivateBugsMixin,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

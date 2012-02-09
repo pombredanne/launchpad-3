@@ -538,7 +538,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertFalse(person.isAnySecurityContact())
 
     def test_has_current_commercial_subscription(self):
-        # IPerson.hasCurrentCommercialSubscription() checks for one. 
+        # IPerson.hasCurrentCommercialSubscription() checks for one.
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
