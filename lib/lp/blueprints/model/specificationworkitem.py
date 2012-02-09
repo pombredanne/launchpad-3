@@ -8,17 +8,16 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import (
+from storm.sqlobject import (
     BoolCol,
     ForeignKey,
     IntCol,
     StringCol,
     )
-
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.sqlbase import SQLBase
+from lp.services.database.stormbase import StormBase
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.interfaces.specificationworkitem import (
@@ -27,8 +26,10 @@ from lp.blueprints.interfaces.specificationworkitem import (
 from lp.registry.interfaces.person import validate_public_person
 
 
-class SpecificationWorkItem(SQLBase):
+class SpecificationWorkItem(StormBase):
     implements(ISpecificationWorkItem)
+
+    __storm_table__ = 'SpecificationWorkItem'
 
     title = StringCol(notNull=True)
     specification = ForeignKey(foreignKey='Specification', notNull=True)
