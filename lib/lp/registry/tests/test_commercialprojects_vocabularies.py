@@ -28,13 +28,13 @@ class TestCommProjVocabulary(TestCaseWithFactory):
 
     def setUp(self):
         super(TestCommProjVocabulary, self).setUp()
+        self.owner = self.factory.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
         self._createProjects()
         self.vocab = CommercialProjectsVocabulary(context=self.owner)
 
     def _createProjects(self):
         """Create a proprietary projects."""
-        self.owner = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
         # Create 5 proprietary projects.
         self.num_proprietary = 5
         for i in range(self.num_proprietary):
