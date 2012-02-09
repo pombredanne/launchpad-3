@@ -39,14 +39,15 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                  licenses=[License.OTHER_PROPRIETARY])
         # Create an open source project.
         self.num_commercial = self.num_proprietary + 1
-        self.factory.makeProduct(
+        self.maintained_project = self.factory.makeProduct(
             name='open-widget', owner=self.owner,
             licenses=[License.GNU_GPL_V3])
         # Create a deactivated open source project.
         with celebrity_logged_in('admin'):
-            self.factory.makeProduct(
+            self.deactivated_project = self.factory.makeProduct(
                 name='norwegian-blue-widget', owner=self.owner,
-                licenses=[License.GNU_GPL_V3]).active = False
+                licenses=[License.GNU_GPL_V3])
+            self.deactivated_project.active = False
 
     def test_search_empty(self):
         """An empty search will return all active maintained projects."""
@@ -84,3 +85,10 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
+
+    def test_contains_maintainer(self):
+        # The vocabulary only contains active projects the user maintains.
+        other_project = self.factory.makeProduct()
+        self.assertIs(False, other_project in self.vocab)
+        self.assertIs(False, self.deactivated_project in self.vocab)
+        self.assertIs(True, self.maintained_project in self.vocab)

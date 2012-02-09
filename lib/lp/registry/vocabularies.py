@@ -1574,9 +1574,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         for proj in self._commercial_projects():
             yield self.toTerm(proj)
 
-    def __contains__(self, obj):
+    def __contains__(self, project):
         """See `IVocabulary`."""
-        return obj in self._filter_projs([obj])
+        if not project.active:
+            return False
+        return self.context.inTeam(project.owner)
 
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):
