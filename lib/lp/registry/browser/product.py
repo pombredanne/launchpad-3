@@ -1647,6 +1647,9 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         if admin:
             self.form_fields = (
                 self.form_fields + self._createRegistrantField())
+        # private_bugs is readonly since we are using a mutator but we need
+        # to edit it on the form.
+        self.form_fields['private_bugs'].field.readonly = False
 
     def _createAliasesField(self):
         """Return a PillarAliases field for IProduct.aliases."""

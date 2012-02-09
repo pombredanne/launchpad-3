@@ -3,6 +3,8 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
+from lp.registry.errors import CommercialSubscribersOnly
+from lp.services.webapp.authorization import check_permission
 
 __metaclass__ = type
 __all__ = [
@@ -511,8 +513,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def privateBugsAllowed(self, user):
+        """See `IProductPublic`."""
+        return (
+            check_permission('launchpad.Moderate', self) or
+            user.hasCurrentCommercialSubscription(self))
+
     def setPrivateBugs(self, user, private_bugs):
         """ See `IProductEditRestricted`."""
+        if private_bugs and not self.privateBugsAllowed(user):
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
         self.private_bugs = private_bugs
 
     @cachedproperty

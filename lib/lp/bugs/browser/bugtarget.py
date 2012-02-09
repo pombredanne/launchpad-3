@@ -196,14 +196,22 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             "enable_bugfiling_duplicate_search",
             ]
         if check_permission("launchpad.Edit", self.context):
-            field_names.extend(["bug_supervisor", "security_contact"])
-            field_names.extend(["private_bugs"])
-
+            field_names.extend([
+                "bug_supervisor", "security_contact", "private_bugs"])
         return field_names
+
+    def validatePrivateBugs(self, data):
+        if (data.get('private_bugs', False) and
+            not self.context.privateBugsAllowed(self.user)):
+            self.setFieldError(
+                'private_bugs',
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
         if check_permission("launchpad.Edit", self.context):
+            self.validatePrivateBugs(data)
             self.validateBugSupervisor(data)
             self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
@@ -220,7 +228,8 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
-        # private_bugs uses a mutator to check permissions.
+        # private_bugs uses a mutator to check permissions, so it needs to
+        # be removed too.
         if check_permission("launchpad.Edit", self.context):
             self.changeBugSupervisor(data['bug_supervisor'])
             del data['bug_supervisor']
@@ -228,7 +237,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             del data['security_contact']
             if (data.get('private_bugs')
                     and data['private_bugs'] != self.context.private_bugs):
-                self.context.setPrivateBugs(data['private_bugs'])
+                self.context.setPrivateBugs(self.user, data['private_bugs'])
                 del data['private_bugs']
         self.updateContextFromData(data)
 

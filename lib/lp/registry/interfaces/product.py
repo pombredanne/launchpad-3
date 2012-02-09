@@ -740,6 +740,13 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
+    def privateBugsAllowed(user):
+        """Is the user allowed to turn on private bugs.
+
+        Generally, this is restricted to ~registry or ~admin or product
+        maintainers with active commercial subscriptions.
+        """
+
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
 
