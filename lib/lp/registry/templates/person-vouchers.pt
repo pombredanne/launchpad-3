@@ -42,9 +42,6 @@
                     <tal:widget define="widget nocall:view/widgets/voucher">
                       <metal:block use-macro="context/@@launchpad_form/widget_row" />
                     </tal:widget>
-                    <tr>
-                      <td></td>
-                    </tr>
                   </table>
                 </metal:widgets>
               </div>
