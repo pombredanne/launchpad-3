@@ -2111,7 +2111,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                   status=SpecificationWorkItemStatus.TODO,
                                   sequence=None):
         if title is None:
-            title = self.getUniqueString('title')
+            title = self.getUniqueString(u'title')
         if specification is None:
             specification = self.makeSpecification()
         if sequence is None:

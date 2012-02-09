@@ -8,12 +8,13 @@ __all__ = [
 
 from zope.interface import implements
 
-from storm.sqlobject import (
-    BoolCol,
-    ForeignKey,
-    IntCol,
-    StringCol,
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    Unicode,
     )
+
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -31,21 +32,31 @@ class SpecificationWorkItem(StormBase):
 
     __storm_table__ = 'SpecificationWorkItem'
 
-    title = StringCol(notNull=True)
-    specification = ForeignKey(foreignKey='Specification', notNull=True)
-    assignee = ForeignKey(
-        notNull=False, foreignKey='Person',
-        storm_validator=validate_public_person, default=None)
-    milestone = ForeignKey(
-        foreignKey='Milestone', notNull=False, default=None)
+    id = Int(primary=True)
+    title = Unicode(allow_none=False)
+    specification_id = Int()
+    specification = Reference(specification_id, 'Specification.id')
+    assignee_id = Int(validator=validate_public_person)
+    assignee = Reference(assignee_id, 'Person.id')
+    milestone_id = Int()
+    milestone = Reference(milestone_id, 'Milestone.id')
     status = EnumCol(
         schema=SpecificationWorkItemStatus,
         notNull=True, default=SpecificationWorkItemStatus.TODO)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    sequence = IntCol(notNull=True)
-    deleted = BoolCol(notNull=True, default=False)
+    sequence = Int(allow_none=False)
+    deleted = Bool(allow_none=False, default=False)
 
     def __repr__(self):
         title = self.title.encode('ASCII', 'backslashreplace')
         return '<SpecificationWorkItem [%s] %s: %s of %s>' % (
             self.assignee, title, self.status, self.specification)
+
+    def __init__(self, title, status, specification, assignee, milestone,
+                 sequence):
+        self.title=title
+        self.status=status
+        self.specifiaction = specification
+        self.assignee=assignee
+        self.milestone=milestone
+        self.sequence=sequence
