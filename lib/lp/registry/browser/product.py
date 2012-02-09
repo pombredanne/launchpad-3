@@ -1622,6 +1622,7 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         "owner",
         "active",
         "autoupdate",
+        "private_bugs",
         ]
 
     @property

@@ -15,7 +15,7 @@ reported about that project will be private by default.
     >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.product import IProductSet
 
-    >>> admin_browser.open("http://launchpad.dev/redfish/+configure-bugtracker")
+    >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 

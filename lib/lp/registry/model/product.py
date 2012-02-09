@@ -511,6 +511,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def setPrivateBugs(self, user, private_bugs):
+        """ See `IProductEditRestricted`."""
+        self.private_bugs = private_bugs
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)

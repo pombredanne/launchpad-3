@@ -39,7 +39,10 @@ from lazr.restful.declarations import (
     export_factory_operation,
     export_operation_as,
     export_read_operation,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -51,6 +54,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -359,10 +363,6 @@ class IProductDriverRestricted(Interface):
         """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted):
-    """`IProduct` properties which require launchpad.Edit permission."""
-
-
 class IProductModerateRestricted(Interface):
     """`IProduct` properties which require launchpad.Moderate."""
 
@@ -613,7 +613,7 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = exported(Bool(title=_('Private bugs'),
+    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
                         description=_(
                             "Whether or not bugs reported into this project "
                             "are private by default.")))
@@ -813,6 +813,19 @@ class IProductPublic(
 
         The number of milestones returned per series is limited.
         """
+
+
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
+    """`IProduct` properties which require launchpad.Edit permission."""
+
+    @mutator_for(IProductPublic['private_bugs'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        private_bugs=copy_field(IProductPublic['private_bugs']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setPrivateBugs(user, private_bugs):
+        """Mutator for private_bugs that checks entitlement."""
 
 
 class IProduct(

@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from lp.services.webapp.menu import structured
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -90,10 +91,6 @@ class BugRoleMixin:
         if self.context.security_contact != security_contact:
             self.context.security_contact = security_contact
 
-    def changePrivateBugs(self, private_bugs):
-        if self.context.private_bugs != private_bugs:
-            self.context.private_bugs = private_bugs
-
     def validateSecurityContact(self, data):
         """Validates the new security contact.
 
@@ -127,3 +124,12 @@ class BugRoleMixin:
             # field_state is self.OK.
             return
         self.setFieldError('security_contact', error)
+
+    def validatePrivateBugs(self, data):
+        if (data.get('private_bugs', False) and
+            not check_permission('launchpad.Moderate', self.context) and
+            not self.user.hasCurrentCommercialSubscription(self.context)):
+            self.setFieldError(
+                'private_bugs',
+                'A valid commercial subscription is required to activate '
+                'this feature.')

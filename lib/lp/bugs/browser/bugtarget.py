@@ -197,7 +197,6 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
-        if check_permission("launchpad.Commercial", self.context):
             field_names.extend(["private_bugs"])
 
         return field_names
@@ -221,14 +220,16 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
+        # private_bugs uses a mutator to check permissions.
         if check_permission("launchpad.Edit", self.context):
             self.changeBugSupervisor(data['bug_supervisor'])
             del data['bug_supervisor']
             self.changeSecurityContact(data['security_contact'])
             del data['security_contact']
-        if check_permission("launchpad.Commercial", self.context):
-            self.changePrivateBugs(data['private_bugs'])
-            del data['private_bugs']
+            if (data.get('private_bugs')
+                    and data['private_bugs'] != self.context.private_bugs):
+                self.context.setPrivateBugs(data['private_bugs'])
+                del data['private_bugs']
         self.updateContextFromData(data)
 
 
