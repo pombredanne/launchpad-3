@@ -531,7 +531,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(self.getBranchRevisions(db_trunk), expected)
 
     def test_retrieveDatabaseAncestry(self):
-        # retrieveDatabaseAncestry should set db_ancestry and db_history to
+        # retrieveDatabaseAncestry should set db_history to
         # Launchpad's current understanding of the branch state.
         # db_branch_revision_map should map Bazaar revision_ids to
         # BranchRevision.ids.
@@ -545,8 +545,6 @@ class TestBzrSync(BzrSyncTestCase):
         branch_revisions = IStore(BranchRevision).find(
             BranchRevision, BranchRevision.branch == branch)
         sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
-        expected_ancestry = set(branch_revision.revision.revision_id
-            for branch_revision in sampledata)
         expected_history = [branch_revision.revision.revision_id
             for branch_revision in sampledata
             if branch_revision.sequence is not None]
@@ -554,9 +552,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
-        db_ancestry, db_history = (
-            bzrsync.retrieveDatabaseAncestry())
-        self.assertEqual(expected_ancestry, set(db_ancestry))
+        db_history = bzrsync.retrieveDatabaseAncestry()
         self.assertEqual(expected_history, list(db_history))
 
 
@@ -579,9 +575,9 @@ class TestPlanDatabaseChanges(BzrSyncTestCase):
         syncer.syncBranchAndClose(self.bzr_tree.branch)
         self.assertEqual(rev2_id, self.db_branch.last_scanned_id)
         self.db_branch.last_scanned_id = rev1_id
-        db_ancestry, db_history = self.db_branch.getScannerData()
+        db_history = self.db_branch.getScannerData()
         branchrevisions_to_delete = syncer.planDatabaseChanges(
-            self.bzr_branch, (2, rev2_id), db_ancestry, db_history)[1]
+            self.bzr_branch, (2, rev2_id), db_history)[1]
         self.assertIn(merge_id, branchrevisions_to_delete)
 
 

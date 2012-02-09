@@ -889,18 +889,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def getScannerData():
-        """Retrieve the full ancestry of a branch for the branch scanner.
+        """Retrieve the full history of a branch for the branch scanner.
 
         The branch scanner script is the only place where we need to retrieve
-        all the BranchRevision rows for a branch. Since the ancestry of some
+        all the BranchRevision rows for a branch. Since the history of some
         branches is into the tens of thousands we don't want to materialise
         BranchRevision instances for each of these.
 
-        :return: tuple of three items.
-            1. Ancestry set of bzr revision-ids.
-            2. History list of bzr revision-ids, oldest first.
-            3. Dictionary mapping bzr revision-ids to the database ids of
-               the corresponding BranchRevision rows for this branch.
+        :return: History list of bzr revision-ids, oldest first.
         """
 
     def getInternalBzrUrl():
