@@ -48,6 +48,7 @@ class BzrSync:
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
+        self.revision_set = getUtility(IRevisionSet)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -233,18 +234,23 @@ class BzrSync:
         revisions = bzr_branch.repository.get_parent_map(revisions)
         return bzr_branch.repository.get_revisions(revisions.keys())
 
+    def getDBPairs(self, bzr_revisions):
+        revision_ids = [bzr_revision.revision_id for bzr_revision in
+                        bzr_revisions]
+        result = self.revision_set.getByRevisionIds(revision_ids)
+        db_revision = dict((rev.revision_id, rev) for rev in result)
+        return [(bzr, db_revision[bzr.revision_id]) for bzr in bzr_revisions]
+
     def syncRevisions(self, bzr_branch, bzr_revisions, revids_to_insert):
-        revision_set = getUtility(IRevisionSet)
-        revision_set.newFromBazaarRevisionBatch(bzr_revisions)
-        for bzr_revision in bzr_revisions:
+        self.revision_set.newFromBazaarRevisionBatch(bzr_revisions)
+        pairs = self.getDBPairs(bzr_revisions)
+        for bzr_revision, db_revision in pairs:
             revision_id = bzr_revision.revision_id
             # Revision not yet in the database. Load it.
             self.logger.debug("Inserting revision: %s", revision_id)
-            db_revision = revision_set.getByRevisionId(revision_id)
-            notify(
-                events.NewRevision(
-                    self.db_branch, bzr_branch, db_revision, bzr_revision,
-                    revids_to_insert[revision_id]))
+            revno = revids_to_insert[revision_id]
+            notify(events.NewRevision(
+                self.db_branch, bzr_branch, db_revision, bzr_revision, revno))
 
     def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
         """Import the revision with the given revision_id.

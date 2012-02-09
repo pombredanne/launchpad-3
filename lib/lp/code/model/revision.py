@@ -259,6 +259,10 @@ class RevisionSet:
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
+    def getByRevisionIds(self, revision_ids):
+        return IStore(Revision).find(
+            Revision, Revision.revision_id.is_in(revision_ids))
+
     def _createRevisionAuthor(self, revision_author):
         """Extract out the email and check to see if it matches a Person."""
         email_address = email.Utils.parseaddr(revision_author)[1]
