@@ -2084,8 +2084,7 @@ class PersonVouchersView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return ('Commercial subscription vouchers for %s'
-                % self.context.displayname)
+        return 'Commercial subscription vouchers'
 
     def setUpFields(self):
         """Set up the fields for this view."""
