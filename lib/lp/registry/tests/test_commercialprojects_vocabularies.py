@@ -5,11 +5,7 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from lp.registry.interfaces.product import (
-    IProductSet,
     License,
     )
 from lp.registry.vocabularies import CommercialProjectsVocabulary
@@ -34,7 +30,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.vocab = CommercialProjectsVocabulary(context=self.owner)
 
     def _createProjects(self):
-        """Create a proprietary projects."""
+        """Create maintained projects."""
         # Create 5 proprietary projects.
         self.num_proprietary = 5
         for i in range(self.num_proprietary):
@@ -42,6 +38,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                 name='widget%d' % i, owner=self.owner,
                  licenses=[License.OTHER_PROPRIETARY])
         # Create an open source project.
+        self.num_commercial = self.num_proprietary + 1
         self.factory.makeProduct(
             name='open-widget', owner=self.owner,
             licenses=[License.GNU_GPL_V3])
@@ -51,29 +48,23 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                 name='norwegian-blue-widget', owner=self.owner,
                 licenses=[License.GNU_GPL_V3]).active = False
 
-    def test_emptySearch(self):
-        """An empty search should return all commercial projects."""
+    def test_search_empty(self):
+        """An empty search will return all active maintained projects."""
         results = self.vocab.searchForTerms('')
         self.assertEqual(
-            self.num_proprietary, len(results),
+            self.num_commercial, len(results),
             "Expected %d results but got %d." % (self.num_proprietary,
                                                  len(results)))
 
-    def test_SuccessfulSearch(self):
-        """Search for a project name that exists."""
+    def test_search_success(self):
+        """Search for for active maintained projects success."""
         # All of our commercial projects are named 'widgetn' where n in 0..4.
         # So searching for 'widget' should return the all of the commercial
         # projects.  The open source project 'openwidget' will match the
         # search too, but be filtered out.
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
-            self.num_proprietary, len(results),
-            "Expected %d results but got %d." % (self.num_proprietary,
-                                                 len(results)))
-        # Searching on a subset of 'widget' should work also.
-        results = self.vocab.searchForTerms('idge')
-        self.assertEqual(
-            self.num_proprietary, len(results),
+            self.num_commercial, len(results),
             "Expected %d results but got %d." % (self.num_proprietary,
                                                  len(results)))
         # Ensure we get only those that match by searching for a single
@@ -82,33 +73,14 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(1, len(results),
                          "Expected %d result but got %d." % (1, len(results)))
 
-    def test_FailedSearch(self):
-        """Search for projects that are not commercial projects we own."""
-        results = self.vocab.searchForTerms('openwidget')
+    def test_search_fail(self):
+        """Search for deactivate or non-maintained projects fails."""
+        results = self.vocab.searchForTerms('norwegian-blue-widget')
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
         results = self.vocab.searchForTerms('firefox')
-        self.assertEqual(0, len(results),
-                         "Expected %d results but got %d." %
-                         (0, len(results)))
-
-    def test_TransitionedProjectsSearch(self):
-        """Search for a project that changes from commercial to open."""
-        # The project is commercial so the search succeeds.
-        project_name = 'widget1'
-        results = self.vocab.searchForTerms(project_name)
-        self.assertEqual(1, len(results),
-                         "Expected %d result but got %d." % (1, len(results)))
-
-        # Now change the license for the widget.
-        widget = getUtility(IProductSet).getByName(project_name)
-        naked_widget = removeSecurityProxy(widget)
-        naked_widget.licenses = [License.GNU_GPL_V3]
-
-        # The project is no longer commercial so it is not found.
-        results = self.vocab.searchForTerms(project_name)
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))

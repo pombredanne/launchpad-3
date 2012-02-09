@@ -1516,9 +1516,8 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
         return [
-            project for project in sorted(projects,
-                                          key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting]
+            project for project in
+            sorted(projects, key=attrgetter('displayname'))]
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
