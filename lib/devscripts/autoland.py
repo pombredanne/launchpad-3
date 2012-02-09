@@ -128,7 +128,8 @@ class MergeProposal:
         emails = set(
             map(get_email,
                 [self._mp.source_branch.owner, self._launchpad.me]))
-        emails.remove(None)
+        if None in emails:
+            emails.remove(None)
         return emails
 
     def get_reviews(self):
