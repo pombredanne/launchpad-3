@@ -131,26 +131,6 @@
 
     <div class="left">
 
-      <div class="portlet">
-
-        <h2>Latest teams registered</h2>
-
-        <table>
-          <tbody>
-            <tr tal:repeat="team context/people/latest_teams">
-              <td><a tal:replace="structure team/fmt:link">A-Team</a>
-                  registered
-                  <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:displaydate">
-                    2007-09-17
-                  </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
 
     <div class="right">
 

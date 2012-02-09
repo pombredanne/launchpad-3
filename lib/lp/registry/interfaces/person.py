@@ -2305,9 +2305,6 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
-
     def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
