@@ -23,7 +23,10 @@ from lp.app.interfaces.launchpad import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.errors import (
+    CommercialSubscribersOnly,
+    OpenTeamLinkageError,
+    )
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -278,6 +281,20 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
         self.assertTrue(product.privateBugsAllowed(product.owner))
+
+    def test_unauthorised_set_private_bugs_raises(self):
+        # Test Product.setPrivateBugs raises an error if user unauthorised.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.setPrivateBugs, product.owner, True)
+
+    def test_set_private_bugs(self):
+        # Test Product.setPrivateBugs()
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        product.setPrivateBugs(product.owner, True)
+        self.assertTrue(product.private_bugs)
 
 
 class TestProductFiles(TestCase):
