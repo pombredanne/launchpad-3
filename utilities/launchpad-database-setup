@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 if [ -n "$1" ]; then
@@ -18,7 +18,7 @@ fi
 # https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-for pgversion in 8.4 8.3 8.2
+for pgversion in 9.1 8.4
 do
   sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
   if [ $? -eq 0 ]; then
@@ -58,23 +58,18 @@ echo Applying postgresql configuration changes...
 
 sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
     /etc/postgresql/$pgversion/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
-sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
---- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
-+++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
-@@ -58,7 +58,10 @@
- # on a non-local interface via the listen_addresses configuration parameter,
- # or via the -i or -h command line switches.
- #
--
-+# Launchpad users
-+local   all         all                           trust
-+host    all         all         127.0.0.1/32      trust
-+host    all         all         ::1/128           trust
-
-
+sudo dd of=/etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
+# Launchpad users
+# This section added automatically by launchpad-database-setup
+local   all         all                           trust
+host    all         all         127.0.0.1/32      trust
+host    all         all         ::1/128           trust
+# END Launchpad users
 
 EOF
+sudo dd oflag=append conv=notrunc \
+    if=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    of=/etc/postgresql/$pgversion/main/pg_hba.conf
 sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
     /etc/postgresql/$pgversion/main/pg_hba.conf
 sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
@@ -88,22 +83,16 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 ##
 # Enable launchpad full text searching in database
 search_path='$user,public,ts2'
-add_missing_from=false
+# Per Bug #90809, standard_conforming_strings should be 'on'
+standard_conforming_strings=off
+escape_string_warning=off
+
 #enable_seqscan=false
 log_statement='none'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
 
 EOF
-
-if [ "$pgversion" = 8.2 -o "$pgversion" = 8.3 ]
-then
-  sudo grep -q '^[[:space:]]*max_fsm_relations' /etc/postgresql/$pgversion/main/postgresql.conf || \
-  sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
-max_fsm_relations=2000
-
-EOF
-fi
 
 if [ -e /etc/init.d/postgresql-$pgversion ]; then
     sudo /etc/init.d/postgresql-$pgversion start
