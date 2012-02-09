@@ -20,5 +20,5 @@ class PersonVouchersViewTestCase(TestCaseWithFactory):
         user_url = canonical_url(user)
         view = create_initialized_view(user, '+vouchers')
         self.assertEqual('Commercial subscription vouchers', view.page_title)
-        self.assertEqual(user_url, view.next_url)
-        self.assertEqual(view.cancel_url, view.next_url)
+        self.assertEqual(user_url, view.cancel_url)
+        self.assertEqual('%s/+vouchers' % user_url, view.next_url)
