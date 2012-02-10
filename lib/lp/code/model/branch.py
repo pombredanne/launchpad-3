@@ -133,7 +133,10 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.config import config
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    insert_many,
+    load_related,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -886,13 +889,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
-        data = []
-        for revid, sequence in revision_id_sequence_pairs:
-            data.append('(%s, %s)' % sqlvalues(revid, sequence))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
-            % data)
+        insert_many(
+            store, 'RevidSequence', ('revision_id', 'sequence'),
+            revision_id_sequence_pairs)
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
