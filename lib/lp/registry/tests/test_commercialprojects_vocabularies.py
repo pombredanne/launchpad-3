@@ -50,7 +50,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
             self.deactivated_project.active = False
 
     def test_search_empty(self):
-        """An empty search will return all active maintained projects."""
+        # An empty search will return all active maintained projects.
         results = self.vocab.searchForTerms('')
         self.assertEqual(
             self.num_commercial, len(results),
@@ -58,11 +58,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                                                  len(results)))
 
     def test_search_success(self):
-        """Search for for active maintained projects success."""
-        # All of our commercial projects are named 'widgetn' where n in 0..4.
-        # So searching for 'widget' should return the all of the commercial
-        # projects.  The open source project 'openwidget' will match the
-        # search too, but be filtered out.
+        # Search for for active maintained projects success.
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
             self.num_commercial, len(results),
@@ -75,7 +71,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d result but got %d." % (1, len(results)))
 
     def test_search_fail(self):
-        """Search for deactivate or non-maintained projects fails."""
+        # Search for deactivate or non-maintained projects fails.
         results = self.vocab.searchForTerms('norwegian-blue-widget')
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
