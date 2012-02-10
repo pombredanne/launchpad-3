@@ -13,6 +13,7 @@ from lp.registry.vocabularies import CommercialProjectsVocabulary
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (
     celebrity_logged_in,
+    login_celebrity,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -55,7 +56,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual('Search', self.vocab.step_title)
         self.assertEqual('displayname', self.vocab._orderBy)
 
-    def test_search_empty(self):
+    def test_searchForTerms_empty(self):
         # An empty search will return all active maintained projects.
         results = self.vocab.searchForTerms('')
         self.assertEqual(
@@ -63,7 +64,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
             "Expected %d results but got %d." % (self.num_proprietary,
                                                  len(results)))
 
-    def test_search_success(self):
+    def test_searchForTerms_success(self):
         # Search for for active maintained projects success.
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
@@ -76,7 +77,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(1, len(results),
                          "Expected %d result but got %d." % (1, len(results)))
 
-    def test_search_fail(self):
+    def test_searchForTerms_fail(self):
         # Search for deactivate or non-maintained projects fails.
         results = self.vocab.searchForTerms('norwegian-blue-widget')
         self.assertEqual(0, len(results),
@@ -87,6 +88,15 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
+
+    def test_searchForTerms_registry_expert(self):
+        # Users with launchpad.Moderate can search for any active project.
+        expert = login_celebrity('registry_experts')
+        self.vocab = CommercialProjectsVocabulary(context=expert)
+        self.assertEqual(
+            1, len(self.vocab.searchForTerms('open-widget')))
+        self.assertEqual(
+            0, len(self.vocab.searchForTerms('norwegian-blue-widget')))
 
     def test_toTerm_no_subscription(self):
         # Commercial project terms contain subscription information.
@@ -116,13 +126,6 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertRaises(
             LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
 
-    def test_searchForTerms(self):
-        # Seach for terms returns an CountableIterator.
-        iterator = self.vocab.searchForTerms('widget')
-        self.assertEqual(6, len(iterator))
-        terms = [term for term in iterator]
-        self.assertEqual('open-widget', terms[0].token)
-
     def test_iter(self):
         # The vocabulary can be iterated and the order is by displayname.
         displaynames = [p.value.displayname for p in self.vocab]
@@ -138,11 +141,11 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertIs(False, self.deactivated_project in self.vocab)
         self.assertIs(True, self.maintained_project in self.vocab)
 
-    def test_contains_commercial_admin(self):
+    def test_contains_registry_expert(self):
         # The vocabulary contains all active projects for commercial.
         other_project = self.factory.makeProduct()
-        with celebrity_logged_in('registry_experts') as expert:
-            self.vocab = CommercialProjectsVocabulary(context=expert)
-            self.assertIs(True, other_project in self.vocab)
-            self.assertIs(False, self.deactivated_project in self.vocab)
-            self.assertIs(True, self.maintained_project in self.vocab)
+        expert = login_celebrity('registry_experts')
+        self.vocab = CommercialProjectsVocabulary(context=expert)
+        self.assertIs(True, other_project in self.vocab)
+        self.assertIs(False, self.deactivated_project in self.vocab)
+        self.assertIs(True, self.maintained_project in self.vocab)

@@ -135,7 +135,6 @@ from lp.registry.interfaces.pillar import (
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
-    License,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -1522,9 +1521,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
             return self.emptySelectResults()
         product_set = getUtility(IProductSet)
         if check_permission('launchpad.Moderate', product_set):
-            projects = product_set.forReview(
-                search_text=query, licenses=[License.OTHER_PROPRIETARY],
-                active=True)
+            projects = product_set.search(query)
         else:
             projects = user.getOwnedProjects(match_name=query)
         return projects
