@@ -4920,10 +4920,8 @@ class ContactViaWebNotificationRecipientSet:
                 (person_or_team.displayname, person_or_team.name))
         elif self._primary_reason is self.TO_ADMINS:
             return (
-                'You are contacting the %s (%s) team admins, %s (%s).' %
-                (person_or_team.displayname, person_or_team.name,
-                 self._primary_recipient.displayname,
-                 self._primary_recipient.name))
+                'You are contacting the %s (%s) team admins.' %
+                (person_or_team.displayname, person_or_team.name))
         else:
             # This is a team without a contact address (self.TO_MEMBERS).
             recipients_count = len(self)

@@ -537,7 +537,7 @@ owner.
 
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
-    admins, Sample Person (name12).
+    admins.
 
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']

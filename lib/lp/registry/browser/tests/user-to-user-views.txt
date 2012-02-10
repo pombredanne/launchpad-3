@@ -305,7 +305,7 @@ Non-members may only contact the team owner.
     --
     This message was sent from Launchpad by
     Bart (http://launchpad.dev/~bart)
-    using the "Contact this team's owner" link on the GuadaMen team page
+    using the "Contact this team's admins" link on the GuadaMen team page
     (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
