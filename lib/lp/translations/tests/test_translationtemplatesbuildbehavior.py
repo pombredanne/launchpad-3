@@ -20,6 +20,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
@@ -79,7 +80,7 @@ class MakeBehaviorMixin(object):
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = WaitingSlave()
         behavior._builder = removeSecurityProxy(self.factory.makeBuilder())
-        behavior._builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
