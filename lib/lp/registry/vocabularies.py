@@ -1512,6 +1512,14 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """The vocabulary's display nane."""
         return 'Select a commercial project'
 
+    @cachedproperty
+    def product_set(self):
+        return getUtility(IProductSet)
+
+    @cachedproperty
+    def is_moderator(self):
+        return check_permission('launchpad.Moderate', self.product_set)
+
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
@@ -1519,9 +1527,8 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        product_set = getUtility(IProductSet)
-        if check_permission('launchpad.Moderate', product_set):
-            projects = product_set.search(query)
+        if self.is_moderator:
+            projects = self.product_set.search(query)
         else:
             projects = user.getOwnedProjects(match_name=query)
         return projects
@@ -1565,8 +1572,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """See `IVocabulary`."""
         if not project.active:
             return False
-        product_set = getUtility(IProductSet)
-        if check_permission('launchpad.Moderate', product_set):
+        if self.is_moderator:
             return True
         return self.context.inTeam(project.owner)
 
