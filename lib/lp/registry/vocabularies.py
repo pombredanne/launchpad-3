@@ -1552,10 +1552,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        if type(results) is list:
-            num = len(results)
-        else:
-            num = results.count()
+        num = results.count()
         return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
