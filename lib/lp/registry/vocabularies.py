@@ -1517,7 +1517,8 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return getUtility(IProductSet)
 
     @cachedproperty
-    def is_moderator(self):
+    def is_commercial_admin(self):
+        """Is the user a commercial admin?"""
         return check_permission('launchpad.Commercial', self.product_set)
 
     def _doSearch(self, query=None):
@@ -1527,7 +1528,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        if self.is_moderator:
+        if self.is_commercial_admin:
             projects = self.product_set.search(query)
         else:
             projects = user.getOwnedProjects(match_name=query)
@@ -1572,7 +1573,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """See `IVocabulary`."""
         if not project.active:
             return False
-        if self.is_moderator:
+        if self.is_commercial_admin:
             return True
         return self.context.inTeam(project.owner)
 
