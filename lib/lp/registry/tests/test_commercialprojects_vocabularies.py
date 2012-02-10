@@ -82,6 +82,13 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
+    def test_toTerm_no_subscription(self):
+        # Commercial project terms contain subscription information.
+        term = self.vocab.toTerm(self.maintained_project)
+        self.assertEqual(self.maintained_project, term.value)
+        self.assertEqual('open-widget', term.token)
+        self.assertEqual('Open-widget (no subscription)', term.title)
+
     def test_getTermByToken(self):
         # The term for a token in the vocabulary is returned.
         token = self.vocab.getTermByToken('open-widget')

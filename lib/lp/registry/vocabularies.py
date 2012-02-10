@@ -1532,14 +1532,14 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def toTerm(self, project):
         """Return the term for this object."""
         if project.commercial_subscription is None:
-            sub_status = "(unsubscribed)"
+            sub_status = "(no subscription)"
         else:
             date_formatter = DateTimeFormatterAPI(
                 project.commercial_subscription.date_expires)
             sub_status = "(expires %s)" % date_formatter.displaydate()
         return SimpleTerm(project,
                           project.name,
-                          '%s %s' % (project.title, sub_status))
+                          '%s %s' % (project.displayname, sub_status))
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
