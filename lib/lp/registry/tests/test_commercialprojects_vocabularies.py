@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.interfaces.product import (
     License,
     )
@@ -88,6 +89,17 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(self.maintained_project, term.value)
         self.assertEqual('open-widget', term.token)
         self.assertEqual('Open-widget (no subscription)', term.title)
+
+    def test_toTerm_with_subscription(self):
+        # Commercial project terms contain subscription information.
+        self.factory.makeCommercialSubscription(self.maintained_project)
+        cs = self.maintained_project.commercial_subscription
+        expiration_date = DateTimeFormatterAPI(cs.date_expires).displaydate()
+        term = self.vocab.toTerm(self.maintained_project)
+        self.assertEqual(self.maintained_project, term.value)
+        self.assertEqual('open-widget', term.token)
+        self.assertEqual(
+            'Open-widget (expires %s)' % expiration_date, term.title)
 
     def test_getTermByToken(self):
         # The term for a token in the vocabulary is returned.
