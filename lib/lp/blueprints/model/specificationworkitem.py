@@ -34,11 +34,11 @@ class SpecificationWorkItem(StormBase):
 
     id = Int(primary=True)
     title = Unicode(allow_none=False)
-    specification_id = Int()
+    specification_id = Int(name='specification')
     specification = Reference(specification_id, 'Specification.id')
-    assignee_id = Int(validator=validate_public_person)
+    assignee_id = Int(name='assignee', validator=validate_public_person)
     assignee = Reference(assignee_id, 'Person.id')
-    milestone_id = Int()
+    milestone_id = Int(name='milestone')
     milestone = Reference(milestone_id, 'Milestone.id')
     status = EnumCol(
         schema=SpecificationWorkItemStatus,
@@ -56,7 +56,7 @@ class SpecificationWorkItem(StormBase):
                  sequence):
         self.title=title
         self.status=status
-        self.specifiaction = specification
+        self.specification = specification
         self.assignee=assignee
         self.milestone=milestone
         self.sequence=sequence
