@@ -86,6 +86,14 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
+    def test_iter(self):
+        # The vocabulary can be iterated and the order is by displayname.
+        displaynames = [p.value.displayname for p in self.vocab]
+        self.assertEqual(
+            ['Open-widget', 'Widget0', 'Widget1', 'Widget2', 'Widget3',
+             'Widget4'],
+            displaynames)
+
     def test_contains_maintainer(self):
         # The vocabulary only contains active projects the user maintains.
         other_project = self.factory.makeProduct()
