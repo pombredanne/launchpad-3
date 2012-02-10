@@ -1301,6 +1301,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {self.package_field_name: self.other_package}
 
+    def initialize(self):
+        # The template only shows the form if the portlet is shown and
+        # there aren't any linked sourcepackages. If either of those
+        # conditions fails, there's no point setting up the widgets
+        # (with the expensive FTI query that entails).
+        if self.can_show_portlet and not self.sourcepackages:
+            super(ProductPackagesPortletView, self).initialize()
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
