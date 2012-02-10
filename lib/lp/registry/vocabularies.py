@@ -1495,10 +1495,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.  For
-    normal users only commercial projects for which the user is the
-    maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.Moderate permission, all commercial projects are returned.
+    A commercial project is an active project that can have a commercial
+    subscription to grant access to proprietary features. The vocabulary
+    contains the active projects user maintains, or all active project
+    if the user is a registry expert.
     """
 
     implements(IHugeVocabulary)
