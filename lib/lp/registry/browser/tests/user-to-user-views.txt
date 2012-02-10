@@ -309,9 +309,10 @@ Non-members may only contact the team owner.
     (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Messages: 1
+    # of Messages: 2
     Recipients:
         Foo Bar <foo.bar@canonical.com>
+        Ubuntu Team <support@ubuntu.com>
 
 
 Member to team
