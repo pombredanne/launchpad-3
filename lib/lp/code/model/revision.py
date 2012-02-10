@@ -354,22 +354,6 @@ class RevisionSet:
         if not revisions:
             return
         store = IMasterStore(Revision)
-        store.execute(
-            """
-            CREATE TEMPORARY TABLE NewRevisionProperties (
-                revision_id text,
-                name text,
-                value text
-            )
-            """)
-        store.execute(
-            """
-            CREATE TEMPORARY TABLE NewRevisionParents (
-                revision_id text,
-                sequence integer,
-                parent_id text
-            )
-            """)
         data = []
 
         author_names = []
@@ -389,21 +373,6 @@ class RevisionSet:
             revision_date = self._timestampToDatetime(bzr_revision.timestamp)
             revision_author = revision_authors[author_name]
 
-            if bzr_revision.properties:
-                for name, value in bzr_revision.properties.iteritems():
-                    property_data.append(
-                        "(%s, %s, %s)" % sqlvalues(revision_id, name, value))
-            if bzr_revision.parent_ids:
-                parent_ids = bzr_revision.parent_ids
-                seen_parents = set()
-                for sequence, parent_id in enumerate(parent_ids):
-                    if parent_id in seen_parents:
-                        continue
-                    seen_parents.add(parent_id)
-                    parent_data.append(
-                        "(%s, %s, %s)" %
-                        sqlvalues(revision_id, sequence, parent_id))
-
             data.append(
                 '(%s, %s, %s, %s)' %
                 sqlvalues(
@@ -411,18 +380,6 @@ class RevisionSet:
                     bzr_revision.message,
                     revision_date,
                     revision_author))
-        if len(parent_data) > 0:
-            store.execute("""
-                INSERT INTO NewRevisionParents (
-                    revision_id, sequence, parent_id)
-                VALUES %s
-                """ % ', '.join(parent_data))
-        if len(property_data) > 0:
-            store.execute("""
-                INSERT INTO NewRevisionProperties (
-                    revision_id, name, value)
-                VALUES %s
-                """ % ', '.join(property_data))
         data = ', '.join(data)
         store.execute(
             """
@@ -430,26 +387,40 @@ class RevisionSet:
                 revision_id, log_body, revision_date, revision_author)
             VALUES %s
             """ % data)
-        store.execute(
-            """
-            INSERT INTO RevisionProperty (revision, name, value)
-            SELECT
-                Revision.id, NewRevisionProperties.name,
-                NewRevisionProperties.value
-            FROM NewRevisionProperties, Revision
-            WHERE Revision.revision_id = NewRevisionProperties.revision_id
-            """)
-        store.execute(
-            """
-            INSERT INTO RevisionParent (revision, sequence, parent_id)
-            SELECT
-                Revision.id, NewRevisionParents.sequence,
-                NewRevisionParents.parent_id
-            FROM NewRevisionParents, Revision
-            WHERE Revision.revision_id = NewRevisionParents.revision_id
-            """)
-        store.execute("DROP TABLE NewRevisionProperties")
-        store.execute("DROP TABLE NewRevisionParents")
+
+        revision_ids = [revision.revision_id for revision in revisions]
+        result = store.find((Revision.revision_id, Revision.id),
+            Revision.revision_id.is_in(revision_ids))
+        revision_db_id = dict(result)
+
+        for bzr_revision, author_name in zip(revisions, author_names):
+            db_id = revision_db_id[bzr_revision.revision_id]
+            for name, value in bzr_revision.properties.iteritems():
+                property_data.append(
+                    "(%s, %s, %s)" % sqlvalues(db_id, name, value))
+            parent_ids = bzr_revision.parent_ids
+            seen_parents = set()
+            for sequence, parent_id in enumerate(parent_ids):
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
+                parent_data.append(
+                    "(%s, %s, %s)" %
+                    sqlvalues(db_id, sequence, parent_id))
+
+
+        if len(parent_data) > 0:
+            store.execute("""
+                INSERT INTO RevisionParent (
+                    revision, sequence, parent_id)
+                VALUES %s
+                """ % ', '.join(parent_data))
+        if len(property_data) > 0:
+            store.execute("""
+                INSERT INTO RevisionProperty (
+                    revision, name, value)
+                VALUES %s
+                """ % ', '.join(property_data))
 
     @staticmethod
     def onlyPresent(revids):
