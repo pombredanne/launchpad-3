@@ -105,25 +105,17 @@ class LaunchpadConfig:
         :param instance_name: the configuration instance to use. Defaults to
             the value of the LPCONFIG environment variable.
         :param process_name: the process configuration name to use. Defaults
-            to the basename of sys.argv[0] without any extension, or None if
-            sys.argv is not available.
+            to the basename of sys.argv[0] without any extension.
        """
         self._config = None
         if instance_name is None:
             instance_name = find_instance_name()
 
         if process_name is None:
-            self._process_name = self._make_process_name()
-        else:
-            self._process_name = process_name
+            process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
+        self._process_name = process_name
         self.root = TREE_ROOT
-
-    def _make_process_name(self):
-        if getattr(sys, 'argv', None) is None:
-            return None
-        basename = os.path.basename(sys.argv[0])
-        return os.path.splitext(basename)[0]
 
     @property
     def instance_name(self):
@@ -180,8 +172,6 @@ class LaunchpadConfig:
         LaunchpadConfig loads the conf file named for the process. When
         the conf file does not exist, it loads launchpad-lazr.conf instead.
         """
-        if self._process_name is None:
-            self._process_name = self._make_process_name()
         return self._process_name
 
     def setProcess(self, process_name):
