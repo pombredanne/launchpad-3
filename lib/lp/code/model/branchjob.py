@@ -487,18 +487,18 @@ class RevisionsAddedJob(BranchJobDerived):
         """Iterate through revisions added to the mainline."""
         graph = self.bzr_branch.repository.get_graph()
         branch_last_revinfo = self.bzr_branch.last_revision_info()
+        # FInd the revision number matching self.last_revision_id
         last_revno = graph.find_distance_to_null(
             self.last_revision_id,
             [(branch_last_revinfo[1], branch_last_revinfo[0])])
         added_revisions = graph.find_unique_ancestors(
-            self.last_revision_id, [self.last_scanned_id])
+            self.last_revision_id, [self.last_scanned_id, NULL_REVISION])
         # Avoid hitting the database since bzrlib makes it easy to check.
         history = graph.iter_lefthand_ancestry(
-            self.last_revision_id, (NULL_REVISION, None))
+            self.last_revision_id, [NULL_REVISION, self.last_scanned_id, None])
         for distance, revid in enumerate(history):
-            if not revid in added_revisions:
-                break
-            yield revid, last_revno - distance
+            if revid in added_revisions:
+                yield revid, last_revno - distance
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""

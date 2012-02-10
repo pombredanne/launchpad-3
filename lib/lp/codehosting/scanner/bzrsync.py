@@ -116,7 +116,7 @@ class BzrSync:
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
-        initial_scan = db_history.is_empty()
+        initial_scan = (self.db_branch.last_scanned_id is None)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
         # The Branch table is modified by other systems, including the web UI,
@@ -155,22 +155,13 @@ class BzrSync:
 
         return bzr_branch.repository.get_graph(PPSource)
 
-    def getAncestryDelta(self, bzr_branch, bzr_last_revinfo):
-        bzr_last = bzr_last_revinfo[1]
-        db_last = self.db_branch.last_scanned_id
-        if db_last is None:
-            db_last = NULL_REVISION
-        graph = self._getRevisionGraph(bzr_branch, db_last)
-        bzr_branch.lock_read()
-        try:
-            added_ancestry, removed_ancestry = (
-                graph.find_difference(bzr_last, db_last))
-        finally:
-            bzr_branch.unlock()
+    def getAncestryDelta(self, bzr_branch, bzr_last_revinfo, graph, db_last):
+        added_ancestry, removed_ancestry = graph.find_difference(
+            bzr_last_revinfo[1], db_last)
         added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
-    def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, db_history):
+    def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, graph, db_history):
         self.logger.info("Calculating history delta.")
         removed_history = []
         common_revid = NULL_REVISION
@@ -185,8 +176,7 @@ class BzrSync:
             removed_history.append(revid)
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
-        bzr_graph = bzr_branch.repository.get_graph()
-        added_history = list(bzr_graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
+        added_history = list(graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
             (common_revid, )))
         return added_history, removed_history
 
@@ -198,10 +188,18 @@ class BzrSync:
         """
         self.logger.info("Planning changes.")
         # Find the length of the common history.
-        added_history, removed_history = self.getHistoryDelta(
-            bzr_branch, bzr_last_revinfo, db_history)
-        added_ancestry, removed_ancestry = self.getAncestryDelta(
-            bzr_branch, bzr_last_revinfo)
+        db_last = self.db_branch.last_scanned_id
+        if db_last is None:
+            db_last = NULL_REVISION
+        graph = self._getRevisionGraph(bzr_branch, db_last)
+        bzr_branch.lock_read()
+        try:
+            added_history, removed_history = self.getHistoryDelta(
+                bzr_branch, bzr_last_revinfo, graph, db_history)
+            added_ancestry, removed_ancestry = self.getAncestryDelta(
+                bzr_branch, bzr_last_revinfo, graph, db_last)
+        finally:
+            bzr_branch.unlock()
 
         notify(
             events.RevisionsRemoved(
@@ -236,8 +234,8 @@ class BzrSync:
         :param revisions: the set of Bazaar revision IDs to return bzrlib
             Revision objects for.
         """
-        revisions = bzr_branch.repository.get_parent_map(revisions)
-        return bzr_branch.repository.get_revisions(revisions.keys())
+        revisions = list(bzr_branch.repository.has_revisions(revisions))
+        return bzr_branch.repository.get_revisions(revisions)
 
     def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
         """Import the revision with the given revision_id.
