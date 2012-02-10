@@ -1513,12 +1513,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """The vocabulary's display nane."""
         return 'Select a commercial project'
 
-    def _filter_projs(self, projects):
-        """Filter the list of all projects to just the commercial ones."""
-        return [
-            project for project in
-            sorted(projects, key=attrgetter('displayname'))]
-
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
         or displayname, or matches the full text index.
@@ -1533,7 +1527,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                 active=True)
         else:
             projects = user.getOwnedProjects(match_name=query)
-            projects = self._filter_projs(projects)
         return projects
 
     def toTerm(self, project):
@@ -1567,7 +1560,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def _commercial_projects(self):
         """Return the list of commercial projects owned by this user."""
-        return self._filter_projs(self._doSearch())
+        return self._doSearch()
 
     def __iter__(self):
         """See `IVocabulary`."""
