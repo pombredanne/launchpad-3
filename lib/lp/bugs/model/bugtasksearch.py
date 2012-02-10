@@ -10,6 +10,8 @@ __all__ = [
     'search_value_to_where_condition',
     ]
 
+from operator import itemgetter
+
 from lazr.enum import BaseItem
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
@@ -194,7 +196,7 @@ def search_value_to_where_condition(search_value):
         return "IS NULL"
 
 
-def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
+def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
     """Return a Storm result set for the given search parameters.
 
     :param resultrow: The type of data returned by the query.
@@ -202,78 +204,61 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, params, *args):
         pre-joined.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
-    :param params: A BugTaskSearchParams instance.
-    :param args: optional additional BugTaskSearchParams instances,
+    :param alternatives: A sequence of BugTaskSearchParams instances, the
+        results of which will be unioned. Only the first ordering is
+        respected.
     """
-    orig_store = store = IStore(BugTask)
-    [query, clauseTables, bugtask_decorator, join_tables,
-    has_duplicate_results, with_clause] = _build_query(params)
-    if with_clause:
-        store = store.with_(with_clause)
-    orderby_expression, orderby_joins = _process_order_by(params)
-    if len(args) == 0:
+    store = IStore(BugTask)
+    orderby_expression, orderby_joins = _process_order_by(alternatives[0])
+    decorators = []
+
+    if len(alternatives) == 1:
+        [query, clauseTables, bugtask_decorator, join_tables,
+         has_duplicate_results, with_clause] = _build_query(alternatives[0])
+        if with_clause:
+            store = store.with_(with_clause)
+        decorators.append(bugtask_decorator)
+
         if has_duplicate_results:
             origin = _build_origin(join_tables, [], clauseTables)
-            outer_origin = _build_origin(
-                    orderby_joins, prejoins, [])
+            outer_origin = _build_origin(orderby_joins, prejoins, [])
             subquery = Select(BugTask.id, where=SQL(query), tables=origin)
-            resultset = store.using(*outer_origin).find(
+            result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
             origin = _build_origin(
                 join_tables + orderby_joins, prejoins, clauseTables)
-            resultset = store.using(*origin).find(resultrow, query)
-        if prejoins:
-            decorator = lambda row: bugtask_decorator(row[0])
-        else:
-            decorator = bugtask_decorator
-
-        resultset.order_by(orderby_expression)
-        return DecoratedResultSet(resultset, result_decorator=decorator,
-            pre_iter_hook=pre_iter_hook)
-
-    inner_resultrow = (BugTask,)
-    origin = _build_origin(join_tables, [], clauseTables)
-    resultset = store.using(*origin).find(inner_resultrow, query)
-
-    decorators = [bugtask_decorator]
-    for arg in args:
-        [query, clauseTables, decorator, join_tables,
-            has_duplicate_results, with_clause] = _build_query(arg)
-        origin = _build_origin(join_tables, [], clauseTables)
-        localstore = store
-        if with_clause:
-            localstore = orig_store.with_(with_clause)
-        next_result = localstore.using(*origin).find(
-            inner_resultrow, query)
-        resultset = resultset.union(next_result)
-        # NB: assumes the decorators are all compatible.
-        # This may need revisiting if e.g. searches on behalf of different
-        # users are combined.
-        decorators.append(decorator)
-
-    def prejoin_decorator(row):
-        bugtask = row[0]
-        for decorator in decorators:
-            bugtask = decorator(bugtask)
-        return bugtask
-
-    def simple_decorator(bugtask):
-        for decorator in decorators:
-            bugtask = decorator(bugtask)
-        return bugtask
-
-    origin = _build_origin(
-        orderby_joins, prejoins, [],
-        start_with=Alias(resultset._get_select(), "BugTask"))
-    if prejoins:
-        decorator = prejoin_decorator
+            result = store.using(*origin).find(resultrow, query)
     else:
-        decorator = simple_decorator
+        results = []
 
-    result = store.using(*origin).find(resultrow)
+        for params in alternatives:
+            [query, clauseTables, decorator, join_tables,
+             has_duplicate_results, with_clause] = _build_query(params)
+            origin = _build_origin(join_tables, [], clauseTables)
+            localstore = store
+            if with_clause:
+                localstore = store.with_(with_clause)
+            next_result = localstore.using(*origin).find((BugTask,), query)
+            results.append(next_result)
+            # NB: assumes the decorators are all compatible.
+            # This may need revisiting if e.g. searches on behalf of different
+            # users are combined.
+            decorators.append(decorator)
+
+        resultset = reduce(lambda l, r: l.union(r), results)
+        origin = _build_origin(
+            orderby_joins, prejoins, [],
+            start_with=Alias(resultset._get_select(), "BugTask"))
+        result = store.using(*origin).find(resultrow)
+
+    if prejoins:
+        decorators.insert(0, itemgetter(0))
+
     result.order_by(orderby_expression)
-    return DecoratedResultSet(result, result_decorator=decorator,
+    return DecoratedResultSet(
+        result,
+        lambda row: reduce(lambda task, dec: dec(task), decorators, row),
         pre_iter_hook=pre_iter_hook)
 
 
