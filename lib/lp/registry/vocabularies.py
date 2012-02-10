@@ -1518,7 +1518,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     @cachedproperty
     def is_moderator(self):
-        return check_permission('launchpad.Moderate', self.product_set)
+        return check_permission('launchpad.Commercial', self.product_set)
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name

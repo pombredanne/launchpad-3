@@ -89,9 +89,9 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
-    def test_searchForTerms_registry_expert(self):
-        # Users with launchpad.Moderate can search for any active project.
-        expert = login_celebrity('registry_experts')
+    def test_searchForTerms_commercial_admin(self):
+        # Users with launchpad.Commercial can search for any active project.
+        expert = login_celebrity('commercial_admin')
         self.vocab = CommercialProjectsVocabulary(context=expert)
         self.assertEqual(
             1, len(self.vocab.searchForTerms('open-widget')))
@@ -141,10 +141,10 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertIs(False, self.deactivated_project in self.vocab)
         self.assertIs(True, self.maintained_project in self.vocab)
 
-    def test_contains_registry_expert(self):
+    def test_contains_commercial_admin(self):
         # The vocabulary contains all active projects for commercial.
         other_project = self.factory.makeProduct()
-        expert = login_celebrity('registry_experts')
+        expert = login_celebrity('commercial_admin')
         self.vocab = CommercialProjectsVocabulary(context=expert)
         self.assertIs(True, other_project in self.vocab)
         self.assertIs(False, self.deactivated_project in self.vocab)

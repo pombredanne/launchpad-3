@@ -2150,7 +2150,7 @@ class PersonVouchersView(LaunchpadFormView):
         project so the property is True always.  Otherwise it is true if the
         vocabulary is not empty.
         """
-        if check_permission('launchpad.Moderate', self.context):
+        if check_permission('launchpad.Commercial', self.context):
             return True
         vocabulary_registry = getVocabularyRegistry()
         vocabulary = vocabulary_registry.get(self.context,
