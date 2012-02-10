@@ -318,11 +318,13 @@ def su(user):
     current_home = os.getenv('HOME')
     home = get_user_home(user)
     os.environ['HOME'] = home
-    yield Env(uid, gid, home)
-    os.setegid(os.getgid())
-    os.seteuid(os.getuid())
-    if current_home is not None:
-        os.environ['HOME'] = current_home
+    try:
+        yield Env(uid, gid, home)
+    finally:
+        os.setegid(os.getgid())
+        os.seteuid(os.getuid())
+        if current_home is not None:
+            os.environ['HOME'] = current_home
 
 
 def user_exists(username):
