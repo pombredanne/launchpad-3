@@ -485,8 +485,7 @@ class RevisionsAddedJob(BranchJobDerived):
 
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
-        repository = self.bzr_branch.repository
-        graph = repository.get_graph()
+        graph = self.bzr_branch.repository.get_graph()
         branch_last_revinfo = self.bzr_branch.last_revision_info()
         last_revno = graph.find_distance_to_null(
             self.last_revision_id,
