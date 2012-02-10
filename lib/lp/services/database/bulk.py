@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'insert_many',
     'load',
     'load_referencing',
     'load_related',
@@ -21,6 +22,7 @@ from storm.info import get_cls_info
 from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.lpstorm import IStore
 
 
@@ -69,7 +71,7 @@ def reload(objects):
 
 def _primary_key(object_type):
     """Get a primary key our helpers can use.
-    
+
     :raises AssertionError if the key is missing or unusable.
     """
     primary_key = get_cls_info(object_type).primary_key
@@ -96,7 +98,7 @@ def load(object_type, primary_keys, store=None):
 
 def load_referencing(object_type, owning_objects, reference_keys):
     """Load objects of object_type that reference owning_objects.
-    
+
     Note that complex types like Person are best loaded through dedicated
     helpers that can eager load other related things (e.g. validity for
     Person).
@@ -143,3 +145,23 @@ def load_related(object_type, owning_objects, foreign_keys):
     for owning_object in owning_objects:
         keys.update(map(partial(getattr, owning_object), foreign_keys))
     return load(object_type, keys)
+
+
+def insert_many(store, table, columns, rows):
+    """Insert multiple rows into a table.
+
+    :param store: Store to use for insertion.
+    :param table: Name of the table to insert into.
+    :param columns: Iterable of names of columns.
+    :param rows: Sequence of tuples of values, in order as per columns.
+    """
+    if len(rows) == 0:
+        return
+    column_str = '(%s)' % ', '.join(columns)
+    rows = ['(%s)' % ', '.join(sqlvalues(*row)) for row in rows]
+    rows = ', '.join(rows)
+    store.execute(
+        """
+        INSERT INTO %s %s
+        VALUES %s
+        """ % (table, column_str, rows))

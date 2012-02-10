@@ -61,6 +61,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.person import ValidPersonCache
+from lp.services.database.bulk import insert_many
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -73,7 +74,6 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     quote,
     SQLBase,
-    sqlvalues,
     )
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import (
@@ -351,8 +351,6 @@ class RevisionSet:
 
     def newFromBazaarRevisions(self, revisions):
         """See `IRevisionSet`."""
-        if not revisions:
-            return
         store = IMasterStore(Revision)
         data = []
 
@@ -374,19 +372,11 @@ class RevisionSet:
             revision_author = revision_authors[author_name]
 
             data.append(
-                '(%s, %s, %s, %s)' %
-                sqlvalues(
-                    revision_id,
-                    bzr_revision.message,
-                    revision_date,
-                    revision_author))
-        data = ', '.join(data)
-        store.execute(
-            """
-            INSERT INTO Revision (
-                revision_id, log_body, revision_date, revision_author)
-            VALUES %s
-            """ % data)
+                (revision_id, bzr_revision.message, revision_date,
+                revision_author))
+        insert_many(
+            store, 'Revision', ('revision_id', 'log_body', 'revision_date',
+                'revision_author'), data)
 
         revision_ids = [revision.revision_id for revision in revisions]
         result = store.find((Revision.revision_id, Revision.id),
@@ -396,31 +386,20 @@ class RevisionSet:
         for bzr_revision, author_name in zip(revisions, author_names):
             db_id = revision_db_id[bzr_revision.revision_id]
             for name, value in bzr_revision.properties.iteritems():
-                property_data.append(
-                    "(%s, %s, %s)" % sqlvalues(db_id, name, value))
+                property_data.append((db_id, name, value))
             parent_ids = bzr_revision.parent_ids
             seen_parents = set()
             for sequence, parent_id in enumerate(parent_ids):
                 if parent_id in seen_parents:
                     continue
                 seen_parents.add(parent_id)
-                parent_data.append(
-                    "(%s, %s, %s)" %
-                    sqlvalues(db_id, sequence, parent_id))
-
-
-        if len(parent_data) > 0:
-            store.execute("""
-                INSERT INTO RevisionParent (
-                    revision, sequence, parent_id)
-                VALUES %s
-                """ % ', '.join(parent_data))
-        if len(property_data) > 0:
-            store.execute("""
-                INSERT INTO RevisionProperty (
-                    revision, name, value)
-                VALUES %s
-                """ % ', '.join(property_data))
+                parent_data.append((db_id, sequence, parent_id))
+        insert_many(
+            store, 'RevisionParent', ('revision', 'sequence', 'parent_id'),
+            parent_data)
+        insert_many(
+            store, 'RevisionProperty', ('revision', 'name', 'value'),
+            property_data)
 
     @staticmethod
     def onlyPresent(revids):
@@ -433,12 +412,8 @@ class RevisionSet:
             CREATE TEMPORARY TABLE Revids
             (revision_id text)
             """)
-        data = []
-        for revid in revids:
-            data.append('(%s)' % sqlvalues(revid))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO Revids (revision_id) VALUES %s" % data)
+        insert_many(
+            store, 'Revids', ('revision_id',), [(revid,) for revid in revids])
         result = store.execute(
             """
             SELECT Revids.revision_id
