@@ -363,110 +363,7 @@ the same subject and body from the same sender.
         Steve Alexander <steve.alexander@ubuntulinux.com>
         Ubuntu Team <support@ubuntu.com>
 
-The Guadamen team creates a mailing list but does not set it to be the
-contact address. The mailing list will not be used.
-
-    >>> team, mailing_list = factory.makeTeamAndMailingList(
-    ...     guadamen.name, guadamen.teamowner.name)
-
-    # Ignore the 'new mailing list message'
-
     >>> transaction.commit()
-    >>> del stub.test_emails[:]
-
-Foo Bar now contacts them again, which he can do because his quota is
-still not met. This message includes a "%s" combination; it is not a
-interpolation instruction.
-
-    >>> view = create_view(
-    ...     foo_bar, guadamen, {
-    ...         'field.field.from_': 'foo.bar@canonical.com',
-    ...         'field.subject': 'My last question for Guadamen',
-    ...         'field.message': 'Can one of you help me with "%s" usage!',
-    ...         'field.actions.send': 'Send',
-    ...         })
-    >>> print_notifications(view)
-    Message sent to GuadaMen
-
-Foo Bar's message gets sent to each individual member of he team.
-
-    >>> transaction.commit()
-    >>> print_messages()
-    Senders: set(['Foo Bar <foo.bar@canonical.com>'])
-    Subjects: set(['My last question for Guadamen'])
-    Bodies:
-    Can one of you help me with "%s" usage!
-    --
-    This message was sent from Launchpad by
-    Foo Bar (http://launchpad.dev/~name16)
-    to each member of the GuadaMen team
-    using the "Contact this team" link on the GuadaMen
-    team page (http://launchpad.dev/~guadamen).
-    For more information see
-    https://help.launchpad.net/YourAccount/ContactingPeople
-    # of Messages: 10
-    Recipients:
-        Alexander Limi <limi@plone.org>
-        Celso Providelo <celso.providelo@canonical.com>
-        Colin Watson <colin.watson@ubuntulinux.com>
-        Daniel Silverstone <daniel.silverstone@canonical.com>
-        Edgar Bursic <edgar@monteparadiso.hr>
-        Foo Bar <foo.bar@canonical.com>
-        Jeff Waugh <jeff.waugh@ubuntulinux.com>
-        Mark Shuttleworth <mark@example.com>
-        Steve Alexander <steve.alexander@ubuntulinux.com>
-        Ubuntu Team <support@ubuntu.com>
-
-The Guadamen team now registers an external contact address (they could
-have also used their Launchpad mailing list address).
-
-    >>> from lp.services.identity.interfaces.emailaddress import (
-    ...     IEmailAddressSet)
-    >>> email_set = getUtility(IEmailAddressSet)
-    >>> address = email_set.new('guadamen@example.com', guadamen)
-    >>> guadamen.setContactAddress(address)
-
-Foo Bar contacts the Guadamen team again, which is allowed because his
-quota was not met by his first message.  This time only one message is
-sent, and that to the new contact address.
-
-    >>> view = create_view(
-    ...     foo_bar, guadamen, {
-    ...         'field.field.from_': 'foo.bar@canonical.com',
-    ...         'field.subject': 'Hello again Guadamen',
-    ...         'field.message': 'Can one of you help me?',
-    ...         'field.actions.send': 'Send',
-    ...         })
-    >>> print_notifications(view)
-    Message sent to GuadaMen
-
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> print from_addr, to_addrs
-    bounces@canonical.com [u'GuadaMen <guadamen@example.com>']
-
-    >>> print raw_msg
-    Content-Type: text/plain; charset="us-ascii"
-    ...
-    From: Foo Bar <foo.bar@canonical.com>
-    To: GuadaMen <guadamen@example.com>
-    Subject: Hello again Guadamen
-    ...
-    X-Launchpad-Message-Rationale: ContactViaWeb member (guadamen team)
-    ...
-    <BLANKLINE>
-    Can one of you help me?
-    --
-    This message was sent from Launchpad by
-    Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page
-    (http://launchpad.dev/~guadamen).
-    For more information see
-    https://help.launchpad.net/YourAccount/ContactingPeople
-
 
 Message quota
 -------------
@@ -476,6 +373,30 @@ is_allowed to send emails because he has not exceeded the daily quota.
 The next_try property is the date when the user will be allowed to send
 emails again. The is_possible property will be False if is_allowed is
 False.
+
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'Hello Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
+
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'Hello Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
 
 Foo Bar has now reached his quota and can send no more contact messages
 today.

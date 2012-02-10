@@ -608,19 +608,6 @@ special message just for him.
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']
 
-EmailToPersonView will use the contact address when the team has one.
-
-    >>> email_address = factory.makeEmail(
-    ...     'landscapers@canonical.com', landscape_developers)
-    >>> landscape_developers.setContactAddress(email_address)
-
-    >>> view = create_initialized_view(landscape_developers, '+contactuser')
-    >>> print view.recipients.description
-    You are contacting the Landscape Developers (landscape-developers) team.
-
-    >>> [recipient.name for recipient in view.recipients]
-    [u'landscape-developers']
-
 
 Contact this user/team valid addresses and quotas
 -------------------------------------------------

@@ -2581,7 +2581,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         :return: the recipients of the message.
         :rtype: `ContactViaWebNotificationRecipientSet` constant:
                 TO_USER
-                TO_TEAM (Send to team's preferredemail)
                 TO_OWNER
                 TO_MEMBERS
         """
@@ -2597,9 +2596,6 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return 'Send an email to yourself through Launchpad'
             else:
                 return 'Send an email to this user through Launchpad'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return ("Send an email to your team's contact email address "
-                    "through Launchpad")
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Send an email to your team's members through Launchpad"
         elif self.group_to_contact == ContactViaWeb.TO_OWNER:
@@ -2615,8 +2611,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             # Note that we explicitly do not change the text to "Contact
             # yourself" when viewing your own page.
             return 'Contact this user'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return "Contact this team's email address"
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Contact this team's members"
         elif self.group_to_contact == ContactViaWeb.TO_OWNER:
@@ -4823,7 +4817,6 @@ class ContactViaWebNotificationRecipientSet:
 
     # Primary reason enumerations.
     TO_USER = object()
-    TO_TEAM = object()
     TO_MEMBERS = object()
     TO_OWNER = object()
 
@@ -4861,12 +4854,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         if person_or_team.is_team:
             if self.user.inTeam(person_or_team):
-                if removeSecurityProxy(person_or_team).preferredemail is None:
-                    # Send to each team member.
-                    return self.TO_MEMBERS
-                else:
-                    # Send to the team's contact address.
-                    return self.TO_TEAM
+                return self.TO_MEMBERS
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
@@ -4909,13 +4897,6 @@ class ContactViaWebNotificationRecipientSet:
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
-        elif self._primary_reason is self.TO_TEAM:
-            reason = (
-                'using the "Contact this team" link on the '
-                '%s team page\n(%s)' % (
-                    person_or_team.displayname,
-                    canonical_url(person_or_team)))
-            header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
@@ -4943,10 +4924,6 @@ class ContactViaWebNotificationRecipientSet:
                 (person_or_team.displayname, person_or_team.name,
                  self._primary_recipient.displayname,
                  self._primary_recipient.name))
-        elif self._primary_reason is self.TO_TEAM:
-            return (
-                'You are contacting the %s (%s) team.' %
-                (person_or_team.displayname, person_or_team.name))
         else:
             # This is a team without a contact address (self.TO_MEMBERS).
             recipients_count = len(self)
