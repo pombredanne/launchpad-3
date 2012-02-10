@@ -82,6 +82,16 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
+    def test_getTermByToken(self):
+        # The term for a token in the vocabulary is returned.
+        token = self.vocab.getTermByToken('open-widget')
+        self.assertEqual(self.maintained_project, token.value)
+
+    def test_getTermByToken_error(self):
+        # A LookupError is raised if the token is not in the vocabulary.
+        self.assertRaises(
+            LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
+
     def test_searchForTerms(self):
         # Seach for terms returns an CountableIterator.
         iterator = self.vocab.searchForTerms('widget')
