@@ -525,14 +525,6 @@ contacted.
 Non-member contacting a Team
 ----------------------------
 
-Users can contact teams, but the behaviour depends upon whether the user
-is a member of the team. No Privileges Person is not a member of the
-Landscape Developers team.
-
-    >>> view = create_initialized_view(landscape_developers, '+index')
-    >>> print view.contact_link_title
-    Send an email to this team's owner through Launchpad
-
 The EmailToPersonView can be used by non-members to contact the team
 owner.
 
@@ -545,7 +537,7 @@ owner.
 
     >>> print view.recipients.description
     You are contacting the Landscape Developers (landscape-developers) team
-    owner, Sample Person (name12).
+    admins, Sample Person (name12).
 
     >>> [recipient.name for recipient in view.recipients]
     [u'name12']

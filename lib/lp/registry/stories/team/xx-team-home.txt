@@ -133,18 +133,6 @@ that, though.
     ...     find_tag_by_id(browser.contents, 'your-involvement'))
     You are a member of this team...
 
-He can also see the contact email address and a link to contact the team.
-
-    >>> browser.open('http://launchpad.dev/~ubuntu-team')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-email'))
-    Email:
-    support@ubuntu.com
-    Set contact address
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'contact-user'))
-    Contact this team's email address
-
 Member can contact their team even if the team does not have a contact
 address:
 
@@ -225,8 +213,8 @@ will actually go to the team's administrators.
     support@ubuntu.com
     >>> content = find_tag_by_id(user_browser.contents, 'contact-user')
     >>> print extract_text(content)
-    Contact this team's owner
+    Contact this team's admins
 
     >>> content.a
     <a href="+contactuser"...
-      title="Send an email to this team's owner through Launchpad">...
+      title="Send an email to this team's admins through Launchpad">...

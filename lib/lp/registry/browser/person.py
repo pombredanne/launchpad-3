@@ -2581,7 +2581,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         :return: the recipients of the message.
         :rtype: `ContactViaWebNotificationRecipientSet` constant:
                 TO_USER
-                TO_OWNER
+                TO_ADMINS
                 TO_MEMBERS
         """
         return ContactViaWebNotificationRecipientSet(
@@ -2598,8 +2598,8 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return 'Send an email to this user through Launchpad'
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Send an email to your team's members through Launchpad"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Send an email to this team's owner through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -2613,8 +2613,8 @@ class PersonView(LaunchpadView, FeedsMixin):
             return 'Contact this user'
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Contact this team's members"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Contact this team's owner"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -4818,7 +4818,7 @@ class ContactViaWebNotificationRecipientSet:
     # Primary reason enumerations.
     TO_USER = object()
     TO_MEMBERS = object()
-    TO_OWNER = object()
+    TO_ADMINS = object()
 
     def __init__(self, user, person_or_team):
         """Initialize the state based on the context and the user.
@@ -4859,7 +4859,7 @@ class ContactViaWebNotificationRecipientSet:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
                 # information for private teams when the members reply.
-                return self.TO_OWNER
+                return self.TO_ADMINS
         else:
             # Send to the user
             return self.TO_USER
@@ -4873,7 +4873,7 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_OWNER:
+        if self._primary_reason is self.TO_ADMINS:
             person_or_team = person_or_team.teamowner
             while person_or_team.is_team:
                 person_or_team = person_or_team.teamowner
@@ -4890,9 +4890,9 @@ class ContactViaWebNotificationRecipientSet:
                 'using the "Contact this user" link on your profile page\n'
                 '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             reason = (
-                'using the "Contact this team\'s owner" link on the '
+                'using the "Contact this team\'s admins" link on the '
                 '%s team page\n(%s)' % (
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
@@ -4918,9 +4918,9 @@ class ContactViaWebNotificationRecipientSet:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             return (
-                'You are contacting the %s (%s) team owner, %s (%s).' %
+                'You are contacting the %s (%s) team admins, %s (%s).' %
                 (person_or_team.displayname, person_or_team.name,
                  self._primary_recipient.displayname,
                  self._primary_recipient.name))
