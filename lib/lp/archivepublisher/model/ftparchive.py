@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -573,7 +573,7 @@ class FTPArchiveHandler:
             SourcePackageName.name,
             LibraryFileAlias.filename,
             Component.name,
-            Concatenate("binary-", DistroArchSeries.architecturetag),
+            Concatenate(u"binary-", DistroArchSeries.architecturetag),
             )
         join_conditions = [
             BinaryPackageRelease.id ==
