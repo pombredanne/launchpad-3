@@ -50,6 +50,11 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                 licenses=[License.GNU_GPL_V3])
             self.deactivated_project.active = False
 
+    def test_attributes(self):
+        self.assertEqual('Select a commercial project', self.vocab.displayname)
+        self.assertEqual('Search', self.vocab.step_title)
+        self.assertEqual('displayname', self.vocab._orderBy)
+
     def test_search_empty(self):
         # An empty search will return all active maintained projects.
         results = self.vocab.searchForTerms('')
