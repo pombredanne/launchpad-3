@@ -61,7 +61,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         results = self.vocab.searchForTerms('')
         self.assertEqual(
             self.num_commercial, len(results),
-            "Expected %d results but got %d." % (self.num_proprietary,
+            "Expected %d results but got %d." % (self.num_commercial,
                                                  len(results)))
 
     def test_searchForTerms_success(self):
@@ -69,7 +69,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
             self.num_commercial, len(results),
-            "Expected %d results but got %d." % (self.num_proprietary,
+            "Expected %d results but got %d." % (self.num_commercial,
                                                  len(results)))
         # Ensure we get only those that match by searching for a single
         # widget, using 't1', a subset of the name 'widget1'.
@@ -78,7 +78,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d result but got %d." % (1, len(results)))
 
     def test_searchForTerms_fail(self):
-        # Search for deactivate or non-maintained projects fails.
+        # Search for deactivated or non-maintained projects fails.
         results = self.vocab.searchForTerms('norwegian-blue-widget')
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %

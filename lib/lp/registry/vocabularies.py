@@ -1497,7 +1497,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     A commercial project is an active project that can have a commercial
     subscription to grant access to proprietary features. The vocabulary
-    contains the active projects user maintains, or all active project
+    contains the active projects the user maintains, or all active project
     if the user is a registry expert.
     """
 
