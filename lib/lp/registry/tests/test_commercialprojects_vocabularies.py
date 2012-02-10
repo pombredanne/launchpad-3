@@ -82,6 +82,13 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                          "Expected %d results but got %d." %
                          (0, len(results)))
 
+    def test_searchForTerms(self):
+        # Seach for terms returns an CountableIterator.
+        iterator = self.vocab.searchForTerms('widget')
+        self.assertEqual(6, len(iterator))
+        terms = [term for term in iterator]
+        self.assertEqual('open-widget', terms[0].token)
+
     def test_iter(self):
         # The vocabulary can be iterated and the order is by displayname.
         displaynames = [p.value.displayname for p in self.vocab]
