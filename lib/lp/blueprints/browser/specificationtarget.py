@@ -342,6 +342,8 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def specs(self):
+        if not check_permission('launchpad.View', self.context):
+            return []
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
 

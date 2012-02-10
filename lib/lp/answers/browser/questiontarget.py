@@ -430,6 +430,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         and that language is among the user's languages, we do not render
         the language control because there are no choices to be made.
         """
+        if not check_permission('launchpad.View', self.context):
+            return False
         languages = list(self.context_question_languages)
         if len(languages) == 0:
             return False
