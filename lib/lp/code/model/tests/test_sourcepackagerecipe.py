@@ -921,6 +921,27 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
 
+    def test_unsets_revspecs(self):
+        # Changing a recipe's text to no longer include revspecs unsets
+        # them from the stored copy.
+        revspec_text = '''\
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
+        %(base)s revid:a
+        nest bar %(nested)s baz tag:b
+        merge zam %(merged)s 2
+        ''' % self.branch_identities
+        no_revspec_text = '''\
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
+        %(base)s
+        nest bar %(nested)s baz
+        merge zam %(merged)s
+        ''' % self.branch_identities
+        recipe = self.get_recipe(revspec_text)
+        self.assertEqual(textwrap.dedent(revspec_text), recipe.recipe_text)
+        with person_logged_in(recipe.owner):
+            recipe.setRecipeText(textwrap.dedent(no_revspec_text))
+        self.assertEqual(textwrap.dedent(no_revspec_text), recipe.recipe_text)
+
     def test_builds_recipe_without_debversion(self):
         recipe_text = '''\
         # bzr-builder format 0.4
