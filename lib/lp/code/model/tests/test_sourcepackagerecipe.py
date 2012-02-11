@@ -759,7 +759,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, recipe=recipe_text)
         transaction.commit()
-        return recipe.builder_recipe
+        return recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
             num_child_branches=0, revid=None, deb_version=None):
@@ -780,7 +780,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity,
             deb_version='0.1-{revno}')
@@ -791,7 +791,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         %(base)s
         merge bar %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -806,7 +806,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -822,7 +822,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
         merge zam %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             deb_version='0.1-{revno}')
@@ -842,7 +842,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         merge zam %(merged)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             deb_version='0.1-{revno}')
@@ -862,7 +862,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
           merge zam %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -885,7 +885,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
           nest zam %(nested2)s zoo
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -905,7 +905,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz tag:b
         merge zam %(merged)s 2
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             revspec="revid:a", deb_version='0.1-{revno}')
@@ -927,7 +927,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version=None)
