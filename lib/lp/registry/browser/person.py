@@ -2085,8 +2085,12 @@ class PersonVouchersView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return ('Commercial subscription vouchers for %s'
-                % self.context.displayname)
+        return 'Commercial subscription vouchers'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2153,12 +2157,6 @@ class PersonVouchersView(LaunchpadFormView):
         vocabulary = vocabulary_registry.get(self.context,
                                              "CommercialProjects")
         return len(vocabulary) > 0
-
-    @action(_("Cancel"), name="cancel",
-            validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Simply redirect to the user's page."""
-        self.next_url = canonical_url(self.context)
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
