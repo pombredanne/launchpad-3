@@ -515,9 +515,9 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Downloads'
         return Link('+download', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text)
 
 
@@ -672,9 +672,9 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         text = 'Downloads'
         return Link('+download', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
 
     def branch_add(self):
