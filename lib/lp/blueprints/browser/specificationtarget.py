@@ -27,7 +27,10 @@ from zope.component import (
 
 from lp import _
 from lp.app.enums import service_uses_launchpad
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    IPrivacy,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationSort,
@@ -342,7 +345,9 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def specs(self):
-        if not check_permission('launchpad.View', self.context):
+        if (IPrivacy.providedBy(self.context)
+                and self.context.private
+                and not check_permission('launchpad.View', self.context)):
             return []
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
