@@ -37,6 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
+      combo_url view/combo_url;
       devmode modules/lp.services.config/config/devmode;
       yui_version view/yui_version;
       yui_console_debug view/yui_console_debug;"
@@ -78,20 +79,20 @@
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
 
   <tal:js-loader condition="request/features/js.combo_loader.enabled">
-   <script
-   src="/+combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+   <script type="text/javascript"
+        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
-            comboBase: '/+combo/?',
+            comboBase: '${combo_url}/?',
             root: 'yui/',
             debug: ${yui_console_debug},
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: '/+combo/?lp/',
-                    comboBase: '/+combo/?',
+                    base: '${combo_url}/?lp/',
+                    comboBase: '${combo_url}/?',
                     root: 'lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
@@ -99,8 +100,8 @@
                 },
                 yui2: {
                     combine: true,
-                    base: '/+combo/?yui2/',
-                    comboBase: '/+combo/?',
+                    base: '${combo_url}/?yui2/',
+                    comboBase: '${combo_url}/?',
                     root: 'yui2/',
                     fetchCSS: false,
                     modules: {
