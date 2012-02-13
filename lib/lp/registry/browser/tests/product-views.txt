@@ -222,7 +222,7 @@ purchase a commercial subscription.
 
     >>> from lp.registry.interfaces.product import License
 
-    >>> firefox.setPrivateBugs(commercial_member, False)
+    >>> firefox.setPrivateBugs(False, commercial_member)
     >>> login('test@canonical.com')
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
 

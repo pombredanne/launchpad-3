@@ -1555,7 +1555,7 @@ class ProductPrivateBugsMixin():
         # be handled separately.
         if (data.get('private_bugs') is not None
                 and data['private_bugs'] != self.context.private_bugs):
-            self.context.setPrivateBugs(self.user, data['private_bugs'])
+            self.context.setPrivateBugs(data['private_bugs'], self.user)
             del data['private_bugs']
         parent = super(ProductPrivateBugsMixin, self)
         return parent.updateContextFromData(data, context, notify_modified)

@@ -285,13 +285,13 @@ class TestProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.setPrivateBugs, product.owner, True)
+            product.setPrivateBugs, True, product.owner)
 
     def test_set_private_bugs(self):
         # Test Product.setPrivateBugs()
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        product.setPrivateBugs(product.owner, True)
+        product.setPrivateBugs(True, product.owner)
         self.assertTrue(product.private_bugs)
 
 

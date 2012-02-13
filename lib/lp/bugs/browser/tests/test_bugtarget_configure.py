@@ -213,7 +213,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
     def test_anyone_can_turn_off_private_bugs(self):
         # Verify any user who can edit the product can set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
-        self.product.setPrivateBugs(registry_expert, True)
+        self.product.setPrivateBugs(True, registry_expert)
         form = self._makeForm()
         view = create_initialized_view(
             self.product, name='+configure-bugtracker', form=form)

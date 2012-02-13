@@ -756,7 +756,7 @@ class IProductPublic(
     @operation_parameters(private_bugs=copy_field(private_bugs))
     @export_write_operation()
     @operation_for_version("devel")
-    def setPrivateBugs(user, private_bugs):
+    def setPrivateBugs(private_bugs, user):
         """Mutator for private_bugs that checks entitlement."""
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):

@@ -3,8 +3,6 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
-from lp.registry.errors import CommercialSubscribersOnly
-from lp.services.webapp.authorization import check_permission
 
 __metaclass__ = type
 __all__ = [
@@ -116,6 +114,7 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -165,6 +164,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -518,7 +518,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             check_permission('launchpad.Moderate', self) or
             user.hasCurrentCommercialSubscription(self))
 
-    def setPrivateBugs(self, user, private_bugs):
+    def setPrivateBugs(self, private_bugs, user):
         """ See `IProductEditRestricted`."""
         if private_bugs and not self.privateBugsAllowed(user):
             raise CommercialSubscribersOnly(
