@@ -2390,6 +2390,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
 
+
 class ProductSharingView(LaunchpadView):
 
     label = "Sharing"
