@@ -31,6 +31,7 @@ from contextlib import contextmanager
 from email.Utils import parseaddr
 import argparse
 import os
+import platform
 import pwd
 import shutil
 import subprocess
@@ -52,11 +53,13 @@ LP_CHECKOUT = 'devel'
 LP_DEB_DEPENDENCIES = (
     'bzr launchpad-developer-dependencies apache2 '
     'apache2-mpm-worker libapache2-mod-wsgi')
-LP_REPOSITORY = 'lp:launchpad'
+LP_REPOSITORIES = (
+    'http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel',
+    'lp:launchpad',
+    )
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
 LXC_CONFIG_TEMPLATE = '/etc/lxc/local.conf'
-LXC_GATEWAY = '10.0.3.1'
 LXC_GUEST_OS = 'lucid'
 LXC_HOSTS_CONTENT = (
     ('127.0.0.88',
@@ -71,11 +74,11 @@ LXC_HOSTS_CONTENT = (
     ('127.0.0.99', 'bazaar.launchpad.dev'),
     )
 LXC_NAME = 'lptests'
-LXC_OPTIONS = (
-    ('lxc.network.type', 'veth'),
-    ('lxc.network.link', 'lxcbr0'),
-    ('lxc.network.flags', 'up'),
-    )
+LXC_OPTIONS = """
+lxc.network.type = veth
+lxc.network.link = {interface}
+lxc.network.flags = up
+"""
 LXC_PATH = '/var/lib/lxc/'
 LXC_REPOS = (
     'deb http://archive.ubuntu.com/ubuntu '
@@ -225,6 +228,19 @@ def get_container_path(lxcname, path='', base_path=LXC_PATH):
     return os.path.join(base_path, lxcname, 'rootfs', path.lstrip('/'))
 
 
+def get_lxc_gateway():
+    """Return a tuple of gateway name and address.
+
+    The gateway name and address will change depending on which version
+    of Ubuntu the script is running on.
+    """
+    release_name = platform.linux_distribution()[2]
+    if release_name == 'oneiric':
+        return 'virbr0', '192.168.122.1'
+    else:
+        return 'lxcbr0', '10.0.3.1'
+
+
 def get_user_ids(user):
     """Return the uid and gid of given `user`, e.g.::
 
@@ -257,20 +273,27 @@ def ssh(location, user=None, caller=subprocess.call):
         >>> ssh('loc', caller=lambda cmd: 1)('ls -l') # doctest: +ELLIPSIS
         Traceback (most recent call last):
         SSHError: ...
+
+    If ignore_errors is set to True when executing the command, no error
+    will be raised, even if the command itself returns an error code.
+
+        >>> sshcall = ssh('loc', caller=lambda cmd: 1)
+        >>> sshcall('ls -l', ignore_errors=True)
     """
     if user is not None:
         location = '{}@{}'.format(user, location)
 
-    def _sshcall(cmd):
+    def _sshcall(cmd, ignore_errors=False):
         sshcmd = (
             'ssh',
             '-t',
+            '-t', # Yes, this second -t is deliberate. See `man ssh`.
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
             '--', cmd,
             )
-        if caller(sshcmd):
+        if caller(sshcmd) and not ignore_errors:
             raise SSHError('Error running command: ' + ' '.join(sshcmd))
 
     return _sshcall
@@ -288,7 +311,8 @@ def su(user):
     yield Env(uid, gid, home)
     os.setegid(os.getgid())
     os.seteuid(os.getuid())
-    os.environ['HOME'] = current_home
+    if current_home is not None:
+        os.environ['HOME'] = current_home
 
 
 def user_exists(username):
@@ -336,6 +360,8 @@ class ArgumentParser(argparse.ArgumentParser):
             if value:
                 if option_strings:
                     args.append(option_strings[0])
+                if isinstance(value, list):
+                    value = ','.join(value)
                 args.append(value)
         return args
 
@@ -472,15 +498,27 @@ def handle_ssh_keys(namespace):
         >>> namespace.public_key == public.decode('string-escape')
         True
 
-    The validation fails if keys are not provided and can not be found
-    in the current home directory::
+    Keys are None if they are not provided and can not be found in the
+    current home directory::
+
+        >>> namespace = argparse.Namespace(
+        ...     private_key=None, public_key=None,
+        ...     home_dir='/tmp/__does_not_exists__')
+        >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
+        >>> print namespace.private_key
+        None
+        >>> print namespace.public_key
+        None
+
+    If only one of private_key and public_key is provided, a
+    ValidationError will be raised.
 
         >>> namespace = argparse.Namespace(
         ...     private_key=private, public_key=None,
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
-        ValidationError: argument public_key ...
+        ValidationError: arguments private-key...
     """
     for attr, filename in (
         ('private_key', 'id_rsa'),
@@ -493,10 +531,12 @@ def handle_ssh_keys(namespace):
             try:
                 value = open(path).read()
             except IOError:
-                raise ValidationError(
-                    'argument {} is required if the system user does not '
-                    'exists with SSH key pair set up.'.format(attr))
+                value = None
             setattr(namespace, attr, value)
+    if bool(namespace.private_key) != bool(namespace.public_key):
+        raise ValidationError(
+            "arguments private-key and public-key: "
+            "both must be provided or neither must be provided.")
 
 
 def handle_directories(namespace):
@@ -563,13 +603,17 @@ parser.add_argument(
 parser.add_argument(
     '-v', '--private-key',
     help='The SSH private key for the Launchpad user (without passphrase). '
-         'If the system user already exists with SSH key pair set up, '
-         'this argument can be omitted.')
+         'If this argument is omitted and a keypair is not found in the '
+         'home directory of the system user a new SSH keypair will be '
+         'generated and the checkout of the Launchpad code will use HTTP '
+         'rather than bzr+ssh.')
 parser.add_argument(
     '-b', '--public-key',
     help='The SSH public key for the Launchpad user. '
-         'If the system user already exists with SSH key pair set up, '
-         'this argument can be omitted.')
+         'If this argument is omitted and a keypair is not found in the '
+         'home directory of the system user a new SSH keypair will be '
+         'generated and the checkout of the Launchpad code will use HTTP '
+         'rather than bzr+ssh.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
     choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
@@ -618,6 +662,15 @@ def initialize_host(
         ssh_dir = os.path.join(env.home, '.ssh')
         if not os.path.exists(ssh_dir):
             os.makedirs(ssh_dir)
+        # Generate user ssh keys if none are supplied.
+        valid_ssh_keys = True
+        if private_key is None:
+            subprocess.call([
+                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
+                '-f', os.path.join(ssh_dir, 'id_rsa')])
+            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
+            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
+            valid_ssh_keys = False
         priv_file = os.path.join(ssh_dir, 'id_rsa')
         pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
@@ -637,21 +690,24 @@ def initialize_host(
         # Set up bzr and Launchpad authentication.
         subprocess.call([
             'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
-        subprocess.call(['bzr', 'lp-login', lpuser])
+        if valid_ssh_keys:
+            subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
         if not os.path.exists(directory):
             os.makedirs(directory)
         subprocess.call(['bzr', 'init-repo', directory])
         checkout_dir = os.path.join(directory, LP_CHECKOUT)
     # bzr branch does not work well with seteuid.
+    repository = LP_REPOSITORIES[1] if valid_ssh_keys else LP_REPOSITORIES[0]
     subprocess.call([
         'su', '-', user, '-c',
-        'bzr branch {} "{}"'.format(LP_REPOSITORY, checkout_dir)])
+        'bzr branch {} "{}"'.format(repository, checkout_dir)])
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
             os.makedirs(os.path.join(dependencies_dir, subdir))
-        with cd(dependencies_dir):
+    with cd(dependencies_dir):
+        with su(user) as env:
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
@@ -659,13 +715,27 @@ def initialize_host(
 
 def create_lxc(user, lxcname):
     """Create the LXC container that will be used for ephemeral instances."""
+    # XXX 2012-02-02 gmb bug=925024:
+    #     These calls need to be removed once the lxc vs. apparmor bug
+    #     is resolved, since having apparmor enabled for lxc is very
+    #     much a Good Thing.
+    # Disable the apparmor profiles for lxc so that we don't have
+    # problems installing postgres.
+    subprocess.call([
+        'ln', '-s',
+        '/etc/apparmor.d/usr.bin.lxc-start',
+        '/etc/apparmor.d/disable/'])
+    subprocess.call([
+        'apparmor_parser', '-R', '/etc/apparmor.d/usr.bin.lxc-start'])
     # Update resolv file in order to get the ability to ssh into the LXC
     # container using its name.
-    file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(LXC_GATEWAY))
+    lxc_gateway_name, lxc_gateway_address = get_lxc_gateway()
+    file_prepend(RESOLV_FILE, 'nameserver {}\n'.format(lxc_gateway_address))
     file_append(
-        DHCP_FILE, 'prepend domain-name-servers {};\n'.format(LXC_GATEWAY))
+        DHCP_FILE,
+        'prepend domain-name-servers {};\n'.format(lxc_gateway_address))
     # Container configuration template.
-    content = ''.join('{}={}\n'.format(*i) for i in LXC_OPTIONS)
+    content = LXC_OPTIONS.format(interface=lxc_gateway_name)
     with open(LXC_CONFIG_TEMPLATE, 'w') as f:
         f.write(content)
     # Creating container.
@@ -728,11 +798,11 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall('adduser {} sudo'.format(user))
     pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
     gid = "`python -c '{}'`".format(pygetgid)
-    root_sshcall('addgroup --gid {} {}'.format(gid, user))
+    root_sshcall('addgroup --gid {} {}'.format(gid, user), ignore_errors=True)
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode "{}/sourcecode"'.format(
+        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
         checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(

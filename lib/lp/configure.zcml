@@ -36,7 +36,6 @@
 
     <include file="permissions.zcml" />
 
-    <i18n:registerTranslations directory="locales" />
     <webservice:register module="lp.patchwebservice" />
     <authorizations module="lp.security" />
 
