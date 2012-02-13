@@ -146,7 +146,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -273,15 +272,12 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def conditionallyOmitVisibility(self):
-        """Remove the visibility field if not authorized."""
-        if check_permission('launchpad.Commercial', self.context):
-            return
-        feature_flag = getFeatureFlag(
-            'disclosure.show_visibility_for_team_add.enabled')
-        if feature_flag and self.user.hasCurrentCommercialSubscription():
-            return
+    def setUpVisibilityField(self):
+        """Set the visibility field to read-write, or remove it."""
         self.form_fields = self.form_fields.omit('visibility')
+        if self.context.checkAllowVisibility(self.user):
+            visibility = copy_field(ITeam['visibility'], readonly=False)
+            self.form_fields += Fields(visibility)
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
@@ -314,11 +310,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.conditionallyOmitVisibility()
-        if 'visibility' in [field.__name__ for field in self.form_fields]:
-            self.form_fields = self.form_fields.omit('visibility')
-            visibility = copy_field(ITeam['visibility'], readonly=False)
-            self.form_fields += Fields(visibility)
+        self.setUpVisibilityField()
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -359,6 +351,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
             visibility = data.get('visibility')
             if visibility:
                 self.context.transitionVisibility(visibility, self.user)
+                del data['visibility']
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
@@ -999,6 +992,7 @@ class TeamMailingListArchiveView(LaunchpadView):
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
+    schema = ITeamCreation
     page_title = 'Register a new team in Launchpad'
     label = page_title
 
@@ -1010,16 +1004,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
-    class schema(ITeamCreation):
-        visibility = copy_field(ITeamCreation['visibility'], readonly=False)
-
     def setUpFields(self):
         """See `LaunchpadViewForm`.
 
         Only Launchpad Admins get to see the visibility field.
         """
         super(TeamAddView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.setUpVisibilityField()
 
     @action('Create Team', name='create')
     def create_action(self, action, data):
@@ -1036,6 +1027,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         visibility = data.get('visibility')
         if visibility:
             team.transitionVisibility(visibility, self.user)
+            del data['visibility']
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)

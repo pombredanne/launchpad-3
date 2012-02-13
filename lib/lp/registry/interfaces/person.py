@@ -706,6 +706,13 @@ class IPersonPublic(IPrivacy):
     def anyone_can_join():
         """Quick check as to whether a team allows anyone to join."""
 
+    def checkAllowVisibility(user):
+        """Is the user allowed to see the visibility field.
+
+        :param: The user.
+        :return: True if they can, otherwise False.
+        """
+
     @mutator_for(visibility)
     @call_with(user=REQUEST_USER)
     @operation_parameters(visibility=copy_field(visibility))

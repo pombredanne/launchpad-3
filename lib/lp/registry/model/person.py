@@ -3064,16 +3064,23 @@ class Person(
         """See `IPerson.`"""
         return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
-    def transitionVisibility(self, visibility, user):
-        validate_person_visibility(self, 'visibility', visibility)
+    def checkAllowVisibility(self, user):
         feature_flag = getFeatureFlag(
             'disclosure.show_visibility_for_team_add.enabled')
         if feature_flag:
-            if not user.hasCurrentCommercialSubscription():
-                raise ImmutableVisibilityError()
+            if user.hasCurrentCommercialSubscription():
+                return True
         else:
-            if not check_permission('launchpad.Commercial', self):
-                raise ImmutableVisibilityError()
+            if check_permission('launchpad.Commercial', self):
+                return True
+        return False
+
+    def transitionVisibility(self, visibility, user):
+        if self.visibility == visibility:
+            return
+        validate_person_visibility(self, 'visibility', visibility)
+        if not self.checkAllowVisibility(user):
+            raise ImmutableVisibilityError()
         self.visibility = visibility
 
 
