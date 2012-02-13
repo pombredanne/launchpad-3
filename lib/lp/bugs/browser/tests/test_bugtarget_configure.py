@@ -212,7 +212,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
             view.errors)
 
     def test_unauthorised_cannot_turn_off_private_bugs(self):
-        # Verify the bug supervisor can always set private_bugs off.
+        # Verify unauthorised user cannot set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
         self.product.setPrivateBugs(True, registry_expert)
         anyperson = self.factory.makePerson()

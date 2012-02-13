@@ -1,5 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lp.services.webapp.interaction import ANONYMOUS
 
 __metaclass__ = type
 
@@ -43,9 +44,11 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     celebrity_logged_in,
     login,
+    login_celebrity,
     login_person,
     TestCase,
     TestCaseWithFactory,
@@ -263,19 +266,21 @@ class TestProduct(TestCaseWithFactory):
             self.factory.makeProduct(security_contact=closed_team)
 
     def test_private_bugs_on_not_allowed_for_anonymous(self):
-        # Anonympus cannot turn on private bugs
+        # Anonymous cannot turn on private bugs.
         product = self.factory.makeProduct()
         self.assertRaises(
             CommercialSubscribersOnly,
             product.checkPrivateBugsTransitionAllowed, True, None)
 
     def test_private_bugs_off_not_allowed_for_anonymous(self):
+        # Anonymous cannot turn private bugs off.
         product = self.factory.makeProduct()
         self.assertRaises(
             Forbidden,
             product.checkPrivateBugsTransitionAllowed, False, None)
 
     def test_private_bugs_on_not_allowed_for_unauthorised(self):
+        # Unauthorised users cannot turn on private bugs.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
         self.assertRaises(
@@ -283,6 +288,7 @@ class TestProduct(TestCaseWithFactory):
             product.checkPrivateBugsTransitionAllowed, True, someone)
 
     def test_private_bugs_off_not_allowed_for_unauthorised(self):
+        # Unauthorised users cannot turn private bugs off.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
         self.assertRaises(
@@ -290,21 +296,25 @@ class TestProduct(TestCaseWithFactory):
             product.checkPrivateBugsTransitionAllowed, False, someone)
 
     def test_private_bugs_on_allowed_for_moderators(self):
+        # Moderators can turn on private bugs.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
         product.checkPrivateBugsTransitionAllowed(True, registry_expert)
 
     def test_private_bugs_off_allowed_for_moderators(self):
+        # Moderators can turn private bugs off.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
         product.checkPrivateBugsTransitionAllowed(False, registry_expert)
 
     def test_private_bugs_on_allowed_for_commercial_subscribers(self):
+        # Commercial subscribers can turn on private bugs.
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
         product.checkPrivateBugsTransitionAllowed(True, product.owner)
 
     def test_private_bugs_off_allowed_for_bug_supervisors(self):
+        # Bug supervisors can turn private bugs off.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         login_person(bug_supervisor)
@@ -323,6 +333,33 @@ class TestProduct(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         product.setPrivateBugs(True, product.owner)
         self.assertTrue(product.private_bugs)
+
+
+class TestProductPermissions(TestCaseWithFactory):
+    """Tests for product permissions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_owner_is_BugSupervisor(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
+
+    def test_bug_supervisor_is_BugSupervisor(self):
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        login_person(bug_supervisor)
+        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
+
+    def test_admin_is_BugSupervisor(self):
+        product = self.factory.makeProduct()
+        login_celebrity('admin')
+        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
+
+    def test_someone_is_not_BugSupervisor(self):
+        product = self.factory.makeProduct()
+        login(ANONYMOUS)
+        self.assertFalse(check_permission('launchpad.BugSupervisor', product))
 
 
 class TestProductFiles(TestCase):

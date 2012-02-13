@@ -30,7 +30,10 @@ import httplib
 
 from lazr.restful.declarations import error_status
 from zope.schema.interfaces import ConstraintNotSatisfied
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import (
+    Forbidden,
+    Unauthorized,
+)
 
 from lp.app.errors import NameLookupFailed
 
@@ -69,7 +72,7 @@ class UserCannotChangeMembershipSilently(Unauthorized):
 
 
 @error_status(httplib.FORBIDDEN)
-class CommercialSubscribersOnly(Unauthorized):
+class CommercialSubscribersOnly(Forbidden):
     """Feature is only available to current commercial subscribers.
 
     Raised when a user tries to invoke an operation that is only available to
