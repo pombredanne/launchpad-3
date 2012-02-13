@@ -1443,6 +1443,9 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
+        <browser:page
+            name="+sharing"
+            template="../templates/product-sharing.pt"/>
 
         <!-- Products Portlets -->
 

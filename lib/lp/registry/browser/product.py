@@ -22,8 +22,7 @@ __all__ = [
     'ProductFacets',
     'ProductInvolvementView',
     'ProductNavigation',
-    'ProductNavigationMenu',
-    'ProductOverviewMenu',
+    'ProductNavigationMenu', 'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
     'ProductPurchaseSubscriptionView',
@@ -40,6 +39,7 @@ __all__ = [
     'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
+    'ProductSharingView',
     ]
 
 
@@ -2388,3 +2388,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
+
+class ProductSharingView(LaunchpadView):
+
+    label = "Sharing"
