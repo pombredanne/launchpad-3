@@ -744,11 +744,14 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
-    def privateBugsAllowed(user):
-        """Is the user allowed to turn on private bugs.
+    def checkPrivateBugsTransitionAllowed(private_bugs, user):
+        """Is user allowed to change the private_bugs attribute to the value?
 
-        Generally, this is restricted to ~registry or ~admin or product
-        maintainers with active commercial subscriptions.
+        Generally, the permission to turn on private bugs is  restricted to
+        ~registry or ~admin or product maintainers with active commercial
+        subscriptions.
+        The permission to turn off private bugs is restricted to ~registry or
+        ~admin or bug supervisors.
         """
 
     @mutator_for(private_bugs)

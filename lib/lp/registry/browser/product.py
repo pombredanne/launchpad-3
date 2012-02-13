@@ -1539,22 +1539,23 @@ class ProductPrivateBugsMixin():
         # private_bugs is readonly since we are using a mutator but we need
         # to edit it on the form.
         super(ProductPrivateBugsMixin, self).setUpFields()
-        self.form_fields['private_bugs'].field.readonly = False
+        self.form_fields = self.form_fields.omit('private_bugs')
+        private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
+        self.form_fields += form.Fields(private_bugs)
 
     def validate(self, data):
         super(ProductPrivateBugsMixin, self).validate(data)
-        if (data.get('private_bugs', False) and
-            not self.context.privateBugsAllowed(self.user)):
-            self.setFieldError(
-                'private_bugs',
-                'A valid commercial subscription is required to turn on '
-                'default private bugs.')
+        private_bugs = data.get('private_bugs')
+        try:
+            self.context.checkPrivateBugsTransitionAllowed(
+                private_bugs, self.user)
+        except Exception as e:
+            self.setFieldError('private_bugs', e.message)
 
     def updateContextFromData(self, data, context=None, notify_modified=True):
         # private_bugs uses a mutator to check permissions, so it needs to
         # be handled separately.
-        if (data.get('private_bugs') is not None
-                and data['private_bugs'] != self.context.private_bugs):
+        if data.has_key('private_bugs'):
             self.context.setPrivateBugs(data['private_bugs'], self.user)
             del data['private_bugs']
         parent = super(ProductPrivateBugsMixin, self)

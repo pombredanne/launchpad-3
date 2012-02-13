@@ -2,6 +2,7 @@
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug configuration views."""
+from zope.security.proxy import removeSecurityProxy
 
 __metaclass__ = type
 
@@ -210,11 +211,25 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
              u'default private bugs.'],
             view.errors)
 
-    def test_anyone_can_turn_off_private_bugs(self):
-        # Verify any user who can edit the product can set private_bugs off.
+    def test_unauthorised_cannot_turn_off_private_bugs(self):
+        # Verify the bug supervisor can always set private_bugs off.
+        registry_expert = self.factory.makeRegistryExpert()
+        self.product.setPrivateBugs(True, registry_expert)
+        anyperson = self.factory.makePerson()
+        login_person(anyperson)
+        form = self._makeForm()
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual(
+            [u'Only bug supervisors can turn off default private bugs.'],
+            view.errors)
+
+    def test_bug_supervisor_can_turn_off_private_bugs(self):
+        # Verify the bug supervisor can always set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
         self.product.setPrivateBugs(True, registry_expert)
         form = self._makeForm()
+        login_person(self.bug_supervisor)
         view = create_initialized_view(
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)

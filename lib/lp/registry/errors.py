@@ -68,7 +68,7 @@ class UserCannotChangeMembershipSilently(Unauthorized):
     """
 
 
-@error_status(httplib.UNAUTHORIZED)
+@error_status(httplib.FORBIDDEN)
 class CommercialSubscribersOnly(Unauthorized):
     """Feature is only available to current commercial subscribers.
 

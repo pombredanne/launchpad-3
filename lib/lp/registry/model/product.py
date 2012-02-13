@@ -52,6 +52,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Forbidden
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -510,20 +511,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    def privateBugsAllowed(self, user):
+    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
         """See `IProductPublic`."""
-        if user is None:
-            return False
-        return (
-            check_permission('launchpad.Moderate', self) or
-            user.hasCurrentCommercialSubscription(self))
-
-    def setPrivateBugs(self, private_bugs, user):
-        """ See `IProductEditRestricted`."""
-        if private_bugs and not self.privateBugsAllowed(user):
+        if (private_bugs and not check_permission('launchpad.Moderate', self)
+                and (user is None
+                     or not user.hasCurrentCommercialSubscription(self))):
             raise CommercialSubscribersOnly(
                 'A valid commercial subscription is required to turn on '
                 'default private bugs.')
+        if (not private_bugs
+                and not check_permission('launchpad.BugSupervisor', self)):
+            raise Forbidden(
+                'Only bug supervisors can turn off default private bugs.')
+
+    def setPrivateBugs(self, private_bugs, user):
+        """ See `IProductEditRestricted`."""
+        if self.private_bugs == private_bugs:
+            return
+        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
     @cachedproperty

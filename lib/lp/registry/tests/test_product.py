@@ -9,6 +9,7 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
+from zope.security.interfaces import Forbidden
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -261,24 +262,53 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(subscription_policy=policy)
             self.factory.makeProduct(security_contact=closed_team)
 
-    def test_private_bugs_not_allowed_for_anonymous(self):
+    def test_private_bugs_on_not_allowed_for_anonymous(self):
+        # Anonympus cannot turn on private bugs
         product = self.factory.makeProduct()
-        self.assertFalse(product.privateBugsAllowed(None))
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.checkPrivateBugsTransitionAllowed, True, None)
 
-    def test_private_bugs_not_allowed_for_unauthorised(self):
+    def test_private_bugs_off_not_allowed_for_anonymous(self):
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Forbidden,
+            product.checkPrivateBugsTransitionAllowed, False, None)
+
+    def test_private_bugs_on_not_allowed_for_unauthorised(self):
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
-        self.assertFalse(product.privateBugsAllowed(someone))
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.checkPrivateBugsTransitionAllowed, True, someone)
 
-    def test_private_bugs_allowed_for_moderators(self):
+    def test_private_bugs_off_not_allowed_for_unauthorised(self):
+        product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
+        self.assertRaises(
+            Forbidden,
+            product.checkPrivateBugsTransitionAllowed, False, someone)
+
+    def test_private_bugs_on_allowed_for_moderators(self):
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
-        self.assertTrue(product.privateBugsAllowed(registry_expert))
+        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
 
-    def test_private_bugs_allowed_for_commercial_subscribers(self):
+    def test_private_bugs_off_allowed_for_moderators(self):
+        product = self.factory.makeProduct()
+        registry_expert = self.factory.makeRegistryExpert()
+        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
+
+    def test_private_bugs_on_allowed_for_commercial_subscribers(self):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        self.assertTrue(product.privateBugsAllowed(product.owner))
+        product.checkPrivateBugsTransitionAllowed(True, product.owner)
+
+    def test_private_bugs_off_allowed_for_bug_supervisors(self):
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        login_person(bug_supervisor)
+        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
 
     def test_unauthorised_set_private_bugs_raises(self):
         # Test Product.setPrivateBugs raises an error if user unauthorised.

@@ -1103,6 +1103,18 @@ class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
                 user.in_admin)
 
 
+class ConfigureProductBugTracker(AuthorizationBase):
+    """Product's owners and bug supervisors can configure bug tracker."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.bug_supervisor) or
+                user.inTeam(self.obj.owner) or
+                user.in_admin)
+
+
 class NominateBugForProductSeries(AuthorizationBase):
     """Product's owners and bug supervisors can add bug nominations."""
 
@@ -1110,9 +1122,7 @@ class NominateBugForProductSeries(AuthorizationBase):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
-        return (user.inTeam(self.obj.product.bug_supervisor) or
-                user.inTeam(self.obj.product.owner) or
-                user.in_admin)
+        return self.forwardCheckAuthenticated(user, self.obj.product)
 
 
 class NominateBugForDistroSeries(AuthorizationBase):

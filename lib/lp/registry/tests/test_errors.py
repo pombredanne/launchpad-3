@@ -92,6 +92,6 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(NameAlreadyTaken())
         self.assertEqual(CONFLICT, error_view.status)
 
-    def test_CommercialSubscribersOnly_authorised(self):
+    def test_CommercialSubscribersOnly_forbidden(self):
         error_view = create_webservice_error_view(CommercialSubscribersOnly())
-        self.assertEqual(UNAUTHORIZED, error_view.status)
+        self.assertEqual(FORBIDDEN, error_view.status)
