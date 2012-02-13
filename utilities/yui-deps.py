@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Print the YUI modules we are using."""
@@ -8,7 +8,7 @@
 from sys import argv
 
 
-yui_root = 'build/js/yui/yui-3.3.0'
+yui_root = 'build/js/yui-3.3.0'
 yui_deps = [
     'yui/yui',
     'oop/oop',

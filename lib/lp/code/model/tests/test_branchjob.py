@@ -24,6 +24,7 @@ from bzrlib.transport import get_transport
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -72,7 +73,10 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
@@ -83,6 +87,7 @@ from lp.testing.layers import (
     )
 from lp.testing.librarianhelpers import get_newest_librarian_file
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -425,6 +430,21 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         finally:
             tree.unlock()
         return branch, tree
+
+    def test_getAuthorDisplayName(self):
+        """getAuthorDisplayName lookups the display name for an author."""
+        self.useBzrBranches(direct_database=True)
+        branch, tree = self.create3CommitsBranch()
+        job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
+        job.bzr_branch.lock_read()
+        self.addCleanup(job.bzr_branch.unlock)
+        self.assertEquals("Somebody <foo@example.com>",
+            job.getAuthorDisplayName("Somebody <foo@example.com>"))
+        # The next call should be cached
+        with StormStatementRecorder() as recorder:
+            self.assertEquals("Somebody <foo@example.com>",
+                job.getAuthorDisplayName("Somebody <foo@example.com>"))
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_iterAddedMainline(self):
         """iterAddedMainline iterates through mainline revisions."""

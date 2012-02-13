@@ -217,6 +217,7 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.feeds.browser import FeedsMixin
@@ -2084,8 +2085,12 @@ class PersonVouchersView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return ('Commercial subscription vouchers for %s'
-                % self.context.displayname)
+        return 'Commercial subscription vouchers'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2152,12 +2157,6 @@ class PersonVouchersView(LaunchpadFormView):
         vocabulary = vocabulary_registry.get(self.context,
                                              "CommercialProjects")
         return len(vocabulary) > 0
-
-    @action(_("Cancel"), name="cancel",
-            validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Simply redirect to the user's page."""
-        self.next_url = canonical_url(self.context)
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
@@ -2581,8 +2580,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         :return: the recipients of the message.
         :rtype: `ContactViaWebNotificationRecipientSet` constant:
                 TO_USER
-                TO_TEAM (Send to team's preferredemail)
-                TO_OWNER
+                TO_ADMINS
                 TO_MEMBERS
         """
         return ContactViaWebNotificationRecipientSet(
@@ -2597,13 +2595,10 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return 'Send an email to yourself through Launchpad'
             else:
                 return 'Send an email to this user through Launchpad'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return ("Send an email to your team's contact email address "
-                    "through Launchpad")
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Send an email to your team's members through Launchpad"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Send an email to this team's owner through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -2615,12 +2610,10 @@ class PersonView(LaunchpadView, FeedsMixin):
             # Note that we explicitly do not change the text to "Contact
             # yourself" when viewing your own page.
             return 'Contact this user'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return "Contact this team's email address"
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Contact this team's members"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Contact this team's owner"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -4823,9 +4816,8 @@ class ContactViaWebNotificationRecipientSet:
 
     # Primary reason enumerations.
     TO_USER = object()
-    TO_TEAM = object()
     TO_MEMBERS = object()
-    TO_OWNER = object()
+    TO_ADMINS = object()
 
     def __init__(self, user, person_or_team):
         """Initialize the state based on the context and the user.
@@ -4861,35 +4853,15 @@ class ContactViaWebNotificationRecipientSet:
         """
         if person_or_team.is_team:
             if self.user.inTeam(person_or_team):
-                if removeSecurityProxy(person_or_team).preferredemail is None:
-                    # Send to each team member.
-                    return self.TO_MEMBERS
-                else:
-                    # Send to the team's contact address.
-                    return self.TO_TEAM
+                return self.TO_MEMBERS
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
                 # information for private teams when the members reply.
-                return self.TO_OWNER
+                return self.TO_ADMINS
         else:
             # Send to the user
             return self.TO_USER
-
-    def _getPrimaryRecipient(self, person_or_team):
-        """Return the primary recipient.
-
-        The primary recipient is the ``person_or_team`` in all cases
-        except for when the email is restricted to a team owner.
-
-        :param person_or_team: The party that is the context of the email.
-        :type person_or_team: `IPerson`.
-        """
-        if self._primary_reason is self.TO_OWNER:
-            person_or_team = person_or_team.teamowner
-            while person_or_team.is_team:
-                person_or_team = person_or_team.teamowner
-        return person_or_team
 
     def _getReasonAndHeader(self, person_or_team):
         """Return the reason and header why the email was received.
@@ -4902,20 +4874,13 @@ class ContactViaWebNotificationRecipientSet:
                 'using the "Contact this user" link on your profile page\n'
                 '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             reason = (
-                'using the "Contact this team\'s owner" link on the '
+                'using the "Contact this team\'s admins" link on the '
                 '%s team page\n(%s)' % (
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
-        elif self._primary_reason is self.TO_TEAM:
-            reason = (
-                'using the "Contact this team" link on the '
-                '%s team page\n(%s)' % (
-                    person_or_team.displayname,
-                    canonical_url(person_or_team)))
-            header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
@@ -4937,15 +4902,9 @@ class ContactViaWebNotificationRecipientSet:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             return (
-                'You are contacting the %s (%s) team owner, %s (%s).' %
-                (person_or_team.displayname, person_or_team.name,
-                 self._primary_recipient.displayname,
-                 self._primary_recipient.name))
-        elif self._primary_reason is self.TO_TEAM:
-            return (
-                'You are contacting the %s (%s) team.' %
+                'You are contacting the %s (%s) team admins.' %
                 (person_or_team.displayname, person_or_team.name))
         else:
             # This is a team without a contact address (self.TO_MEMBERS).
@@ -4968,6 +4927,16 @@ class ContactViaWebNotificationRecipientSet:
             for recipient in team.getMembersWithPreferredEmails():
                 email = removeSecurityProxy(recipient).preferredemail.email
                 all_recipients[email] = recipient
+        elif self._primary_reason is self.TO_ADMINS:
+            team = self._primary_recipient
+            for admin in team.adminmembers:
+                # This method is similar to getTeamAdminsEmailAddresses, but
+                # this case needs to know the user. Since both methods
+                # ultimately iterate over get_recipients, this case is not
+                # in a different performance class.
+                for recipient in get_recipients(admin):
+                    email = removeSecurityProxy(recipient).preferredemail.email
+                    all_recipients[email] = recipient
         elif self._primary_recipient.is_valid_person_or_team:
             email = removeSecurityProxy(
                 self._primary_recipient).preferredemail.email
@@ -5040,7 +5009,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         self._reset_state()
         self._primary_reason = self._getPrimaryReason(person)
-        self._primary_recipient = self._getPrimaryRecipient(person)
+        self._primary_recipient = person
         if reason is None:
             reason, header = self._getReasonAndHeader(person)
         self._reason = reason
