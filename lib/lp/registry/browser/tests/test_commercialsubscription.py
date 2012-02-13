@@ -76,5 +76,10 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(
             commercial_admin, '+vouchers', form=form)
+        self.assertEqual([], view.errors)
         self.assertIsNot(None, project.commercial_subscription)
-        self.assertIsNot(None, view.next_url)
+        self.assertEqual(0, len(view.redeemable_vouchers))
+        self.assertEqual(
+            0, len(view.form_fields.get('voucher').vocabulary))
+        self.assertEqual(
+            0, len(view.widgets.get('voucher').context.vocabulary))

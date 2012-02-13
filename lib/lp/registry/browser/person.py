@@ -2117,17 +2117,21 @@ class PersonVouchersView(LaunchpadFormView):
             render_context=self.render_context)
         return field
 
-    def createVoucherField(self):
-        """Create voucher field.
-
-        Only redeemable vouchers owned by the user are shown.
-        """
+    def createVoucherVocabulary(self):
+        """Return a vocabulary of redeemable vouchers."""
         terms = []
         for voucher in self.redeemable_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
-        voucher_vocabulary = SimpleVocabulary(terms)
+        return SimpleVocabulary(terms)
+
+    def createVoucherField(self):
+        """Create voucher field.
+
+        Only redeemable vouchers owned by the user are shown.
+        """
+        voucher_vocabulary = self.createVoucherVocabulary()
         field = FormFields(
             Choice(__name__='voucher',
                    title=_('Select a voucher'),
@@ -2139,9 +2143,23 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def redeemable_vouchers(self):
-        """Get the redeemable vouchers owned by the user."""
-        vouchers = self.context.getRedeemableCommercialSubscriptionVouchers()
+        """Get the list redeemable vouchers owned by the user."""
+        vouchers = [
+            voucher for voucher in
+            self.context.getRedeemableCommercialSubscriptionVouchers()]
         return vouchers
+
+    def updateRedeemableVouchers(self, voucher):
+        """Remove the voucher from the cached list of redeemable vouchers.
+
+        Updated the voucher field and widget so that the form can be reused.
+        """
+        vouchers = get_property_cache(self).redeemable_vouchers
+        vouchers.remove(voucher)
+        vocabulary = self.createVoucherVocabulary()
+        self.form_fields['voucher'].vocabulary = vocabulary
+        self.widgets['voucher'].context = self.form_fields['voucher']
+        self.widgets['voucher'].vocabulary = vocabulary
 
     @cachedproperty
     def has_commercial_projects(self):
@@ -2181,6 +2199,7 @@ class PersonVouchersView(LaunchpadFormView):
             # Force the page to reload so the just consumed voucher is
             # not displayed again (since the field has already been
             # created).
+            self.updateRedeemableVouchers(voucher)
             self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
             self.addError(
