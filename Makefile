@@ -499,4 +499,4 @@ pydoctor:
 	launchpad.pot pagetests pull_branches pydoctor realclean	\
 	reload-apache run run-testapp runner scan_branches schema	\
 	sprite_css sprite_image start stop sync_branches TAGS tags	\
-	test_build test_inplace zcmldocs
+	test_build test_inplace zcmldocs combobuild
