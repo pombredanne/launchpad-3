@@ -706,7 +706,7 @@ class IPersonPublic(IPrivacy):
     def anyone_can_join():
         """Quick check as to whether a team allows anyone to join."""
 
-    def checkAllowVisibility(user):
+    def checkAllowVisibility():
         """Is the user allowed to see the visibility field.
 
         :param: The user.
@@ -723,8 +723,8 @@ class IPersonPublic(IPrivacy):
     
         :param visibility: The PersonVisibility to change to.
         :param user: The user requesting the change.
-        :raises ImmutableVisibilityError: Raised when the visibility can not
-        be changed.
+        :raises: `ImmutableVisibilityError` when the visibility can not
+            be changed.
         :return: None.
         """
 

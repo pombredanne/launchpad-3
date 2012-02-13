@@ -275,7 +275,7 @@ class TeamFormMixin:
     def setUpVisibilityField(self):
         """Set the visibility field to read-write, or remove it."""
         self.form_fields = self.form_fields.omit('visibility')
-        if self.context.checkAllowVisibility(self.user):
+        if self.user and self.user.checkAllowVisibility():
             visibility = copy_field(ITeam['visibility'], readonly=False)
             self.form_fields += Fields(visibility)
 

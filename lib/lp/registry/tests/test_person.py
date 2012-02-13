@@ -564,7 +564,7 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertRaises(
             ImmutableVisibilityError, person.transitionVisibility,
-            PersonVisibility.PRIVATE)
+            PersonVisibility.PRIVATE, person)
 
 
 class TestPersonStates(TestCaseWithFactory):
