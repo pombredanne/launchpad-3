@@ -1443,9 +1443,6 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
-        <browser:page
-            name="+sharing"
-            template="../templates/product-sharing.pt"/>
 
         <!-- Products Portlets -->
 
@@ -1456,6 +1453,12 @@
             name="+portlet-license-missing"
             template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="launchpad.Edit"
+        name="+sharing"
+        class="lp.registry.browser.product.ProductSharingView"
+        template="../templates/product-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
