@@ -103,6 +103,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.error.interfaces import IErrorReportingUtility
+from zope.formlib import form
 from zope.formlib.form import FormFields
 from zope.interface import (
     classImplements,
@@ -2156,10 +2157,13 @@ class PersonVouchersView(LaunchpadFormView):
         """
         vouchers = get_property_cache(self).redeemable_vouchers
         vouchers.remove(voucher)
-        vocabulary = self.createVoucherVocabulary()
-        self.form_fields['voucher'].vocabulary = vocabulary
-        self.widgets['voucher'].context = self.form_fields['voucher']
-        self.widgets['voucher'].vocabulary = vocabulary
+        # Setup the fields and widgets again, but withut the submitted data.
+        self.form_fields = (
+            self.createProjectField() + self.createVoucherField())
+        self.widgets = form.setUpWidgets(
+            self.form_fields.select('project', 'voucher'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=True)
 
     @cachedproperty
     def has_commercial_projects(self):
@@ -2200,7 +2204,7 @@ class PersonVouchersView(LaunchpadFormView):
             # not displayed again (since the field has already been
             # created).
             self.updateRedeemableVouchers(voucher)
-            self.next_url = self.request.URL
+            #self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))

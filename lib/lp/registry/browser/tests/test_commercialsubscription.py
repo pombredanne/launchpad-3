@@ -80,6 +80,38 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertIsNot(None, project.commercial_subscription)
         self.assertEqual(0, len(view.redeemable_vouchers))
         self.assertEqual(
-            0, len(view.form_fields.get('voucher').vocabulary))
+            0, len(view.form_fields['voucher'].field.vocabulary))
         self.assertEqual(
-            0, len(view.widgets.get('voucher').context.vocabulary))
+            0, len(view.widgets['voucher'].vocabulary))
+
+    def test_redeem_twice_with_commercial_admin(self):
+        # The fields are setup if the commercial admin has vouchers.
+        commercial_admin = login_celebrity('commercial_admin')
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_id_1 = voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        voucher_id_2 = voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        project_1 = self.factory.makeProduct()
+        project_2 = self.factory.makeProduct()
+        form = {
+            'field.project': project_1.name,
+            'field.voucher': voucher_id_1,
+            'field.actions.redeem': 'Redeem',
+            }
+        view = create_initialized_view(
+            commercial_admin, '+vouchers', form=form)
+        self.assertEqual([], view.errors)
+        self.assertIsNot(None, project_1.commercial_subscription)
+        self.assertEqual(1, len(view.redeemable_vouchers))
+        form = {
+            'field.project': project_2.name,
+            'field.voucher': voucher_id_2,
+            'field.actions.redeem': 'Redeem',
+            }
+        view = create_initialized_view(
+            commercial_admin, '+vouchers', form=form)
+        self.assertEqual([], view.errors)
+        self.assertIsNot(None, project_2.commercial_subscription)
+        self.assertEqual(0, len(view.redeemable_vouchers))
