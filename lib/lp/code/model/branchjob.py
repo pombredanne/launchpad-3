@@ -464,6 +464,7 @@ class RevisionsAddedJob(BranchJobDerived):
         super(RevisionsAddedJob, self).__init__(context)
         self._bzr_branch = None
         self._tree_cache = {}
+        self._author_display_cache = {}
 
     @property
     def bzr_branch(self):
@@ -644,6 +645,27 @@ class RevisionsAddedJob(BranchJobDerived):
             [proposal for proposal, date_created in proposals.itervalues()],
             key=operator.attrgetter('date_created'), reverse=True)
 
+    def getAuthorDisplayName(self, author):
+        """Get the display name for an author.
+
+        This caches the result.
+
+        :param author: Author text as found in the bzr revision
+        :return: Prettified author name
+        """
+        try:
+            return self._author_display_cache[author]
+        except KeyError:
+            pass
+        revision_set = RevisionSet()
+        rev_author = revision_set.acquireRevisionAuthor(author)
+        if rev_author.person is None:
+            displayname = rev_author.name
+        else:
+            displayname = rev_author.person.unique_displayname
+        self._author_display_cache[author] = displayname
+        return displayname
+
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
 
@@ -655,18 +677,11 @@ class RevisionsAddedJob(BranchJobDerived):
         try:
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
-            authors = self.getAuthors(merged_revisions, graph)
-            revision_set = RevisionSet()
-            rev_authors = set(revision_set.acquireRevisionAuthor(author) for
-                              author in authors)
             outf = StringIO()
-            pretty_authors = []
-            for rev_author in rev_authors:
-                if rev_author.person is None:
-                    displayname = rev_author.name
-                else:
-                    displayname = rev_author.person.unique_displayname
-                pretty_authors.append('  %s' % displayname)
+            authors = self.getAuthors(merged_revisions, graph)
+            pretty_authors = list(set([
+                '  %s' % self.getAuthorDisplayName(author) for author in
+                authors]))
 
             if len(pretty_authors) > 0:
                 outf.write('Merge authors:\n')

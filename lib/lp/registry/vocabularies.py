@@ -135,7 +135,6 @@ from lp.registry.interfaces.pillar import (
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
-    License,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -1496,10 +1495,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.  For
-    normal users only commercial projects for which the user is the
-    maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.Moderate permission, all commercial projects are returned.
+    A commercial project is an active project that can have a commercial
+    subscription to grant access to proprietary features. The vocabulary
+    contains the active projects the user maintains, or all active project
+    if the user is a registry expert.
     """
 
     implements(IHugeVocabulary)
@@ -1513,12 +1512,14 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """The vocabulary's display nane."""
         return 'Select a commercial project'
 
-    def _filter_projs(self, projects):
-        """Filter the list of all projects to just the commercial ones."""
-        return [
-            project for project in sorted(projects,
-                                          key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting]
+    @cachedproperty
+    def product_set(self):
+        return getUtility(IProductSet)
+
+    @cachedproperty
+    def is_commercial_admin(self):
+        """Is the user a commercial admin?"""
+        return check_permission('launchpad.Commercial', self.product_set)
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1527,27 +1528,23 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        product_set = getUtility(IProductSet)
-        if check_permission('launchpad.Moderate', product_set):
-            projects = product_set.forReview(
-                search_text=query, licenses=[License.OTHER_PROPRIETARY],
-                active=True)
+        if self.is_commercial_admin:
+            projects = self.product_set.search(query)
         else:
             projects = user.getOwnedProjects(match_name=query)
-            projects = self._filter_projs(projects)
         return projects
 
     def toTerm(self, project):
         """Return the term for this object."""
         if project.commercial_subscription is None:
-            sub_status = "(unsubscribed)"
+            sub_status = "(no subscription)"
         else:
             date_formatter = DateTimeFormatterAPI(
                 project.commercial_subscription.date_expires)
             sub_status = "(expires %s)" % date_formatter.displaydate()
         return SimpleTerm(project,
                           project.name,
-                          '%s %s' % (project.title, sub_status))
+                          '%s %s' % (project.displayname, sub_status))
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
@@ -1560,24 +1557,25 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        if type(results) is list:
-            num = len(results)
-        else:
-            num = results.count()
+        num = results.count()
         return CountableIterator(num, results, self.toTerm)
 
     def _commercial_projects(self):
         """Return the list of commercial projects owned by this user."""
-        return self._filter_projs(self._doSearch())
+        return self._doSearch()
 
     def __iter__(self):
         """See `IVocabulary`."""
         for proj in self._commercial_projects():
             yield self.toTerm(proj)
 
-    def __contains__(self, obj):
+    def __contains__(self, project):
         """See `IVocabulary`."""
-        return obj in self._filter_projs([obj])
+        if not project.active:
+            return False
+        if self.is_commercial_admin:
+            return True
+        return self.context.inTeam(project.owner)
 
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):
