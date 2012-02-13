@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This script will set up a brand new Ubuntu machine as a LP developer
@@ -147,7 +147,7 @@ do_install() {
   }
 
 sudo apt-get update
-REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker"
+REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker libapache2-mod-wsgi"
 for pkg in $REQUIRED_PACKAGES; do
   do_install;
 done
