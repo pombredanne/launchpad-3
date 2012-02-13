@@ -60,3 +60,21 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(1, len(view.redeemable_vouchers))
         self.assertEqual(
             ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+
+    def test_redeem_with_commercial_admin(self):
+        # The fields are setup if the commercial admin has vouchers.
+        commercial_admin = login_celebrity('commercial_admin')
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_id = voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        project = self.factory.makeProduct()
+        form = {
+            'field.project': project.name,
+            'field.voucher': voucher_id,
+            'field.actions.redeem': 'Redeem',
+            }
+        view = create_initialized_view(
+            commercial_admin, '+vouchers', form=form)
+        self.assertIsNot(None, project.commercial_subscription)
+        self.assertIsNot(None, view.next_url)
