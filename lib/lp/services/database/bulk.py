@@ -17,12 +17,17 @@ from collections import defaultdict
 from functools import partial
 from operator import attrgetter
 
+from storm.database import convert_param_marks
+from storm.exceptions import (
+    ClosedError,
+    ConnectionBlockedError,
+    )
 from storm.expr import Or
 from storm.info import get_cls_info
 from storm.store import Store
+from storm.tracer import trace
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.lpstorm import IStore
 
 
@@ -147,6 +152,40 @@ def load_related(object_type, owning_objects, foreign_keys):
     return load(object_type, keys)
 
 
+def execute_many(store, statement, rows):
+    """Invoke cursor.executemany for a Store.
+
+    Adapted from Store.execute and Connection.execute.
+    """
+    if store._implicit_flush_block_count == 0:
+        store.flush()
+    connection = store._connection
+    if connection._closed:
+        raise ClosedError("Connection is closed")
+    if connection._blocked:
+        raise ConnectionBlockedError("Access to connection is blocked")
+    if connection._event:
+        connection._event.emit("register-transaction")
+    connection._ensure_connected()
+    statement = convert_param_marks(statement, "?", connection.param_mark)
+    raw_cursor = connection._check_disconnect(connection.build_raw_cursor)
+    connection._check_disconnect(
+        trace, "execute_many", connection, raw_cursor,
+        statement, rows or ())
+    try:
+        connection._check_disconnect(raw_cursor.executemany, statement, rows)
+    except Exception, error:
+        connection._check_disconnect(
+            trace, "execute_many_success", connection, raw_cursor,
+            statement, rows, error)
+        raise
+    else:
+        connection._check_disconnect(
+            trace, "connection_raw_execute_success", connection, raw_cursor,
+            statement, rows)
+    return raw_cursor
+
+
 def insert_many(store, table, columns, rows):
     """Insert multiple rows into a table.
 
@@ -155,10 +194,10 @@ def insert_many(store, table, columns, rows):
     :param columns: Iterable of names of columns.
     :param rows: Sequence of tuples of values, in order as per columns.
     """
-    column_str = '(%s)' % ', '.join(columns)
-    values = '(%s)' % ', '.join(['%s' for column in columns])
-    statement = """
-        INSERT INTO %s %s
-        VALUES %s
-        """ % (table, column_str, values)
-    store._connection.build_raw_cursor().executemany(statement, rows)
+    def listify(values):
+        return '(%s)' % ', '.join(values)
+    column_str = listify(columns)
+    values = listify(['?'] * len(columns))
+    values = '(%s)' % ', '.join(['?' for column in columns])
+    statement = "INSERT INTO %s %s VALUES %s" % (table, column_str, values)
+    return execute_many(store, statement, rows)
