@@ -5,20 +5,58 @@
 
 __metaclass__ = type
 
+from lp.services.salesforce.interfaces import ISalesforceVoucherProxy
+from lp.services.salesforce.tests.proxy import TestSalesforceVoucherProxy
 from lp.services.webapp.publisher import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    FakeAdapterMixin,
+    login_celebrity,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
-class PersonVouchersViewTestCase(TestCaseWithFactory):
+class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_init(self):
+    def test_init_without_vouchers_or_projects(self):
+        # Thhe view provides common view properties, but the form is disabled.
         user = self.factory.makePerson()
         self.factory.makeProduct(owner=user)
+        voucher_proxy = TestSalesforceVoucherProxy()
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
         user_url = canonical_url(user)
         view = create_initialized_view(user, '+vouchers')
         self.assertEqual('Commercial subscription vouchers', view.page_title)
         self.assertEqual(user_url, view.cancel_url)
         self.assertIs(None, view.next_url)
+        self.assertEqual(0, len(view.redeemable_vouchers))
+        self.assertEqual([], view.form_fields)
+
+    def test_init_with_vouchers_and_projects(self):
+        # The fields are setup when the user hase both vouchers and projects.
+        user = self.factory.makePerson()
+        login_person(user)
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_proxy.grantVoucher(
+            user, user, user, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        self.factory.makeProduct(owner=user)
+        view = create_initialized_view(user, '+vouchers')
+        self.assertEqual(1, len(view.redeemable_vouchers))
+        self.assertEqual(
+            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
+
+    def test_init_with_commercial_admin_with_vouchers(self):
+        # The fields are setup if the commercial admin has vouchers.
+        commercial_admin = login_celebrity('commercial_admin')
+        voucher_proxy = TestSalesforceVoucherProxy()
+        voucher_proxy.grantVoucher(
+            commercial_admin, commercial_admin, commercial_admin, 12)
+        self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
+        view = create_initialized_view(commercial_admin, '+vouchers')
+        self.assertEqual(1, len(view.redeemable_vouchers))
+        self.assertEqual(
+            ['project', 'voucher'], [f.__name__ for f in view.form_fields])
