@@ -1433,8 +1433,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
         source.sourcepackagerelease.changelog = changelog
         transaction.commit()
+        person = self.factory.makePerson(name='archiver')
         target_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest)
+            distribution=self.test_publisher.ubuntutest,
+            owner=person, name='ppa')
         [copied_source] = do_copy(
             [source], target_archive, nobby, source.pocket, False,
             person=target_archive.owner, check_permissions=False,
@@ -1453,8 +1455,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
               * 1.0-2.
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)
