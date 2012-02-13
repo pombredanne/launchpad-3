@@ -800,15 +800,20 @@ class TestTeamIndexView(TestCaseWithFactory):
             archive = self.factory.makeArchive(private=True, owner=team)
             archive.newSubscription(user, registrant=owner)
         with person_logged_in(user):
-            view = create_initialized_view(
-                team, name="+index",  server_url=canonical_url(team),
-                path_info='', principal=user)
-            document = find_tag_by_id(view(), 'document')
-        self.assertIsNone(document.find(True, id='side-portlets'))
-        self.assertIsNone(document.find(True, id='registration'))
-        self.assertEndsWith(
-            extract_text(document.find(True, id='maincontent')),
-            'The information in this page is not shared with you.')
+            for rootsite, view_name in [
+                (None, '+index'), ('code', '+branches'), ('bugs', '+bugs'),
+                ('blueprints', '+specs'), ('answers', '+questions'),
+                ('translations', '+translations')]:
+                view = create_initialized_view(
+                    team, name=view_name, path_info='', principal=user,
+                    server_url=canonical_url(team, rootsite=rootsite),
+                    rootsite=rootsite)
+                document = find_tag_by_id(view(), 'document')
+                self.assertIsNone(document.find(True, id='side-portlets'))
+                self.assertIsNone(document.find(True, id='registration'))
+                self.assertEndsWith(
+                    extract_text(document.find(True, id='maincontent')),
+                    'The information in this page is not shared with you.')
 
 
 class TestPersonIndexVisibilityView(TestCaseWithFactory):

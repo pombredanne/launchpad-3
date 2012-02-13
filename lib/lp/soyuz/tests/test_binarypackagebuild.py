@@ -18,6 +18,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
@@ -48,6 +49,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -522,7 +524,8 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.build = gedit_src_hist.createMissingBuilds()[0]
 
         self.builder = self.factory.makeBuilder()
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(WaitingSlave('BuildStatus.OK')))
         self.build.buildqueue_record.markAsBuilding(self.builder)
 
     def testDependencies(self):
