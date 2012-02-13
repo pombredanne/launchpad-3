@@ -8,12 +8,14 @@ if [ -z "$1" ]; then
 fi
 
 BUILD_DIR=$1
-rm -rf $BUILD_DIR/*
+
+if [ -d "$BUILD_DIR/lp" ]; then
+    echo "$0: Assuming build dir is up-to-date."
+    exit 0
+fi
 
 # Populate YUI.
-mkdir $BUILD_DIR/yui-${versions:yui}
-cp -a ${buildout:yui-directory}/yui-${versions:yui}/* $BUILD_DIR/yui-${versions:yui}
-ln -sf $BUILD_DIR/yui-${versions:yui} $BUILD_DIR/yui
+ln -sf yui-${versions:yui} $BUILD_DIR/yui
 
 # And YUI 2, for now.
 cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
