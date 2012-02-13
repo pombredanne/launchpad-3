@@ -2118,21 +2118,18 @@ class PersonVouchersView(LaunchpadFormView):
             render_context=self.render_context)
         return field
 
-    def createVoucherVocabulary(self):
-        """Return a vocabulary of redeemable vouchers."""
-        terms = []
-        for voucher in self.redeemable_vouchers:
-            text = "%s (%d months)" % (
-                voucher.voucher_id, voucher.term_months)
-            terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
-        return SimpleVocabulary(terms)
 
     def createVoucherField(self):
         """Create voucher field.
 
         Only redeemable vouchers owned by the user are shown.
         """
-        voucher_vocabulary = self.createVoucherVocabulary()
+        terms = []
+        for voucher in self.redeemable_vouchers:
+            text = "%s (%d months)" % (
+                voucher.voucher_id, voucher.term_months)
+            terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
+        voucher_vocabulary = SimpleVocabulary(terms)
         field = FormFields(
             Choice(__name__='voucher',
                    title=_('Select a voucher'),
