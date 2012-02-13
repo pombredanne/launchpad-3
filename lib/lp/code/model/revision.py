@@ -362,7 +362,9 @@ class RevisionSet:
             except IndexError:
                 author = None
             author_names.append(author)
-        revision_authors = self.acquireRevisionAuthors(author_names)
+        revision_authors = dict(
+            (name, author.id) for name, author in
+            self.acquireRevisionAuthors(author_names).items())
 
         property_data = []
         parent_data = []
@@ -372,7 +374,7 @@ class RevisionSet:
             revision_author = revision_authors[author_name]
 
             data.append(
-                (revision_id, bzr_revision.message, revision_date,
+                (revision_id, bzr_revision.message, str(revision_date),
                 revision_author))
         insert_many(
             store, 'Revision', ('revision_id', 'log_body', 'revision_date',

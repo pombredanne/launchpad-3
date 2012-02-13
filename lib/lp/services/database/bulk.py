@@ -155,13 +155,10 @@ def insert_many(store, table, columns, rows):
     :param columns: Iterable of names of columns.
     :param rows: Sequence of tuples of values, in order as per columns.
     """
-    if len(rows) == 0:
-        return
     column_str = '(%s)' % ', '.join(columns)
-    rows = ['(%s)' % ', '.join(sqlvalues(*row)) for row in rows]
-    rows = ', '.join(rows)
-    store.execute(
-        """
+    values = '(%s)' % ', '.join(['%s' for column in columns])
+    statement = """
         INSERT INTO %s %s
         VALUES %s
-        """ % (table, column_str, rows))
+        """ % (table, column_str, values)
+    store._connection.build_raw_cursor().executemany(statement, rows)
