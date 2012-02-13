@@ -2393,9 +2393,5 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
 class ProductSharingView(LaunchpadView):
 
-    label = "Sharing"
-
-    @property
-    def page_title(self):
-        """The HTML page title."""
-        return "Sharing: %s" % self.context.displayname
+    page_title = "Sharing"
+    label = page_title
