@@ -538,7 +538,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertFalse(person.isAnySecurityContact())
 
     def test_has_current_commercial_subscription(self):
-        # IPerson.hasCurrentCommercialSubscription() checks for one. 
+        # IPerson.hasCurrentCommercialSubscription() checks for one.
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         product = self.factory.makeProduct(owner=team)
@@ -559,6 +559,12 @@ class TestPerson(TestCaseWithFactory):
         # not have one.
         person = self.factory.makePerson()
         self.assertFalse(person.hasCurrentCommercialSubscription())
+
+    def test_can_not_set_visibility(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            ImmutableVisibilityError, person.transitionVisibility,
+            PersonVisibility.PRIVATE)
 
 
 class TestPersonStates(TestCaseWithFactory):

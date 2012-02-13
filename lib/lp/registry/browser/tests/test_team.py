@@ -493,7 +493,7 @@ class TestTeamAddView(TestCaseWithFactory):
             personset, name=self.view_name, principal=admin)
         self.assertIn(
             'visibility', [field.__name__ for field in view.form_fields])
-        
+
     def test_random_does_not_see_visibility_field_with_flag(self):
         personset = getUtility(IPersonSet)
         person = self.factory.makePerson()
@@ -519,6 +519,28 @@ class TestTeamAddView(TestCaseWithFactory):
                     'visibility',
                     [field.__name__ for field in view.form_fields])
 
+    def test_person_with_cs_can_create_private_team(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.visibility': 'PRIVATE',
+            'field.actions.create': 'Create',
+            }
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                view = create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner,
+                    form=form)
+            team = personset.getByName(team_name)
+            self.assertIsNotNone(team)
+            self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
 
     def test_person_with_expired_cs_does_not_see_visibility(self):
         personset = getUtility(IPersonSet)

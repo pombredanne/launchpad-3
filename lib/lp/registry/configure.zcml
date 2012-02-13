@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -913,8 +913,6 @@
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
-            <allow
-                interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.LimitedView"
                 interface="lp.registry.interfaces.person.IPersonLimitedView"/>
@@ -935,13 +933,10 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo"/>
+                set_attributes="displayname icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
-            <require
-                permission="launchpad.Commercial"
-                set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>

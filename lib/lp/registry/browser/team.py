@@ -43,6 +43,7 @@ from datetime import (
 import math
 from urllib import unquote
 
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 import pytz
@@ -50,8 +51,11 @@ import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.formlib import form
-from zope.formlib.form import FormFields
+from zope.formlib.form import (
+    Fields,
+    FormField,
+    FormFields,
+    )
 from zope.interface import (
     classImplements,
     implements,
@@ -311,6 +315,10 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
+        if 'visibility' in [field.__name__ for field in self.form_fields]:
+            self.form_fields = self.form_fields.omit('visibility')
+            visibility = copy_field(ITeam['visibility'], readonly=False)
+            self.form_fields += Fields(visibility)
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -348,6 +356,9 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     @action('Save', name='save')
     def action_save(self, action, data):
         try:
+            visibility = data.get('visibility')
+            if visibility:
+                self.context.transitionVisibility(visibility, self.user)
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
@@ -449,7 +460,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
         # Replace the default contact_method field by a custom one.
         self.form_fields = (
-            form.FormFields(self.getContactMethodField())
+            FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
 
     def getContactMethodField(self):
@@ -482,7 +493,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # field.
             del terms[hosted_list_term_index]
 
-        return form.FormField(
+        return FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact this team's members?"),
                    required=True, vocabulary=SimpleVocabulary(terms)))
@@ -990,7 +1001,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
 
     page_title = 'Register a new team in Launchpad'
     label = page_title
-    schema = ITeamCreation
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -999,6 +1009,9 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
         orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+
+    class schema(ITeamCreation):
+        visibility = copy_field(ITeamCreation['visibility'], readonly=False)
 
     def setUpFields(self):
         """See `LaunchpadViewForm`.
@@ -1022,7 +1035,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
-            team.visibility = visibility
+            team.transitionVisibility(visibility, self.user)
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)

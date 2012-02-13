@@ -243,6 +243,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -289,6 +290,7 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
@@ -3061,6 +3063,18 @@ class Person(
     def canCreatePPA(self):
         """See `IPerson.`"""
         return self.subscriptionpolicy in CLOSED_TEAM_POLICY
+
+    def transitionVisibility(self, visibility, user):
+        validate_person_visibility(self, 'visibility', visibility)
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag:
+            if not user.hasCurrentCommercialSubscription():
+                raise ImmutableVisibilityError()
+        else:
+            if not check_permission('launchpad.Commercial', self):
+                raise ImmutableVisibilityError()
+        self.visibility = visibility
 
 
 class PersonSet:
