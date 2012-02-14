@@ -406,27 +406,10 @@ class RevisionSet:
     @staticmethod
     def onlyPresent(revids):
         """See `IRevisionSet`."""
-        if not revids:
-            return set()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute(
-            """
-            CREATE TEMPORARY TABLE Revids
-            (revision_id text)
-            """)
-        insert_many(
-            store, 'Revids', ('revision_id',), [(revid,) for revid in revids])
-        result = store.execute(
-            """
-            SELECT Revids.revision_id
-            FROM Revids, Revision
-            WHERE Revids.revision_id = Revision.revision_id
-            """)
-        present = set()
-        for row in result.get_all():
-            present.add(row[0])
-        store.execute("DROP TABLE Revids")
-        return present
+        store = IStore(Revision)
+        clause = Revision.revision_id.is_in(revids)
+        present = store.find(Revision.revision_id, clause)
+        return set(present)
 
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
