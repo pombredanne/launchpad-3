@@ -2146,7 +2146,7 @@ class PersonVouchersView(LaunchpadFormView):
             self.context.getRedeemableCommercialSubscriptionVouchers()]
         return vouchers
 
-    def updateRedeemableVouchers(self, voucher):
+    def removeRedeemableVoucher(self, voucher):
         """Remove the voucher from the cached list of redeemable vouchers.
 
         Updated the voucher field and widget so that the form can be reused.
@@ -2196,7 +2196,7 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            self.updateRedeemableVouchers(voucher)
+            self.removeRedeemableVoucher(voucher)
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
