@@ -3553,18 +3553,6 @@ class PersonSet:
             (EmailAddress, Person),
             EmailAddress.email.lower().is_in(addresses), extra_query)
 
-    def latest_teams(self, limit=5):
-        """See `IPersonSet`."""
-        orderby = (Desc(Person.datecreated), Desc(Person.id))
-        result = IStore(Person).find(
-            Person,
-            And(
-                self._teamPrivacyQuery(),
-                TeamParticipation.team == Person.id,
-                Person.teamowner != None,
-                Person.merged == None))
-        return result.order_by(orderby).config(distinct=True)[:limit]
-
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
         """Merge a table that "decorates" Person.
