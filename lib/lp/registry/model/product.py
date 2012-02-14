@@ -130,6 +130,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -149,6 +150,10 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.security import (
+    BugTargetOwnerOrBugSupervisorOrAdmins,
+    ModerateByRegistryExpertsOrAdmins,
+    )
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -165,7 +170,6 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -511,15 +515,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
-    def checkPrivateBugsTransitionAllowed(self, private_bugs):
+    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
         """See `IProductPublic`."""
-        moderator = check_permission('launchpad.Moderate', self)
-        valid_bug_supervisor = (
-            check_permission('launchpad.BugSupervisor', self)
-            and (not private_bugs or self.has_current_commercial_subscription)
-        )
-        if moderator or valid_bug_supervisor:
-            return
+        if user is not None:
+            person_roles = IPersonRoles(user)
+            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
+            moderator = moderator_check.checkAuthenticated(person_roles)
+            if moderator:
+                return True
+
+            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
+            bug_supervisor = (
+                bug_supervisor_check.checkAuthenticated(person_roles))
+            if (bug_supervisor and
+                    (not private_bugs
+                     or self.has_current_commercial_subscription)):
+                return
         if private_bugs:
             raise CommercialSubscribersOnly(
                 'A valid commercial subscription is required to turn on '
@@ -527,11 +538,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         raise Unauthorized(
             'Only bug supervisors can turn off default private bugs.')
 
-    def setPrivateBugs(self, private_bugs):
+    def setPrivateBugs(self, private_bugs, user):
         """ See `IProductEditRestricted`."""
         if self.private_bugs == private_bugs:
             return
-        self.checkPrivateBugsTransitionAllowed(private_bugs)
+        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
         self.private_bugs = private_bugs
 
     @cachedproperty

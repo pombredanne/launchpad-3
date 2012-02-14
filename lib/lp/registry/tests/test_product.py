@@ -268,90 +268,81 @@ class TestProduct(TestCaseWithFactory):
     def test_private_bugs_on_not_allowed_for_anonymous(self):
         # Anonymous cannot turn on private bugs.
         product = self.factory.makeProduct()
-        login(ANONYMOUS)
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True)
+            product.checkPrivateBugsTransitionAllowed, True, None)
 
     def test_private_bugs_off_not_allowed_for_anonymous(self):
         # Anonymous cannot turn private bugs off.
         product = self.factory.makeProduct()
-        login(ANONYMOUS)
         self.assertRaises(
             Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False)
+            product.checkPrivateBugsTransitionAllowed, False, None)
 
     def test_private_bugs_on_not_allowed_for_unauthorised(self):
         # Unauthorised users cannot turn on private bugs.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
-        login_person(someone)
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True)
+            product.checkPrivateBugsTransitionAllowed, True, someone)
 
     def test_private_bugs_off_not_allowed_for_unauthorised(self):
         # Unauthorised users cannot turn private bugs off.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
-        login_person(someone)
         self.assertRaises(
             Unauthorized,
-            product.checkPrivateBugsTransitionAllowed, False)
+            product.checkPrivateBugsTransitionAllowed, False, someone)
 
     def test_private_bugs_on_allowed_for_moderators(self):
         # Moderators can turn on private bugs.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
-        login_person(registry_expert)
-        product.checkPrivateBugsTransitionAllowed(True)
+        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
 
     def test_private_bugs_off_allowed_for_moderators(self):
         # Moderators can turn private bugs off.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
-        login_person(registry_expert)
-        product.checkPrivateBugsTransitionAllowed(False)
+        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
 
     def test_private_bugs_on_allowed_for_commercial_subscribers(self):
         # Commercial subscribers can turn on private bugs.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        login_person(bug_supervisor)
         self.factory.makeCommercialSubscription(product)
-        product.checkPrivateBugsTransitionAllowed(True)
+        product.checkPrivateBugsTransitionAllowed(True, bug_supervisor)
 
     def test_private_bugs_on_not_allowed_for_expired_subscribers(self):
         # Expired Commercial subscribers cannot turn on private bugs.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        login_person(bug_supervisor)
         self.factory.makeCommercialSubscription(product, expired=True)
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.setPrivateBugs, True)
+            product.setPrivateBugs, True, bug_supervisor)
 
     def test_private_bugs_off_allowed_for_bug_supervisors(self):
         # Bug supervisors can turn private bugs off.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        login_person(bug_supervisor)
-        product.checkPrivateBugsTransitionAllowed(False)
+        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
 
     def test_unauthorised_set_private_bugs_raises(self):
         # Test Product.setPrivateBugs raises an error if user unauthorised.
         product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.setPrivateBugs, True)
+            product.setPrivateBugs, True, someone)
 
     def test_set_private_bugs(self):
         # Test Product.setPrivateBugs()
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         self.factory.makeCommercialSubscription(product)
-        login_person(bug_supervisor)
-        product.setPrivateBugs(True)
+        product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
 
 

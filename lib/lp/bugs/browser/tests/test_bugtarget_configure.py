@@ -226,8 +226,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
     def test_unauthorised_cannot_turn_off_private_bugs(self):
         # Verify unauthorised user cannot set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
-        login_person(registry_expert)
-        self.product.setPrivateBugs(True)
+        self.product.setPrivateBugs(True, registry_expert)
         anyperson = self.factory.makePerson()
         login_person(anyperson)
         form = self._makeForm()
@@ -240,8 +239,7 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
     def test_bug_supervisor_can_turn_off_private_bugs(self):
         # Verify the bug supervisor can always set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
-        login_person(registry_expert)
-        self.product.setPrivateBugs(True)
+        self.product.setPrivateBugs(True, registry_expert)
         form = self._makeForm()
         login_person(self.bug_supervisor)
         view = create_initialized_view(
