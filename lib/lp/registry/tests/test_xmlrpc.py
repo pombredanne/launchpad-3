@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import xmlrpclib
 
-from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
