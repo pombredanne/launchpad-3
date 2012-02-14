@@ -2,7 +2,6 @@
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug configuration views."""
-from zope.security.proxy import removeSecurityProxy
 
 __metaclass__ = type
 
