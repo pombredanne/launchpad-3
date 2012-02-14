@@ -1521,7 +1521,16 @@ class FakeAdapterMixin:
         return getMultiAdapter(for_interfaces, provided_interface, name=name)
 
     def registerUtility(self, component, for_interface, name=''):
+        try:
+            current_commponent = getUtility(for_interface)
+        except:
+            current_commponent = None
         site_manager = getSiteManager()
         site_manager.registerUtility(component, for_interface, name)
         self.addCleanup(
             site_manager.unregisterUtility, component, for_interface, name)
+        if current_commponent is not None:
+            # Restore the default utility.
+            self.addCleanup(
+                site_manager.registerUtility, current_commponent,
+                for_interface, name)

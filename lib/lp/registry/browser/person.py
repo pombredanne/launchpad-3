@@ -2197,11 +2197,7 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is
-            # not displayed again (since the field has already been
-            # created).
             self.updateRedeemableVouchers(voucher)
-            #self.next_url = self.request.URL
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
