@@ -595,7 +595,6 @@ class Person(
     _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
-    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC,

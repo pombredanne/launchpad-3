@@ -1022,8 +1022,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
 
-    entitlements = Attribute("List of Entitlements for this person or team.")
-
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
 

@@ -103,7 +103,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceEdit,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
-from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
@@ -2247,26 +2246,6 @@ class BranchMergeProposalEdit(AuthorizationBase):
                 self.forwardCheckAuthenticated(
                     user, self.obj.target_branch) or
                 user.inTeam(self.obj.target_branch.reviewer))
-
-
-class ViewEntitlement(AuthorizationBase):
-    """Permissions to view IEntitlement objects.
-
-    Allow the owner of the entitlement, the entitlement registrant,
-    or any member of the team or any admin to view the entitlement.
-    """
-    permission = 'launchpad.View'
-    usedfor = IEntitlement
-
-    def checkAuthenticated(self, user):
-        """Is the user able to view an Entitlement attribute?
-
-        Any team member can edit a branch subscription for their team.
-        Launchpad Admins can also edit any branch subscription.
-        """
-        return (user.inTeam(self.obj.person) or
-                user.inTeam(self.obj.registrant) or
-                user.in_admin)
 
 
 class AdminDistroSeriesLanguagePacks(

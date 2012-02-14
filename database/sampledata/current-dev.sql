@@ -4032,17 +4032,6 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (93, '
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 
-ALTER TABLE entitlement DISABLE TRIGGER ALL;
-
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
-
-
-ALTER TABLE entitlement ENABLE TRIGGER ALL;
-
-
 ALTER TABLE faq DISABLE TRIGGER ALL;
 
 INSERT INTO faq (id, title, tags, content, product, distribution, owner, date_created, last_updated_by, date_last_updated, fti) VALUES (1, 'Wireless Networking Documentation', 'wifi', 'Installation instructions for many wireless cards can be found at:
