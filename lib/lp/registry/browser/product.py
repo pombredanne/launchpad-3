@@ -2394,4 +2394,4 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 class ProductSharingView(LaunchpadView):
 
     page_title = "Sharing"
-    label = page_title
+    label = "Sharing information"
