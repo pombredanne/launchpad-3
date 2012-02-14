@@ -2561,7 +2561,7 @@ class ICanonicalSSOApplication(ILaunchpadApplication):
 class ICanonicalSSOAPI(Interface):
     """XMLRPC API used by the software center agent."""
 
-    def getPersonByOpenIDIdentifier(openid_identifier):
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
         """Get the details of an LP person based on an OpenID identifier."""
 
 

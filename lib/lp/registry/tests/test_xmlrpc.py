@@ -147,7 +147,7 @@ class TestCanonicalSSOApplication(TestCaseWithFactory):
             'http://xmlrpc-private.launchpad.dev:8087/canonicalsso',
             transport=XMLRPCTestTransport())
 
-    def test_getPersonByOpenIDIdentifier(self):
+    def test_getPersonDetailsByOpenIDIdentifier(self):
         person = self.factory.makePerson(time_zone='Australia/Melbourne')
         self.factory.makeTeam(
             name='pubteam', members=[person],
@@ -157,7 +157,8 @@ class TestCanonicalSSOApplication(TestCaseWithFactory):
             visibility=PersonVisibility.PRIVATE)
         openid_identifier = removeSecurityProxy(
             person.account).openid_identifiers.any().identifier
-        result = self.rpc_proxy.getPersonByOpenIDIdentifier(openid_identifier)
+        result = self.rpc_proxy.getPersonDetailsByOpenIDIdentifier(
+            openid_identifier)
         self.assertEqual(
             dict(
                 name=person.name,
@@ -177,5 +178,6 @@ class TestCanonicalSSOApplication(TestCaseWithFactory):
             transport=XMLRPCTestTransport())
         e = self.assertRaises(
             xmlrpclib.ProtocolError,
-            public_rpc_proxy.getPersonByOpenIDIdentifier, openid_identifier)
+            public_rpc_proxy.getPersonDetailsByOpenIDIdentifier,
+            openid_identifier)
         self.assertEqual(404, e.errcode)

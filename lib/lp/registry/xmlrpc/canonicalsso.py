@@ -28,7 +28,7 @@ class CanonicalSSOAPI(LaunchpadXMLRPCView):
 
     implements(ICanonicalSSOAPI)
 
-    def getPersonByOpenIDIdentifier(self, openid_identifier):
+    def getPersonDetailsByOpenIDIdentifier(self, openid_identifier):
         try:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
                 openid_identifier.decode('ascii'))
