@@ -1710,29 +1710,6 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productrelease.IProductReleaseFileEditRestricted"/>
     </class>
-    <class
-        class="lp.registry.model.entitlement.Entitlement">
-        <require
-            permission="launchpad.View"
-            interface="lp.registry.interfaces.entitlement.IEntitlement"/>
-        <require
-            permission="launchpad.Admin"
-            set_schema="lp.registry.interfaces.entitlement.IEntitlement"/>
-    </class>
-
-    <!-- EntitlementSet -->
-
-    <class
-        class="lp.registry.model.entitlement.EntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </class>
-    <securedutility
-        class="lp.registry.model.entitlement.EntitlementSet"
-        provides="lp.registry.interfaces.entitlement.IEntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </securedutility>
 
     <!-- SuiteSourcePackage -->
     <class
