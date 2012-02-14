@@ -906,8 +906,6 @@
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
-            <allow
-                interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.LimitedView"
                 interface="lp.registry.interfaces.person.IPersonLimitedView"/>
@@ -928,13 +926,10 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo"/>
+                set_attributes="displayname icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
-            <require
-                permission="launchpad.Commercial"
-                set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>
@@ -1715,29 +1710,6 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productrelease.IProductReleaseFileEditRestricted"/>
     </class>
-    <class
-        class="lp.registry.model.entitlement.Entitlement">
-        <require
-            permission="launchpad.View"
-            interface="lp.registry.interfaces.entitlement.IEntitlement"/>
-        <require
-            permission="launchpad.Admin"
-            set_schema="lp.registry.interfaces.entitlement.IEntitlement"/>
-    </class>
-
-    <!-- EntitlementSet -->
-
-    <class
-        class="lp.registry.model.entitlement.EntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </class>
-    <securedutility
-        class="lp.registry.model.entitlement.EntitlementSet"
-        provides="lp.registry.interfaces.entitlement.IEntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </securedutility>
 
     <!-- SuiteSourcePackage -->
     <class
