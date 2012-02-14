@@ -343,19 +343,19 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
-        self.assertEqual(self.product.commercial_subscription.sales_system_id,
-                         'hello')
+        self.assertEqual(
+            'hello', self.product.commercial_subscription.sales_system_id)
         transaction.abort()
         # Cache is cleared.
-        self.assertEqual(self.product.commercial_subscription, None)
+        self.assertIs(None, self.product.commercial_subscription)
 
         # Cache is cleared again.
         transaction.abort()
         self.factory.makeCommercialSubscription(self.product)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
-        self.assertEqual(self.product.commercial_subscription.sales_system_id,
-                         'new')
+        self.assertEqual(
+            'new', self.product.commercial_subscription.sales_system_id)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
