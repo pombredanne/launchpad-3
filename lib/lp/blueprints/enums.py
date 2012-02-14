@@ -516,27 +516,27 @@ class SprintSpecificationStatus(DBEnumeratedType):
 
 class SpecificationWorkItemStatus(DBEnumeratedType):
     TODO = DBItem(0, """
-        TODO
+        Todo
 
         A work item that's not done yet.
         """)
     DONE = DBItem(1, """
-        DONE
+        Done
 
         A work item that's done.
         """)
     POSTPONED = DBItem(2, """
-        POSTPONED
+        Postponed
 
         A work item that has been postponed.
         """)
     INPROGRESS = DBItem(3, """
-        INPROGRESS
+        In progress
 
         A work item that is inprogress.
         """)
     BLOCKED = DBItem(4, """
-        BLOCKED
+        Blocked
 
         A work item that is blocked.
         """)
