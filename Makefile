@@ -145,7 +145,7 @@ inplace: build combobuild logs clean_logs
 		ln -sf $(WD)/build/js $(CONVOY_ROOT); \
 	fi
 
-build: compile apidoc jsbuild css_combine sprite_image
+build: compile apidoc jsbuild combobuild css_combine sprite_image
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
