@@ -2118,7 +2118,6 @@ class PersonVouchersView(LaunchpadFormView):
             render_context=self.render_context)
         return field
 
-
     def createVoucherField(self):
         """Create voucher field.
 
