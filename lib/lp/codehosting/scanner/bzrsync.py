@@ -98,7 +98,7 @@ class BzrSync:
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
-        for revids in iter_list_chunks(list(new_db_revs), 1000):
+        for revids in iter_list_chunks(list(new_db_revs), 10000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
             self.syncRevisions(bzr_branch, revisions, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
@@ -287,7 +287,7 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(revids_to_insert))
         revid_seq_pairs = revids_to_insert.items()
-        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
+        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 10000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
     def updateBranchStatus(self, bzr_history):
