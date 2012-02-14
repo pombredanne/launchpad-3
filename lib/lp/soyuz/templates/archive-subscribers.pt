@@ -37,6 +37,8 @@
           enctype="multipart/form-data"
           accept-charset="UTF-8">
 
+        <tal:navigation_top
+           replace="structure view/batchnav/@@+navigation-links-upper" />
         <table tal:attributes="summary string:Subscribers for ${context/displayname};"
                id="archive-subscribers" class="listing">
           <thead>
@@ -78,7 +80,7 @@
               </td>
             </tr>
             <tr class="archive_subscriber_row"
-                tal:repeat="subscription view/subscriptions">
+                tal:repeat="subscription view/current_subscriptions_batch">
               <td tal:content="structure subscription/subscriber/fmt:link" />
               <td tal:content="subscription/date_expires/fmt:date" />
               <td tal:content="subscription/description" />
@@ -90,10 +92,12 @@
            </tr>
           </tbody>
         </table>
+        <tal:navigation_bottom
+          replace="structure view/batchnav/@@+navigation-links-lower" />
         </form>
       </div><!-- class="portlet" -->
       <script type="text/javascript" id="setup-archivesubscribers-index">
-          LPS.use('lp.soyuz.archivesubscribers_index', function(Y) {
+          LPJS.use('lp.soyuz.archivesubscribers_index', function(Y) {
               Y.lp.soyuz.archivesubscribers_index.setup_archivesubscribers_index();
           });
       </script>

@@ -8,7 +8,7 @@
 
 <script tal:condition="view/can_write"
         tal:content="structure string:
-        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPJS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: ${view/widget_css_selector},
                 accept_empty: ${view/accept_empty},

@@ -26,9 +26,7 @@
   </p>
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
-    You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
-    and therefore cannot edit this bug's status.
+    You need to log in to change this bug's status.
   </p>
   <tal:has_watch
       condition="context/bugwatch"

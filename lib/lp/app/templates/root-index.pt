@@ -146,9 +146,11 @@
               <input id="text" type="text" name="field.text" size="25%" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
-            <script type="text/javascript"><!--
-              setFocusByName('field.text');
-            // --></script>
+            <script type="text/javascript">
+                LPJS.use('lp', function () {
+                    setFocusByName('field.text');
+                });
+            </script>
             <div id="homepage-stats" tal:content="cache:public, 1 hour">
               <strong
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,

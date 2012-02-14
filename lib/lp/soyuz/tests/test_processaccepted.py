@@ -27,6 +27,7 @@ from lp.soyuz.scripts.processaccepted import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -81,8 +82,7 @@ class TestProcessAccepted(TestCaseWithFactory):
             distribution=self.distro)
         self.createWaitingAcceptancePackage(distroseries=other_distroseries)
         script = self.getScript([])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
 
         # The other source should be published now.
@@ -119,8 +119,7 @@ class TestProcessAccepted(TestCaseWithFactory):
 
         # Accept the packages.
         script = self.getScript(['--copy-archives'])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
 
         # Packages in main archive should not be accepted and published.
@@ -164,8 +163,7 @@ class TestProcessAccepted(TestCaseWithFactory):
                     done_count)
 
         script = self.getScript([])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         synch = UploadCheckingSynchronizer()
         transaction.manager.registerSynch(synch)
         script.main()

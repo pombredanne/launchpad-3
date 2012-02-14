@@ -70,8 +70,7 @@
             tal:condition="context/show_column/date_last_updated|nothing">
             2007-11-25</td>
         <td tal:condition="context/show_column/heat|nothing"
-            tal:content="structure bugtask/bug_heat_html"
-            style="text-align: center">
+            tal:content="structure bugtask/bug_heat_html">
             HEAT</td>
       </tr>
     </tbody>

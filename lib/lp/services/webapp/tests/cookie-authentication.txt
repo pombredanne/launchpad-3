@@ -27,7 +27,7 @@ are sent to other vhosts in the same domain.
 
     >>> from lp.services.webapp.tests.test_login import (
     ...     fill_login_form_and_submit)
-    >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
+    >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
     Foo Bar (name16) ...
 

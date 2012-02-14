@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -505,7 +505,7 @@ class ArchiveMenuMixin:
     def delete(self):
         """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        link = Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='trash-icon')
 
         # This link should not be available for copy archives or
         # archives without any sources.
@@ -520,7 +520,7 @@ class ArchiveMenuMixin:
     def copy(self):
         """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        link = Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='package-sync')
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
@@ -1211,20 +1211,15 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # Present a page notification describing the action.
-        messages = []
-        messages.append(
-            '<p>Source and binaries deleted by %s request:'
-            % self.user.displayname)
+        messages = [structured(
+            '<p>Source and binaries deleted by %s:', self.user.displayname)]
         for source in selected_sources:
-            messages.append('<br/>%s' % source.displayname)
-        messages.append('</p>')
-        # Replace the 'comment' content added by the user via structured(),
-        # so it will be quoted appropriately.
-        messages.append("<p>Deletion comment: %(comment)s</p>")
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(
-            structured(notification, comment=comment))
+            messages.append(structured('<br/>%s', source.displayname))
+        messages.append(structured(
+            '</p>\n<p>Deletion comment: %s</p>', comment))
+        notification = structured(
+            '\n'.join([msg.escapedtext for msg in messages]))
+        self.request.response.addNotification(notification)
 
         self.setNextURL()
 

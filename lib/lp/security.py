@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'ModerateByRegistryExpertsOrAdmins',
     ]
 
 from zope.component import (
@@ -42,7 +43,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
-from lp.bugs.model.bugtask import get_bug_privacy_filter
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -107,6 +108,7 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.milestone import (
+    IAbstractMilestone,
     IMilestone,
     IProjectGroupMilestone,
     )
@@ -167,8 +169,8 @@ from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -339,14 +341,8 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
-    def checkAccountAuthenticated(self, account):
-        if account == self.obj:
-            return True
-        return super(
-            EditAccountBySelfOrAdmin, self).checkAccountAuthenticated(account)
-
     def checkAuthenticated(self, user):
-        return user.in_admin
+        return user.in_admin or user.person.accountID == self.obj.id
 
 
 class ViewAccount(EditAccountBySelfOrAdmin):
@@ -357,12 +353,8 @@ class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IOpenIdIdentifier
 
-    def checkAccountAuthenticated(self, account):
-        if account == self.obj.account:
-            return True
-        return super(
-            ViewOpenIdIdentifierBySelfOrAdmin,
-            self).checkAccountAuthenticated(account)
+    def checkAuthenticated(self, user):
+        return user.in_admin or user.person.accountID == self.obj.accountID
 
 
 class SpecialAccount(EditAccountBySelfOrAdmin):
@@ -370,7 +362,9 @@ class SpecialAccount(EditAccountBySelfOrAdmin):
 
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
-        return user.in_admin or user.in_registry_experts
+        return (
+            super(SpecialAccount, self).checkAuthenticated(user)
+            or user.in_registry_experts)
 
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
@@ -457,8 +451,8 @@ class ViewDistributionMirror(AnonymousAuthorization):
 
 
 class ViewMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone."""
-    usedfor = IMilestone
+    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
+    usedfor = IAbstractMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -767,7 +761,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        return self.obj.id == user.person.id or user.in_admin
+        return self.obj.id == user.id or user.in_admin
 
 
 class EditTranslationsPersonByPerson(AuthorizationBase):
@@ -912,7 +906,8 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
 
             # Do comparison by ids because they may be needed for comparison
             # to membership.team.ids later.
-            user_teams = [team.id for team in user.person.teams_participated_in]
+            user_teams = [
+                team.id for team in user.person.teams_participated_in]
             super_teams = [team.id for team in self.obj.super_teams]
             intersection_teams = set(user_teams) & set(super_teams)
 

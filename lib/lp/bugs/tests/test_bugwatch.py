@@ -51,6 +51,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -641,9 +642,8 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
         for i in range(5):
             self.bug_watch.addActivity(message="Activity %s" % i)
-        transaction.commit()
 
-        self.layer.switchDbUser('garbo')
+        switch_dbuser('garbo')
         self.pruner = BugWatchActivityPruner(BufferLogger())
         self.addCleanup(self.pruner.cleanUp)
 

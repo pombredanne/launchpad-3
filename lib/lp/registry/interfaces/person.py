@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -37,6 +37,7 @@ __all__ = [
     'PersonalStanding',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
+    'TeamEmailAddressError',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
     'validate_person',
@@ -44,6 +45,8 @@ __all__ = [
     'validate_public_person',
     'validate_subscription_policy',
     ]
+
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -55,6 +58,7 @@ from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
@@ -62,6 +66,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -147,7 +152,6 @@ from lp.services.fields import (
     is_public_person_or_closed_team,
     LogoImageUpload,
     MugshotImageUpload,
-    PasswordField,
     PersonChoice,
     PublicPersonChoice,
     StrippedTextLine,
@@ -692,9 +696,39 @@ class IPersonPublic(IPrivacy):
     account_status_comment = Text(
         title=_("Why are you deactivating your account?"), required=False,
         readonly=True)
+    visibility = exported(
+        Choice(title=_("Visibility"),
+               description=_(
+                   "Public visibility is standard.  "
+                   "Private means the team is completely "
+                   "hidden."),
+               required=True, vocabulary=PersonVisibility,
+               default=PersonVisibility.PUBLIC, readonly=True))
 
     def anyone_can_join():
         """Quick check as to whether a team allows anyone to join."""
+
+    def checkAllowVisibility():
+        """Is the user allowed to see the visibility field.
+
+        :param: The user.
+        :return: True if they can, otherwise False.
+        """
+
+    @mutator_for(visibility)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(visibility=copy_field(visibility))
+    @export_write_operation()
+    @operation_for_version("beta")
+    def transitionVisibility(visibility, user):
+        """Set visibility of IPerson.
+    
+        :param visibility: The PersonVisibility to change to.
+        :param user: The user requesting the change.
+        :raises: `ImmutableVisibilityError` when the visibility can not
+            be changed.
+        :return: None.
+        """
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -768,8 +802,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
     karma = exported(
         Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
@@ -1246,6 +1278,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         The result is a list of vouchers.
         :return: list
         """
+
+    def hasCurrentCommercialSubscription():
+        """Return if the user has a current commercial subscription."""
 
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None, datecreated=None):
@@ -1802,19 +1837,6 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonCommAdminWriteRestricted(Interface):
-    """IPerson attributes that require launchpad.Admin permission to set."""
-
-    visibility = exported(
-        Choice(title=_("Visibility"),
-               description=_(
-                   "Public visibility is standard.  "
-                   "Private means the team is completely "
-                   "hidden."),
-               required=True, vocabulary=PersonVisibility,
-               default=PersonVisibility.PUBLIC))
-
-
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
@@ -1822,7 +1844,6 @@ class IPersonSpecialRestricted(Interface):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
-            - Setting its password to NULL;
             - Removing the user from all teams he's a member of;
             - Changing all his email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
@@ -1832,17 +1853,16 @@ class IPersonSpecialRestricted(Interface):
         :param comment: An explanation of why the account status changed.
         """
 
-    def reactivate(comment, password, preferred_email):
+    def reactivate(comment, preferred_email):
         """Reactivate this person and its account.
 
-        Set the account status to ACTIVE, the account's password to the given
-        one and its preferred email address.
+        Set the account status to ACTIVE, and update the preferred email
+        address.
 
         If the person's name contains a -deactivatedaccount suffix (usually
         added by `IPerson`.deactivateAccount(), it is removed.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
         """
@@ -1876,9 +1896,8 @@ class IPersonSpecialRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonCommAdminWriteRestricted,
-              IPersonSpecialRestricted, IHasStanding, ISetLocation,
-              IRootContext):
+              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
+              ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2075,7 +2094,6 @@ class IPersonSet(Interface):
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
-            password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """Create and return an `IPerson` and `IEmailAddress`.
 
@@ -2096,9 +2114,6 @@ class IPersonSet(Interface):
             (e.g. "when the foo package was imported into Ubuntu Breezy").
         :param name: The person's name.
         :param displayname: The person's displayname.
-        :param password: The person's password.
-        :param passwordEncrypted: Whether or not the given password is
-            encrypted.
         :param registrant: The user who created this person, if any.
         :param hide_email_addresses: Whether or not Launchpad should hide the
             person's email addresses from other users.
@@ -2554,6 +2569,7 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
+@error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
 
@@ -2562,6 +2578,10 @@ class NoSuchPerson(NameLookupFailed):
     """Raised when we try to look up an IPerson that doesn't exist."""
 
     _message_prefix = "No such person"
+
+
+class TeamEmailAddressError(Exception):
+    """The person cannot be created as a team owns its email address."""
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

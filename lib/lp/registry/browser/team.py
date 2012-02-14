@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ __all__ = [
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
+    'TeamMailingListArchiveView',
     'TeamMapData',
     'TeamMapLtdData',
     'TeamMapView',
@@ -42,13 +43,19 @@ from datetime import (
 import math
 from urllib import unquote
 
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 import pytz
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.formlib import form
-from zope.formlib.form import FormFields
+from zope.formlib.form import (
+    Fields,
+    FormField,
+    FormFields,
+    )
 from zope.interface import (
     classImplements,
     implements,
@@ -92,6 +99,7 @@ from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.person import (
     CommonMenuLinks,
+    PersonAdministerView,
     PersonIndexView,
     PersonNavigation,
     PersonRenameFormMixin,
@@ -128,6 +136,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.poll import IPollSet
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
@@ -135,6 +144,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
@@ -215,8 +225,11 @@ class HasRenewalPolicyMixin:
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visibility.
 
-    The visibility field should only be shown to users with
-    launchpad.Commercial permission on the team.
+    The visibility field is shown if
+    * The user has launchpad.Commercial permission.
+    * Or the feature flag
+    disclosure.show_visibility_for_team_add.enabled is on, and the user has
+    a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -259,10 +272,12 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def conditionallyOmitVisibility(self):
-        """Remove the visibility field if not authorized."""
-        if not check_permission('launchpad.Commercial', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
+    def setUpVisibilityField(self):
+        """Set the visibility field to read-write, or remove it."""
+        self.form_fields = self.form_fields.omit('visibility')
+        if self.user and self.user.checkAllowVisibility():
+            visibility = copy_field(ITeam['visibility'], readonly=False)
+            self.form_fields += Fields(visibility)
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
@@ -295,7 +310,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.setUpVisibilityField()
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -303,7 +318,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         # Do we need to only show open subscription policy choices?
         try:
             team.checkClosedSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -311,10 +326,14 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in OPEN_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
+
         # Do we need to only show closed subscription policy choices?
         try:
             team.checkOpenSubscriptionPolicyAllowed()
-        except TeamSubscriptionPolicyError:
+        except TeamSubscriptionPolicyError as e:
             # Ideally SimpleVocabulary.fromItems() would accept 3-tuples but
             # it doesn't so we need to be a bit more verbose.
             self.widgets['subscriptionpolicy'].vocabulary = (
@@ -322,10 +341,17 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
                     policy, policy.name, policy.title)
                     for policy in CLOSED_TEAM_POLICY])
                 )
+            self.widgets['subscriptionpolicy'].extra_hint_class = (
+                'sprite info')
+            self.widgets['subscriptionpolicy'].extra_hint = e.message
 
     @action('Save', name='save')
     def action_save(self, action, data):
         try:
+            visibility = data.get('visibility')
+            if visibility:
+                self.context.transitionVisibility(visibility, self.user)
+                del data['visibility']
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
@@ -341,6 +367,12 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class TeamAdministerView(PersonAdministerView):
+    """A view to administer teams on behalf of users."""
+    label = "Review team"
+    default_field_names = ['name', 'displayname']
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -421,7 +453,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
         # Replace the default contact_method field by a custom one.
         self.form_fields = (
-            form.FormFields(self.getContactMethodField())
+            FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
 
     def getContactMethodField(self):
@@ -454,7 +486,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # field.
             del terms[hosted_list_term_index]
 
-        return form.FormField(
+        return FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact this team's members?"),
                    required=True, vocabulary=SimpleVocabulary(terms)))
@@ -940,12 +972,29 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         self.next_url = canonical_url(self.context)
 
 
+class TeamMailingListArchiveView(LaunchpadView):
+
+    label = "Mailing list archive"
+
+    def __init__(self, context, request):
+        super(TeamMailingListArchiveView, self).__init__(context, request)
+        self.messages = self._get_messages()
+        cache = IJSONRequestCache(request).objects
+        cache['mail'] = self.messages
+
+    def _get_messages(self):
+        # XXX: jcsackett 18-1-2012: This needs to be updated to use the
+        # grackle client, once that is available, instead of returning
+        # an empty list as it does now.
+        return simplejson.loads('[]')
+
+
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
+    schema = ITeamCreation
     page_title = 'Register a new team in Launchpad'
     label = page_title
-    schema = ITeamCreation
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -961,7 +1010,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         Only Launchpad Admins get to see the visibility field.
         """
         super(TeamAddView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.setUpVisibilityField()
 
     @action('Create Team', name='create')
     def create_action(self, action, data):
@@ -977,7 +1026,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
-            team.visibility = visibility
+            team.transitionVisibility(visibility, self.user)
+            del data['visibility']
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)
@@ -1208,7 +1258,7 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
@@ -1223,7 +1273,7 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -1501,6 +1551,20 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Change owner'
         summary = 'Change the owner of the team'
         return Link(target, text, summary, icon='edit')
+
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        # Team owners and admins have launchpad.Moderate on ITeam, but we
+        # do not want them to see this link because it is for Lp admins
+        # and registry experts.
+        checker = ModerateByRegistryExpertsOrAdmins(self)
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = checker.checkAuthenticated(IPersonRoles(self.user))
+        summary = 'Administer this team on behalf of a user'
+        return Link(target, text, summary, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Moderate')
     def delete(self):
@@ -2147,7 +2211,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'delete', 'join', 'add_my_teams', 'leave')
+    links = ('edit', 'administer', 'delete', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
@@ -180,6 +180,7 @@ from lp.registry.interfaces.person import (
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
+    TeamEmailAddressError,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
@@ -242,6 +243,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -260,10 +262,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from lp.services.identity.model.account import (
-    Account,
-    AccountPassword,
-    )
+from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
@@ -291,6 +290,7 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
@@ -527,24 +527,6 @@ class Person(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-
-    def _get_password(self):
-        # We have to remove the security proxy because the password is
-        # needed before we are authenticated. I'm not overly worried because
-        # this method is scheduled for demolition -- StuartBishop 20080514
-        password = IStore(AccountPassword).find(
-            AccountPassword, accountID=self.accountID).one()
-        if password is None:
-            return None
-        else:
-            return password.password
-
-    def _set_password(self, value):
-        account = IMasterStore(Account).get(Account, self.accountID)
-        assert account is not None, 'No account for this Person.'
-        account.password = value
-
-    password = property(_get_password, _set_password)
 
     def _get_account_status(self):
         account = IStore(Account).get(Account, self.accountID)
@@ -1249,6 +1231,32 @@ class Person(
                 "Voucher %s has invalid status %s" %
                 (voucher.voucher_id, voucher.status))
         return vouchers
+
+    def hasCurrentCommercialSubscription(self):
+        """See `IPerson`."""
+        # Circular imports.
+        from lp.registry.model.commercialsubscription import (
+            CommercialSubscription,
+            )
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.teammembership import TeamParticipation
+        person = Store.of(self).using(
+            Person,
+            Join(
+                TeamParticipation,
+                Person.id == TeamParticipation.personID),
+            Join(
+                Product, TeamParticipation.teamID == Product._ownerID),
+            Join(
+                CommercialSubscription,
+                CommercialSubscription.productID == Product.id)
+            ).find(
+                Person,
+                CommercialSubscription.date_expires > datetime.now(
+                    pytz.UTC),
+                Person.id == self.id)
+        return not person.is_empty()
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -2537,10 +2545,10 @@ class Person(
         else:
             return None
 
-    def reactivate(self, comment, password, preferred_email):
+    def reactivate(self, comment, preferred_email):
         """See `IPersonSpecialRestricted`."""
         account = IMasterObject(self.account)
-        account.reactivate(comment, password)
+        account.reactivate(comment)
         self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
             # The name was changed by deactivateAccount(). Restore the
@@ -3056,6 +3064,25 @@ class Person(
         """See `IPerson.`"""
         return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
+    def checkAllowVisibility(self):
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag:
+            if self.hasCurrentCommercialSubscription():
+                return True
+        else:
+            if check_permission('launchpad.Commercial', self):
+                return True
+        return False
+
+    def transitionVisibility(self, visibility, user):
+        if self.visibility == visibility:
+            return
+        validate_person_visibility(self, 'visibility', visibility)
+        if not user.checkAllowVisibility():
+            raise ImmutableVisibilityError()
+        self.visibility = visibility
+
 
 class PersonSet:
     """The set of persons."""
@@ -3114,6 +3141,13 @@ class PersonSet:
                 or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
+
+            # XXX wgrant 2012-01-20 bug=556680: This is awful, as it can
+            # lock people out of their account until they change their
+            # SSO address. But stealing addresses from other accounts is
+            # probably worse.
+            if email is not None and email.person.is_team:
+                raise TeamEmailAddressError()
 
             if email is None:
                 if identifier is None:
@@ -3174,9 +3208,7 @@ class PersonSet:
 
             elif person.account.status in [AccountStatus.DEACTIVATED,
                                            AccountStatus.NOACCOUNT]:
-                password = ''
-                removeSecurityProxy(person.account).reactivate(
-                    comment, password)
+                removeSecurityProxy(person.account).reactivate(comment)
                 removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
@@ -3207,8 +3239,7 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None,
-            displayname=None, password=None, passwordEncrypted=False,
+            self, email, rationale, comment=None, name=None, displayname=None,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
 
@@ -3229,9 +3260,7 @@ class PersonSet:
         # Convert the PersonCreationRationale to an AccountCreationRationale
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
-        account = getUtility(IAccountSet).new(
-                account_rationale, displayname, password=password,
-                password_is_encrypted=passwordEncrypted)
+        account = getUtility(IAccountSet).new(account_rationale, displayname)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,

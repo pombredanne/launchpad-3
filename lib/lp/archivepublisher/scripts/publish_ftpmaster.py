@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -28,7 +28,7 @@ from lp.services.scripts.base import (
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
-from lp.soyuz.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.querydistro import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.scripts.publishdistro import PublishDistro
 

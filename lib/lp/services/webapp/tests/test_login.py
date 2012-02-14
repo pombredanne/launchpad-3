@@ -424,6 +424,20 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         main_content = extract_text(find_main_content(html))
         self.assertIn('This account has been suspended', main_content)
 
+    def test_account_with_team_email_address(self):
+        # If the email address from the OpenID provider is owned by a
+        # team, there's not much we can do. See bug #556680 for
+        # discussions about a proper solution.
+        self.factory.makeTeam(email="foo@bar.com")
+        person = self.factory.makePerson()
+
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(
+                person.account, email="foo@bar.com")
+        self.assertFalse(view.login_called)
+        main_content = extract_text(find_main_content(html))
+        self.assertIn('Team email address conflict', main_content)
+
     def test_negative_openid_assertion(self):
         # The OpenID provider responded with a negative assertion, so the
         # login error page is shown.
@@ -545,11 +559,10 @@ class MyMechanizeBrowser(mechanize.Browser):
     handler_classes['_redirect'] = MyHTTPRedirectHandler
 
 
-def fill_login_form_and_submit(browser, email_address, password):
+def fill_login_form_and_submit(browser, email_address):
     assert browser.getControl(name='field.email') is not None, (
         "We don't seem to be looking at a login form.")
     browser.getControl(name='field.email').value = email_address
-    browser.getControl(name='field.password').value = password
     browser.getControl('Continue').click()
 
 
@@ -565,7 +578,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         browser.getControl('Continue').click()
 
         self.assertEquals('Login', browser.title)
-        fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
+        fill_login_form_and_submit(browser, 'test@canonical.com')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
         self.assertIn('Sample Person (name12)', login_status)

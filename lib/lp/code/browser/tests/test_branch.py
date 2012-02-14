@@ -120,8 +120,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsBranchOwner(self):
         # A branch location with a defined private host is visible to the
         # owner.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
@@ -138,10 +137,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsOtherLoggedInUser(self):
         # A branch location with a defined private host is hidden from other
         # users.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
-        other = self.factory.makePerson(
-            email="other@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
+        other = self.factory.makePerson(email="other@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
@@ -931,6 +928,25 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+    def test_private_owner_is_ok(self):
+        # A branch's owner can be changed to a private team permitted by the
+        # visibility policy.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        team = self.factory.makeTeam(
+            owner=person, displayname="Private team",
+            visibility=PersonVisibility.PRIVATE)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").displayValue = ["Private team"]
+        browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEquals(team, branch.owner)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

@@ -793,14 +793,6 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         authorised to do so.
         """
 
-    def setImportanceFromDebbugs(severity):
-        """Set the Launchpad BugTask importance on the basis of a debbugs
-        severity.  This maps from the debbugs severity values ('normal',
-        'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Launchpad importance values, and returns the relevant Launchpad
-        importance.
-        """
-
     def canTransitionToStatus(new_status, user):
         """Return True if the user is allowed to change the status to
         `new_status`.
@@ -913,8 +905,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """
 
     def userHasBugSupervisorPrivileges(user):
-        """Is the user a privledged one, allowed to changed details on a
-        bug?
+        """Is the user privileged and allowed to change details on a bug?
 
         :return: A boolean.
         """
@@ -1067,6 +1058,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
         vocabulary=BugTagsSearchCombinator, required=False,
         default=BugTagsSearchCombinator.ANY)
 
+    upstream_target = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
+
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
     """The schema used by the bug task search form of a person."""
@@ -1188,9 +1182,9 @@ class BugTaskSearchParams:
 
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
-                 assignee=None, sourcepackagename=None, owner=None,
-                 attachmenttype=None, orderby=None, omit_dupes=False,
-                 subscriber=None, component=None,
+                 milestone_tag=None, assignee=None, sourcepackagename=None,
+                 owner=None, attachmenttype=None, orderby=None,
+                 omit_dupes=False, subscriber=None, component=None,
                  pending_bugwatch_elsewhere=False, resolved_upstream=False,
                  open_upstream=False, has_no_upstream_bugtask=False, tag=None,
                  has_cve=False, bug_supervisor=None, bug_reporter=None,
@@ -1205,7 +1199,8 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False, cve=None):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None,
+                 upstream_target=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1213,6 +1208,7 @@ class BugTaskSearchParams:
         self.status = status
         self.importance = importance
         self.milestone = milestone
+        self.milestone_tag = milestone_tag
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
         self.owner = owner
@@ -1254,6 +1250,7 @@ class BugTaskSearchParams:
         self.created_since = created_since
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
         self.cve = cve
+        self.upstream_target = upstream_target
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1612,28 +1609,6 @@ class IBugTaskSet(Interface):
         inactive and have never been confirmed.
         """
 
-    def maintainedBugTasks(person, minimportance=None,
-                           showclosed=None, orderby=None, user=None):
-        """Return all bug tasks assigned to a package/product maintained by
-        :person:.
-
-        By default, closed (FIXCOMMITTED, INVALID) tasks are not
-        returned. If you want closed tasks too, just pass
-        showclosed=True.
-
-        If minimportance is not None, return only the bug tasks with
-        importance greater than minimportance.
-
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-
-        The <user> parameter is necessary to make sure we don't return any
-        bugtask of a private bug for which the user is not subscribed. If
-        <user> is None, no private bugtasks will be returned.
-        """
-
     def getBugCountsForPackages(user, packages):
         """Return open bug counts for the list of packages.
 
@@ -1663,12 +1638,6 @@ class IBugTaskSet(Interface):
         """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")
-
-    def buildUpstreamClause(params):
-        """Create a SQL clause to do upstream checks in a bug search.
-
-        :return: A string SQL expression.
-        """
 
 
 def valid_remote_bug_url(value):

@@ -6,16 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'Account',
-    'AccountPassword',
     'AccountSet',
     ]
 
-from sqlobject import (
-    ForeignKey,
-    StringCol,
-    )
+from sqlobject import StringCol
 from storm.locals import ReferenceSet
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.database.constants import UTC_NOW
@@ -33,7 +28,6 @@ from lp.services.identity.interfaces.account import (
     IAccountSet,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.webapp.interfaces import IPasswordEncryptor
 
 
 class Account(SQLBase):
@@ -61,55 +55,17 @@ class Account(SQLBase):
         return "<%s '%s' (%s)>" % (
             self.__class__.__name__, displayname, self.status)
 
-    def reactivate(self, comment, password):
+    def reactivate(self, comment):
         """See `IAccountSpecialRestricted`."""
         self.status = AccountStatus.ACTIVE
         self.status_comment = comment
-        self.password = password
-
-    # The password is actually stored in a separate table for security
-    # reasons, so use a property to hide this implementation detail.
-    def _get_password(self):
-        # We have to force the switch to the auth store, because the
-        # AccountPassword table is not visible via the main store
-        # for security reasons.
-        password = IStore(AccountPassword).find(
-            AccountPassword, accountID=self.id).one()
-        if password is None:
-            return None
-        else:
-            return password.password
-
-    def _set_password(self, value):
-        # Making a modification, so we explicitly use the auth store master.
-        store = IMasterStore(AccountPassword)
-        password = store.find(
-            AccountPassword, accountID=self.id).one()
-
-        if value is not None and password is None:
-            # There is currently no AccountPassword record and we need one.
-            AccountPassword(accountID=self.id, password=value)
-        elif value is None and password is not None:
-            # There is an AccountPassword record that needs removing.
-            store.remove(password)
-        elif value is not None:
-            # There is an AccountPassword record that needs updating.
-            password.password = value
-        elif value is None and password is None:
-            # Nothing to do
-            pass
-        else:
-            assert False, "This should not be reachable."
-
-    password = property(_get_password, _set_password)
 
 
 class AccountSet:
     """See `IAccountSet`."""
     implements(IAccountSet)
 
-    def new(self, rationale, displayname, password=None,
-            password_is_encrypted=False, openid_identifier=None):
+    def new(self, rationale, displayname, openid_identifier=None):
         """See `IAccountSet`."""
 
         account = Account(
@@ -122,12 +78,6 @@ class AccountSet:
             identifier.account = account
             identifier.identifier = openid_identifier
             IMasterStore(OpenIdIdentifier).add(identifier)
-
-        # Create the password record.
-        if password is not None:
-            if not password_is_encrypted:
-                password = getUtility(IPasswordEncryptor).encrypt(password)
-            AccountPassword(account=account, password=password)
 
         return account
 
@@ -148,14 +98,3 @@ class AccountSet:
         if account is None:
             raise LookupError(openid_identifier)
         return account
-
-
-class AccountPassword(SQLBase):
-    """SQLObject wrapper to the AccountPassword table.
-
-    Note that this class is not exported, as the existence of the
-    AccountPassword table only needs to be known by this module.
-    """
-    account = ForeignKey(
-        dbName='account', foreignKey='Account', alternateID=True)
-    password = StringCol(dbName='password', notNull=True)

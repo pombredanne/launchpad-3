@@ -12,7 +12,9 @@ A user may activate their account that was created by an automated
 process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
-    >>> from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import (
+    ...     IEmailAddressSet,
+    ...     )
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> emailset = getUtility(IEmailAddressSet)
@@ -22,8 +24,6 @@ process. Matsubara's account was created during a code import.
     False
     >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara.password
-    None
     >>> print matsubara.preferredemail
     None
 
@@ -31,17 +31,16 @@ The account can only be activated by the user who is claiming
 the profile. Sample Person cannot claim it.
 
     >>> login('test@canonical.com')
-    >>> matsubara.account.reactivate(comment="test", password='ok')
+    >>> matsubara.account.reactivate(comment="test")
     Traceback (most recent call last):
     ...
     Unauthorized: ...'launchpad.Special')
 
-Matsubara can. A password and a preferred email address must be passed
-as arguments.
+Matsubara can.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> login('matsubara@async.com.br')
-    >>> matsubara.account.reactivate(comment="test", password='ok')
+    >>> matsubara.account.reactivate(comment="test")
     >>> matsubara.setPreferredEmail(emailaddress)
     >>> import transaction
     >>> transaction.commit()
@@ -215,7 +214,6 @@ Accounts can be reactivated.
 
     >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',
-    ...     password="ok",
     ...     preferred_email=foobar_preferredemail)
     >>> transaction.commit()  # To see the changes on other stores.
     >>> foobar.account.status

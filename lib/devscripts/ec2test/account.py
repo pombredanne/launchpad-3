@@ -38,6 +38,7 @@ VALID_AMI_OWNERS = {
     '259696152397': 'bac',
     '873925794399': 'wgrant',
     '957911449157': 'mbp',
+    '340983519589': 'stub',
     # ...anyone else want in on the fun?
     }
 

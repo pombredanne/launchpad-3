@@ -33,8 +33,7 @@ class TestRecipeBuild(WindmillTestCase):
     def setUp(self):
         super(TestRecipeBuild, self).setUp()
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test',
-            email="chef@example.com")
+            displayname='Master Chef', name='chef', email="chef@example.com")
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')

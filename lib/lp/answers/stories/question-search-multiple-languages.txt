@@ -219,7 +219,7 @@ English questions. As there are no Japanese or Welsh questions, there
 will not be any controls present for those two languages when
 searching Ubuntu.
 
-    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.getControl('English (United Kingdom)').selected
     True

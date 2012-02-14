@@ -36,12 +36,14 @@ from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
     BugTask,
-    BugTaskSet,
-    build_tag_search_clause,
-    get_bug_privacy_filter,
     IllegalTarget,
     validate_new_target,
     validate_target,
+    )
+from lp.bugs.model.bugtasksearch import (
+    _build_status_clause,
+    _build_tag_search_clause,
+    get_bug_privacy_filter,
     )
 from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
@@ -81,6 +83,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     ws_object,
+    )
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -211,7 +217,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
     # used to find sets of bugs.  These tests exercise that utility function.
 
     def searchClause(self, status_spec):
-        return BugTaskSet._buildStatusClause(status_spec)
+        return _build_status_clause(status_spec)
 
     def test_simple_queries(self):
         # WHERE clauses for simple status values are straightforward.
@@ -277,7 +283,7 @@ class TestBugTaskSetStatusSearchClauses(TestCase):
 class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
-        return build_tag_search_clause(tag_spec)
+        return _build_tag_search_clause(tag_spec)
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
@@ -634,7 +640,7 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskHardwareSearch, self).setUp()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_search_results_without_duplicates(self):
         # Searching for hardware related bugtasks returns each
@@ -645,11 +651,9 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
         self.layer.txn.commit()
         device = getUtility(IHWDeviceSet).getByDeviceID(
             HWBus.PCI, '0x10de', '0x0455')
-        self.layer.switchDbUser('hwdb-submission-processor')
-        self.factory.makeHWSubmissionDevice(
-            new_submission, device, None, None, 1)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        with dbuser('hwdb-submission-processor'):
+            self.factory.makeHWSubmissionDevice(
+                new_submission, device, None, None, 1)
         search_params = BugTaskSearchParams(
             user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
             hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
@@ -1509,17 +1513,6 @@ class TestBugTaskDeletion(TestCaseWithFactory):
         bug.default_bugtask.delete()
         self.assertEqual([bugtask], bug.bugtasks)
         self.assertEqual(bugtask, bug.default_bugtask)
-
-    def test_bug_heat_updated(self):
-        # Test that the bug heat is updated when a bugtask is deleted.
-        bug = self.factory.makeBug()
-        distro = self.factory.makeDistribution()
-        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
-        login_person(distro.owner)
-        dsp_task = bug.addTask(bug.owner, dsp)
-        self.assertTrue(dsp.total_bug_heat > 0)
-        dsp_task.delete()
-        self.assertTrue(dsp.total_bug_heat == 0)
 
 
 class TestConjoinedBugTasks(TestCaseWithFactory):

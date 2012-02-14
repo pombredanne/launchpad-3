@@ -20,6 +20,8 @@ import socket
 import tempfile
 import xmlrpclib
 
+from urlparse import urlparse
+
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
@@ -256,8 +258,11 @@ class BuilderSlave(object):
         :return: a Deferred that returns a
             (stdout, stderr, subprocess exitcode) triple
         """
+        url_components = urlparse(self.url)
+        buildd_name = url_components.hostname.split('.')[0]
         resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self._vm_host}
+            'vm_host': self._vm_host,
+            'buildd_name': buildd_name}
         # Twisted API requires string but the configuration provides unicode.
         resume_argv = [
             term.encode('utf-8') for term in resume_command.split()]
@@ -535,24 +540,10 @@ class Builder(SQLBase):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
-    _testing_slave = None
-
     @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # When testing it's possible to substitute the slave object, which is
-        # usually an XMLRPC client, with a stub object that removes the need
-        # to actually create a buildd slave in various states - which can be
-        # hard to create. We cannot use the property cache because it is
-        # cleared on transaction boundaries, hence the low tech approach.
-        if self._testing_slave is not None:
-            return self._testing_slave
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
-
-    def setSlaveForTesting(self, proxy):
-        """See IBuilder."""
-        self._testing_slave = proxy
-        del get_property_cache(self).slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
@@ -840,7 +831,7 @@ class Builder(SQLBase):
             self.failBuilder(error_message)
             return defer.succeed(None)
 
-    def findAndStartJob(self, buildd_slave=None):
+    def findAndStartJob(self):
         """See IBuilder."""
         # XXX This method should be removed in favour of two separately
         # called methods that find and dispatch the job.  It will
@@ -851,9 +842,6 @@ class Builder(SQLBase):
         if candidate is None:
             logger.debug("No build candidates available for builder.")
             return defer.succeed(None)
-
-        if buildd_slave is not None:
-            self.setSlaveForTesting(buildd_slave)
 
         d = self._dispatchBuildCandidate(candidate)
         return d.addCallback(lambda ignored: candidate)

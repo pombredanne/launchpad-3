@@ -34,7 +34,6 @@ its development focus.
     Gnome Applets
     NetApplet
     gnomebaker
-    ...
 
 The projects are linked.
 

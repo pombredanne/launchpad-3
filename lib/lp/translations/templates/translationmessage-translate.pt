@@ -14,7 +14,7 @@
     }
     </style>
     <script type="text/javascript">
-      LPS.use('lp.translations.pofile', function(Y) {
+      LPJS.use('lp.translations.pofile', function(Y) {
         Y.on('domready', Y.lp.translations.pofile.initializeTranslationMessage);
       });
     </script>

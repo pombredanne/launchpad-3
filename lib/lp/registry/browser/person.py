@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -155,7 +155,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.location import LocationWidget
-from lp.app.widgets.password import PasswordChangeWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -218,6 +217,7 @@ from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.feeds.browser import FeedsMixin
@@ -498,6 +498,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # In which case we assume it is the archive_id (for the
             # moment, archive name will be an option soon).
             archive_id = self.request.stepstogo.consume()
+            if not archive_id.isdigit():
+                return None
             return traverse_archive_subscription_for_subscriber(
                 self.context, archive_id)
         else:
@@ -971,8 +973,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
+    links = ('personal', 'email_settings', 'sshkeys', 'gpgkeys')
 
     def personal(self):
         target = '+edit'
@@ -1195,7 +1196,7 @@ class PersonRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return self.context.name
+        return '%s.rdf' % self.context.name
 
 
 class PersonRdfContentsView:
@@ -1225,7 +1226,26 @@ class PersonRdfContentsView:
         return encodeddata
 
 
-class PersonAdministerView(LaunchpadEditFormView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        # Reason is a message about why a rename cannot happen.
+        # No message means renames are permitted.
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
@@ -1277,7 +1297,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     label = "Review person's account"
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
-    custom_widget('password', PasswordChangeWidget)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1290,7 +1309,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
         if self.viewed_by_admin:
-            self.field_names = ['displayname', 'password'] + self.field_names
+            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1334,10 +1353,8 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         """Update the IAccount."""
         if (data['status'] == AccountStatus.SUSPENDED
             and self.context.status != AccountStatus.SUSPENDED):
-            # Setting the password to a clear value makes it impossible to
-            # login. The preferred email address is removed to ensure no
-            # email is sent to the user.
-            data['password'] = 'invalid'
+            # The preferred email address is removed to ensure no email
+            # is sent to the user.
             self.person.setPreferredEmail(None)
             self.request.response.addInfoNotification(
                 u'The account "%s" has been suspended.' % (
@@ -2068,8 +2085,12 @@ class PersonVouchersView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return ('Commercial subscription vouchers for %s'
-                % self.context.displayname)
+        return 'Commercial subscription vouchers'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Set up the fields for this view."""
@@ -2136,12 +2157,6 @@ class PersonVouchersView(LaunchpadFormView):
         vocabulary = vocabulary_registry.get(self.context,
                                              "CommercialProjects")
         return len(vocabulary) > 0
-
-    @action(_("Cancel"), name="cancel",
-            validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Simply redirect to the user's page."""
-        self.next_url = canonical_url(self.context)
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
@@ -2565,8 +2580,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         :return: the recipients of the message.
         :rtype: `ContactViaWebNotificationRecipientSet` constant:
                 TO_USER
-                TO_TEAM (Send to team's preferredemail)
-                TO_OWNER
+                TO_ADMINS
                 TO_MEMBERS
         """
         return ContactViaWebNotificationRecipientSet(
@@ -2581,13 +2595,10 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return 'Send an email to yourself through Launchpad'
             else:
                 return 'Send an email to this user through Launchpad'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return ("Send an email to your team's contact email address "
-                    "through Launchpad")
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Send an email to your team's members through Launchpad"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Send an email to this team's owner through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -2599,12 +2610,10 @@ class PersonView(LaunchpadView, FeedsMixin):
             # Note that we explicitly do not change the text to "Contact
             # yourself" when viewing your own page.
             return 'Contact this user'
-        elif self.group_to_contact == ContactViaWeb.TO_TEAM:
-            return "Contact this team's email address"
         elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
             return "Contact this team's members"
-        elif self.group_to_contact == ContactViaWeb.TO_OWNER:
-            return "Contact this team's owner"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
         else:
             raise AssertionError('Unknown group to contact.')
 
@@ -3010,7 +3019,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                LPS.use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3478,23 +3487,6 @@ class PersonEditHomePageView(BasePersonEditView):
     page_title = label
 
 
-class PersonRenameFormMixin(LaunchpadEditFormView):
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        Renames are prohibited if a person/team has an active PPA or an
-        active mailing list.
-        """
-        reason = self.context.checkRename()
-        if reason:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonRenameFormMixin, self).setUpWidgets()
-        if reason:
-            self.widgets['name'].hint = reason
-
-
 class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
@@ -3947,7 +3939,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     "detected it as being yours. If it was detected by our "
                     "system, it's probably shown on this page and is waiting "
                     "to be confirmed as yours." % newemail)
-            elif email.person is not None:
+            else:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
                 merge_url = (
@@ -3962,17 +3954,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                     canonical_url(owner),
                     owner.displayname,
                     merge_url))
-            elif email.account is not None:
-                account = email.account
-                self.addError(structured(
-                    "The email address '%s' is already registered to an "
-                    "account, %s.",
-                    newemail,
-                    account.displayname))
-            else:
-                self.addError(structured(
-                    "The email address '%s' is already registered.",
-                    newemail))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
@@ -4835,9 +4816,8 @@ class ContactViaWebNotificationRecipientSet:
 
     # Primary reason enumerations.
     TO_USER = object()
-    TO_TEAM = object()
     TO_MEMBERS = object()
-    TO_OWNER = object()
+    TO_ADMINS = object()
 
     def __init__(self, user, person_or_team):
         """Initialize the state based on the context and the user.
@@ -4873,35 +4853,15 @@ class ContactViaWebNotificationRecipientSet:
         """
         if person_or_team.is_team:
             if self.user.inTeam(person_or_team):
-                if removeSecurityProxy(person_or_team).preferredemail is None:
-                    # Send to each team member.
-                    return self.TO_MEMBERS
-                else:
-                    # Send to the team's contact address.
-                    return self.TO_TEAM
+                return self.TO_MEMBERS
             else:
                 # A non-member can only send emails to a single person to
                 # hinder spam and to prevent leaking membership
                 # information for private teams when the members reply.
-                return self.TO_OWNER
+                return self.TO_ADMINS
         else:
             # Send to the user
             return self.TO_USER
-
-    def _getPrimaryRecipient(self, person_or_team):
-        """Return the primary recipient.
-
-        The primary recipient is the ``person_or_team`` in all cases
-        except for when the email is restricted to a team owner.
-
-        :param person_or_team: The party that is the context of the email.
-        :type person_or_team: `IPerson`.
-        """
-        if self._primary_reason is self.TO_OWNER:
-            person_or_team = person_or_team.teamowner
-            while person_or_team.is_team:
-                person_or_team = person_or_team.teamowner
-        return person_or_team
 
     def _getReasonAndHeader(self, person_or_team):
         """Return the reason and header why the email was received.
@@ -4914,20 +4874,13 @@ class ContactViaWebNotificationRecipientSet:
                 'using the "Contact this user" link on your profile page\n'
                 '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             reason = (
-                'using the "Contact this team\'s owner" link on the '
+                'using the "Contact this team\'s admins" link on the '
                 '%s team page\n(%s)' % (
                     person_or_team.displayname,
                     canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
-        elif self._primary_reason is self.TO_TEAM:
-            reason = (
-                'using the "Contact this team" link on the '
-                '%s team page\n(%s)' % (
-                    person_or_team.displayname,
-                    canonical_url(person_or_team)))
-            header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
             reason = (
@@ -4949,15 +4902,9 @@ class ContactViaWebNotificationRecipientSet:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_OWNER:
+        elif self._primary_reason is self.TO_ADMINS:
             return (
-                'You are contacting the %s (%s) team owner, %s (%s).' %
-                (person_or_team.displayname, person_or_team.name,
-                 self._primary_recipient.displayname,
-                 self._primary_recipient.name))
-        elif self._primary_reason is self.TO_TEAM:
-            return (
-                'You are contacting the %s (%s) team.' %
+                'You are contacting the %s (%s) team admins.' %
                 (person_or_team.displayname, person_or_team.name))
         else:
             # This is a team without a contact address (self.TO_MEMBERS).
@@ -4980,6 +4927,16 @@ class ContactViaWebNotificationRecipientSet:
             for recipient in team.getMembersWithPreferredEmails():
                 email = removeSecurityProxy(recipient).preferredemail.email
                 all_recipients[email] = recipient
+        elif self._primary_reason is self.TO_ADMINS:
+            team = self._primary_recipient
+            for admin in team.adminmembers:
+                # This method is similar to getTeamAdminsEmailAddresses, but
+                # this case needs to know the user. Since both methods
+                # ultimately iterate over get_recipients, this case is not
+                # in a different performance class.
+                for recipient in get_recipients(admin):
+                    email = removeSecurityProxy(recipient).preferredemail.email
+                    all_recipients[email] = recipient
         elif self._primary_recipient.is_valid_person_or_team:
             email = removeSecurityProxy(
                 self._primary_recipient).preferredemail.email
@@ -5052,7 +5009,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         self._reset_state()
         self._primary_reason = self._getPrimaryReason(person)
-        self._primary_recipient = self._getPrimaryRecipient(person)
+        self._primary_recipient = person
         if reason is None:
             reason, header = self._getReasonAndHeader(person)
         self._reason = reason

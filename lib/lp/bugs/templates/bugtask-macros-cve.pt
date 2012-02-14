@@ -20,14 +20,9 @@
               <a tal:attributes="href bugtaskcve/bug/fmt:url"
                  tal:content="string:Bug #${bugtaskcve/bug/id}: ${bugtaskcve/bug/title}">Foo Bar does not work</a>
             </td>
-            <td style="text-align: center">
-              <tal:block repeat="cve bugtaskcve/cves">
-                <a style="text-decoration: none" 
-                   tal:attributes="href cve/fmt:url"><img src="/@@/link"
-                   alt="" /><span style="text-decoration: underline"
-                                  tal:content="cve/displayname">CVE-1999-1234</span></a>
-                <br />
-              </tal:block>
+            <td style="text-align: center"
+                tal:define="content python: view.renderCVELinks(bugtaskcve.cves)"
+                tal:content="structure content">
             </td>
           </tr>
           <tal:bugtask tal:repeat="bugtask bugtaskcve/bugtasks">

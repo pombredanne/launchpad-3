@@ -74,7 +74,7 @@ Selecting a project the user owns and a valid voucher result in a
 successful voucher redemption.
 
     >>> browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~cprov/+vouchers')
     >>> browser.getControl(name='field.project').value='aptoncd'
     >>> browser.getControl(name='field.voucher').value = [
@@ -190,14 +190,3 @@ not shown to the user.
 Reset the class variable to disable forced faults.
 
     >>> SalesforceXMLRPCTestTransport.forced_fault = None
-
-
-Canceling the request
----------------------
-
-If the 'Cancel' button is selected the person's overview page is shown.
-
-    >>> browser.open('http://launchpad.dev/~bac/+vouchers')
-    >>> browser.getControl('Cancel').click()
-    >>> print browser.url
-    http://launchpad.dev/~bac

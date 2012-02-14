@@ -7,7 +7,7 @@ the person, which is that person and admins.
     >>> login('test@canonical.com')
     >>> zzz = factory.makePerson(
     ...     name='zzz', time_zone='Africa/Maseru', email='zzz@foo.com',
-    ...     latitude=None, longitude=None, password='test')
+    ...     latitude=None, longitude=None)
     >>> logout()
 
 A user cannot set another user's location.

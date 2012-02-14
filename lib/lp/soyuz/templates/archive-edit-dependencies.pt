@@ -62,7 +62,7 @@
   </div> <!-- launchpad_form -->
 
 <script type="text/javascript">
-   LPS.use("node", function(Y) {
+   LPJS.use("node", function(Y) {
 
        // Highlight (setting bold font-weight) the label for the
        // selected option in a given NodesList. Assumes the input is

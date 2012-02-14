@@ -1,7 +1,9 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python2.6
+PYTHON:=$(shell sed -e \
+    '/RELEASE/!d; s/.*=12.*/python2.7/; s/.*=.*/python2.6/' /etc/lsb-release)
+
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -12,7 +14,6 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=utilities/shhh.py
-HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
@@ -39,6 +40,8 @@ JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
+CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -84,7 +87,12 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	    --force "$(APIDOC_TMPDIR)"
 	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
-apidoc: compile $(API_INDEX)
+apidoc:
+ifdef LP_MAKE_NO_WADL
+	@echo "Skipping WADL generation."
+else
+	$(MAKE) compile $(API_INDEX)
+endif
 
 # Used to generate HTML developer documentation for Launchpad.
 doc:
@@ -126,13 +134,16 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build logs clean_logs
+inplace: build combobuild logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+	if [ -d /srv/launchpad.dev ]; then \
+		ln -sf $(WD)/build/js $(CONVOY_ROOT); \
+	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
 
@@ -176,6 +187,9 @@ ifeq ($(JS_BUILD), min)
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
+
+combobuild:
+	bin/combo-rootdir build/js
 
 jsbuild: $(PY) $(JS_OUT)
 
@@ -233,6 +247,7 @@ compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	ln -sf ../../../../build/js/yui-3.3.0 $(ICING)/yui
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -251,7 +266,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -268,8 +284,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -346,21 +362,33 @@ rebuildfti:
 
 clean_js:
 	$(RM) $(JS_OUT)
-	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+	$(RM) -r $(ICING)/yui
 
 clean_buildout:
+	$(RM) -r build
+	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
 
-clean: clean_js clean_buildout clean_logs
+clean_mailman:
+	$(RM) -r \
+			  /var/tmp/mailman \
+			  /var/tmp/mailman-xmlrpc.test
+ifdef LP_MAKE_KEEP_MAILMAN
+	@echo "Keeping previously built mailman."
+else
+	$(RM) -r lib/mailman
+endif
+
+clean: clean_js clean_mailman clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -373,11 +401,11 @@ clean: clean_js clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r lib/mailman
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) -r $(APIDOC_DIR)
 	$(RM) -r $(APIDOC_DIR).tmp
+	$(RM) -r build
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
 	$(RM) -r \
@@ -431,7 +459,11 @@ copy-apache-config:
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev
+	if [ ! -d /srv/launchpad.dev ]; then \
+		mkdir /srv/launchpad.dev; \
+		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
+	fi	
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

@@ -1,9 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from BeautifulSoup import BeautifulSoup
-
-from lp.registry.interfaces.person import PersonVisibility
-
 
 __metaclass__ = type
 
@@ -13,13 +9,14 @@ from datetime import (
     timedelta,
     )
 import re
-import simplejson
 import urllib
 
+from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
+import simplejson
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -35,25 +32,6 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    login_person,
-    )
-from lp.testing.pages import find_tag_by_id
-from lp.services.webapp import canonical_url
-from lp.services.webapp.authorization import clear_cache
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    ILaunchpadRoot,
-    )
-from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
@@ -70,22 +48,40 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    ANONYMOUS,
     BrowserTestCase,
     celebrity_logged_in,
     feature_flags,
+    login,
+    login_person,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
     )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
@@ -109,8 +105,8 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
         task = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson(password='test')
-        person_with_teams = self.factory.makePerson(password='test')
+        person_no_teams = self.factory.makePerson()
+        person_with_teams = self.factory.makePerson()
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
@@ -254,6 +250,20 @@ class TestBugTaskView(TestCaseWithFactory):
             # happend. The error will be listed in the view.
             self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
+
+    def test_bugtag_urls_are_encoded(self):
+        # The link to bug tags are encoded to protect against special chars.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        getUtility(ILaunchBag).add(bug.default_bugtask)
+        view = create_initialized_view(bug.default_bugtask, name=u'+index')
+        expected = [(u'depends-on+987',
+            u'/foobar/+bugs?field.tag=depends-on%2B987')]
+        self.assertEqual(expected, view.unofficial_tags)
+        browser = self.getUserBrowser(canonical_url(bug), bug.owner)
+        self.assertIn(
+            'href="/foobar/+bugs?field.tag=depends-on%2B987"',
+            browser.contents)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -939,7 +949,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -970,7 +980,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bug.default_bugtask, name='+delete', server_url=server_url,
@@ -1006,7 +1016,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_REFERER': default_bugtask_url,
             }
         form = {
-            'field.actions.delete_bugtask': 'Delete'
+            'field.actions.delete_bugtask': 'Delete',
             }
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
@@ -1898,11 +1908,11 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.useContext(person_logged_in(owner))
         with dynamic_listings():
             view = self.makeView(item.bugtask)
-        cache = IJSONRequestCache(view.request)
-        items = cache.objects['mustache_model']['items']
-        self.assertEqual(1, len(items))
-        combined = dict(item.model)
-        combined.update(view.search().field_visibility)
+            cache = IJSONRequestCache(view.request)
+            items = cache.objects['mustache_model']['items']
+            self.assertEqual(1, len(items))
+            combined = dict(item.model)
+            combined.update(view.search().field_visibility)
         self.assertEqual(combined, items[0])
 
     def test_no_next_prev_for_single_batch(self):
@@ -2249,7 +2259,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(getUtility(IBugTaskSet).orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "
@@ -2270,6 +2280,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             self.assertTrue(
                 key[2] in ('asc', 'desc'),
                 'Invalid order value: %r' % (key, ))
+
+    def test_tags_encoded_in_model(self):
+        # The tag name is encoded properly in the JSON.
+        product = self.factory.makeProduct(name='foobar')
+        bug = self.factory.makeBug(product=product, tags=['depends-on+987'])
+        with dynamic_listings():
+            view = self.makeView(bugtask=bug.default_bugtask)
+        cache = IJSONRequestCache(view.request)
+        tags = cache.objects['mustache_model']['items'][0]['tags']
+        expected_url = (
+            canonical_url(product, view_name='+bugs') +
+            '/?field.tag=depends-on%2B987')
+        self.assertEqual(
+            [{'url': expected_url, 'tag': u'depends-on+987'}], tags)
 
 
 class TestBugTaskExpirableListingView(BrowserTestCase):

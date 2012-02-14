@@ -515,9 +515,9 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Downloads'
         return Link('+download', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text)
 
 
@@ -672,9 +672,9 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         text = 'Downloads'
         return Link('+download', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
 
     def branch_add(self):
@@ -1301,6 +1301,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {self.package_field_name: self.other_package}
 
+    def initialize(self):
+        # The template only shows the form if the portlet is shown and
+        # there aren't any linked sourcepackages. If either of those
+        # conditions fails, there's no point setting up the widgets
+        # (with the expensive FTI query that entails).
+        if self.can_show_portlet and not self.sourcepackages:
+            super(ProductPackagesPortletView, self).initialize()
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
@@ -1814,7 +1822,7 @@ class ProductRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return self.context.name
+        return '%s.rdf' % self.context.name
 
 
 class Icon:

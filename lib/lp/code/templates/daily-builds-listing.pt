@@ -29,14 +29,11 @@
     </form>
 
     <script type="text/javascript">
-      function submit_filter() {
-          getElement('filter_form').submit();
-      }
-
-      function hookUpFilterSubmission () {
-          connect('field.when_completed_filter', 'onchange', submit_filter);
-      }
-      registerLaunchpadFunction(hookUpFilterSubmission);
+        LPJS.use("lp.code.util", function(Y) {
+          Y.on("domready", function(e) {
+              Y.lp.code.util.hookUpDailyBuildsFilterSubmission(Y);
+          }, window);
+        });
     </script>
 
     <tal:block tal:condition="not:dailybuilds">

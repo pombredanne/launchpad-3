@@ -203,3 +203,12 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
+
+    def test_renderExtraHint(self):
+        # If an extra hint is specified, it is rendered.
+        self.widget.extra_hint = "Hello World"
+        self.widget.extra_hint_class = 'hint_class'
+        expected = (
+            '<div class="hint_class">Hello World</div>')
+        hint_html = self.widget.renderExtraHint()
+        self.assertEqual(expected, hint_html)

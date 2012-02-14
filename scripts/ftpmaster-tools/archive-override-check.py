@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Override Check
@@ -20,7 +20,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.scripts.ftpmaster import PubSourceChecker
+from lp.soyuz.scripts.pubsourcechecker import PubSourceChecker
 
 
 class ArchiveOverrideCheckScript(LaunchpadScript):

@@ -38,7 +38,7 @@
         </p>
       </tal:referred>
       <p tal:condition="not:view/referrer">
-      Check that you are logged in with the correct acount, or that you
+      Check that you are logged in with the correct account, or that you
       entered the address correctly, or search for it:
       </p>
       <form
