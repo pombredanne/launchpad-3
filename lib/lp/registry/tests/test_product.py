@@ -33,7 +33,6 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import (
     Product,
     UnDeactivateable,
@@ -266,9 +265,6 @@ class TestProductFiles(TestCase):
 
     def test_adddownloadfile_nonascii_filename(self):
         """Test uploading a file with a non-ascii char in the filename."""
-        # XXX EdwinGrubbs 2008-03-06 bug=69988
-        # Doctests are difficult to use with non-ascii characters, so
-        # I have used a unittest.
         firefox_owner = setupBrowser(auth='Basic mark@example.com:test')
         filename = u'foo\xa5.txt'.encode('utf-8')
         firefox_owner.open(
@@ -313,7 +309,7 @@ class TestProductFiles(TestCase):
         self.assertEqual(a_element.contents[0].strip(), u'sig')
 
 
-class ProductAttributeCacheTestCase(TestCase):
+class ProductAttributeCacheTestCase(TestCaseWithFactory):
     """Cached attributes must be cleared at the end of a transaction."""
 
     layer = DatabaseFunctionalLayer
@@ -343,15 +339,7 @@ class ProductAttributeCacheTestCase(TestCase):
     def testCommercialSubscriptionCache(self):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
-        now = datetime.datetime.now(pytz.UTC)
-        CommercialSubscription(
-            product=self.product,
-            date_starts=now,
-            date_expires=now,
-            registrant=self.product.owner,
-            purchaser=self.product.owner,
-            sales_system_id='foo',
-            whiteboard='bar')
+        self.factory.makeCommercialSubscription(self.product)
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
@@ -363,14 +351,7 @@ class ProductAttributeCacheTestCase(TestCase):
 
         # Cache is cleared again.
         transaction.abort()
-        CommercialSubscription(
-            product=self.product,
-            date_starts=now,
-            date_expires=now,
-            registrant=self.product.owner,
-            purchaser=self.product.owner,
-            sales_system_id='new',
-            whiteboard='')
+        self.factory.makeCommercialSubscription(self.product)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
