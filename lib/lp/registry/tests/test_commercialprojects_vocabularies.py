@@ -116,13 +116,28 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(
             'Open-widget (expires %s)' % expiration_date, term.title)
 
-    def test_getTermByToken(self):
-        # The term for a token in the vocabulary is returned.
+    def test_getTermByToken_user(self):
+        # The term for a token in the vocabulary is returned for maintained
+        # projects.
         token = self.vocab.getTermByToken('open-widget')
         self.assertEqual(self.maintained_project, token.value)
 
-    def test_getTermByToken_error(self):
+    def test_getTermByToken_commercial_admin(self):
+        # The term for a token in the vocabulary is returned for any
+        # active project.
+        login_celebrity('commercial_admin')
+        token = self.vocab.getTermByToken('open-widget')
+        self.assertEqual(self.maintained_project, token.value)
+
+    def test_getTermByToken_error_user(self):
         # A LookupError is raised if the token is not in the vocabulary.
+        self.assertRaises(
+            LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
+
+    def test_getTermByToken_error_commercial_admin(self):
+        # The term for a token in the vocabulary is returned for any
+        # active project.
+        login_celebrity('commercial_admin')
         self.assertRaises(
             LookupError, self.vocab.getTermByToken, 'norwegian-blue-widget')
 
