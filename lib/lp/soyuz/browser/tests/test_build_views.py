@@ -424,3 +424,15 @@ class TestBuildViews(TestCaseWithFactory):
             self.assertThat(
                 test_range_factory,
                 Not(Raises(MatchesException(StormRangeFactoryError))))
+
+    def test_name_filter_with_storm_range_factory(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(distroseries=distroseries)
+        view = create_initialized_view(
+            distroseries.distribution, name="+builds",
+            form={
+                'build_state': 'built',
+                'build_text': 'foo',
+                'start': 75,
+                'memo': '["2012-01-01T01:01:01", 0]'})
+        view.setupBuildList()

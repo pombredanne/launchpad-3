@@ -560,6 +560,12 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.hasCurrentCommercialSubscription())
 
+    def test_can_not_set_visibility(self):
+        person = self.factory.makePerson()
+        self.assertRaises(
+            ImmutableVisibilityError, person.transitionVisibility,
+            PersonVisibility.PRIVATE, person)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
