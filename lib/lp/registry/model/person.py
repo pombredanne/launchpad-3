@@ -1230,7 +1230,7 @@ class Person(
                 (voucher.voucher_id, voucher.status))
         return vouchers
 
-    def hasCurrentCommercialSubscription(self, product=None):
+    def hasCurrentCommercialSubscription(self):
         """See `IPerson`."""
         # Circular imports.
         from lp.registry.model.commercialsubscription import (
@@ -1239,10 +1239,6 @@ class Person(
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
         from lp.registry.model.teammembership import TeamParticipation
-
-        filter = [Person.id == self.id]
-        if product:
-            filter.append(Product.id == product.id)
         person = Store.of(self).using(
             Person,
             Join(
@@ -1257,7 +1253,7 @@ class Person(
                 Person,
                 CommercialSubscription.date_expires > datetime.now(
                     pytz.UTC),
-                *filter)
+                Person.id == self.id)
         return not person.is_empty()
 
     def iterTopProjectsContributedTo(self, limit=10):

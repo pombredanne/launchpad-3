@@ -10,7 +10,7 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
-from zope.security.interfaces import Forbidden
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -268,98 +268,91 @@ class TestProduct(TestCaseWithFactory):
     def test_private_bugs_on_not_allowed_for_anonymous(self):
         # Anonymous cannot turn on private bugs.
         product = self.factory.makeProduct()
+        login(ANONYMOUS)
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, None)
+            product.checkPrivateBugsTransitionAllowed, True)
 
     def test_private_bugs_off_not_allowed_for_anonymous(self):
         # Anonymous cannot turn private bugs off.
         product = self.factory.makeProduct()
+        login(ANONYMOUS)
         self.assertRaises(
-            Forbidden,
-            product.checkPrivateBugsTransitionAllowed, False, None)
+            Unauthorized,
+            product.checkPrivateBugsTransitionAllowed, False)
 
     def test_private_bugs_on_not_allowed_for_unauthorised(self):
         # Unauthorised users cannot turn on private bugs.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
+        login_person(someone)
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.checkPrivateBugsTransitionAllowed, True, someone)
+            product.checkPrivateBugsTransitionAllowed, True)
 
     def test_private_bugs_off_not_allowed_for_unauthorised(self):
         # Unauthorised users cannot turn private bugs off.
         product = self.factory.makeProduct()
         someone = self.factory.makePerson()
+        login_person(someone)
         self.assertRaises(
-            Forbidden,
-            product.checkPrivateBugsTransitionAllowed, False, someone)
+            Unauthorized,
+            product.checkPrivateBugsTransitionAllowed, False)
 
     def test_private_bugs_on_allowed_for_moderators(self):
         # Moderators can turn on private bugs.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
+        login_person(registry_expert)
+        product.checkPrivateBugsTransitionAllowed(True)
 
     def test_private_bugs_off_allowed_for_moderators(self):
         # Moderators can turn private bugs off.
         product = self.factory.makeProduct()
         registry_expert = self.factory.makeRegistryExpert()
-        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
+        login_person(registry_expert)
+        product.checkPrivateBugsTransitionAllowed(False)
 
     def test_private_bugs_on_allowed_for_commercial_subscribers(self):
         # Commercial subscribers can turn on private bugs.
-        product = self.factory.makeProduct()
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        login_person(bug_supervisor)
         self.factory.makeCommercialSubscription(product)
-        product.checkPrivateBugsTransitionAllowed(True, product.owner)
+        product.checkPrivateBugsTransitionAllowed(True)
+
+    def test_private_bugs_on_not_allowed_for_expired_subscribers(self):
+        # Expired Commercial subscribers cannot turn on private bugs.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        login_person(bug_supervisor)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.setPrivateBugs, True)
 
     def test_private_bugs_off_allowed_for_bug_supervisors(self):
         # Bug supervisors can turn private bugs off.
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
         login_person(bug_supervisor)
-        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
+        product.checkPrivateBugsTransitionAllowed(False)
 
     def test_unauthorised_set_private_bugs_raises(self):
         # Test Product.setPrivateBugs raises an error if user unauthorised.
         product = self.factory.makeProduct()
         self.assertRaises(
             CommercialSubscribersOnly,
-            product.setPrivateBugs, True, product.owner)
+            product.setPrivateBugs, True)
 
     def test_set_private_bugs(self):
         # Test Product.setPrivateBugs()
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        product.setPrivateBugs(True, product.owner)
-        self.assertTrue(product.private_bugs)
-
-
-class TestProductPermissions(TestCaseWithFactory):
-    """Tests for product permissions."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_owner_is_BugSupervisor(self):
-        product = self.factory.makeProduct()
-        login_person(product.owner)
-        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
-
-    def test_bug_supervisor_is_BugSupervisor(self):
         bug_supervisor = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        self.factory.makeCommercialSubscription(product)
         login_person(bug_supervisor)
-        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
-
-    def test_admin_is_BugSupervisor(self):
-        product = self.factory.makeProduct()
-        login_celebrity('admin')
-        self.assertTrue(check_permission('launchpad.BugSupervisor', product))
-
-    def test_someone_is_not_BugSupervisor(self):
-        product = self.factory.makeProduct()
-        login(ANONYMOUS)
-        self.assertFalse(check_permission('launchpad.BugSupervisor', product))
+        product.setPrivateBugs(True)
+        self.assertTrue(product.private_bugs)
 
 
 class TestProductFiles(TestCase):

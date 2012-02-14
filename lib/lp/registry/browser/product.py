@@ -1547,8 +1547,7 @@ class ProductPrivateBugsMixin():
         super(ProductPrivateBugsMixin, self).validate(data)
         private_bugs = data.get('private_bugs')
         try:
-            self.context.checkPrivateBugsTransitionAllowed(
-                private_bugs, self.user)
+            self.context.checkPrivateBugsTransitionAllowed(private_bugs)
         except Exception as e:
             self.setFieldError('private_bugs', e.message)
 
@@ -1556,7 +1555,7 @@ class ProductPrivateBugsMixin():
         # private_bugs uses a mutator to check permissions, so it needs to
         # be handled separately.
         if data.has_key('private_bugs'):
-            self.context.setPrivateBugs(data['private_bugs'], self.user)
+            self.context.setPrivateBugs(data['private_bugs'])
             del data['private_bugs']
         parent = super(ProductPrivateBugsMixin, self)
         return parent.updateContextFromData(data, context, notify_modified)

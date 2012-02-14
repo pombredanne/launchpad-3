@@ -194,11 +194,24 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         form = self._makeForm()
         self.factory.makeCommercialSubscription(self.product)
         form['field.private_bugs'] = 'on'
-        login_person(self.product.owner)
+        login_person(self.bug_supervisor)
         view = create_initialized_view(
             self.product, name='+configure-bugtracker', form=form)
         self.assertEqual([], view.errors)
         self.assertTrue(self.product.private_bugs)
+
+    def test_expired_commercial_subscriber_cannot_turn_on_private_bugs(self):
+        # Verify expired commercial subscribers cannot set private_bugs to on.
+        form = self._makeForm()
+        self.factory.makeCommercialSubscription(self.product, expired=True)
+        form['field.private_bugs'] = 'on'
+        login_person(self.bug_supervisor)
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual(
+            [u'A valid commercial subscription is required to turn on '
+             u'default private bugs.'],
+            view.errors)
 
     def test_unauthorised_cannot_turn_on_private_bugs(self):
         # Verify unauthorised users cannot set private_bugs to on.
@@ -214,7 +227,8 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
     def test_unauthorised_cannot_turn_off_private_bugs(self):
         # Verify unauthorised user cannot set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
-        self.product.setPrivateBugs(True, registry_expert)
+        login_person(registry_expert)
+        self.product.setPrivateBugs(True)
         anyperson = self.factory.makePerson()
         login_person(anyperson)
         form = self._makeForm()
@@ -227,7 +241,8 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
     def test_bug_supervisor_can_turn_off_private_bugs(self):
         # Verify the bug supervisor can always set private_bugs off.
         registry_expert = self.factory.makeRegistryExpert()
-        self.product.setPrivateBugs(True, registry_expert)
+        login_person(registry_expert)
+        self.product.setPrivateBugs(True)
         form = self._makeForm()
         login_person(self.bug_supervisor)
         view = create_initialized_view(

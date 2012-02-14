@@ -744,22 +744,21 @@ class IProductPublic(
 
     packagings = Attribute(_("All the packagings for the project."))
 
-    def checkPrivateBugsTransitionAllowed(private_bugs, user):
-        """Is user allowed to change the private_bugs attribute to the value?
+    def checkPrivateBugsTransitionAllowed(private_bugs):
+        """Can the private_bugs attribute be changed to the value?
 
-        Generally, the permission to turn on private bugs is  restricted to
-        ~registry or ~admin or product maintainers with active commercial
-        subscriptions.
-        The permission to turn off private bugs is restricted to ~registry or
-        ~admin or bug supervisors.
+        Generally, the permission is restricted to ~registry or ~admin or
+        bug supervisors.
+        In addition, a valid commercial subscription is required to turn on
+        private bugs when being done by a bug supervisor. However, no
+        commercial subscription is required to turn off private bugs.
         """
 
     @mutator_for(private_bugs)
-    @call_with(user=REQUEST_USER)
     @operation_parameters(private_bugs=copy_field(private_bugs))
     @export_write_operation()
     @operation_for_version("devel")
-    def setPrivateBugs(private_bugs, user):
+    def setPrivateBugs(private_bugs):
         """Mutator for private_bugs that checks entitlement."""
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):

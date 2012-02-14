@@ -545,27 +545,6 @@ class TestPerson(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         self.assertTrue(team.teamowner.hasCurrentCommercialSubscription())
 
-    def test_has_current_commercial_subscription_for_product(self):
-        # IPerson.hasCurrentCommercialSubscription() checks for a commercial
-        # subscription for a particular product and returns True if current.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product)
-        self.assertTrue(
-            team.teamowner.hasCurrentCommercialSubscription(product))
-
-    def test_has_expired_commercial_subscription_for_product(self):
-        # IPerson.hasCurrentCommercialSubscription() checks for a commercial
-        # subscription for a particular product and returns False if not
-        # current.
-        team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        product = self.factory.makeProduct(owner=team)
-        self.factory.makeCommercialSubscription(product, expired=True)
-        self.assertFalse(
-            team.teamowner.hasCurrentCommercialSubscription(product))
-
     def test_does_not_have_current_commercial_subscription(self):
         # IPerson.hasCurrentCommercialSubscription() is false if it has
         # expired.

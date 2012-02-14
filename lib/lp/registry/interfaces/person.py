@@ -1243,7 +1243,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: list
         """
 
-    def hasCurrentCommercialSubscription(product=None):
+    def hasCurrentCommercialSubscription():
         """Return if the user has a current commercial subscription."""
 
     def assignKarma(action_name, product=None, distribution=None,
