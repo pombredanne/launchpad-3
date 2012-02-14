@@ -286,6 +286,46 @@ class BugTaskStatus(DBEnumeratedType):
         """)
 
 
+class BugTaskVisibilityPolicy(DBEnumeratedType):
+    """Bug Task Visibility Policy.
+
+    The policies used to control which users and teams can see the bug.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can see this bug.
+        """)
+
+    PUBLICSECURITY = DBItem(2, """
+        Public Security
+
+        Everyone can see this resolved security related bug.
+        """)
+
+    EMBARGOEDSECURITY = DBItem(3, """
+        Embargoed Security
+
+        Only users with permission to see the project's security related bugs
+        can see this bug.
+        """)
+
+    USERDATA = DBItem(4, """
+        User Data
+
+        Only users with permission to see the project's bugs containing user
+        data can see this bug.
+        """)
+
+#    PROPRIETARY = DBItem(5, """
+#        Proprietary
+#
+#        Only users with permission to see the project's bugs containing
+#        proprietary data can see this bug.
+#        """)
+
+
 class BugTaskStatusSearch(DBEnumeratedType):
     """Bug Task Status
 
