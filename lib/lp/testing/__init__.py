@@ -107,6 +107,7 @@ from testtools.matchers import (
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
+    ComponentLookupError,
     getMultiAdapter,
     getSiteManager,
     getUtility,
@@ -1522,8 +1523,8 @@ class FakeAdapterMixin:
 
     def registerUtility(self, component, for_interface, name=''):
         try:
-            current_commponent = getUtility(for_interface)
-        except:
+            current_commponent = getUtility(for_interface, name=name)
+        except ComponentLookupError:
             current_commponent = None
         site_manager = getSiteManager()
         site_manager.registerUtility(component, for_interface, name)
