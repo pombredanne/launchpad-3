@@ -40,6 +40,7 @@ __all__ = [
     'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
+    'ProductSharingView',
     ]
 
 
@@ -2388,3 +2389,9 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
+
+
+class ProductSharingView(LaunchpadView):
+
+    page_title = "Sharing"
+    label = page_title
