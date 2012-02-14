@@ -12,13 +12,13 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
     ICanonicalSSOAPI,
     ICanonicalSSOApplication,
     IPerson,
     )
-from lp.registry.model.teammembership import find_team_participations
 from lp.services.identity.interfaces.account import IAccountSet
 from lp.services.webapp import LaunchpadXMLRPCView
 
@@ -40,8 +40,8 @@ class CanonicalSSOAPI(LaunchpadXMLRPCView):
 
         time_zone = person.location and person.location.time_zone
         team_names = dict(
-            (t.name, t.private)
-            for t in find_team_participations([person]) if t.is_team)
+            (removeSecurityProxy(t).name, t.private)
+            for t in person.teams_participated_in)
         return {
             'name': person.name,
             'time_zone': time_zone,
