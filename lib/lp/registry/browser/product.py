@@ -1546,6 +1546,8 @@ class ProductPrivateBugsMixin():
     def validate(self, data):
         super(ProductPrivateBugsMixin, self).validate(data)
         private_bugs = data.get('private_bugs')
+        if private_bugs is None:
+            return
         try:
             self.context.checkPrivateBugsTransitionAllowed(private_bugs)
         except Exception as e:
@@ -1651,8 +1653,8 @@ class ProductValidationMixin:
                         canonical_url(self.context, view_name='+packages')))
 
 
-class ProductAdminView(ProductEditView, ProductValidationMixin,
-                       ProductPrivateBugsMixin):
+class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
+                       ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
     default_field_names = [
@@ -1729,9 +1731,8 @@ class ProductAdminView(ProductEditView, ProductValidationMixin,
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, ProductValidationMixin,
-                               ProductPrivateBugsMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin, ProductPrivateBugsMixin,
+                               ProductEditView, ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
