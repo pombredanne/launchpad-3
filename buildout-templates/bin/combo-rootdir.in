@@ -39,19 +39,5 @@ rm $BUILD_DIR/lp/app/worlddata
 cp lib/lp/services/worlddata/javascript/languages.js $BUILD_DIR/lp
 cp lib/lp/app/longpoll/javascript/longpoll.js $BUILD_DIR/lp
 
-# Build the LP module definition file.
-utilities/js-deps -n LP_MODULES -s $BUILD_DIR/lp -o $BUILD_DIR/lp/meta.js >/dev/null
-
 # Minify our JS.
 bin/py -m lp.scripts.utilities.js.jsmin_all $BUILD_DIR/lp
-
-# Check if any JS modules are missing.
-error=0
-for mod in $(grep '  LP' $BUILD_DIR/lp/meta.js | tr -s ' ' | cut -d\  -f2) ; do
-    if ! grep -q "modules\[$mod\]" $BUILD_DIR/lp/meta.js ; then
-        echo "ERROR: $mod is not mentioned in the meta file"
-        error=1
-    fi
-done
-
-exit $error
