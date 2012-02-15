@@ -2,9 +2,23 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
+
+-- AccessArtifact
+
+COMMENT ON TABLE AccessArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessArtifactGrant.';
+COMMENT ON COLUMN AccessArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessArtifact.branch IS 'The branch that this abstract artifact represents.';
+
+-- AccessArtifactGrant
+
+COMMENT ON TABLE AccessArtifactGrant IS 'A grant for a person to access an artifact.';
+COMMENT ON COLUMN AccessArtifactGrant.artifact IS 'The artifact on which access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantee IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessArtifactGrant.date_created IS 'The date the access was granted.';
 
 -- AccessPolicy
 
@@ -15,19 +29,24 @@ COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Priv
 
 -- AccessPolicyArtifact
 
-COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
-COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
+COMMENT ON TABLE AccessPolicyArtifact IS 'An association between an artifact and a policy. A grant for any related policy grants access to the artifact.';
+COMMENT ON COLUMN AccessPolicyArtifact.artifact IS 'The artifact associated with this policy.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'The policy associated with this artifact.';
+
+-- AccessPolicyGrantFlat
+
+COMMENT ON TABLE AccessPolicyGrantFlat IS 'A fact table for access queries. AccessPolicyGrants are included verbatim, but AccessArtifactGrants are included with their artifacts'' corresponding policies.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.artifact IS 'The artifact on which access is granted. If null, the grant is for the whole policy';
+COMMENT ON COLUMN AccessPolicyGrantFlat.grantee IS 'The person to whom access is granted.';
 
 -- AccessPolicyGrant
 
-COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy''s artifacts.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
 COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
-COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 
 -- Announcement
 
