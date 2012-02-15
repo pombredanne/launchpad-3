@@ -1108,6 +1108,16 @@
         interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
         class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
         permission="zope.Public"/>
+    <securedutility
+        class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOApplication"
+        provides="lp.registry.interfaces.person.ICanonicalSSOApplication">
+      <allow interface="lp.registry.interfaces.person.ICanonicalSSOApplication" />
+    </securedutility>
+    <xmlrpc:view
+        for="lp.registry.interfaces.person.ICanonicalSSOApplication"
+        interface="lp.registry.interfaces.person.ICanonicalSSOAPI"
+        class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOAPI"
+        permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->
 
