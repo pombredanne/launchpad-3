@@ -3,8 +3,11 @@
 
 SET client_min_messages=ERROR;
 
+ALTER TABLE entitlement DROP CONSTRAINT entitlement_approved_by_fkey;
+ALTER TABLE entitlement DROP CONSTRAINT entitlement_person_fkey;
+ALTER TABLE entitlement DROP CONSTRAINT entitlement_registrant_fkey;
+
 ALTER TABLE entitlement SET SCHEMA todrop;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 09, 0);
-
 
