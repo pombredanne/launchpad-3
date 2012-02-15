@@ -42,6 +42,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -974,19 +975,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
-            columns,
+            (BranchRevision.sequence, Revision.revision_id),
             Revision.id == BranchRevision.revision_id,
-            BranchRevision.branch_id == self.id)
-        rows = rows.order_by(BranchRevision.sequence)
-        ancestry = set()
-        history = []
-        for sequence, revision_id in rows:
-            ancestry.add(revision_id)
-            if sequence is not None:
-                history.append(revision_id)
-        return ancestry, history
+            BranchRevision.branch_id == self.id,
+            BranchRevision.sequence != None)
+        return rows.order_by(Desc(BranchRevision.sequence))
 
     def getPullURL(self):
         """See `IBranch`."""
@@ -1411,6 +1405,26 @@ class BranchSet:
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
         return branches
+
+    def getBranchVisibilityInfo(self, user, person, branch_names):
+        """See `IBranchSet`."""
+        if user is None:
+            return dict()
+        branch_set = getUtility(IBranchLookup)
+        visible_branches = []
+        for name in branch_names:
+            branch = branch_set.getByUniqueName(name)
+            try:
+                if (branch is not None
+                        and branch.visibleByUser(user)
+                        and branch.visibleByUser(person)):
+                    visible_branches.append(branch.unique_name)
+            except Unauthorized:
+                # We don't include branches user cannot see.
+                pass
+        return {
+            'person_name': person.displayname,
+            'visible_branches': visible_branches}
 
 
 def update_trigger_modified_fields(branch):

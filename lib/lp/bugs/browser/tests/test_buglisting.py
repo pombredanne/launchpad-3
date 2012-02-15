@@ -467,6 +467,18 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
             bug_target, rootsite='answers', view_name='+addquestion')
         self.assertEqual(url, view.addquestion_url)
 
+    def test_upstream_project(self):
+        # BugTaskSearchListingView.upstream_project and
+        # BugTaskSearchListingView.upstream_launchpad_project are
+        # None for all bug targets except SourcePackages
+        # and DistributionSourcePackages.
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertIs(None, view.upstream_project)
+        self.assertIs(None, view.upstream_launchpad_project)
+
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
 
@@ -489,6 +501,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(upstream_project, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         content = find_tag_by_id(view.render(), 'also-in-upstream')
         link = canonical_url(upstream_project, rootsite='bugs')
         self.assertEqual(link, content.a['href'])
@@ -501,6 +514,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
 
     def test_package_without_upstream_project(self):
@@ -512,7 +526,24 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=observer)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(None, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
+
+    def test_filter_by_upstream_target(self):
+        # If an upstream target is specified is the query parameters,
+        # the corresponding flag in BugTaskSearchParams is set.
+        upstream_project = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        bug_target = self._getBugTarget(
+            upstream_project.distrosourcepackages[0])
+        form = {
+            'search': 'Search',
+            'advanced': 1,
+            'field.upstream_target': upstream_project.name,
+            }
+        view = create_initialized_view(bug_target, '+bugs', form=form)
+        search_params = view.buildSearchParams()
+        self.assertEqual(upstream_project, search_params.upstream_target)
 
 
 class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):

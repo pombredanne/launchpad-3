@@ -321,22 +321,21 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
         self.makeSeriesPackage('translatable', messages=800)
-        hot_package = self.makeSeriesPackage('hot', heat=500)
+        hot_package = self.makeSeriesPackage('hot', bugs=50)
         # Create a second SPPH for 'hot', to verify that duplicates are
         # eliminated in the queries.
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=hot_package.sourcepackagename,
             distroseries=self.series,
             component=self.universe_component, section_name='web')
-        self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
+        self.makeSeriesPackage('hot-translatable', bugs=25, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
         self.linkPackage('linked')
         transaction.commit()
         login(ANONYMOUS)
 
-    def makeSeriesPackage(self, name,
-                          is_main=False, heat=None, messages=None,
+    def makeSeriesPackage(self, name, is_main=False, bugs=None, messages=None,
                           is_translations=False):
         # Make a published source package.
         if is_main:
@@ -353,10 +352,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             component=component, section_name=section)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
-        if heat is not None:
-            bugtask = self.factory.makeBugTask(
-                target=source_package, owner=self.user)
-            bugtask.bug.setHeat(heat)
+        if bugs is not None:
+            dsp = removeSecurityProxy(
+                source_package.distribution_sourcepackage)
+            dsp.bug_count = bugs
         if messages is not None:
             template = self.factory.makePOTemplate(
                 distroseries=self.series, sourcepackagename=sourcepackagename,

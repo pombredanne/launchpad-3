@@ -14,7 +14,6 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=utilities/shhh.py
-HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
@@ -42,7 +41,7 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
-CONVOY_ROOT=/var/tmp/convoy
+CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -135,13 +134,16 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build logs clean_logs
+inplace: build combobuild logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+	if [ -d /srv/launchpad.dev ]; then \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
+	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
 
@@ -186,14 +188,12 @@ else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
-combobuild: jsbuild
-	mkdir -p $(CONVOY_ROOT)
-	bin/combo-rootdir $(CONVOY_ROOT)
-	rm -f $(ICING)/yui
-	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
+combobuild:
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
-	ln -sf ../../../../build/js/yui/yui-3.3.0 $(ICING)/yui
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -249,6 +249,7 @@ compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	ln -sf ../../../../build/js/yui-3.3.0 $(ICING)/yui
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -267,7 +268,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -284,8 +286,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -360,20 +362,20 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean_combo: clean_js
-	$(RM) -r $(CONVOY_ROOT)
-
 clean_js:
 	$(RM) $(JS_OUT)
 	$(RM) -r $(ICING)/yui
 
 clean_buildout:
+	$(RM) -r build
+	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -459,7 +461,11 @@ copy-apache-config:
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev
+	if [ ! -d /srv/launchpad.dev ]; then \
+		mkdir /srv/launchpad.dev; \
+		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
+	fi	
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

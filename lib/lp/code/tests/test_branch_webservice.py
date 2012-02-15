@@ -1,10 +1,12 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
+from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -46,6 +48,39 @@ class TestBranchOperations(TestCaseWithFactory):
         self.assertEquals(
             exception.content,
             'reviewers and review_types must be equal length.')
+
+    def test_getBranchVisibilityInfo(self):
+        """Test the test_getBranchVisibilityInfo API."""
+        self.factory.makePerson(name='fred')
+        owner = self.factory.makePerson()
+        visible_branch = self.factory.makeBranch()
+        visible_name = visible_branch.unique_name
+        invisible_branch = self.factory.makeBranch(owner=owner, private=True)
+        invisible_name = removeSecurityProxy(invisible_branch).unique_name
+        branches = [
+            visible_branch.unique_name,
+            invisible_name]
+        endInteraction()
+
+        lp = launchpadlib_for("test", person=owner)
+        person = lp.people['fred']
+        info = lp.branches.getBranchVisibilityInfo(
+            person=person, branch_names=branches)
+        self.assertEqual('Fred', info['person_name'])
+        self.assertEqual([visible_name], info['visible_branches'])
+
+    def test_createMergeProposal_fails_if_source_and_target_are_equal(self):
+        source = self.factory.makeBranch()
+        source_url = api_url(source)
+        lp = launchpadlib_for("test", source.owner.name)
+        source = lp.load(source_url)
+        exception = self.assertRaises(
+            BadRequest, source.createMergeProposal,
+            target_branch=source, initial_comment='Merge\nit!',
+            needs_review=True, commit_message='It was merged!\n')
+        self.assertEquals(
+            exception.content,
+            'Source and target branches must be different.')
 
 
 class TestBranchDeletes(TestCaseWithFactory):

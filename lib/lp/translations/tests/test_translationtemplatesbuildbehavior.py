@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
@@ -15,10 +15,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
@@ -78,7 +80,7 @@ class MakeBehaviorMixin(object):
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = WaitingSlave()
         behavior._builder = removeSecurityProxy(self.factory.makeBuilder())
-        behavior._builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
@@ -110,6 +112,16 @@ class TestTranslationTemplatesBuildBehavior(
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
         return getUtility(IBuildQueueSet).getByJob(job.id)
+
+    def test_dispatchBuildToSlave_no_chroot_fails(self):
+        # dispatchBuildToSlave will fail if the chroot does not exist.
+        behavior = self.makeBehavior(use_fake_chroot=False)
+        buildqueue_item = self._getBuildQueueItem(behavior)
+
+        switch_dbuser(config.builddmaster.dbuser)
+        self.assertRaises(
+            CannotBuild, behavior.dispatchBuildToSlave, buildqueue_item,
+            logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DataDownloadView',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -61,6 +62,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -220,6 +222,29 @@ class redirection:
         return cls
 
 
+class DataDownloadView:
+    """Download data without templating.
+
+    Subclasses must provide getBody, content_type and filename.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Set the headers and return the body.
+
+        It is not necessary to supply Content-length, because this is added by
+        the caller.
+        """
+        self.request.response.setHeader('Content-Type', self.content_type)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % (
+             self.filename))
+        return self.getBody()
+
+
 class UserAttributeCache:
     """Mix in to provide self.user, cached."""
 
@@ -327,6 +352,16 @@ class LaunchpadView(UserAttributeCache):
         # likely due to some non-obvious circular import issues.
         from lp.services.config import config
         return 'true' if config.devmode else 'false'
+
+    @property
+    def combo_url(self):
+        """Return the URL for the combo loader."""
+        # Circular imports, natch.
+        from lp.services.config import config
+        combo_url = '/+combo'
+        if not config.devmode:
+            combo_url += '/rev%s' % revno
+        return combo_url
 
     def render(self):
         """Return the body of the response.

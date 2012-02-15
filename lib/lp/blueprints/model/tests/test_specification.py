@@ -9,6 +9,9 @@ from testtools.matchers import Equals
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationworkitem import (
+    SpecificationWorkItemStatus,
+    )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -153,5 +156,21 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
-        work_item = spec.newWorkItem(title='new-work-item', sequence=0)
+        work_item = spec.newWorkItem(title=u'new-work-item', sequence=0)
         self.assertIsInstance(work_item, SpecificationWorkItem)
+
+    def test_newworkitem_uses_passed_arguments(self):
+        title = u'new-work-item'
+        spec = self.factory.makeSpecification()
+        assignee = self.factory.makePerson()
+        milestone = self.factory.makeMilestone()
+        status = SpecificationWorkItemStatus.DONE
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(
+            title=title, assignee=assignee, milestone=milestone,
+            status=status, sequence=0)
+        self.assertEqual(spec, work_item.specification)
+        self.assertEqual(assignee, work_item.assignee)
+        self.assertEqual(status, work_item.status)
+        self.assertEqual(title, work_item.title)
+        self.assertEqual(milestone, work_item.milestone)
