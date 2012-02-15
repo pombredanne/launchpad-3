@@ -1464,7 +1464,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    pillar_privacy_filters = ''
     query = """
         (%(public_bug_filter)s EXISTS (
             WITH teams AS (
@@ -1480,10 +1479,8 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
             FROM BugTask
             WHERE BugTask.assignee IN (SELECT team FROM teams) AND
                 BugTask.bug = Bug.id
-            %(extra_filters)s
                 ))
         """ % dict(
                 personid=quote(user.id),
-                public_bug_filter=public_bug_filter,
-                extra_filters=pillar_privacy_filters)
+                public_bug_filter=public_bug_filter)
     return query, _make_cache_user_can_view_bug(user)
