@@ -1541,7 +1541,7 @@ class ProductPrivateBugsMixin():
         super(ProductPrivateBugsMixin, self).setUpFields()
         self.form_fields = self.form_fields.omit('private_bugs')
         private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
-        self.form_fields += form.Fields(private_bugs)
+        self.form_fields += form.Fields(private_bugs, render_context=True)
 
     def validate(self, data):
         super(ProductPrivateBugsMixin, self).validate(data)
