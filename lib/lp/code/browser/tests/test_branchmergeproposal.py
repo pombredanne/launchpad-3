@@ -465,7 +465,7 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
         self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
 
-    def test_register_ajax_request(self):
+    def test_register_ajax_request_with_confirmation(self):
         # Ajax submits return json data containing info about what the visible
         # branches are if they are not all visible to the reviewer.
 
@@ -489,6 +489,27 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
                  'reviewer': reviewer,
                  'needs_review': True})
         self.assertEqual(expected_data, simplejson.loads(result_data))
+
+    def test_register_ajax_request_with_no_confirmation(self):
+        # Ajax submits where there is no confirmation required return a 201
+        # with the new location.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch()
+        reviewer = self.factory.makePerson()
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST', principal=owner, **extra)
+        view = self._createView(request=request)
+        with person_logged_in(owner):
+            result_data = view.register_action.success(
+                {'target_branch': target_branch,
+                 'reviewer': reviewer,
+                 'needs_review': True})
+        self.assertEqual(None, result_data)
+        self.assertEqual(201, view.request.response.getStatus())
+        mp = target_branch.getMergeProposals()[0]
+        self.assertEqual(
+            canonical_url(mp), view.request.response.getHeader('Location'))
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in

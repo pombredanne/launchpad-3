@@ -267,12 +267,9 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertEqual(tip_revision_id, new_branch.last_mirrored_id)
         self.assertEqual(tip_revision_id, new_branch.last_scanned_id)
         # Make sure that the branch revisions have been copied.
-        old_ancestry, old_history = removeSecurityProxy(
-            db_branch).getScannerData()
-        new_ancestry, new_history = removeSecurityProxy(
-            new_branch).getScannerData()
-        self.assertEqual(old_ancestry, new_ancestry)
-        self.assertEqual(old_history, new_history)
+        old_history = removeSecurityProxy(db_branch).getScannerData()
+        new_history = removeSecurityProxy(new_branch).getScannerData()
+        self.assertEqual(list(old_history), list(new_history))
         self.assertFalse(new_branch.pending_writes)
         self.assertIs(None, new_branch.stacked_on)
         self.assertEqual(new_branch, db_branch.stacked_on)

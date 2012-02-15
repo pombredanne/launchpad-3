@@ -125,9 +125,12 @@ class MergeProposal:
         :return: A set of `IPerson`s.
         """
         # XXX: JonathanLange 2009-09-24: No unit tests.
-        return set(
+        emails = set(
             map(get_email,
                 [self._mp.source_branch.owner, self._launchpad.me]))
+        if None in emails:
+            emails.remove(None)
+        return emails
 
     def get_reviews(self):
         """Return a dictionary of all Approved reviews.
@@ -242,6 +245,8 @@ def get_qa_clause(bugs, no_qa=False, incremental=False, rollback=None):
 def get_email(person):
     """Get the preferred email address for 'person'."""
     email_object = person.preferred_email_address
+    if email_object is None:
+        return None # A team most likely.
     return email_object.email
 
 

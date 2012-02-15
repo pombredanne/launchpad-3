@@ -31,10 +31,6 @@
       <tal:registrant replace="structure context/registrant/fmt:link" />
     </tal:registering>
 
-    <tal:heading metal:fill-slot="heading">
-      <h1 tal:content="context/title">Mozilla</h1>
-    </tal:heading>
-
     <tal:main metal:fill-slot="main">
 
     <div class="top-portlet">

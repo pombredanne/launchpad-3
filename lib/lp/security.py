@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugTargetOwnerOrBugSupervisorOrAdmins',
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
@@ -43,7 +44,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
-from lp.bugs.model.bugtask import get_bug_privacy_filter
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -103,7 +104,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceEdit,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
-from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
@@ -169,8 +169,8 @@ from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -1090,8 +1090,7 @@ class EditDistributionSourcePackage(AuthorizationBase):
     usedfor = IDistributionSourcePackage
 
 
-class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
-    AuthorizationBase):
+class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):
     """Product's owner and bug supervisor can set official bug tags."""
 
     permission = 'launchpad.BugSupervisor'
@@ -2247,26 +2246,6 @@ class BranchMergeProposalEdit(AuthorizationBase):
                 self.forwardCheckAuthenticated(
                     user, self.obj.target_branch) or
                 user.inTeam(self.obj.target_branch.reviewer))
-
-
-class ViewEntitlement(AuthorizationBase):
-    """Permissions to view IEntitlement objects.
-
-    Allow the owner of the entitlement, the entitlement registrant,
-    or any member of the team or any admin to view the entitlement.
-    """
-    permission = 'launchpad.View'
-    usedfor = IEntitlement
-
-    def checkAuthenticated(self, user):
-        """Is the user able to view an Entitlement attribute?
-
-        Any team member can edit a branch subscription for their team.
-        Launchpad Admins can also edit any branch subscription.
-        """
-        return (user.inTeam(self.obj.person) or
-                user.inTeam(self.obj.registrant) or
-                user.in_admin)
 
 
 class AdminDistroSeriesLanguagePacks(
