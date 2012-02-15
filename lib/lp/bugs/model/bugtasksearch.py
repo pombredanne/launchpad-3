@@ -1467,39 +1467,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     pillar_privacy_filters = ''
     if features.getFeatureFlag(
         'disclosure.private_bug_visibility_cte.enabled'):
-        if features.getFeatureFlag(
-            'disclosure.private_bug_visibility_rules.enabled'):
-            pillar_privacy_filters = """
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, Product
-                WHERE Product.owner IN (SELECT team FROM teams) AND
-                    BugTask.product = Product.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, ProductSeries
-                WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
-                    BugTask.productseries = ProductSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, Distribution
-                WHERE Distribution.owner IN (SELECT team FROM teams) AND
-                    BugTask.distribution = Distribution.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, DistroSeries, Distribution
-                WHERE Distribution.owner IN (SELECT team FROM teams) AND
-                    DistroSeries.distribution = Distribution.id AND
-                    BugTask.distroseries = DistroSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-            """
         query = """
             (%(public_bug_filter)s EXISTS (
                 WITH teams AS (
@@ -1522,43 +1489,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
                     public_bug_filter=public_bug_filter,
                     extra_filters=pillar_privacy_filters)
     else:
-        if features.getFeatureFlag(
-            'disclosure.private_bug_visibility_rules.enabled'):
-            pillar_privacy_filters = """
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, Product
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Product.owner AND
-                    BugTask.product = Product.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, ProductSeries
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = ProductSeries.owner AND
-                    BugTask.productseries = ProductSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, Distribution
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Distribution.owner AND
-                    BugTask.distribution = Distribution.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, DistroSeries, Distribution
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Distribution.owner AND
-                    DistroSeries.distribution = Distribution.id AND
-                    BugTask.distroseries = DistroSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-            """ % sqlvalues(personid=user.id)
         query = """
             (%(public_bug_filter)s EXISTS (
                 SELECT BugSubscription.bug
