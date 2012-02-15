@@ -1465,47 +1465,25 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
     pillar_privacy_filters = ''
-    if features.getFeatureFlag(
-        'disclosure.private_bug_visibility_cte.enabled'):
-        query = """
-            (%(public_bug_filter)s EXISTS (
-                WITH teams AS (
-                    SELECT team from TeamParticipation
-                    WHERE person = %(personid)s
-                )
-                SELECT BugSubscription.bug
-                FROM BugSubscription
-                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
-                    BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask
-                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                    BugTask.bug = Bug.id
-                %(extra_filters)s
-                    ))
-            """ % dict(
-                    personid=quote(user.id),
-                    public_bug_filter=public_bug_filter,
-                    extra_filters=pillar_privacy_filters)
-    else:
-        query = """
-            (%(public_bug_filter)s EXISTS (
-                SELECT BugSubscription.bug
-                FROM BugSubscription, TeamParticipation
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = BugSubscription.person AND
-                    BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = BugTask.assignee AND
-                    BugTask.bug = Bug.id
-                %(extra_filters)s
-                    ))
-            """ % dict(
-                    personid=quote(user.id),
-                    public_bug_filter=public_bug_filter,
-                    extra_filters=pillar_privacy_filters)
+    query = """
+        (%(public_bug_filter)s EXISTS (
+            WITH teams AS (
+                SELECT team from TeamParticipation
+                WHERE person = %(personid)s
+            )
+            SELECT BugSubscription.bug
+            FROM BugSubscription
+            WHERE BugSubscription.person IN (SELECT team FROM teams) AND
+                BugSubscription.bug = Bug.id
+            UNION ALL
+            SELECT BugTask.bug
+            FROM BugTask
+            WHERE BugTask.assignee IN (SELECT team FROM teams) AND
+                BugTask.bug = Bug.id
+            %(extra_filters)s
+                ))
+        """ % dict(
+                personid=quote(user.id),
+                public_bug_filter=public_bug_filter,
+                extra_filters=pillar_privacy_filters)
     return query, _make_cache_user_can_view_bug(user)
