@@ -130,33 +130,19 @@ represent the ancestry of a large branch.
 In particular, IBranch.getScannerData efficiently retrieves the BranchRevision
 data needed by the branch-scanner script.
 
-    >>> ancestry, history = branch.getScannerData()
+    >>> history = branch.getScannerData()
 
-The first return value is a set of revision_id strings for the full ancestry
-of the branch.
+The return value is a sequence of tuples with revision numbers and
+revision_ids.
 
-    >>> for revision_id in sorted(ancestry):
-    ...     print revision_id
-    foo@localhost-20051031165758-48acedf2b6a2e898
-    foo@localhost-20051031170008-098959758bf79803
-    foo@localhost-20051031170239-5fce7d6bd3f01efc
-    foo@localhost-20051031170357-1301ad6d387feb23
-    test@canonical.com-20051031165248-6f1bb97973c2b4f4
-    test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
-    test@canonical.com-20051031165532-3113df343e494daa
-    test@canonical.com-20051031165901-43b9644ec2eacc4e
-
-The second return value is a sequence of revision_id strings for the revision
-history of the branch.
-
-    >>> for revision_id in history:
-    ...     print revision_id
-    test@canonical.com-20051031165248-6f1bb97973c2b4f4
-    test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
-    foo@localhost-20051031165758-48acedf2b6a2e898
-    foo@localhost-20051031170008-098959758bf79803
-    foo@localhost-20051031170239-5fce7d6bd3f01efc
-    foo@localhost-20051031170357-1301ad6d387feb23
+    >>> for revno, revision_id in history:
+    ...     print "%d, %s" % (revno, revision_id)
+    6, foo@localhost-20051031170357-1301ad6d387feb23
+    5, foo@localhost-20051031170239-5fce7d6bd3f01efc
+    4, foo@localhost-20051031170008-098959758bf79803
+    3, foo@localhost-20051031165758-48acedf2b6a2e898
+    2, test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
+    1, test@canonical.com-20051031165248-6f1bb97973c2b4f4
 
 
 === Deleting BranchRevisions ===
