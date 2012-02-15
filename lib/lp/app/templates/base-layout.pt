@@ -204,12 +204,12 @@
     tal:condition="request/features/visible_render_time"
     define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
-  start_ajax_logging();
   var render_time = "${render_time}";
-  LPJS.use("node", function(Y) {
+  LPJS.use("node", "lp.ajax_log" , function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");
       node.set("innerHTML", render_time);
+      var ajax_log = new Y.lp.ajax_log();
     });
   });
 &lt;/script&gt;' />
