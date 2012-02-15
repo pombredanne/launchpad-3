@@ -142,8 +142,7 @@ inplace: build combobuild logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 	if [ -d /srv/launchpad.dev ]; then \
-		$(RM) $(CONVOY_ROOT); \
-		ln -s $(WD)/build/js $(CONVOY_ROOT); \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
