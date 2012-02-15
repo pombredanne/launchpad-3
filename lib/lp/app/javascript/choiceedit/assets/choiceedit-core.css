@@ -41,12 +41,17 @@
 .yui3-ichoicelist li a:focus {
   outline: black 1px dotted;
 }
-.yui3-ichoicelist .choice-description {
+.yui3-ichoicelist-content .choice-link {
+  padding: 0;
+}
+.yui3-ichoicelist-content .choice-description {
   font-weight: normal;
   padding: 0;
   color: #777;
-  text-decoration: none;
 }
-.yui3-ichoicelist .choice-description:hover {
+.yui3-ichoicelist-content .choice-link:hover {
+  text-decoration: underline;
+}
+.yui3-ichoicelist-content :link:hover {
   text-decoration: none;
 }
