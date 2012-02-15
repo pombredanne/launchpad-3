@@ -9,12 +9,14 @@ Setup
 
 Create a builder working on a TranslationTemplatesBuild for a branch.
 
+    >>> from testtools.monkey import patch
     >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.model.builder import BuilderSlave
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
     >>> from lp.testing.fakemethod import FakeMethod
@@ -51,7 +53,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     ...     fake_chroot)
 
     >>> builder = factory.makeBuilder(vm_host=factory.getUniqueString())
-    >>> builder.setSlaveForTesting(FakeSlave())
+    >>> _ = patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(FakeSlave()))
     >>> buildqueue.markAsBuilding(builder)
 
     >>> builder_page = canonical_url(builder)

@@ -23,10 +23,6 @@
   </head>
 
   <body>
-    <tal:heading metal:fill-slot="heading">
-      <h1 itemprop="name" tal:content="context/title">project title</h1>
-    </tal:heading>
-
     <tal:registering metal:fill-slot="registering">
         Registered by
         <a tal:replace="structure context/registrant/fmt:link" />
