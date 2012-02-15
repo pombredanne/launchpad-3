@@ -277,6 +277,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.enhanced_choice_popup.enabled',
+     'boolean',
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

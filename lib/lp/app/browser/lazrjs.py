@@ -37,6 +37,7 @@ from zope.security.checker import (
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -526,7 +527,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
 def vocabulary_to_choice_edit_items(
     vocab, css_class_prefix=None, disabled_items=None, as_json=False,
-    name_fn=None, value_fn=None):
+    name_fn=None, value_fn=None, description_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
 
     :vocab: The enumeration to iterate over.
@@ -552,9 +553,18 @@ def vocabulary_to_choice_edit_items(
             value = value_fn(item)
         else:
             value = item.title
+        if description_fn is None:
+            description_fn = lambda item: getattr(item, 'description', '')
+        description = ''
+        feature_flag = getFeatureFlag(
+            'disclosure.enhanced_choice_popup.enabled')
+        if feature_flag:
+            description = description_fn(item)
         new_item = {
             'name': name,
             'value': value,
+            'description': description,
+            'description_css_class': 'choice-description',
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
             if disabled_item == item:
