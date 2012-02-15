@@ -803,8 +803,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         url = get_default_bazaar_branch_store()._getMirrorURL(
             code_import.branch.id)
         branch = Branch.open(url)
-        self.assertEqual(
-            self.foreign_commit_count, len(branch.revision_history()))
+        self.assertEqual(self.foreign_commit_count, branch.revno())
 
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""

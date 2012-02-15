@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -52,6 +52,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -89,7 +90,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
@@ -97,7 +97,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
@@ -116,6 +115,7 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.errors import CommercialSubscribersOnly
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -130,6 +130,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -149,6 +150,10 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.security import (
+    BugTargetOwnerOrBugSupervisorOrAdmins,
+    ModerateByRegistryExpertsOrAdmins,
+    )
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -300,11 +305,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
@@ -377,7 +382,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    max_bug_heat = Int()
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
@@ -511,9 +515,45 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
+        """See `IProductPublic`."""
+        if user is not None:
+            person_roles = IPersonRoles(user)
+            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
+            moderator = moderator_check.checkAuthenticated(person_roles)
+            if moderator:
+                return True
+
+            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
+            bug_supervisor = (
+                bug_supervisor_check.checkAuthenticated(person_roles))
+            if (bug_supervisor and
+                    (not private_bugs
+                     or self.has_current_commercial_subscription)):
+                return
+        if private_bugs:
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
+        raise Unauthorized(
+            'Only bug supervisors can turn off default private bugs.')
+
+    def setPrivateBugs(self, private_bugs, user):
+        """ See `IProductEditRestricted`."""
+        if self.private_bugs == private_bugs:
+            return
+        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
+        self.private_bugs = private_bugs
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
+
+    @property
+    def has_current_commercial_subscription(self):
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return (self.commercial_subscription
+            and self.commercial_subscription.date_expires > now)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,

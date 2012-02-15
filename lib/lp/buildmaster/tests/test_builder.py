@@ -205,7 +205,7 @@ class TestBuilder(TestCaseWithFactory):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
@@ -370,7 +370,8 @@ class TestBuilder(TestCaseWithFactory):
         builder, build = self._setupBinaryBuildAndBuilder()
         candidate = build.queueBuild()
         building_slave = BuildingSlave()
-        builder.setSlaveForTesting(building_slave)
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(building_slave))
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
@@ -405,7 +406,7 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         d = builder.slaveStatus()
 
         def got_status(status_dict):
@@ -458,13 +459,15 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_slave_fault(self):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(BrokenSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
         d = builder.isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
         builder = self.factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         d = builder.isAvailable()
         return d.addCallback(self.assertTrue)
 

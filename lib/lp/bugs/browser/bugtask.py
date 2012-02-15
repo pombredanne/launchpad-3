@@ -220,6 +220,7 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -2776,13 +2777,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     field_name)
 
         orderby = get_sortorder_from_request(self.request)
-        bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
 
             try:
-                bugset.orderby_expression[orderby_col]
+                orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
