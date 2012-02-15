@@ -1268,7 +1268,7 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active private_bugs "/>
+            set_attributes="active"/>
 
         <!-- IHasAliases -->
 
