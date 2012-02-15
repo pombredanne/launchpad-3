@@ -278,6 +278,9 @@ class TeamFormMixin:
         if self.user and self.user.checkAllowVisibility():
             visibility = copy_field(ITeam['visibility'], readonly=False)
             self.form_fields += Fields(visibility)
+            # We'd like visibility near the top. Eyes closed, please.
+            field = self.form_fields.__FormFields_seq__.pop()
+            self.form_fields.__FormFields_seq__.insert(2, field)
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,

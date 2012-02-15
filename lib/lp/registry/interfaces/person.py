@@ -522,9 +522,6 @@ class PersonNameField(BlacklistableContentNameField):
     """
     errormessage = _("%s is already in use by another person or team.")
 
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
-
     @property
     def _content_iface(self):
         """Return the interface this field belongs to."""
