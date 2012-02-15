@@ -1548,10 +1548,15 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
-        search_results = self._doSearch(token)
-        for search_result in search_results:
-            if search_result.name == token:
-                return self.toTerm(search_result)
+        if self.is_commercial_admin:
+            project = self.product_set.getByName(token)
+            if project is not None and project.active:
+                return self.toTerm(project)
+        else:
+            search_results = self._doSearch(token)
+            for search_result in search_results:
+                if search_result.name == token:
+                    return self.toTerm(search_result)
         raise LookupError(token)
 
     def searchForTerms(self, query=None, vocab_filter=None):
@@ -1560,13 +1565,9 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         num = results.count()
         return CountableIterator(num, results, self.toTerm)
 
-    def _commercial_projects(self):
-        """Return the list of commercial projects owned by this user."""
-        return self._doSearch()
-
     def __iter__(self):
         """See `IVocabulary`."""
-        for proj in self._commercial_projects():
+        for proj in self._doSearch():
             yield self.toTerm(proj)
 
     def __contains__(self, project):

@@ -18,20 +18,9 @@ reported about that project will be private by default.
     >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
-
-However, the product's bug supervisor must be set, and if it is not, as is
-the case with Firefox, the user will get an error:
-
-    >>> admin_browser.open("http://launchpad.dev/firefox/+admin")
-    >>> admin_browser.getControl(name="field.private_bugs").value = True
-    >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.url
-    'http://launchpad.dev/firefox/+admin'
-    >>> for tag in find_tags_by_class(admin_browser.contents, "message"):
-    ...     print tag.renderContents()
-    There is 1 error.
-    <BLANKLINE>
-    Set a <a href="...+bugsupervisor">bug supervisor</a> for this project first.
+    >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
+    >>> admin_browser.getControl(name="field.private_bugs").value
+    True
 
 Filing a new bug
 ----------------
