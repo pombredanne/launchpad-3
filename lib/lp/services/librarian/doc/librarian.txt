@@ -130,29 +130,6 @@ or the https one, depending on a config value.
     ...     ) is not None
     True
 
-However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
-header in the request to 'http', even when 'use_https' is True.
-
-    >>> from zope.component import getMultiAdapter
-    >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> from urlparse import urlparse
-    >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'http'})
-    >>> view = getMultiAdapter((alias,request), name='+index')
-    >>> view.initialize()
-    >>> print urlparse(request.response.getHeader('Location'))[0]
-    http
-
-When the incoming scheme is 'https' then the redirect scheme is
-unaffected.
-
-    >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME': 'https'})
-    >>> view = getMultiAdapter((alias,request), name='+index')
-    >>> view.initialize()
-    >>> print urlparse(request.response.getHeader('Location'))[0]
-    https
-
 Reset 'use_https' to its original state.
 
     >>> test_config_data = config.pop('test')
@@ -371,6 +348,7 @@ LibraryFileAliasView doesn't work on restricted files. This is a
 temporary measure until we're sure no restricted files leak into the
 traversal hierarchy.
 
+    >>> from zope.component import getMultiAdapter
     >>> view = getMultiAdapter((file_alias, request), name='+index')
     >>> view.initialize()
     Traceback (most recent call last):
@@ -568,7 +546,6 @@ Default View
 A librarian file has a default view that should redirect to the download
 URL.
 
-    >>> from zope.component import getMultiAdapter
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(

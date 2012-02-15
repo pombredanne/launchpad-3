@@ -11,6 +11,8 @@ __all__ = [
     'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'IHasStanding',
     'IObjectReassignment',
     'IPerson',
@@ -18,11 +20,11 @@ __all__ = [
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -44,6 +46,8 @@ __all__ = [
     'validate_subscription_policy',
     ]
 
+import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -54,6 +58,7 @@ from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
@@ -61,6 +66,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -690,9 +696,39 @@ class IPersonPublic(IPrivacy):
     account_status_comment = Text(
         title=_("Why are you deactivating your account?"), required=False,
         readonly=True)
+    visibility = exported(
+        Choice(title=_("Visibility"),
+               description=_(
+                   "Public visibility is standard.  "
+                   "Private means the team is completely "
+                   "hidden."),
+               required=True, vocabulary=PersonVisibility,
+               default=PersonVisibility.PUBLIC, readonly=True))
 
     def anyone_can_join():
         """Quick check as to whether a team allows anyone to join."""
+
+    def checkAllowVisibility():
+        """Is the user allowed to see the visibility field.
+
+        :param: The user.
+        :return: True if they can, otherwise False.
+        """
+
+    @mutator_for(visibility)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(visibility=copy_field(visibility))
+    @export_write_operation()
+    @operation_for_version("beta")
+    def transitionVisibility(visibility, user):
+        """Set visibility of IPerson.
+    
+        :param visibility: The PersonVisibility to change to.
+        :param user: The user requesting the change.
+        :raises: `ImmutableVisibilityError` when the visibility can not
+            be changed.
+        :return: None.
+        """
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -987,8 +1023,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             readonly=True, required=False,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
-
-    entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
@@ -1801,19 +1835,6 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonCommAdminWriteRestricted(Interface):
-    """IPerson attributes that require launchpad.Admin permission to set."""
-
-    visibility = exported(
-        Choice(title=_("Visibility"),
-               description=_(
-                   "Public visibility is standard.  "
-                   "Private means the team is completely "
-                   "hidden."),
-               required=True, vocabulary=PersonVisibility,
-               default=PersonVisibility.PUBLIC))
-
-
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
@@ -1873,9 +1894,8 @@ class IPersonSpecialRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonCommAdminWriteRestricted,
-              IPersonSpecialRestricted, IHasStanding, ISetLocation,
-              IRootContext):
+              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
+              ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2305,9 +2325,6 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
-
     def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
@@ -2532,10 +2549,22 @@ class ISoftwareCenterAgentAPI(Interface):
         """
 
 
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
+
+
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
+@error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
 
