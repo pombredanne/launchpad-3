@@ -142,10 +142,10 @@ inplace: build combobuild logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 	if [ -d /srv/launchpad.dev ]; then \
-		ln -sf $(WD)/build/js $(CONVOY_ROOT); \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
 
-build: compile apidoc jsbuild combobuild css_combine sprite_image
+build: compile apidoc jsbuild css_combine sprite_image
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
@@ -189,9 +189,11 @@ else
 endif
 
 combobuild:
-	bin/combo-rootdir build/js
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in

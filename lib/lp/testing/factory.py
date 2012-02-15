@@ -535,9 +535,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         administrators.addMember(user, administrators.teamowner)
         return user
 
+    @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        from lp.testing.sampledata import ADMIN_EMAIL
-        login(ADMIN_EMAIL)
         user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)

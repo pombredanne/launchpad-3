@@ -103,6 +103,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.error.interfaces import IErrorReportingUtility
+from zope.formlib import form
 from zope.formlib.form import FormFields
 from zope.interface import (
     classImplements,
@@ -2139,9 +2140,26 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def redeemable_vouchers(self):
-        """Get the redeemable vouchers owned by the user."""
-        vouchers = self.context.getRedeemableCommercialSubscriptionVouchers()
+        """Get the list redeemable vouchers owned by the user."""
+        vouchers = [
+            voucher for voucher in
+            self.context.getRedeemableCommercialSubscriptionVouchers()]
         return vouchers
+
+    def removeRedeemableVoucher(self, voucher):
+        """Remove the voucher from the cached list of redeemable vouchers.
+
+        Updated the voucher field and widget so that the form can be reused.
+        """
+        vouchers = get_property_cache(self).redeemable_vouchers
+        vouchers.remove(voucher)
+        # Setup the fields and widgets again, but withut the submitted data.
+        self.form_fields = (
+            self.createProjectField() + self.createVoucherField())
+        self.widgets = form.setUpWidgets(
+            self.form_fields.select('project', 'voucher'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=True)
 
     @cachedproperty
     def has_commercial_projects(self):
@@ -2178,10 +2196,7 @@ class PersonVouchersView(LaunchpadFormView):
                 subscription_months=voucher.term_months)
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is
-            # not displayed again (since the field has already been
-            # created).
-            self.next_url = self.request.URL
+            self.removeRedeemableVoucher(voucher)
         except SalesforceVoucherProxyException, error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))

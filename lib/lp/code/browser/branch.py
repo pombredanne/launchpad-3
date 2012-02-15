@@ -1372,7 +1372,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
-            self.next_url = canonical_url(proposal)
             if len(visible_branches) < 2:
                 invisible_branches = [branch.unique_name
                             for branch in [source_branch, target_branch]
@@ -1381,6 +1380,14 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'To ensure visibility, %s is now subscribed to: %s'
                     % (visibility_info['person_name'],
                        english_list(invisible_branches)))
+            # Success so we do a client redirect to the new mp page.
+            if self.request.is_ajax:
+                self.request.response.setStatus(201)
+                self.request.response.setHeader(
+                    'Location', canonical_url(proposal))
+                return None
+            else:
+                self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
 

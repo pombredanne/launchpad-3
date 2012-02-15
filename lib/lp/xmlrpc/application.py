@@ -27,7 +27,10 @@ from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
+from lp.registry.interfaces.person import (
+    ICanonicalSSOApplication,
+    ISoftwareCenterAgentApplication,
+    )
 from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
 from lp.services.webapp import LaunchpadXMLRPCView
@@ -68,6 +71,11 @@ class PrivateApplication:
     def softwarecenteragent(self):
         """See `IPrivateApplication`."""
         return getUtility(ISoftwareCenterAgentApplication)
+
+    @property
+    def canonicalsso(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ICanonicalSSOApplication)
 
     @property
     def featureflags(self):
