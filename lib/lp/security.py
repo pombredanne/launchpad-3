@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugTargetOwnerOrBugSupervisorOrAdmins',
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
@@ -1089,8 +1090,7 @@ class EditDistributionSourcePackage(AuthorizationBase):
     usedfor = IDistributionSourcePackage
 
 
-class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
-    AuthorizationBase):
+class BugTargetOwnerOrBugSupervisorOrAdmins(AuthorizationBase):
     """Product's owner and bug supervisor can set official bug tags."""
 
     permission = 'launchpad.BugSupervisor'
