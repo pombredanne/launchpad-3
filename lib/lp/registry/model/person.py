@@ -243,6 +243,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -289,6 +290,7 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
@@ -593,7 +595,6 @@ class Person(
     _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
-    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC,
@@ -3062,6 +3063,25 @@ class Person(
         """See `IPerson.`"""
         return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
+    def checkAllowVisibility(self):
+        feature_flag = getFeatureFlag(
+            'disclosure.show_visibility_for_team_add.enabled')
+        if feature_flag:
+            if self.hasCurrentCommercialSubscription():
+                return True
+        else:
+            if check_permission('launchpad.Commercial', self):
+                return True
+        return False
+
+    def transitionVisibility(self, visibility, user):
+        if self.visibility == visibility:
+            return
+        validate_person_visibility(self, 'visibility', visibility)
+        if not user.checkAllowVisibility():
+            raise ImmutableVisibilityError()
+        self.visibility = visibility
+
 
 class PersonSet:
     """The set of persons."""
@@ -3532,18 +3552,6 @@ class PersonSet:
         ).find(
             (EmailAddress, Person),
             EmailAddress.email.lower().is_in(addresses), extra_query)
-
-    def latest_teams(self, limit=5):
-        """See `IPersonSet`."""
-        orderby = (Desc(Person.datecreated), Desc(Person.id))
-        result = IStore(Person).find(
-            Person,
-            And(
-                self._teamPrivacyQuery(),
-                TeamParticipation.team == Person.id,
-                Person.teamowner != None,
-                Person.merged == None))
-        return result.order_by(orderby).config(distinct=True)[:limit]
 
     def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
