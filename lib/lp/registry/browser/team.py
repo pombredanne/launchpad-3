@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -43,15 +43,19 @@ from datetime import (
 import math
 from urllib import unquote
 
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import simplejson
 import pytz
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.formlib import form
-from zope.formlib.form import FormFields
+from zope.formlib.form import (
+    Fields,
+    FormField,
+    FormFields,
+    )
 from zope.interface import (
     classImplements,
     implements,
@@ -221,8 +225,11 @@ class HasRenewalPolicyMixin:
 class TeamFormMixin:
     """Form to be used on forms which conditionally display team visibility.
 
-    The visibility field should only be shown to users with
-    launchpad.Commercial permission on the team.
+    The visibility field is shown if
+    * The user has launchpad.Commercial permission.
+    * Or the feature flag
+    disclosure.show_visibility_for_team_add.enabled is on, and the user has
+    a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -265,10 +272,12 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def conditionallyOmitVisibility(self):
-        """Remove the visibility field if not authorized."""
-        if not check_permission('launchpad.Commercial', self.context):
-            self.form_fields = self.form_fields.omit('visibility')
+    def setUpVisibilityField(self):
+        """Set the visibility field to read-write, or remove it."""
+        self.form_fields = self.form_fields.omit('visibility')
+        if self.user and self.user.checkAllowVisibility():
+            visibility = copy_field(ITeam['visibility'], readonly=False)
+            self.form_fields += Fields(visibility)
 
 
 class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
@@ -301,7 +310,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.setUpVisibilityField()
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
@@ -339,6 +348,10 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
     @action('Save', name='save')
     def action_save(self, action, data):
         try:
+            visibility = data.get('visibility')
+            if visibility:
+                self.context.transitionVisibility(visibility, self.user)
+                del data['visibility']
             self.updateContextFromData(data)
         except ImmutableVisibilityError, error:
             self.request.response.addErrorNotification(str(error))
@@ -440,7 +453,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
         # Replace the default contact_method field by a custom one.
         self.form_fields = (
-            form.FormFields(self.getContactMethodField())
+            FormFields(self.getContactMethodField())
             + self.form_fields.omit('contact_method'))
 
     def getContactMethodField(self):
@@ -473,7 +486,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # field.
             del terms[hosted_list_term_index]
 
-        return form.FormField(
+        return FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact this team's members?"),
                    required=True, vocabulary=SimpleVocabulary(terms)))
@@ -979,9 +992,9 @@ class TeamMailingListArchiveView(LaunchpadView):
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
 
+    schema = ITeamCreation
     page_title = 'Register a new team in Launchpad'
     label = page_title
-    schema = ITeamCreation
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -997,7 +1010,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         Only Launchpad Admins get to see the visibility field.
         """
         super(TeamAddView, self).setUpFields()
-        self.conditionallyOmitVisibility()
+        self.setUpVisibilityField()
 
     @action('Create Team', name='create')
     def create_action(self, action, data):
@@ -1013,7 +1026,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
-            team.visibility = visibility
+            team.transitionVisibility(visibility, self.user)
+            del data['visibility']
         email = data.get('contactemail')
         if email is not None:
             generateTokenAndValidationEmail(email, team)
@@ -1244,7 +1258,7 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMap(
                             %(min_lat)s, %(max_lat)s, %(min_lng)s,
@@ -1259,7 +1273,7 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPJS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderTeamMapSmall(
                             %(center_lat)s, %(center_lng)s);

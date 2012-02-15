@@ -889,19 +889,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def getScannerData():
-        """Retrieve the full ancestry of a branch for the branch scanner.
+        """Retrieve the full history of a branch for the branch scanner.
 
         The branch scanner script is the only place where we need to retrieve
-        all the BranchRevision rows for a branch. Since the ancestry of some
+        all the BranchRevision rows for a branch. Since the history of some
         branches is into the tens of thousands we don't want to materialise
         BranchRevision instances for each of these.
 
-        :return: tuple of three items.
-            1. Ancestry set of bzr revision-ids.
-            2. History list of bzr revision-ids. Similar to the result of
-               bzrlib.Branch.revision_history().
-            3. Dictionnary mapping bzr bzr revision-ids to the database ids of
-               the corresponding BranchRevision rows for this branch.
+        :return: Iterator over bzr revision-ids in history, newest first.
         """
 
     def getInternalBzrUrl():
@@ -1339,6 +1334,37 @@ class IBranchSet(Interface):
         :param eager_load: If True (the default because this is used in the
             web service and it needs the related objects to create links)
             eager load related objects (products, code imports etc).
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose branch visibility is being "
+                    "checked."),
+            schema=IPerson),
+        branch_names=List(value_type=Text(),
+            title=_('List of branch unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBranchVisibilityInfo(user, person, branch_names):
+        """Return the named branches visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param person: The person whose branch visibility we wish to check.
+        :param branch_names: The unique names of the branches to check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_branches: a list of the unique names of the branches which
+        the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript. It is not
+        designed to efficiently scale to handle requests for large numbers of
+        branches.
         """
 
 

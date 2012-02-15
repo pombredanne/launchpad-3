@@ -32,16 +32,10 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
@@ -192,7 +186,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return self.distribution.owner
 
 
-class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
+class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
                     HasDriversMixin):
@@ -204,7 +198,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IBugSummaryDimension, ISourcePackage, IHasBuildRecords,
         ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
@@ -522,11 +516,6 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             And(BugSummary.distroseries == self.distroseries,
                 BugSummary.sourcepackagename == self.sourcepackagename),
             user, tag_limit=tag_limit, include_tags=include_tags)
-
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.distribution_sourcepackage.max_bug_heat
 
     @property
     def drivers(self):

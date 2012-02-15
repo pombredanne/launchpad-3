@@ -30,4 +30,7 @@ class IPrivateApplication(ILaunchpadApplication):
     softwarecenteragent = Attribute(
         """Software center agent XML-RPC end point.""")
 
+    canonicalsso = Attribute(
+        """Canonical SSO XML-RPC end point.""")
+
     featureflags = Attribute("""Feature flag information endpoint""")

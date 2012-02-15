@@ -125,7 +125,15 @@
             }
         }">
    </script>
+
   </tal:js-loader>
+  <script type="text/javascript">
+      // we need this to create a single YUI instance all events and code
+      // talks across. All instances of YUI().use should be based off of
+      // LPJS instead.
+      LPJS = new YUI();
+  </script>
+
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
@@ -140,7 +148,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
     <script id="base-layout-load-scripts" type="text/javascript">
-        YUI().use('base', 'node', 'console', 'event',
+        LPJS.use('base', 'node', 'console', 'event',
             'oop', 'lp', 'lp.app.privacy',
             'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
@@ -185,7 +193,7 @@
             // registers a function to fire onload.
             // Use this for initilaizing any javascript that should fire once the page
             // has been loaded.
-            YUI().use('node', function(Y) {
+            LPJS.use('node', function(Y) {
                 Y.on('load', function(e) {
                     func();
                 }, window);
@@ -222,7 +230,7 @@
                             node.focus();
                         }
                     } catch (e) {
-                        YUI().use('console', function(Y) {
+                        LPJS.use('console', function(Y) {
                             Y.log('In setFocusByName(<' +
                                 node.tagName + ' type=' + node.type + '>): ' + e);
                         });

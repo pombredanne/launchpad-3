@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to represent a single machine instance in EC2."""
@@ -145,6 +145,10 @@ echo '
 127.0.0.99      bazaar.launchpad.dev
 ' >> /etc/hosts
 
+# If this is uncommented, postgresql 9.1 will be explicitly installed
+# before other versisons and end up on port 5432, overriding the version
+# of postgresql specified in launchpad-database-dependencies.
+## apt-get -y install postgresql-9.1 postgresql-9.1-debversion postgresql-client-9.1 postgresql-contrib-9.1 postgresql-plpython-9.1 postgresql-server-dev-9.1 postgresql-doc-9.1
 apt-get -y install launchpad-developer-dependencies apache2 apache2-mpm-worker
 
 # Create the ec2test user, give them passwordless sudo.

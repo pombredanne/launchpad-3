@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DataDownloadView',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -219,6 +220,29 @@ class redirection:
             setattr(cls, '__redirections__', redirections)
         redirections[self.fromname] = (self.toname, self.status)
         return cls
+
+
+class DataDownloadView:
+    """Download data without templating.
+
+    Subclasses must provide getBody, content_type and filename.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Set the headers and return the body.
+
+        It is not necessary to supply Content-length, because this is added by
+        the caller.
+        """
+        self.request.response.setHeader('Content-Type', self.content_type)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % (
+             self.filename))
+        return self.getBody()
 
 
 class UserAttributeCache:

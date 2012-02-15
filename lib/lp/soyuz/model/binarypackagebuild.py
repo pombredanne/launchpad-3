@@ -982,7 +982,7 @@ class BinaryPackageBuildSet:
                         SourcePackageRelease.id AND
                     SourcePackageRelease.sourcepackagename =
                         SourcePackageName.id
-                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                    AND SourcepackageName.name LIKE '%%%%' || %s || '%%%%'
                 ''' % quote_like(name))
             else:
                 queries.append('''

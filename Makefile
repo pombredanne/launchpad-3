@@ -142,7 +142,7 @@ inplace: build combobuild logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 	if [ -d /srv/launchpad.dev ]; then \
-		ln -sf $(WD)/build/js $(CONVOY_ROOT); \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
@@ -189,9 +189,11 @@ else
 endif
 
 combobuild:
-	bin/combo-rootdir build/js
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -266,7 +268,8 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
 run-testapp: build inplace stop
@@ -283,8 +286,8 @@ start-gdb: build inplace stop support_files run.gdb
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq,txlongpoll \
-	 -i $(LPCONFIG)
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -372,6 +375,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) _pythonpath.py
 	$(RM) -r yui/*
+	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request

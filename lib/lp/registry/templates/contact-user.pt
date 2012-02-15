@@ -17,7 +17,7 @@
             specified below.  If you do not want
             <tal:person
              tal:content="context/displayname">Anne Person</tal:person>
-            to know your email address, hit
+            to know your email address,
             <a href="" tal:attributes="href view/cancel_url">Cancel</a> now.
             </p>
           </div>

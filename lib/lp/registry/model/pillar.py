@@ -116,19 +116,20 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-
         # Retrieve information out of the PillarName table.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+            WHERE (id = (SELECT alias_for FROM PillarName WHERE name=?)
                    OR name=?)
-                AND alias_for IS NULL
+                AND alias_for IS NULL%s
+            LIMIT 1
             """
         if ignore_inactive:
-            query += " AND active IS TRUE"
+            query %= " AND active IS TRUE"
+        else:
+            query %= ""
         name = ensure_unicode(name)
         result = store.execute(query, [name, name])
         row = result.get_one()

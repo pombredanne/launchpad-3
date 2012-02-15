@@ -1242,3 +1242,18 @@ class TestQueueToolInJail(TestQueueBase, TestCase):
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes', 'netapplet-1.0.0.tar.gz'],
             files)
+
+    def testFetchWithoutChanges(self):
+        """Check that fetch works without a changes file (eg. from gina)."""
+        pus = getUtility(IDistributionSet).getByName('ubuntu').getSeries(
+            'breezy-autotest').getPackageUploads(name=u'pmount')
+        for pu in pus:
+            removeSecurityProxy(pu).changesfile = None
+
+        FAKE_DEB_CONTENT = "Fake DEB"
+        fillLibrarianFile(90, FAKE_DEB_CONTENT)
+        self.execute_command('fetch pmount')
+
+        # Check the files' names.
+        files = sorted(self._listfiles())
+        self.assertEqual(['pmount_1.0-1_all.deb'], files)

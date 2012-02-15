@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -207,6 +207,7 @@ from lp.registry.interfaces.sourcepackage import (
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.config import config
@@ -534,9 +535,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         administrators.addMember(user, administrators.teamowner)
         return user
 
+    @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        from lp.testing.sampledata import ADMIN_EMAIL
-        login(ADMIN_EMAIL)
         user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
@@ -2323,9 +2323,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
-        return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent,
-            _date_created=date_created)
+        with person_logged_in(sender):
+            return merge_proposal.createComment(
+                sender, subject, body, vote, vote_tag, parent,
+                _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
@@ -4387,6 +4388,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Content-Disposition': 'attachment; filename="%s"' % filename
             }
         return fileupload
+
+    def makeCommercialSubscription(self, product, expired=False):
+        """Create a commercial subscription for the given product."""
+        if expired:
+            expiry = datetime.now(pytz.UTC) - timedelta(days=1)
+        else:
+            expiry = datetime.now(pytz.UTC) + timedelta(days=30)
+        CommercialSubscription(
+            product=product,
+            date_starts=datetime.now(pytz.UTC) - timedelta(days=90),
+            date_expires=expiry,
+            registrant=product.owner,
+            purchaser=product.owner,
+            sales_system_id='new',
+            whiteboard='')
 
 
 # Some factory methods return simple Python types. We don't add
