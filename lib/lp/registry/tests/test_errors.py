@@ -28,6 +28,7 @@ from lp.registry.errors import (
     UserCannotChangeMembershipSilently,
     UserCannotSubscribePerson,
     )
+from lp.registry.interfaces.person import ImmutableVisibilityError
 from lp.testing import TestCase
 from lp.testing.layers import FunctionalLayer
 from lp.testing.views import create_webservice_error_view
@@ -90,3 +91,8 @@ class TestWebServiceErrors(TestCase):
     def test_NameAlreadyTaken_bad_request(self):
         error_view = create_webservice_error_view(NameAlreadyTaken())
         self.assertEqual(CONFLICT, error_view.status)
+
+    def test_ImmutableVisibilityError_forbidden(self):
+        error_view = create_webservice_error_view(
+            ImmutableVisibilityError())
+        self.assertEqual(FORBIDDEN, error_view.status)

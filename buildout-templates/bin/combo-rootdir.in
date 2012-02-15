@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 set -e
 
 if [ -z "$1" ]; then
@@ -9,25 +12,25 @@ fi
 
 BUILD_DIR=$1
 
-if [ -d "$BUILD_DIR/lp" ]; then
-    echo "$0: Assuming build dir is up-to-date."
-    exit 0
+# Populate YUI.
+if [ ! -h $BUILD_DIR/yui ]; then
+    ln -sf yui-${versions:yui} $BUILD_DIR/yui
 fi
 
-# Populate YUI.
-ln -sf yui-${versions:yui} $BUILD_DIR/yui
-
 # And YUI 2, for now.
-cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
+if [ ! -d $BUILD_DIR/yui2 ]; then
+    cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
+fi
 
 # Copy in our modules.
+rm -rf $BUILD_DIR/lp
 mkdir $BUILD_DIR/lp
 for jsdir in lib/lp/*/javascript ; do
     app=$(echo $jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,')
     cp -a $jsdir $BUILD_DIR/lp/$app
 done
 # ... and delete tests.
-find $BUILD_DIR -name 'tests' -type d | xargs rm -rf
+find $BUILD_DIR/lp -name 'tests' -type d | xargs rm -rf
 
 # We have to move some modules around.
 cp lib/lp/contrib/javascript/lp.mustache.js $BUILD_DIR/lp

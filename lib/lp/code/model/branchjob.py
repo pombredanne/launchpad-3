@@ -464,6 +464,7 @@ class RevisionsAddedJob(BranchJobDerived):
         super(RevisionsAddedJob, self).__init__(context)
         self._bzr_branch = None
         self._tree_cache = {}
+        self._author_display_cache = {}
 
     @property
     def bzr_branch(self):
@@ -485,16 +486,20 @@ class RevisionsAddedJob(BranchJobDerived):
 
     def iterAddedMainline(self):
         """Iterate through revisions added to the mainline."""
-        repository = self.bzr_branch.repository
-        added_revisions = repository.get_graph().find_unique_ancestors(
-            self.last_revision_id, [self.last_scanned_id])
+        graph = self.bzr_branch.repository.get_graph()
+        branch_last_revinfo = self.bzr_branch.last_revision_info()
+        # Find the revision number matching self.last_revision_id.
+        last_revno = graph.find_distance_to_null(
+            self.last_revision_id,
+            [(branch_last_revinfo[1], branch_last_revinfo[0])])
+        added_revisions = graph.find_unique_ancestors(
+            self.last_revision_id, [self.last_scanned_id, NULL_REVISION])
         # Avoid hitting the database since bzrlib makes it easy to check.
-        # There are possibly more efficient ways to get the mainline
-        # revisions, but this is simple and it works.
-        history = self.bzr_branch.revision_history()
-        for num, revid in enumerate(history):
+        history = graph.iter_lefthand_ancestry(
+            self.last_revision_id, [NULL_REVISION, self.last_scanned_id, None])
+        for distance, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num + 1
+                yield revid, last_revno - distance
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -515,8 +520,11 @@ class RevisionsAddedJob(BranchJobDerived):
 
         self.bzr_branch.lock_read()
         try:
-            for revision, revno in self.iterAddedMainline():
+            for revision_id, revno in reversed(
+                    list(self.iterAddedMainline())):
                 assert revno is not None
+                revision = self.bzr_branch.repository.get_revision(
+                    revision_id)
                 mailer = self.getMailerForRevision(
                     revision, revno, self.generateDiffs())
                 mailer.sendAll()
@@ -644,6 +652,27 @@ class RevisionsAddedJob(BranchJobDerived):
             [proposal for proposal, date_created in proposals.itervalues()],
             key=operator.attrgetter('date_created'), reverse=True)
 
+    def getAuthorDisplayName(self, author):
+        """Get the display name for an author.
+
+        This caches the result.
+
+        :param author: Author text as found in the bzr revision
+        :return: Prettified author name
+        """
+        try:
+            return self._author_display_cache[author]
+        except KeyError:
+            pass
+        revision_set = RevisionSet()
+        rev_author = revision_set.acquireRevisionAuthor(author)
+        if rev_author.person is None:
+            displayname = rev_author.name
+        else:
+            displayname = rev_author.person.unique_displayname
+        self._author_display_cache[author] = displayname
+        return displayname
+
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
 
@@ -655,18 +684,11 @@ class RevisionsAddedJob(BranchJobDerived):
         try:
             graph = self.bzr_branch.repository.get_graph()
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
-            authors = self.getAuthors(merged_revisions, graph)
-            revision_set = RevisionSet()
-            rev_authors = set(revision_set.acquireRevisionAuthor(author) for
-                              author in authors)
             outf = StringIO()
-            pretty_authors = []
-            for rev_author in rev_authors:
-                if rev_author.person is None:
-                    displayname = rev_author.name
-                else:
-                    displayname = rev_author.person.unique_displayname
-                pretty_authors.append('  %s' % displayname)
+            authors = self.getAuthors(merged_revisions, graph)
+            pretty_authors = list(set([
+                '  %s' % self.getAuthorDisplayName(author) for author in
+                authors]))
 
             if len(pretty_authors) > 0:
                 outf.write('Merge authors:\n')

@@ -10,7 +10,8 @@
   <form action="/+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
     <a
-      href="javascript:removeElementClass(document.getElementById('debug_timeline'),'hidden')"
+      href="javascript:void(0)"
+      onclick="window.scrollTo(0, LPJS.one('#debug_timeline').toggleClass('hidden').getXY()[1])"
       tal:condition="request/features/visible_render_time"
       >
       <div id="rendertime">Loading...</div>

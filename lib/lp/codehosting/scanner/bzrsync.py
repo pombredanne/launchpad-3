@@ -16,6 +16,7 @@ __all__ = [
 
 import logging
 
+from bzrlib.errors import NoSuchRevision
 from bzrlib.graph import DictParentsProvider
 from bzrlib.revision import NULL_REVISION
 import pytz
@@ -84,16 +85,16 @@ class BzrSync:
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
-        bzr_history = bzr_branch.revision_history()
+        last_revision_info = bzr_branch.last_revision_info()
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        db_ancestry, db_history = self.retrieveDatabaseAncestry()
+        db_history = self.retrieveDatabaseAncestry()
 
         (new_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_history, db_ancestry, db_history)
+            bzr_branch, last_revision_info, db_history)
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
@@ -115,7 +116,7 @@ class BzrSync:
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
-        initial_scan = (len(db_history) == 0)
+        initial_scan = (self.db_branch.last_scanned_id is None)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
         # The Branch table is modified by other systems, including the web UI,
@@ -125,7 +126,7 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
-        self.updateBranchStatus(bzr_history)
+        self.updateBranchStatus(last_revision_info)
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, self.logger, new_ancestry))
@@ -134,8 +135,7 @@ class BzrSync:
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        db_ancestry, db_history = self.db_branch.getScannerData()
-        return db_ancestry, db_history
+        return self.db_branch.getScannerData()
 
     def _getRevisionGraph(self, bzr_branch, db_last):
         if bzr_branch.repository.has_revision(db_last):
@@ -155,42 +155,32 @@ class BzrSync:
 
         return bzr_branch.repository.get_graph(PPSource)
 
-    def getAncestryDelta(self, bzr_branch):
-        bzr_last = bzr_branch.last_revision()
-        db_last = self.db_branch.last_scanned_id
-        if db_last is None:
-            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
-            added_ancestry.discard(None)
-            removed_ancestry = set()
-        else:
-            graph = self._getRevisionGraph(bzr_branch, db_last)
-            added_ancestry, removed_ancestry = (
-                graph.find_difference(bzr_last, db_last))
-            added_ancestry.discard(NULL_REVISION)
+    def getAncestryDelta(self, bzr_branch, bzr_last_revinfo, graph, db_last):
+        added_ancestry, removed_ancestry = graph.find_difference(
+            bzr_last_revinfo[1], db_last)
+        added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
-    def getHistoryDelta(self, bzr_history, db_history):
+    def getHistoryDelta(self, bzr_branch, bzr_last_revinfo, graph, db_history):
         self.logger.info("Calculating history delta.")
-        common_len = min(len(bzr_history), len(db_history))
-        while common_len > 0:
-            # The outer conditional improves efficiency. Without it, the
-            # algorithm is O(history-size * change-size), which can be
-            # excessive if a long branch is replaced by another long branch
-            # with a distant (or no) common mainline parent. The inner
-            # conditional is needed for correctness with branches where the
-            # history does not follow the line of leftmost parents.
-            if db_history[common_len - 1] == bzr_history[common_len - 1]:
-                if db_history[:common_len] == bzr_history[:common_len]:
+        removed_history = []
+        common_revid = NULL_REVISION
+        for (revno, revid) in db_history:
+            try:
+                if bzr_branch.get_rev_id(revno) == revid:
+                    common_revid = revid
+                    common_len = revno
                     break
-            common_len -= 1
+            except NoSuchRevision:
+                pass
+            removed_history.append(revid)
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
-        removed_history = db_history[common_len:]
-        added_history = bzr_history[common_len:]
+        added_history = list(graph.iter_lefthand_ancestry(bzr_last_revinfo[1],
+            (common_revid, )))
         return added_history, removed_history
 
-    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
-                            db_history):
+    def planDatabaseChanges(self, bzr_branch, bzr_last_revinfo, db_history):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
@@ -198,9 +188,18 @@ class BzrSync:
         """
         self.logger.info("Planning changes.")
         # Find the length of the common history.
-        added_history, removed_history = self.getHistoryDelta(
-            bzr_history, db_history)
-        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
+        db_last = self.db_branch.last_scanned_id
+        if db_last is None:
+            db_last = NULL_REVISION
+        graph = self._getRevisionGraph(bzr_branch, db_last)
+        bzr_branch.lock_read()
+        try:
+            added_history, removed_history = self.getHistoryDelta(
+                bzr_branch, bzr_last_revinfo, graph, db_history)
+            added_ancestry, removed_ancestry = self.getAncestryDelta(
+                bzr_branch, bzr_last_revinfo, graph, db_last)
+        finally:
+            bzr_branch.unlock()
 
         notify(
             events.RevisionsRemoved(
@@ -215,10 +214,9 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
-        last_revno = len(bzr_history)
         revids_to_insert = dict(
             self.revisionsToInsert(
-                added_history, last_revno, added_ancestry))
+                added_history, bzr_last_revinfo[0], added_ancestry))
         # We must remove any stray BranchRevisions that happen to already be
         # present.
         existing_branchrevisions = Store.of(self.db_branch).find(
@@ -236,8 +234,8 @@ class BzrSync:
         :param revisions: the set of Bazaar revision IDs to return bzrlib
             Revision objects for.
         """
-        revisions = bzr_branch.repository.get_parent_map(revisions)
-        return bzr_branch.repository.get_revisions(revisions.keys())
+        revisions = list(bzr_branch.repository.has_revisions(revisions))
+        return bzr_branch.repository.get_revisions(revisions)
 
     def syncOneRevision(self, bzr_branch, bzr_revision, revids_to_insert):
         """Import the revision with the given revision_id.
@@ -263,13 +261,13 @@ class BzrSync:
         """Calculate the revisions to insert and their revnos.
 
         :param added_history: A list of revision ids added to the revision
-            history in parent-to-child order.
+            history in child-to-parent order.
         :param last_revno: The revno of the last revision.
         :param added_ancestry: A set of revisions that have been added to the
             ancestry of the branch.  May overlap with added_history.
         """
         start_revno = last_revno - len(added_history) + 1
-        for (revno, revision_id) in enumerate(added_history, start_revno):
+        for (revno, revision_id) in enumerate(reversed(added_history), start_revno):
             yield revision_id, revno
         for revision_id in added_ancestry.difference(added_history):
             yield revision_id, None
@@ -296,12 +294,10 @@ class BzrSync:
         for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
-    def updateBranchStatus(self, bzr_history):
+    def updateBranchStatus(self, (revision_count, last_revision)):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        revision_count = len(bzr_history)
         if revision_count > 0:
-            last_revision = bzr_history[-1]
             revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
         else:
             revision = None
