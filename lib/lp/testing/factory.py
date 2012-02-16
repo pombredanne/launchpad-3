@@ -142,6 +142,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
+    IAccessArtifactGrantSource,
     IAccessArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -4360,15 +4361,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(artifact).flush()
         return artifact
 
-    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+    def makeAccessArtifactGrant(self, artifact=None, grantee=None,
+                                grantor=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:
             grantor = self.makePerson()
-        if object is None:
-            object = self.makeAccessPolicy()
+        grant = getUtility(IAccessArtifactGrantSource).grant(
+            artifact, grantee, grantor)
+        IStore(grant).flush()
+        return grant
+
+    def makeAccessPolicyGrant(self, policy=None, grantee=None, grantor=None):
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
         grant = getUtility(IAccessPolicyGrantSource).grant(
-            grantee, grantor, object)
+            policy, grantee, grantor)
         IStore(grant).flush()
         return grant
 

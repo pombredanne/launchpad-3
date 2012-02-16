@@ -20,6 +20,7 @@ from zope.interface import implements
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
     IAccessArtifact,
+    IAccessArtifactGrant,
     IAccessPolicy,
     IAccessPolicyGrant,
     )
@@ -148,19 +149,17 @@ class AccessPolicy(StormBase):
         return cls.findByPillar(pillar).find(type=type).one()
 
 
-class AccessPolicyGrant(StormBase):
-    implements(IAccessPolicyGrant)
+class AccessArtifactGrant(StormBase):
+    implements(IAccessArtifactGrant)
 
-    __storm_table__ = 'AccessPolicyGrant'
+    __storm_table__ = 'AccessArtifactGrant'
+    __storm_primary__ = 'abstract_artifact_id', 'grantee_id'
 
-    id = Int(primary=True)
-    grantee_id = Int(name='grantee')
-    grantee = Reference(grantee_id, 'Person.id')
-    policy_id = Int(name='policy')
-    policy = Reference(policy_id, 'AccessPolicy.id')
     abstract_artifact_id = Int(name='artifact')
     abstract_artifact = Reference(
         abstract_artifact_id, 'AccessArtifact.id')
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
     grantor_id = Int(name='grantor')
     grantor = Reference(grantor_id, 'Person.id')
     date_created = DateTime()
@@ -171,17 +170,47 @@ class AccessPolicyGrant(StormBase):
             return self.abstract_artifact.concrete_artifact
 
     @classmethod
-    def grant(cls, grantee, grantor, object):
-        """See `IAccessPolicyGrantSource`."""
+    def grant(cls, artifact, grantee, grantor):
+        """See `IAccessArtifactGrantSource`."""
         grant = cls()
+        grant.abstract_artifact = artifact
         grant.grantee = grantee
         grant.grantor = grantor
-        if IAccessPolicy.providedBy(object):
-            grant.policy = object
-        elif IAccessArtifact.providedBy(object):
-            grant.abstract_artifact = object
-        else:
-            raise ValueError("Unsupported object: %r" % object)
+        IStore(cls).add(grant)
+        return grant
+
+    @classmethod
+    def getByID(cls, id):
+        """See `IAccessArtifactGrantSource`."""
+        return IStore(cls).get(cls, id)
+
+    @classmethod
+    def findByArtifact(cls, artifact):
+        """See `IAccessArtifactGrantSource`."""
+        return IStore(cls).find(cls, abstract_artifact=artifact)
+
+
+class AccessPolicyGrant(StormBase):
+    implements(IAccessPolicyGrant)
+
+    __storm_table__ = 'AccessPolicyGrant'
+    __storm_primary__ = 'policy_id', 'grantee_id'
+
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
+    grantor_id = Int(name='grantor')
+    grantor = Reference(grantor_id, 'Person.id')
+    date_created = DateTime()
+
+    @classmethod
+    def grant(cls, policy, grantee, grantor):
+        """See `IAccessPolicyGrantSource`."""
+        grant = cls()
+        grant.policy = policy
+        grant.grantee = grantee
+        grant.grantor = grantor
         IStore(cls).add(grant)
         return grant
 

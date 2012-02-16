@@ -8,9 +8,12 @@ __metaclass__ = type
 __all__ = [
     'AccessPolicyType',
     'IAccessArtifact',
+    'IAccessArtifactGrant',
+    'IAccessArtifactGrantSource',
     'IAccessArtifactSource',
     'IAccessPolicy',
     'IAccessPolicyGrant',
+    'IAccessPolicyGrantSource',
     'IAccessPolicySource',
     'UnsuitableAccessPolicyError',
     ]
@@ -55,6 +58,15 @@ class IAccessArtifact(Interface):
     concrete_artifact = Attribute("Concrete artifact")
 
 
+class IAccessArtifactGrant(Interface):
+    grantee = Attribute("Grantee")
+    grantor = Attribute("Grantor")
+    date_created = Attribute("Date created")
+    abstract_artifact = Attribute("Abstract artifact")
+
+    concrete_artifact = Attribute("Concrete artifact")
+
+
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
@@ -62,14 +74,10 @@ class IAccessPolicy(Interface):
 
 
 class IAccessPolicyGrant(Interface):
-    id = Attribute("ID")
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
     policy = Attribute("Access policy")
-    abstract_artifact = Attribute("Abstract artifact")
-
-    concrete_artifact = Attribute("Concrete artifact")
 
 
 class IAccessArtifactSource(Interface):
@@ -93,6 +101,23 @@ class IAccessArtifactSource(Interface):
         """
 
 
+class IAccessArtifactGrantSource(Interface):
+
+    def grant(artifact, grantee, grantor):
+        """Create an `IAccessArtifactGrant`.
+
+        :param object: the `IAccessArtifact` to grant access to.
+        :param grantee: the `IPerson` to hold the access.
+        :param grantor: the `IPerson` that grants the access.
+        """
+
+    def getByID(id):
+        """Return the `IAccessArtifactGrant` with the given ID."""
+
+    def findByArtifact(artifact):
+        """Return all `IAccessArtifactGrant` objects for the artifact."""
+
+
 class IAccessPolicySource(Interface):
 
     def create(pillar, display_name):
@@ -110,13 +135,13 @@ class IAccessPolicySource(Interface):
 
 class IAccessPolicyGrantSource(Interface):
 
-    def grant(grantee, grantor, object):
+    def grant(policy, grantee, grantor):
         """Create an `IAccessPolicyGrant`.
 
-        :param grantee: the `IPerson` to hold the access.
-        :param grantor: the `IPerson` that grants the access.
         :param object: the `IAccessPolicy` or `IAccessPolicyArtifact` to
             grant access to.
+        :param grantee: the `IPerson` to hold the access.
+        :param grantor: the `IPerson` that grants the access.
         """
 
     def getByID(id):

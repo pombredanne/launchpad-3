@@ -1920,6 +1920,17 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessArtifactSource"/>
     </securedutility>
     <class
+        class="lp.registry.model.accesspolicy.AccessArtifactGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessArtifactGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource"/>
+    </securedutility>
+    <class
         class="lp.registry.model.accesspolicy.AccessPolicyGrant">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrant"/>
