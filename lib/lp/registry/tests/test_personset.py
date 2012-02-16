@@ -23,6 +23,7 @@ from lp.registry.errors import (
     InvalidName,
     NameAlreadyTaken,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantSource
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -571,9 +572,14 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.factory.makePerson()
         grant = self.factory.makeAccessPolicyGrant()
         self._do_premerge(grant.grantee, person)
+
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertIs(None, source.get(grant.policy, person))
+        self.assertIsNot(None, source.get(grant.policy, grant.grantee))
         with person_logged_in(person):
             self._do_merge(grant.grantee, person)
-        self.assertEqual(person, grant.grantee)
+        self.assertIsNot(None, source.get(grant.policy, person))
+        self.assertIs(None, source.get(grant.policy, grant.grantee))
 
     def test_merge_accesspolicygrants_conflicts(self):
         # Conflicting AccessPolicyGrants are deleted.
@@ -582,24 +588,25 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.factory.makePerson()
         person_grantor = self.factory.makePerson()
         person_grant = self.factory.makeAccessPolicyGrant(
-            grantee=person, grantor=person_grantor, object=policy)
+            grantee=person, grantor=person_grantor, policy=policy)
+        person_grant_date = person_grant.date_created
 
         duplicate = self.factory.makePerson()
         duplicate_grantor = self.factory.makePerson()
-        duplicate_grant = self.factory.makeAccessPolicyGrant(
-            grantee=duplicate, grantor=duplicate_grantor, object=policy)
+        self.factory.makeAccessPolicyGrant(
+            grantee=duplicate, grantor=duplicate_grantor, policy=policy)
 
         self._do_premerge(duplicate, person)
         with person_logged_in(person):
             self._do_merge(duplicate, person)
         transaction.commit()
 
-        self.assertEqual(person, person_grant.grantee)
-        self.assertEqual(person_grantor, person_grant.grantor)
-        self.assertIs(
-            None,
-            IStore(AccessPolicyGrant).get(
-                AccessPolicyGrant, duplicate_grant.id))
+        # The retained person's grant remains, while the duplicate's is
+        # deleted.
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertEquals(
+            person_grant_date, source.get(policy, person).date_created)
+        self.assertIs(None, source.get(policy, duplicate))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
