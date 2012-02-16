@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -24,6 +24,48 @@
       </thead>
       <tbody id="observer-table-body"></tbody>
     </table>
+  </div>
+
+  <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
+    <div id="portlet-disclosure-summary" class="first portlet">
+      <p>
+        Permavirgin is shared with <a href="#">5</a> users:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <td colspan="2"><strong>Embargoed Security:</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="code-links">
+            <td>Sharing everything with <a href="#">3</a> users</td>
+          </tr>
+          <tr class="code-links">
+            <td>Sharing some things with <a href="#">1</a> users</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p></p>
+
+      <table>
+        <thead>
+          <tr>
+            <td colspan="2"><strong>User Data:</strong></td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="code-links">
+            <td>Sharing everything with <a href="#">4</a> users</td>
+          </tr>
+          <tr class="code-links">
+            <td>Sharing some things with <a href="#">0</a> users</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </body>
 </html>
