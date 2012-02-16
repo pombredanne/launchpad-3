@@ -7,9 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'AccessPolicyType',
+    'IAccessArtifact',
+    'IAccessArtifactSource',
     'IAccessPolicy',
-    'IAccessPolicyArtifact',
-    'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
     'IAccessPolicySource',
     'UnsuitableAccessPolicyError',
@@ -50,16 +50,15 @@ class AccessPolicyType(DBEnumeratedType):
         """)
 
 
+class IAccessArtifact(Interface):
+    id = Attribute("ID")
+    concrete_artifact = Attribute("Concrete artifact")
+
+
 class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
-
-
-class IAccessPolicyArtifact(Interface):
-    id = Attribute("ID")
-    concrete_artifact = Attribute("Concrete artifact")
-    policy = Attribute("Access policy")
 
 
 class IAccessPolicyGrant(Interface):
@@ -71,6 +70,27 @@ class IAccessPolicyGrant(Interface):
     abstract_artifact = Attribute("Abstract artifact")
 
     concrete_artifact = Attribute("Concrete artifact")
+
+
+class IAccessArtifactSource(Interface):
+
+    def ensure(concrete_artifact):
+        """Return the `IAccessArtifact` for a concrete artifact.
+
+        Creates the abstract artifact if it doesn't already exist.
+        """
+
+    def get(concrete_artifact):
+        """Return the `IAccessArtifact` for an artifact, if it exists.
+
+        Use ensure() if you want to create one if it doesn't yet exist.
+        """
+
+    def delete(concrete_artifact):
+        """Delete the `IAccessArtifact` for a concrete artifact.
+
+        Also removes any AccessArtifactGrants for the artifact.
+        """
 
 
 class IAccessPolicySource(Interface):
@@ -86,27 +106,6 @@ class IAccessPolicySource(Interface):
 
     def findByPillar(pillar):
         """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
-
-
-class IAccessPolicyArtifactSource(Interface):
-
-    def ensure(concrete_artifact):
-        """Return the `IAccessPolicyArtifact` for a concrete artifact.
-
-        Creates the abstract artifact if it doesn't already exist.
-        """
-
-    def get(concrete_artifact):
-        """Return the `IAccessPolicyArtifact` for an artifact, if it exists.
-
-        Use ensure() if you want to create one if it doesn't yet exist.
-        """
-
-    def delete(concrete_artifact):
-        """Delete the `IAccessPolicyArtifact` for a concrete artifact.
-
-        Also removes any AccessPolicyGrants for the artifact.
-        """
 
 
 class IAccessPolicyGrantSource(Interface):

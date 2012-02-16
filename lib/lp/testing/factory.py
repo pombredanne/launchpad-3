@@ -142,7 +142,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
-    IAccessPolicyArtifactSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -4353,11 +4353,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(policy).flush()
         return policy
 
-    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
+    def makeAccessArtifact(self, concrete=None):
         if concrete is None:
             concrete = self.makeBranch()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        artifact.policy = policy
+        artifact = getUtility(IAccessArtifactSource).ensure(concrete)
         IStore(artifact).flush()
         return artifact
 

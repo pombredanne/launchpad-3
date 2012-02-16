@@ -1909,18 +1909,15 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
     </securedutility>
     <class
-        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        class="lp.registry.model.accesspolicy.AccessArtifact">
         <allow
-            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
-        <require
-            permission="zope.Public"
-            set_attributes="policy"/>
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifact"/>
     </class>
     <securedutility
-        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
-        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        component="lp.registry.model.accesspolicy.AccessArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactSource">
         <allow
-            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactSource"/>
     </securedutility>
     <class
         class="lp.registry.model.accesspolicy.AccessPolicyGrant">
