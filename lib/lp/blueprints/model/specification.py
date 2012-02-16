@@ -45,6 +45,7 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -60,6 +61,7 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -227,6 +229,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         return self.distribution
+
+    def newWorkItem(self, title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
+        """See ISpecification."""
+        return SpecificationWorkItem(
+            title=title, status=status, specification=self, assignee=assignee,
+            milestone=milestone, sequence=sequence)
 
     def setTarget(self, target):
         """See ISpecification."""
