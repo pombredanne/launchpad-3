@@ -16,7 +16,6 @@
           language.
         </p>
       </div>
-    <metal:js use-macro="context/@@+person-macros/private-team-js" />
     </div>
   </body>
 </html>

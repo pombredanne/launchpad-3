@@ -191,6 +191,7 @@ from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
@@ -290,7 +291,6 @@ from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.model.language import Language
@@ -3064,14 +3064,13 @@ class Person(
         return self.subscriptionpolicy in CLOSED_TEAM_POLICY
 
     def checkAllowVisibility(self):
+        role = IPersonRoles(self)
+        if role.in_commercial_admin or role.in_admin:
+            return True
         feature_flag = getFeatureFlag(
             'disclosure.show_visibility_for_team_add.enabled')
-        if feature_flag:
-            if self.hasCurrentCommercialSubscription():
-                return True
-        else:
-            if check_permission('launchpad.Commercial', self):
-                return True
+        if feature_flag and self.hasCurrentCommercialSubscription():
+            return True
         return False
 
     def transitionVisibility(self, visibility, user):
