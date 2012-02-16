@@ -4319,7 +4319,7 @@ class PersonSet:
         return self._getPrecachedPersons(
             origin, conditions,
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_location=False, need_archive=need_archive,
+            need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity, need_icon=need_icon)
 
