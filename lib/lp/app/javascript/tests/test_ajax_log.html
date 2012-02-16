@@ -7,7 +7,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>Test ajax_batch_navigator</title>
+      <title>Test ajax_log</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -27,32 +27,24 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- Dependencies -->
       <script type="text/javascript"
-          src="../../../../../build/js/lp/app/client.js"></script>
+          src="../../../../../build/js/lp/app/anim/anim.js"></script>
       <script type="text/javascript"
-          src="../../../../../build/js/lp/app/errors.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/lp.js"></script>
-      <script type="text/javascript"
-          src="../../../../../build/js/lp/app/testing/mockio.js"></script>
+          src="../../../../../build/js/lp/app/extras/extras.js"></script>
+
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../ajax_batch_navigator.js"></script>
+      <script type="text/javascript" src="../ajax_log.js"></script>
 
-      <!-- Placeholder for any css asset for this module. -->
-      <!-- <link rel="stylesheet" href="../assets/ajax_batch_navigator-core.css" /> -->
+      <!-- Any css assert for this module. -->
+      <!-- <link rel="stylesheet" href="../assets/ajax_log-core.css" /> -->
 
       <!-- The test suite. -->
-      <script type="text/javascript" src="test_ajax_batch_navigator.js"></script>
+      <script type="text/javascript" src="test_ajax_log.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
-            <li>lp.app.batchnavigator.test</li>
+            <li>lp.ajax_log.test</li>
         </ul>
-
-        <!-- The example markup required by the script to run -->
-        <div class="test-hook">
-        </div>
     </body>
 </html>
