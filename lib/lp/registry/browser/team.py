@@ -20,10 +20,6 @@ __all__ = [
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
     'TeamMailingListArchiveView',
-    'TeamMapData',
-    'TeamMapLtdData',
-    'TeamMapView',
-    'TeamMapLtdView',
     'TeamMemberAddView',
     'TeamMembershipView',
     'TeamMugshotView',
@@ -1200,112 +1196,6 @@ class TeamMemberAddView(LaunchpadFormView):
         self.widgets['newmember'].setRenderedValue(None)
 
 
-class TeamMapView(LaunchpadView):
-    """Show all people with known locations on a map.
-
-    Also provides links to edit the locations of people in the team without
-    known locations.
-    """
-
-    label = "Team member locations"
-    limit = None
-
-    @cachedproperty
-    def mapped_participants(self):
-        """Participants with locations."""
-        return self.context.getMappedParticipants(limit=self.limit)
-
-    @cachedproperty
-    def mapped_participants_count(self):
-        """Count of participants with locations."""
-        return self.context.mapped_participants_count
-
-    @cachedproperty
-    def has_mapped_participants(self):
-        """Does the team have any mapped participants?"""
-        return self.mapped_participants_count > 0
-
-    @cachedproperty
-    def unmapped_participants(self):
-        """Participants (ordered by name) with no recorded locations."""
-        return list(self.context.unmapped_participants)
-
-    @cachedproperty
-    def unmapped_participants_count(self):
-        """Count of participants with no recorded locations."""
-        return self.context.unmapped_participants_count
-
-    @cachedproperty
-    def times(self):
-        """The current times in time zones with members."""
-        zones = set(participant.time_zone
-                    for participant in self.mapped_participants)
-        times = [datetime.now(pytz.timezone(zone))
-                 for zone in zones]
-        timeformat = '%H:%M'
-        return sorted(
-            set(time.strftime(timeformat) for time in times))
-
-    @cachedproperty
-    def bounds(self):
-        """A dictionary with the bounds and center of the map, or None"""
-        if self.has_mapped_participants:
-            return self.context.getMappedParticipantsBounds(self.limit)
-        return None
-
-    @property
-    def map_html(self):
-        """HTML which shows the map with location of the team's members."""
-        return """
-            <script type="text/javascript">
-                LPJS.use('node', 'lp.app.mapping', function(Y) {
-                    function renderMap() {
-                        Y.lp.app.mapping.renderTeamMap(
-                            %(min_lat)s, %(max_lat)s, %(min_lng)s,
-                            %(max_lng)s, %(center_lat)s, %(center_lng)s);
-                     }
-                     Y.on("domready", renderMap);
-                });
-            </script>""" % self.bounds
-
-    @property
-    def map_portlet_html(self):
-        """The HTML which shows a small version of the team's map."""
-        return """
-            <script type="text/javascript">
-                LPJS.use('node', 'lp.app.mapping', function(Y) {
-                    function renderMap() {
-                        Y.lp.app.mapping.renderTeamMapSmall(
-                            %(center_lat)s, %(center_lng)s);
-                     }
-                     Y.on("domready", renderMap);
-                });
-            </script>""" % self.bounds
-
-
-class TeamMapData(TeamMapView):
-    """An XML dump of the locations of all team members."""
-
-    def render(self):
-        self.request.response.setHeader(
-            'content-type', 'application/xml;charset=utf-8')
-        body = LaunchpadView.render(self)
-        return body.encode('utf-8')
-
-
-class TeamMapLtdMixin:
-    """A mixin for team views with limited participants."""
-    limit = 24
-
-
-class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
-    """Team map view with limited participants."""
-
-
-class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
-    """An XML dump of the locations of limited number of team members."""
-
-
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
@@ -1597,11 +1487,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Approve or decline members'
         return Link(target, text, icon='add')
 
-    def map(self):
-        target = '+map'
-        text = 'View map and time zones'
-        return Link(target, text, icon='meeting')
-
     def add_my_teams(self):
         target = '+add-my-teams'
         text = 'Add one of my teams'
@@ -1717,7 +1602,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'configure_mailing_list',
         'moderate_mailing_list',
         'editlanguages',
-        'map',
         'polls',
         'add_poll',
         'join',

@@ -705,46 +705,33 @@ class Person(
             Or(OAuthRequestToken.date_expires == None,
                OAuthRequestToken.date_expires > UTC_NOW))
 
-    @cachedproperty
-    def location(self):
-        """See `IObjectWithLocation`."""
-        return PersonLocation.selectOneBy(person=self)
+    @property
+    def latitude(self):
+        """See `IHasLocation`.
+
+        We no longer allow users to set their geographical location but we
+        need to keep this because it was exported on version 1.0 of the API.
+        """
+        return None
+
+    @property
+    def longitude(self):
+        """See `IHasLocation`.
+
+        We no longer allow users to set their geographical location but we
+        need to keep this because it was exported on version 1.0 of the API.
+        """
+        return None
 
     @property
     def time_zone(self):
         """See `IHasLocation`."""
-        if self.location is None:
+        location = PersonLocation.selectOneBy(person=self)
+        if location is None:
             return None
         # Wrap the location with a security proxy to make sure the user has
         # enough rights to see it.
-        return ProxyFactory(self.location).time_zone
-
-    @property
-    def latitude(self):
-        """See `IHasLocation`."""
-        if self.location is None:
-            return None
-        # Wrap the location with a security proxy to make sure the user has
-        # enough rights to see it.
-        return ProxyFactory(self.location).latitude
-
-    @property
-    def longitude(self):
-        """See `IHasLocation`."""
-        if self.location is None:
-            return None
-        # Wrap the location with a security proxy to make sure the user has
-        # enough rights to see it.
-        return ProxyFactory(self.location).longitude
-
-    def setLocationVisibility(self, visible):
-        """See `ISetLocation`."""
-        assert not self.is_team, 'Cannot edit team location.'
-        if self.location is None:
-            get_property_cache(self).location = PersonLocation(
-                person=self, visible=visible)
-        else:
-            self.location.visible = visible
+        return ProxyFactory(location).time_zone
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
@@ -753,14 +740,15 @@ class Person(
                 (latitude is not None and longitude is not None)), (
             "Cannot set a latitude without longitude (and vice-versa).")
 
-        if self.location is not None:
-            self.location.time_zone = time_zone
-            self.location.latitude = latitude
-            self.location.longitude = longitude
-            self.location.last_modified_by = user
-            self.location.date_last_modified = UTC_NOW
+        location = PersonLocation.selectOneBy(person=self)
+        if location is not None:
+            location.time_zone = time_zone
+            location.latitude = latitude
+            location.longitude = longitude
+            location.last_modified_by = user
+            location.date_last_modified = UTC_NOW
         else:
-            get_property_cache(self).location = PersonLocation(
+            PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1797,7 +1785,7 @@ class Person(
     def all_members_prepopulated(self):
         """See `IPerson`."""
         return self._members(direct=False, need_karma=True,
-            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_ubuntu_coc=True, need_archive=True,
             need_preferred_email=True, need_validity=True)
 
     @staticmethod
@@ -1865,15 +1853,13 @@ class Person(
             decorators=decorators)
 
     def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False, need_preferred_email=False,
-        need_validity=False):
+        need_archive=False, need_preferred_email=False, need_validity=False):
         """Lookup all members of the team with optional precaching.
 
         :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
-        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
@@ -1909,7 +1895,6 @@ class Person(
             origin, conditions, store=Store.of(self),
             need_karma=need_karma,
             need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location,
             need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity)
@@ -2011,7 +1996,7 @@ class Person(
     def api_activemembers(self):
         """See `IPerson`."""
         return self._members(direct=True, need_karma=True,
-            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_ubuntu_coc=True, need_archive=True,
             need_preferred_email=True, need_validity=True)
 
     @property
@@ -2061,92 +2046,6 @@ class Person(
             TeamSubscriptionPolicy.DELEGATED
             )
         return (self.subscriptionpolicy in open_types)
-
-    def _getMappedParticipantsLocations(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        return PersonLocation.select("""
-            PersonLocation.person = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            -- We only need to check for a latitude here because there's a DB
-            -- constraint which ensures they are both set or unset.
-            PersonLocation.latitude IS NOT NULL AND
-            PersonLocation.visible IS TRUE AND
-            Person.id = PersonLocation.person AND
-            Person.teamowner IS NULL
-            """ % sqlvalues(self.id),
-            clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person', ], limit=limit)
-
-    def getMappedParticipants(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        # Pre-cache this location against its person.  Since we'll always
-        # iterate over all persons returned by this property (to build the map
-        # of team members), it becomes more important to cache their locations
-        # than to return a lazy SelectResults (or similar) object that only
-        # fetches the rows when they're needed.
-        locations = self._getMappedParticipantsLocations(limit=limit)
-        for location in locations:
-            get_property_cache(location.person).location = location
-        participants = set(location.person for location in locations)
-        # Cache the ValidPersonCache query for all mapped participants.
-        if len(participants) > 0:
-            sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
-            list(ValidPersonCache.select(sql))
-        getUtility(IPersonSet).cacheBrandingForPeople(participants)
-        return list(participants)
-
-    @property
-    def mapped_participants_count(self):
-        """See `IPersonViewRestricted`."""
-        return self._getMappedParticipantsLocations().count()
-
-    def getMappedParticipantsBounds(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        max_lat = -90.0
-        min_lat = 90.0
-        max_lng = -180.0
-        min_lng = 180.0
-        locations = self._getMappedParticipantsLocations(limit)
-        if self.mapped_participants_count == 0:
-            raise AssertionError(
-                'This method cannot be called when '
-                'mapped_participants_count == 0.')
-        latitudes = sorted(location.latitude for location in locations)
-        if latitudes[-1] > max_lat:
-            max_lat = latitudes[-1]
-        if latitudes[0] < min_lat:
-            min_lat = latitudes[0]
-        longitudes = sorted(location.longitude for location in locations)
-        if longitudes[-1] > max_lng:
-            max_lng = longitudes[-1]
-        if longitudes[0] < min_lng:
-            min_lng = longitudes[0]
-        center_lat = (max_lat + min_lat) / 2.0
-        center_lng = (max_lng + min_lng) / 2.0
-        return dict(
-            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
-            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
-
-    @property
-    def unmapped_participants(self):
-        """See `IPersonViewRestricted`."""
-        return Person.select("""
-            Person.id = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            TeamParticipation.person NOT IN (
-                SELECT PersonLocation.person
-                FROM PersonLocation INNER JOIN TeamParticipation ON
-                     PersonLocation.person = TeamParticipation.person
-                WHERE TeamParticipation.team = %s AND
-                      PersonLocation.latitude IS NOT NULL) AND
-            Person.teamowner IS NULL
-            """ % sqlvalues(self.id, self.id),
-            clauseTables=['TeamParticipation'])
-
-    @property
-    def unmapped_participants_count(self):
-        """See `IPersonViewRestricted`."""
-        return self.unmapped_participants.count()
 
     @property
     def open_membership_invitations(self):
@@ -4405,8 +4304,8 @@ class PersonSet:
 
     def getPrecachedPersonsFromIDs(
         self, person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False, need_icon=False):
+        need_archive=False, need_preferred_email=False, need_validity=False,
+        need_icon=False):
         """See `IPersonSet`."""
         origin = [Person]
         conditions = [
@@ -4414,15 +4313,15 @@ class PersonSet:
         return self._getPrecachedPersons(
             origin, conditions,
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location, need_archive=need_archive,
+            need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
         self, origin, conditions, store=None,
         need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False, need_preferred_email=False,
-        need_validity=False, need_icon=False):
+        need_archive=False, need_preferred_email=False, need_validity=False,
+        need_icon=False):
         """Lookup all members of the team with optional precaching.
 
         :param store: Provide ability to specify the store.
@@ -4432,7 +4331,6 @@ class PersonSet:
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
-        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
@@ -4455,12 +4353,6 @@ class PersonSet:
                 And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
-        if need_location:
-            # New people have no location rows
-            origin.append(
-                LeftJoin(PersonLocation,
-                    PersonLocation.person == Person.id))
-            columns.append(PersonLocation)
         if need_archive:
             # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
@@ -4523,11 +4415,6 @@ class PersonSet:
                 signed = row[index]
                 index += 1
                 cache.is_ubuntu_coc_signer = signed
-            #-- location caching
-            if need_location:
-                location = row[index]
-                index += 1
-                cache.location = location
             #-- archive caching
             if need_archive:
                 archive = row[index]

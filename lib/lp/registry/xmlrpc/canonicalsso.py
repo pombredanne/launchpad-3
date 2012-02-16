@@ -38,7 +38,7 @@ class CanonicalSSOAPI(LaunchpadXMLRPCView):
         if person is None:
             return
 
-        time_zone = person.location and person.location.time_zone
+        time_zone = person.time_zone
         team_names = dict(
             (removeSecurityProxy(t).name, t.private)
             for t in person.teams_participated_in)

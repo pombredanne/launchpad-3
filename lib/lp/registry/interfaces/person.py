@@ -130,8 +130,6 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation,
-    ILocationRecord,
-    IObjectWithLocation,
     ISetLocation,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -722,7 +720,7 @@ class IPersonPublic(IPrivacy):
     @operation_for_version("beta")
     def transitionVisibility(visibility, user):
         """Set visibility of IPerson.
-    
+
         :param visibility: The PersonVisibility to change to.
         :param user: The user requesting the change.
         :raises: `ImmutableVisibilityError` when the visibility can not
@@ -796,9 +794,9 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
-                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson):
+                    IHasLocation, IHasRequestedReviews, IHasBugs, IHasRecipes,
+                    IHasTranslationImports, IPersonSettings,
+                    IQuestionsPerson):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -1714,13 +1712,6 @@ class IPersonEditRestricted(Interface):
         :param team: The team to leave.
         """
 
-    @operation_parameters(
-        visible=copy_field(ILocationRecord['visible'], required=True))
-    @export_write_operation()
-    @operation_for_version("beta")
-    def setLocationVisibility(visible):
-        """Specify the visibility of a person's location and time zone."""
-
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
         """Set the attributes of the person's membership on this team.
@@ -2412,15 +2403,13 @@ class IPersonSet(Interface):
 
     def getPrecachedPersonsFromIDs(
         person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False):
+        need_archive=False, need_preferred_email=False, need_validity=False):
         """Lookup person objects from ids with optional precaching.
 
         :param person_ids: List of person ids.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
-        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
