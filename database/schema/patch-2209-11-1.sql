@@ -8,6 +8,9 @@ ALTER TABLE AccessPolicy SET SCHEMA todrop;
 ALTER TABLE AccessPolicyArtifact SET SCHEMA todrop;
 ALTER TABLE AccessPolicyGrant SET SCHEMA todrop;
 
+ALTER TABLE Bug DROP COLUMN access_policy;
+ALTER TABLE Branch DROP COLUMN access_policy;
+
 -- And create a whole new one.
 CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
