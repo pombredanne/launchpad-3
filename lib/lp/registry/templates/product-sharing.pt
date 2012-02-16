@@ -27,9 +27,15 @@
   </div>
 
   <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
+    <tal:comment replace="nothing">
+    XXX j.c.sackett 2012-02-16 The data in this portlet is static right now,
+    as policy architecture (which determines the numbers to display) are in
+    flux. Once they settle down, the view needs to populate some methods to
+    set the numbers in this portlet.
+    </tal:comment>
     <div id="portlet-disclosure-summary" class="first portlet">
       <p>
-        Permavirgin is shared with <a href="#">5</a> users:
+        Permavirgin is shared with <a href="#">0</a> users:
       </p>
 
       <table>
@@ -40,10 +46,10 @@
         </thead>
         <tbody>
           <tr class="code-links">
-            <td>Sharing everything with <a href="#">3</a> users</td>
+            <td>Sharing everything with <a href="#">0</a> users</td>
           </tr>
           <tr class="code-links">
-            <td>Sharing some things with <a href="#">1</a> users</td>
+            <td>Sharing some things with <a href="#">0</a> users</td>
           </tr>
         </tbody>
       </table>
@@ -58,7 +64,7 @@
         </thead>
         <tbody>
           <tr class="code-links">
-            <td>Sharing everything with <a href="#">4</a> users</td>
+            <td>Sharing everything with <a href="#">0</a> users</td>
           </tr>
           <tr class="code-links">
             <td>Sharing some things with <a href="#">0</a> users</td>
