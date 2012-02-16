@@ -87,7 +87,7 @@ CREATE INDEX accesspolicygrantflat__artifact__grantee__idx
 CREATE OR REPLACE FUNCTION
     accesspolicyartifact_maintain_accesspolicyartifactflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -120,7 +120,7 @@ CREATE TRIGGER accesspolicyartifact_maintain_accesspolicyartifactflat_trigger
 CREATE OR REPLACE FUNCTION
     accessartifactgrant_maintain_accesspolicygrantflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -153,7 +153,7 @@ CREATE TRIGGER accessartifactgrant_maintain_accesspolicygrantflat_trigger
 CREATE OR REPLACE FUNCTION
     accesspolicygrant_maintain_accesspolicygrantflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
