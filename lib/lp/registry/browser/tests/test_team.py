@@ -556,6 +556,22 @@ class TestTeamAddView(TestCaseWithFactory):
                     'visibility',
                     [field.__name__ for field in view.form_fields])
 
+    def test_visibility_is_correct_during_edit(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(owner):
+            url = canonical_url(team)
+        with FeatureFixture(self.feature_flag):
+            browser = self.getUserBrowser(url, user=owner)
+            browser.getLink('Change details').click()
+            self.assertEqual(
+                ['PRIVATE'],
+                browser.getControl(name="field.visibility").value)
+        
 
 class TestTeamMenu(TestCaseWithFactory):
 

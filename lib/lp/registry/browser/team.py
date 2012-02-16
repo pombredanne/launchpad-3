@@ -272,12 +272,13 @@ class TeamFormMixin:
                     'Private teams must have a Restricted subscription '
                     'policy.')
 
-    def setUpVisibilityField(self):
+    def setUpVisibilityField(self, render_context=False):
         """Set the visibility field to read-write, or remove it."""
         self.form_fields = self.form_fields.omit('visibility')
         if self.user and self.user.checkAllowVisibility():
             visibility = copy_field(ITeam['visibility'], readonly=False)
-            self.form_fields += Fields(visibility)
+            self.form_fields += Fields(
+                visibility, render_context=render_context)
             # Shift visibility to be the third field.
             field_names = [field.__name__ for field in self.form_fields]
             field = field_names.pop()
@@ -315,7 +316,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
         self.field_names.remove('contactemail')
         self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
-        self.setUpVisibilityField()
+        self.setUpVisibilityField(render_context=True)
 
     def setUpWidgets(self):
         super(TeamEditView, self).setUpWidgets()
