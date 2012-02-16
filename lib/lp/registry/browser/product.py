@@ -41,6 +41,7 @@ __all__ = [
     'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
+    'ProductSharingView',
     ]
 
 
@@ -1541,7 +1542,7 @@ class ProductPrivateBugsMixin():
         super(ProductPrivateBugsMixin, self).setUpFields()
         self.form_fields = self.form_fields.omit('private_bugs')
         private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
-        self.form_fields += form.Fields(private_bugs)
+        self.form_fields += form.Fields(private_bugs, render_context=True)
 
     def validate(self, data):
         super(ProductPrivateBugsMixin, self).validate(data)
@@ -2410,3 +2411,9 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
+
+
+class ProductSharingView(LaunchpadView):
+
+    page_title = "Sharing"
+    label = "Sharing information"

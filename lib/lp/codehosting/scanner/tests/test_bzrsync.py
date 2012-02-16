@@ -17,7 +17,6 @@ from bzrlib.revision import (
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
 import pytz
-from storm.expr import Desc
 from storm.locals import Store
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
@@ -429,10 +428,9 @@ class TestBzrSync(BzrSyncTestCase):
             else:
                 bzr_branch.set_last_revision_info(revno, bzr_rev)
                 delta_branch = bzr_branch
-            return sync.getAncestryDelta(
-                delta_branch, delta_branch.last_revision_info(), graph, db_rev)
+            return sync.getAncestryDelta(delta_branch)
 
-        added_ancestry, removed_ancestry = get_delta('merge', NULL_REVISION)
+        added_ancestry, removed_ancestry = get_delta('merge', None)
         # All revisions are new for an unscanned branch
         self.assertEqual(
             set(['base', 'trunk', 'branch', 'merge']), added_ancestry)
@@ -473,11 +471,8 @@ class TestBzrSync(BzrSyncTestCase):
         # yield each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_history = ['rev-1']
-        graph = bzrsync._getRevisionGraph(self.bzr_branch, 'rev-1')
-        added_ancestry = bzrsync.getAncestryDelta(
-            self.bzr_branch, self.bzr_branch.last_revision_info(),
-            graph, 'rev-1')[0]
+        bzr_history = self.bzr_branch.revision_history()
+        added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
         result = bzrsync.revisionsToInsert(
             bzr_history, self.bzr_branch.revno(), added_ancestry)
         self.assertEqual({'rev-1': 1}, dict(result))
@@ -488,12 +483,8 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_history = ['merge', 'trunk', 'base']
-        graph = bzrsync._getRevisionGraph(bzr_tree.branch, 'merge')
-        self.addCleanup(bzr_tree.branch.lock_read().unlock)
-        added_ancestry = bzrsync.getAncestryDelta(
-            bzr_tree.branch, bzr_tree.branch.last_revision_info(),
-            graph, NULL_REVISION)[0]
+        bzr_history = bzr_tree.branch.revision_history()
+        added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(
             expected, dict(bzrsync.revisionsToInsert(bzr_history,
@@ -537,7 +528,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(self.getBranchRevisions(db_trunk), expected)
 
     def test_retrieveDatabaseAncestry(self):
-        # retrieveDatabaseAncestry should set db_history to
+        # retrieveDatabaseAncestry should set db_ancestry and db_history to
         # Launchpad's current understanding of the branch state.
         # db_branch_revision_map should map Bazaar revision_ids to
         # BranchRevision.ids.
@@ -550,16 +541,19 @@ class TestBzrSync(BzrSyncTestCase):
             '~name12/+junk/junk.contrib')
         branch_revisions = IStore(BranchRevision).find(
             BranchRevision, BranchRevision.branch == branch)
-        sampledata = list(branch_revisions.order_by(Desc(BranchRevision.sequence)))
-        expected_history = [
-            (branch_revision.sequence, branch_revision.revision.revision_id)
+        sampledata = list(branch_revisions.order_by(BranchRevision.sequence))
+        expected_ancestry = set(branch_revision.revision.revision_id
+            for branch_revision in sampledata)
+        expected_history = [branch_revision.revision.revision_id
             for branch_revision in sampledata
             if branch_revision.sequence is not None]
 
         self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
-        db_history = bzrsync.retrieveDatabaseAncestry()
+        db_ancestry, db_history = (
+            bzrsync.retrieveDatabaseAncestry())
+        self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
 
 
@@ -582,9 +576,9 @@ class TestPlanDatabaseChanges(BzrSyncTestCase):
         syncer.syncBranchAndClose(self.bzr_tree.branch)
         self.assertEqual(rev2_id, self.db_branch.last_scanned_id)
         self.db_branch.last_scanned_id = rev1_id
-        db_history = self.db_branch.getScannerData()
+        db_ancestry, db_history = self.db_branch.getScannerData()
         branchrevisions_to_delete = syncer.planDatabaseChanges(
-            self.bzr_branch, (2, rev2_id), db_history)[1]
+            self.bzr_branch, [rev1_id, rev2_id], db_ancestry, db_history)[1]
         self.assertIn(merge_id, branchrevisions_to_delete)
 
 
