@@ -32,18 +32,17 @@ CREATE TABLE AccessArtifact (
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
-CREATE TABLE AccessPolicyArtifact (
-    artifact integer REFERENCES AccessArtifact NOT NULL,
-    policy integer REFERENCES AccessPolicy NOT NULL
-);
-
 CREATE UNIQUE INDEX accessartifact__bug__key
     ON AccessArtifact(bug) WHERE bug IS NOT NULL;
-CREATE UNIQUE INDEX accesscontrolledartifact__branch__key
+CREATE UNIQUE INDEX accessartifact__branch__key
     ON AccessArtifact(branch) WHERE branch IS NOT NULL;
 
-CREATE INDEX accesspolicyartifact__artifact__key
-    ON AccessPolicyArtifact(artifact);
+CREATE TABLE AccessPolicyArtifact (
+    artifact integer REFERENCES AccessArtifact NOT NULL,
+    policy integer REFERENCES AccessPolicy NOT NULL,
+    PRIMARY KEY (artifact, policy)
+);
+
 CREATE INDEX accesspolicyartifact__policy__key
     ON AccessPolicyArtifact(policy);
 
