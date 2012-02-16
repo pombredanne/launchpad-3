@@ -106,13 +106,17 @@ class IAccessArtifactGrantSource(Interface):
     def grant(artifact, grantee, grantor):
         """Create an `IAccessArtifactGrant`.
 
-        :param object: the `IAccessArtifact` to grant access to.
+        :param artifact: the `IAccessArtifact` to grant access to.
         :param grantee: the `IPerson` to hold the access.
         :param grantor: the `IPerson` that grants the access.
         """
 
-    def getByID(id):
-        """Return the `IAccessArtifactGrant` with the given ID."""
+    def get(artifact, grantee):
+        """Return the specified `IAccessArtifactGrant` or None.
+
+        :param artifact: the `IAccessArtifact` that access is granted to.
+        :param grantee: the `IPerson` who holds the access.
+        """
 
     def findByArtifact(artifact):
         """Return all `IAccessArtifactGrant` objects for the artifact."""
@@ -138,14 +142,17 @@ class IAccessPolicyGrantSource(Interface):
     def grant(policy, grantee, grantor):
         """Create an `IAccessPolicyGrant`.
 
-        :param object: the `IAccessPolicy` or `IAccessPolicyArtifact` to
-            grant access to.
+        :param policy: the `IAccessPolicy` to grant access to.
         :param grantee: the `IPerson` to hold the access.
         :param grantor: the `IPerson` that grants the access.
         """
 
-    def getByID(id):
-        """Return the `IAccessPolicyGrant` with the given ID."""
+    def get(policy, grantee):
+        """Return the specified `IAccessPolicyGrant` or None.
+
+        :param policy: the `IAccessPolicy` that access is granted to.
+        :param grantee: the `IPerson` who holds the access.
+        """
 
     def findByPolicy(policy):
         """Return all `IAccessPolicyGrant` objects for the policy."""

@@ -24,6 +24,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
     IAccessPolicyGrant,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
@@ -180,9 +181,11 @@ class AccessArtifactGrant(StormBase):
         return grant
 
     @classmethod
-    def getByID(cls, id):
+    def get(cls, artifact, grantee):
         """See `IAccessArtifactGrantSource`."""
-        return IStore(cls).get(cls, id)
+        assert IAccessArtifact.providedBy(artifact)
+        assert IPerson.providedBy(grantee)
+        return IStore(cls).get(cls, (artifact.id, grantee.id))
 
     @classmethod
     def findByArtifact(cls, artifact):
@@ -215,9 +218,11 @@ class AccessPolicyGrant(StormBase):
         return grant
 
     @classmethod
-    def getByID(cls, id):
+    def get(cls, policy, grantee):
         """See `IAccessPolicyGrantSource`."""
-        return IStore(cls).get(cls, id)
+        assert IAccessPolicy.providedBy(policy)
+        assert IPerson.providedBy(grantee)
+        return IStore(cls).get(cls, (policy.id, grantee.id))
 
     @classmethod
     def findByPolicy(cls, policy):

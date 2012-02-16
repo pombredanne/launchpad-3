@@ -231,21 +231,20 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
                 abstract_artifact=artifact,
                 concrete_artifact=artifact.concrete_artifact))
 
-    def test_getByID(self):
-        # getByID finds the right grant.
+    def test_get(self):
+        # get() finds the right grant.
         grant = self.factory.makeAccessArtifactGrant()
-        # Flush so we get an ID.
-        Store.of(grant).flush()
         self.assertEqual(
             grant,
-            getUtility(IAccessArtifactGrantSource).getByID(grant.id))
+            getUtility(IAccessArtifactGrantSource).get(
+                grant.abstract_artifact, grant.grantee))
 
-    def test_getByID_nonexistent(self):
-        # getByID returns None if the grant doesn't exist.
+    def test_get_nonexistent(self):
+        # get() returns None if the grant doesn't exist.
         self.assertIs(
             None,
-            getUtility(IAccessArtifactGrantSource).getByID(
-                self.factory.getUniqueInteger()))
+            getUtility(IAccessArtifactGrantSource).get(
+                self.factory.makeAccessArtifact(), self.factory.makePerson()))
 
     def test_findByPolicy(self):
         # findByPolicy finds only the relevant grants.
@@ -284,21 +283,20 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
                 grantor=grantor,
                 policy=policy))
 
-    def test_getByID(self):
-        # getByID finds the right grant.
+    def test_get(self):
+        # get() finds the right grant.
         grant = self.factory.makeAccessPolicyGrant()
-        # Flush so we get an ID.
-        Store.of(grant).flush()
         self.assertEqual(
             grant,
-            getUtility(IAccessPolicyGrantSource).getByID(grant.id))
+            getUtility(IAccessPolicyGrantSource).get(
+                grant.policy, grant.grantee))
 
-    def test_getByID_nonexistent(self):
-        # getByID returns None if the grant doesn't exist.
+    def test_get_nonexistent(self):
+        # get() returns None if the grant doesn't exist.
         self.assertIs(
             None,
-            getUtility(IAccessPolicyGrantSource).getByID(
-                self.factory.getUniqueInteger()))
+            getUtility(IAccessPolicyGrantSource).get(
+                self.factory.makeAccessPolicy(), self.factory.makePerson()))
 
     def test_findByPolicy(self):
         # findByPolicy finds only the relevant grants.
