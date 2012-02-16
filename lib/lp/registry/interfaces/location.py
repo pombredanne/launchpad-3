@@ -14,6 +14,7 @@ __metaclass__ = type
 __all__ = [
     'IHasLocation',
     'ILocationRecord',
+    'IObjectWithLocation',
     'IPersonLocation',
     'ISetLocation',
     ]
@@ -62,6 +63,12 @@ class IHasLocation(Interface):
         Choice(title=_('The time zone of this object.'),
                required=False, readonly=True,
                vocabulary='TimezoneName')))
+
+
+class IObjectWithLocation(Interface):
+    """An interface supported by objects with a defined location."""
+
+    location = Attribute("An ILocation for this object.")
 
 
 class ILocationRecord(IHasLocation):

@@ -130,6 +130,7 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation,
+    IObjectWithLocation,
     ISetLocation,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -794,9 +795,9 @@ class IPersonLimitedView(IHasIcon, IHasLogo):
 
 class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
-                    IHasLocation, IHasRequestedReviews, IHasBugs, IHasRecipes,
-                    IHasTranslationImports, IPersonSettings,
-                    IQuestionsPerson):
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings, IQuestionsPerson):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -1612,31 +1613,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants_count = Attribute(
-        "The number of mapped participants")
-    unmapped_participants = doNotSnapshot(
-        CollectionField(
-            title=_("List of participants with no coordinates recorded."),
-            value_type=Reference(schema=Interface)))
-    unmapped_participants_count = Attribute(
-        "The number of unmapped participants")
-
-    def getMappedParticipants(limit=None):
-        """List of participants with coordinates.
-
-        :param limit: The optional maximum number of items to return.
-        :return: A list of `IPerson` objects
-        """
-
-    def getMappedParticipantsBounds():
-        """Return a dict of the bounding longitudes latitudes, and centers.
-
-        This method cannot be called if there are no mapped participants.
-
-        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
-            center_lat, and center_lng
-        """
-
     def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
@@ -2403,13 +2379,15 @@ class IPersonSet(Interface):
 
     def getPrecachedPersonsFromIDs(
         person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_archive=False, need_preferred_email=False, need_validity=False):
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
         """Lookup person objects from ids with optional precaching.
 
         :param person_ids: List of person ids.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
+        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
@@ -2577,7 +2555,6 @@ for name in [
     'invited_members',
     'deactivatedmembers',
     'expiredmembers',
-    'unmapped_participants',
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 

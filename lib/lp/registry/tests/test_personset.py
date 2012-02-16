@@ -130,8 +130,8 @@ class TestPersonSet(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             persons = list(self.person_set.getPrecachedPersonsFromIDs(
                 person_ids, need_karma=True, need_ubuntu_coc=True,
-                need_archive=True, need_preferred_email=True,
-                need_validity=True))
+                need_location=True, need_archive=True,
+                need_preferred_email=True, need_validity=True))
         self.assertThat(recorder, HasQueryCount(LessThan(2)))
 
         with StormStatementRecorder() as recorder:
@@ -139,6 +139,7 @@ class TestPersonSet(TestCaseWithFactory):
                 person.is_valid_person
                 person.karma
                 person.is_ubuntu_coc_signer
+                person.location,
                 person.archive
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))

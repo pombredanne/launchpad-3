@@ -723,15 +723,19 @@ class Person(
         """
         return None
 
+    @cachedproperty
+    def location(self):
+        """See `IObjectWithLocation`."""
+        return PersonLocation.selectOneBy(person=self)
+
     @property
     def time_zone(self):
         """See `IHasLocation`."""
-        location = PersonLocation.selectOneBy(person=self)
-        if location is None:
+        if self.location is None:
             return None
         # Wrap the location with a security proxy to make sure the user has
         # enough rights to see it.
-        return ProxyFactory(location).time_zone
+        return ProxyFactory(self.location).time_zone
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
@@ -740,15 +744,14 @@ class Person(
                 (latitude is not None and longitude is not None)), (
             "Cannot set a latitude without longitude (and vice-versa).")
 
-        location = PersonLocation.selectOneBy(person=self)
-        if location is not None:
-            location.time_zone = time_zone
-            location.latitude = latitude
-            location.longitude = longitude
-            location.last_modified_by = user
-            location.date_last_modified = UTC_NOW
+        if self.location is not None:
+            self.location.time_zone = time_zone
+            self.location.latitude = latitude
+            self.location.longitude = longitude
+            self.location.last_modified_by = user
+            self.location.date_last_modified = UTC_NOW
         else:
-            PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1785,7 +1788,7 @@ class Person(
     def all_members_prepopulated(self):
         """See `IPerson`."""
         return self._members(direct=False, need_karma=True,
-            need_ubuntu_coc=True, need_archive=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
             need_preferred_email=True, need_validity=True)
 
     @staticmethod
@@ -1853,13 +1856,15 @@ class Person(
             decorators=decorators)
 
     def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
-        need_archive=False, need_preferred_email=False, need_validity=False):
+        need_location=False, need_archive=False, need_preferred_email=False,
+        need_validity=False):
         """Lookup all members of the team with optional precaching.
 
         :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
+        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
@@ -1895,6 +1900,7 @@ class Person(
             origin, conditions, store=Store.of(self),
             need_karma=need_karma,
             need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location,
             need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity)
@@ -1996,7 +2002,7 @@ class Person(
     def api_activemembers(self):
         """See `IPerson`."""
         return self._members(direct=True, need_karma=True,
-            need_ubuntu_coc=True, need_archive=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
             need_preferred_email=True, need_validity=True)
 
     @property
@@ -4304,8 +4310,8 @@ class PersonSet:
 
     def getPrecachedPersonsFromIDs(
         self, person_ids, need_karma=False, need_ubuntu_coc=False,
-        need_archive=False, need_preferred_email=False, need_validity=False,
-        need_icon=False):
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False, need_icon=False):
         """See `IPersonSet`."""
         origin = [Person]
         conditions = [
@@ -4313,15 +4319,15 @@ class PersonSet:
         return self._getPrecachedPersons(
             origin, conditions,
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_archive=need_archive,
+            need_location=False, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
         self, origin, conditions, store=None,
         need_karma=False, need_ubuntu_coc=False,
-        need_archive=False, need_preferred_email=False, need_validity=False,
-        need_icon=False):
+        need_location=False, need_archive=False, need_preferred_email=False,
+        need_validity=False, need_icon=False):
         """Lookup all members of the team with optional precaching.
 
         :param store: Provide ability to specify the store.
@@ -4331,6 +4337,7 @@ class PersonSet:
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
+        :param need_location: The location attribute will be cached.
         :param need_archive: The archive attribute will be cached.
         :param need_preferred_email: The preferred email attribute will be
             cached.
@@ -4353,6 +4360,12 @@ class PersonSet:
                 And(Person._is_ubuntu_coc_signer_condition(),
                     SignedCodeOfConduct.ownerID == Person.id))),
                 name='is_ubuntu_coc_signer'))
+        if need_location:
+            # New people have no location rows
+            origin.append(
+                LeftJoin(PersonLocation,
+                    PersonLocation.person == Person.id))
+            columns.append(PersonLocation)
         if need_archive:
             # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
@@ -4415,6 +4428,11 @@ class PersonSet:
                 signed = row[index]
                 index += 1
                 cache.is_ubuntu_coc_signer = signed
+            #-- location caching
+            if need_location:
+                location = row[index]
+                index += 1
+                cache.location = location
             #-- archive caching
             if need_archive:
                 archive = row[index]

@@ -29,19 +29,3 @@ A user can set his own time zone:
     >>> zzz.time_zone
     u'Europe/Madrid'
     >>> logout()
-
-The user can change his time zone:
-
-    >>> self_browser.open('http://launchpad.dev/~zzz/+editlocation')
-    >>> self_browser.getControl(name='field.time_zone').value = [
-    ...     'Australia/Perth']
-    >>> zzz.time_zone
-    u'Australia/Perth'
-
-And so can a Launchpad admin:
-
-    >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
-    >>> self_browser.getControl(name='field.time_zone').value = [
-    ...     'Europe/Madrid']
-    >>> zzz.time_zone
-    u'Europe/Madrid'

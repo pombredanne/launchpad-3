@@ -19,7 +19,7 @@ PersonLocation). Until we move the time zone back to the Person table
     None
 
 setLocation() will always set the time zone to the given value and both
-latitude and lagitude to None, regardless of what was passed in.
+latitude and longitude to None, regardless of what was passed in.
 
     >>> cprov = personset.getByName('cprov')
     >>> login_person(cprov)
