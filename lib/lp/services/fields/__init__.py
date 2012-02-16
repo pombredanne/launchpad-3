@@ -491,7 +491,8 @@ class BlacklistableContentNameField(ContentNameField):
     """ContentNameField that also checks that a name is not blacklisted"""
 
     blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators. Please contact Launchpad Support.")
+                         "administrators. Contact Launchpad Support if you "
+                         "want to use this name.")
 
     def _validate(self, input):
         """Check that the given name is valid, unique and not blacklisted."""
