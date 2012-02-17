@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
@@ -145,6 +148,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
 
 
 class TestSpecificationWorkItems(TestCaseWithFactory):
+    """Test the Workitem-related methods of ISpecification."""
 
     layer = DatabaseFunctionalLayer
 
@@ -163,6 +167,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         title = u'new-work-item'
         spec = self.factory.makeSpecification()
         assignee = self.factory.makePerson()
+        # XXX: This test should fail because we're using a milestone that
+        # doesn't belong to the spec's target.
         milestone = self.factory.makeMilestone()
         status = SpecificationWorkItemStatus.DONE
         login_person(spec.owner)
@@ -174,3 +180,125 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         self.assertEqual(status, work_item.status)
         self.assertEqual(title, work_item.title)
         self.assertEqual(milestone, work_item.milestone)
+
+    def test_updateWorkItems_no_existing_items(self):
+        """When there are no existing work items, updateWorkItems will create
+        a new entry for every element in the list given to it.
+        """
+        spec = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        milestone = self.factory.makeMilestone(product=spec.product)
+        work_item1_data = dict(
+            title=u'Foo Bar', status=SpecificationWorkItemStatus.DONE,
+            assignee=spec.owner, milestone=None)
+        work_item2_data = dict(
+            title=u'Bar Foo', status=SpecificationWorkItemStatus.TODO,
+            assignee=None, milestone=milestone)
+
+        # We start with no work items.
+        self.assertEquals([], list(spec.work_items))
+
+        login_person(spec.owner)
+        spec.updateWorkItems([work_item1_data, work_item2_data])
+
+        # And after calling updateWorkItems() we have 2 work items.
+        self.assertEqual(2, spec.work_items.count())
+
+        # The data dicts we pass to updateWorkItems() have no sequence because
+        # that's taken from their position on the list, so we update our data
+        # dicts with the sequence we expect our work items to have.
+        work_item1_data['sequence'] = 0
+        work_item2_data['sequence'] = 1
+
+        # Assert that the work items ultimately inserted in the DB are exactly
+        # what we expect them to be.
+        created_wi1, created_wi2 = list(spec.work_items)
+        self.assertThat(
+            created_wi1, MatchesStructure.byEquality(**work_item1_data))
+        self.assertThat(
+            created_wi2, MatchesStructure.byEquality(**work_item2_data))
+
+    def test_updateWorkItems_merges_with_existing_ones(self):
+        spec = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        login_person(spec.owner)
+        # Create two work-items in our database.
+        wi1_data = self._createWorkItemAndReturnDataDict(spec)
+        wi2_data = self._createWorkItemAndReturnDataDict(spec)
+        self.assertEqual(2, spec.work_items.count())
+
+        # These are the work items we'll be inserting.
+        new_wi1_data = dict(
+            title=u'Some Title', status=SpecificationWorkItemStatus.TODO,
+            assignee=None, milestone=None)
+        new_wi2_data = dict(
+            title=u'Other title', status=SpecificationWorkItemStatus.TODO,
+            assignee=None, milestone=None)
+
+        # We want to insert the two work items above in the first and third
+        # positions respectively, so the existing ones to be moved around
+        # (e.g. have their sequence updated).
+        work_items = [new_wi1_data, wi1_data, new_wi2_data, wi2_data]
+        spec.updateWorkItems(work_items)
+
+        # Update our data dicts with the sequences we expect the work items in
+        # our DB to have.
+        new_wi1_data['sequence'] = 0
+        wi1_data['sequence'] = 1
+        new_wi2_data['sequence'] = 2
+        wi2_data['sequence'] = 3
+
+        self.assertEqual(4, spec.work_items.count())
+        for data, obj in zip(work_items, list(spec.work_items)):
+            self.assertThat(obj, MatchesStructure.byEquality(**data))
+
+    def test_updateWorkItems_updates_existing_ones(self):
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        # Create a work-item in our database.
+        wi_data = self._createWorkItemAndReturnDataDict(spec)
+        self.assertEqual(1, spec.work_items.count())
+
+        # This time we're only changing the existing work item; we'll change
+        # its assignee and status.
+        wi_data.update(dict(status=SpecificationWorkItemStatus.DONE,
+                            assignee=spec.owner))
+        spec.updateWorkItems([wi_data])
+
+        self.assertEqual(1, spec.work_items.count())
+        self.assertThat(
+            spec.work_items[0], MatchesStructure.byEquality(**wi_data))
+
+    def test_updateWorkItems_deletes_all_if_given_empty_list(self):
+        work_item = self.factory.makeSpecificationWorkItem()
+        spec = work_item.specification
+        self.assertEqual(1, spec.work_items.count())
+        spec.updateWorkItems([])
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_updateWorkItems_marks_removed_ones_as_deleted(self):
+        spec = self.factory.makeSpecification()
+        wi1_data = self._createWorkItemAndReturnDataDict(spec)
+        wi2_data = self._createWorkItemAndReturnDataDict(spec)
+        self.assertEqual(2, spec.work_items.count())
+        login_person(spec.owner)
+
+        # We have two work items in the DB but now we want to update them to
+        # keep just the second one. The first will be deleted and the sequence
+        # of the second will be changed.
+        spec.updateWorkItems([wi2_data])
+        self.assertEqual(1, spec.work_items.count())
+        wi2_data['sequence'] = 0
+        self.assertThat(
+            spec.work_items[0], MatchesStructure.byEquality(**wi2_data))
+
+    def _createWorkItemAndReturnDataDict(self, spec):
+        if spec.work_items.count() == 0:
+            sequence = 0
+        else:
+            sequence = max(wi.sequence for wi in spec.work_items) + 1
+        wi = self.factory.makeSpecificationWorkItem(
+            specification=spec, sequence=sequence)
+        return dict(
+            title=wi.title, status=wi.status, assignee=wi.assignee,
+            milestone=wi.milestone, sequence=sequence)

@@ -289,6 +289,10 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
+    # FIXME: Should probably use something other than Attribute here. Probably
+    # List(value_type=ISpecificationWorkItem, ...)
+    work_items = Attribute("The list of work items for this spec")
+
     whiteboard = exported(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
@@ -574,6 +578,20 @@ class ISpecificationEditRestricted(Interface):
                     status=SpecificationWorkItemStatus.TODO, assignee=None,
                     milestone=None):
         """Create a new SpecificationWorkItem."""
+
+    def updateWorkItems(new_work_items):
+        """Update the existing work items to match the given ones.
+
+        First, for every existing work item that is not present on the new
+        list, mark it as deleted. Then, for every tuple in the given list,
+        lookup an existing work item with the same title and update its
+        status, assignee, milestone and sequence (position on the work-items
+        list). If there's no existing work items with that title, we create a
+        new one.
+
+        :param new_work_items: A list of dictionaries containing the following
+            keys: title, status, assignee and milestone.
+        """
 
     def setTarget(target):
         """Set this specification's target.

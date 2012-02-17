@@ -44,7 +44,12 @@ class SpecificationWorkItem(StormBase):
         schema=SpecificationWorkItemStatus,
         notNull=True, default=SpecificationWorkItemStatus.TODO)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    # XXX: Need to decide whether we'll use sequential values here or leave
+    # gaps between the numbers we use to make it cheap to insert new items in
+    # the middle.
     sequence = Int(allow_none=False)
+    # XXX: Should we reset the sequence when a WI is marked as deleted?
+    # XXX: Do we need to keep track of the date when it was deleted?
     deleted = Bool(allow_none=False, default=False)
 
     def __repr__(self):

@@ -238,6 +238,59 @@ class Specification(SQLBase, BugLinkTargetMixin):
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)
 
+    @property
+    def work_items(self):
+        """See ISpecification."""
+        return Store.of(self).find(
+            SpecificationWorkItem, specification=self,
+            deleted=False).order_by("sequence")
+
+    def _deleteWorkItemsNotMatching(self, titles):
+        """Delete all work items whose title does not match the given ones.
+
+        Also set the sequence of those deleted work items to -1.
+        """
+        for work_item in self.work_items:
+            if work_item.title not in titles:
+                work_item.deleted = True
+
+    def updateWorkItems(self, new_work_items):
+        """See ISpecification."""
+        # First remove work items with titles that are no longer present.
+        self._deleteWorkItemsNotMatching(
+            [wi['title'] for wi in new_work_items])
+        work_items = list(Store.of(self).find(
+            SpecificationWorkItem, specification=self, deleted=False).order_by("sequence"))
+        # At this point the list of new_work_items is necessarily the same
+        # size (or longer) than the list of existing ones.
+        to_insert = []
+        existing_titles = [wi.title for wi in work_items]
+        for i in range(len(new_work_items)):
+            new_wi = new_work_items[i]
+            if new_wi['title'] not in existing_titles:
+                # This is a new work item, so we insert it with 'i' as its
+                # sequence as that's the position it is on the list entered by
+                # the user.
+                to_insert.append((i, new_wi))
+            else:
+                # Get the existing work item with the same title and update
+                # it to match what we have now.
+                existing_wi = work_items[
+                    existing_titles.index(new_wi['title'])]
+                existing_wi.sequence = i
+                existing_wi.status = new_wi['status']
+                existing_wi.assignee = new_wi['assignee']
+                milestone = new_wi['milestone']
+                if milestone is not None:
+                    assert milestone.target == self.target, (
+                        "%s does not belong to this spec's target (%s)" %
+                            (milestone.displayname, self.target.name))
+                existing_wi.milestone = milestone
+
+        for sequence, item in to_insert:
+            self.newWorkItem(item['title'], sequence, item['status'],
+                             item['assignee'], item['milestone'])
+
     def setTarget(self, target):
         """See ISpecification."""
         if IProduct.providedBy(target):
