@@ -54,6 +54,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationLifecycleStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -568,6 +569,11 @@ class ISpecificationEditRestricted(Interface):
     @operation_for_version("devel")
     def setImplementationStatus(implementation_status, user):
         """Mutator for implementation_status that calls updateLifeCycle."""
+
+    def newWorkItem(title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
+        """Create a new SpecificationWorkItem."""
 
     def setTarget(target):
         """Set this specification's target.
