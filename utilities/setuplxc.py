@@ -140,23 +140,23 @@ def cd(directory):
 
 
 def file_append(filename, line):
-    """Append given `line`, if not present, at the end of `filename`.
+    r"""Append given `line`, if not present, at the end of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     Nothing happens if the file already contains the given `line`::
 
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     A new line is automatically added before the given `line` if it is not
     present at the end of current file content::
@@ -165,9 +165,9 @@ def file_append(filename, line):
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
         >>> f.write('line1')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
     """
     with open(filename, 'a+') as f:
         content = f.read()
@@ -179,30 +179,30 @@ def file_append(filename, line):
 
 
 def file_prepend(filename, line):
-    """Insert given `line`, if not present, at the beginning of `filename`.
+    r"""Insert given `line`, if not present, at the beginning of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file starts with the given `line`, nothing happens::
 
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file contains the given `line`, but not at the beginning,
     the line is moved on top::
 
-        >>> file_prepend(f.name, 'line1\\n')
+        >>> file_prepend(f.name, 'line1\n')
         >>> open(f.name).read()
-        'line1\\nline0\\n'
+        'line1\nline0\n'
     """
     with open(filename, 'r+') as f:
         lines = f.readlines()
@@ -499,12 +499,12 @@ def handle_userdata(namespace, whois=bzr_whois):
 
 
 def handle_ssh_keys(namespace):
-    """Handle private and public ssh keys.
+    r"""Handle private and public ssh keys.
 
     Keys contained in the namespace are escaped::
 
-        >>> private = r'PRIVATE\\nKEY'
-        >>> public = r'PUBLIC\\nKEY'
+        >>> private = r'PRIVATE\nKEY'
+        >>> public = r'PUBLIC\nKEY'
         >>> namespace = argparse.Namespace(
         ...     private_key=private, public_key=public)
         >>> handle_ssh_keys(namespace)
