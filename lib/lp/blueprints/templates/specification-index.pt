@@ -280,6 +280,10 @@
     </div>
 
     <div class="portlet">
+      <div class="wide" tal:content="structure view/workitems_widget" />
+    </div>
+
+    <div class="portlet">
       <div class="wide" tal:content="structure view/whiteboard_widget" />
     </div>
 

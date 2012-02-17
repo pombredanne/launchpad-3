@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
+    'SpecificationEditWorkItemsView',
     'SpecificationGoalDecideView',
     'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
@@ -520,6 +521,11 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
+    def workitems(self):
+        text = 'Edit work items'
+        return Link('+workitems', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
         if self.context.linked_branches.count() > 0:
             text = 'Link to another branch'
@@ -715,6 +721,12 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
     custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditWorkItemsView(SpecificationEditView):
+    label = 'Edit specification work items'
+    field_names = ['workitems']
+    custom_widget('workitems', TextAreaWidget, height=15)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):
