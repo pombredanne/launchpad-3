@@ -78,6 +78,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -671,17 +672,13 @@ class ObjectFormatterAPI:
 
         By default, reverse breadcrumbs are always used if they are available.
         If not available, then the view's .page_title attribut is used.
-        If breadcrumbs are available, then a view can still choose to
-        override them by setting the attribute .override_title_breadcrumbs
-        to True.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
         hierarchy_view = getMultiAdapter(
             (view.context, request), name='+hierarchy')
-        override = getattr(view, 'override_title_breadcrumbs', False)
-        if (override or
+        if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
             not hierarchy_view.display_breadcrumbs):
             # The breadcrumbs are either not available or are overridden.  If

@@ -37,7 +37,7 @@ page.
     'http://bugs.launchpad.dev/evolution/+bug/...'
 
     >>> user_browser.title
-    'Bug #... in Evolution: ...Evolution crashes...'
+    'Bug #... : Bugs : Evolution'
 
 
 Subscribing to a similar bug
@@ -109,7 +109,7 @@ user to the bug page.
     'http://bugs.launchpad.dev/evolution/+bug/...'
 
     >>> user_browser.title
-    'Bug #... in Evolution: ...Faznambutron dumps core...'
+    'Bug #... : Bugs : Evolution'
 
 
 Empty ProjectGroups

@@ -637,8 +637,6 @@ class BugTaskTextView(LaunchpadView):
 class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
-    override_title_breadcrumbs = True
-
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
@@ -654,6 +652,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def page_title(self):
+        return self.context.bug.id
+
+    @property
+    def label(self):
         heading = 'Bug #%s in %s' % (
             self.context.bug.id, self.context.bugtargetdisplayname)
         title = FormattersAPI(self.context.bug.title).obfuscate_email()
