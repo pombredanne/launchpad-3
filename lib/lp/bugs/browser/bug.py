@@ -949,7 +949,7 @@ class DeprecatedAssignedBugsView(RedirectionView):
 
     def __init__(self, context, request):
         target = canonical_url(
-            getUtility(ILaunchBag).user, view='+assignedbugs')
+            getUtility(ILaunchBag).user, view_name='+assignedbugs')
         super(DeprecatedAssignedBugsView, self).__init__(
             target, request)
 

@@ -229,7 +229,7 @@ class CurrentTranslationMessageIndexView(RedirectionView):
     """A view to forward to the translation form."""
 
     def __init__(self, context, request):
-        target = canonical_url(context, view='+translate')
+        target = canonical_url(context, view_name='+translate')
         super(CurrentTranslationMessageIndexView, self).__init__(
             target, request)
 

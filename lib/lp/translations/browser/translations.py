@@ -160,7 +160,7 @@ class TranslateRedirectView(RedirectionView):
 
     def __init__(self, context, request):
         target = canonical_url(
-            context, rootsite='translations', view='+translate')
+            context, rootsite='translations', view_name='+translate')
         super(TranslateRedirectView, self).__init__(
             target, request, status=301)
 
@@ -170,7 +170,7 @@ class TranslationsRedirectView(RedirectionView):
 
     def __init__(self, context, request):
         target = canonical_url(
-            context, rootsite='translations', view='+translations')
+            context, rootsite='translations', view_name='+translations')
         super(TranslationsRedirectView, self).__init__(
             target, request, status=301)
 
