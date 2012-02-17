@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for person bug views."""
@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from lp.app.errors import UnexpectedFormData
 from lp.app.browser.tales import MenuAPI
+from lp.bugs.browser import person
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.registry.browser import person
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
