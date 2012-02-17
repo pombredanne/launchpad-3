@@ -163,7 +163,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
         permission="zope.Public"/>
     <browser:page
         name="+missingpackages"
@@ -337,7 +337,7 @@
         <browser:page
             name="+ask-a-question-button"
             for="lp.registry.interfaces.projectgroup.IProjectGroup"
-            class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+            class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
             permission="zope.Public"/>
     </facet>
     <browser:navigation
@@ -389,7 +389,7 @@
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
         permission="zope.Public"/>
     <browser:page
         name="+edit"
@@ -1792,7 +1792,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"

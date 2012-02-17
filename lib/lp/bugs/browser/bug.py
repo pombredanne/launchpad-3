@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -121,6 +121,7 @@ from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
+from lp.services.webapp.publisher import RedirectionView
 
 
 class BugNavigation(Navigation):
@@ -683,19 +684,16 @@ class BugSubscriptionPortletView(LaunchpadView,
             cache['notifications_text'] = self.notifications_text
 
 
-class BugWithoutContextView:
+class BugWithoutContextView(RedirectionView):
     """View that redirects to the new bug page.
 
     The user is redirected, to the oldest IBugTask ('oldest' being
     defined as the IBugTask with the smallest ID.)
     """
-    # XXX: BradCrittenden 2009-04-28 This class can go away since the
-    # publisher now takes care of the redirection to a bug task.
-    def redirectToNewBugPage(self):
-        """Redirect the user to the 'first' report of this bug."""
-        # An example of practicality beating purity.
-        self.request.response.redirect(
-            canonical_url(self.context.default_bugtask))
+
+    def __init__(self, context, request):
+        super(BugWithoutContextView, self).__init__(
+            canonical_url(context.default_bugtask), request)
 
 
 class BugEditViewBase(LaunchpadEditFormView):
@@ -940,7 +938,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
                 structured(notification_text))
 
 
-class DeprecatedAssignedBugsView:
+class DeprecatedAssignedBugsView(RedirectionView):
     """Deprecate the /malone/assigned namespace.
 
     It's important to ensure that this namespace continues to work, to
@@ -950,14 +948,10 @@ class DeprecatedAssignedBugsView:
     """
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def redirect_to_assignedbugs(self):
-        """Redirect the user to their assigned bugs report."""
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).user) +
-            "/+assignedbugs")
+        target = canonical_url(
+            getUtility(ILaunchBag).user, view='+assignedbugs')
+        super(DeprecatedAssignedBugsView, self).__init__(
+            target, request)
 
 
 normalize_mime_type = re.compile(r'\s+')
