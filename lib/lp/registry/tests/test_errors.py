@@ -16,6 +16,7 @@ from httplib import (
 
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
+    CommercialSubscribersOnly,
     DeleteSubscriptionError,
     DistroSeriesDifferenceError,
     JoinNotAllowed,
@@ -74,7 +75,7 @@ class TestWebServiceErrors(TestCase):
         error_view = create_webservice_error_view(DeleteSubscriptionError())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_UserCannotSubscribePerson_bad_request(self):
+    def test_UserCannotSubscribePerson_authorised(self):
         error_view = create_webservice_error_view(UserCannotSubscribePerson())
         self.assertEqual(UNAUTHORIZED, error_view.status)
 
@@ -83,7 +84,7 @@ class TestWebServiceErrors(TestCase):
             CannotTransitionToCountryMirror())
         self.assertEqual(BAD_REQUEST, error_view.status)
 
-    def test_UserCannotChangeMembershipSilently_bad_request(self):
+    def test_UserCannotChangeMembershipSilently_authorised(self):
         error_view = create_webservice_error_view(
             UserCannotChangeMembershipSilently())
         self.assertEqual(UNAUTHORIZED, error_view.status)
@@ -91,6 +92,10 @@ class TestWebServiceErrors(TestCase):
     def test_NameAlreadyTaken_bad_request(self):
         error_view = create_webservice_error_view(NameAlreadyTaken())
         self.assertEqual(CONFLICT, error_view.status)
+
+    def test_CommercialSubscribersOnly_forbidden(self):
+        error_view = create_webservice_error_view(CommercialSubscribersOnly())
+        self.assertEqual(FORBIDDEN, error_view.status)
 
     def test_ImmutableVisibilityError_forbidden(self):
         error_view = create_webservice_error_view(
