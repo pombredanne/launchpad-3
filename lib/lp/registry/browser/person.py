@@ -639,7 +639,10 @@ class PersonBugsMenu(NavigationMenu):
     def reportedbugs(self):
         text = 'Reported bugs'
         summary = 'Bugs reported by %s.' % self.context.displayname
-        return Link('+reportedbugs', text, site='bugs', summary=summary)
+        enabled = not self.context.is_team
+        return Link(
+            '+reportedbugs', text, site='bugs', summary=summary,
+            enabled=enabled)
 
     def subscribedbugs(self):
         text = 'Subscribed bugs'
@@ -651,12 +654,18 @@ class PersonBugsMenu(NavigationMenu):
         text = 'Commented bugs'
         summary = ('Bug reports on which %s has commented.'
                    % self.context.displayname)
-        return Link('+commentedbugs', text, site='bugs', summary=summary)
+        enabled = not self.context.is_team
+        return Link(
+            '+commentedbugs', text, site='bugs', summary=summary,
+            enabled=enabled)
 
     def affectingbugs(self):
         text = 'Affecting bugs'
         summary = ('Bugs affecting %s.' % self.context.displayname)
-        return Link('+affectingbugs', text, site='bugs', summary=summary)
+        enabled = not self.context.is_team
+        return Link(
+            '+affectingbugs', text, site='bugs', summary=summary,
+            enabled=enabled)
 
 
 class PersonSpecsMenu(NavigationMenu):
