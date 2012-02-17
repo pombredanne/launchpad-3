@@ -29,7 +29,7 @@ __all__ = [
 
 from collections import namedtuple, OrderedDict
 from contextlib import contextmanager
-from email.Utils import parseaddr
+from email.Utils import parseaddr, formataddr
 import argparse
 import os
 import platform
@@ -703,8 +703,7 @@ def initialize_host(
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
         # Set up bzr and Launchpad authentication.
-        subprocess.call([
-            'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
+        subprocess.call(['bzr', 'whoami', formataddr((fullname, email))])
         if valid_ssh_keys:
             subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
@@ -721,6 +720,25 @@ def initialize_host(
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
             os.makedirs(os.path.join(dependencies_dir, subdir))
+    # We need a script that will run the LP build inside LXC.  It is run as
+    # root (see below) but drops root once inside the LXC container.
+    build_script_file = '/usr/local/bin/launchpad-lxc-build'
+    with open(build_script_file, 'w') as script:
+        uid = pwd.getpwnam(user)[2]
+        script.write('#!/bin/sh\n')
+        script.write(
+            'lxc-execute -n lptests --' # Run the named LXC container.
+            ' /usr/bin/sudo -u#{} -i'.format(uid)+ # Drop root privileges.
+            ' /bin/sh -c' # The command below needs to run in a shell.
+            ' cd /var/lib/buildbot/lp && make build && make schema\n')
+        os.chmod(build_script_file, 0555)
+    # Add a file to sudoers.d that will let the buildbot user run the above.
+    sudoers_file = '/etc/sudoers.d/lauchpad-buildbot'
+    with open(sudoers_file, 'w') as sudoers:
+        sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
+        sudoers.write(' /usr/local/bin/launchpad-lxc-build\n')
+        # The sudoers must have this mode or it will be ignored.
+        os.chmod(sudoers_file, 0440)
     with cd(dependencies_dir):
         with su(user) as env:
             subprocess.call([
