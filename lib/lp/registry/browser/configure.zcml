@@ -1455,6 +1455,12 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
+        permission="launchpad.Edit"
+        name="+sharing"
+        class="lp.registry.browser.product.ProductSharingView"
+        template="../templates/product-sharing.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
         name="+purchase-subscription"
         class="lp.registry.browser.product.ProductPurchaseSubscriptionView"
