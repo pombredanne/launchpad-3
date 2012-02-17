@@ -12,6 +12,7 @@ __all__ = [
     'file_append',
     'file_prepend',
     'get_container_path',
+    'get_user_home',
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
@@ -251,6 +252,15 @@ def get_user_ids(user):
     return userdata.pw_uid, userdata.pw_gid
 
 
+def get_user_home(user):
+    """Return the home directory of the given `user`.
+
+        >>> get_user_home('root')
+        '/root'
+    """
+    return pwd.getpwnam(user).pw_dir
+
+
 def ssh(location, user=None, caller=subprocess.call):
     """Return a callable that can be used to run ssh shell commands.
 
@@ -306,13 +316,15 @@ def su(user):
     os.setegid(gid)
     os.seteuid(uid)
     current_home = os.getenv('HOME')
-    home = os.path.join(os.path.sep, 'home', user)
+    home = get_user_home(user)
     os.environ['HOME'] = home
-    yield Env(uid, gid, home)
-    os.setegid(os.getgid())
-    os.seteuid(os.getuid())
-    if current_home is not None:
-        os.environ['HOME'] = current_home
+    try:
+        yield Env(uid, gid, home)
+    finally:
+        os.setegid(os.getgid())
+        os.seteuid(os.getuid())
+        if current_home is not None:
+            os.environ['HOME'] = current_home
 
 
 def user_exists(username):
@@ -404,17 +416,20 @@ def handle_users(namespace, euid=None):
 
     If lpuser is not provided by namespace, the user name is used::
 
-        >>> namespace = argparse.Namespace(user='myuser', lpuser=None)
+        >>> import getpass
+        >>> username = getpass.getuser()
+
+        >>> namespace = argparse.Namespace(user=username, lpuser=None)
         >>> handle_users(namespace)
-        >>> namespace.lpuser
-        'myuser'
+        >>> namespace.lpuser == username
+        True
 
     This validator populates namespace with `home_dir` and `run_as_root`
     names::
 
         >>> handle_users(namespace, euid=0)
-        >>> namespace.home_dir
-        '/home/myuser'
+        >>> namespace.home_dir == '/home/' + username
+        True
         >>> namespace.run_as_root
         True
 
@@ -434,7 +449,7 @@ def handle_users(namespace, euid=None):
         namespace.user = pwd.getpwuid(euid).pw_name
     if namespace.lpuser is None:
         namespace.lpuser = namespace.user
-    namespace.home_dir = os.path.join(os.path.sep, 'home', namespace.user)
+    namespace.home_dir = get_user_home(namespace.user)
     namespace.run_as_root = not euid
 
 
@@ -751,8 +766,8 @@ def create_lxc(user, lxcname):
         raise SetupLXCError('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
-    user_authorized_keys = os.path.join(
-        os.path.sep, 'home', user, '.ssh/authorized_keys')
+    user_authorized_keys = os.path.expanduser(
+        '~' + user + '/.ssh/authorized_keys')
     with open(user_authorized_keys, 'a') as f:
         f.write(open('/root/.ssh/id_rsa.pub').read())
     dst = get_container_path(lxcname, '/root/.ssh/')
@@ -794,6 +809,15 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
         '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
+    # We install lxc in the guest so that lxc-execute will work on the
+    # container.  We use --no-install-recommends at the recommendation
+    # of the Canonical lxc maintainers because all we need is a file
+    # that the base lxc package installs, and so that packages we
+    # don't need and that might even cause problems inside the
+    # container are not around.
+    root_sshcall(
+        'DEBIAN_FRONTEND=noninteractive apt-get -y '
+        '--no-install-recommends install lxc')
     # User configuration.
     root_sshcall('adduser {} sudo'.format(user))
     pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
