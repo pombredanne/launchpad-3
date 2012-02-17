@@ -2162,25 +2162,6 @@ COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has propertie
 COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
 COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
 
--- Entitlement
-COMMENT ON TABLE Entitlement IS 'Entitlements and usage of privileged features.';
-COMMENT ON COLUMN Entitlement.person IS 'The person to which the entitlements apply.';
-COMMENT ON COLUMN Entitlement.registrant IS 'The person (admin) who registered this entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.approved_by IS 'The person who approved this entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.date_approved IS 'Approval date of entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.date_created IS 'Creation date of entitlement.';
-COMMENT ON COLUMN Entitlement.date_starts IS 'When this entitlement becomes active.';
-COMMENT ON COLUMN Entitlement.date_expires IS 'When this entitlement expires.';
-COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement (e.g. private bug).';
-COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
-COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
-COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
-COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
-COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
-COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
-COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
-COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
-
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
