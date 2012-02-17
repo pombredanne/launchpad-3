@@ -647,6 +647,14 @@ class SpecificationView(SpecificationSimpleView):
             hide_empty=False)
 
     @property
+    def workitems_text_widget(self):
+        """The Work Items text as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['workitems_text'], title="Work Items",
+            edit_view='+workitems', edit_title='Edit work items',
+            hide_empty=False)
+
+    @property
     def direction_widget(self):
         return BooleanChoiceWidget(
             self.context, ISpecification['direction_approved'],

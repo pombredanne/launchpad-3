@@ -507,7 +507,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard"))
+                               "whiteboard", "workitems_text"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -972,7 +972,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
+        drafter=None, whiteboard=None, workitems_text=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
@@ -988,7 +988,8 @@ class SpecificationSet(HasSpecificationsMixin):
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
+            workitems_text=workitems_text)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

@@ -295,6 +295,10 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
         as_of="devel")
+    workitems_text = Text(title=_('Work Items'), required=False,
+             description=_(
+                "Work items for this specification input in a text format. "
+                "Your changes will override the current work items."))
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
              required=True, default=False,
@@ -645,7 +649,7 @@ class ISpecificationSet(IHasSpecifications):
 
     def new(name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
+        drafter=None, whiteboard=None, workitems_text=None,
         priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
 
@@ -672,6 +676,7 @@ class ISpecificationDelta(Interface):
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
     whiteboard = Attribute("The spec whiteboard or None.")
+    workitems_text = Attribute("The spec work items as text or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distroseries = Attribute("The series to which this is targeted.")
