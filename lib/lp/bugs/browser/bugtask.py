@@ -46,10 +46,6 @@ from datetime import (
     timedelta,
     )
 from itertools import groupby
-from math import (
-    floor,
-    log,
-    )
 from operator import attrgetter
 import os.path
 import re
@@ -4015,6 +4011,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
             items = vocabulary_to_choice_edit_items(
                 SimpleVocabulary.fromItems(status_items),
+                include_description=True,
                 css_class_prefix='status',
                 disabled_items=disabled_items)
         else:
@@ -4037,6 +4034,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
             items = vocabulary_to_choice_edit_items(
                 SimpleVocabulary.fromItems(importance_items),
+                include_description=True,
                 css_class_prefix='importance')
         else:
             items = '[]'
