@@ -6,7 +6,6 @@ __metaclass__ = type
 from textwrap import dedent
 
 from testtools.matchers import (
-    Contains,
     MatchesRegex,
     MatchesStructure,
     )
