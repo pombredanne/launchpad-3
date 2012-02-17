@@ -46,10 +46,6 @@ from datetime import (
     timedelta,
     )
 from itertools import groupby
-from math import (
-    floor,
-    log,
-    )
 from operator import attrgetter
 import os.path
 import re
