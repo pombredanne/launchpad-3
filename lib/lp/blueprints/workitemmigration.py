@@ -148,6 +148,7 @@ def extractWorkItemsFromWhiteboard(spec):
 
     # Now parse the work item lines and store them in SpecificationWorkItem.
     parser = WorkitemParser(spec)
+    sequence = 0
     for line, milestone in wi_lines:
         assignee_name, title, status = parser.parse_blueprint_workitem(line)
         if assignee_name is not None:
@@ -159,8 +160,9 @@ def extractWorkItemsFromWhiteboard(spec):
             assignee = None
         workitem = removeSecurityProxy(spec).newWorkItem(
             status=status, title=title, assignee=assignee,
-            milestone=milestone)
+            milestone=milestone, sequence=sequence)
         work_items.append(workitem)
+        sequence += 1
 
     removeSecurityProxy(spec).whiteboard = "\n".join(new_whiteboard)
     return work_items
@@ -211,6 +213,8 @@ class SpecificationWorkitemMigrator:
             return
 
         for spec in specs:
+            # TODO: Skip the specs that already have one or more
+            # SpecificationWorkItem entries.
             try:
                 work_items = extractWorkItemsFromWhiteboard(spec)
             except Exception, e:
