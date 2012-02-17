@@ -535,7 +535,7 @@ class TestTeamAddView(TestCaseWithFactory):
             }
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
+                create_initialized_view(
                     personset, name=self.view_name, principal=team.teamowner,
                     form=form)
             team = personset.getByName(team_name)
@@ -571,7 +571,7 @@ class TestTeamAddView(TestCaseWithFactory):
             self.assertEqual(
                 ['PRIVATE'],
                 browser.getControl(name="field.visibility").value)
-        
+
 
 class TestTeamMenu(TestCaseWithFactory):
 
@@ -776,6 +776,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             removeSecurityProxy(tm).status = status
             view = create_initialized_view(self.team, "+addmember")
             view.add_action.success(data={'newmember': member_team})
+
+
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
 
 
 class TestTeamIndexView(TestCaseWithFactory):
