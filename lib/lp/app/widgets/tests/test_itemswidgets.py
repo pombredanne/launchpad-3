@@ -262,10 +262,21 @@ class TestVocabularyToChoiceEditItems(TestCase):
                     for e in self.ChoiceEnum]
         self.assertEqual(expected, items)
 
+    def test_vocabulary_to_choice_edit_items_no_description(self):
+        # Even if feature flag is on, there are no descriptions unless wanted.
+        feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            overrides = {'description': ''}
+            items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        expected = [self._makeItemDict(e.value, overrides)
+                    for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
     def test_vocabulary_to_choice_edit_items_with_description(self):
         # The items list is as expected with the feature flag.
         feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
         with FeatureFixture(feature_flag):
-            items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+            items = vocabulary_to_choice_edit_items(
+                self.ChoiceEnum, include_description=True)
         expected = [self._makeItemDict(e.value) for e in self.ChoiceEnum]
         self.assertEqual(expected, items)

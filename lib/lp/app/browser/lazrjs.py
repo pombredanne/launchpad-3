@@ -526,8 +526,9 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=None, as_json=False,
-    name_fn=None, value_fn=None, description_fn=None):
+    vocab, include_description=False, css_class_prefix=None,
+    disabled_items=None, as_json=False, name_fn=None, value_fn=None,
+    description_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
 
     :vocab: The enumeration to iterate over.
@@ -558,7 +559,7 @@ def vocabulary_to_choice_edit_items(
         description = ''
         feature_flag = getFeatureFlag(
             'disclosure.enhanced_choice_popup.enabled')
-        if feature_flag:
+        if include_description and feature_flag:
             description = description_fn(item)
         new_item = {
             'name': name,
@@ -660,7 +661,7 @@ class EnumChoiceWidget(WidgetBase):
     def __init__(self, context, exported_field, header,
                  content_box_id=None, enum=None,
                  edit_view="+edit", edit_url=None, edit_title='',
-                 css_class_prefix=''):
+                 css_class_prefix='', include_description=False):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -689,7 +690,9 @@ class EnumChoiceWidget(WidgetBase):
             enum = exported_field.vocabulary
         if IEnumeratedType(enum, None) is None:
             raise ValueError('%r does not provide IEnumeratedType' % enum)
-        self.items = vocabulary_to_choice_edit_items(enum, css_class_prefix)
+        self.items = vocabulary_to_choice_edit_items(
+            enum, include_description=include_description,
+            css_class_prefix=css_class_prefix)
 
     @property
     def config(self):
