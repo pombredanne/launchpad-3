@@ -19,6 +19,7 @@ from lp.bugs.browser.bugtask import (
     BugsBugTaskSearchListingView,
     BugTargetView,
     )
+from lp.bugs.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -26,7 +27,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
 from lp.services.feeds.feed import (
@@ -77,11 +77,11 @@ class BugsFeedBase(FeedBase):
         different feeds.
         """
         self.show_column = dict(
-            id = True,
-            title = True,
-            bugtargetdisplayname = True,
-            importance = True,
-            status = True)
+            id=True,
+            title=True,
+            bugtargetdisplayname=True,
+            importance=True,
+            status=True)
 
     @property
     def logo(self):

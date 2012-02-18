@@ -1752,6 +1752,8 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 class TeamMembershipView(LaunchpadView):
     """The view behind ITeam/+members."""
 
+    page_title = 'Members'
+
     @cachedproperty
     def label(self):
         return smartquote('Members of "%s"' % self.context.displayname)
