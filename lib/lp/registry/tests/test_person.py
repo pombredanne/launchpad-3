@@ -6,7 +6,10 @@ __metaclass__ = type
 from datetime import datetime
 
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.utils import smartquote
+
 import pytz
+
 from storm.store import Store
 from testtools.matchers import (
     Equals,
@@ -260,6 +263,16 @@ class TestPersonTeams(TestCaseWithFactory):
 class TestPerson(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_title_user(self):
+        user = self.factory.makePerson(name='snarf')
+        self.assertEqual('Snarf', user.title)
+        self.assertEqual(user.displayname, user.title)
+
+    def test_title_team(self):
+        team = self.factory.makeTeam(name='pting')
+        title = smartquote('"%s" team') % team.displayname
+        self.assertEqual(title, team.title)
 
     def test_getOwnedOrDrivenPillars(self):
         user = self.factory.makePerson()

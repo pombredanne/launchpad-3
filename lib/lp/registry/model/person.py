@@ -40,8 +40,13 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.restful.utils import get_current_browser_request
+from lazr.restful.utils import (
+    get_current_browser_request,
+    smartquote,
+    )
+
 import pytz
+
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -1786,6 +1791,8 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
+        if self.is_team:
+            return smartquote('"%s" team') % self.displayname
         return self.displayname
 
     @property
