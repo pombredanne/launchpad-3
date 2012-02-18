@@ -271,6 +271,12 @@
         class="lp.bugs.browser.bug.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"/>
+    <adapter
+        name="bugs"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.person.IPerson"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+team-bugs-macro"

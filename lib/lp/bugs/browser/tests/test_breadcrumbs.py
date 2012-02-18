@@ -77,3 +77,22 @@ class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
             (self.bug_tracker.title, self.bug_tracker_url),
             ]
         self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker)
+
+
+class BugsVHostBreadcrumbTestCase(BaseBreadcrumbTestCase):
+
+    def test_person(self):
+        person = self.factory.makePerson(name='snarf')
+        person_bugs_url = canonical_url(person, rootsite='bugs')
+        crumbs = self.getBreadcrumbsForObject(person, rootsite='bugs')
+        last_crumb = crumbs[-1]
+        self.assertEquals(person_bugs_url, last_crumb.url)
+        self.assertEquals("Bugs", last_crumb.text)
+
+    def test_bugtarget(self):
+        project = self.factory.makeProduct(name='fnord')
+        project_bugs_url = canonical_url(project, rootsite='bugs')
+        crumbs = self.getBreadcrumbsForObject(project, rootsite='bugs')
+        last_crumb = crumbs[-1]
+        self.assertEquals(project_bugs_url, last_crumb.url)
+        self.assertEquals("Bugs", last_crumb.text)
