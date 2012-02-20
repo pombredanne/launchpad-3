@@ -765,7 +765,6 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
-                PersonBugsMenu
                 PersonEditNavigationMenu
                 PersonFacets
                 PersonIndexMenu
@@ -1044,18 +1043,6 @@
             class="lp.registry.browser.person.PersonOAuthTokensView"
             permission="launchpad.Edit"
             template="../templates/person-oauth-tokens.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonSubscriptionsView"
-            name="+subscriptions"
-            template="../templates/person-subscriptions.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonStructuralSubscriptionsView"
-            name="+structural-subscriptions"
-            template="../templates/person-structural-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
@@ -1453,6 +1440,12 @@
             name="+portlet-license-missing"
             template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="launchpad.Edit"
+        name="+sharing"
+        class="lp.registry.browser.product.ProductSharingView"
+        template="../templates/product-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

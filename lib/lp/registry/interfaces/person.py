@@ -11,6 +11,8 @@ __all__ = [
     'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'IHasStanding',
     'IObjectReassignment',
     'IPerson',
@@ -18,11 +20,11 @@ __all__ = [
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -521,9 +523,6 @@ class PersonNameField(BlacklistableContentNameField):
     teams.
     """
     errormessage = _("%s is already in use by another person or team.")
-
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -2323,9 +2322,6 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
-
     def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
@@ -2548,6 +2544,17 @@ class ISoftwareCenterAgentAPI(Interface):
         the software center to create subscriptions to private PPAs without
         requiring a Launchpad account.
         """
+
+
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
 
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):

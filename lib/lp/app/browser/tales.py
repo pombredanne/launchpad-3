@@ -1581,8 +1581,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         url = urlappend(canonical_url(self._release), '+download')
         # Quote the filename to eliminate non-ascii characters which
         # are invalid in the url.
-        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
+        return urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):

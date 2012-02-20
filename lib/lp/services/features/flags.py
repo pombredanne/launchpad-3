@@ -200,13 +200,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
     ('disclosure.enhanced_private_bug_subscriptions.enabled',
      'boolean',
      ('Enables the auto subscribing and unsubscribing of users as a bug '
@@ -274,6 +267,13 @@ flag_info = sorted([
      'boolean',
      ('If true, will show the visibility field for IPersonSet:+newteam if '
       'the user has a current commercial subscription.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_choice_popup.enabled',
+     'boolean',
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup'),
      '',
      '',
      ''),
