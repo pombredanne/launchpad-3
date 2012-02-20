@@ -133,14 +133,14 @@ class IAccessPolicySource(Interface):
         :return: a collection of the created `IAccessPolicy` objects.
         """
 
-    def getByID(id):
-        """Return the `IAccessPolicy` with the given ID."""
+    def findByIDs(ids):
+        """Return the `IAccessPolicy`s with the given IDs."""
 
-    def getByPillarAndType(pillar, type):
-        """Return the pillar's `IAccessPolicy` with the given type."""
+    def findByPillarsAndTypes(pillars_and_types):
+        """Return the `IAccessPolicy`s for the given pillars and types."""
 
-    def findByPillar(pillar):
-        """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
+    def findByPillars(pillars):
+        """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""
 
 
 class IAccessPolicyGrantSource(Interface):

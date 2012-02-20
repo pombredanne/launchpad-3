@@ -11,6 +11,10 @@ __all__ = [
     ]
 
 from storm.databases.postgres import Returning
+from storm.expr import (
+    And,
+    Or,
+    )
 from storm.properties import (
     DateTime,
     Int,
@@ -142,19 +146,25 @@ class AccessPolicy(StormBase):
         return col == pillar
 
     @classmethod
-    def getByID(cls, id):
+    def findByIDs(cls, ids):
         """See `IAccessPolicySource`."""
-        return IStore(cls).get(cls, id)
+        return IStore(cls).find(cls, cls.id.is_in(ids))
 
     @classmethod
-    def findByPillar(cls, pillar):
+    def findByPillars(cls, pillars):
         """See `IAccessPolicySource`."""
-        return IStore(cls).find(cls, cls._constraintForPillar(pillar))
+        return IStore(cls).find(
+            cls,
+            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
-    def getByPillarAndType(cls, pillar, type):
+    def findByPillarsAndTypes(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
-        return cls.findByPillar(pillar).find(type=type).one()
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls._constraintForPillar(pillar), cls.type == type)
+                for (pillar, type) in pillars_and_types)))
 
 
 class AccessArtifactGrant(StormBase):

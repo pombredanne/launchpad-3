@@ -53,62 +53,67 @@ class TestAccessPolicySource(TestCaseWithFactory):
         self.assertThat(
             policies,
             AllMatch(Provides(IAccessPolicy)))
-        self.assertEquals(
+        self.assertContentEqual(
             wanted,
             [(policy.pillar, policy.type) for policy in policies])
 
-    def test_getByID(self):
-        # getByID finds the right policy.
-        policy = self.factory.makeAccessPolicy()
-        # Flush so we get an ID.
-        Store.of(policy).flush()
-        self.assertEqual(
-            policy, getUtility(IAccessPolicySource).getByID(policy.id))
-
-    def test_getByID_nonexistent(self):
-        # getByID returns None if the policy doesn't exist.
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicySource).getByID(
-                self.factory.getUniqueInteger()))
-
-    def test_getByPillarAndType(self):
-        # getByPillarAndType finds the right policy.
-        product = self.factory.makeProduct()
-
-        private_policy = self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.PRIVATE)
-        security_policy = self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.SECURITY)
-        self.assertEqual(
-            private_policy,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.PRIVATE))
-        self.assertEqual(
-            security_policy,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.SECURITY))
-
-    def test_getByPillarAndType_nonexistent(self):
-        # getByPillarAndType returns None if the policy doesn't exist.
-        # Create policy identifiers, and an unrelated policy.
-        self.factory.makeAccessPolicy(type=AccessPolicyType.PRIVATE)
-        product = self.factory.makeProduct()
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.PRIVATE))
-
-    def test_findByPillar(self):
-        # findByPillar finds only the relevant policies.
-        product = self.factory.makeProduct()
-        policies = [
-            self.factory.makeAccessPolicy(pillar=product, type=type)
-            for type in AccessPolicyType.items]
+    def test_findByIDs(self):
+        # findByIDs finds the right policies.
+        policies = [self.factory.makeAccessPolicy() for i in range(2)]
         self.factory.makeAccessPolicy()
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByPillar(product))
+            getUtility(IAccessPolicySource).findByIDs(
+                [policy.id for policy in policies]))
+
+    def test_findByPillarsAndTypes(self):
+        # findByPillarsAndTypes finds the right policies.
+        product = self.factory.makeProduct()
+        distribution = self.factory.makeDistribution()
+        other_product = self.factory.makeProduct()
+
+        wanted = [
+            (product, AccessPolicyType.PRIVATE),
+            (product, AccessPolicyType.SECURITY),
+            (distribution, AccessPolicyType.PRIVATE),
+            (distribution, AccessPolicyType.SECURITY),
+            (other_product, AccessPolicyType.PRIVATE),
+            ]
+        getUtility(IAccessPolicySource).create(wanted)
+
+        query = [
+            (product, AccessPolicyType.PRIVATE),
+            (product, AccessPolicyType.SECURITY),
+            (distribution, AccessPolicyType.SECURITY),
+            ]
+        self.assertContentEqual(
+            query,
+            [(policy.pillar, policy.type) for policy in
+             getUtility(IAccessPolicySource).findByPillarsAndTypes(query)])
+
+        query = [(distribution, AccessPolicyType.PRIVATE)]
+        self.assertContentEqual(
+            query,
+            [(policy.pillar, policy.type) for policy in
+             getUtility(IAccessPolicySource).findByPillarsAndTypes(query)])
+
+    def test_findByPillars(self):
+        # findByPillars finds only the relevant policies.
+        product = self.factory.makeProduct()
+        distribution = self.factory.makeProduct()
+        other_product = self.factory.makeProduct()
+        wanted = [
+            (pillar, type)
+            for type in AccessPolicyType.items
+            for pillar in (product, distribution, other_product)]
+        policies = getUtility(IAccessPolicySource).create(wanted)
+        self.assertContentEqual(
+            policies,
+            getUtility(IAccessPolicySource).findByPillars(
+                [product, distribution, other_product]))
+        self.assertContentEqual(
+            [policy for policy in policies if policy.pillar == product],
+            getUtility(IAccessPolicySource).findByPillars([product]))
 
 
 class TestAccessArtifact(TestCaseWithFactory):
