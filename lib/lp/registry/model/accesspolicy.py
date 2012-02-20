@@ -20,16 +20,17 @@ from storm.properties import (
     Int,
     )
 from storm.references import Reference
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.accesspolicy import (
     AccessPolicyType,
     IAccessArtifact,
     IAccessArtifactGrant,
+    IAccessArtifactGrantSource,
     IAccessPolicy,
     IAccessPolicyGrant,
     )
-from lp.registry.interfaces.person import IPerson
 from lp.services.database.bulk import load
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
@@ -108,12 +109,11 @@ class AccessArtifact(StormBase):
     @classmethod
     def delete(cls, concrete_artifacts):
         """See `IAccessPolicyArtifactSource`."""
-        ids = [abstract.id for abstract in cls.find(concrete_artifacts)]
+        abstracts = list(cls.find(concrete_artifacts))
+        ids = [abstract.id for abstract in abstracts]
         if len(ids) == 0:
             return
-        IStore(abstract).find(
-            AccessArtifactGrant,
-            AccessArtifactGrant.abstract_artifact_id.is_in(ids)).remove()
+        getUtility(IAccessArtifactGrantSource).deleteByArtifacts(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
@@ -234,6 +234,11 @@ class AccessArtifactGrant(StormBase):
         ids = [artifact.id for artifact in artifacts]
         return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
 
+    @classmethod
+    def deleteByArtifacts(cls, artifacts):
+        """See `IAccessPolicyGrantSource`."""
+        cls.findByArtifacts(artifacts).remove()
+
 
 class AccessPolicyGrant(StormBase):
     implements(IAccessPolicyGrant)
@@ -250,23 +255,29 @@ class AccessPolicyGrant(StormBase):
     date_created = DateTime()
 
     @classmethod
-    def grant(cls, policy, grantee, grantor):
+    def grant(cls, grants):
         """See `IAccessPolicyGrantSource`."""
-        grant = cls()
-        grant.policy = policy
-        grant.grantee = grantee
-        grant.grantor = grantor
-        IStore(cls).add(grant)
-        return grant
+        insert_values = [
+            (policy.id, grantee.id, grantor.id)
+            for (policy, grantee, grantor) in grants]
+        result = IStore(cls).execute(
+            Returning(BulkInsert(
+                (cls.policy_id, cls.grantee_id, cls.grantor_id),
+                expr=insert_values,
+                primary_columns=(cls.policy_id, cls.grantee_id))))
+        return load(cls, result)
 
     @classmethod
-    def get(cls, policy, grantee):
+    def find(cls, grants):
         """See `IAccessPolicyGrantSource`."""
-        assert IAccessPolicy.providedBy(policy)
-        assert IPerson.providedBy(grantee)
-        return IStore(cls).get(cls, (policy.id, grantee.id))
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls.policy == policy, cls.grantee == grantee)
+                for (policy, grantee) in grants)))
 
     @classmethod
-    def findByPolicy(cls, policy):
+    def findByPolicies(cls, policies):
         """See `IAccessPolicyGrantSource`."""
-        return IStore(cls).find(cls, policy=policy)
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(cls, cls.policy_id.is_in(ids))

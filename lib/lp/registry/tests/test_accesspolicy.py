@@ -280,35 +280,26 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_grant(self):
-        policy = self.factory.makeAccessPolicy()
-        grantee = self.factory.makePerson()
-        grantor = self.factory.makePerson()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
-            policy, grantee, grantor)
-        self.assertThat(
-            grant,
-            MatchesStructure.byEquality(
-                grantee=grantee,
-                grantor=grantor,
-                policy=policy))
+        wanted = [
+            (self.factory.makeAccessPolicy(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            (self.factory.makeAccessPolicy(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            ]
+        grants = getUtility(IAccessPolicyGrantSource).grant(wanted)
+        self.assertContentEqual(
+            wanted, [(g.policy, g.grantee, g.grantor) for g in grants])
 
-    def test_get(self):
-        # get() finds the right grant.
-        grant = self.factory.makeAccessPolicyGrant()
-        self.assertEqual(
-            grant,
-            getUtility(IAccessPolicyGrantSource).get(
-                grant.policy, grant.grantee))
+    def test_find(self):
+        # find() finds the right grants.
+        grants = [self.factory.makeAccessPolicyGrant() for i in range(2)]
+        self.assertContentEqual(
+            grants,
+            getUtility(IAccessPolicyGrantSource).find(
+                [(g.policy, g.grantee) for g in grants]))
 
-    def test_get_nonexistent(self):
-        # get() returns None if the grant doesn't exist.
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicyGrantSource).get(
-                self.factory.makeAccessPolicy(), self.factory.makePerson()))
-
-    def test_findByPolicy(self):
-        # findByPolicy finds only the relevant grants.
+    def test_findByPolicies(self):
+        # findByPolicies() finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
         grants = [
             self.factory.makeAccessPolicyGrant(policy=policy)
@@ -316,4 +307,4 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
             grants,
-            getUtility(IAccessPolicyGrantSource).findByPolicy(policy))
+            getUtility(IAccessPolicyGrantSource).findByPolicies([policy]))

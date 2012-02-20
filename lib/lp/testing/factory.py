@@ -4378,9 +4378,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             grantee = self.makePerson()
         if grantor is None:
             grantor = self.makePerson()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
+        [grant] = getUtility(IAccessPolicyGrantSource).grant(
             [(policy, grantee, grantor)])
-        IStore(grant).flush()
         return grant
 
     def makeFakeFileUpload(self, filename=None, content=None):

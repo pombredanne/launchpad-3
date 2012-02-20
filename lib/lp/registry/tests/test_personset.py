@@ -13,6 +13,7 @@ import pytz
 
 from testtools.matchers import (
     LessThan,
+    MatchesStructure,
     )
 
 from zope.component import getUtility
@@ -37,7 +38,6 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
-from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.person import (
     Person,
     PersonSet,
@@ -574,12 +574,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(grant.grantee, person)
 
         source = getUtility(IAccessPolicyGrantSource)
-        self.assertIs(None, source.get(grant.policy, person))
-        self.assertIsNot(None, source.get(grant.policy, grant.grantee))
+        self.assertEqual(
+            grant.grantee, source.findByPolicies([grant.policy]).one().grantee)
         with person_logged_in(person):
             self._do_merge(grant.grantee, person)
-        self.assertIsNot(None, source.get(grant.policy, person))
-        self.assertIs(None, source.get(grant.policy, grant.grantee))
+        self.assertEqual(
+            person, source.findByPolicies([grant.policy]).one().grantee)
 
     def test_merge_accesspolicygrants_conflicts(self):
         # Conflicting AccessPolicyGrants are deleted.
@@ -601,12 +601,14 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             self._do_merge(duplicate, person)
         transaction.commit()
 
-        # The retained person's grant remains, while the duplicate's is
-        # deleted.
+        # Only one grant for the policy exists: the retained person's.
         source = getUtility(IAccessPolicyGrantSource)
-        self.assertEquals(
-            person_grant_date, source.get(policy, person).date_created)
-        self.assertIs(None, source.get(policy, duplicate))
+        self.assertThat(
+            source.findByPolicies([policy]).one(),
+            MatchesStructure.byEquality(
+                policy=policy,
+                grantee=person,
+                date_created=person_grant_date))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.

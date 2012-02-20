@@ -121,6 +121,9 @@ class IAccessArtifactGrantSource(Interface):
     def findByArtifacts(artifacts):
         """Return all `IAccessArtifactGrant` objects for the artifacts."""
 
+    def deleteByArtifacts(artifacts):
+        """Delete all `IAccessArtifactGrant` objects for the artifacts."""
+
 
 class IAccessPolicySource(Interface):
 
@@ -145,20 +148,20 @@ class IAccessPolicySource(Interface):
 
 class IAccessPolicyGrantSource(Interface):
 
-    def grant(policy, grantee, grantor):
-        """Create an `IAccessPolicyGrant`.
+    def grant(grants):
+        """Create `IAccessPolicyGrant`s.
 
-        :param policy: the `IAccessPolicy` to grant access to.
-        :param grantee: the `IPerson` to hold the access.
-        :param grantor: the `IPerson` that grants the access.
+        :param grants: a collection of
+            (`IAccessPolicy`, grantee `IPerson`, grantor `IPerson`) triples
+            to grant.
         """
 
-    def get(policy, grantee):
-        """Return the specified `IAccessPolicyGrant` or None.
+    def find(grants):
+        """Return the specified `IAccessPolicyGrant`s if they exist.
 
-        :param policy: the `IAccessPolicy` that access is granted to.
-        :param grantee: the `IPerson` who holds the access.
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
         """
 
-    def findByPolicy(policy):
-        """Return all `IAccessPolicyGrant` objects for the policy."""
+    def findByPolicies(artifacts):
+        """Return all `IAccessPolicyGrant` objects for the artifacts."""
