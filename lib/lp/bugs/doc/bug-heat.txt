@@ -215,9 +215,8 @@ date.
 
 If we call getBugsWithOutdatedHeat() now, the set that is returned will
 be empty because all the bugs have been recently updated.
-getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
-is the maximum age, in days, that a bug's heat can be before it gets
-included in the returned set.
+getBugsWithOutdatedHeat() takes a single parameter, cutoff, which is the
+oldest a bug's heat can be before it gets included in the returned set.
 
     >>> yesterday = datetime.now(timezone('UTC')) - timedelta(days=1)
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
@@ -225,7 +224,7 @@ included in the returned set.
 
 IBug.setHeat() takes a timestamp parameter so that we can set the
 heat_last_updated date manually for the purposes of testing. If we make
-a bug's heat older than the max_heat_age that we pass to
+a bug's heat older than the cutoff that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
@@ -272,7 +271,7 @@ We'll commit the transaction so that the BugHeatUpdater updates the
 right bugs.
 
     >>> transaction.commit()
-    >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
 it as a method will recalculate the heat for all the out-of-date bugs.

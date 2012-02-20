@@ -780,23 +780,17 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 5000
 
-    def __init__(self, log, abort_time=None, max_heat_age=None):
+    def __init__(self, log, abort_time=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
         self.total_processed = 0
         self.is_done = False
         self.offset = 0
-        if max_heat_age is None:
-            max_heat_age = config.calculate_bug_heat.max_heat_age
-        self.max_heat_age = max_heat_age
 
         self.store = IMasterStore(Bug)
 
     @property
     def _outdated_bugs(self):
-        last_updated_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(days=self.max_heat_age))
         try:
             last_updated_cutoff = iso8601.parse_date(
                 getFeatureFlag('bugs.heat_updates.cutoff'))
