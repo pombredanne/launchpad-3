@@ -143,10 +143,9 @@ unaffected, the bug's heat doesn't change.
     >>> bug.heat
     8
 
-Marking the bug as a duplicate will set its heat to zero, whilst also
-adding 10 points of heat to the bug it duplicates, 6 points for the
-duplication and 4 points for the subscribers that the duplicated bug
-inherits.
+Marking the bug as a duplicate won't change its hit, but it will add 10
+points of heat to the bug it duplicates: 6 points for the duplication
+and 4 points for the subscribers that the duplicated bug inherits.
 
     >>> duplicated_bug = factory.makeBug()
     >>> duplicated_bug.heat
@@ -154,7 +153,7 @@ inherits.
 
     >>> bug.markAsDuplicate(duplicated_bug)
     >>> bug.heat
-    0
+    8
 
     >>> duplicated_bug.heat
     16
