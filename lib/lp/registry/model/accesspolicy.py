@@ -13,6 +13,7 @@ __all__ = [
 from storm.databases.postgres import Returning
 from storm.expr import (
     And,
+    Insert,
     Or,
     )
 from storm.properties import (
@@ -35,7 +36,6 @@ from lp.services.database.bulk import load
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
-from lp.services.database.stormexpr import BulkInsert
 
 
 class AccessArtifact(StormBase):
@@ -101,7 +101,7 @@ class AccessArtifact(StormBase):
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
         result = IStore(cls).execute(
-            Returning(BulkInsert(
+            Returning(Insert(
                 (cls.bug_id, cls.branch_id),
                 expr=insert_values, primary_columns=cls.id)))
         created = load(cls, (cols[0] for cols in result))
@@ -149,7 +149,7 @@ class AccessPolicy(StormBase):
             else:
                 raise ValueError("%r is not a supported pillar" % pillar)
         result = IStore(cls).execute(
-            Returning(BulkInsert(
+            Returning(Insert(
                 (cls.product_id, cls.distribution_id, cls.type),
                 expr=insert_values, primary_columns=cls.id)))
         return load(AccessPolicy, (cols[0] for cols in result))
@@ -215,7 +215,7 @@ class AccessArtifactGrant(StormBase):
             (artifact.id, grantee.id, grantor.id)
             for (artifact, grantee, grantor) in grants]
         result = IStore(cls).execute(
-            Returning(BulkInsert(
+            Returning(Insert(
                 (cls.abstract_artifact_id, cls.grantee_id, cls.grantor_id),
                 expr=insert_values,
                 primary_columns=(cls.abstract_artifact_id, cls.grantee_id))))
@@ -263,7 +263,7 @@ class AccessPolicyGrant(StormBase):
             (policy.id, grantee.id, grantor.id)
             for (policy, grantee, grantor) in grants]
         result = IStore(cls).execute(
-            Returning(BulkInsert(
+            Returning(Insert(
                 (cls.policy_id, cls.grantee_id, cls.grantor_id),
                 expr=insert_values,
                 primary_columns=(cls.policy_id, cls.grantee_id))))
