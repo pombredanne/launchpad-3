@@ -4,10 +4,8 @@
 __metaclass__ = type
 
 from storm.exceptions import LostObjectError
-from storm.store import Store
 from testtools.matchers import (
     AllMatch,
-    MatchesStructure,
     )
 from zope.component import getUtility
 

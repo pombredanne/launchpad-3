@@ -56,24 +56,26 @@ class AccessArtifact(StormBase):
         return artifact
 
     @classmethod
-    def _getConcreteAttribute(cls, concrete_artifact):
+    def _constraintForConcrete(cls, concrete_artifact):
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
         if IBug.providedBy(concrete_artifact):
-            return cls.bug
+            col = cls.bug
         elif IBranch.providedBy(concrete_artifact):
-            return cls.branch
+            col = cls.branch
         else:
             raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
+        return col == concrete_artifact
 
     @classmethod
     def find(cls, concrete_artifacts):
         """See `IAccessArtifactSource`."""
-        constraints = (
-            cls._getConcreteAttribute(artifact) == artifact
-            for artifact in concrete_artifacts)
-        return IStore(cls).find(cls, Or(*constraints))
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                cls._constraintForConcrete(artifact)
+                for artifact in concrete_artifacts)))
 
     @classmethod
     def ensure(cls, concrete_artifacts):
