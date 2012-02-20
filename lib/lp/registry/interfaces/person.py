@@ -11,6 +11,8 @@ __all__ = [
     'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'IHasStanding',
     'IObjectReassignment',
     'IPerson',
@@ -18,11 +20,11 @@ __all__ = [
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -128,7 +130,6 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation,
-    ILocationRecord,
     IObjectWithLocation,
     ISetLocation,
     )
@@ -522,9 +523,6 @@ class PersonNameField(BlacklistableContentNameField):
     """
     errormessage = _("%s is already in use by another person or team.")
 
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
-
     @property
     def _content_iface(self):
         """Return the interface this field belongs to."""
@@ -720,7 +718,7 @@ class IPersonPublic(IPrivacy):
     @operation_for_version("beta")
     def transitionVisibility(visibility, user):
         """Set visibility of IPerson.
-    
+
         :param visibility: The PersonVisibility to change to.
         :param user: The user requesting the change.
         :raises: `ImmutableVisibilityError` when the visibility can not
@@ -1612,31 +1610,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants_count = Attribute(
-        "The number of mapped participants")
-    unmapped_participants = doNotSnapshot(
-        CollectionField(
-            title=_("List of participants with no coordinates recorded."),
-            value_type=Reference(schema=Interface)))
-    unmapped_participants_count = Attribute(
-        "The number of unmapped participants")
-
-    def getMappedParticipants(limit=None):
-        """List of participants with coordinates.
-
-        :param limit: The optional maximum number of items to return.
-        :return: A list of `IPerson` objects
-        """
-
-    def getMappedParticipantsBounds():
-        """Return a dict of the bounding longitudes latitudes, and centers.
-
-        This method cannot be called if there are no mapped participants.
-
-        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
-            center_lat, and center_lng
-        """
-
     def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
@@ -1711,13 +1684,6 @@ class IPersonEditRestricted(Interface):
 
         :param team: The team to leave.
         """
-
-    @operation_parameters(
-        visible=copy_field(ILocationRecord['visible'], required=True))
-    @export_write_operation()
-    @operation_for_version("beta")
-    def setLocationVisibility(visible):
-        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
@@ -2323,9 +2289,6 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
-
     def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
@@ -2550,6 +2513,17 @@ class ISoftwareCenterAgentAPI(Interface):
         """
 
 
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
+
+
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
@@ -2578,7 +2552,6 @@ for name in [
     'invited_members',
     'deactivatedmembers',
     'expiredmembers',
-    'unmapped_participants',
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 

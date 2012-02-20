@@ -490,6 +490,10 @@ class ContentNameField(UniqueField):
 class BlacklistableContentNameField(ContentNameField):
     """ContentNameField that also checks that a name is not blacklisted"""
 
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators. Contact Launchpad Support if you "
+                         "want to use this name.")
+
     def _validate(self, input):
         """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
@@ -505,9 +509,7 @@ class BlacklistableContentNameField(ContentNameField):
         from lp.registry.interfaces.person import IPersonSet
         user = getUtility(ILaunchBag).user
         if getUtility(IPersonSet).isNameBlacklisted(input, user):
-            raise LaunchpadValidationError(
-                "The name '%s' has been blocked by the Launchpad "
-                "administrators." % input)
+            raise LaunchpadValidationError(self.blacklistmessage % input)
 
 
 class PillarAliases(TextLine):

@@ -9,9 +9,19 @@ from testtools.matchers import Equals
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specificationworkitem import (
+    SpecificationWorkItemStatus,
+    )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    ANONYMOUS,
+    login,
+    login_person,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+from zope.security.interfaces import Unauthorized
 
 
 class TestSpecificationDependencies(TestCaseWithFactory):
@@ -132,3 +142,35 @@ class TestSpecificationValidation(TestCaseWithFactory):
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
+
+
+class TestSpecificationWorkItems(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_anonymous_newworkitem_not_allowed(self):
+        spec = self.factory.makeSpecification()
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, spec, 'newWorkItem')
+
+    def test_owner_newworkitem_allowed(self):
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(title=u'new-work-item', sequence=0)
+        self.assertIsInstance(work_item, SpecificationWorkItem)
+
+    def test_newworkitem_uses_passed_arguments(self):
+        title = u'new-work-item'
+        spec = self.factory.makeSpecification()
+        assignee = self.factory.makePerson()
+        milestone = self.factory.makeMilestone()
+        status = SpecificationWorkItemStatus.DONE
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(
+            title=title, assignee=assignee, milestone=milestone,
+            status=status, sequence=0)
+        self.assertEqual(spec, work_item.specification)
+        self.assertEqual(assignee, work_item.assignee)
+        self.assertEqual(status, work_item.status)
+        self.assertEqual(title, work_item.title)
+        self.assertEqual(milestone, work_item.milestone)
