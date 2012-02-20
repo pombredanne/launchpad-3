@@ -282,9 +282,24 @@ There are two bugs with heat more than a day old:
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     2
 
-Calling our BugHeatUpdater will update the heat of those bugs.
+The updater gets the cutoff from a feature flag. By default no bugs are
+considered outdated.
 
     >>> update_bug_heat(chunk_size=1)
+    DEBUG Updating heat for 0 bugs
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
+    2
+
+If we set the cutoff to a day ago, calling our BugHeatUpdater will update the
+heat of those bugs.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> flag = FeatureFixture(
+    ...     {'bugs.heat_updates.cutoff': yesterday.isoformat()})
+
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
@@ -294,7 +309,8 @@ IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
 
 Update the rest in one big chunk.
 
-    >>> update_bug_heat(chunk_size=1000)
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1000)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all

@@ -13,6 +13,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import iso8601
 import logging
 import multiprocessing
 import os
@@ -32,6 +33,7 @@ from storm.locals import (
     Min,
     SQL,
     )
+from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -64,6 +66,7 @@ from lp.services.database.sqlbase import (
     session_store,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
@@ -794,6 +797,11 @@ class BugHeatUpdater(TunableLoop):
         last_updated_cutoff = (
             datetime.now(timezone('UTC')) -
             timedelta(days=self.max_heat_age))
+        try:
+            last_updated_cutoff = iso8601.parse_date(
+                getFeatureFlag('bugs.heat_updates.cutoff'))
+        except iso8601.ParseError:
+            return EmptyResultSet()
         outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
             last_updated_cutoff)
         # We remove the security proxy so that we can access the set()
