@@ -840,7 +840,7 @@
         <browser:page
             name="+editlocation"
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonEditLocationView"
+            class="lp.registry.browser.person.PersonEditTimeZoneView"
             permission="launchpad.Edit"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
@@ -945,9 +945,6 @@
             <browser:page
                 name="+xrds"
                 attribute="xrds"/>
-            <browser:page
-                name="+portlet-map"
-                template="../templates/person-portlet-map.pt"/>
         </browser:pages>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -1057,28 +1054,10 @@
             template="../templates/team-portlet-polls.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapView"
-            name="+map"
-            template="../templates/team-map.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamMailingListSubscribersView"
             permission="zope.Public"
             name="+mailing-list-subscribers"
             template="../templates/team-mailinglist-subscribers.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapData"
-            template="../templates/team-map-data.pt"
-            name="+mapdata"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapLtdData"
-            template="../templates/team-map-data.pt"
-            name="+mapdataltd"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
@@ -1090,12 +1069,6 @@
             name="+mugshots"
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamMapLtdView"
-            permission="zope.Public"
-            name="+portlet-map"
-            template="../templates/team-portlet-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"

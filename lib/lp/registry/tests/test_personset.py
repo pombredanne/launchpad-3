@@ -32,7 +32,6 @@ from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
-    PersonVisibility,
     TeamEmailAddressError,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
@@ -140,7 +139,7 @@ class TestPersonSet(TestCaseWithFactory):
                 person.is_valid_person
                 person.karma
                 person.is_ubuntu_coc_signer
-                person.location
+                person.location,
                 person.archive
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
