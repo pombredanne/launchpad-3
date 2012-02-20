@@ -81,7 +81,10 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     )
 from lp.services.webapp.menu import structured
-from lp.services.webapp.publisher import LaunchpadView
+from lp.services.webapp.publisher import (
+    LaunchpadView,
+    RedirectionView,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -230,15 +233,11 @@ class POTemplateMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class POTemplateSubsetView:
+class POTemplateSubsetView(RedirectionView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        # We are not using this context directly, only for traversals.
-        self.request.response.redirect('../+translations')
+        super(POTemplateSubsetView, self).__init__(
+            '../+translations', request)
 
 
 class POTemplateView(LaunchpadView,
