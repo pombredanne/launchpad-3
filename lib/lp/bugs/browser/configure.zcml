@@ -1,4 +1,4 @@
-<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -269,7 +269,7 @@
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         name="assigned"
         class="lp.bugs.browser.bug.DeprecatedAssignedBugsView"
-        attribute="redirect_to_assignedbugs"
+        attribute="__call__"
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
@@ -949,7 +949,7 @@
             name="+index"
             class="lp.bugs.browser.bug.BugWithoutContextView"
             permission="zope.Public"
-            attribute="redirectToNewBugPage"/>
+            attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"
