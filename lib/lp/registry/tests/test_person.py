@@ -5,21 +5,17 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
-
 from storm.store import Store
-
 from testtools.matchers import (
     Equals,
     LessThan,
     )
-
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-
-from lazr.lifecycle.snapshot import Snapshot
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -27,9 +23,7 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
-from lp.registry.errors import (
-    PrivatePersonLinkageError,
-    )
+from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -47,16 +41,11 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    )
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    )
+from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.propertycache import clear_property_cache
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    )
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     login,
@@ -71,6 +60,7 @@ from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -560,6 +550,13 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.hasCurrentCommercialSubscription())
 
+    def test_commercial_admin_with_ff_checkAllowVisibility(self):
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        feature_flag = {
+            'disclosure.show_visibility_for_team_add.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            self.assertTrue(admin.checkAllowVisibility())
+
     def test_can_not_set_visibility(self):
         person = self.factory.makePerson()
         self.assertRaises(
@@ -721,8 +718,7 @@ class TestPersonStates(TestCaseWithFactory):
             'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'unmapped_participants', 'longitude',
-            'latitude', 'time_zone',
+            'proposedmembers', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:

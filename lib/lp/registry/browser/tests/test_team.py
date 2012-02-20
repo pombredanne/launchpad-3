@@ -535,7 +535,7 @@ class TestTeamAddView(TestCaseWithFactory):
             }
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
+                create_initialized_view(
                     personset, name=self.view_name, principal=team.teamowner,
                     form=form)
             team = personset.getByName(team_name)
@@ -555,6 +555,22 @@ class TestTeamAddView(TestCaseWithFactory):
                 self.assertNotIn(
                     'visibility',
                     [field.__name__ for field in view.form_fields])
+
+    def test_visibility_is_correct_during_edit(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(owner):
+            url = canonical_url(team)
+        with FeatureFixture(self.feature_flag):
+            browser = self.getUserBrowser(url, user=owner)
+            browser.getLink('Change details').click()
+            self.assertEqual(
+                ['PRIVATE'],
+                browser.getControl(name="field.visibility").value)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -760,6 +776,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             removeSecurityProxy(tm).status = status
             view = create_initialized_view(self.team, "+addmember")
             view.add_action.success(data={'newmember': member_team})
+
+
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
 
 
 class TestTeamIndexView(TestCaseWithFactory):

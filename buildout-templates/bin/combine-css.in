@@ -11,10 +11,6 @@ import os
 from lp.scripts.utilities.js.jsbuild import ComboFile
 from lp.scripts.utilities.js.combo import combine_files
 
-# This constant helps us meet maximum line-length goals.
-GALLERY_ACCORDION = 'yui3-gallery/gallery-accordion/assets/'
-
-
 root = os.path.abspath('.')
 root = os.path.normpath(${buildout:directory|path-repr})
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
@@ -42,8 +38,8 @@ names = [
     'build/activator/assets/skins/sam/activator.css',
     'build/choiceedit/assets/choiceedit-core.css',
     'build/ordering/assets/ordering-core.css',
-    GALLERY_ACCORDION + 'gallery-accordion-core.css',
-    GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
+    'build/gallery-accordion/assets/gallery-accordion-core.css',
+    'build/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
     'build/sprite.css',
     # Include our main stylesheets at the end so they
     # take precedence over the others.

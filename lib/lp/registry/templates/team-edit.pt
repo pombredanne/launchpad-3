@@ -12,13 +12,9 @@
 
 <body>
   <div metal:fill-slot="main">
-
     <div metal:use-macro="context/@@launchpad_form/form" />
-
-    <metal:js use-macro="context/@@+person-macros/private-team-js" />
-
+    <metal:js use-macro="context/@@+person-macros/team-js" />
     <tal:menu replace="structure view/@@+related-pages" />
-
   </div>
 </body>
 </html>
