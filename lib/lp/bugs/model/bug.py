@@ -22,10 +22,6 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
@@ -39,7 +35,6 @@ from lazr.lifecycle.event import (
     )
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
-from pytz import timezone
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -2070,20 +2065,14 @@ class Bug(SQLBase):
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
         if duplicate_of is not None:
-            # Update the heat of the master bug and set this bug's heat
-            # to 0 (since it's a duplicate, it shouldn't have any heat
-            # at all).
-            self.setHeat(0)
             # Maybe confirm bug tasks, now that more people might be affected
             # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
-        else:
-            # Otherwise, recalculate this bug's heat, since it will be 0
-            # from having been a duplicate. We also update the bug that
-            # was previously duplicated.
-            self.updateHeat()
-            if current_duplicateof is not None:
-                current_duplicateof.updateHeat()
+
+        # Update the former duplicateof's heat, as it will have been
+        # reduced by the unduping.
+        if current_duplicateof is not None:
+            current_duplicateof.updateHeat()
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
@@ -2256,11 +2245,6 @@ class Bug(SQLBase):
 
     def updateHeat(self):
         """See `IBug`."""
-        if self.duplicateof is not None:
-            # If this bug is a duplicate we don't try to calculate its
-            # heat.
-            return
-
         # We need to flush the store first to ensure that changes are
         # reflected in the new bug heat total.
         store = Store.of(self)
@@ -2991,18 +2975,15 @@ class BugSet:
         result_set = store.find(Bug)
         return result_set.order_by('id')
 
-    def getBugsWithOutdatedHeat(self, max_heat_age):
+    def getBugsWithOutdatedHeat(self, cutoff):
         """See `IBugSet`."""
         store = IStore(Bug)
-        last_updated_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(days=max_heat_age))
         last_updated_clause = Or(
-            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated < cutoff,
             Bug.heat_last_updated == None)
 
-        return store.find(
-            Bug, Bug.duplicateof == None, last_updated_clause).order_by('id')
+        return store.find(Bug, last_updated_clause).order_by(
+            Bug.heat_last_updated)
 
 
 class BugAffectsPerson(SQLBase):
