@@ -234,6 +234,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
                     status=SpecificationWorkItemStatus.TODO, assignee=None,
                     milestone=None):
         """See ISpecification."""
+        if milestone is not None:
+            assert milestone.target == self.target, (
+                "%s does not belong to this spec's target (%s)" %
+                    (milestone.displayname, self.target.name))
         return SpecificationWorkItem(
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)

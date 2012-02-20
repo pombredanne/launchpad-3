@@ -167,9 +167,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         title = u'new-work-item'
         spec = self.factory.makeSpecification()
         assignee = self.factory.makePerson()
-        # XXX: This test should fail because we're using a milestone that
-        # doesn't belong to the spec's target.
-        milestone = self.factory.makeMilestone()
+        milestone = self.factory.makeMilestone(product=spec.product)
         status = SpecificationWorkItemStatus.DONE
         login_person(spec.owner)
         work_item = spec.newWorkItem(
