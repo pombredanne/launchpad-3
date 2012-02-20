@@ -948,10 +948,14 @@ class DeprecatedAssignedBugsView(RedirectionView):
     """
 
     def __init__(self, context, request):
-        target = canonical_url(
+        self.context = context
+        self.request = request
+        self.status = 303
+    
+    def __call__(self):
+        self.target = canonical_url(
             getUtility(ILaunchBag).user, view_name='+assignedbugs')
-        super(DeprecatedAssignedBugsView, self).__init__(
-            target, request)
+        super(DeprecatedAssignedBugsView, self).__call__()
 
 
 normalize_mime_type = re.compile(r'\s+')
