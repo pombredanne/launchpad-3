@@ -83,7 +83,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -345,8 +344,7 @@ def validate_assignee(self, attr, value):
 def validate_target(bug, target, retarget_existing=True):
     """Validate a bugtask target against a bug's existing tasks.
 
-    Checks that no conflicting tasks already exist, and that the new
-    target's pillar supports the bug's access policy.
+    Checks that no conflicting tasks already exist.
     """
     if bug.getBugTask(target):
         raise IllegalTarget(
@@ -378,14 +376,6 @@ def validate_target(bug, target, retarget_existing=True):
                 "This private bug already affects %s. "
                 "Private bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
-
-    if (bug.access_policy is not None and
-        bug.access_policy.pillar != target.pillar and
-        not getUtility(IAccessPolicySource).getByPillarAndType(
-            target.pillar, bug.access_policy.type)):
-        raise IllegalTarget(
-            "%s doesn't have a %s access policy."
-            % (target.pillar.displayname, bug.access_policy.type.title))
 
 
 def validate_new_target(bug, target):
@@ -1178,12 +1168,6 @@ class BugTask(SQLBase):
         for name, value in new_key.iteritems():
             setattr(self, name, value)
         self.updateTargetNameCache()
-
-        # If there's a policy set and we're changing to a another
-        # pillar, recalculate the access policy.
-        if (self.bug.access_policy is not None and
-            self.bug.access_policy.pillar != target.pillar):
-            self.bug.setAccessPolicy(self.bug.access_policy.type)
 
         # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
         # We also should see if we ought to auto-transition to the
