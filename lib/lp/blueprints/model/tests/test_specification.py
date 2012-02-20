@@ -181,6 +181,21 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         self.assertEqual(title, work_item.title)
         self.assertEqual(milestone, work_item.milestone)
 
+    def test_work_items_property(self):
+        spec = self.factory.makeSpecification()
+        wi1 = self.factory.makeSpecificationWorkItem(
+            specification=spec, sequence=2)
+        wi2 = self.factory.makeSpecificationWorkItem(
+            specification=spec, sequence=1)
+        # This work item won't be included in the results of spec.work_items
+        # because it is deleted.
+        self.factory.makeSpecificationWorkItem(
+            specification=spec, sequence=3, deleted=True)
+        # This work item belongs to a different spec so it won't be returned
+        # by spec.work_items.
+        self.factory.makeSpecificationWorkItem()
+        self.assertEqual([wi2, wi1], list(spec.work_items))
+
     def test_updateWorkItems_no_existing_items(self):
         """When there are no existing work items, updateWorkItems will create
         a new entry for every element in the list given to it.
@@ -278,7 +293,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     def test_updateWorkItems_marks_removed_ones_as_deleted(self):
         spec = self.factory.makeSpecification()
-        wi1_data = self._createWorkItemAndReturnDataDict(spec)
+        self._createWorkItemAndReturnDataDict(spec)
         wi2_data = self._createWorkItemAndReturnDataDict(spec)
         self.assertEqual(2, spec.work_items.count())
         login_person(spec.owner)
@@ -293,6 +308,12 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             spec.work_items[0], MatchesStructure.byEquality(**wi2_data))
 
     def _createWorkItemAndReturnDataDict(self, spec):
+        """Create a new work item for the given spec using the next available
+        sequence number.
+
+        Return a dict with the title, status, assignee, milestone and sequence
+        attributes of the spec.
+        """
         if spec.work_items.count() == 0:
             sequence = 0
         else:
