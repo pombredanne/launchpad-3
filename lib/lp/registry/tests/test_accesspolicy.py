@@ -5,7 +5,10 @@ __metaclass__ = type
 
 from storm.exceptions import LostObjectError
 from storm.store import Store
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    AllMatch,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 
 from lp.registry.interfaces.accesspolicy import (
@@ -41,13 +44,18 @@ class TestAccessPolicy(TestCaseWithFactory):
 class TestAccessPolicySource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_create_for_product(self):
-        product = self.factory.makeProduct()
-        type = AccessPolicyType.SECURITY
-        policy = getUtility(IAccessPolicySource).create(product, type)
+    def test_create(self):
+        wanted = [
+            (self.factory.makeProduct(), AccessPolicyType.PRIVATE),
+            (self.factory.makeDistribution(), AccessPolicyType.SECURITY),
+            ]
+        policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertThat(
-            policy,
-            MatchesStructure.byEquality(pillar=product, type=type))
+            policies,
+            AllMatch(Provides(IAccessPolicy)))
+        self.assertEquals(
+            wanted,
+            [(policy.pillar, policy.type) for policy in policies])
 
     def test_getByID(self):
         # getByID finds the right policy.

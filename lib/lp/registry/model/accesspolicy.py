@@ -10,6 +10,7 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
+from storm.databases.postgres import Returning
 from storm.properties import (
     DateTime,
     Int,
@@ -25,9 +26,11 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrant,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.bulk import load
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.database.stormexpr import BulkInsert
 
 
 class AccessArtifact(StormBase):
@@ -108,19 +111,23 @@ class AccessPolicy(StormBase):
         return self.product or self.distribution
 
     @classmethod
-    def create(cls, pillar, type):
+    def create(cls, policies):
         from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.product import IProduct
-        obj = cls()
-        if IProduct.providedBy(pillar):
-            obj.product = pillar
-        elif IDistribution.providedBy(pillar):
-            obj.distribution = pillar
-        else:
-            raise ValueError("%r is not a supported pillar" % pillar)
-        obj.type = type
-        IStore(cls).add(obj)
-        return obj
+
+        insert_values = []
+        for pillar, type in policies:
+            if IProduct.providedBy(pillar):
+                insert_values.append((pillar.id, None, type.value))
+            elif IDistribution.providedBy(pillar):
+                insert_values.append((None, pillar.id, type.value))
+            else:
+                raise ValueError("%r is not a supported pillar" % pillar)
+        result = IStore(cls).execute(
+            Returning(BulkInsert(
+                (cls.product_id, cls.distribution_id, cls.type),
+                expr=insert_values, primary_columns=cls.id)))
+        return load(AccessPolicy, (cols[0] for cols in result))
 
     @classmethod
     def _constraintForPillar(cls, pillar):

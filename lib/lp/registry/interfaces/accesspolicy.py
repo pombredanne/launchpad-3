@@ -124,8 +124,14 @@ class IAccessArtifactGrantSource(Interface):
 
 class IAccessPolicySource(Interface):
 
-    def create(pillar, display_name):
-        """Create an `IAccessPolicy` for the pillar with the given name."""
+    def create(policies):
+        """Create an `IAccessPolicy` for the given pillars and types.
+
+        :param policies: a collection of
+            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            create `IAccessPolicy` objects for.
+        :return: a collection of the created `IAccessPolicy` objects.
+        """
 
     def getByID(id):
         """Return the `IAccessPolicy` with the given ID."""

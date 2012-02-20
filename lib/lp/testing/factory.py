@@ -4350,9 +4350,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
         if pillar is None:
             pillar = self.makeProduct()
-        policy = getUtility(IAccessPolicySource).create(pillar, type)
-        IStore(policy).flush()
-        return policy
+        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        return policies[0]
 
     def makeAccessArtifact(self, concrete=None):
         if concrete is None:
