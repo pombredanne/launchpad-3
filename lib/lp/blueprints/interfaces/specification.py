@@ -41,6 +41,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -62,6 +63,9 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
+    )
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItem
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
@@ -289,10 +293,10 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
-    # FIXME: Should probably use something other than Attribute here. Probably
-    # List(value_type=ISpecificationWorkItem, ...)
-    work_items = Attribute("The list of work items for this spec")
-
+    work_items = List(
+        description=_("All non-deleted work items for this spec, sorted by "
+                      "their 'sequence'"),
+        value_type=Reference(schema=ISpecificationWorkItem), readonly=True)
     whiteboard = exported(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
