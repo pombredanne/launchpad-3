@@ -219,7 +219,7 @@ class TestLoaders(TestCaseWithFactory):
             self.factory.makeBranch(),
             self.factory.makeBranch(),
             ]
-        expected = set(list(owned_objects[0].subscriptions) + 
+        expected = set(list(owned_objects[0].subscriptions) +
             list(owned_objects[1].subscriptions))
         self.assertNotEqual(0, len(expected))
         self.assertEqual(expected,
