@@ -18,7 +18,9 @@ class WorkitemMigrator(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    # FIXME: fix the dbuser
+    # XXX: This is a throw-away script which we'll delete once the migration
+    # is complete, so I'd rather avoid setting up an extra DB user just for
+    # it, hence me using 'launchpad_main'.
     script = WorkitemMigrator(
         'workitem-migration-script', dbuser='launchpad_main')
     script.lock_and_run()

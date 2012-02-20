@@ -187,8 +187,12 @@ class SpecificationWorkitemMigrator:
         self.transaction = transaction
         self.logger = logger
         self.start_at = start_at
+        # Get only the specs which contain "work items" in their whiteboard
+        # and which don't have any SpecificationWorkItems.
         query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
             'work items')
+        query += (" and id not in (select distinct specification from "
+                  "SpecificationWorkItem)")
         self.specs = IStore(Specification).find(Specification, query)
         self.total = self.specs.count()
         self.logger.info(
@@ -213,31 +217,27 @@ class SpecificationWorkitemMigrator:
             return
 
         for spec in specs:
-            # TODO: Skip the specs that already have one or more
-            # SpecificationWorkItem entries.
             try:
                 work_items = extractWorkItemsFromWhiteboard(spec)
             except Exception, e:
                 self.logger.info(
                     "Failed to parse whiteboard of %s: %s" % (
                         spec, unicode(e)))
-                #self.transaction.abort()
-                #self.transaction.begin()
+                self.transaction.abort()
+                self.transaction.begin()
                 continue
 
             if len(work_items) > 0:
                 self.logger.info(
                     "Migrated %d work items from the whiteboard of %s" % (
                         len(work_items), spec))
-                #self.transaction.commit()
-                #self.transaction.begin()
+                self.transaction.commit()
+                self.transaction.begin()
             else:
                 self.logger.info(
                     "No work items found on the whiteboard of %s" %
                         spec)
 
-        self.transaction.abort()
-        self.transaction.begin()
         self.start_at += specs_count
 
 

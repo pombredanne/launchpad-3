@@ -30,9 +30,6 @@ class FakeSpecification(object):
     assignee = None
 
 
-# TODO: Send email notifications when we fail to migrate the whiteboard.
-
-
 class TestWorkItemParser(TestCase):
 
     def test_parse_line_basic(self):
