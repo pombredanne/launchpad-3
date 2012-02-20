@@ -256,27 +256,33 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
-        # First remove work items with titles that are no longer present.
+        # First mark work items with titles that are no longer present as
+        # deleted.
         self._deleteWorkItemsNotMatching(
             [wi['title'] for wi in new_work_items])
-        work_items = list(Store.of(self).find(
-            SpecificationWorkItem, specification=self, deleted=False).order_by("sequence"))
+        work_items = Store.of(self).find(
+            SpecificationWorkItem, specification=self, deleted=False)
+        work_items = list(work_items.order_by("sequence"))
         # At this point the list of new_work_items is necessarily the same
-        # size (or longer) than the list of existing ones.
+        # size (or longer) than the list of existing ones, so we can just
+        # iterate over it updating the existing items and creating any new
+        # ones.
         to_insert = []
         existing_titles = [wi.title for wi in work_items]
         for i in range(len(new_work_items)):
             new_wi = new_work_items[i]
             if new_wi['title'] not in existing_titles:
                 # This is a new work item, so we insert it with 'i' as its
-                # sequence as that's the position it is on the list entered by
-                # the user.
+                # sequence because that's the position it is on the list
+                # entered by the user.
                 to_insert.append((i, new_wi))
             else:
                 # Get the existing work item with the same title and update
                 # it to match what we have now.
                 existing_wi = work_items[
                     existing_titles.index(new_wi['title'])]
+                # Update the sequence to match its current position on the
+                # list entered by the user.
                 existing_wi.sequence = i
                 existing_wi.status = new_wi['status']
                 existing_wi.assignee = new_wi['assignee']
