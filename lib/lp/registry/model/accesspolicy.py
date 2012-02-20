@@ -207,26 +207,32 @@ class AccessArtifactGrant(StormBase):
             return self.abstract_artifact.concrete_artifact
 
     @classmethod
-    def grant(cls, artifact, grantee, grantor):
+    def grant(cls, grants):
         """See `IAccessArtifactGrantSource`."""
-        grant = cls()
-        grant.abstract_artifact = artifact
-        grant.grantee = grantee
-        grant.grantor = grantor
-        IStore(cls).add(grant)
-        return grant
+        insert_values = [
+            (artifact.id, grantee.id, grantor.id)
+            for (artifact, grantee, grantor) in grants]
+        result = IStore(cls).execute(
+            Returning(BulkInsert(
+                (cls.abstract_artifact_id, cls.grantee_id, cls.grantor_id),
+                expr=insert_values,
+                primary_columns=(cls.abstract_artifact_id, cls.grantee_id))))
+        return load(cls, result)
 
     @classmethod
-    def get(cls, artifact, grantee):
+    def find(cls, grants):
         """See `IAccessArtifactGrantSource`."""
-        assert IAccessArtifact.providedBy(artifact)
-        assert IPerson.providedBy(grantee)
-        return IStore(cls).get(cls, (artifact.id, grantee.id))
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls.abstract_artifact == artifact, cls.grantee == grantee)
+                for (artifact, grantee) in grants)))
 
     @classmethod
-    def findByArtifact(cls, artifact):
+    def findByArtifacts(cls, artifacts):
         """See `IAccessArtifactGrantSource`."""
-        return IStore(cls).find(cls, abstract_artifact=artifact)
+        ids = [artifact.id for artifact in artifacts]
+        return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
 
 
 class AccessPolicyGrant(StormBase):

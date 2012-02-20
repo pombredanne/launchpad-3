@@ -103,23 +103,23 @@ class IAccessArtifactSource(Interface):
 
 class IAccessArtifactGrantSource(Interface):
 
-    def grant(artifact, grantee, grantor):
-        """Create an `IAccessArtifactGrant`.
+    def grant(grants):
+        """Create `IAccessArtifactGrant`s.
 
-        :param artifact: the `IAccessArtifact` to grant access to.
-        :param grantee: the `IPerson` to hold the access.
-        :param grantor: the `IPerson` that grants the access.
+        :param grants: a collection of
+            (`IAccessArtifact`, grantee `IPerson`, grantor `IPerson`) triples
+            to grant.
         """
 
-    def get(artifact, grantee):
-        """Return the specified `IAccessArtifactGrant` or None.
+    def find(grants):
+        """Return the specified `IAccessArtifactGrant`s if they exist.
 
-        :param artifact: the `IAccessArtifact` that access is granted to.
-        :param grantee: the `IPerson` who holds the access.
+        :param grants: a collection of (`IAccessArtifact`, grantee `IPerson`)
+            pairs.
         """
 
-    def findByArtifact(artifact):
-        """Return all `IAccessArtifactGrant` objects for the artifact."""
+    def findByArtifacts(artifacts):
+        """Return all `IAccessArtifactGrant` objects for the artifacts."""
 
 
 class IAccessPolicySource(Interface):

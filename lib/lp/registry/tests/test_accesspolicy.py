@@ -235,36 +235,27 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_grant(self):
-        artifact = self.factory.makeAccessArtifact()
-        grantee = self.factory.makePerson()
-        grantor = self.factory.makePerson()
-        grant = getUtility(IAccessArtifactGrantSource).grant(
-            artifact, grantee, grantor)
-        self.assertThat(
-            grant,
-            MatchesStructure.byEquality(
-                grantee=grantee,
-                grantor=grantor,
-                abstract_artifact=artifact,
-                concrete_artifact=artifact.concrete_artifact))
+        wanted = [
+            (self.factory.makeAccessArtifact(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            (self.factory.makeAccessArtifact(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            ]
+        grants = getUtility(IAccessArtifactGrantSource).grant(wanted)
+        self.assertContentEqual(
+            wanted,
+            [(g.abstract_artifact, g.grantee, g.grantor) for g in grants])
 
-    def test_get(self):
-        # get() finds the right grant.
-        grant = self.factory.makeAccessArtifactGrant()
-        self.assertEqual(
-            grant,
-            getUtility(IAccessArtifactGrantSource).get(
-                grant.abstract_artifact, grant.grantee))
+    def test_find(self):
+        # find() finds the right grants.
+        grants = [self.factory.makeAccessArtifactGrant() for i in range(2)]
+        self.assertContentEqual(
+            grants,
+            getUtility(IAccessArtifactGrantSource).find(
+                [(g.abstract_artifact, g.grantee) for g in grants]))
 
-    def test_get_nonexistent(self):
-        # get() returns None if the grant doesn't exist.
-        self.assertIs(
-            None,
-            getUtility(IAccessArtifactGrantSource).get(
-                self.factory.makeAccessArtifact(), self.factory.makePerson()))
-
-    def test_findByPolicy(self):
-        # findByPolicy finds only the relevant grants.
+    def test_findByArtifacts(self):
+        # findByArtifacts() finds only the relevant grants.
         artifact = self.factory.makeAccessArtifact()
         grants = [
             self.factory.makeAccessArtifactGrant(artifact=artifact)
@@ -272,7 +263,8 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
         self.factory.makeAccessArtifactGrant()
         self.assertContentEqual(
             grants,
-            getUtility(IAccessArtifactGrantSource).findByArtifact(artifact))
+            getUtility(IAccessArtifactGrantSource).findByArtifacts(
+                [artifact]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
