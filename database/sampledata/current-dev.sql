@@ -765,9 +765,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -4060,13 +4057,6 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (93, '
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
-
-
-ALTER TABLE entitlement DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE entitlement ENABLE TRIGGER ALL;
 
 
 ALTER TABLE faq DISABLE TRIGGER ALL;
