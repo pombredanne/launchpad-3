@@ -4356,9 +4356,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeAccessArtifact(self, concrete=None):
         if concrete is None:
             concrete = self.makeBranch()
-        artifact = getUtility(IAccessArtifactSource).ensure(concrete)
-        IStore(artifact).flush()
-        return artifact
+        artifacts = getUtility(IAccessArtifactSource).ensure([concrete])
+        return artifacts[0]
 
     def makeAccessArtifactGrant(self, artifact=None, grantee=None,
                                 grantor=None):

@@ -54,48 +54,67 @@ class AccessArtifact(StormBase):
         assert artifact is not None
         return artifact
 
-    @staticmethod
-    def _getConcreteAttribute(concrete_artifact):
+    @classmethod
+    def _getConcreteAttribute(cls, concrete_artifact):
         from lp.bugs.interfaces.bug import IBug
         from lp.code.interfaces.branch import IBranch
         if IBug.providedBy(concrete_artifact):
-            return 'bug'
+            return cls.bug
         elif IBranch.providedBy(concrete_artifact):
-            return 'branch'
+            return cls.branch
         else:
             raise ValueError(
                 "%r is not a valid artifact" % concrete_artifact)
 
     @classmethod
-    def get(cls, concrete_artifact):
+    def find(cls, concrete_artifacts):
         """See `IAccessArtifactSource`."""
-        constraints = {
-            cls._getConcreteAttribute(concrete_artifact): concrete_artifact}
-        return IStore(cls).find(cls, **constraints).one()
+        constraints = (
+            cls._getConcreteAttribute(artifact) == artifact
+            for artifact in concrete_artifacts)
+        return IStore(cls).find(cls, Or(*constraints))
 
     @classmethod
-    def ensure(cls, concrete_artifact):
+    def ensure(cls, concrete_artifacts):
         """See `IAccessArtifactSource`."""
-        existing = cls.get(concrete_artifact)
-        if existing is not None:
+        from lp.bugs.interfaces.bug import IBug
+        from lp.code.interfaces.branch import IBranch
+
+        existing = list(cls.find(concrete_artifacts))
+        if len(existing) == len(concrete_artifacts):
             return existing
-        # No existing object. Create a new one.
-        obj = cls()
-        setattr(
-            obj, cls._getConcreteAttribute(concrete_artifact),
-            concrete_artifact)
-        IStore(cls).add(obj)
-        return obj
+
+        # Not everything exists. Create missing ones.
+        needed = (
+            set(concrete_artifacts) -
+            set(abstract.concrete_artifact for abstract in existing))
+
+        insert_values = []
+        for concrete in needed:
+            if IBug.providedBy(concrete):
+                insert_values.append((concrete.id, None))
+            elif IBranch.providedBy(concrete):
+                insert_values.append((None, concrete.id))
+            else:
+                raise ValueError("%r is not a supported artifact" % concrete)
+        result = IStore(cls).execute(
+            Returning(BulkInsert(
+                (cls.bug_id, cls.branch_id),
+                expr=insert_values, primary_columns=cls.id)))
+        created = load(cls, (cols[0] for cols in result))
+
+        return list(existing) + created
 
     @classmethod
-    def delete(cls, concrete_artifact):
+    def delete(cls, concrete_artifacts):
         """See `IAccessPolicyArtifactSource`."""
-        abstract = cls.get(concrete_artifact)
-        if abstract is None:
+        ids = [abstract.id for abstract in cls.find(concrete_artifacts)]
+        if len(ids) == 0:
             return
         IStore(abstract).find(
-            AccessArtifactGrant, abstract_artifact=abstract).remove()
-        IStore(abstract).find(AccessArtifact, id=abstract.id).remove()
+            AccessArtifactGrant,
+            AccessArtifactGrant.abstract_artifact_id.is_in(ids)).remove()
+        IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
 class AccessPolicy(StormBase):

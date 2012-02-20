@@ -133,7 +133,7 @@ class TestAccessArtifactSourceOnce(TestCaseWithFactory):
         self.assertRaises(
             ValueError,
             getUtility(IAccessArtifactSource).ensure,
-            self.factory.makeProduct())
+            [self.factory.makeProduct()])
 
 
 class BaseAccessArtifactTests:
@@ -143,37 +143,41 @@ class BaseAccessArtifactTests:
         raise NotImplementedError()
 
     def test_ensure(self):
-        # ensure() creates an abstract artifact which maps to the
-        # concrete one.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessArtifactSource).ensure(concrete)
-        Store.of(abstract).flush()
-        self.assertEqual(concrete, abstract.concrete_artifact)
+        # ensure() creates abstract artifacts which map to the
+        # concrete ones.
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        self.assertContentEqual(
+            concretes,
+            [abstract.concrete_artifact for abstract in abstracts])
 
-    def test_get(self):
-        # get() finds an abstract artifact which maps to the concrete
-        # one.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessArtifactSource).ensure(concrete)
-        self.assertEqual(
-            abstract, getUtility(IAccessArtifactSource).get(concrete))
+    def test_find(self):
+        # find() finds abstract artifacts which map to the concrete ones.
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        self.assertContentEqual(
+            abstracts, getUtility(IAccessArtifactSource).find(concretes))
 
     def test_ensure_twice(self):
         # ensure() will reuse an existing matching abstract artifact if
         # it exists.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessArtifactSource).ensure(concrete)
-        Store.of(abstract).flush()
-        self.assertEqual(
-            abstract.id,
-            getUtility(IAccessArtifactSource).ensure(concrete).id)
+        concrete1 = self.getConcreteArtifact()
+        concrete2 = self.getConcreteArtifact()
+        [abstract1] = getUtility(IAccessArtifactSource).ensure([concrete1])
+
+        abstracts = getUtility(IAccessArtifactSource).ensure(
+            [concrete1, concrete2])
+        self.assertIn(abstract1, abstracts)
+        self.assertContentEqual(
+            [concrete1, concrete2],
+            [abstract.concrete_artifact for abstract in abstracts])
 
     def test_delete(self):
-        # delete() removes the abstract artifact and any associated
+        # delete() removes the abstract artifacts and any associated
         # grants.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessArtifactSource).ensure(concrete)
-        grant = self.factory.makeAccessArtifactGrant(artifact=abstract)
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        grant = self.factory.makeAccessArtifactGrant(artifact=abstracts[0])
 
         # Make some other grants to ensure they're unaffected.
         other_grants = [
@@ -183,19 +187,19 @@ class BaseAccessArtifactTests:
                 policy=self.factory.makeAccessPolicy()),
             ]
 
-        getUtility(IAccessArtifactSource).delete(concrete)
+        getUtility(IAccessArtifactSource).delete(concretes)
         IStore(grant).invalidate()
         self.assertRaises(LostObjectError, getattr, grant, 'grantor')
         self.assertRaises(
-            LostObjectError, getattr, abstract, 'concrete_artifact')
+            LostObjectError, getattr, abstracts[0], 'concrete_artifact')
 
         for other_grant in other_grants:
-            other_grant.grantor
+            self.assertIsNot(None, other_grant.grantor)
 
     def test_delete_noop(self):
         # delete() works even if there's no abstract artifact.
         concrete = self.getConcreteArtifact()
-        getUtility(IAccessArtifactSource).delete(concrete)
+        getUtility(IAccessArtifactSource).delete([concrete])
 
 
 class TestAccessArtifactBranch(BaseAccessArtifactTests,

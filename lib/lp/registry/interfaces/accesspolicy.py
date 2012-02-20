@@ -82,22 +82,22 @@ class IAccessPolicyGrant(Interface):
 
 class IAccessArtifactSource(Interface):
 
-    def ensure(concrete_artifact):
-        """Return the `IAccessArtifact` for a concrete artifact.
+    def ensure(concrete_artifacts):
+        """Return `IAccessArtifact`s for the concrete artifacts.
 
-        Creates the abstract artifact if it doesn't already exist.
+        Creates abstract artifacts if they don't already exist.
         """
 
-    def get(concrete_artifact):
-        """Return the `IAccessArtifact` for an artifact, if it exists.
+    def find(concrete_artifacts):
+        """Return the `IAccessArtifact`s for the artifacts, if they exist.
 
-        Use ensure() if you want to create one if it doesn't yet exist.
+        Use ensure() if you want to create them if they don't yet exist.
         """
 
-    def delete(concrete_artifact):
-        """Delete the `IAccessArtifact` for a concrete artifact.
+    def delete(concrete_artifacts):
+        """Delete the `IAccessArtifact`s for the concrete artifact.
 
-        Also removes any AccessArtifactGrants for the artifact.
+        Also removes any AccessArtifactGrants for the artifacts.
         """
 
 
