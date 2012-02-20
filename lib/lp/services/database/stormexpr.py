@@ -89,7 +89,7 @@ class BulkInsert(Expr):
 
 
 @compile.when(BulkInsert)
-def compile_bulinsert(compile, insert, state):
+def compile_bulkinsert(compile, insert, state):
     state.push("context", COLUMN_NAME)
     columns = compile(tuple(insert.map), state, token=True)
     state.context = TABLE
