@@ -23,6 +23,10 @@ from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.soyuz.model.component import Component
 from lp.testing import (
     TestCase,
@@ -170,10 +174,17 @@ class TestLoaders(TestCaseWithFactory):
 
     def test_load_with_compound_primary_keys(self):
         # load() does not like compound primary keys.
-        self.assertRaisesWithContent(
-            AssertionError,
-            'Compound primary keys are not supported: BugAffectsPerson.',
-            bulk.load, BugAffectsPerson, [])
+        flags = [
+            FeatureFlag(u'foo', 0, u'bar', u'true'),
+            FeatureFlag(u'foo', 0, u'baz', u'false'),
+            ]
+        other_flag = FeatureFlag(u'notfoo', 0, u'notbar', u'true')
+        for flag in flags + [other_flag]:
+            getFeatureStore().add(flag)
+
+        self.assertContentEqual(
+            flags,
+            bulk.load(FeatureFlag, [(ff.scope, ff.flag) for ff in flags]))
 
     def test_load_with_store(self):
         # load() can use an alternative store.
