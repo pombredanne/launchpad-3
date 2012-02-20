@@ -14,6 +14,7 @@ from lp.services.database.stormexpr import BulkInsert
 
 
 # Create columnN, tableN, and elemN variables.
+# Stolen from Storm's tests.expr.
 for i in range(10):
     for name in ["column", "elem"]:
         exec "%s%d = SQLToken('%s%d')" % (name, i, name, i)
@@ -22,6 +23,11 @@ for i in range(10):
 
 
 class TestBulkInsert(TestCase):
+    """Storm Insert expression which supports bulk operations.
+
+    These are parts of tests.expr from lp:~wgrant/launchpad/bulk-insert,
+    duplicated here until the Storm branch is merged.
+    """
 
     def test_insert_bulk(self):
         expr = BulkInsert(

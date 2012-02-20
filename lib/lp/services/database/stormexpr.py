@@ -58,8 +58,8 @@ class Concatenate(BinaryOper):
 class BulkInsert(Expr):
     """Expression representing an insert statement.
 
-    This is storm.expr.Insert from lp:~wgrant/launchpad/bulk-insert, which is
-    not yet approved.
+    This is storm.expr.Insert from lp:~wgrant/launchpad/bulk-insert,
+    duplicated here until the Storm branch is merged.
 
     @ivar map: Dictionary mapping columns to values, or a sequence of columns
         for a bulk insert.
