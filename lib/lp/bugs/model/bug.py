@@ -22,10 +22,6 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
@@ -39,7 +35,6 @@ from lazr.lifecycle.event import (
     )
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
-from pytz import timezone
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -2999,14 +2994,11 @@ class BugSet:
         result_set = store.find(Bug)
         return result_set.order_by('id')
 
-    def getBugsWithOutdatedHeat(self, max_heat_age):
+    def getBugsWithOutdatedHeat(self, cutoff):
         """See `IBugSet`."""
         store = IStore(Bug)
-        last_updated_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(days=max_heat_age))
         last_updated_clause = Or(
-            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated < cutoff,
             Bug.heat_last_updated == None)
 
         return store.find(Bug, last_updated_clause).order_by(

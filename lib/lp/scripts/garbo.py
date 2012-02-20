@@ -25,6 +25,7 @@ from contrib.glock import (
     )
 from psycopg2 import IntegrityError
 import pytz
+from pytz import timezone
 from storm.expr import In
 from storm.locals import (
     Max,
@@ -790,8 +791,11 @@ class BugHeatUpdater(TunableLoop):
 
     @property
     def _outdated_bugs(self):
+        last_updated_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(days=self.max_heat_age))
         outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)
+            last_updated_cutoff)
         # We remove the security proxy so that we can access the set()
         # method of the result set.
         return removeSecurityProxy(outdated_bugs)

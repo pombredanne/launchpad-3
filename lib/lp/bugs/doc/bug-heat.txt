@@ -219,7 +219,8 @@ getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
 is the maximum age, in days, that a bug's heat can be before it gets
 included in the returned set.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> yesterday = datetime.now(timezone('UTC')) - timedelta(days=1)
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
 
 IBug.setHeat() takes a timestamp parameter so that we can set the
@@ -232,7 +233,8 @@ getBugsWithOutdatedHeat().
     >>> old_heat_bug.setHeat(
     ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     1
 
@@ -248,7 +250,8 @@ We'll set the new bug's heat_last_updated to None manually.
 
     >>> new_bug.heat_last_updated = None
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     2
 
@@ -276,7 +279,7 @@ it as a method will recalculate the heat for all the out-of-date bugs.
 
 There are two bugs with heat more than a day old:
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     2
 
 Calling our BugHeatUpdater will update the heat of those bugs.
@@ -286,7 +289,7 @@ Calling our BugHeatUpdater will update the heat of those bugs.
 
 IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     1
 
 Update the rest in one big chunk.
@@ -297,5 +300,5 @@ Update the rest in one big chunk.
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
