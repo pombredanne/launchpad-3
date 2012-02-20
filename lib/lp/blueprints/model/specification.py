@@ -224,6 +224,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
+    def workitems_text(self):
+        return "No work items yet"
+
+    @property
     def target(self):
         """See ISpecification."""
         if self.product:

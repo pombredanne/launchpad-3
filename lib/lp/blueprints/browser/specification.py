@@ -411,7 +411,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal',
+             'whiteboard', 'proposegoal', 'workitems',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
@@ -725,8 +725,8 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
 
 class SpecificationEditWorkItemsView(SpecificationEditView):
     label = 'Edit specification work items'
-    field_names = ['workitems']
-    custom_widget('workitems', TextAreaWidget, height=15)
+    field_names = ['workitems_text']
+    custom_widget('workitems_text', TextAreaWidget, height=15)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):
