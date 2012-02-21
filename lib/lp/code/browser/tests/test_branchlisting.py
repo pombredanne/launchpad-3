@@ -35,7 +35,7 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
-    )
+    IPerson)
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
@@ -356,6 +356,19 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         self.makeABranch()
         page = self.get_branch_list_page(target=self.team)
         self.assertThat(page, Not(self.registered_branches_matcher))
+
+    def test_branch_list_recipes_link(self):
+        # The link to the source package recipes is always displayed.
+        page = self.get_branch_list_page()
+        recipes_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package recipes link', 'a',
+                text='Source package recipes',
+                attrs={'href': self.base_url + '/+recipes'}))
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, recipes_matcher)
+        else:
+            self.assertThat(page, Not(recipes_matcher))
 
 
 class TestSimplifiedPersonProductBranchesView(
@@ -682,6 +695,7 @@ class TestPersonBranchesPage(BrowserTestCase):
         # the content should not appear in tact because it's been escaped
         self.assertTrue(badname not in browser.contents)
         self.assertTrue(escapedname in browser.contents)
+
 
 class TestProjectGroupBranches(TestCaseWithFactory,
                                AjaxBatchNavigationMixin):
