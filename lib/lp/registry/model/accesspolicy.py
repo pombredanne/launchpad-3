@@ -16,6 +16,7 @@ from storm.expr import (
     Insert,
     Or,
     )
+from storm.info import ClassInfo
 from storm.properties import (
     DateTime,
     Int,
@@ -36,6 +37,20 @@ from lp.services.database.bulk import load
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+
+
+def bulk_insert(cols, values):
+    cls = cols[0].cls
+    keys = [
+        [col.variable_factory(value=val) for col, val in zip(cols, value)]
+        for value in values]
+    primary_key = ClassInfo(cls).primary_key
+    result = IStore(cls).execute(
+        Returning(Insert(cols, expr=keys, primary_columns=primary_key)))
+    if len(primary_key) == 1:
+        return load(cls, (cols[0] for cols in result))
+    else:
+        return load(cls, result)
 
 
 class AccessArtifact(StormBase):
@@ -143,16 +158,13 @@ class AccessPolicy(StormBase):
         insert_values = []
         for pillar, type in policies:
             if IProduct.providedBy(pillar):
-                insert_values.append((pillar.id, None, type.value))
+                insert_values.append((pillar.id, None, type))
             elif IDistribution.providedBy(pillar):
-                insert_values.append((None, pillar.id, type.value))
+                insert_values.append((None, pillar.id, type))
             else:
                 raise ValueError("%r is not a supported pillar" % pillar)
-        result = IStore(cls).execute(
-            Returning(Insert(
-                (cls.product_id, cls.distribution_id, cls.type),
-                expr=insert_values, primary_columns=cls.id)))
-        return load(AccessPolicy, (cols[0] for cols in result))
+        return bulk_insert(
+            (cls.product_id, cls.distribution_id, cls.type), insert_values)
 
     @classmethod
     def _constraintForPillar(cls, pillar):
@@ -214,12 +226,9 @@ class AccessArtifactGrant(StormBase):
         insert_values = [
             (artifact.id, grantee.id, grantor.id)
             for (artifact, grantee, grantor) in grants]
-        result = IStore(cls).execute(
-            Returning(Insert(
-                (cls.abstract_artifact_id, cls.grantee_id, cls.grantor_id),
-                expr=insert_values,
-                primary_columns=(cls.abstract_artifact_id, cls.grantee_id))))
-        return load(cls, result)
+        return bulk_insert(
+            (cls.abstract_artifact_id, cls.grantee_id, cls.grantor_id),
+            insert_values)
 
     @classmethod
     def find(cls, grants):
