@@ -24,14 +24,15 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
 
     def test_pagetitle_top_level(self):
         project = self.factory.makeProduct(name='fnord')
-        view = create_view(project, name='+index')
+        view = create_view(project, name='+index', current_request=True)
         view.request.traversed_objects = [project, view]
         formatter = ObjectFormatterAPI(view)
         self.assertEqual('Fnord in Launchpad', formatter.pagetitle())
 
     def test_pagetitle_vhost(self):
         project = self.factory.makeProduct(name='fnord')
-        view = create_view(project, name='+bugs', rootsite='bugs')
+        view = create_view(project, name='+bugs', rootsite='bugs',
+            current_request=True, server_url='https://bugs.launchpad.dev/')
         view.request.traversed_objects = [project, view]
         formatter = ObjectFormatterAPI(view)
         self.assertEqual('Bugs : Fnord', formatter.pagetitle())
@@ -55,6 +56,31 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         self.assertEqual(
             'Edit Fnord trunk series : Series trunk : Fnord',
             formatter.pagetitle())
+
+    def test_pagetitle_last_breadcrumb_detail(self):
+        project = self.factory.makeProduct(name='fnord')
+        bug = self.factory.makeBug(product=project, title='bang')
+        view = create_view(
+            bug.bugtasks[0], name='+index', rootsite='bugs',
+            current_request=True, server_url='https://bugs.launchpad.dev/')
+        view.request.traversed_objects = [project, bug.bugtasks[0], view]
+        formatter = ObjectFormatterAPI(view)
+        self.assertEqual(
+            '%s bang : Bugs : Fnord' % bug.displayname,
+            formatter.pagetitle())
+
+    def test_pagetitle_last_breadcrumb_detail_too_long(self):
+        project = self.factory.makeProduct(name='fnord')
+        title = 'Bang out go the lights ' * 4
+        bug = self.factory.makeBug(product=project, title=title)
+        view = create_view(
+            bug.bugtasks[0], name='+index', rootsite='bugs',
+            current_request=True, server_url='https://bugs.launchpad.dev/')
+        view.request.traversed_objects = [project, bug.bugtasks[0], view]
+        formatter = ObjectFormatterAPI(view)
+        detail = '%s %s' % (bug.displayname, title)
+        expected_title = '%s... : Bugs : Fnord' % detail[0:64]
+        self.assertEqual(expected_title, formatter.pagetitle())
 
 
 class TestPillarFormatterAPI(TestCaseWithFactory):

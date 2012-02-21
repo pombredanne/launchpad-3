@@ -667,6 +667,12 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
+    def _getSaneBreadcrumbDetail(self, breadcrumb):
+        text = breadcrumb.detail
+        if len(text) > 64:
+            return '%s...' % text[0:64]
+        return text
+
     def pagetitle(self):
         """The page title to be used.
 
@@ -694,9 +700,10 @@ class ObjectFormatterAPI:
                 if template is None:
                     return ROOT_TITLE
         # Use the reverse breadcrumbs.
-        return SEPARATOR.join(
-            breadcrumb.text for breadcrumb
-            in reversed(hierarchy_view.items))
+        breadcrumbs = list(reversed(hierarchy_view.items))
+        detail_breadcrumb = self._getSaneBreadcrumbDetail(breadcrumbs[0])
+        title_breadcrumbs = [breadcrumb.text for breadcrumb in breadcrumbs[1:]]
+        return SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
 
 
 class ObjectImageDisplayAPI:
