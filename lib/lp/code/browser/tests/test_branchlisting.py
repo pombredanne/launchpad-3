@@ -33,9 +33,10 @@ from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.person import (
+    IPerson,
     IPersonSet,
     PersonVisibility,
-    IPerson)
+    )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
