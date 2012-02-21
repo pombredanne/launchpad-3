@@ -165,4 +165,6 @@ def insert_many(store, table, columns, rows):
     :param columns: Iterable of names of columns.
     :param rows: Sequence of tuples of values, in order as per columns.
     """
-    return store.execute(Insert(columns, table=[table], expr=rows))
+    if len(rows) == 0:
+        return
+    store.execute(Insert(columns, table=[table], expr=rows))
