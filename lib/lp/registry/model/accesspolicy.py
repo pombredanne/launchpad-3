@@ -39,10 +39,14 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
 
 
+def _dbify_value(col, val):
+    return col.variable_factory(value=val)
+
+
 def bulk_insert(cols, values):
     cls = cols[0].cls
     keys = [
-        [col.variable_factory(value=val) for col, val in zip(cols, value)]
+        [_dbify_value(col, val) for col, val in zip(cols, value)]
         for value in values]
     primary_key = ClassInfo(cls).primary_key
     result = IStore(cls).execute(
