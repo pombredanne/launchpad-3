@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'NewRevision',
+    'NewMainlineRevisions',
     'RevisionsRemoved',
     'TipChanged',
     ]

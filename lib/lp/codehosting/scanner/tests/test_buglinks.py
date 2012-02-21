@@ -8,7 +8,6 @@ __metaclass__ = type
 from bzrlib.revision import Revision
 from zope.component import getUtility
 from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
