@@ -10,17 +10,9 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
-from itertools import chain
-
-from storm.databases.postgres import Returning
 from storm.expr import (
     And,
-    Insert,
     Or,
-    )
-from storm.info import (
-    ClassInfo,
-    get_obj_info,
     )
 from storm.properties import (
     DateTime,
@@ -38,44 +30,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicy,
     IAccessPolicyGrant,
     )
-from lp.services.database.bulk import load
+from lp.services.database.bulk import create
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
-
-
-def _dbify_value(col, val):
-    if isinstance(col, Reference):
-        if val is None:
-            return (None,) * len(col._relation._get_local_columns(col._cls))
-        else:
-            return col._relation.get_remote_variables(
-                get_obj_info(val).get_obj())
-    else:
-        return col.variable_factory(value=val)
-
-
-def _dbify_column(col):
-    if isinstance(col, Reference):
-        return col._relation._get_local_columns(col._cls)
-    else:
-        return (col,)
-
-
-def bulk_insert(cols, values):
-    db_cols = list(chain.from_iterable(map(_dbify_column, cols)))
-    cls = db_cols[0].cls
-    db_values = [
-        [_dbify_value(col, val) for col, val in zip(cols, value)]
-        for value in values]
-    primary_key = ClassInfo(cls).primary_key
-    result = IStore(cls).execute(
-        Returning(Insert(
-            db_cols, expr=db_values, primary_columns=primary_key)))
-    if len(primary_key) == 1:
-        return load(cls, (cols[0] for cols in result))
-    else:
-        return load(cls, result)
 
 
 class AccessArtifact(StormBase):
@@ -140,7 +98,7 @@ class AccessArtifact(StormBase):
                 insert_values.append((None, concrete))
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
-        created = bulk_insert((cls.bug, cls.branch), insert_values)
+        created = create((cls.bug, cls.branch), insert_values)
         return list(existing) + created
 
     @classmethod
@@ -183,8 +141,7 @@ class AccessPolicy(StormBase):
                 insert_values.append((None, pillar, type))
             else:
                 raise ValueError("%r is not a supported pillar" % pillar)
-        return bulk_insert(
-            (cls.product, cls.distribution, cls.type), insert_values)
+        return create((cls.product, cls.distribution, cls.type), insert_values)
 
     @classmethod
     def _constraintForPillar(cls, pillar):
@@ -243,9 +200,8 @@ class AccessArtifactGrant(StormBase):
     @classmethod
     def grant(cls, grants):
         """See `IAccessArtifactGrantSource`."""
-        return bulk_insert(
-            (cls.abstract_artifact, cls.grantee, cls.grantor),
-            grants)
+        return create(
+            (cls.abstract_artifact, cls.grantee, cls.grantor), grants)
 
     @classmethod
     def find(cls, grants):
@@ -285,9 +241,7 @@ class AccessPolicyGrant(StormBase):
     @classmethod
     def grant(cls, grants):
         """See `IAccessPolicyGrantSource`."""
-        return bulk_insert(
-            (cls.policy, cls.grantee, cls.grantor),
-            grants)
+        return create((cls.policy, cls.grantee, cls.grantor), grants)
 
     @classmethod
     def find(cls, grants):
