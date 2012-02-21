@@ -9,8 +9,8 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
     IAccessPolicy,
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -44,8 +44,8 @@ class TestAccessPolicySource(TestCaseWithFactory):
 
     def test_create(self):
         wanted = [
-            (self.factory.makeProduct(), AccessPolicyType.PRIVATE),
-            (self.factory.makeDistribution(), AccessPolicyType.SECURITY),
+            (self.factory.makeProduct(), AccessPolicyType.PROPRIETARY),
+            (self.factory.makeDistribution(), AccessPolicyType.USERDATA),
             ]
         policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertThat(
@@ -62,25 +62,25 @@ class TestAccessPolicySource(TestCaseWithFactory):
         other_product = self.factory.makeProduct()
 
         wanted = [
-            (product, AccessPolicyType.PRIVATE),
-            (product, AccessPolicyType.SECURITY),
-            (distribution, AccessPolicyType.PRIVATE),
-            (distribution, AccessPolicyType.SECURITY),
-            (other_product, AccessPolicyType.PRIVATE),
+            (product, AccessPolicyType.PROPRIETARY),
+            (product, AccessPolicyType.USERDATA),
+            (distribution, AccessPolicyType.PROPRIETARY),
+            (distribution, AccessPolicyType.USERDATA),
+            (other_product, AccessPolicyType.PROPRIETARY),
             ]
         getUtility(IAccessPolicySource).create(wanted)
 
         query = [
-            (product, AccessPolicyType.PRIVATE),
-            (product, AccessPolicyType.SECURITY),
-            (distribution, AccessPolicyType.SECURITY),
+            (product, AccessPolicyType.PROPRIETARY),
+            (product, AccessPolicyType.USERDATA),
+            (distribution, AccessPolicyType.USERDATA),
             ]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
              getUtility(IAccessPolicySource).find(query)])
 
-        query = [(distribution, AccessPolicyType.PRIVATE)]
+        query = [(distribution, AccessPolicyType.PROPRIETARY)]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in

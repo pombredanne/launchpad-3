@@ -138,11 +138,11 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
+    AccessPolicyType,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
     IAccessPolicyGrantSource,
@@ -4363,7 +4363,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
 
-    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
+    def makeAccessPolicy(self, pillar=None,
+                         type=AccessPolicyType.PROPRIETARY):
         if pillar is None:
             pillar = self.makeProduct()
         policies = getUtility(IAccessPolicySource).create([(pillar, type)])

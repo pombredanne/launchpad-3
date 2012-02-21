@@ -24,8 +24,8 @@ from storm.references import Reference
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
     IAccessArtifact,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
