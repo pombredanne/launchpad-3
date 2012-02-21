@@ -17,7 +17,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         super(TestBugTaskBreadcrumb, self).setUp()
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
-        self.bug = self.factory.makeBug(product=product)
+        self.bug = self.factory.makeBug(product=product, title='borked')
         self.bugtask = self.bug.default_bugtask
         self.bugtask_url = canonical_url(self.bugtask, rootsite='bugs')
 
@@ -26,6 +26,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         last_crumb = crumbs[-1]
         self.assertEquals(self.bugtask_url, last_crumb.url)
         self.assertEquals("Bug #%d" % self.bug.id, last_crumb.text)
+        self.assertEquals("Bug #%d borked" % self.bug.id, last_crumb.detail)
 
     def test_bugtask_child(self):
         crumbs = self.getBreadcrumbsForObject(
