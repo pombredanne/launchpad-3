@@ -109,11 +109,11 @@ yui_deps = {
         'yql/yql',
     ],
     2: [
-        'calendar/calendar.js',
+        'yahoo/yahoo.js',
         'dom/dom.js',
         'event/event.js',
         'yahoo-dom-event/yahoo-dom-event.js',
-        'yahoo/yahoo.js'
+        'calendar/calendar.js',
     ]
 }
 
