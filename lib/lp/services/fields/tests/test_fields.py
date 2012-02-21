@@ -14,6 +14,7 @@ from zope.interface import Interface
 from zope.schema.interfaces import TooShort
 
 from lp.app.validators import LaunchpadValidationError
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -106,6 +107,149 @@ class TestStrippableText(TestCase):
         field = StrippableText(
             __name__='test', strip_text=True, max_length=2)
         self.assertEqual(None, field.validate(u'  a  '))
+
+
+class WorkItemParseError(Exception):
+    """An error when parsing a work item line from a blueprint's whiteboard."""
+
+
+from zope.schema import Text
+class WorkItemsText(Text):
+
+    def parse_line(self, line):
+        assert line.strip() != '', "Please don't give us an empty line"
+        try:
+            title, status = line.rsplit(':')
+        except ValueError:
+            raise WorkItemParseError('Missing work item status.')
+            
+        status = status.strip().lower()
+
+        assignee = None
+        if title.startswith('['):
+            if ']' in title:
+                off = title.index(']')
+                assignee = title[1:off]
+                title = title[off + 1:].strip()
+            else:
+                raise WorkItemParseError('Missing closing "]" for assignee')
+
+        if title == '':
+            raise WorkItemParseError(
+                'No work item title found on "%s"' % line)
+
+        valid_statuses = SpecificationWorkItemStatus.items
+        if status not in [item.name.lower() for item in valid_statuses]:
+            raise WorkItemParseError('Unknown status: %s' % status)
+        status = valid_statuses[status.upper()]
+
+        return {'title': title, 'status': status, 'assignee': assignee}
+
+    def parse(self, text):
+        work_items = []
+        for line in text.splitlines():
+            work_items.append(self.parse_line(line))
+        return work_items
+
+class TestWorkItemsText(TestCase):
+
+    def test_single_line_parsing(self):
+        field = WorkItemsText(__name__='test')
+        work_items_title = 'Test this work item'
+        parsed = field.parse_line('%s: TODO' % (work_items_title))
+        self.assertEqual(parsed['title'], work_items_title)
+        self.assertEqual(parsed['status'], SpecificationWorkItemStatus.TODO)
+
+    def test_silly_caps_status_parsing(self):
+        field = WorkItemsText(__name__='test')
+        parsed_upper = field.parse_line('Test this work item: TODO    ')
+        self.assertEqual(parsed_upper['status'], SpecificationWorkItemStatus.TODO)
+        parsed_lower = field.parse_line('Test this work item:     todo')
+        self.assertEqual(parsed_lower['status'], SpecificationWorkItemStatus.TODO)
+        parsed_camel = field.parse_line('Test this work item: ToDo')
+        self.assertEqual(parsed_camel['status'], SpecificationWorkItemStatus.TODO)
+
+    def test_parse_line_without_status_fails(self):
+        # We should require an explicit status to avoid the problem of work
+        # items with a url but no status.
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            WorkItemParseError, field.parse_line,
+            'Missing status')
+
+    def test_parse_line_without_title_fails(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            WorkItemParseError, field.parse_line,
+            ':TODO')
+
+    def test_parse_line_without_title_with_assignee_fails(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            WorkItemParseError, field.parse_line,
+            '[test-person] :TODO')
+
+    def test_multi_line_parsing(self):
+        field = WorkItemsText(__name__='test')
+        title_1 = 'Work item 1'
+        title_2 = 'Work item 2'
+        work_items_text = "%s: TODO\n%s: POSTPONED" % (title_1, title_2)
+        parsed = field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title_1,
+                      'status': SpecificationWorkItemStatus.TODO,
+                      'assignee': None},
+                     {'title': title_2,
+                      'status': SpecificationWorkItemStatus.POSTPONED,
+                      'assignee': None}])
+
+    def test_parse_assignee(self):
+        field = WorkItemsText(__name__='test')
+        title = 'Work item 1'
+        assignee = 'test-person'
+        work_items_text = "[%s]%s: TODO" % (assignee, title)
+        parsed = field.parse_line(work_items_text)
+        self.assertEqual(parsed['assignee'], assignee)
+
+    def test_parse_assignee_with_space(self):
+        field = WorkItemsText(__name__='test')
+        title = 'Work item 1'
+        assignee = 'test-person'
+        work_items_text = "[%s] %s: TODO" % (assignee, title)
+        parsed = field.parse_line(work_items_text)
+        self.assertEqual(parsed['assignee'], assignee)
+
+    def test_parse_line_with_missing_closing_bracket_for_assignee(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            WorkItemParseError, field.parse_line,
+            "[test-person A single work item: TODO")
+
+    def test_parse_line_with_invalid_status(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            WorkItemParseError, field.parse_line,
+            'Invalid status: FOO')
+
+    def test_parse_empty_line(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            AssertionError, field.parse_line, "  \t \t ")
+
+    # def test_parse_milestone(self):
+    #     field = WorkItemsText(__name__='test')
+    #     milestone = '2012.02'
+    #     title = "Work item for a milestone"
+    #     work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
+    #     parsed = field.parse(work_items_text)
+    #     self.assertEqual(parsed, [{'title': title,
+    #                   'status': SpecificationWorkItemStatus.TODO,
+    #                   'assignee': None, 'milestone': milestone}])
+        
+        
+    # XXX: add tests for additional milestones
+    # XXX: add tests for empty milestone block
+    # XXX: add tests for sequence
 
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):

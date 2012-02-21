@@ -295,10 +295,13 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
         as_of="devel")
-    workitems_text = Text(title=_('Work Items'), required=False,
+    # TODO: we need to add a test for this
+    workitems_text = exported(
+        Text(title=_('Work Items'), required=False,
              description=_(
                 "Work items for this specification input in a text format. "
-                "Your changes will override the current work items."))
+                "Your changes will override the current work items.")),
+        as_of="devel")
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
              required=True, default=False,
