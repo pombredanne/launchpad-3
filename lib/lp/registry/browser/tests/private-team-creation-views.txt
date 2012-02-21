@@ -172,6 +172,7 @@ taken by a private team get the blacklist message.
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
     The name 'secret-team' has been blocked by the Launchpad administrators.
+    Contact Launchpad Support if you want to use this name.
 
 
 = Private Team Editing =
@@ -422,4 +423,4 @@ users will get a blacklist message.
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
     The name 'private-top-secret' has been blocked by the Launchpad
-    administrators.
+    administrators. Contact Launchpad Support if you want to use this name.

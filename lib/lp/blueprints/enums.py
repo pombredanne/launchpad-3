@@ -14,6 +14,7 @@ __all__ = [
     'SpecificationPriority',
     'SpecificationSort',
     'SprintSpecificationStatus',
+    'SpecificationWorkItemStatus',
     ]
 
 
@@ -510,4 +511,32 @@ class SprintSpecificationStatus(DBEnumeratedType):
         This spec has been submitted for consideration by the meeting
         organisers. It has not yet been accepted or declined for the
         agenda.
+        """)
+
+
+class SpecificationWorkItemStatus(DBEnumeratedType):
+    TODO = DBItem(0, """
+        Todo
+
+        A work item that's not done yet.
+        """)
+    DONE = DBItem(1, """
+        Done
+
+        A work item that's done.
+        """)
+    POSTPONED = DBItem(2, """
+        Postponed
+
+        A work item that has been postponed.
+        """)
+    INPROGRESS = DBItem(3, """
+        In progress
+
+        A work item that is inprogress.
+        """)
+    BLOCKED = DBItem(4, """
+        Blocked
+
+        A work item that is blocked.
         """)

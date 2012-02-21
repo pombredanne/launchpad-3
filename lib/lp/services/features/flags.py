@@ -31,7 +31,9 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -79,6 +81,13 @@ flag_info = sorted([
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -200,13 +209,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
     ('disclosure.enhanced_private_bug_subscriptions.enabled',
      'boolean',
      ('Enables the auto subscribing and unsubscribing of users as a bug '
@@ -274,6 +276,13 @@ flag_info = sorted([
      'boolean',
      ('If true, will show the visibility field for IPersonSet:+newteam if '
       'the user has a current commercial subscription.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_choice_popup.enabled',
+     'boolean',
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup'),
      '',
      '',
      ''),

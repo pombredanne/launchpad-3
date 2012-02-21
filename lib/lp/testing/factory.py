@@ -73,6 +73,7 @@ from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -139,12 +140,6 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
-    )
-from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
-    IAccessPolicyArtifactSource,
-    IAccessPolicyGrantSource,
-    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -535,9 +530,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         administrators.addMember(user, administrators.teamowner)
         return user
 
+    @with_celebrity_logged_in('admin')
     def makeRegistryExpert(self, name=None, email='expert@example.com'):
-        from lp.testing.sampledata import ADMIN_EMAIL
-        login(ADMIN_EMAIL)
         user = self.makePerson(name=name, email=email)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         registry_team.addMember(user, registry_team.teamowner)
@@ -2104,6 +2098,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spec
 
     makeBlueprint = makeSpecification
+
+    def makeSpecificationWorkItem(self, title=None, specification=None,
+                                  assignee=None, milestone=None, deleted=False,
+                                  status=SpecificationWorkItemStatus.TODO,
+                                  sequence=None):
+        if title is None:
+            title = self.getUniqueString(u'title')
+        if specification is None:
+            specification = self.makeSpecification()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
+        work_item = removeSecurityProxy(specification).newWorkItem(
+            title=title, sequence=sequence, status=status, assignee=assignee,
+            milestone=milestone)
+        work_item.deleted = deleted
+        return work_item
 
     def makeQuestion(self, target=None, title=None,
                      owner=None, description=None, language=None):
@@ -4345,33 +4355,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
-
-    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
-        if pillar is None:
-            pillar = self.makeProduct()
-        policy = getUtility(IAccessPolicySource).create(pillar, type)
-        IStore(policy).flush()
-        return policy
-
-    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
-        if concrete is None:
-            concrete = self.makeBranch()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        artifact.policy = policy
-        IStore(artifact).flush()
-        return artifact
-
-    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
-        if grantee is None:
-            grantee = self.makePerson()
-        if grantor is None:
-            grantor = self.makePerson()
-        if object is None:
-            object = self.makeAccessPolicy()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
-            grantee, grantor, object)
-        IStore(grant).flush()
-        return grant
 
     def makeFakeFileUpload(self, filename=None, content=None):
         """Return a zope.publisher.browser.FileUpload like object.

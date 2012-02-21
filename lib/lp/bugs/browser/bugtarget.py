@@ -113,7 +113,10 @@ from lp.bugs.model.structuralsubscription import (
 from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from lp.registry.browser.product import ProductConfigureBase
+from lp.registry.browser.product import (
+    ProductConfigureBase,
+    ProductPrivateBugsMixin,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -151,6 +154,8 @@ class IProductBugConfiguration(Interface):
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
     security_contact = copy_field(IHasSecurityContact['security_contact'])
+    private_bugs = copy_field(
+        IProduct['private_bugs'], readonly=False)
     official_malone = copy_field(ILaunchpadUsage['official_malone'])
     enable_bug_expiration = copy_field(
         ILaunchpadUsage['enable_bug_expiration'])
@@ -171,7 +176,9 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
+class ProductConfigureBugTrackerView(BugRoleMixin,
+                                     ProductPrivateBugsMixin,
+                                     ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
@@ -192,6 +199,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             "bug_reporting_guidelines",
             "bug_reported_acknowledgement",
             "enable_bugfiling_duplicate_search",
+            "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
@@ -200,6 +208,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
+        super(ProductConfigureBugTrackerView, self).validate(data)
         if check_permission("launchpad.Edit", self.context):
             self.validateBugSupervisor(data)
             self.validateSecurityContact(data)

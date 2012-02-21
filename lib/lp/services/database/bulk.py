@@ -23,6 +23,7 @@ from storm.exceptions import (
     ConnectionBlockedError,
     )
 from storm.expr import (
+    And,
     Insert,
     Or,
     )
@@ -77,28 +78,35 @@ def reload(objects):
         list(query)
 
 
-def _primary_key(object_type):
+def _primary_key(object_type, allow_compound=False):
     """Get a primary key our helpers can use.
 
     :raises AssertionError if the key is missing or unusable.
     """
     primary_key = get_cls_info(object_type).primary_key
-    if len(primary_key) != 1:
-        raise AssertionError(
-            "Compound primary keys are not supported: %s." %
-            object_type.__name__)
-    return primary_key[0]
+    if len(primary_key) == 1:
+        return primary_key[0]
+    else:
+        if not allow_compound:
+            raise AssertionError(
+                "Compound primary keys are not supported: %s." %
+                object_type.__name__)
+        return primary_key
 
 
 def load(object_type, primary_keys, store=None):
     """Load a large number of objects efficiently."""
-    primary_key = _primary_key(object_type)
-    primary_key_column = primary_key
+    primary_key = _primary_key(object_type, allow_compound=True)
     primary_keys = set(primary_keys)
     primary_keys.discard(None)
     if not primary_keys:
         return []
-    condition = primary_key_column.is_in(primary_keys)
+    if isinstance(primary_key, tuple):
+        condition = Or(*(
+            And(*(key == value for (key, value) in zip(primary_key, values)))
+            for values in primary_keys))
+    else:
+        condition = primary_key.is_in(primary_keys)
     if store is None:
         store = IStore(object_type)
     return list(store.find(object_type, condition))

@@ -519,6 +519,29 @@ class TestTeamAddView(TestCaseWithFactory):
                     'visibility',
                     [field.__name__ for field in view.form_fields])
 
+    def test_person_with_cs_can_create_private_team(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.visibility': 'PRIVATE',
+            'field.actions.create': 'Create',
+            }
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner,
+                    form=form)
+            team = personset.getByName(team_name)
+            self.assertIsNotNone(team)
+            self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
+
     def test_person_with_expired_cs_does_not_see_visibility(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(
@@ -532,6 +555,22 @@ class TestTeamAddView(TestCaseWithFactory):
                 self.assertNotIn(
                     'visibility',
                     [field.__name__ for field in view.form_fields])
+
+    def test_visibility_is_correct_during_edit(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(owner):
+            url = canonical_url(team)
+        with FeatureFixture(self.feature_flag):
+            browser = self.getUserBrowser(url, user=owner)
+            browser.getLink('Change details').click()
+            self.assertEqual(
+                ['PRIVATE'],
+                browser.getControl(name="field.visibility").value)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -737,6 +776,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             removeSecurityProxy(tm).status = status
             view = create_initialized_view(self.team, "+addmember")
             view.add_action.success(data={'newmember': member_team})
+
+
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
 
 
 class TestTeamIndexView(TestCaseWithFactory):
