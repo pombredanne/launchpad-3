@@ -166,6 +166,6 @@ user to the bug page.
     'http://bugs.launchpad.dev/firefox/+bug/...'
 
     >>> print user_browser.title
-    Bug #... : Bugs : Mozilla Firefox
+    Bug #... Frankenzombulon reanimated... : Bugs : Mozilla Firefox
 
 

@@ -87,7 +87,7 @@ changes to that test.
 
     >>> user_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> user_browser.title.decode('utf-8')
-    u'Bug #2 (blackhole) : Bugs : Tomcat'
+    u'Bug #2 (blackhole) ... : Bugs : Tomcat'
     >>> user_browser.getControl(name='field.comment').value = (
     ...     "-----BEGIN PGP SIGNED MESSAGE-----\n"
     ...     "Hash: SHA1\n"
@@ -120,7 +120,7 @@ No Privileges Person is authenticated in user_browser, so he can see
 email addresses in messages.
 
     >>> user_browser.title.decode('utf-8')
-    u'Bug #2 (blackhole) : Bugs : Tomcat'
+    u'Bug #2 (blackhole) ... : Bugs : Tomcat'
     >>> text = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-2])
@@ -135,7 +135,7 @@ unauthenticated, so he will see the obfuscated email address.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> anon_browser.title.decode('utf-8')
-    u'Bug #2 (blackhole) : Bugs : Tomcat'
+    u'Bug #2 (blackhole) ... : Bugs : Tomcat'
     >>> text = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-2])
