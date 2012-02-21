@@ -5,16 +5,22 @@
 
 __metaclass__ = type
 
+import datetime
+
+from pytz import UTC
 from storm.exceptions import ClassInfoError
 from storm.info import get_obj_info
 from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.security import (
     checker,
     proxy,
     )
 
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import BugAffectsPerson
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.model.person import Person
 from lp.services.database import bulk
@@ -29,10 +35,12 @@ from lp.services.features.model import (
     )
 from lp.soyuz.model.component import Component
 from lp.testing import (
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 object_is_key = lambda thing: thing
@@ -219,9 +227,49 @@ class TestLoaders(TestCaseWithFactory):
             self.factory.makeBranch(),
             self.factory.makeBranch(),
             ]
-        expected = set(list(owned_objects[0].subscriptions) + 
+        expected = set(list(owned_objects[0].subscriptions) +
             list(owned_objects[1].subscriptions))
         self.assertNotEqual(0, len(expected))
         self.assertEqual(expected,
             set(bulk.load_referencing(BranchSubscription, owned_objects,
                 ['branchID'])))
+
+
+class TestCreate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_handles_references_and_enums(self):
+        # create() correctly compiles plain types, enums and references.
+        bug = self.factory.makeBug()
+        people = [self.factory.makePerson() for i in range(5)]
+
+        wanted = [
+            (bug, person, person, datetime.datetime.now(UTC),
+             BugNotificationLevel.LIFECYCLE)
+            for person in people]
+
+        with StormStatementRecorder() as recorder:
+            subs = bulk.create(
+                (BugSubscription.bug, BugSubscription.person,
+                 BugSubscription.subscribed_by, BugSubscription.date_created,
+                 BugSubscription.bug_notification_level),
+                wanted)
+
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertContentEqual(
+            wanted,
+            ((sub.bug, sub.person, sub.subscribed_by, sub.date_created,
+              sub.bug_notification_level) for sub in subs))
+
+    def test_fails_on_multiple_classes(self):
+        # create() only inserts into columns on a single class.
+        self.assertRaises(
+            AssertionError,
+            bulk.create, (BugSubscription.bug, BranchSubscription.branch), [])
+
+    def test_fails_on_reference_mismatch(self):
+        # create() handles Reference columns in a typesafe manner.
+        self.assertRaisesWithContent(
+            RuntimeError, "Property used in an unknown class",
+            bulk.create, (BugSubscription.bug,), [[self.factory.makeBranch()]])
