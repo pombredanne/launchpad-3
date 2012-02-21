@@ -145,6 +145,7 @@ For example, there are no bugs with the word 'Fnord' in Firefox.
 
 But if we put that word in the bug #4 description, it will be found.
 
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
