@@ -88,7 +88,7 @@ class IAccessArtifactSource(Interface):
     def delete(concrete_artifacts):
         """Delete the `IAccessArtifact`s for the concrete artifact.
 
-        Also removes any AccessArtifactGrants for the artifacts.
+        Also revokes any `IAccessArtifactGrant`s for the artifacts.
         """
 
 
@@ -112,7 +112,7 @@ class IAccessArtifactGrantSource(Interface):
     def findByArtifacts(artifacts):
         """Return all `IAccessArtifactGrant` objects for the artifacts."""
 
-    def deleteByArtifacts(artifacts):
+    def revokeByArtifacts(artifacts):
         """Delete all `IAccessArtifactGrant` objects for the artifacts."""
 
 

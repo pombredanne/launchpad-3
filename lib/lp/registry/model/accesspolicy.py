@@ -115,7 +115,7 @@ class AccessArtifact(StormBase):
         ids = [abstract.id for abstract in abstracts]
         if len(ids) == 0:
             return
-        getUtility(IAccessArtifactGrantSource).deleteByArtifacts(abstracts)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifacts(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
@@ -237,7 +237,7 @@ class AccessArtifactGrant(StormBase):
         return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
 
     @classmethod
-    def deleteByArtifacts(cls, artifacts):
+    def revokeByArtifacts(cls, artifacts):
         """See `IAccessPolicyGrantSource`."""
         cls.findByArtifacts(artifacts).remove()
 
