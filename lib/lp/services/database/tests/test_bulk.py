@@ -21,6 +21,10 @@ from zope.security import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import BugAffectsPerson
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    )
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.model.person import Person
 from lp.services.database import bulk
@@ -33,6 +37,7 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.job.model.job import Job
 from lp.soyuz.model.component import Component
 from lp.testing import (
     StormStatementRecorder,
@@ -239,7 +244,7 @@ class TestCreate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_handles_references_and_enums(self):
+    def test_references_and_enums(self):
         # create() correctly compiles plain types, enums and references.
         bug = self.factory.makeBug()
         people = [self.factory.makePerson() for i in range(5)]
@@ -261,6 +266,17 @@ class TestCreate(TestCaseWithFactory):
             wanted,
             ((sub.bug, sub.person, sub.subscribed_by, sub.date_created,
               sub.bug_notification_level) for sub in subs))
+
+    def test_null_reference(self):
+        # create() handles None as a Reference value.
+        job = Job()
+        IStore(Job).add(job)
+        wanted = [(None, job, BranchJobType.RECLAIM_BRANCH_SPACE)]
+        [branchjob] = bulk.create(
+            (BranchJob.branch, BranchJob.job, BranchJob.job_type),
+            wanted)
+        self.assertEqual(
+            wanted, [(branchjob.branch, branchjob.job, branchjob.job_type)])
 
     def test_fails_on_multiple_classes(self):
         # create() only inserts into columns on a single class.
