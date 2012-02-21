@@ -281,7 +281,7 @@ class TestCreate(TestCaseWithFactory):
     def test_fails_on_multiple_classes(self):
         # create() only inserts into columns on a single class.
         self.assertRaises(
-            AssertionError,
+            ValueError,
             bulk.create, (BugSubscription.bug, BranchSubscription.branch), [])
 
     def test_fails_on_reference_mismatch(self):
