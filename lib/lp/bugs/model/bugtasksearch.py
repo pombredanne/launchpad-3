@@ -59,14 +59,11 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.person import Person
-from lp.services import features
-from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     quote,
-    quote_like,
     sqlvalues,
     )
 from lp.services.propertycache import get_property_cache
@@ -456,7 +453,7 @@ def _build_query(params):
         extra_clauses.append(_build_search_text_clause(params))
 
     if params.fast_searchtext:
-        extra_clauses.append(_build_fast_search_text_clause(params))
+        extra_clauses.append(_build_search_text_clause(params, fast=True))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -819,13 +816,16 @@ def _require_params(params):
     return params
 
 
-def _build_search_text_clause(params):
+def _build_search_text_clause(params, fast=False):
     """Build the clause for searchtext."""
-    assert params.fast_searchtext is None, (
-        'Cannot use fast_searchtext at the same time as searchtext.')
-
-    searchtext_quoted = quote(params.searchtext)
-    searchtext_like_quoted = quote_like(params.searchtext)
+    if fast:
+        assert params.searchtext is None, (
+            'Cannot use searchtext at the same time as fast_searchtext.')
+        searchtext_quoted = quote(params.fast_searchtext)
+    else:
+        assert params.fast_searchtext is None, (
+            'Cannot use fast_searchtext at the same time as searchtext.')
+        searchtext_quoted = quote(params.searchtext)
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
@@ -834,44 +834,7 @@ def _build_search_text_clause(params):
             SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
             ]
 
-    comment_clause = """BugTask.id IN (
-        SELECT BugTask.id
-        FROM BugTask, BugMessage,Message, MessageChunk
-        WHERE BugMessage.bug = BugTask.bug
-            AND BugMessage.message = Message.id
-            AND Message.id = MessageChunk.message
-            AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-    text_search_clauses = [
-        "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-        ]
-    no_targetnamesearch = bool(features.getFeatureFlag(
-        'malone.disable_targetnamesearch'))
-    if not no_targetnamesearch:
-        text_search_clauses.append(
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-            searchtext_like_quoted))
-    # Due to performance problems, whether to search in comments is
-    # controlled by a config option.
-    if config.malone.search_comments:
-        text_search_clauses.append(comment_clause)
-    return "(%s)" % " OR ".join(text_search_clauses)
-
-
-def _build_fast_search_text_clause(params):
-    """Build the clause to use for the fast_searchtext criteria."""
-    assert params.searchtext is None, (
-        'Cannot use searchtext at the same time as fast_searchtext.')
-
-    fast_searchtext_quoted = quote(params.fast_searchtext)
-
-    if params.orderby is None:
-        # Unordered search results aren't useful, so sort by relevance
-        # instead.
-        params.orderby = [
-            SQLConstant("-rank(Bug.fti, ftq(%s))" %
-            fast_searchtext_quoted)]
-
-    return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
+    return "Bug.fti @@ ftq(%s)" % searchtext_quoted
 
 
 def _build_status_clause(status):

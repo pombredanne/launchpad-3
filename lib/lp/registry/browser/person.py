@@ -22,7 +22,7 @@ __all__ = [
     'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
-    'PersonEditLocationView',
+    'PersonEditTimeZoneView',
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonFacets',
@@ -103,7 +103,6 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.publisher.interfaces import NotFound
 from zope.schema import (
-    Bool,
     Choice,
     Text,
     TextLine,
@@ -144,7 +143,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
-from lp.app.widgets.location import LocationWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.interfaces.bugtask import (
@@ -204,7 +202,6 @@ from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.feeds.browser import FeedsMixin
-from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
@@ -2309,47 +2306,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
 
-    @property
-    def map_portlet_html(self):
-        """Generate the HTML which shows the map portlet."""
-        assert self.has_visible_location, (
-            "Can't generate the map for a person who hasn't set a "
-            "visible location.")
-        replacements = {'center_lat': self.context.latitude,
-                        'center_lng': self.context.longitude}
-        return u"""
-            <script type="text/javascript">
-                LPJS.use('node', 'lp.app.mapping', function(Y) {
-                    function renderMap() {
-                        Y.lp.app.mapping.renderPersonMapSmall(
-                            %(center_lat)s, %(center_lng)s);
-                     }
-                     Y.on("domready", renderMap);
-                });
-            </script>""" % replacements
-
-    @cachedproperty
-    def has_visible_location(self):
-        """Does the person have latitude and a visible location."""
-        if self.context.is_team:
-            return self.context.mapped_participants_count > 0
-        else:
-            return (check_permission('launchpad.View', self.context.location)
-                and self.context.latitude is not None)
-
-    @property
-    def should_show_map_portlet(self):
-        """Should the map portlet be displayed?
-
-        The map portlet is displayed only if the person has no location
-        specified (latitude), or if the user has permission to view the
-        person's location.
-        """
-        if self.user == self.context:
-            return True
-        else:
-            return self.has_visible_location
-
 
 class PersonCodeOfConductEditView(LaunchpadView):
     """View for the ~person/+codesofconduct pages."""
@@ -4047,23 +4003,27 @@ class PersonOAuthTokensView(LaunchpadView):
             canonical_url(self.context, view_name='+oauth-tokens'))
 
 
-class PersonLocationForm(Interface):
+class PersonTimeZoneForm(Interface):
 
-    location = LocationField(
-        title=_('Time zone'),
-        required=True)
-    hide = Bool(
-        title=_("Hide my location details from others."),
-        required=True, default=False)
+    time_zone = Choice(
+        vocabulary='TimezoneName', title=_('Time zone'), required=True,
+        description=_(
+            'Once the time zone is correctly set, events '
+            'in Launchpad will be displayed in local time.'))
 
 
-class PersonEditLocationView(LaunchpadFormView):
-    """Edit a person's location."""
+class PersonEditTimeZoneView(LaunchpadFormView):
+    """Edit a person's time zone."""
 
-    schema = PersonLocationForm
-    field_names = ['location']
-    custom_widget('location', LocationWidget)
+    schema = PersonTimeZoneForm
     page_title = label = 'Set timezone'
+
+    @property
+    def initial_values(self):
+        if self.context.time_zone is None:
+            return {}
+        else:
+            return dict(time_zone=self.context.time_zone)
 
     @property
     def next_url(self):
@@ -4073,17 +4033,14 @@ class PersonEditLocationView(LaunchpadFormView):
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
-        """Set the coordinates and time zone for the person."""
-        new_location = data.get('location')
-        if new_location is None:
+        """Set the time zone for the person."""
+        timezone = data.get('time_zone')
+        if timezone is None:
             raise UnexpectedFormData('No location received.')
-        latitude = new_location.latitude
-        longitude = new_location.longitude
-        time_zone = new_location.time_zone
-        self.context.setLocation(latitude, longitude, time_zone, self.user)
-        if 'hide' in self.field_names:
-            visible = not data['hide']
-            self.context.setLocationVisibility(visible)
+        # XXX salgado, 2012-02-16, bug=933699: Use setLocation() because it's
+        # the cheaper way to set the timezone of a person. Once the bug is
+        # fixed we'll be able to get rid of this hack.
+        self.context.setLocation(None, None, timezone, self.user)
 
 
 def archive_to_person(archive):
