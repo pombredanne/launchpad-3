@@ -5,10 +5,56 @@
 
 __metaclass__ = type
 
-from lp.app.browser.tales import PillarFormatterAPI
-from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.app.browser.tales import (
+    ObjectFormatterAPI,
+    PillarFormatterAPI,
+    )
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    FakeAdapterMixin,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.views import create_view
+
+
+class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_pagetitle_top_level(self):
+        project = self.factory.makeProduct(name='fnord')
+        view = create_view(project, name='+index')
+        view.request.traversed_objects = [project, view]
+        formatter = ObjectFormatterAPI(view)
+        self.assertEqual('Fnord in Launchpad', formatter.pagetitle())
+
+    def test_pagetitle_vhost(self):
+        project = self.factory.makeProduct(name='fnord')
+        view = create_view(project, name='+bugs', rootsite='bugs')
+        view.request.traversed_objects = [project, view]
+        formatter = ObjectFormatterAPI(view)
+        self.assertEqual('Bugs : Fnord', formatter.pagetitle())
+
+    def test_pagetitle_lower_level_default_view(self):
+        project = self.factory.makeProduct(name='fnord')
+        view = create_view(
+            project.development_focus, name='+index', current_request=True)
+        view.request.traversed_objects = [
+            project, project.development_focus, view]
+        formatter = ObjectFormatterAPI(view)
+        self.assertEqual('Series trunk : Fnord', formatter.pagetitle())
+
+    def test_pagetitle_lower_level_named_view(self):
+        project = self.factory.makeProduct(name='fnord')
+        view = create_view(
+            project.development_focus, name='+edit', current_request=True)
+        view.request.traversed_objects = [
+            project, project.development_focus, view]
+        formatter = ObjectFormatterAPI(view)
+        self.assertEqual(
+            'Edit Fnord trunk series : Series trunk : Fnord',
+            formatter.pagetitle())
 
 
 class TestPillarFormatterAPI(TestCaseWithFactory):
@@ -34,7 +80,7 @@ class TestPillarFormatterAPI(TestCaseWithFactory):
             'summary': self.product.displayname,
             'css_class': self.FORMATTER_CSS_CLASS,
             }
-        self.assertEquals(link, template % mapping)
+        self.assertEqual(link, template % mapping)
 
     def test_link_with_displayname(self):
         # Calling PillarFormatterAPI.link_with_displayname() will return
@@ -52,4 +98,4 @@ class TestPillarFormatterAPI(TestCaseWithFactory):
             'name': self.product.name,
             'css_class': self.FORMATTER_CSS_CLASS,
             }
-        self.assertEquals(link, template % mapping)
+        self.assertEqual(link, template % mapping)
