@@ -54,6 +54,7 @@ from operator import attrgetter
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 import pytz
+import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -74,7 +75,9 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import (
+    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -108,7 +111,11 @@ from lp.app.browser.tales import (
     format_link,
     MenuAPI,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.browser.vocabulary import vocabulary_filters
+from lp.app.enums import (
+    InformationVisibilityPolicy,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -1558,7 +1565,7 @@ class ProductPrivateBugsMixin():
     def updateContextFromData(self, data, context=None, notify_modified=True):
         # private_bugs uses a mutator to check permissions, so it needs to
         # be handled separately.
-        if data.has_key('private_bugs'):
+        if 'private_bugs' in data:
             self.context.setPrivateBugs(data['private_bugs'], self.user)
             del data['private_bugs']
         parent = super(ProductPrivateBugsMixin, self)
@@ -2417,3 +2424,39 @@ class ProductSharingView(LaunchpadView):
 
     page_title = "Sharing"
     label = "Sharing information"
+
+    @property
+    def access_policies(self):
+        result = []
+        for x, policy in enumerate(InformationVisibilityPolicy):
+            item = dict(
+                index=x,
+                value=policy.token,
+                title=policy.title,
+                description=policy.value.description
+            )
+            result.append(item)
+        return result
+
+    @cachedproperty
+    def sharing_vocabulary(self):
+        registry = getVocabularyRegistry()
+        return registry.get(
+            IVocabulary, 'ValidPersonOrTeam')
+
+    @cachedproperty
+    def sharing_vocabulary_filters(self):
+        return vocabulary_filters(self.sharing_vocabulary)
+
+    @property
+    def sharing_picker_config(self):
+        return dict(
+            access_policies=self.access_policies,
+            vocabulary='ValidPersonOrTeam',
+            vocabulary_filters=self.sharing_vocabulary_filters,
+            header='Grant access to artifacts for %s'
+                % self.context.displayname)
+
+    @property
+    def json_sharing_picker_config(self):
+        return simplejson.dumps(self.sharing_picker_config)

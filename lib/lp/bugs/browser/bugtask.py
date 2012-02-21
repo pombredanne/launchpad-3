@@ -136,6 +136,7 @@ from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -1187,7 +1188,7 @@ def get_assignee_vocabulary_info(context):
     else:
         vocab_name = 'AllUserTeamsParticipation'
     vocab = vocabulary_registry.get(None, vocab_name)
-    return vocab_name, vocab.supportedFilters()
+    return vocab_name, vocab
 
 
 class BugTaskBugWatchMixin:
@@ -4123,20 +4124,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
 
     def bugtask_config(self):
         """Configuration for the bugtask JS widgets on the row."""
-        assignee_vocabulary, assignee_vocabulary_filters = (
+        assignee_vocabulary_name, assignee_vocabulary = (
             get_assignee_vocabulary_info(self.context))
-        # If we have no filters or just the ALL filter, then no filtering
-        # support is required.
-        filter_details = []
-        if (len(assignee_vocabulary_filters) > 1 or
-               (len(assignee_vocabulary_filters) == 1
-                and assignee_vocabulary_filters[0].name != 'ALL')):
-            for filter in assignee_vocabulary_filters:
-                filter_details.append({
-                    'name': filter.name,
-                    'title': filter.title,
-                    'description': filter.description,
-                    })
+        filter_details = vocabulary_filters(assignee_vocabulary)
         # Display the search field only if the user can set any person
         # or team
         user = self.user
@@ -4154,7 +4144,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin,
             bug_title=cx.bug.title,
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
-            assignee_vocabulary=assignee_vocabulary,
+            assignee_vocabulary=assignee_vocabulary_name,
             assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
