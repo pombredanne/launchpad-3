@@ -144,7 +144,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                          % (entered_name, distribution.displayname))
                 if package_name is None:
                     return distribution
@@ -158,7 +158,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         dsp = distribution.getSourcePackage(source_name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                         % (package_name.name, distribution.displayname))
                 return dsp
             else:
