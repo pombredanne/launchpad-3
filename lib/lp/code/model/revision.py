@@ -25,7 +25,6 @@ from sqlobject import (
     ForeignKey,
     IntCol,
     SQLMultipleJoin,
-    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
