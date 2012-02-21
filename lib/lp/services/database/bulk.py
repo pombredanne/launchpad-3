@@ -22,7 +22,10 @@ from storm.exceptions import (
     ClosedError,
     ConnectionBlockedError,
     )
-from storm.expr import Or
+from storm.expr import (
+    Insert,
+    Or,
+    )
 from storm.info import get_cls_info
 from storm.store import Store
 from storm.tracer import trace
@@ -186,7 +189,7 @@ def execute_many(store, statement, rows):
     return raw_cursor
 
 
-def insert_many(store, table, columns, rows):
+def insert_many_raw(store, table, columns, rows):
     """Insert multiple rows into a table.
 
     :param store: Store to use for insertion.
@@ -201,3 +204,14 @@ def insert_many(store, table, columns, rows):
     values = '(%s)' % ', '.join(['?' for column in columns])
     statement = "INSERT INTO %s %s VALUES %s" % (table, column_str, values)
     return execute_many(store, statement, rows)
+
+
+def insert_many(store, table, columns, rows):
+    """Insert multiple rows into a table.
+
+    :param store: Store to use for insertion.
+    :param table: Name of the table to insert into.
+    :param columns: Iterable of names of columns.
+    :param rows: Sequence of tuples of values, in order as per columns.
+    """
+    return store.execute(Insert(columns, table=[table], expr=rows))

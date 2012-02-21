@@ -374,7 +374,7 @@ class RevisionSet:
             revision_author = revision_authors[author_name]
 
             data.append(
-                (revision_id, bzr_revision.message, str(revision_date),
+                (revision_id, bzr_revision.message, revision_date,
                 revision_author))
         insert_many(
             store, 'Revision', ('revision_id', 'log_body', 'revision_date',
