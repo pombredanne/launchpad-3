@@ -118,20 +118,25 @@ class IAccessArtifactGrantSource(Interface):
 
 class IAccessPolicySource(Interface):
 
-    def create(policies):
+    def create(pillars_and_types):
         """Create an `IAccessPolicy` for the given pillars and types.
 
-        :param policies: a collection of
+        :param pillars_and_types: a collection of
             (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
             create `IAccessPolicy` objects for.
         :return: a collection of the created `IAccessPolicy` objects.
         """
 
+    def find(pillars_and_types):
+        """Return the `IAccessPolicy`s for the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            find.
+        """
+
     def findByID(ids):
         """Return the `IAccessPolicy`s with the given IDs."""
-
-    def findByPillarAndType(pillars_and_types):
-        """Return the `IAccessPolicy`s for the given pillars and types."""
 
     def findByPillar(pillars):
         """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""

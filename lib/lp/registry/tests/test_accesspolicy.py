@@ -55,17 +55,8 @@ class TestAccessPolicySource(TestCaseWithFactory):
             wanted,
             [(policy.pillar, policy.type) for policy in policies])
 
-    def test_findByID(self):
-        # findByID finds the right policies.
-        policies = [self.factory.makeAccessPolicy() for i in range(2)]
-        self.factory.makeAccessPolicy()
-        self.assertContentEqual(
-            policies,
-            getUtility(IAccessPolicySource).findByID(
-                [policy.id for policy in policies]))
-
-    def test_findPillarAndType(self):
-        # findByPillarAndType finds the right policies.
+    def test_find(self):
+        # find() finds the right policies.
         product = self.factory.makeProduct()
         distribution = self.factory.makeDistribution()
         other_product = self.factory.makeProduct()
@@ -87,13 +78,22 @@ class TestAccessPolicySource(TestCaseWithFactory):
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
-             getUtility(IAccessPolicySource).findByPillarAndType(query)])
+             getUtility(IAccessPolicySource).find(query)])
 
         query = [(distribution, AccessPolicyType.PRIVATE)]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
-             getUtility(IAccessPolicySource).findByPillarAndType(query)])
+             getUtility(IAccessPolicySource).find(query)])
+
+    def test_findByID(self):
+        # findByID finds the right policies.
+        policies = [self.factory.makeAccessPolicy() for i in range(2)]
+        self.factory.makeAccessPolicy()
+        self.assertContentEqual(
+            policies,
+            getUtility(IAccessPolicySource).findByID(
+                [policy.id for policy in policies]))
 
     def test_findByPillar(self):
         # findByPillar finds only the relevant policies.

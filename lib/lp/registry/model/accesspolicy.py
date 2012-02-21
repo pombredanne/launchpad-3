@@ -167,6 +167,15 @@ class AccessPolicy(StormBase):
         return col == pillar
 
     @classmethod
+    def find(cls, pillars_and_types):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls._constraintForPillar(pillar), cls.type == type)
+                for (pillar, type) in pillars_and_types)))
+
+    @classmethod
     def findByID(cls, ids):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(cls, cls.id.is_in(ids))
@@ -177,15 +186,6 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(
             cls,
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
-
-    @classmethod
-    def findByPillarAndType(cls, pillars_and_types):
-        """See `IAccessPolicySource`."""
-        return IStore(cls).find(
-            cls,
-            Or(*(
-                And(cls._constraintForPillar(pillar), cls.type == type)
-                for (pillar, type) in pillars_and_types)))
 
 
 class AccessArtifactGrant(StormBase):
