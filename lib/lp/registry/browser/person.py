@@ -4019,6 +4019,13 @@ class PersonEditTimeZoneView(LaunchpadFormView):
     page_title = label = 'Set timezone'
 
     @property
+    def initial_values(self):
+        if self.context.time_zone is None:
+            return {}
+        else:
+            return dict(time_zone=self.context.time_zone)
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
 
