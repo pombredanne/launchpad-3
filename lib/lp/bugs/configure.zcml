@@ -722,7 +722,6 @@
                 attributes="
                     id
                     private
-                    access_policy
                     bugtasks
                     default_bugtask
                     affected_pillars

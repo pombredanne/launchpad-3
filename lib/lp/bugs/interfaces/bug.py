@@ -1263,12 +1263,11 @@ class IBugSet(Interface):
         USE THIS ANYWAY.
         """
 
-    def getBugsWithOutdatedHeat(max_heat_age):
+    def getBugsWithOutdatedHeat(cutoff):
         """Return the set of bugs whose heat is out of date.
 
-        :param max_heat_age: The maximum age, in days, that a bug's heat
-                             can be before it is included in the
-                             returned set.
+        :param cutoff: the oldest that a bug's heat can be before it is
+            considered outdated.
         """
 
 

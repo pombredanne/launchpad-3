@@ -143,10 +143,9 @@ unaffected, the bug's heat doesn't change.
     >>> bug.heat
     8
 
-Marking the bug as a duplicate will set its heat to zero, whilst also
-adding 10 points of heat to the bug it duplicates, 6 points for the
-duplication and 4 points for the subscribers that the duplicated bug
-inherits.
+Marking the bug as a duplicate won't change its heat, but it will add 10
+points of heat to the bug it duplicates: 6 points for the duplication
+and 4 points for the subscribers that the duplicated bug inherits.
 
     >>> duplicated_bug = factory.makeBug()
     >>> duplicated_bug.heat
@@ -154,7 +153,7 @@ inherits.
 
     >>> bug.markAsDuplicate(duplicated_bug)
     >>> bug.heat
-    0
+    8
 
     >>> duplicated_bug.heat
     16
@@ -216,16 +215,16 @@ date.
 
 If we call getBugsWithOutdatedHeat() now, the set that is returned will
 be empty because all the bugs have been recently updated.
-getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
-is the maximum age, in days, that a bug's heat can be before it gets
-included in the returned set.
+getBugsWithOutdatedHeat() takes a single parameter, cutoff, which is the
+oldest a bug's heat can be before it gets included in the returned set.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> yesterday = datetime.now(timezone('UTC')) - timedelta(days=1)
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
 
 IBug.setHeat() takes a timestamp parameter so that we can set the
 heat_last_updated date manually for the purposes of testing. If we make
-a bug's heat older than the max_heat_age that we pass to
+a bug's heat older than the cutoff that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
@@ -233,7 +232,8 @@ getBugsWithOutdatedHeat().
     >>> old_heat_bug.setHeat(
     ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     1
 
@@ -249,7 +249,8 @@ We'll set the new bug's heat_last_updated to None manually.
 
     >>> new_bug.heat_last_updated = None
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     2
 
@@ -270,33 +271,49 @@ We'll commit the transaction so that the BugHeatUpdater updates the
 right bugs.
 
     >>> transaction.commit()
-    >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
 it as a method will recalculate the heat for all the out-of-date bugs.
 
 There are two bugs with heat more than a day old:
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     2
 
-Calling our BugHeatUpdater will update the heat of those bugs.
+The updater gets the cutoff from a feature flag. By default no bugs are
+considered outdated.
 
     >>> update_bug_heat(chunk_size=1)
+    DEBUG Updating heat for 0 bugs
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
+    2
+
+If we set the cutoff to a day ago, calling our BugHeatUpdater will update the
+heat of those bugs.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> flag = FeatureFixture(
+    ...     {'bugs.heat_updates.cutoff': yesterday.isoformat()})
+
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     1
 
 Update the rest in one big chunk.
 
-    >>> update_bug_heat(chunk_size=1000)
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1000)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
