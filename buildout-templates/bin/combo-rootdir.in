@@ -38,4 +38,4 @@ cp lib/lp/services/worlddata/javascript/languages.js $BUILD_DIR/lp
 cp lib/lp/app/longpoll/javascript/longpoll.js $BUILD_DIR/lp
 
 # Minify our JS.
-bin/py -m lp.scripts.utilities.js.jsmin_all $BUILD_DIR/lp
+bin/lpjsmin -p $BUILD_DIR/lp
