@@ -2454,7 +2454,7 @@ class ProductSharingView(LaunchpadView):
             access_policies=self.access_policies,
             vocabulary='ValidPersonOrTeam',
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to artifacts for %s'
+            header='Grant access to %s'
                 % self.context.displayname)
 
     @property
