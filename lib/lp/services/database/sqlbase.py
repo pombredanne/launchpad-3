@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -164,7 +164,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
 
-        We we force use of the the master Store.
+        We force use of the master Store.
 
         We refetch any parameters from different stores from the
         correct master Store.

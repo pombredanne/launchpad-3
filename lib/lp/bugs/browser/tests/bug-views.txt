@@ -358,7 +358,7 @@ still say 'Edit subscription':
     'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
-unsubsription is handled by the remove icon next the the team in the
+unsubsription is handled by the remove icon next the team in the
 subscribers portlet.
 
     >>> bug_one.unsubscribe(foo_bar, foo_bar)

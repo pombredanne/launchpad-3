@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """top-tests.py - Report about slowest tests in the test suite.
@@ -112,7 +112,7 @@ class TestRunnerStats:
             raise ParseException('End of file before end of test run.')
 
     def handleStartTestRunner(self, line, ignored):
-        """Switch the the layer state."""
+        """Switch the layer state."""
 
     def handleLayerStart(self, line, match):
         """Create a new stats container for the layer."""

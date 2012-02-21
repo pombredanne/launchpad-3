@@ -83,7 +83,7 @@ counts (because they are costly to retrieve).
     Mozilla Firefox 1.0                             trunk  A date
                                                               not yet released
 
-When the project is a member of a project group, the the user can see a
+When the project is a member of a project group, the user can see a
 link to the project groups's milestone's page.
 
     >>> anon_browser.getLink(
