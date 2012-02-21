@@ -2442,7 +2442,7 @@ class ProductSharingView(LaunchpadView):
     def sharing_vocabulary(self):
         registry = getVocabularyRegistry()
         return registry.get(
-            IVocabulary, 'ValidPersonOrTeam')
+            IVocabulary, 'ValidPillarOwner')
 
     @cachedproperty
     def sharing_vocabulary_filters(self):
@@ -2452,7 +2452,7 @@ class ProductSharingView(LaunchpadView):
     def sharing_picker_config(self):
         return dict(
             access_policies=self.access_policies,
-            vocabulary='ValidPersonOrTeam',
+            vocabulary='ValidPillarOwner',
             vocabulary_filters=self.sharing_vocabulary_filters,
             header='Grant access to %s'
                 % self.context.displayname)

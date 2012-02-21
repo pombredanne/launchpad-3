@@ -421,4 +421,5 @@ class TestProductSharingView(TestCaseWithFactory):
         self.assertEqual(
             'Grant access to %s' % product.displayname,
             picker_config['header'])
-        self.assertEqual('ValidPersonOrTeam', picker_config['vocabulary'])
+        self.assertEqual(
+            'ValidPillarOwner', picker_config['vocabulary'])
