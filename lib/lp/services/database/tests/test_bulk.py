@@ -8,7 +8,9 @@ __metaclass__ = type
 from storm.exceptions import ClassInfoError
 from storm.info import get_obj_info
 from storm.store import Store
+from testtools.matchers import Equals
 import transaction
+from zope.component import getUtility
 from zope.security import (
     checker,
     proxy,
@@ -27,12 +29,19 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.soyuz.model.component import Component
 from lp.testing import (
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 object_is_key = lambda thing: thing
@@ -225,3 +234,39 @@ class TestLoaders(TestCaseWithFactory):
         self.assertEqual(expected,
             set(bulk.load_referencing(BranchSubscription, owned_objects,
                 ['branchID'])))
+
+
+class TestInsertMany(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def create_insertable(self, store):
+        store.execute("""
+            CREATE TABLE Insertable(
+                id SERIAL PRIMARY KEY,
+                value integer);
+        """)
+        self.addCleanup(store.execute, 'DROP TABLE Insertable;')
+
+    def assertValues(self, store, values):
+        result = store.execute('SELECT value from Insertable ORDER BY value')
+        self.assertEqual(values, list(result))
+
+    def test_insert_many(self):
+        """Works correctly with multiple rows."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.create_insertable(store)
+        values = [(2,), (4,), (6,)]
+        with StormStatementRecorder() as recorder:
+            bulk.insert_many(store, "Insertable", ('value',), values)
+        self.assertValues(store, values)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_insert_many_zero_rows(self):
+        """Does nothing with zero rows."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.create_insertable(store)
+        with StormStatementRecorder() as recorder:
+            bulk.insert_many(store, "Insertable", ('value',), [])
+        self.assertValues(store, [])
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
