@@ -537,11 +537,11 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
         source = getUtility(IAccessPolicyGrantSource)
         self.assertEqual(
-            grant.grantee, source.findByPolicies([grant.policy]).one().grantee)
+            grant.grantee, source.findByPolicy([grant.policy]).one().grantee)
         with person_logged_in(person):
             self._do_merge(grant.grantee, person)
         self.assertEqual(
-            person, source.findByPolicies([grant.policy]).one().grantee)
+            person, source.findByPolicy([grant.policy]).one().grantee)
 
     def test_merge_accesspolicygrants_conflicts(self):
         # Conflicting AccessPolicyGrants are deleted.
@@ -561,12 +561,11 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, person)
         with person_logged_in(person):
             self._do_merge(duplicate, person)
-        transaction.commit()
 
         # Only one grant for the policy exists: the retained person's.
         source = getUtility(IAccessPolicyGrantSource)
         self.assertThat(
-            source.findByPolicies([policy]).one(),
+            source.findByPolicy([policy]).one(),
             MatchesStructure.byEquality(
                 policy=policy,
                 grantee=person,

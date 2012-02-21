@@ -115,7 +115,7 @@ class AccessArtifact(StormBase):
         ids = [abstract.id for abstract in abstracts]
         if len(ids) == 0:
             return
-        getUtility(IAccessArtifactGrantSource).revokeByArtifacts(abstracts)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
@@ -167,19 +167,19 @@ class AccessPolicy(StormBase):
         return col == pillar
 
     @classmethod
-    def findByIDs(cls, ids):
+    def findByID(cls, ids):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(cls, cls.id.is_in(ids))
 
     @classmethod
-    def findByPillars(cls, pillars):
+    def findByPillar(cls, pillars):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
     @classmethod
-    def findByPillarsAndTypes(cls, pillars_and_types):
+    def findByPillarAndType(cls, pillars_and_types):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
@@ -231,15 +231,15 @@ class AccessArtifactGrant(StormBase):
                 for (artifact, grantee) in grants)))
 
     @classmethod
-    def findByArtifacts(cls, artifacts):
+    def findByArtifact(cls, artifacts):
         """See `IAccessArtifactGrantSource`."""
         ids = [artifact.id for artifact in artifacts]
         return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
 
     @classmethod
-    def revokeByArtifacts(cls, artifacts):
+    def revokeByArtifact(cls, artifacts):
         """See `IAccessPolicyGrantSource`."""
-        cls.findByArtifacts(artifacts).remove()
+        cls.findByArtifact(artifacts).remove()
 
 
 class AccessPolicyGrant(StormBase):
@@ -279,7 +279,7 @@ class AccessPolicyGrant(StormBase):
                 for (policy, grantee) in grants)))
 
     @classmethod
-    def findByPolicies(cls, policies):
+    def findByPolicy(cls, policies):
         """See `IAccessPolicyGrantSource`."""
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))

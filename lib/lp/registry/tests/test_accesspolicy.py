@@ -55,17 +55,17 @@ class TestAccessPolicySource(TestCaseWithFactory):
             wanted,
             [(policy.pillar, policy.type) for policy in policies])
 
-    def test_findByIDs(self):
-        # findByIDs finds the right policies.
+    def test_findByID(self):
+        # findByID finds the right policies.
         policies = [self.factory.makeAccessPolicy() for i in range(2)]
         self.factory.makeAccessPolicy()
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByIDs(
+            getUtility(IAccessPolicySource).findByID(
                 [policy.id for policy in policies]))
 
-    def test_findByPillarsAndTypes(self):
-        # findByPillarsAndTypes finds the right policies.
+    def test_findPillarAndType(self):
+        # findByPillarAndType finds the right policies.
         product = self.factory.makeProduct()
         distribution = self.factory.makeDistribution()
         other_product = self.factory.makeProduct()
@@ -87,16 +87,16 @@ class TestAccessPolicySource(TestCaseWithFactory):
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
-             getUtility(IAccessPolicySource).findByPillarsAndTypes(query)])
+             getUtility(IAccessPolicySource).findByPillarAndType(query)])
 
         query = [(distribution, AccessPolicyType.PRIVATE)]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
-             getUtility(IAccessPolicySource).findByPillarsAndTypes(query)])
+             getUtility(IAccessPolicySource).findByPillarAndType(query)])
 
-    def test_findByPillars(self):
-        # findByPillars finds only the relevant policies.
+    def test_findByPillar(self):
+        # findByPillar finds only the relevant policies.
         product = self.factory.makeProduct()
         distribution = self.factory.makeProduct()
         other_product = self.factory.makeProduct()
@@ -107,11 +107,11 @@ class TestAccessPolicySource(TestCaseWithFactory):
         policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByPillars(
+            getUtility(IAccessPolicySource).findByPillar(
                 [product, distribution, other_product]))
         self.assertContentEqual(
             [policy for policy in policies if policy.pillar == product],
-            getUtility(IAccessPolicySource).findByPillars([product]))
+            getUtility(IAccessPolicySource).findByPillar([product]))
 
 
 class TestAccessArtifact(TestCaseWithFactory):
@@ -252,8 +252,8 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             getUtility(IAccessArtifactGrantSource).find(
                 [(g.abstract_artifact, g.grantee) for g in grants]))
 
-    def test_findByArtifacts(self):
-        # findByArtifacts() finds only the relevant grants.
+    def test_findByArtifact(self):
+        # findByArtifact() finds only the relevant grants.
         artifact = self.factory.makeAccessArtifact()
         grants = [
             self.factory.makeAccessArtifactGrant(artifact=artifact)
@@ -261,8 +261,7 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
         self.factory.makeAccessArtifactGrant()
         self.assertContentEqual(
             grants,
-            getUtility(IAccessArtifactGrantSource).findByArtifacts(
-                [artifact]))
+            getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
@@ -296,8 +295,8 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
             getUtility(IAccessPolicyGrantSource).find(
                 [(g.policy, g.grantee) for g in grants]))
 
-    def test_findByPolicies(self):
-        # findByPolicies() finds only the relevant grants.
+    def test_findByPolicy(self):
+        # findByPolicy() finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
         grants = [
             self.factory.makeAccessPolicyGrant(policy=policy)
@@ -305,4 +304,4 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
             grants,
-            getUtility(IAccessPolicyGrantSource).findByPolicies([policy]))
+            getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))

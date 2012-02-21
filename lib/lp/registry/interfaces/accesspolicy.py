@@ -109,10 +109,10 @@ class IAccessArtifactGrantSource(Interface):
             pairs.
         """
 
-    def findByArtifacts(artifacts):
+    def findByArtifact(artifacts):
         """Return all `IAccessArtifactGrant` objects for the artifacts."""
 
-    def revokeByArtifacts(artifacts):
+    def revokeByArtifact(artifacts):
         """Delete all `IAccessArtifactGrant` objects for the artifacts."""
 
 
@@ -127,13 +127,13 @@ class IAccessPolicySource(Interface):
         :return: a collection of the created `IAccessPolicy` objects.
         """
 
-    def findByIDs(ids):
+    def findByID(ids):
         """Return the `IAccessPolicy`s with the given IDs."""
 
-    def findByPillarsAndTypes(pillars_and_types):
+    def findByPillarAndType(pillars_and_types):
         """Return the `IAccessPolicy`s for the given pillars and types."""
 
-    def findByPillars(pillars):
+    def findByPillar(pillars):
         """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""
 
 
@@ -154,5 +154,5 @@ class IAccessPolicyGrantSource(Interface):
             pairs.
         """
 
-    def findByPolicies(artifacts):
+    def findByPolicy(policies):
         """Return all `IAccessPolicyGrant` objects for the artifacts."""
