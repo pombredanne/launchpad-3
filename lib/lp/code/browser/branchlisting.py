@@ -839,7 +839,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues',
+             'active_reviews', 'mergequeues', 'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
@@ -924,6 +924,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             '+activereviews',
             'Active reviews')
 
+    def source_package_recipes(self):
+        return Link(
+            '+recipes',
+            'Source package recipes',
+            enabled=IPerson.providedBy(self.context))
+
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by self.person."""
@@ -990,6 +996,7 @@ class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
 
