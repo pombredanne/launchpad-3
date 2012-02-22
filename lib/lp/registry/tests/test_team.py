@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -120,7 +120,7 @@ class TestTeamContactAddress(TestCaseWithFactory):
     def test_setContactAddress_after_purged_mailing_list_and_rename(self):
         # This is the rare case where a list is purged for a team rename,
         # then the contact address is set/unset sometime afterwards.
-        # The old mailing list address belongs the the team, but not the list.
+        # The old mailing list address belongs the team, but not the list.
         # 1. Create then purge a mailing list.
         self.createMailingListAndGetAddress()
         mailing_list = self.team.mailing_list

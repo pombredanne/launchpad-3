@@ -2244,7 +2244,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
             else:
                 merge_action = 'merged'
             self.request.response.addInfoNotification(
-                "%s is queued to be be %s in a few minutes." % (
+                "%s is queued to be %s in a few minutes." % (
                 self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()
@@ -4017,6 +4017,13 @@ class PersonEditTimeZoneView(LaunchpadFormView):
 
     schema = PersonTimeZoneForm
     page_title = label = 'Set timezone'
+
+    @property
+    def initial_values(self):
+        if self.context.time_zone is None:
+            return {}
+        else:
+            return dict(time_zone=self.context.time_zone)
 
     @property
     def next_url(self):
