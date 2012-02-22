@@ -701,6 +701,10 @@ class ObjectFormatterAPI:
                     return ROOT_TITLE
         # Use the reverse breadcrumbs.
         breadcrumbs = list(reversed(hierarchy_view.items))
+        if len(breadcrumbs) == 0:
+            # This implies there are no breadcrumbs, but this more often
+            # is caused when an Unauthorized error is being raised.
+            return ''
         detail_breadcrumb = self._getSaneBreadcrumbDetail(breadcrumbs[0])
         title_breadcrumbs = [breadcrumb.text for breadcrumb in breadcrumbs[1:]]
         title_text = SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
