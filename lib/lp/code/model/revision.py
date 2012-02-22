@@ -264,9 +264,6 @@ class RevisionSet:
         author.linkToLaunchpadPerson()
         return author
 
-    def _extractRevisionData(self, revision):
-        """Extract and return correctly-formatted revision data."""
-
     def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
