@@ -192,13 +192,14 @@ def _dbify_column(col):
         return (col,)
 
 
-def create(columns, values):
+def create(columns, values, return_created=True):
     """Create a large number of objects efficiently.
 
     :param cols: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
-    :return: A list of the created objects.
+    :param return_created: Retrieve the created objects.
+    :return: A list of the created objects if return_created, otherwise None.
     """
     # Flatten Reference faux-columns into their primary keys.
     db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
@@ -207,6 +208,10 @@ def create(columns, values):
         raise ValueError(
             "The Storm columns to insert values into must be from a single "
             "class.")
+
+    if len(values) == 0:
+        return [] if return_created else None
+
     [cls] = clses
     primary_key = get_cls_info(cls).primary_key
 
@@ -218,10 +223,12 @@ def create(columns, values):
             _dbify_value(col, val) for col, val in zip(columns, value)))
         for value in values]
 
-    result = IStore(cls).execute(
-        Returning(Insert(
-            db_cols, expr=db_values, primary_columns=primary_key)))
-    if len(primary_key) == 1:
-        return load(cls, map(itemgetter(0), result))
+    if not return_created:
+        IStore(cls).execute(Insert(db_cols, expr=db_values))
+        return None
     else:
-        return load(cls, result)
+        result = IStore(cls).execute(
+            Returning(Insert(
+                db_cols, expr=db_values, primary_columns=primary_key)))
+        keys = map(itemgetter(0), result) if len(primary_key) == 1 else result
+        return load(cls, keys)
