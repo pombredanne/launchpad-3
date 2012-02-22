@@ -45,7 +45,7 @@ contributions to the selected translation.
     ...     'Spanish (es) translation of alsa-utils in alsa-utils trunk')
     >>> anon_browser.getLink(alsa_utils_link).click()
     >>> print anon_browser.title
-    Translations by ... in...Spanish (es) translation...
+    Translations by ...Spanish (es)...
 
 
 URL-escaped user names
