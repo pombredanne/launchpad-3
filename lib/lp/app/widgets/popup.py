@@ -19,12 +19,10 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.vocabulary import (
-    get_person_picker_entry_metadata,
-    vocabulary_filters,
-    )
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
+from lp.services.webapp.vocabulary import IHugeVocabulary
 
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
@@ -170,7 +168,24 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                 "The %r.%s interface attribute doesn't have its "
                 "vocabulary specified."
                 % (choice.context, choice.__name__))
-        return vocabulary_filters(choice.vocabulary)
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(choice.vocabulary):
+            return []
+        supported_filters = choice.vocabulary.supportedFilters()
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filters = []
+        if (len(supported_filters) == 0 or
+           (len(supported_filters) == 1
+            and supported_filters[0].name == 'ALL')):
+            return filters
+        for filter in supported_filters:
+            filters.append({
+                'name': filter.name,
+                'title': filter.title,
+                'description': filter.description,
+                })
+        return filters
 
     @property
     def vocabulary_name(self):

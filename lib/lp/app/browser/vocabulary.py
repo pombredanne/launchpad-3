@@ -9,7 +9,6 @@ __all__ = [
     'HugeVocabularyJSONView',
     'IPickerEntrySource',
     'get_person_picker_entry_metadata',
-    'vocabulary_filters',
     ]
 
 from itertools import izip
@@ -493,24 +492,3 @@ class HugeVocabularyJSONView:
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(dict(total_size=total_size, entries=result))
-
-
-def vocabulary_filters(vocabulary):
-    # Only IHugeVocabulary's have filters.
-    if not IHugeVocabulary.providedBy(vocabulary):
-        return []
-    supported_filters = vocabulary.supportedFilters()
-    # If we have no filters or just the ALL filter, then no filtering
-    # support is required.
-    filters = []
-    if (len(supported_filters) == 0 or
-       (len(supported_filters) == 1
-        and supported_filters[0].name == 'ALL')):
-        return filters
-    for filter in supported_filters:
-        filters.append({
-            'name': filter.name,
-            'title': filter.title,
-            'description': filter.description,
-            })
-    return filters
