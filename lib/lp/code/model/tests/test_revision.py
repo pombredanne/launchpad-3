@@ -289,6 +289,16 @@ class TestRevisionSet(TestCaseWithFactory):
         # tighten this restriction.
         self.assertThat(recorder, HasQueryCount(Equals(8)))
 
+    def test_acquireRevisionAuthors(self):
+        # AcquireRevisionAuthors creates new authors only if none exists with
+        # that name.
+        author1 = self.revision_set.acquireRevisionAuthors(['name1'])['name1']
+        self.assertEqual(author1.name, 'name1')
+        Store.of(author1).flush()
+        author2 = self.revision_set.acquireRevisionAuthors(['name1'])['name1']
+        self.assertEqual(
+            removeSecurityProxy(author1).id, removeSecurityProxy(author2).id)
+
 
 class TestRevisionGetBranch(TestCaseWithFactory):
     """Test the `getBranch` method of the revision."""

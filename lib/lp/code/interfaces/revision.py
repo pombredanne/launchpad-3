@@ -141,6 +141,13 @@ class IRevisionSet(Interface):
         important for larger branches.
         """
 
+    def acquireRevisionAuthors(names):
+        """Return a dict of RevisionAuthors with the specified names.
+
+        If a RevisionAuthor is not present in the database, it is created
+        first.
+        """
+
     def getTipRevisionsForBranches(branches):
         """Get the tip branch revisions for the specified branches.
 
