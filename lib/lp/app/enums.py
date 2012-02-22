@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'InformationVisibilityPolicy',
     'ServiceUsage',
     'service_uses_launchpad',
     ]
