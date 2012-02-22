@@ -301,32 +301,8 @@ class TestBugCreation(TestCaseWithFactory):
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
 
 
-class TestBugSecurityAdapters(TestCaseWithFactory):
+class TestLimitedViewBugSecurityAdapter(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
-
-    def test_anon_public_bug(self):
-        # An anonymous user can see a public bug.
-        bug = self.factory.makeBug()
-        self.assertTrue(check_permission('launchpad.View', bug))
-
-    def test_anon_private_bug(self):
-        # An anonymous user can not see a private bug.
-        bug = self.factory.makeBug(private=True)
-        self.assertFalse(check_permission('launchpad.View', bug))
-
-    def test_user_public_bug(self):
-        # A user can see a public bug.
-        bug = self.factory.makeBug()
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            self.assertTrue(check_permission('launchpad.View', bug))
-
-    def test_user_private_bug(self):
-        # A user can not see a public bug.
-        bug = self.factory.makeBug(private=True)
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            self.assertFalse(check_permission('launchpad.View', bug))
 
     def test_user_private_bug_subscribed_to_public_dup(self):
         # A user has limited visibility of a private bug if they are
