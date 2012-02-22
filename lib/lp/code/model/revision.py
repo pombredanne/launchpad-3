@@ -370,16 +370,14 @@ class RevisionSet:
             data.append(
                 (revision_id, bzr_revision.message, revision_date,
                 revision_author))
-        create((
+        db_revisions = create((
             Revision.revision_id, Revision.log_body, Revision.revision_date,
             Revision.revision_author_id), data)
 
-        revision_ids = [revision.revision_id for revision in revisions]
-        result = store.find((Revision.revision_id, Revision.id),
-            Revision.revision_id.is_in(revision_ids))
-        revision_db_id = dict(result)
+        revision_db_id = dict(
+            (rev.revision_id, rev.id) for rev in db_revisions)
 
-        for bzr_revision, author_name in zip(revisions, author_names):
+        for bzr_revision in revisions:
             db_id = revision_db_id[bzr_revision.revision_id]
             for name, value in bzr_revision.properties.iteritems():
                 property_data.append((db_id, name, value))
@@ -392,10 +390,10 @@ class RevisionSet:
                 parent_data.append((db_id, sequence, parent_id))
         create((
             RevisionParent.revisionID, RevisionParent.sequence,
-            RevisionParent.parent_id), parent_data)
+            RevisionParent.parent_id), parent_data, return_created=False)
         create((
             RevisionProperty.revisionID, RevisionProperty.name,
-            RevisionProperty.value), property_data)
+            RevisionProperty.value), property_data, return_created=False)
 
     @staticmethod
     def onlyPresent(revids):

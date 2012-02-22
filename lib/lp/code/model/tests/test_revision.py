@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from testtools.matchers import Equals
 import time
 from unittest import TestCase
 
@@ -43,11 +44,13 @@ from lp.services.webapp.interfaces import (
 from lp.testing import (
     login,
     logout,
+    StormStatementRecorder,
     TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -269,7 +272,8 @@ class TestRevisionSet(TestCaseWithFactory):
             self.factory.makeBzrRevision('rev-1', prop1="foo"),
             self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
         ]
-        self.revision_set.newFromBazaarRevisions(bzr_revisions)
+        with StormStatementRecorder() as recorder:
+            self.revision_set.newFromBazaarRevisions(bzr_revisions)
         rev_1 = self.revision_set.getByRevisionId('rev-1')
         self.assertEqual(
             bzr_revisions[0].committer, rev_1.revision_author.name)
@@ -281,6 +285,9 @@ class TestRevisionSet(TestCaseWithFactory):
         self.assertEqual({'prop1': 'foo'}, rev_1.getProperties())
         rev_2 = self.revision_set.getByRevisionId('rev-2')
         self.assertEqual(['rev-1'], rev_2.parent_ids)
+        # Really, less than 9 is great, but if the count improves, we should
+        # tighten this restriction.
+        self.assertThat(recorder, HasQueryCount(Equals(8)))
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
