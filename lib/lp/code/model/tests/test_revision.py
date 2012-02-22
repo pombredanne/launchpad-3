@@ -22,12 +22,16 @@ from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.revision import (
+    Revision,
     RevisionCache,
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
-from lp.services.database.lpstorm import IMasterObject
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IStore,
+    )
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger
@@ -256,6 +260,27 @@ class TestRevisionSet(TestCaseWithFactory):
         # with that id.
         found = self.revision_set.getByRevisionId('nonexistent')
         self.assertIs(None, found)
+
+    def test_newFromBazaarRevisions(self):
+        # newFromBazaarRevisions behaves as expected.
+        # only branchscanner can SELECT revisionproperties.
+        self.becomeDbUser('branchscanner')
+        bzr_revisions = [
+            self.factory.makeBzrRevision('rev-1', prop1="foo"),
+            self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
+        ]
+        self.revision_set.newFromBazaarRevisions(bzr_revisions)
+        rev_1 = self.revision_set.getByRevisionId('rev-1')
+        self.assertEqual(
+            bzr_revisions[0].committer, rev_1.revision_author.name)
+        self.assertEqual(
+            bzr_revisions[0].message, rev_1.log_body)
+        self.assertEqual(
+            datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC), rev_1.revision_date)
+        self.assertEqual([], rev_1.parents)
+        self.assertEqual({'prop1': 'foo'}, rev_1.getProperties())
+        rev_2 = self.revision_set.getByRevisionId('rev-2')
+        self.assertEqual(['rev-1'], rev_2.parent_ids)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
