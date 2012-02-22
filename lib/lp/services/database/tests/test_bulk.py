@@ -13,7 +13,6 @@ from storm.info import get_obj_info
 from storm.store import Store
 from testtools.matchers import Equals
 import transaction
-from zope.component import getUtility
 from zope.security import (
     checker,
     proxy,
@@ -40,11 +39,6 @@ from lp.services.features.model import (
     getFeatureStore,
     )
 from lp.services.job.model.job import Job
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.soyuz.model.component import Component
 from lp.testing import (
     StormStatementRecorder,

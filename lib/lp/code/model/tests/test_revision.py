@@ -23,7 +23,6 @@ from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.revision import (
-    Revision,
     RevisionCache,
     RevisionSet,
     )
@@ -31,7 +30,6 @@ from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
 from lp.services.database.lpstorm import (
     IMasterObject,
-    IStore,
     )
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus

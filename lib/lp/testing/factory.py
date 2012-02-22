@@ -1548,7 +1548,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBzrRevision(self, revision_id=None, parent_ids=None, **kwargs):
         if revision_id is None:
-            revision_id=self.getUniqueString('revision-id')
+            revision_id = self.getUniqueString('revision-id')
         if parent_ids is None:
             parent_ids = []
         return BzrRevision(

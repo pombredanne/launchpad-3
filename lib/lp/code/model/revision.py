@@ -345,7 +345,6 @@ class RevisionSet:
 
     def newFromBazaarRevisions(self, revisions):
         """See `IRevisionSet`."""
-        store = IMasterStore(Revision)
         data = []
 
         author_names = []
