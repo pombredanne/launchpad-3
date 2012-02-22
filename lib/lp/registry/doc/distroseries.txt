@@ -448,7 +448,7 @@ Packages that need linking and packagings that need upstream information
 
 The distroseries getPrioritizedUnlinkedSourcePackages() method returns
 a prioritized list of `ISourcePackage` objects that need a packaging link to
-an `IProductSeries` to provide the the upstream information to share bugs,
+an `IProductSeries` to provide the upstream information to share bugs,
 translations, and code. Each item in the list is a dict with the 'package',
 total_bugs, and total_messages (translatable messages).
 

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'create',
     'load',
     'load_referencing',
     'load_related',
@@ -13,14 +14,24 @@ __all__ = [
 
 
 from collections import defaultdict
+from itertools import chain
 from functools import partial
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
+from storm.databases.postgres import Returning
 from storm.expr import (
     And,
+    Insert,
     Or,
     )
-from storm.info import get_cls_info
+from storm.info import (
+    get_cls_info,
+    get_obj_info,
+    )
+from storm.references import Reference
 from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
@@ -153,3 +164,71 @@ def load_related(object_type, owning_objects, foreign_keys):
     for owning_object in owning_objects:
         keys.update(map(partial(getattr, owning_object), foreign_keys))
     return load(object_type, keys)
+
+
+def _dbify_value(col, val):
+    """Convert a value into a form that Storm can compile directly."""
+    if isinstance(col, Reference):
+        # References are mainly meant to be used as descriptors, so we
+        # have to perform a bit of evil here to turn the (potentially
+        # None) value into a sequence of primary key values.
+        if val is None:
+            return (None,) * len(col._relation._get_local_columns(col._cls))
+        else:
+            return col._relation.get_remote_variables(
+                get_obj_info(val).get_obj())
+    else:
+        return (col.variable_factory(value=val),)
+
+
+def _dbify_column(col):
+    """Convert a column into a form that Storm can compile directly."""
+    if isinstance(col, Reference):
+        # References are mainly meant to be used as descriptors, so we
+        # haver to perform a bit of evil here to turn the column into
+        # a sequence of primary key columns.
+        return col._relation._get_local_columns(col._cls)
+    else:
+        return (col,)
+
+
+def create(columns, values, return_created=True):
+    """Create a large number of objects efficiently.
+
+    :param cols: The Storm columns to insert values into. Must be from a
+        single class.
+    :param values: A list of lists of values for the columns.
+    :param return_created: Retrieve the created objects.
+    :return: A list of the created objects if return_created, otherwise None.
+    """
+    # Flatten Reference faux-columns into their primary keys.
+    db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
+    clses = set(col.cls for col in db_cols)
+    if len(clses) != 1:
+        raise ValueError(
+            "The Storm columns to insert values into must be from a single "
+            "class.")
+
+    if len(values) == 0:
+        return [] if return_created else None
+
+    [cls] = clses
+    primary_key = get_cls_info(cls).primary_key
+
+    # Mangle our value list into compilable values. Normal columns just
+    # get passed through the variable factory, while References get
+    # squashed into primary key variables.
+    db_values = [
+        list(chain.from_iterable(
+            _dbify_value(col, val) for col, val in zip(columns, value)))
+        for value in values]
+
+    if not return_created:
+        IStore(cls).execute(Insert(db_cols, expr=db_values))
+        return None
+    else:
+        result = IStore(cls).execute(
+            Returning(Insert(
+                db_cols, expr=db_values, primary_columns=primary_key)))
+        keys = map(itemgetter(0), result) if len(primary_key) == 1 else result
+        return load(cls, keys)

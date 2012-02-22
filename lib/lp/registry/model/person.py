@@ -1054,7 +1054,7 @@ class Person(
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
-        """Return the names and karma points of of this person on the
+        """Return the names and karma points of this person on the
         product/distribution with that name.
 
         The results are ordered descending by the karma points and limited to
