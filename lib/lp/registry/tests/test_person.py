@@ -9,7 +9,6 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import smartquote
 
 import pytz
-
 from storm.store import Store
 from testtools.matchers import (
     Equals,

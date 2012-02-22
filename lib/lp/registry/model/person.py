@@ -46,7 +46,6 @@ from lazr.restful.utils import (
     )
 
 import pytz
-
 from sqlobject import (
     BoolCol,
     ForeignKey,
