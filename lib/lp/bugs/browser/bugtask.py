@@ -4524,5 +4524,4 @@ class BugTaskBreadcrumb(Breadcrumb):
     @property
     def detail(self):
         bug = self.context.bug
-        return '%s %s' % (
-            bug.displayname, FormattersAPI(bug.title).obfuscate_email())
+        return '%s %s' % (bug.displayname, bug.title)
