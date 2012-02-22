@@ -53,7 +53,7 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from lazr.restful._resource import ResourceJSONEncoder
+from lazr.restful import ResourceJSONEncoder
 import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
