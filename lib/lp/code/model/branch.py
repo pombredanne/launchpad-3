@@ -134,7 +134,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.config import config
 from lp.services.database.bulk import (
-    insert_many,
     load_related,
     )
 from lp.services.database.constants import (
