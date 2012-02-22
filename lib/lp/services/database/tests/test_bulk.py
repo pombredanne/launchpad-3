@@ -263,25 +263,6 @@ class TestInsertMany(TestCaseWithFactory):
         result = store.execute('SELECT value from Insertable ORDER BY value')
         self.assertEqual(values, list(result))
 
-    def test_insert_many(self):
-        """Works correctly with multiple rows."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.create_insertable(store)
-        values = [(2,), (4,), (6,)]
-        with StormStatementRecorder() as recorder:
-            bulk.insert_many(store, "Insertable", ('value',), values)
-        self.assertValues(store, values)
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
-
-    def test_insert_many_zero_rows(self):
-        """Does nothing with zero rows."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        self.create_insertable(store)
-        with StormStatementRecorder() as recorder:
-            bulk.insert_many(store, "Insertable", ('value',), [])
-        self.assertValues(store, [])
-        self.assertThat(recorder, HasQueryCount(Equals(0)))
-
 
 class TestCreate(TestCaseWithFactory):
 

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'create',
-    'insert_many',
     'load',
     'load_referencing',
     'load_related',
@@ -165,19 +164,6 @@ def load_related(object_type, owning_objects, foreign_keys):
     for owning_object in owning_objects:
         keys.update(map(partial(getattr, owning_object), foreign_keys))
     return load(object_type, keys)
-
-
-def insert_many(store, table, columns, rows):
-    """Insert multiple rows into a table.
-
-    :param store: Store to use for insertion.
-    :param table: Name of the table to insert into.
-    :param columns: Iterable of names of columns.
-    :param rows: Sequence of tuples of values, in order as per columns.
-    """
-    if len(rows) == 0:
-        return
-    store.execute(Insert(columns, table=[table], expr=rows))
 
 
 def _dbify_value(col, val):

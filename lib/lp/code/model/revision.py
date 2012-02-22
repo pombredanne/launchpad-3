@@ -60,7 +60,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.person import ValidPersonCache
-from lp.services.database.bulk import insert_many
+from lp.services.database.bulk import create
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -370,9 +370,9 @@ class RevisionSet:
             data.append(
                 (revision_id, bzr_revision.message, revision_date,
                 revision_author))
-        insert_many(
-            store, 'Revision', ('revision_id', 'log_body', 'revision_date',
-                'revision_author'), data)
+        create((
+            Revision.revision_id, Revision.log_body, Revision.revision_date,
+            Revision.revision_author_id), data)
 
         revision_ids = [revision.revision_id for revision in revisions]
         result = store.find((Revision.revision_id, Revision.id),
@@ -390,12 +390,12 @@ class RevisionSet:
                     continue
                 seen_parents.add(parent_id)
                 parent_data.append((db_id, sequence, parent_id))
-        insert_many(
-            store, 'RevisionParent', ('revision', 'sequence', 'parent_id'),
-            parent_data)
-        insert_many(
-            store, 'RevisionProperty', ('revision', 'name', 'value'),
-            property_data)
+        create((
+            RevisionParent.revisionID, RevisionParent.sequence,
+            RevisionParent.parent_id), parent_data)
+        create((
+            RevisionProperty.revisionID, RevisionProperty.name,
+            RevisionProperty.value), property_data)
 
     @staticmethod
     def onlyPresent(revids):
