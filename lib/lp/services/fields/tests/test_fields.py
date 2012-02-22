@@ -110,10 +110,12 @@ class TestStrippableText(TestCase):
 
 
 class WorkItemParseError(Exception):
-    """An error when parsing a work item line from a blueprint's whiteboard."""
+    """An error when parsing a work item line from a blueprint."""
 
 
+import re
 from zope.schema import Text
+from lp.registry.interfaces.person import IPersonSet
 class WorkItemsText(Text):
 
     def parse_line(self, line):
@@ -146,10 +148,47 @@ class WorkItemsText(Text):
         return {'title': title, 'status': status, 'assignee': assignee}
 
     def parse(self, text):
+        milestone = None
         work_items = []
+        milestone_re = re.compile('^work items(.*)\s*:\s*$', re.I)
         for line in text.splitlines():
-            work_items.append(self.parse_line(line))
+            if line.strip() == '':
+                continue
+            milestone_match = milestone_re.search(line)
+            if milestone_match:
+                milestone_part = milestone_match.group(1).strip()
+                milestone = milestone_part.split()[-1]
+            else:
+                new_work_item = self.parse_line(line)
+                new_work_item['milestone'] = milestone
+                work_items.append(new_work_item)
         return work_items
+
+    def validate(self, work_item):
+        assignee_name = work_item['assignee']
+        if assignee_name is not None:
+            assignee = getUtility(IPersonSet).getByName(assignee_name)
+            if assignee is None:
+                raise ValueError("Unknown person name: %s" % assignee_name)
+        else:
+            assignee = None
+
+
+class TestWorkItemsTextValidation(TestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person_is_looked_up(self):
+        field = WorkItemsText(__name__='test')
+        person_name = 'test-person'
+        work_item = {'title': 'A work item',
+                     'status': SpecificationWorkItemStatus.TODO,
+                     'assignee': person_name,
+                     'milestone': None}
+        
+        self.assertRaises(
+            ValueError, field.validate, work_item)
+
 
 class TestWorkItemsText(TestCase):
 
@@ -198,10 +237,12 @@ class TestWorkItemsText(TestCase):
         self.assertEqual(
             parsed, [{'title': title_1,
                       'status': SpecificationWorkItemStatus.TODO,
-                      'assignee': None},
+                      'assignee': None,
+                      'milestone': None},
                      {'title': title_2,
                       'status': SpecificationWorkItemStatus.POSTPONED,
-                      'assignee': None}])
+                      'assignee': None,
+                      'milestone': None}])
 
     def test_parse_assignee(self):
         field = WorkItemsText(__name__='test')
@@ -231,26 +272,71 @@ class TestWorkItemsText(TestCase):
             WorkItemParseError, field.parse_line,
             'Invalid status: FOO')
 
-    def test_parse_empty_line(self):
+    def test_parse_empty_line_raises(self):
         field = WorkItemsText(__name__='test')
         self.assertRaises(
             AssertionError, field.parse_line, "  \t \t ")
 
-    # def test_parse_milestone(self):
-    #     field = WorkItemsText(__name__='test')
-    #     milestone = '2012.02'
-    #     title = "Work item for a milestone"
-    #     work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
-    #     parsed = field.parse(work_items_text)
-    #     self.assertEqual(parsed, [{'title': title,
-    #                   'status': SpecificationWorkItemStatus.TODO,
-    #                   'assignee': None, 'milestone': milestone}])
-        
-        
-    # XXX: add tests for additional milestones
-    # XXX: add tests for empty milestone block
-    # XXX: add tests for sequence
+    def test_parse_empty_lines_have_no_meaning(self):
+        field = WorkItemsText(__name__='test')
+        parsed = field.parse("\n\n\n\n\n\n\n\n")
+        self.assertEqual(parsed, [])
 
+    def test_parse_milestone(self):
+        field = WorkItemsText(__name__='test')
+        milestone = '2012.02'
+        title = "Work item for a milestone"
+        work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
+        parsed = field.parse(work_items_text)
+        self.assertEqual(parsed, [{'title': title,
+                      'status': SpecificationWorkItemStatus.TODO,
+                      'assignee': None, 'milestone': milestone}])
+        
+    def test_parse_multi_milestones(self):
+        field = WorkItemsText(__name__='test')
+        milestone_1 = '2012.02'
+        milestone_2 = '2012.03'
+        title_1 = "Work item for a milestone"
+        title_2 = "Work item for a later milestone"
+        work_items_text = ("Work items for %s:\n%s: POSTPONED\n\nWork items "
+                           "for %s:\n%s: TODO" % (milestone_1, title_1,
+                                                  milestone_2, title_2))
+        parsed = field.parse(work_items_text)
+        self.assertEqual(parsed, [{'title': title_1,
+                      'status': SpecificationWorkItemStatus.POSTPONED,
+                      'assignee': None, 'milestone': milestone_1},
+                                  {'title': title_2,
+                      'status': SpecificationWorkItemStatus.TODO,
+                      'assignee': None, 'milestone': milestone_2}])
+
+    def test_parse_orphaned_work_items(self):
+        # Work items not in a milestone block belong to the latest specified 
+        # milestone.
+        field = WorkItemsText(__name__='test')
+        milestone_1 = '2012.02'
+        milestone_2 = '2012.03'
+        title_1 = "Work item for a milestone"
+        title_2 = "Work item for a later milestone"
+        title_3 = "A work item preceeded by a blank line"
+        work_items_text = ("Work items for %s:\n%s: POSTPONED\n\nWork items "
+                           "for %s:\n%s: TODO\n\n%s: TODO" % (milestone_1, title_1,
+                                                  milestone_2, title_2, title_3))
+        parsed = field.parse(work_items_text)
+        self.assertEqual(parsed, 
+                         [{'title': title_1,
+                           'status': SpecificationWorkItemStatus.POSTPONED,
+                           'assignee': None, 'milestone': milestone_1},
+                          {'title': title_2,
+                           'status': SpecificationWorkItemStatus.TODO,
+                           'assignee': None, 'milestone': milestone_2},
+                          {'title': title_3,
+                           'status': SpecificationWorkItemStatus.TODO,
+                           'assignee': None, 'milestone': milestone_2}])
+
+
+    # XXX: add tests for sequence
+    # XXX: add tests for looking up people in set()
+    # XXX: add tests for looking up milestones in set() and check that they are valid for that bp
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):
 
