@@ -247,23 +247,6 @@ class TestLoaders(TestCaseWithFactory):
                 ['branchID'])))
 
 
-class TestInsertMany(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def create_insertable(self, store):
-        store.execute("""
-            CREATE TABLE Insertable(
-                id SERIAL PRIMARY KEY,
-                value integer);
-        """)
-        self.addCleanup(store.execute, 'DROP TABLE Insertable;')
-
-    def assertValues(self, store, values):
-        result = store.execute('SELECT value from Insertable ORDER BY value')
-        self.assertEqual(values, list(result))
-
-
 class TestCreate(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
