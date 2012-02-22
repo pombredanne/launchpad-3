@@ -2244,7 +2244,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
             else:
                 merge_action = 'merged'
             self.request.response.addInfoNotification(
-                "%s is queued to be be %s in a few minutes." % (
+                "%s is queued to be %s in a few minutes." % (
                 self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()

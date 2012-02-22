@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for requesting recipe builds."""
@@ -51,7 +51,7 @@ class TestRecipeEdit(WindmillTestCase):
         # Save it
         client.click(jquery=u'("#edit-distroseries-save")[0]')
 
-        # Wait for the the new one that is added.
+        # Wait for the new one that is added.
         client.waits.forElement(
             jquery=u"('#edit-distroseries-items ul li a')[0]",
             timeout=FOR_ELEMENT)
