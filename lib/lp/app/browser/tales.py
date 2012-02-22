@@ -703,7 +703,8 @@ class ObjectFormatterAPI:
         breadcrumbs = list(reversed(hierarchy_view.items))
         detail_breadcrumb = self._getSaneBreadcrumbDetail(breadcrumbs[0])
         title_breadcrumbs = [breadcrumb.text for breadcrumb in breadcrumbs[1:]]
-        return SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
+        title_text = SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
+        return FormattersAPI(title_text).obfuscate_email()
 
 
 class ObjectImageDisplayAPI:
