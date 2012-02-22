@@ -75,6 +75,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     Summary,
     Title,
+    WorkItemsText,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.menu import structured
@@ -297,8 +298,9 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         as_of="devel")
     # TODO: we need to add a test for this
     workitems_text = exported(
-        Text(title=_('Work Items'), required=False,
-             description=_(
+        WorkItemsText(
+            title=_('Work Items'), required=False,
+            description=_(
                 "Work items for this specification input in a text format. "
                 "Your changes will override the current work items.")),
         as_of="devel")

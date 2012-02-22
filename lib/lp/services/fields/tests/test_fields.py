@@ -27,6 +27,8 @@ from lp.services.fields import (
     FormattableDate,
     is_public_person_or_closed_team,
     StrippableText,
+    WorkItemParseError,
+    WorkItemsText,
     )
 from lp.testing import (
     login_person,
@@ -107,71 +109,6 @@ class TestStrippableText(TestCase):
         field = StrippableText(
             __name__='test', strip_text=True, max_length=2)
         self.assertEqual(None, field.validate(u'  a  '))
-
-
-class WorkItemParseError(Exception):
-    """An error when parsing a work item line from a blueprint."""
-
-
-import re
-from zope.schema import Text
-from lp.registry.interfaces.person import IPersonSet
-class WorkItemsText(Text):
-
-    def parse_line(self, line):
-        assert line.strip() != '', "Please don't give us an empty line"
-        try:
-            title, status = line.rsplit(':')
-        except ValueError:
-            raise WorkItemParseError('Missing work item status.')
-            
-        status = status.strip().lower()
-
-        assignee = None
-        if title.startswith('['):
-            if ']' in title:
-                off = title.index(']')
-                assignee = title[1:off]
-                title = title[off + 1:].strip()
-            else:
-                raise WorkItemParseError('Missing closing "]" for assignee')
-
-        if title == '':
-            raise WorkItemParseError(
-                'No work item title found on "%s"' % line)
-
-        valid_statuses = SpecificationWorkItemStatus.items
-        if status not in [item.name.lower() for item in valid_statuses]:
-            raise WorkItemParseError('Unknown status: %s' % status)
-        status = valid_statuses[status.upper()]
-
-        return {'title': title, 'status': status, 'assignee': assignee}
-
-    def parse(self, text):
-        milestone = None
-        work_items = []
-        milestone_re = re.compile('^work items(.*)\s*:\s*$', re.I)
-        for line in text.splitlines():
-            if line.strip() == '':
-                continue
-            milestone_match = milestone_re.search(line)
-            if milestone_match:
-                milestone_part = milestone_match.group(1).strip()
-                milestone = milestone_part.split()[-1]
-            else:
-                new_work_item = self.parse_line(line)
-                new_work_item['milestone'] = milestone
-                work_items.append(new_work_item)
-        return work_items
-
-    def validate(self, work_item):
-        assignee_name = work_item['assignee']
-        if assignee_name is not None:
-            assignee = getUtility(IPersonSet).getByName(assignee_name)
-            if assignee is None:
-                raise ValueError("Unknown person name: %s" % assignee_name)
-        else:
-            assignee = None
 
 
 class TestWorkItemsTextValidation(TestCase):
