@@ -124,7 +124,7 @@ class TestWorkItemsTextValidation(TestCase):
                      'milestone': None}
         
         self.assertRaises(
-            ValueError, field.validate, work_item)
+            ValueError, field.validate_workitem, work_item)
 
 
 class TestWorkItemsText(TestCase):

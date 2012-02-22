@@ -242,6 +242,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)
 
+    def setWorkItems(self, new_work_items):
+        field = ISpecification['workitems_text'].bind(self)
+        self.updateWorkItems(field.parseAndValidate(new_work_items))
+
     def setTarget(self, target):
         """See ISpecification."""
         if IProduct.providedBy(target):

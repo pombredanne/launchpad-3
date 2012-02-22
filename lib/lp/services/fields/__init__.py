@@ -915,7 +915,7 @@ class WorkItemsText(Text):
                 work_items.append(new_work_item)
         return work_items
 
-    def validate(self, work_item):
+    def validate_workitem(self, work_item):
         from lp.registry.interfaces.person import IPersonSet
         assignee_name = work_item['assignee']
         if assignee_name is not None:
@@ -924,3 +924,34 @@ class WorkItemsText(Text):
                 raise ValueError("Unknown person name: %s" % assignee_name)
         else:
             assignee = None
+
+    def validate(self, value):
+        # This is the method that the form machinery will call to
+        # validate the whole input. Here we must parse/validate everything and
+        # raise a LaunchpadValidationError on the first error we encounter.
+        self.parseAndValidate(value)
+
+    def parseAndValidate(self, text):
+        # We need this because we want to pass the work_item dicts with the
+        # assignee/milestone objects validated to
+        # Specification.setWorkItems().
+        work_items = self.parse(text)
+        for work_item in work_items:
+            # With this I think we can get rid of validate_workitem() above,
+            # test getAssignee() and getMilestone() directly and write just a
+            # single test for this method.
+            work_item['assignee'] = self.getAssignee(work_item['assignee'])
+            work_item['milestone'] = self.getMilestone(work_item['milestone'])
+        return work_items
+
+    def getAssignee(self, assignee_name):
+        if assignee_name is None:
+            return None
+        # TODO: Lookup an assignee with the given name, raising a validation
+        # error if it doesn't exist.
+
+    def getMilestone(self, milestone_name):
+        if milestone_name is None:
+            return None
+        # TODO: Lookup the milestone with the given name and ensure it belongs
+        # to the spec's target, raising a validation error if not.

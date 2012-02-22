@@ -299,7 +299,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     # TODO: we need to add a test for this
     workitems_text = exported(
         WorkItemsText(
-            title=_('Work Items'), required=False,
+            title=_('Work Items'), required=False, readonly=True,
             description=_(
                 "Work items for this specification input in a text format. "
                 "Your changes will override the current work items.")),
@@ -602,6 +602,13 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
+
+    @mutator_for(ISpecificationPublic['workitems_text'])
+    @operation_parameters(new_work_items=WorkItemsText())
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setWorkItems(new_work_items):
+        """XXX"""
 
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
