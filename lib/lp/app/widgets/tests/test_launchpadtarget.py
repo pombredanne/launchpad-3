@@ -213,7 +213,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         form['field.target.package'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no package named 'non-existent' published in Fnord".)
+            "There is no package named 'non-existent' published in Fnord.")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
         self.assertEqual(message, self.widget.error())
