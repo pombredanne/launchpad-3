@@ -192,13 +192,13 @@ def _dbify_column(col):
         return (col,)
 
 
-def create(columns, values, return_created=True):
+def create(columns, values, load_created=False):
     """Create a large number of objects efficiently.
 
     :param cols: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
-    :param return_created: Retrieve the created objects.
+    :param load_created: Return the created objects.
     :return: A list of the created objects if return_created, otherwise None.
     """
     # Flatten Reference faux-columns into their primary keys.
@@ -210,7 +210,7 @@ def create(columns, values, return_created=True):
             "class.")
 
     if len(values) == 0:
-        return [] if return_created else None
+        return [] if load_created else None
 
     [cls] = clses
     primary_key = get_cls_info(cls).primary_key
@@ -223,7 +223,7 @@ def create(columns, values, return_created=True):
             _dbify_value(col, val) for col, val in zip(columns, value)))
         for value in values]
 
-    if not return_created:
+    if not load_created:
         IStore(cls).execute(Insert(db_cols, expr=db_values))
         return None
     else:

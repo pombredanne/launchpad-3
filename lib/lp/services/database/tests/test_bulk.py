@@ -260,7 +260,7 @@ class TestCreate(TestCaseWithFactory):
                 (BugSubscription.bug, BugSubscription.person,
                  BugSubscription.subscribed_by, BugSubscription.date_created,
                  BugSubscription.bug_notification_level),
-                wanted)
+                wanted, load_created=True)
 
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertContentEqual(
@@ -274,7 +274,7 @@ class TestCreate(TestCaseWithFactory):
         wanted = [(None, job, BranchJobType.RECLAIM_BRANCH_SPACE)]
         [branchjob] = bulk.create(
             (BranchJob.branch, BranchJob.job, BranchJob.job_type),
-            wanted)
+            wanted, load_created=True)
         self.assertEqual(
             wanted, [(branchjob.branch, branchjob.job, branchjob.job_type)])
 
@@ -294,7 +294,9 @@ class TestCreate(TestCaseWithFactory):
     def test_zero_values_is_noop(self):
         # create()ing 0 rows is a no-op.
         with StormStatementRecorder() as recorder:
-            self.assertEqual([], bulk.create((BugSubscription.bug,), []))
+            self.assertEqual(
+                [],
+                bulk.create((BugSubscription.bug,), [], load_created=True))
         self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_load_can_be_skipped(self):
@@ -307,7 +309,7 @@ class TestCreate(TestCaseWithFactory):
                 None,
                 bulk.create(
                     (BranchJob.branch, BranchJob.job, BranchJob.job_type),
-                    wanted, return_created=False))
+                    wanted, load_created=False))
         self.assertThat(recorder, HasQueryCount(Equals(1)))
         [reclaimjob] = ReclaimBranchSpaceJob.iterReady()
         branchjob = reclaimjob.context
