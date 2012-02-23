@@ -10,7 +10,6 @@ __all__ = [
     'Privacy',
     ]
 
-from zope.component import adapter
 from zope.interface import implements
 from zope.security.interfaces import (
     Forbidden,
@@ -29,7 +28,6 @@ class Privacy:
         self.private = private
 
 
-@adapter(Exception)
 class ExceptionPrivacy(Privacy):
     """Adapt an Exception to IPrivacy."""
 
