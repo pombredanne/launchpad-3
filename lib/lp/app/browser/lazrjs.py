@@ -37,6 +37,7 @@ from zope.security.checker import (
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -525,8 +526,9 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
 
 def vocabulary_to_choice_edit_items(
-    vocab, css_class_prefix=None, disabled_items=None, as_json=False,
-    name_fn=None, value_fn=None):
+    vocab, include_description=False, css_class_prefix=None,
+    disabled_items=None, as_json=False, name_fn=None, value_fn=None,
+    description_fn=None):
     """Convert an enumerable to JSON for a ChoiceEdit.
 
     :vocab: The enumeration to iterate over.
@@ -552,9 +554,18 @@ def vocabulary_to_choice_edit_items(
             value = value_fn(item)
         else:
             value = item.title
+        if description_fn is None:
+            description_fn = lambda item: getattr(item, 'description', '')
+        description = ''
+        feature_flag = getFeatureFlag(
+            'disclosure.enhanced_choice_popup.enabled')
+        if include_description and feature_flag:
+            description = description_fn(item)
         new_item = {
             'name': name,
             'value': value,
+            'description': description,
+            'description_css_class': 'choice-description',
             'style': '', 'help': '', 'disabled': False}
         for disabled_item in disabled_items:
             if disabled_item == item:
@@ -650,7 +661,7 @@ class EnumChoiceWidget(WidgetBase):
     def __init__(self, context, exported_field, header,
                  content_box_id=None, enum=None,
                  edit_view="+edit", edit_url=None, edit_title='',
-                 css_class_prefix=''):
+                 css_class_prefix='', include_description=False):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -679,7 +690,9 @@ class EnumChoiceWidget(WidgetBase):
             enum = exported_field.vocabulary
         if IEnumeratedType(enum, None) is None:
             raise ValueError('%r does not provide IEnumeratedType' % enum)
-        self.items = vocabulary_to_choice_edit_items(enum, css_class_prefix)
+        self.items = vocabulary_to_choice_edit_items(
+            enum, include_description=include_description,
+            css_class_prefix=css_class_prefix)
 
     @property
     def config(self):

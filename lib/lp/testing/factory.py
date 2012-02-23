@@ -73,6 +73,7 @@ from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -2103,6 +2104,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spec
 
     makeBlueprint = makeSpecification
+
+    def makeSpecificationWorkItem(self, title=None, specification=None,
+                                  assignee=None, milestone=None, deleted=False,
+                                  status=SpecificationWorkItemStatus.TODO,
+                                  sequence=None):
+        if title is None:
+            title = self.getUniqueString(u'title')
+        if specification is None:
+            specification = self.makeSpecification()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
+        work_item = removeSecurityProxy(specification).newWorkItem(
+            title=title, sequence=sequence, status=status, assignee=assignee,
+            milestone=milestone)
+        work_item.deleted = deleted
+        return work_item
 
     def makeQuestion(self, target=None, title=None,
                      owner=None, description=None, language=None):
