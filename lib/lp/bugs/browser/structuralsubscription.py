@@ -95,15 +95,11 @@ class StructuralSubscriptionView(LaunchpadFormView):
     custom_widget('subscriptions_team', LabeledMultiCheckBoxWidget)
     custom_widget('remove_other_subscriptions', LabeledMultiCheckBoxWidget)
 
-    override_title_breadcrumbs = True
-
-    @property
-    def page_title(self):
-        return 'Subscribe to Bugs in %s' % self.context.title
+    page_title = 'Subscribe'
 
     @property
     def label(self):
-        return self.page_title
+        return 'Subscribe to Bugs in %s' % self.context.title
 
     @property
     def next_url(self):
