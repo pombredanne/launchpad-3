@@ -40,6 +40,6 @@ class TestServiceFactory(TestCaseWithFactory, FakeAdapterMixin):
         fake_service = FakeService()
         self.registerUtility(fake_service, IService, "fake")
         context, view, request = test_traverse(
-            'https://launchpad.dev/api/devel/services/fake')
+            'https://launchpad.dev/api/devel/+services/fake')
         self.assertEqual(getUtility(IServiceFactory), context)
         self.assertEqual(fake_service, view)

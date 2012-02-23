@@ -49,12 +49,12 @@ class TestWebService(WebServiceTestCase, ApiTestMixin):
         service = AccessPolicyService()
         root_app = getUtility(ILaunchpadRoot)
         self.assertEqual(
-            '%sservices/accesspolicy' % canonical_url(root_app),
+            '%s+services/accesspolicy' % canonical_url(root_app),
             canonical_url(service))
 
     def _named_get(self, api_method, **kwargs):
         return self.webservice.named_get(
-            '/services/accesspolicy',
+            '/+services/accesspolicy',
             api_method, api_version='devel', **kwargs).jsonBody()
 
     def _getAccessPolicies(self):
@@ -74,5 +74,5 @@ class TestLaunchpadlib(TestCaseWithFactory, ApiTestMixin):
         # XXX 2012-02-23 wallyworld bug 681767
         # Launchpadlib can't do relative url's
         service = self.launchpad.load(
-            '%s/services/accesspolicy' % self.launchpad._root_uri)
+            '%s/+services/accesspolicy' % self.launchpad._root_uri)
         return service.getAccessPolicies()

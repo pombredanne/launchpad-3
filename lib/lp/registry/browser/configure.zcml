@@ -34,7 +34,7 @@
         />
     <browser:url
        for="lp.app.interfaces.services.IServiceFactory"
-       path_expression="string:services"
+       path_expression="string:+services"
        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
       />
     <browser:url

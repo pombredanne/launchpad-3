@@ -653,7 +653,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
-        'services': IServiceFactory,
+        '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
         'bugs': IMaloneApplication,
