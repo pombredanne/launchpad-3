@@ -705,6 +705,24 @@ class Person(
             Or(OAuthRequestToken.date_expires == None,
                OAuthRequestToken.date_expires > UTC_NOW))
 
+    @property
+    def latitude(self):
+        """See `IHasLocation`.
+
+        We no longer allow users to set their geographical location but we
+        need to keep this because it was exported on version 1.0 of the API.
+        """
+        return None
+
+    @property
+    def longitude(self):
+        """See `IHasLocation`.
+
+        We no longer allow users to set their geographical location but we
+        need to keep this because it was exported on version 1.0 of the API.
+        """
+        return None
+
     @cachedproperty
     def location(self):
         """See `IObjectWithLocation`."""
@@ -718,33 +736,6 @@ class Person(
         # Wrap the location with a security proxy to make sure the user has
         # enough rights to see it.
         return ProxyFactory(self.location).time_zone
-
-    @property
-    def latitude(self):
-        """See `IHasLocation`."""
-        if self.location is None:
-            return None
-        # Wrap the location with a security proxy to make sure the user has
-        # enough rights to see it.
-        return ProxyFactory(self.location).latitude
-
-    @property
-    def longitude(self):
-        """See `IHasLocation`."""
-        if self.location is None:
-            return None
-        # Wrap the location with a security proxy to make sure the user has
-        # enough rights to see it.
-        return ProxyFactory(self.location).longitude
-
-    def setLocationVisibility(self, visible):
-        """See `ISetLocation`."""
-        assert not self.is_team, 'Cannot edit team location.'
-        if self.location is None:
-            get_property_cache(self).location = PersonLocation(
-                person=self, visible=visible)
-        else:
-            self.location.visible = visible
 
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
@@ -1059,7 +1050,7 @@ class Person(
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
-        """Return the names and karma points of of this person on the
+        """Return the names and karma points of this person on the
         product/distribution with that name.
 
         The results are ordered descending by the karma points and limited to
@@ -2061,92 +2052,6 @@ class Person(
             TeamSubscriptionPolicy.DELEGATED
             )
         return (self.subscriptionpolicy in open_types)
-
-    def _getMappedParticipantsLocations(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        return PersonLocation.select("""
-            PersonLocation.person = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            -- We only need to check for a latitude here because there's a DB
-            -- constraint which ensures they are both set or unset.
-            PersonLocation.latitude IS NOT NULL AND
-            PersonLocation.visible IS TRUE AND
-            Person.id = PersonLocation.person AND
-            Person.teamowner IS NULL
-            """ % sqlvalues(self.id),
-            clauseTables=['TeamParticipation', 'Person'],
-            prejoins=['person', ], limit=limit)
-
-    def getMappedParticipants(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        # Pre-cache this location against its person.  Since we'll always
-        # iterate over all persons returned by this property (to build the map
-        # of team members), it becomes more important to cache their locations
-        # than to return a lazy SelectResults (or similar) object that only
-        # fetches the rows when they're needed.
-        locations = self._getMappedParticipantsLocations(limit=limit)
-        for location in locations:
-            get_property_cache(location.person).location = location
-        participants = set(location.person for location in locations)
-        # Cache the ValidPersonCache query for all mapped participants.
-        if len(participants) > 0:
-            sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
-            list(ValidPersonCache.select(sql))
-        getUtility(IPersonSet).cacheBrandingForPeople(participants)
-        return list(participants)
-
-    @property
-    def mapped_participants_count(self):
-        """See `IPersonViewRestricted`."""
-        return self._getMappedParticipantsLocations().count()
-
-    def getMappedParticipantsBounds(self, limit=None):
-        """See `IPersonViewRestricted`."""
-        max_lat = -90.0
-        min_lat = 90.0
-        max_lng = -180.0
-        min_lng = 180.0
-        locations = self._getMappedParticipantsLocations(limit)
-        if self.mapped_participants_count == 0:
-            raise AssertionError(
-                'This method cannot be called when '
-                'mapped_participants_count == 0.')
-        latitudes = sorted(location.latitude for location in locations)
-        if latitudes[-1] > max_lat:
-            max_lat = latitudes[-1]
-        if latitudes[0] < min_lat:
-            min_lat = latitudes[0]
-        longitudes = sorted(location.longitude for location in locations)
-        if longitudes[-1] > max_lng:
-            max_lng = longitudes[-1]
-        if longitudes[0] < min_lng:
-            min_lng = longitudes[0]
-        center_lat = (max_lat + min_lat) / 2.0
-        center_lng = (max_lng + min_lng) / 2.0
-        return dict(
-            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
-            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
-
-    @property
-    def unmapped_participants(self):
-        """See `IPersonViewRestricted`."""
-        return Person.select("""
-            Person.id = TeamParticipation.person AND
-            TeamParticipation.team = %s AND
-            TeamParticipation.person NOT IN (
-                SELECT PersonLocation.person
-                FROM PersonLocation INNER JOIN TeamParticipation ON
-                     PersonLocation.person = TeamParticipation.person
-                WHERE TeamParticipation.team = %s AND
-                      PersonLocation.latitude IS NOT NULL) AND
-            Person.teamowner IS NULL
-            """ % sqlvalues(self.id, self.id),
-            clauseTables=['TeamParticipation'])
-
-    @property
-    def unmapped_participants_count(self):
-        """See `IPersonViewRestricted`."""
-        return self.unmapped_participants.count()
 
     @property
     def open_membership_invitations(self):
@@ -3615,31 +3520,6 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def _mergeAccessPolicyGrant(self, cur, from_id, to_id):
-        # Update only the AccessPolicyGrants that will not conflict.
-        cur.execute('''
-            UPDATE AccessPolicyGrant
-            SET grantee=%(to_id)d
-            WHERE grantee = %(from_id)d AND (
-                policy NOT IN
-                    (
-                    SELECT policy
-                    FROM AccessPolicyGrant
-                    WHERE grantee = %(to_id)d
-                    )
-                OR artifact NOT IN
-                    (
-                    SELECT artifact
-                    FROM AccessPolicyGrant
-                    WHERE grantee = %(to_id)d
-                    )
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM AccessPolicyGrant WHERE grantee = %(from_id)d
-            ''' % vars())
-
     def _mergeBranches(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
         branches = getUtility(IBranchCollection).ownedBy(from_person)
@@ -4192,9 +4072,6 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey', 'owner'))
-
-        self._mergeAccessPolicyGrant(cur, from_id, to_id)
-        skip.append(('accesspolicygrant', 'grantee'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.

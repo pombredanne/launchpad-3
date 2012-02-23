@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -331,7 +331,7 @@ class BugWatch(SQLBase):
             self.next_check <= datetime.now(utc)):
             # If the watch is already scheduled for a time in the past
             # (or for right now) it can't be rescheduled, since it
-            # should be be checked by the next checkwatches run anyway.
+            # should be checked by the next checkwatches run anyway.
             return False
 
         if self.activity.is_empty():

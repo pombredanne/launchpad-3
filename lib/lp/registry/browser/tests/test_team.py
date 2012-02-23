@@ -465,7 +465,7 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
             ['name', 'displayname'], view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do not see the the displayname field.
+        # Registry experts do not see the displayname field.
         team = self.factory.makeTeam()
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
@@ -535,7 +535,7 @@ class TestTeamAddView(TestCaseWithFactory):
             }
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
+                create_initialized_view(
                     personset, name=self.view_name, principal=team.teamowner,
                     form=form)
             team = personset.getByName(team_name)
@@ -571,7 +571,7 @@ class TestTeamAddView(TestCaseWithFactory):
             self.assertEqual(
                 ['PRIVATE'],
                 browser.getControl(name="field.visibility").value)
-        
+
 
 class TestTeamMenu(TestCaseWithFactory):
 
@@ -778,6 +778,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             view.add_action.success(data={'newmember': member_team})
 
 
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
+
+
 class TestTeamIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -800,7 +811,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (
-            'Test Team is queued to be be merged or deleted '
+            'Test Team is queued to be merged or deleted '
             'in a few minutes.')
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)

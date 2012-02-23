@@ -346,3 +346,23 @@ a.unofficial-tag {
 .red {
     color: red;
 }
+
+.accessPolicyPUBLIC, .accessPolicyPUBLIC a {
+    color: green;
+    }
+
+.accessPolicyPUBLICSECURITY, .accessPolicyPUBLICSECURITY a {
+    color: #1f7dff;
+    }
+
+.accessPolicyEMBARGOEDSECURITY, .accessPolicyEMBARGOEDSECURITY a {
+    color: #ff4500;
+    }
+
+.accessPolicyUSERDATA, .accessPolicyUSERDATA a {
+    color: #800080;
+    }
+
+.accessPolicyPROPRIETARY, .accessPolicyPROPRIETARY a {
+    color: red;
+    }
