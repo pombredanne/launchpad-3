@@ -61,6 +61,7 @@ __all__ = [
 
 
 import re
+import sys
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -869,6 +870,11 @@ class WorkItemParseError(Exception):
 
 class WorkItemsText(Text):
 
+    def __init__(self, specification=None, **kwargs):
+        super(WorkItemsText, self).__init__(**kwargs)
+        # XXX: how can we pass this to the constructor?
+        self.specification = specification
+
     def parse_line(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
         try:
@@ -915,21 +921,15 @@ class WorkItemsText(Text):
                 work_items.append(new_work_item)
         return work_items
 
-    def validate_workitem(self, work_item):
-        from lp.registry.interfaces.person import IPersonSet
-        assignee_name = work_item['assignee']
-        if assignee_name is not None:
-            assignee = getUtility(IPersonSet).getByName(assignee_name)
-            if assignee is None:
-                raise ValueError("Unknown person name: %s" % assignee_name)
-        else:
-            assignee = None
-
     def validate(self, value):
         # This is the method that the form machinery will call to
         # validate the whole input. Here we must parse/validate everything and
         # raise a LaunchpadValidationError on the first error we encounter.
-        self.parseAndValidate(value)
+        try:
+            self.parseAndValidate(value)
+        except:
+            exc_info = sys.exc_info()
+            raise LaunchpadValidationError, exc_info[1], exc_info[2]
 
     def parseAndValidate(self, text):
         # We need this because we want to pass the work_item dicts with the
@@ -937,6 +937,7 @@ class WorkItemsText(Text):
         # Specification.setWorkItems().
         work_items = self.parse(text)
         for work_item in work_items:
+            print "TEST", work_item
             # With this I think we can get rid of validate_workitem() above,
             # test getAssignee() and getMilestone() directly and write just a
             # single test for this method.
@@ -947,11 +948,30 @@ class WorkItemsText(Text):
     def getAssignee(self, assignee_name):
         if assignee_name is None:
             return None
-        # TODO: Lookup an assignee with the given name, raising a validation
-        # error if it doesn't exist.
+        # XXX importing this from the top of this file fails
+        from lp.registry.interfaces.person import IPersonSet
+        assignee = getUtility(IPersonSet).getByName(assignee_name)
+        if assignee is None:
+            raise LaunchpadValidationError("Unknown person name: %s" % assignee_name)
+        return assignee
 
     def getMilestone(self, milestone_name):
         if milestone_name is None:
             return None
-        # TODO: Lookup the milestone with the given name and ensure it belongs
-        # to the spec's target, raising a validation error if not.
+        print "spec", self.specification
+        if self.specification is None:
+            # XXX improve error message
+            raise LaunchpadValidationError("Can't look up milestone: %s since I"
+                                           " don't know which specification I "
+                                           "belong to." % milestone_name)
+        # XXX importing this from the top of this file fails
+        from lp.registry.interfaces.milestone import IMilestoneSet
+        product = self.specification.target
+        print product
+        milestone = getUtility(IMilestoneSet).getByNameAndProduct(
+            milestone_name, product)
+        if milestone is None:
+            raise LaunchpadValidationError("The milestone '%s' is not valid "
+                                           "for the product '%s'." % \
+                                               (milestone_name, product.name))
+        return milestone

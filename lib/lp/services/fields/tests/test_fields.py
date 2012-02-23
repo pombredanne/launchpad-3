@@ -115,19 +115,63 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_person_is_looked_up(self):
+    def test_milestone_validation_fails_without_spec(self):
+        field = WorkItemsText(__name__='test', specification=None)
+        self.assertRaises(
+            LaunchpadValidationError, field.getMilestone, 'test-milestone')
+        
+    def test_unknown_assignee_is_rejected(self):
         field = WorkItemsText(__name__='test')
         person_name = 'test-person'
-        work_item = {'title': 'A work item',
-                     'status': SpecificationWorkItemStatus.TODO,
-                     'assignee': person_name,
-                     'milestone': None}
-        
         self.assertRaises(
-            ValueError, field.validate_workitem, work_item)
+            LaunchpadValidationError, field.getAssignee, person_name)
+
+    def test_validate_valid_assignee(self):
+        field = WorkItemsText(__name__='test')
+        assignee = self.factory.makePerson()
+        self.assertEqual(assignee, field.getAssignee(assignee.name))
+
+    def test_validate_unset_assignee(self):
+        field = WorkItemsText(__name__='test')
+        self.assertIs(None, field.getAssignee(None))
+
+    def test_validate_unset_milestone(self):
+        field = WorkItemsText(None, __name__='test')
+        self.assertIs(None, field.getMilestone(None))
+
+    def test_validate_unknown_milestone(self):
+        specification = self.factory.makeSpecification()
+        field = WorkItemsText(__name__='test', specification=specification)
+        milestone_name = '2012.02'
+        self.assertRaises(
+            LaunchpadValidationError, field.getMilestone, milestone_name)
+
+    def test_validate_valid_milestone(self):
+        milestone_name = 'test-milestone'
+        milestone = self.factory.makeMilestone(name=milestone_name)
+        specification = self.factory.makeSpecification(
+            product=milestone.product)
+        field = WorkItemsText(__name__='test', specification=specification)
+        self.assertEqual(milestone, field.getMilestone(milestone_name))
+
+    def test_validate_invalid_milestone(self):
+        milestone_name = 'test-milestone'
+        self.factory.makeMilestone(name=milestone_name)
+        specification = self.factory.makeSpecification(product=None)
+        field = WorkItemsText(__name__='test', specification=specification)
+        self.assertRaises(
+            LaunchpadValidationError, field.getMilestone, milestone_name)
 
 
 class TestWorkItemsText(TestCase):
+
+    # XXX: add tests for sequence
+
+    def test_validate_raises_LaunchpadValidationError(self):
+        field = WorkItemsText(__name__='test')
+        self.assertRaises(
+            LaunchpadValidationError, field.validate,
+            'This is not a valid work item.')
 
     def test_single_line_parsing(self):
         field = WorkItemsText(__name__='test')
@@ -139,11 +183,14 @@ class TestWorkItemsText(TestCase):
     def test_silly_caps_status_parsing(self):
         field = WorkItemsText(__name__='test')
         parsed_upper = field.parse_line('Test this work item: TODO    ')
-        self.assertEqual(parsed_upper['status'], SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_upper['status'],
+                         SpecificationWorkItemStatus.TODO)
         parsed_lower = field.parse_line('Test this work item:     todo')
-        self.assertEqual(parsed_lower['status'], SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_lower['status'],
+                         SpecificationWorkItemStatus.TODO)
         parsed_camel = field.parse_line('Test this work item: ToDo')
-        self.assertEqual(parsed_camel['status'], SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_camel['status'],
+                         SpecificationWorkItemStatus.TODO)
 
     def test_parse_line_without_status_fails(self):
         # We should require an explicit status to avoid the problem of work
@@ -272,7 +319,6 @@ class TestWorkItemsText(TestCase):
 
 
     # XXX: add tests for sequence
-    # XXX: add tests for looking up people in set()
     # XXX: add tests for looking up milestones in set() and check that they are valid for that bp
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):

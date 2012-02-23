@@ -246,6 +246,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
         field = ISpecification['workitems_text'].bind(self)
         self.updateWorkItems(field.parseAndValidate(new_work_items))
 
+    def updateWorkItems(self, new_work_items):
+        for work_item in new_work_items:
+            print work_item
+
     def setTarget(self, target):
         """See ISpecification."""
         if IProduct.providedBy(target):
@@ -996,8 +1000,7 @@ class SpecificationSet(HasSpecificationsMixin):
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
-            workitems_text=workitems_text)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

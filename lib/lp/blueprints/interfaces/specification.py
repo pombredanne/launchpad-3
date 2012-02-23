@@ -661,7 +661,7 @@ class ISpecificationSet(IHasSpecifications):
 
     def new(name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None, workitems_text=None,
+        drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
 
