@@ -300,7 +300,7 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> from lp.services.helpers import backslashreplace
     >>> browser.open(bug_1_url)
     >>> print backslashreplace(browser.title)
-    Bug #... Test Bug 1 : Bugs : Mozilla Firefox
+    Bug #...Test Bug 1... : Bugs : Mozilla Firefox
 
     >>> browser.getLink('Target to series').click()
     >>> print browser.title

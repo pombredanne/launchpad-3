@@ -26,7 +26,8 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         last_crumb = crumbs[-1]
         self.assertEquals(self.bugtask_url, last_crumb.url)
         self.assertEquals("Bug #%d" % self.bug.id, last_crumb.text)
-        self.assertEquals("Bug #%d borked" % self.bug.id, last_crumb.detail)
+        self.assertEquals(
+            u"Bug #%d \u201cborked\u201d" % self.bug.id, last_crumb.detail)
 
     def test_bugtask_child(self):
         crumbs = self.getBreadcrumbsForObject(

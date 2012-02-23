@@ -4524,4 +4524,5 @@ class BugTaskBreadcrumb(Breadcrumb):
     @property
     def detail(self):
         bug = self.context.bug
-        return '%s %s' % (bug.displayname, bug.title)
+        title = smartquote('"%s"' % bug.title)
+        return '%s %s' % (bug.displayname, title)
