@@ -350,7 +350,7 @@ visible for members of the team and admins.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Hardware submissions for Ubuntu Team...
+    Hardware submissions for ...Ubuntu Team...
     Ubuntu Team has posted no submissions.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
