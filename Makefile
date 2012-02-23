@@ -63,7 +63,8 @@ BUILDOUT_BIN = \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
+	bin/watch_jsbuild.py
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
