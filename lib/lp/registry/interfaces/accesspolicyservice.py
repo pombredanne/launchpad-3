@@ -21,6 +21,9 @@ from lp.app.interfaces.services import IService
 
 class IAccessPolicyService(IService):
 
+    # XXX 2012-02-24 wallyworld bug 939910
+    # Need to export for version 'beta' even though we only want to use it in
+    # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
     @export_read_operation()
