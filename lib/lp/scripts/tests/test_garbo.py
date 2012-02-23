@@ -72,6 +72,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
@@ -994,6 +995,24 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_BugHeatUpdater_sees_feature_flag(self):
+        # BugHeatUpdater can see its feature flag even though it's
+        # running in a thread. garbo sets up a feature controller for
+        # each worker.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug()
+        now = datetime.now(UTC)
+        cutoff = now - timedelta(days=1)
+        old_update = now - timedelta(days=2)
+        bug.heat_last_updated = old_update
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'bugs.heat_updates.cutoff',
+            cutoff.isoformat().decode('ascii')))
+        transaction.commit()
+        self.assertEqual(old_update, bug.heat_last_updated)
+        self.runHourly()
+        self.assertNotEqual(old_update, bug.heat_last_updated)
 
 
 class TestGarboTasks(TestCaseWithFactory):

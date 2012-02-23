@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the commercial projects vocabularies."""
@@ -65,7 +65,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                                                  len(results)))
 
     def test_searchForTerms_success(self):
-        # Search for for active maintained projects success.
+        # Search for active maintained projects success.
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
             self.num_commercial, len(results),

@@ -1255,7 +1255,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
                     naked_build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
-        # When there are 4+ pending builds, only the the most
+        # When there are 4+ pending builds, only the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
             [build4, build3, build2, build1, build6],

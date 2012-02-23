@@ -123,7 +123,7 @@ class TestPersonIndexView(TestCaseWithFactory):
         job_source.create(from_person=dupe_person, to_person=target_person)
         view = create_initialized_view(dupe_person, name="+index")
         notifications = view.request.response.notifications
-        message = 'Finch is queued to be be merged in a few minutes.'
+        message = 'Finch is queued to be merged in a few minutes.'
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
 
@@ -423,7 +423,7 @@ class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
             self.view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do not see the the displayname field.
+        # Registry experts do not see the displayname field.
         login_celebrity('registry_experts')
         self.view.setUpFields()
         self.assertEqual(
