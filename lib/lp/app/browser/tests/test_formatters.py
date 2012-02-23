@@ -66,7 +66,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         view.request.traversed_objects = [project, bug.bugtasks[0], view]
         formatter = ObjectFormatterAPI(view)
         self.assertEqual(
-            '%s bang : Bugs : Fnord' % bug.displayname,
+            u'%s \u201cbang\u201d : Bugs : Fnord' % bug.displayname,
             formatter.pagetitle())
 
     def test_pagetitle_last_breadcrumb_detail_too_long(self):
@@ -78,8 +78,8 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
             current_request=True, server_url='https://bugs.launchpad.dev/')
         view.request.traversed_objects = [project, bug.bugtasks[0], view]
         formatter = ObjectFormatterAPI(view)
-        detail = '%s %s' % (bug.displayname, title)
-        expected_title = '%s... : Bugs : Fnord' % detail[0:64]
+        detail = u'%s \u201c%s\u201d' % (bug.displayname, title)
+        expected_title = u'%s... : Bugs : Fnord' % detail[0:64]
         self.assertEqual(expected_title, formatter.pagetitle())
 
 
