@@ -14,27 +14,6 @@
         file="vocabularies.zcml"/>
     <include
         package=".browser"/>
-    <include
-        package=".services"/>
-
-    <!-- Services Infrastructure -->
-    <securedutility
-        class="lp.app.services.ServiceFactory"
-        provides="lp.app.interfaces.services.IServiceFactory">
-        <allow
-            interface="lp.app.interfaces.services.IServiceFactory"/>
-        <allow
-            interface="zope.publisher.interfaces.IPublishTraverse"/>
-    </securedutility>
-    <securedutility
-        class="lp.services.webservice.services.ServicesLink"
-        provides="lp.services.webservice.services.IServicesLink">
-        <allow
-            interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
-        <allow
-            interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
-    </securedutility>
-
     <class
         class="lp.registry.model.teammembership.TeamMembershipSet">
         <allow
