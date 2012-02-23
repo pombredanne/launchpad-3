@@ -8,9 +8,11 @@ import pyinotify
 import os
 import re
 import shutil
+from convoy.meta import Builder
 
 BUILD_DIR = 'build/js/lp'
 WATCH_DIR = 'lib'
+META_NAME = 'LP_MODULES'
 
 # to start out let's assume your CWD is where we're referencing things from
 CWD = os.getcwd()
@@ -42,12 +44,23 @@ def copyfile(src, dst):
 
 class HandleChanges(pyinotify.ProcessEvent):
     def process_IN_CREATE(self, event):
-        if event.mask == pyinotify.IN_MODIFY:
+        if event.mask == pyinotify.IN_CREATE:
             needs_filtering = [f(event.name) for f in FILTERS]
             if True in needs_filtering:
                 pass
             else:
-                print "Was created:", event.pathname
+                new_path = build_path(event.pathname)
+                copyfile(event.pathname, new_path)
+                lpjsmin.minify(new_path)
+                # we now need to update the meta.js file for our new module
+                Builder(
+                    name=META_NAME,
+                    src_dir=os.path.abspath(BUILD_DIR),
+                    output=os.path.join(BUILD_DIR, 'meta.js'),
+                    exclude_regex='-min.js',
+                    ext=False,
+                    include_skin=False,
+                    ).do_build()
 
     def process_IN_MODIFY(self, event):
         if event.mask == pyinotify.IN_MODIFY:
