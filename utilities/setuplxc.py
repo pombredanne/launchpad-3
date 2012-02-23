@@ -729,7 +729,7 @@ def initialize_host(
         script.write(
             'lxc-execute -n lptests --' # Run the named LXC container.
             ' /usr/bin/sudo -u#{} -i'.format(uid)+ # Drop root privileges.
-            ' make -C /var/lib/buildbot/lp schema\n')
+            ' make -C /var/lib/buildbot/lp schema\n') # do the build
         os.chmod(build_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/lauchpad-buildbot'
