@@ -30,8 +30,6 @@ bug listing.
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
-    15 Nonsensical bugs are useless
-      Mozilla Thunderbird Unknown New
     3 Bug Title Test
       mozilla-firefox (Debian Woody) Medium New
     3 Bug Title Test
@@ -40,8 +38,6 @@ bug listing.
       Evolution Medium New
     10 another test bug
       linux-source-2.6.15 (Ubuntu) Medium New
-    15 Nonsensical bugs are useless
-      Redfish Undecided New
 
 Even if a product is specified in the bug target widget, all bug reports
 will be searched.

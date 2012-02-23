@@ -7,7 +7,7 @@ Checks that the '+pots/' page redirects always to the '+translations' one.
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
-  Content-Type: text/plain
+  Content-Type: text/plain;charset=utf-8
   Location: ../+translations
   ...
 
@@ -37,7 +37,7 @@ removing.
   ... """)
   HTTP/1.1 301 Moved Permanently
   Content-Length: 0
-  Content-Type: text/plain
+  Content-Type: text/plain;charset=utf-8
   Location: .../+source/evolution/+translations
   ...
 

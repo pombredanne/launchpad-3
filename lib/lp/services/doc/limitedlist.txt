@@ -32,7 +32,7 @@ the first elements are dropped.
     <LimitedList(2, [2, 3])>
 
 If we add two LimitedLists, the result is a LimitedList too, its maximum
-length is the same as the the maximum length of the left operand. If the
+length is the same as the maximum length of the left operand. If the
 concatenated lists have more elements than left_operand.max_length, only
 the last elements are stored.
 

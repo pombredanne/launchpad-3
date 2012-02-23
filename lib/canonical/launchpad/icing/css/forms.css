@@ -224,6 +224,18 @@ h1 .yui3-ieditor-errors {
     font-size: 12px;
     line-height: 30px;
     }
+.step-links {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-right: 10em;
+    text-align: right;
+    }
+.step-links button.next {
+    padding-top: 10px;
+    }
+.step-links .prev {
+    margin-right: 2em;
+    }
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }

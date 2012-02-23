@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ApportJobs."""
@@ -126,7 +126,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             data_dict['hwdb_submission_keys'],
             "Values for hwdb_submission_keys do not match")
 
-        # The attachments list of of the data_dict dict will be of
+        # The attachments list of the data_dict dict will be of
         # the same length as the attachments list in the filebug_data
         # object.
         self.assertEqual(

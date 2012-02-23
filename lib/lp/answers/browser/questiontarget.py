@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
@@ -7,11 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'AnswersVHostBreadcrumb',
-    'AskAQuestionButtonView',
+    'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
     'QuestionCollectionByLanguageView',
-    'QuestionCollectionLatestQuestionsView',
+    'QuestionCollectionLatestQuestionsPortlet',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
     'QuestionCollectionOpenCountView',
@@ -98,7 +98,7 @@ from lp.services.worlddata.helpers import (
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
-class AskAQuestionButtonView:
+class AskAQuestionButtonPortlet:
     """View that renders a button to ask a question on its context."""
 
     def __call__(self):
@@ -154,7 +154,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class QuestionCollectionLatestQuestionsView:
+class QuestionCollectionLatestQuestionsPortlet:
     """View used to display the latest questions on a question target."""
 
     @property

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -1041,7 +1041,7 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(expected, translation)
 
     def test_translatePath_branch_id_alias_owned(self):
-        # Even if the the requester is the owner, the branch is read only.
+        # Even if the requester is the owner, the branch is read only.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
