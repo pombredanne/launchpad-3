@@ -11,6 +11,7 @@ __all__ = [
 import logging
 
 from lazr.delegates import delegates
+from lazr.jobrunner.runjobs import SuspendJobException
 import simplejson
 from storm.locals import (
     And,
@@ -50,7 +51,6 @@ from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
-    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob

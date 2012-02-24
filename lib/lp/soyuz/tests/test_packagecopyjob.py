@@ -6,6 +6,7 @@
 import operator
 from textwrap import dedent
 
+from lazr.jobrunner.runjobs import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
@@ -25,7 +26,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     JobStatus,
-    SuspendJobException,
     )
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride

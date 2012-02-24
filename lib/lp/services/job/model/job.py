@@ -58,6 +58,10 @@ class Job(SQLBase):
 
     implements(IJob)
 
+    @property
+    def job_id(self):
+        return self.id
+
     scheduled_start = UtcDateTimeCol()
 
     date_created = UtcDateTimeCol()

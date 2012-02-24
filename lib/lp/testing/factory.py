@@ -48,6 +48,7 @@ import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
+from lazr.jobrunner.runjobs import SuspendJobException
 import pytz
 from pytz import UTC
 import simplejson
@@ -226,7 +227,6 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from lp.services.identity.model.account import Account
-from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage

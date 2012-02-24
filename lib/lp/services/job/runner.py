@@ -62,7 +62,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
-    SuspendJobException,
     )
 from lp.services.mail.sendmail import (
     MailController,
@@ -203,7 +202,7 @@ class BaseJobRunner(LazrJobRunner):
 
     @staticmethod
     def job_str(job):
-        LazrJobRunner.job_str(removeSecurityProxy(job))
+        return LazrJobRunner.job_str(removeSecurityProxy(job))
 
     def commit(self):
         transaction.commit()
