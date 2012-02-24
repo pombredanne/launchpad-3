@@ -128,8 +128,6 @@ class TestBugLinking(BzrSyncTestCase):
         self.bug1.addTask(self.bug1.owner, distro)
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(distro).max_bug_heat = 0
-        removeSecurityProxy(dsp).max_bug_heat = 0
         self.layer.txn.commit()
 
     def getBugURL(self, bug):
