@@ -11,7 +11,6 @@ __all__ = [
 import logging
 
 from lazr.delegates import delegates
-import simplejson
 from storm.locals import (
     And,
     Int,
