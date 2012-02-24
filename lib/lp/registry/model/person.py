@@ -40,7 +40,11 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.restful.utils import get_current_browser_request
+from lazr.restful.utils import (
+    get_current_browser_request,
+    smartquote,
+    )
+
 import pytz
 from sqlobject import (
     BoolCol,
@@ -1050,7 +1054,7 @@ class Person(
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
-        """Return the names and karma points of of this person on the
+        """Return the names and karma points of this person on the
         product/distribution with that name.
 
         The results are ordered descending by the karma points and limited to
@@ -1777,6 +1781,8 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
+        if self.is_team:
+            return smartquote('"%s" team') % self.displayname
         return self.displayname
 
     @property

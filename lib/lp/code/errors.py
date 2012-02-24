@@ -297,7 +297,7 @@ class ReviewNotPending(Exception):
 
 
 class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
+    """Raised if the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):

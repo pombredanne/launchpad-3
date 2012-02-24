@@ -774,7 +774,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def inline_filebug_form_url(self):
         """Return the URL to the inline filebug form.
 
-        If a token was passed to this view, it will be be passed through
+        If a token was passed to this view, it will be passed through
         to the inline bug filing form via the returned URL.
         """
         url = canonical_url(self.context, view_name='+filebug-inline-form')
@@ -1173,7 +1173,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def inline_filebug_form_url(self):
         """Return the URL to the inline filebug form.
 
-        If a token was passed to this view, it will be be passed through
+        If a token was passed to this view, it will be passed through
         to the inline bug filing form via the returned URL.
 
         The URL returned will be the URL of the first of the current

@@ -8,6 +8,9 @@ ALTER TABLE AccessPolicy SET SCHEMA todrop;
 ALTER TABLE AccessPolicyArtifact SET SCHEMA todrop;
 ALTER TABLE AccessPolicyGrant SET SCHEMA todrop;
 
+ALTER TABLE Bug DROP COLUMN access_policy;
+ALTER TABLE Branch DROP COLUMN access_policy;
+
 -- And create a whole new one.
 CREATE TABLE AccessPolicy (
     id serial PRIMARY KEY,
@@ -29,18 +32,17 @@ CREATE TABLE AccessArtifact (
     CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
 );
 
-CREATE TABLE AccessPolicyArtifact (
-    artifact integer REFERENCES AccessArtifact NOT NULL,
-    policy integer REFERENCES AccessPolicy NOT NULL
-);
-
 CREATE UNIQUE INDEX accessartifact__bug__key
     ON AccessArtifact(bug) WHERE bug IS NOT NULL;
-CREATE UNIQUE INDEX accesscontrolledartifact__branch__key
+CREATE UNIQUE INDEX accessartifact__branch__key
     ON AccessArtifact(branch) WHERE branch IS NOT NULL;
 
-CREATE INDEX accesspolicyartifact__artifact__key
-    ON AccessPolicyArtifact(artifact);
+CREATE TABLE AccessPolicyArtifact (
+    artifact integer REFERENCES AccessArtifact NOT NULL,
+    policy integer REFERENCES AccessPolicy NOT NULL,
+    PRIMARY KEY (artifact, policy)
+);
+
 CREATE INDEX accesspolicyartifact__policy__key
     ON AccessPolicyArtifact(policy);
 
@@ -85,7 +87,7 @@ CREATE INDEX accesspolicygrantflat__artifact__grantee__idx
 CREATE OR REPLACE FUNCTION
     accesspolicyartifact_maintain_accesspolicyartifactflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -118,7 +120,7 @@ CREATE TRIGGER accesspolicyartifact_maintain_accesspolicyartifactflat_trigger
 CREATE OR REPLACE FUNCTION
     accessartifactgrant_maintain_accesspolicygrantflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -151,7 +153,7 @@ CREATE TRIGGER accessartifactgrant_maintain_accesspolicygrantflat_trigger
 CREATE OR REPLACE FUNCTION
     accesspolicygrant_maintain_accesspolicygrantflat_trig()
     RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN

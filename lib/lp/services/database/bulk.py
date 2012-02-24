@@ -26,6 +26,7 @@ from storm.expr import (
     And,
     Insert,
     Or,
+    SQL,
     )
 from storm.info import (
     get_cls_info,
@@ -168,7 +169,9 @@ def load_related(object_type, owning_objects, foreign_keys):
 
 def _dbify_value(col, val):
     """Convert a value into a form that Storm can compile directly."""
-    if isinstance(col, Reference):
+    if isinstance(val, SQL):
+        return (val,)
+    elif isinstance(col, Reference):
         # References are mainly meant to be used as descriptors, so we
         # have to perform a bit of evil here to turn the (potentially
         # None) value into a sequence of primary key values.
@@ -192,18 +195,31 @@ def _dbify_column(col):
         return (col,)
 
 
-def create(columns, values):
+def create(columns, values, get_objects=False,
+           get_primary_keys=False):
     """Create a large number of objects efficiently.
 
     :param cols: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
-    :return: A list of the created objects.
+    :param get_objects: Return the created objects.
+    :param get_primary_keys: Return the created primary keys.
+    :return: A list of the created objects if get_created, otherwise None.
     """
     # Flatten Reference faux-columns into their primary keys.
     db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
     clses = set(col.cls for col in db_cols)
-    assert len(clses) == 1
+    if len(clses) != 1:
+        raise ValueError(
+            "The Storm columns to insert values into must be from a single "
+            "class.")
+    if get_objects and get_primary_keys:
+        raise ValueError(
+            "get_objects and get_primary_keys are mutually exclusive.")
+
+    if len(values) == 0:
+        return [] if (get_objects or get_primary_keys) else None
+
     [cls] = clses
     primary_key = get_cls_info(cls).primary_key
 
@@ -215,10 +231,15 @@ def create(columns, values):
             _dbify_value(col, val) for col, val in zip(columns, value)))
         for value in values]
 
-    result = IStore(cls).execute(
-        Returning(Insert(
-            db_cols, expr=db_values, primary_columns=primary_key)))
-    if len(primary_key) == 1:
-        return load(cls, map(itemgetter(0), result))
+    if get_objects or get_primary_keys:
+        result = IStore(cls).execute(
+            Returning(Insert(
+                db_cols, expr=db_values, primary_columns=primary_key)))
+        keys = map(itemgetter(0), result) if len(primary_key) == 1 else result
+        if get_objects:
+            return load(cls, keys)
+        else:
+            return list(keys)
     else:
-        return load(cls, result)
+        IStore(cls).execute(Insert(db_cols, expr=db_values))
+        return None

@@ -225,7 +225,7 @@ forwarded upstream that have a bug watch against a remote bug.
 Deltas
 ......
 
-BugReportData also offers a set of of *_delta properties along with the
+BugReportData also offers a set of *_delta properties along with the
 *_percentage properties.
 
 BugReportData.triaged_bugs_delta is the difference between the number of

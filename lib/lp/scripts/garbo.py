@@ -66,7 +66,11 @@ from lp.services.database.sqlbase import (
     session_store,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
+    make_script_feature_controller,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
@@ -1122,6 +1126,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         """
         self.logger.debug(
             "Worker thread %s running.", threading.currentThread().name)
+        install_feature_controller(make_script_feature_controller(self.name))
         self.login()
 
         while True:
