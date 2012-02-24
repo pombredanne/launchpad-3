@@ -370,7 +370,7 @@ class RevisionSet:
         # Create all Revision objects.
         db_revisions = create((
             Revision.revision_id, Revision.log_body, Revision.revision_date,
-            Revision.revision_author_id), data)
+            Revision.revision_author_id), data, get_objects=True)
 
         # Map revision_id to Revision database ID.
         revision_db_id = dict(
@@ -396,12 +396,12 @@ class RevisionSet:
         # Create all RevisionParent objects.
         create((
             RevisionParent.revisionID, RevisionParent.sequence,
-            RevisionParent.parent_id), parent_data, return_created=False)
+            RevisionParent.parent_id), parent_data)
 
         # Create all RevisionProperty objects.
         create((
             RevisionProperty.revisionID, RevisionProperty.name,
-            RevisionProperty.value), property_data, return_created=False)
+            RevisionProperty.value), property_data)
 
     @staticmethod
     def onlyPresent(revids):
