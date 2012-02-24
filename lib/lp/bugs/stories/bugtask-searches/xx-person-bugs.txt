@@ -7,7 +7,7 @@ lists the bug assigned to that person.
     >>> anon_browser.open('http://launchpad.dev/~name12')
     >>> anon_browser.getLink('Bugs').click()
     >>> print anon_browser.title
-    Related bugs
+    Bugs : Sample Person
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12
@@ -49,7 +49,7 @@ virtual host:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12')
     >>> print anon_browser.title
-    Related bugs
+    Bugs : Sample Person
 
 
 More specific listings
@@ -64,7 +64,7 @@ Assigned bugs
 
     >>> anon_browser.getLink('Assigned bugs').click()
     >>> print anon_browser.title
-    Assigned bugs : Sample Person
+    Assigned bugs : Bugs : Sample Person
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+assignedbugs
@@ -83,7 +83,7 @@ Commented bugs
 
     >>> anon_browser.getLink('Commented bugs').click()
     >>> print anon_browser.title
-    Commented bugs : Sample Person
+    Commented bugs : Bugs : Sample Person
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+commentedbugs
@@ -106,7 +106,7 @@ Reported bugs
 
     >>> anon_browser.getLink('Reported bugs').click()
     >>> print anon_browser.title
-    Reported bugs : Sample Person
+    Reported bugs : Bugs : Sample Person
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+reportedbugs
@@ -137,7 +137,7 @@ Subscribed bugs
 
     >>> anon_browser.getLink('Subscribed bugs').click()
     >>> print anon_browser.title
-    Subscribed bugs : Sample Person
+    Subscribed bugs : Bugs : Sample Person
 
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+subscribedbugs
