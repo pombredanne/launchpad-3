@@ -243,8 +243,7 @@ class TestBugHideCommentControls(
 
     def getView(self, context, user=None, no_login=False):
         """Required by the mixin."""
-        with celebrity_logged_in('admin'):
-            task = context.default_bugtask
+        task = removeSecurityProxy(context).default_bugtask
         return self.getViewBrowser(
             context=task, user=user, no_login=no_login)
 

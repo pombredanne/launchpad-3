@@ -26,7 +26,6 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
-    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -317,8 +316,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # blocked from doing so.
         view = self.createInitializedSecrecyView()
         bug = view.context.bug
-        with celebrity_logged_in('admin'):
-            task = bug.default_bugtask
+        task = removeSecurityProxy(bug).default_bugtask
         self.assertEqual(1, len(view.request.response.notifications))
         notification = view.request.response.notifications[0].message
         mute_url = canonical_url(task, view_name='+mute')
