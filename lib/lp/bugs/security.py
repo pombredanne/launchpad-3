@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security adapters for the bugs module."""
@@ -6,9 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-from zope.component import getUtility
-
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
@@ -69,7 +66,7 @@ class DeleteBugTask(AuthorizationBase):
             return False
 
         # Admins can always delete bugtasks.
-        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+        if user.in_admin:
             return True
 
         bugtask = self.obj
@@ -233,8 +230,7 @@ class AdminBugWatch(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return (
-            user.in_admin or
-            user.in_launchpad_developers)
+            user.in_admin or user.in_launchpad_developers)
 
 
 class EditStructuralSubscription(AuthorizationBase):
@@ -256,3 +252,30 @@ class EditBugSubscriptionFilter(AuthorizationBase):
         return (
             self.obj.structural_subscription is None or
             user.inTeam(self.obj.structural_subscription.subscriber))
+
+
+class PublicOrPrivateBugExistence(AuthorizationBase):
+    """Restrict knowing about the existence of bugs.
+
+    Knowing the existence of a private bug allow traversing to its URL and
+    displaying the bug number.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = IBug
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public bugs."""
+        return not self.obj.private
+
+    def checkAuthenticated(self, user):
+        """By default, we simply perform a View permission check.
+
+        We also grant limited viewability to users who are subscribed via
+        a duplicate bug.
+        """
+        if self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.View'):
+            return True
+
+        return not self.obj.private or self.obj.isSubscribedToDupes(
+            user.person)

@@ -50,6 +50,7 @@ setup(
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',
+        'lpjsmin',
         # Required for launchpadlib
         'keyring',
         'manuel',

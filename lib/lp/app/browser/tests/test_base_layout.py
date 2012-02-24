@@ -108,9 +108,10 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual('watermark-apps-portlet', watermark['class'])
         if self.context.is_team:
             self.assertEqual('/@@/team-logo', watermark.img['src'])
+            self.assertEqual(u'\u201cWaffles\u201d team', watermark.h2.string)
         else:
             self.assertEqual('/@@/person-logo', watermark.img['src'])
-        self.assertEqual('Waffles', watermark.h2.string)
+            self.assertEqual('Waffles', watermark.h2.string)
         self.assertEqual('facetmenu', watermark.ul['class'])
 
     def test_main_side(self):

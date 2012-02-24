@@ -60,7 +60,7 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
     bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
@@ -185,7 +185,7 @@ $(JS_YUI):
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+	cat $^ | bin/lpjsmin > $@
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
