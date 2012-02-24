@@ -218,7 +218,7 @@ def create(columns, values, get_objects=False,
             "get_objects and get_primary_keys are mutually exclusive.")
 
     if len(values) == 0:
-        return [] if get_objects else None
+        return [] if (get_objects or get_primary_keys) else None
 
     [cls] = clses
     primary_key = get_cls_info(cls).primary_key
