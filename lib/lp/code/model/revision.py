@@ -342,8 +342,8 @@ class RevisionSet:
 
     def newFromBazaarRevisions(self, revisions):
         """See `IRevisionSet`."""
-        data = []
 
+        # Find all author names for these revisions.
         author_names = []
         for bzr_revision in revisions:
             authors = bzr_revision.get_apparent_authors()
@@ -352,12 +352,13 @@ class RevisionSet:
             except IndexError:
                 author = None
             author_names.append(author)
+        # Get or make every RevisionAuthor for these revisions.
         revision_authors = dict(
             (name, author.id) for name, author in
             self.acquireRevisionAuthors(author_names).items())
 
-        property_data = []
-        parent_data = []
+        # Collect all data for making Revision objects.
+        data = []
         for bzr_revision, author_name in zip(revisions, author_names):
             revision_id = bzr_revision.revision_id
             revision_date = self._timestampToDatetime(bzr_revision.timestamp)
@@ -366,27 +367,38 @@ class RevisionSet:
             data.append(
                 (revision_id, bzr_revision.message, revision_date,
                 revision_author))
+        # Create all Revision objects.
         db_revisions = create((
             Revision.revision_id, Revision.log_body, Revision.revision_date,
             Revision.revision_author_id), data)
 
+        # Map revision_id to Revision database ID.
         revision_db_id = dict(
             (rev.revision_id, rev.id) for rev in db_revisions)
 
+        # Collect all data for making RevisionParent and RevisionProperty
+        # objects.
+        parent_data = []
+        property_data = []
         for bzr_revision in revisions:
             db_id = revision_db_id[bzr_revision.revision_id]
+            # Property data: revision DB id, name, value.
             for name, value in bzr_revision.properties.iteritems():
                 property_data.append((db_id, name, value))
             parent_ids = bzr_revision.parent_ids
+            # Parent data: revision DB id, sequence, revision_id
             seen_parents = set()
             for sequence, parent_id in enumerate(parent_ids):
                 if parent_id in seen_parents:
                     continue
                 seen_parents.add(parent_id)
                 parent_data.append((db_id, sequence, parent_id))
+        # Create all RevisionParent objects.
         create((
             RevisionParent.revisionID, RevisionParent.sequence,
             RevisionParent.parent_id), parent_data, return_created=False)
+
+        # Create all RevisionProperty objects.
         create((
             RevisionProperty.revisionID, RevisionProperty.name,
             RevisionProperty.value), property_data, return_created=False)
