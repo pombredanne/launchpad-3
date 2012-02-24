@@ -32,11 +32,9 @@ from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
-    PersonVisibility,
     TeamEmailAddressError,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
-from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.person import (
     Person,
     PersonSet,
@@ -140,47 +138,10 @@ class TestPersonSet(TestCaseWithFactory):
                 person.is_valid_person
                 person.karma
                 person.is_ubuntu_coc_signer
-                person.location
+                person.location,
                 person.archive
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
-
-    def test_latest_teams_public(self):
-        # Anyone can see the latest 5 teams if they are public.
-        teams = []
-        for num in xrange(1, 7):
-            teams.append(self.factory.makeTeam(name='team-%s' % num))
-        teams.reverse()
-        result = self.person_set.latest_teams()
-        self.assertEqual(teams[0:5], list(result))
-
-    def test_latest_teams_private(self):
-        # Private teams are only included in the latest teams if the
-        # user can view the team.
-        teams = []
-        for num in xrange(1, 7):
-            teams.append(self.factory.makeTeam(name='team-%s' % num))
-        owner = self.factory.makePerson()
-        teams.append(
-            self.factory.makeTeam(
-                name='private-team', owner=owner,
-                visibility=PersonVisibility.PRIVATE))
-        teams.reverse()
-        login_person(owner)
-        result = self.person_set.latest_teams()
-        self.assertEqual(teams[0:5], list(result))
-        login_person(self.factory.makePerson())
-        result = self.person_set.latest_teams()
-        self.assertEqual(teams[1:6], list(result))
-
-    def test_latest_teams_limit(self):
-        # The limit controls the number of latest teams returned.
-        teams = []
-        for num in xrange(1, 7):
-            teams.append(self.factory.makeTeam(name='team-%s' % num))
-        teams.reverse()
-        result = self.person_set.latest_teams(limit=3)
-        self.assertEqual(teams[0:3], list(result))
 
 
 class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):
@@ -565,41 +526,6 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # See comments in assertConflictingSubscriptionDeletes.
         dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp)
-
-    def test_merge_accesspolicygrants(self):
-        # AccessPolicyGrants are transferred from the duplicate.
-        person = self.factory.makePerson()
-        grant = self.factory.makeAccessPolicyGrant()
-        self._do_premerge(grant.grantee, person)
-        with person_logged_in(person):
-            self._do_merge(grant.grantee, person)
-        self.assertEqual(person, grant.grantee)
-
-    def test_merge_accesspolicygrants_conflicts(self):
-        # Conflicting AccessPolicyGrants are deleted.
-        policy = self.factory.makeAccessPolicy()
-
-        person = self.factory.makePerson()
-        person_grantor = self.factory.makePerson()
-        person_grant = self.factory.makeAccessPolicyGrant(
-            grantee=person, grantor=person_grantor, object=policy)
-
-        duplicate = self.factory.makePerson()
-        duplicate_grantor = self.factory.makePerson()
-        duplicate_grant = self.factory.makeAccessPolicyGrant(
-            grantee=duplicate, grantor=duplicate_grantor, object=policy)
-
-        self._do_premerge(duplicate, person)
-        with person_logged_in(person):
-            self._do_merge(duplicate, person)
-        transaction.commit()
-
-        self.assertEqual(person, person_grant.grantee)
-        self.assertEqual(person_grantor, person_grant.grantor)
-        self.assertIs(
-            None,
-            IStore(AccessPolicyGrant).get(
-                AccessPolicyGrant, duplicate_grant.id))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.

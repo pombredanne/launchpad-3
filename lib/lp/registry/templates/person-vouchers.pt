@@ -42,16 +42,8 @@
                     <tal:widget define="widget nocall:view/widgets/voucher">
                       <metal:block use-macro="context/@@launchpad_form/widget_row" />
                     </tal:widget>
-                    <tr>
-                      <td></td>
-                      <td>
-                        <input tal:replace="structure view/redeem_action/render" />
-                        <input tal:replace="structure view/cancel_action/render" />
-                      </td>
-                    </tr>
                   </table>
                 </metal:widgets>
-                <metal:widgets fill-slot="buttons" />
               </div>
             </tal:has_voucher>
           </tal:define_vouchers>

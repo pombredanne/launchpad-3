@@ -1846,7 +1846,7 @@ class DistroSeriesSet:
             # wrapped anyway - and sqlvalues goes boom.
             archives = removeSecurityProxy(
                 distroseries.distribution.all_distro_archive_ids)
-            clause = """(spr.sourcepackagename IN %s AND
+            clause = """(spph.sourcepackagename IN %s AND
                 spph.archive IN %s AND
                 spph.distroseries = %s)
                 """ % sqlvalues(source_package_ids, archives, distroseries.id)
@@ -1860,7 +1860,8 @@ class DistroSeriesSet:
             (SourcePackageRelease, DistroSeries.id), SQL("""
                 (SourcePackageRelease.id, DistroSeries.id) IN (
                     SELECT
-                        DISTINCT ON (spr.sourcepackagename, spph.distroseries)
+                        DISTINCT ON (
+                            spph.sourcepackagename, spph.distroseries)
                         spr.id, spph.distroseries
                     FROM
                         SourcePackageRelease AS spr,
@@ -1870,7 +1871,9 @@ class DistroSeriesSet:
                         AND spph.status IN %s
                         AND %s
                     ORDER BY
-                        spr.sourcepackagename, spph.distroseries, spph.id DESC
+                        spph.sourcepackagename,
+                        spph.distroseries,
+                        spph.id DESC
                     )
                 """
                 % (sqlvalues(active_publishing_status) + (combined_clause,))))

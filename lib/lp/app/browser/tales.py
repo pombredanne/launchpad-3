@@ -78,6 +78,7 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
+from lp.services.webapp.error import SystemErrorView
 from lp.services.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -666,22 +667,24 @@ class ObjectFormatterAPI:
         else:
             return 'public'
 
+    def _getSaneBreadcrumbDetail(self, breadcrumb):
+        text = breadcrumb.detail
+        if len(text) > 64:
+            return '%s...' % text[0:64]
+        return text
+
     def pagetitle(self):
         """The page title to be used.
 
         By default, reverse breadcrumbs are always used if they are available.
         If not available, then the view's .page_title attribut is used.
-        If breadcrumbs are available, then a view can still choose to
-        override them by setting the attribute .override_title_breadcrumbs
-        to True.
         """
         ROOT_TITLE = 'Launchpad'
         view = self._context
         request = get_current_browser_request()
         hierarchy_view = getMultiAdapter(
             (view.context, request), name='+hierarchy')
-        override = getattr(view, 'override_title_breadcrumbs', False)
-        if (override or
+        if (isinstance(view, SystemErrorView) or
             hierarchy_view is None or
             not hierarchy_view.display_breadcrumbs):
             # The breadcrumbs are either not available or are overridden.  If
@@ -697,9 +700,15 @@ class ObjectFormatterAPI:
                 if template is None:
                     return ROOT_TITLE
         # Use the reverse breadcrumbs.
-        return SEPARATOR.join(
-            breadcrumb.text for breadcrumb
-            in reversed(hierarchy_view.items))
+        breadcrumbs = list(reversed(hierarchy_view.items))
+        if len(breadcrumbs) == 0:
+            # This implies there are no breadcrumbs, but this more often
+            # is caused when an Unauthorized error is being raised.
+            return ''
+        detail_breadcrumb = self._getSaneBreadcrumbDetail(breadcrumbs[0])
+        title_breadcrumbs = [breadcrumb.text for breadcrumb in breadcrumbs[1:]]
+        title_text = SEPARATOR.join([detail_breadcrumb] + title_breadcrumbs)
+        return FormattersAPI(title_text).obfuscate_email()
 
 
 class ObjectImageDisplayAPI:
@@ -1581,8 +1590,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         url = urlappend(canonical_url(self._release), '+download')
         # Quote the filename to eliminate non-ascii characters which
         # are invalid in the url.
-        url = urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
+        return urlappend(url, urllib.quote(lfa.filename.encode('utf-8')))
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):

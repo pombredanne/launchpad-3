@@ -465,7 +465,7 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
             ['name', 'displayname'], view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do not see the the displayname field.
+        # Registry experts do not see the displayname field.
         team = self.factory.makeTeam()
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
@@ -493,7 +493,7 @@ class TestTeamAddView(TestCaseWithFactory):
             personset, name=self.view_name, principal=admin)
         self.assertIn(
             'visibility', [field.__name__ for field in view.form_fields])
-        
+
     def test_random_does_not_see_visibility_field_with_flag(self):
         personset = getUtility(IPersonSet)
         person = self.factory.makePerson()
@@ -519,6 +519,28 @@ class TestTeamAddView(TestCaseWithFactory):
                     'visibility',
                     [field.__name__ for field in view.form_fields])
 
+    def test_person_with_cs_can_create_private_team(self):
+        personset = getUtility(IPersonSet)
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        product = self.factory.makeProduct(owner=team)
+        self.factory.makeCommercialSubscription(product)
+        team_name = self.factory.getUniqueString()
+        form = {
+            'field.name': team_name,
+            'field.displayname': 'New Team',
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.visibility': 'PRIVATE',
+            'field.actions.create': 'Create',
+            }
+        with person_logged_in(team.teamowner):
+            with FeatureFixture(self.feature_flag):
+                create_initialized_view(
+                    personset, name=self.view_name, principal=team.teamowner,
+                    form=form)
+            team = personset.getByName(team_name)
+            self.assertIsNotNone(team)
+            self.assertEqual(PersonVisibility.PRIVATE, team.visibility)
 
     def test_person_with_expired_cs_does_not_see_visibility(self):
         personset = getUtility(IPersonSet)
@@ -533,6 +555,22 @@ class TestTeamAddView(TestCaseWithFactory):
                 self.assertNotIn(
                     'visibility',
                     [field.__name__ for field in view.form_fields])
+
+    def test_visibility_is_correct_during_edit(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(owner):
+            url = canonical_url(team)
+        with FeatureFixture(self.feature_flag):
+            browser = self.getUserBrowser(url, user=owner)
+            browser.getLink('Change details').click()
+            self.assertEqual(
+                ['PRIVATE'],
+                browser.getControl(name="field.visibility").value)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -740,6 +778,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             view.add_action.success(data={'newmember': member_team})
 
 
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
+
+
 class TestTeamIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -762,7 +811,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (
-            'Test Team is queued to be be merged or deleted '
+            'Test Team is queued to be merged or deleted '
             'in a few minutes.')
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
@@ -778,15 +827,20 @@ class TestTeamIndexView(TestCaseWithFactory):
             archive = self.factory.makeArchive(private=True, owner=team)
             archive.newSubscription(user, registrant=owner)
         with person_logged_in(user):
-            view = create_initialized_view(
-                team, name="+index",  server_url=canonical_url(team),
-                path_info='', principal=user)
-            document = find_tag_by_id(view(), 'document')
-        self.assertIsNone(document.find(True, id='side-portlets'))
-        self.assertIsNone(document.find(True, id='registration'))
-        self.assertEndsWith(
-            extract_text(document.find(True, id='maincontent')),
-            'The information in this page is not shared with you.')
+            for rootsite, view_name in [
+                (None, '+index'), ('code', '+branches'), ('bugs', '+bugs'),
+                ('blueprints', '+specs'), ('answers', '+questions'),
+                ('translations', '+translations')]:
+                view = create_initialized_view(
+                    team, name=view_name, path_info='', principal=user,
+                    server_url=canonical_url(team, rootsite=rootsite),
+                    rootsite=rootsite)
+                document = find_tag_by_id(view(), 'document')
+                self.assertIsNone(document.find(True, id='side-portlets'))
+                self.assertIsNone(document.find(True, id='registration'))
+                self.assertEndsWith(
+                    extract_text(document.find(True, id='maincontent')),
+                    'The information in this page is not shared with you.')
 
 
 class TestPersonIndexVisibilityView(TestCaseWithFactory):

@@ -53,12 +53,6 @@ from lp.testing.layers import (
 from lp.testing.matchers import HasQueryCount
 
 
-PRIVATE_BUG_VISIBILITY_FLAG = {
-    'disclosure.private_bug_visibility_rules.enabled': 'on'}
-PRIVATE_BUG_VISIBILITY_CTE_FLAG = {
-    'disclosure.private_bug_visibility_cte.enabled': 'on'}
-
-
 class SearchTestBase:
     """A mixin class with tests useful for all targets and search variants."""
 
@@ -150,55 +144,6 @@ class SearchTestBase:
             bugtask.transitionToAssignee(user)
         params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
-
-    def test_private_bug_in_search_result_pillar_owners(self):
-        # Private, non-security bugs are included in search results for the
-        # pillar owners if the correct feature flag is enabled.
-        bugtask = self.bugtasks[-1]
-        pillar_owner = bugtask.pillar.owner
-        with person_logged_in(self.owner):
-            bugtask.bug.setPrivate(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        params = self.getBugTaskSearchParams(user=pillar_owner)
-        # Check the results with the feature flag.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks)
-        # Check the results without the feature flag.
-        self.assertSearchFinds(params, self.bugtasks[:-1])
-
-        # Make the bugtask security related.
-        with person_logged_in(self.owner):
-            bugtask.bug.setSecurityRelated(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        # It should now be excluded from the results.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks[:-1])
-
-    def test_private_bug_in_search_result_pillar_owners_cte(self):
-        # Like test_private_bug_in_search_result_pillar_owners, but with
-        # the new CTE-based visibility query.
-        bugtask = self.bugtasks[-1]
-        pillar_owner = bugtask.pillar.owner
-        with person_logged_in(self.owner):
-            bugtask.bug.setPrivate(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        params = self.getBugTaskSearchParams(user=pillar_owner)
-        # Check the results with the feature flag.
-        flags = dict()
-        flags.update(PRIVATE_BUG_VISIBILITY_FLAG)
-        flags.update(PRIVATE_BUG_VISIBILITY_CTE_FLAG)
-        with FeatureFixture(flags):
-            self.assertSearchFinds(params, self.bugtasks)
-        # Check the results without the feature flag.
-        self.assertSearchFinds(params, self.bugtasks[:-1])
-
-        # Make the bugtask security related.
-        with person_logged_in(self.owner):
-            bugtask.bug.setSecurityRelated(True, self.owner)
-            bugtask.bug.unsubscribe(pillar_owner, self.owner)
-        # It should now be excluded from the results.
-        with FeatureFixture(PRIVATE_BUG_VISIBILITY_FLAG):
-            self.assertSearchFinds(params, self.bugtasks[:-1])
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -352,15 +297,11 @@ class SearchTestBase:
                     owner=commenter, content='comment %s' % number)
 
     def test_fulltext_search(self):
-        # Full text searches find text indexed by Bug.fti...
+        # Full text searches find text indexed by Bug.fti.
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
             user=None, searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ...and by MessageChunk.fti
-        params = self.getBugTaskSearchParams(
-            user=None, searchtext='three comment')
-        self.assertSearchFinds(params, self.bugtasks[2:3])
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
@@ -368,10 +309,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ..or by MessageChunk.fti
-        params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='three comment')
-        self.assertSearchFinds(params, [])
 
     def test_has_no_upstream_bugtask(self):
         # Search results can be limited to bugtasks of bugs that do
@@ -1023,25 +960,6 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             self.bugtasks[0].target.addSubscription(
                 subscriber, subscribed_by=subscriber)
         return subscriber
-
-    def test_disable_targetnames_search(self):
-        # searching in the target name is contentious and arguably a bug. To
-        # permit incremental changes we allow it to be disabled via a feature
-        # flag.
-        with person_logged_in(self.owner):
-            product1 = self.factory.makeProduct(name='product-foo',
-                owner=self.owner, project=self.searchtarget)
-            product2 = self.factory.makeProduct(name='product-bar',
-                owner=self.owner, project=self.searchtarget)
-            bug1 = self.factory.makeBug(product=product1)
-            bug1.default_bugtask.updateTargetNameCache()
-            self.factory.makeBug(product=product2)
-        params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
-        # With no flag, we find the first bug.
-        self.assertSearchFinds(params, [bug1.default_bugtask])
-        with FeatureFixture({'malone.disable_targetnamesearch': u'on'}):
-            # With a flag set, no bugs are found.
-            self.assertSearchFinds(params, [])
 
     def setUpMilestoneSorting(self):
         with person_logged_in(self.owner):

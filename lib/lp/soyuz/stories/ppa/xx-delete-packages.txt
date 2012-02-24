@@ -517,9 +517,8 @@ Remove the just deleted publication from disk setting its
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
-Now, not only the 'Removed from disk' notice is rendered inside the
-expandable area, but also the message mentioned pointing to the file
-links at the end of the section.
+Now the 'Removed from disk' notice is rendered inside the expandable
+area.
 
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
@@ -533,7 +532,6 @@ links at the end of the section.
     Removed from disk ... ago.
     Deleted ... ago by No Privileges Person
     Deletion of a number of base pairs that is not evenly divisible by ...
-    Removed files can still be downloaded from the Librarian; see below.
     Changelog
     Builds
       i386
