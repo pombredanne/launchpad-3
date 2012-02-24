@@ -33,7 +33,6 @@ from storm.expr import (
     Desc,
     LeftJoin,
     Or,
-    SQL,
     Sum,
     )
 from storm.store import Store
@@ -1470,8 +1469,7 @@ class PublishingSet:
             [(get_archive(archive, bpr), das, pocket, bpr,
               bpr.binarypackagename,
               get_component(archive, das.distroseries, component),
-              section, priority, PackagePublishingStatus.PENDING,
-              SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"))
+              section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
               for (das, bpr, (component, section, priority)) in needed],
             load_created=True)
 
