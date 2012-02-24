@@ -88,8 +88,7 @@
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
-      <div id="watermark" class="watermark-apps-portlet"
-           tal:condition="view/macro:pagehas/applicationtabs">
+      <div id="watermark" class="watermark-apps-portlet">
         <div class="flowed-block">
           <span tal:replace="structure view/watermark:logo"></span>
         </div>
@@ -110,8 +109,7 @@
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div class="context-publication"
-              tal:condition="view/macro:pagehas/applicationtabs">
+            <div class="context-publication">
               <h1
                 tal:condition="view/label|nothing"
                 tal:content="view/label"
