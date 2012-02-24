@@ -15,7 +15,6 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.model.launchpad import (
-    ExceptionPrivacy,
     Privacy,
     )
 from lp.testing import TestCase

@@ -73,9 +73,9 @@
       <h2>Older (obsolete) versions of the Code of Conduct</h2>
 
       <ul class="document">
-         <tal:codes tal:repeat="code context"> 
+         <tal:codes tal:repeat="code context">
             <tal:not_current condition="not: code/current">
-              <li><a tal:content="code/title" 
+              <li><a tal:content="code/title"
                      tal:attributes="href code/fmt:url" /></li>
             </tal:not_current>
          </tal:codes>
