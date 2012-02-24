@@ -1962,4 +1962,10 @@
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
     </securedutility>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrantFlat"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
+    </securedutility>
 </configure>

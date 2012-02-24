@@ -32,6 +32,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifact,
     IAccessPolicyGrant,
     )
+from lp.registry.model.person import Person
 from lp.services.database.bulk import create
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
@@ -304,3 +305,23 @@ class AccessPolicyGrant(StormBase):
         """See `IAccessPolicyGrantSource`."""
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
+
+
+class AccessPolicyGrantFlat(StormBase):
+    __storm_table__ = 'AccessPolicyGrantFlat'
+
+    id = Int(primary=True)
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
+    abstract_artifact_id = Int(name='artifact')
+    abstract_artifact = Reference(
+        abstract_artifact_id, 'AccessArtifact.id')
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
+
+    @classmethod
+    def findGranteesByPolicy(cls, policies):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(
+            Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))

@@ -14,6 +14,7 @@ __all__ = [
     'IAccessPolicyArtifact',
     'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
+    'IAccessPolicyGrantFlatSource',
     'IAccessPolicyGrantSource',
     'IAccessPolicySource',
     ]
@@ -169,3 +170,14 @@ class IAccessPolicyGrantSource(Interface):
 
     def findByPolicy(policies):
         """Return all `IAccessPolicyGrant` objects for the policies."""
+
+
+class IAccessPolicyGrantFlatSource(Interface):
+
+    def findGranteesByPolicy(policies):
+        """Find the `IPerson`s with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        """

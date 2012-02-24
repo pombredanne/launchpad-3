@@ -17,6 +17,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -360,3 +361,27 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         self.assertContentEqual(
             grants,
             getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))
+
+
+class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_findGranteesByPolicy(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        policy = self.factory.makeAccessPolicy()
+        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee, artifact_grant.grantee],
+            apgfs.findGranteesByPolicy([policy]))
