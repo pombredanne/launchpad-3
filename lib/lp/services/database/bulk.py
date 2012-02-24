@@ -26,6 +26,7 @@ from storm.expr import (
     And,
     Insert,
     Or,
+    SQL,
     )
 from storm.info import (
     get_cls_info,
@@ -168,7 +169,9 @@ def load_related(object_type, owning_objects, foreign_keys):
 
 def _dbify_value(col, val):
     """Convert a value into a form that Storm can compile directly."""
-    if isinstance(col, Reference):
+    if isinstance(val, SQL):
+        return (val,)
+    elif isinstance(col, Reference):
         # References are mainly meant to be used as descriptors, so we
         # have to perform a bit of evil here to turn the (potentially
         # None) value into a sequence of primary key values.

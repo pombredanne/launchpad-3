@@ -9,6 +9,7 @@ import datetime
 
 from pytz import UTC
 from storm.exceptions import ClassInfoError
+from storm.expr import SQL
 from storm.info import get_obj_info
 from storm.store import Store
 from testtools.matchers import Equals
@@ -34,6 +35,7 @@ from lp.services.database.lpstorm import (
     ISlaveStore,
     IStore,
     )
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
@@ -315,3 +317,17 @@ class TestCreate(TestCaseWithFactory):
         branchjob = reclaimjob.context
         self.assertEqual(
             wanted, [(branchjob.branch, branchjob.job, branchjob.job_type)])
+
+    def test_sql_passed_through(self):
+        # create() passes SQL() expressions through untouched.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+
+        [sub] = bulk.create(
+            (BugSubscription.bug, BugSubscription.person,
+             BugSubscription.subscribed_by, BugSubscription.date_created,
+             BugSubscription.bug_notification_level),
+            [(bug, person, person,
+              SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"),
+              BugNotificationLevel.LIFECYCLE)], load_created=True)
+        self.assertEqual(get_transaction_timestamp(), sub.date_created)
