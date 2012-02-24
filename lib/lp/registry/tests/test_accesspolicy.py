@@ -371,15 +371,18 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         # the policies or the policies' artifacts.
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
 
+        # People with grants on the policy show up.
         policy = self.factory.makeAccessPolicy()
         policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
         self.assertContentEqual(
             [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
 
+        # But not people with grants on artifacts.
         artifact_grant = self.factory.makeAccessArtifactGrant()
         self.assertContentEqual(
             [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
 
+        # Unless the artifacts are linked to the policy.
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=policy)
         self.assertContentEqual(
