@@ -163,8 +163,6 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
 
 class TestWorkItemsText(TestCase):
 
-    # XXX: add tests for sequence
-
     def test_validate_raises_LaunchpadValidationError(self):
         field = WorkItemsText(__name__='test')
         self.assertRaises(
@@ -177,6 +175,12 @@ class TestWorkItemsText(TestCase):
         parsed = field.parse_line('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
         self.assertEqual(parsed['status'], SpecificationWorkItemStatus.TODO)
+
+    def test_url_and_colon_in_title(self):
+        field = WorkItemsText(__name__='test')
+        work_items_title = 'Test this: which is a url: http://www.linaro.org/'
+        parsed = field.parse_line('%s: TODO' % (work_items_title))
+        self.assertEqual(parsed['title'], work_items_title)
 
     def test_silly_caps_status_parsing(self):
         field = WorkItemsText(__name__='test')

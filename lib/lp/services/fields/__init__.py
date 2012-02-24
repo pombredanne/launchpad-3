@@ -873,7 +873,7 @@ class WorkItemsText(Text):
     def parse_line(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
         try:
-            title, status = line.rsplit(':')
+            title, status = line.rsplit(':', 1)
         except ValueError:
             raise WorkItemParseError('Missing work item status.')
 
