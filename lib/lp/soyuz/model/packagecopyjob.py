@@ -311,14 +311,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 target_distroseries, copy_policy, include_binaries, job_id,
                 task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
-        return [
-            job.id for job in
-            bulk.create(
+        return bulk.create(
                 (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
                  PackageCopyJob.copy_policy, PackageCopyJob.source_archive,
                  PackageCopyJob.target_archive, PackageCopyJob.package_name,
                  PackageCopyJob.job_id, PackageCopyJob.metadata),
-                job_contents, load_created=True)]
+                job_contents, get_primary_keys=True)
 
     @classmethod
     def getActiveJobs(cls, target_archive):

@@ -121,11 +121,10 @@ class Job(SQLBase):
         :param request: The `IPerson` requesting the jobs.
         :return: An iterable of `Job.id` values for the new jobs.
         """
-        return [
-            job.id for job in bulk.create(
+        return bulk.create(
                 (Job._status, Job.requester),
                 [(JobStatus.WAITING, requester) for i in range(num_jobs)],
-                load_created=True)]
+                get_primary_keys=True)
 
     def acquireLease(self, duration=300):
         """See `IJob`."""

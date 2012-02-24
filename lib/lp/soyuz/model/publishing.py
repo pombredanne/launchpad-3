@@ -1471,7 +1471,7 @@ class PublishingSet:
               get_component(archive, das.distroseries, component),
               section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
               for (das, bpr, (component, section, priority)) in needed],
-            load_created=True)
+            get_objects=True)
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):

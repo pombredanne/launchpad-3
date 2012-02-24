@@ -97,8 +97,7 @@ def create_multiple_jobs(derived_series, parent_series):
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
-    return [
-        job.id for job in bulk.create(
+    return bulk.create(
             (DistributionJob.distribution, DistributionJob.distroseries,
              DistributionJob.job_type, DistributionJob.job_id,
              DistributionJob.metadata),
@@ -106,7 +105,7 @@ def create_multiple_jobs(derived_series, parent_series):
               DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
               make_metadata(spn_id, parent_series.id))
              for job_id, spn_id in zip(job_ids, sourcepackagenames)],
-            load_created=True)]
+            get_primary_keys=True)
 
 
 def find_waiting_jobs(derived_series, sourcepackagename, parent_series):

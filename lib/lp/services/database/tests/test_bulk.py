@@ -262,7 +262,7 @@ class TestCreate(TestCaseWithFactory):
                 (BugSubscription.bug, BugSubscription.person,
                  BugSubscription.subscribed_by, BugSubscription.date_created,
                  BugSubscription.bug_notification_level),
-                wanted, load_created=True)
+                wanted, get_objects=True)
 
         self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertContentEqual(
@@ -276,7 +276,7 @@ class TestCreate(TestCaseWithFactory):
         wanted = [(None, job, BranchJobType.RECLAIM_BRANCH_SPACE)]
         [branchjob] = bulk.create(
             (BranchJob.branch, BranchJob.job, BranchJob.job_type),
-            wanted, load_created=True)
+            wanted, get_objects=True)
         self.assertEqual(
             wanted, [(branchjob.branch, branchjob.job, branchjob.job_type)])
 
@@ -298,8 +298,21 @@ class TestCreate(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             self.assertEqual(
                 [],
-                bulk.create((BugSubscription.bug,), [], load_created=True))
+                bulk.create((BugSubscription.bug,), [], get_objects=True))
         self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_can_return_ids(self):
+        # create() can be asked to return the created IDs instead of objects.
+        job = IStore(Job).add(Job())
+        IStore(Job).flush()
+        wanted = [(None, job, BranchJobType.RECLAIM_BRANCH_SPACE)]
+        with StormStatementRecorder() as recorder:
+            [created_id] = bulk.create(
+                (BranchJob.branch, BranchJob.job, BranchJob.job_type),
+                wanted, get_primary_keys=True)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        [reclaimjob] = ReclaimBranchSpaceJob.iterReady()
+        self.assertEqual(created_id, reclaimjob.context.id)
 
     def test_load_can_be_skipped(self):
         # create() can be told not to load the created rows.
@@ -311,7 +324,7 @@ class TestCreate(TestCaseWithFactory):
                 None,
                 bulk.create(
                     (BranchJob.branch, BranchJob.job, BranchJob.job_type),
-                    wanted, load_created=False))
+                    wanted, get_objects=False))
         self.assertThat(recorder, HasQueryCount(Equals(1)))
         [reclaimjob] = ReclaimBranchSpaceJob.iterReady()
         branchjob = reclaimjob.context
@@ -329,5 +342,5 @@ class TestCreate(TestCaseWithFactory):
              BugSubscription.bug_notification_level),
             [(bug, person, person,
               SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"),
-              BugNotificationLevel.LIFECYCLE)], load_created=True)
+              BugNotificationLevel.LIFECYCLE)], get_objects=True)
         self.assertEqual(get_transaction_timestamp(), sub.date_created)
