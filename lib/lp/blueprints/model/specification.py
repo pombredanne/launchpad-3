@@ -225,7 +225,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     @property
     def workitems_text(self):
-        return "No work items yet"
+        workitems_lines = []
+        milestone = None
+        for work_item in self.work_items:
+            if work_item.milestone != milestone:
+                milestone = work_item.milestone
+                # Separate milestone blocks, but no blank line if this is the
+                # first work item
+                if work_item.sequence > 0:
+                    workitems_lines.append("")
+                workitems_lines.append("Work items for %s:" % milestone.name)
+            # work_items are ordered by sequence
+            workitems_lines.append("%s: %s" % (work_item.title,
+                                               work_item.status))
+        return "\n".join(workitems_lines)
 
     @property
     def target(self):
@@ -241,6 +254,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationWorkItem(
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)
+
+    @property
+    def work_items(self):
+        """See ISpecification."""
+        return Store.of(self).find(
+            SpecificationWorkItem, specification=self,
+            deleted=False).order_by("sequence")
 
     def setWorkItems(self, new_work_items):
         field = ISpecification['workitems_text'].bind(self)

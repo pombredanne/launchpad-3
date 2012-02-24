@@ -174,3 +174,82 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         self.assertEqual(status, work_item.status)
         self.assertEqual(title, work_item.title)
         self.assertEqual(milestone, work_item.milestone)
+
+    def test_workitems_text_no_workitems(self):
+        spec = self.factory.makeSpecification()
+        self.assertEqual('', spec.workitems_text)
+
+    def test_workitems_text_single_workitem(self):
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(title=u'new-work-item', sequence=0,
+                                     status=SpecificationWorkItemStatus.TODO)
+        expected_wi_text = "%s: Todo" % work_item.title
+        self.assertEqual(expected_wi_text, spec.workitems_text)
+
+    def test_workitems_text_multi_workitems(self):
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        work_item1 = spec.newWorkItem(
+            title=u'new-work-item', sequence=0,
+            status=SpecificationWorkItemStatus.TODO)
+        work_item2 = spec.newWorkItem(
+            title=u'another-work-item', sequence=1,
+            status=SpecificationWorkItemStatus.POSTPONED)
+        expected_wi_text = ("%s: Todo\n"
+                            "%s: Postponed" % \
+                                (work_item1.title, work_item2.title))
+        self.assertEqual(expected_wi_text, spec.workitems_text)
+
+    def test_workitems_text_with_milestone(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone()
+        login_person(spec.owner)
+        work_item = spec.newWorkItem(
+            title=u'new-work-item', sequence=0,
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        expected_wi_text = ("Work items for %s:\n"
+                            "%s: Todo" % \
+                                (milestone.name, work_item.title))
+        self.assertEqual(expected_wi_text, spec.workitems_text)
+
+    def test_workitems_text_with_implicit_and_explicit_milestone(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone()
+        login_person(spec.owner)
+        work_item1 = spec.newWorkItem(
+            title=u'Work item with default milestone', sequence=0,
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=None)
+        work_item2 = spec.newWorkItem(
+            title=u'Work item with set milestone', sequence=1,
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        expected_wi_text = ("%s: Todo\n"
+                            "\nWork items for %s:\n"
+                            "%s: Todo" % \
+                                (work_item1.title, milestone.name,
+                                 work_item2.title))
+        self.assertEqual(expected_wi_text, spec.workitems_text)
+
+    def test_workitems_text_with_different_milestones(self):
+        spec = self.factory.makeSpecification()
+        milestone1 = self.factory.makeMilestone()
+        milestone2 = self.factory.makeMilestone()
+        login_person(spec.owner)
+        work_item1 = spec.newWorkItem(
+            title=u'Work item with first milestone', sequence=0,
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone1)
+        work_item2 = spec.newWorkItem(
+            title=u'Work item with second milestone', sequence=1,
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone2)
+        expected_wi_text = ("Work items for %s:\n"
+                            "%s: Todo\n"
+                            "\nWork items for %s:\n"
+                            "%s: Todo" % \
+                                (milestone1.name, work_item1.title, milestone2.name,
+                                 work_item2.title))
+        self.assertEqual(expected_wi_text, spec.workitems_text)
