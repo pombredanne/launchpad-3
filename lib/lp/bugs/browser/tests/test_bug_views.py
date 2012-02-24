@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Bug Views."""
@@ -26,6 +26,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
+    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -316,11 +317,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # blocked from doing so.
         view = self.createInitializedSecrecyView()
         bug = view.context.bug
+        with celebrity_logged_in('admin'):
+            task = bug.default_bugtask
         self.assertEqual(1, len(view.request.response.notifications))
         notification = view.request.response.notifications[0].message
-        mute_url = canonical_url(bug.default_bugtask, view_name='+mute')
-        subscribe_url = canonical_url(
-            bug.default_bugtask, view_name='+subscribe')
+        mute_url = canonical_url(task, view_name='+mute')
+        subscribe_url = canonical_url(task, view_name='+subscribe')
         self.assertIn(mute_url, notification)
         self.assertIn(subscribe_url, notification)
 
@@ -386,7 +388,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             'Discussion', subscription_data['bug_notification_level'])
 
         [subscriber_data] = result_data['subscription_data']
-        subscriber = removeSecurityProxy(bug.default_bugtask).pillar.owner
+        subscriber = removeSecurityProxy(bug).default_bugtask.pillar.owner
         self.assertEqual(
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
