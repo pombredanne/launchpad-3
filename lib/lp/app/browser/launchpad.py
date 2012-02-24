@@ -80,6 +80,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -661,6 +662,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
         'bugs': IMaloneApplication,

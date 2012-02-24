@@ -4,6 +4,8 @@
 """All the interfaces that are exposed through the webservice."""
 
 __all__ = [
+    'IAccessPolicyService',
+    'IServiceFactory',
     'DerivationError',
     'ICommercialSubscription',
     'IDistribution',
@@ -99,6 +101,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+
+# Services
+from lp.app.interfaces.services import IServiceFactory
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 
 
 _schema_circular_imports
