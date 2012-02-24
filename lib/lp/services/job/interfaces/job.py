@@ -88,6 +88,9 @@ class JobStatus(DBEnumeratedType):
 class IJob(Interface):
     """Basic attributes of a job."""
 
+    job_id = Int(title=_(
+        'A unique identifier for this job.'))
+
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
 

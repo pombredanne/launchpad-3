@@ -38,6 +38,7 @@ from ampoule import (
     pool,
     )
 from lazr.delegates import delegates
+from lazr.jobrunner.runjobs import JobRunner as LazrJobRunner
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -177,17 +178,13 @@ class BaseRunnableJob(BaseRunnableJobSource):
         ctrl.send()
 
 
-class BaseJobRunner(object):
+class BaseJobRunner(LazrJobRunner):
     """Runner of Jobs."""
 
     def __init__(self, logger=None, error_utility=None):
-        self.completed_jobs = []
-        self.incomplete_jobs = []
-        if logger is None:
-            logger = logging.getLogger()
-        self.logger = logger
-        self.error_utility = error_utility
+        super(BaseJobRunner, self).__init__(logger)
         self.oops_ids = []
+        self.error_utility = error_utility
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
@@ -206,51 +203,16 @@ class BaseJobRunner(object):
 
     @staticmethod
     def job_str(job):
-        class_name = job.__class__.__name__
-        ijob_id = removeSecurityProxy(job).job.id
-        return '%s (ID %d)' % (class_name, ijob_id)
+        LazrJobRunner.job_str(removeSecurityProxy(job))
+
+    def commit(self):
+        transaction.commit()
+
+    def abort(self):
+        transaction.abort()
 
     def runJob(self, job):
-        """Attempt to run a job, updating its status as appropriate."""
-        job = IRunnableJob(job)
-
-        self.logger.info(
-            'Running %s in status %s' % (
-                self.job_str(job), job.status.title))
-        job.start()
-        transaction.commit()
-        do_retry = False
-        try:
-            try:
-                job.run()
-            except job.retry_error_types, e:
-                if job.attempt_count > job.max_retries:
-                    raise
-                self.logger.exception(
-                    "Scheduling retry due to %s.", e.__class__.__name__)
-                do_retry = True
-        except SuspendJobException:
-            self.logger.debug("Job suspended itself")
-            job.suspend()
-            self.incomplete_jobs.append(job)
-        except Exception:
-            transaction.abort()
-            job.fail()
-            # Record the failure.
-            transaction.commit()
-            self.incomplete_jobs.append(job)
-            raise
-        else:
-            # Commit transaction to update the DB time.
-            transaction.commit()
-            if do_retry:
-                job.queue()
-                self.incomplete_jobs.append(job)
-            else:
-                job.complete()
-                self.completed_jobs.append(job)
-        # Commit transaction to update job status.
-        transaction.commit()
+        super(BaseJobRunner, self).runJob(IRunnableJob(job))
 
     def runJobHandleError(self, job):
         """Run the specified job, handling errors.
