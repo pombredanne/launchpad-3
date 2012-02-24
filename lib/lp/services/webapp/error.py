@@ -41,7 +41,6 @@ class SystemErrorView(LaunchpadView):
     implements(ISystemErrorView)
 
     page_title = 'Error: Launchpad system error'
-    override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
         'templates/oops-veryplain.pt')
@@ -185,7 +184,6 @@ class UnexpectedFormDataView(SystemErrorView):
 class NotFoundView(SystemErrorView):
 
     page_title = 'Error: Page not found'
-    override_title_breadcrumbs = True
 
     response_code = httplib.NOT_FOUND
 
@@ -224,7 +222,6 @@ class GoneView(NotFoundView):
 class RequestExpiredView(SystemErrorView):
 
     page_title = 'Error: Timeout'
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 
@@ -240,7 +237,6 @@ class InvalidBatchSizeView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
     page_title = "Error: Invalid Batch Size"
-    override_title_breadcrumbs = True
 
     response_code = httplib.BAD_REQUEST
 
@@ -259,7 +255,6 @@ class InvalidBatchSizeView(SystemErrorView):
 class TranslationUnavailableView(SystemErrorView):
 
     page_title = 'Error: Translation page is not available'
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 
@@ -271,7 +266,6 @@ class ReadOnlyErrorView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
     page_title = "Error: you can't do this right now"
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 
