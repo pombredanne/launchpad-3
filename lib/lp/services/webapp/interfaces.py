@@ -234,6 +234,8 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
+    detail = Attribute('Detailed text of this breadcrumb.')
+
 
 #
 # Canonical URLs

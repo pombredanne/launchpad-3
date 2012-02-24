@@ -132,9 +132,12 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         expose_user_administered_teams_to_js(self.request, self.user, context,
             absoluteURL=fake_absoluteURL)
         team_info = self._sort(self.request.objects['administratedTeams'])
-        self.assertThat(team_info[0]['title'], Equals(u'Team 1'))
+        self.assertThat(
+            team_info[0]['title'], Equals(u'\u201cTeam 1\u201d team'))
         self.assertThat(team_info[0]['has_preferredemail'], Equals(False))
-        self.assertThat(team_info[1]['title'], Equals(u'Team 2'))
+        self.assertThat(
+            team_info[1]['title'],
+            Equals(u'\u201cTeam 2\u201d team'))
         self.assertThat(team_info[1]['has_preferredemail'], Equals(True))
 
     def test_teams_for_non_distro(self):
@@ -162,14 +165,16 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
-            team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
+            team_info[0]['title'],
+            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
         self.assertThat(
-            team_info[1]['title'], Equals(u'Bug Supervisor Team'))
+            team_info[1]['title'],
+            Equals(u'\u201cBug Supervisor Team\u201d team'))
         self.assertThat(
-            team_info[2]['title'], Equals(u'Unrelated Team'))
+            team_info[2]['title'], Equals(u'\u201cUnrelated Team\u201d team'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals('http://example.com/BugSupervisorSubTeam'))
+            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
 
     def test_expose_user_administered_teams_to_js__uses_cached_teams(self):
         # The function expose_user_administered_teams_to_js uses a
@@ -236,12 +241,14 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
-            team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
+            team_info[0]['title'],
+            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
         self.assertThat(
-            team_info[1]['title'], Equals(u'Bug Supervisor Team'))
+            team_info[1]['title'],
+            Equals(u'\u201cBug Supervisor Team\u201d team'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals('http://example.com/BugSupervisorSubTeam'))
+            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
 
     def test_teams_for_distro_with_no_bug_super(self):
         self._setup_teams(self.user)
@@ -266,14 +273,16 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
-            team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
+            team_info[0]['title'],
+            Equals(u'\u201cBug Supervisor Sub Team\u201d team'))
         self.assertThat(
-            team_info[1]['title'], Equals(u'Bug Supervisor Team'))
+            team_info[1]['title'],
+            Equals(u'\u201cBug Supervisor Team\u201d team'))
         self.assertThat(
-            team_info[2]['title'], Equals(u'Unrelated Team'))
+            team_info[2]['title'], Equals(u'\u201cUnrelated Team\u201d team'))
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
-            Equals('http://example.com/BugSupervisorSubTeam'))
+            Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
 
 
 class TestStructuralSubscriptionHelpers(TestCase):

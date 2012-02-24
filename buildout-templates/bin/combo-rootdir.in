@@ -33,4 +33,4 @@ done
 find $BUILD_DIR/lp -name 'tests' -type d | xargs rm -rf
 
 # Minify our JS.
-bin/py -m lp.scripts.utilities.js.jsmin_all $BUILD_DIR/lp
+bin/lpjsmin -p $BUILD_DIR/lp
