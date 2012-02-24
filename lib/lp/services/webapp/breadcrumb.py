@@ -30,6 +30,7 @@ class Breadcrumb:
     implements(IBreadcrumb)
 
     text = None
+    _detail = None
     _url = None
 
     def __init__(self, context):
@@ -55,9 +56,18 @@ class Breadcrumb:
         else:
             return self._url
 
+    @property
+    def detail(self):
+        """See `IBreadcrumb`.
+
+        Subclasses may choose to provide detail text that will be used
+        to make the page title for the last item traversed.
+        """
+        return self._detail or self.text
+
     def __repr__(self):
         # XXX: salgado, 2009-10-14, http://bugs.python.org/issue5876: In
-        # python 2.5, the return value of __repr__() may be forced into a
+        # python 2.5-2.7, the return value of __repr__() may be forced into a
         # type(str), so we can't include unicode here.
         text = self.text.encode('raw-unicode-escape')
         return "<%s url='%s' text='%s'>" % (

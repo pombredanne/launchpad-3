@@ -77,7 +77,7 @@ subscribed to the bug.  He clicks cancel which takes him back to his
     >>> cancel_link = subscriber_browser.getLink('Cancel')
     >>> cancel_link.click()
     >>> print subscriber_browser.title
-    Subscriptions : Webster
+    Subscriptions : Bugs : Webster
 
 He chooses to unsubscribe from the bug about Affluenza.
 
@@ -87,7 +87,7 @@ He chooses to unsubscribe from the bug about Affluenza.
     ...     "unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
-    Subscriptions : Webster
+    Subscriptions : Bugs : Webster
 
 Webster can see that the bug about Affluenza is no longer listed in his direct
 bug subscriptions.
@@ -118,7 +118,7 @@ Webster chooses to review the subscriptions for his team America.
     >>> subscriber_browser.open(
     ...     'https://bugs.launchpad.dev/~america/+subscriptions')
     >>> print subscriber_browser.title
-    Subscriptions : “America” team
+    Subscriptions : Bugs ...
 
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'bug_subscriptions'))

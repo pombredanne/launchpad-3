@@ -30,7 +30,7 @@ a file-like object to demonstrate this.
     ...     "of the attachment")
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.title
-    'Bug #... in Mozilla Firefox...'
+    'Bug #... : Bugs : Mozilla Firefox'
 
 No Privileges Person sees a notice on the bug page stating that the file
 was attached.
