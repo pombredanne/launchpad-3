@@ -4,18 +4,18 @@
 __metaclass__ = type
 
 from storm.exceptions import LostObjectError
-from testtools.matchers import (
-    AllMatch,
-    )
+from testtools.matchers import AllMatch
 from zope.component import getUtility
 
 from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicy,
     IAccessArtifact,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicy,
+    IAccessPolicyArtifact,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -262,6 +262,61 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
         self.assertContentEqual(
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
+
+
+class TestAccessPolicyArtifact(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessPolicyArtifact(),
+            Provides(IAccessPolicyArtifact))
+
+
+class TestAccessPolicyArtifactSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_create(self):
+        wanted = [
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
+            ]
+        links = getUtility(IAccessPolicyArtifactSource).create(wanted)
+        self.assertContentEqual(
+            wanted,
+            [(link.abstract_artifact, link.policy) for link in links])
+
+    def test_find(self):
+        links = [self.factory.makeAccessPolicyArtifact() for i in range(3)]
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).find(
+                [(link.abstract_artifact, link.policy) for link in links]))
+
+    def test_findByArtifact(self):
+        # findByArtifact() finds only the relevant links.
+        artifact = self.factory.makeAccessArtifact()
+        links = [
+            self.factory.makeAccessPolicyArtifact(artifact=artifact)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [artifact]))
+
+    def test_findByPolicy(self):
+        # findByPolicy() finds only the relevant links.
+        policy = self.factory.makeAccessPolicy()
+        links = [
+            self.factory.makeAccessPolicyArtifact(policy=policy)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):

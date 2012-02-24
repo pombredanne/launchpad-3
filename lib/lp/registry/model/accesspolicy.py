@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AccessArtifact',
     'AccessPolicy',
+    'AccessPolicyArtifact',
     'AccessPolicyGrant',
     ]
 
@@ -28,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessPolicy,
+    IAccessPolicyArtifact,
     IAccessPolicyGrant,
     )
 from lp.services.database.bulk import create
@@ -177,6 +179,47 @@ class AccessPolicy(StormBase):
         return IStore(cls).find(
             cls,
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
+
+
+class AccessPolicyArtifact(StormBase):
+    implements(IAccessPolicyArtifact)
+
+    __storm_table__ = 'AccessPolicyArtifact'
+    __storm_primary__ = 'abstract_artifact_id', 'policy_id'
+
+    abstract_artifact_id = Int(name='artifact')
+    abstract_artifact = Reference(
+        abstract_artifact_id, 'AccessArtifact.id')
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
+
+    @classmethod
+    def create(cls, links):
+        """See `IAccessPolicyArtifactSource`."""
+        return create(
+            (cls.abstract_artifact, cls.policy), links,
+            get_objects=True)
+
+    @classmethod
+    def find(cls, links):
+        """See `IAccessArtifactGrantSource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls.abstract_artifact == artifact, cls.policy == policy)
+                for (artifact, policy) in links)))
+
+    @classmethod
+    def findByArtifact(cls, artifacts):
+        """See `IAccessPolicyArtifactSource`."""
+        ids = [artifact.id for artifact in artifacts]
+        return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
+
+    @classmethod
+    def findByPolicy(cls, policies):
+        """See `IAccessPolicyArtifactSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
 
 class AccessArtifactGrant(StormBase):
