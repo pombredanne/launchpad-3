@@ -115,11 +115,6 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_milestone_validation_fails_without_spec(self):
-        field = WorkItemsText(__name__='test', specification=None)
-        self.assertRaises(
-            LaunchpadValidationError, field.getMilestone, 'test-milestone')
-        
     def test_unknown_assignee_is_rejected(self):
         field = WorkItemsText(__name__='test')
         person_name = 'test-person'
@@ -141,7 +136,8 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
 
     def test_validate_unknown_milestone(self):
         specification = self.factory.makeSpecification()
-        field = WorkItemsText(__name__='test', specification=specification)
+        field = WorkItemsText(__name__='test')
+        field.context = specification
         milestone_name = '2012.02'
         self.assertRaises(
             LaunchpadValidationError, field.getMilestone, milestone_name)
@@ -151,14 +147,16 @@ class TestWorkItemsTextValidation(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(name=milestone_name)
         specification = self.factory.makeSpecification(
             product=milestone.product)
-        field = WorkItemsText(__name__='test', specification=specification)
+        field = WorkItemsText(__name__='test')
+        field.context = specification
         self.assertEqual(milestone, field.getMilestone(milestone_name))
 
     def test_validate_invalid_milestone(self):
         milestone_name = 'test-milestone'
         self.factory.makeMilestone(name=milestone_name)
         specification = self.factory.makeSpecification(product=None)
-        field = WorkItemsText(__name__='test', specification=specification)
+        field = WorkItemsText(__name__='test')
+        field.context = specification
         self.assertRaises(
             LaunchpadValidationError, field.getMilestone, milestone_name)
 
@@ -221,12 +219,10 @@ class TestWorkItemsText(TestCase):
         self.assertEqual(
             parsed, [{'title': title_1,
                       'status': SpecificationWorkItemStatus.TODO,
-                      'assignee': None,
-                      'milestone': None},
+                      'assignee': None, 'milestone': None, 'sequence': 0},
                      {'title': title_2,
                       'status': SpecificationWorkItemStatus.POSTPONED,
-                      'assignee': None,
-                      'milestone': None}])
+                      'assignee': None, 'milestone': None, 'sequence': 1}])
 
     def test_parse_assignee(self):
         field = WorkItemsText(__name__='test')
@@ -274,7 +270,7 @@ class TestWorkItemsText(TestCase):
         parsed = field.parse(work_items_text)
         self.assertEqual(parsed, [{'title': title,
                       'status': SpecificationWorkItemStatus.TODO,
-                      'assignee': None, 'milestone': milestone}])
+                      'assignee': None, 'milestone': milestone, 'sequence': 0}])
         
     def test_parse_multi_milestones(self):
         field = WorkItemsText(__name__='test')
@@ -286,12 +282,15 @@ class TestWorkItemsText(TestCase):
                            "for %s:\n%s: TODO" % (milestone_1, title_1,
                                                   milestone_2, title_2))
         parsed = field.parse(work_items_text)
-        self.assertEqual(parsed, [{'title': title_1,
-                      'status': SpecificationWorkItemStatus.POSTPONED,
-                      'assignee': None, 'milestone': milestone_1},
-                                  {'title': title_2,
-                      'status': SpecificationWorkItemStatus.TODO,
-                      'assignee': None, 'milestone': milestone_2}])
+        self.assertEqual(parsed,
+                         [{'title': title_1,
+                           'status': SpecificationWorkItemStatus.POSTPONED,
+                           'assignee': None, 'milestone': milestone_1,
+                           'sequence': 0},
+                          {'title': title_2,
+                           'status': SpecificationWorkItemStatus.TODO,
+                           'assignee': None, 'milestone': milestone_2,
+                           'sequence': 1}])
 
     def test_parse_orphaned_work_items(self):
         # Work items not in a milestone block belong to the latest specified 
@@ -302,24 +301,44 @@ class TestWorkItemsText(TestCase):
         title_1 = "Work item for a milestone"
         title_2 = "Work item for a later milestone"
         title_3 = "A work item preceeded by a blank line"
-        work_items_text = ("Work items for %s:\n%s: POSTPONED\n\nWork items "
-                           "for %s:\n%s: TODO\n\n%s: TODO" % (milestone_1, title_1,
-                                                  milestone_2, title_2, title_3))
+        work_items_text = (
+            "Work items for %s:\n%s: POSTPONED\n\nWork items for %s:\n%s: "
+            "TODO\n\n%s: TODO" % (milestone_1, title_1, milestone_2, title_2,
+                                  title_3))
         parsed = field.parse(work_items_text)
         self.assertEqual(parsed, 
                          [{'title': title_1,
                            'status': SpecificationWorkItemStatus.POSTPONED,
-                           'assignee': None, 'milestone': milestone_1},
+                           'assignee': None, 'milestone': milestone_1,
+                           'sequence': 0},
                           {'title': title_2,
                            'status': SpecificationWorkItemStatus.TODO,
-                           'assignee': None, 'milestone': milestone_2},
+                           'assignee': None, 'milestone': milestone_2,
+                           'sequence': 1},
                           {'title': title_3,
                            'status': SpecificationWorkItemStatus.TODO,
-                           'assignee': None, 'milestone': milestone_2}])
+                           'assignee': None, 'milestone': milestone_2,
+                           'sequence': 2}])
 
+    def test_sequence_single_workitem(self):
+        field = WorkItemsText(__name__='test')
+        parsed = field.parse("A single work item: TODO")
+        self.assertEqual(0, parsed[0]['sequence'])
 
-    # XXX: add tests for sequence
-    # XXX: add tests for looking up milestones in set() and check that they are valid for that bp
+    def test_only_workitems_get_sequence(self):
+        # We will not keep blank lines, and milestone headers will be
+        # regenerated, right?
+        field = WorkItemsText(__name__='test')
+        parsed = field.parse("A single work item: TODO\n"
+                             "A second work item: TODO\n"
+                             "\n"
+                             "Work items for 2012.02:\n"
+                             "Work item for a milestone: TODO\n")
+        self.assertEqual([(wi['title'], wi['sequence']) for wi in parsed], 
+                         [("A single work item", 0), ("A second work item", 1),
+                          ("Work item for a milestone", 2)])
+         
+
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):
 

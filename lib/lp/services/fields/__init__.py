@@ -870,11 +870,6 @@ class WorkItemParseError(Exception):
 
 class WorkItemsText(Text):
 
-    def __init__(self, specification=None, **kwargs):
-        super(WorkItemsText, self).__init__(**kwargs)
-        # XXX: how can we pass this to the constructor?
-        self.specification = specification
-
     def parse_line(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
         try:
@@ -905,6 +900,7 @@ class WorkItemsText(Text):
         return {'title': title, 'status': status, 'assignee': assignee}
 
     def parse(self, text):
+        sequence = 0
         milestone = None
         work_items = []
         milestone_re = re.compile('^work items(.*)\s*:\s*$', re.I)
@@ -918,17 +914,17 @@ class WorkItemsText(Text):
             else:
                 new_work_item = self.parse_line(line)
                 new_work_item['milestone'] = milestone
+                new_work_item['sequence'] = sequence
+                sequence += 1
                 work_items.append(new_work_item)
         return work_items
 
     def validate(self, value):
-        # This is the method that the form machinery will call to
-        # validate the whole input. Here we must parse/validate everything and
-        # raise a LaunchpadValidationError on the first error we encounter.
         try:
             self.parseAndValidate(value)
         except:
             exc_info = sys.exc_info()
+            # Re-raise the exception as LaunchpadValidationError
             raise LaunchpadValidationError, exc_info[1], exc_info[2]
 
     def parseAndValidate(self, text):
@@ -937,10 +933,6 @@ class WorkItemsText(Text):
         # Specification.setWorkItems().
         work_items = self.parse(text)
         for work_item in work_items:
-            print "TEST", work_item
-            # With this I think we can get rid of validate_workitem() above,
-            # test getAssignee() and getMilestone() directly and write just a
-            # single test for this method.
             work_item['assignee'] = self.getAssignee(work_item['assignee'])
             work_item['milestone'] = self.getMilestone(work_item['milestone'])
         return work_items
@@ -958,16 +950,11 @@ class WorkItemsText(Text):
     def getMilestone(self, milestone_name):
         if milestone_name is None:
             return None
-        print "spec", self.specification
-        if self.specification is None:
-            # XXX improve error message
-            raise LaunchpadValidationError("Can't look up milestone: %s since I"
-                                           " don't know which specification I "
-                                           "belong to." % milestone_name)
+
+        product = self.context.target
+
         # XXX importing this from the top of this file fails
         from lp.registry.interfaces.milestone import IMilestoneSet
-        product = self.specification.target
-        print product
         milestone = getUtility(IMilestoneSet).getByNameAndProduct(
             milestone_name, product)
         if milestone is None:
