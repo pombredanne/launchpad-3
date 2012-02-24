@@ -123,7 +123,7 @@ class Job(SQLBase):
         """
         return [
             job.id for job in bulk.create(
-                (Job.status, Job.requester),
+                (Job._status, Job.requester),
                 [(JobStatus.WAITING, requester) for i in range(num_jobs)],
                 load_created=True)]
 
