@@ -98,8 +98,8 @@ class AccessArtifact(StormBase):
                 insert_values.append((None, concrete))
             else:
                 raise ValueError("%r is not a supported artifact" % concrete)
-        created = create((cls.bug, cls.branch), insert_values)
-        return list(existing) + created
+        new = create((cls.bug, cls.branch), insert_values, get_objects=True)
+        return list(existing) + new
 
     @classmethod
     def delete(cls, concrete_artifacts):
@@ -141,7 +141,9 @@ class AccessPolicy(StormBase):
                 insert_values.append((None, pillar, type))
             else:
                 raise ValueError("%r is not a supported pillar" % pillar)
-        return create((cls.product, cls.distribution, cls.type), insert_values)
+        return create(
+            (cls.product, cls.distribution, cls.type), insert_values,
+            get_objects=True)
 
     @classmethod
     def _constraintForPillar(cls, pillar):
@@ -201,7 +203,8 @@ class AccessArtifactGrant(StormBase):
     def grant(cls, grants):
         """See `IAccessArtifactGrantSource`."""
         return create(
-            (cls.abstract_artifact, cls.grantee, cls.grantor), grants)
+            (cls.abstract_artifact, cls.grantee, cls.grantor), grants,
+            get_objects=True)
 
     @classmethod
     def find(cls, grants):
@@ -241,7 +244,8 @@ class AccessPolicyGrant(StormBase):
     @classmethod
     def grant(cls, grants):
         """See `IAccessPolicyGrantSource`."""
-        return create((cls.policy, cls.grantee, cls.grantor), grants)
+        return create(
+            (cls.policy, cls.grantee, cls.grantor), grants, get_objects=True)
 
     @classmethod
     def find(cls, grants):
