@@ -134,8 +134,19 @@ class IRevisionSet(Interface):
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
 
-    def newFromBazaarRevision(bzr_revision):
-        """Create a new Revision from the given Bazaar Revision object."""
+    def newFromBazaarRevisions(revision_batch):
+        """Create new Revisions from the given Bazaar Revisions.
+
+        This method allows us to insert Revisions in bulk, which is
+        important for larger branches.
+        """
+
+    def acquireRevisionAuthors(names):
+        """Return a dict of RevisionAuthors with the specified names.
+
+        If a RevisionAuthor is not present in the database, it is created
+        first.
+        """
 
     def getTipRevisionsForBranches(branches):
         """Get the tip branch revisions for the specified branches.
