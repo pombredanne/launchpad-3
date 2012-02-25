@@ -2507,7 +2507,6 @@ class PageMacroDispatcher:
         view/macro:page/main_side
         view/macro:page/main_only
         view/macro:page/searchless
-        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/globalsearch
@@ -2612,8 +2611,6 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=False,
                 portlets=False),
-       'locationless':
-            LayoutElements(),
         }
 
 

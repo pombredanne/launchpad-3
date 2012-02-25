@@ -43,6 +43,13 @@
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter
+        provides="lp.app.interfaces.launchpad.IPrivacy"
+        for="Exception"
+        factory="lp.app.model.launchpad.ExceptionPrivacy"
+        permission="zope.Public"
+        />
+
+    <adapter
         provides="lp.services.privacy.interfaces.IObjectPrivacy"
         for="zope.interface.Interface"
         factory="lp.services.privacy.adapters.ObjectPrivacy"
