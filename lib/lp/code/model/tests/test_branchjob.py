@@ -392,10 +392,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             existing = branch.getBranchRevision(
                 revision_id=bzr_revision.revision_id)
             if existing is None:
-                revision = RevisionSet().newFromBazaarRevision(bzr_revision)
-            else:
-                revision = RevisionSet().getByRevisionId(
-                    bzr_revision.revision_id)
+                RevisionSet().newFromBazaarRevisions([bzr_revision])
+            revision = RevisionSet().getByRevisionId(
+                bzr_revision.revision_id)
             try:
                 revno = bzr_branch.revision_id_to_revno(revision.revision_id)
             except bzr_errors.NoSuchRevision:
