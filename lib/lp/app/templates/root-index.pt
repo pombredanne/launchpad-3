@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <metal:head fill-slot="head_epilogue">
     <style>
@@ -57,13 +57,6 @@
       <!-- Is your project registered yet? -->
 
       <div id="homepage" class="homepage">
-
-        <div class="top-portlet" style="border-bottom: 1px dotted #999;">
-          <img src="/@@/launchpad-logo-and-name.png"
-               alt=""
-               style="margin: 0 9em 1em 0"/>
-        </div>
-
         <div class="yui-g">
           <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"

@@ -48,6 +48,7 @@ import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
+from bzrlib.revision import Revision as BzrRevision
 import pytz
 from pytz import UTC
 import simplejson
@@ -1544,6 +1545,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             new_revision = make_revision(old_revision)
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
+
+    def makeBzrRevision(self, revision_id=None, parent_ids=None, **kwargs):
+        if revision_id is None:
+            revision_id = self.getUniqueString('revision-id')
+        if parent_ids is None:
+            parent_ids = []
+        return BzrRevision(
+            message=self.getUniqueString('message'),
+            revision_id=revision_id,
+            committer=self.getUniqueString('committer'),
+            parent_ids=parent_ids,
+            timestamp=0, timezone=0, properties=kwargs)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):

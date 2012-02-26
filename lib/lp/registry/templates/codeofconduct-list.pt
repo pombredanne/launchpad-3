@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -73,9 +73,9 @@
       <h2>Older (obsolete) versions of the Code of Conduct</h2>
 
       <ul class="document">
-         <tal:codes tal:repeat="code context"> 
+         <tal:codes tal:repeat="code context">
             <tal:not_current condition="not: code/current">
-              <li><a tal:content="code/title" 
+              <li><a tal:content="code/title"
                      tal:attributes="href code/fmt:url" /></li>
             </tal:not_current>
          </tal:codes>
