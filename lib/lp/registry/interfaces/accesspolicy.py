@@ -23,11 +23,22 @@ from zope.interface import (
 
 
 class IAccessArtifact(Interface):
+    """An artifact that has its own access control rules.
+
+    Examples are a bug or a branch.
+    """
+
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
 
 
 class IAccessArtifactGrant(Interface):
+    """A grant for a person or team to access an artifact.
+
+    For example, the reporter of an embargoed security bug has a grant for
+    that bug.
+    """
+
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
@@ -37,12 +48,24 @@ class IAccessArtifactGrant(Interface):
 
 
 class IAccessPolicy(Interface):
+    """A policy to govern access to a category of a project's artifacts.
+
+    An example is Ubuntu security, which controls access to Ubuntu's embargoed
+    security bugs.
+    """
+
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
 
 
 class IAccessPolicyGrant(Interface):
+    """A grant for a person or team to access all of a policy's artifacts.
+
+    For example, the Canonical security team has a grant for Ubuntu's
+    security policy so they can see embargoed security bugs.
+    """
+
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
