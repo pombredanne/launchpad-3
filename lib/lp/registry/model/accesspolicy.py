@@ -105,9 +105,9 @@ class AccessArtifact(StormBase):
     def delete(cls, concrete_artifacts):
         """See `IAccessPolicyArtifactSource`."""
         abstracts = list(cls.find(concrete_artifacts))
-        ids = [abstract.id for abstract in abstracts]
-        if len(ids) == 0:
+        if len(abstracts) == 0:
             return
+        ids = [abstract.id for abstract in abstracts]
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
