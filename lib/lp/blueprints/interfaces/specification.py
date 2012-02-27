@@ -629,7 +629,10 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     @export_write_operation()
     @operation_for_version('devel')
     def setWorkItems(new_work_items):
-        """XXX"""
+        """Set work items on this specification.
+
+        :param new_work_items: Work items to set.
+        """
 
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug

@@ -177,41 +177,41 @@ class TestWorkItemsText(TestCase):
 
     def test_single_line_parsing(self):
         work_items_title = 'Test this work item'
-        parsed = self.field.parse_line('%s: TODO' % (work_items_title))
+        parsed = self.field.parseLine('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
         self.assertEqual(parsed['status'], SpecificationWorkItemStatus.TODO)
 
     def test_url_and_colon_in_title(self):
         work_items_title = 'Test this: which is a url: http://www.linaro.org/'
-        parsed = self.field.parse_line('%s: TODO' % (work_items_title))
+        parsed = self.field.parseLine('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
 
     def test_silly_caps_status_parsing(self):
-        parsed_upper = self.field.parse_line('Test this work item: TODO    ')
+        parsed_upper = self.field.parseLine('Test this work item: TODO    ')
         self.assertEqual(parsed_upper['status'],
                          SpecificationWorkItemStatus.TODO)
-        parsed_lower = self.field.parse_line('Test this work item:     todo')
+        parsed_lower = self.field.parseLine('Test this work item:     todo')
         self.assertEqual(parsed_lower['status'],
                          SpecificationWorkItemStatus.TODO)
-        parsed_camel = self.field.parse_line('Test this work item: ToDo')
+        parsed_camel = self.field.parseLine('Test this work item: ToDo')
         self.assertEqual(parsed_camel['status'],
                          SpecificationWorkItemStatus.TODO)
 
-    def test_parse_line_without_status_fails(self):
+    def test_parseLine_without_status_fails(self):
         # We should require an explicit status to avoid the problem of work
         # items with a url but no status.
         self.assertRaises(
-            LaunchpadValidationError, self.field.parse_line,
+            LaunchpadValidationError, self.field.parseLine,
             'Missing status')
 
-    def test_parse_line_without_title_fails(self):
+    def test_parseLine_without_title_fails(self):
         self.assertRaises(
-            LaunchpadValidationError, self.field.parse_line,
+            LaunchpadValidationError, self.field.parseLine,
             ':TODO')
 
-    def test_parse_line_without_title_with_assignee_fails(self):
+    def test_parseLine_without_title_with_assignee_fails(self):
         self.assertRaises(
-            LaunchpadValidationError, self.field.parse_line,
+            LaunchpadValidationError, self.field.parseLine,
             '[test-person] :TODO')
 
     def test_multi_line_parsing(self):
@@ -231,59 +231,59 @@ class TestWorkItemsText(TestCase):
         title = 'Work item 1'
         assignee = 'test-person'
         work_items_text = "[%s]%s: TODO" % (assignee, title)
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['assignee'], assignee)
 
     def test_parse_assignee_with_space(self):
         title = 'Work item 1'
         assignee = 'test-person'
         work_items_text = "[%s] %s: TODO" % (assignee, title)
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['assignee'], assignee)
 
-    def test_parse_line_with_missing_closing_bracket_for_assignee(self):
+    def test_parseLine_with_missing_closing_bracket_for_assignee(self):
         self.assertRaises(
-            LaunchpadValidationError, self.field.parse_line,
+            LaunchpadValidationError, self.field.parseLine,
             "[test-person A single work item: TODO")
 
-    def test_parse_line_with_invalid_status(self):
+    def test_parseLine_with_invalid_status(self):
         self.assertRaises(
-            LaunchpadValidationError, self.field.parse_line,
+            LaunchpadValidationError, self.field.parseLine,
             'Invalid status: FOO')
 
-    def test_parse_line_todo_status(self):
+    def test_parseLine_todo_status(self):
         status = SpecificationWorkItemStatus.TODO.name
         work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['status'].name, status)
 
-    def test_parse_line_done_status(self):
+    def test_parseLine_done_status(self):
         status = SpecificationWorkItemStatus.DONE.name
         work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['status'].name, status)
 
-    def test_parse_line_postponed_status(self):
+    def test_parseLine_postponed_status(self):
         status = SpecificationWorkItemStatus.POSTPONED.name
         work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['status'].name, status)
 
-    def test_parse_line_inprogress_status(self):
+    def test_parseLine_inprogress_status(self):
         status = SpecificationWorkItemStatus.INPROGRESS.name
         work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['status'].name, status)
 
-    def test_parse_line_blocked_status(self):
+    def test_parseLine_blocked_status(self):
         status = SpecificationWorkItemStatus.BLOCKED.name
         work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parse_line(work_items_text)
+        parsed = self.field.parseLine(work_items_text)
         self.assertEqual(parsed['status'].name, status)
 
     def test_parse_empty_line_raises(self):
         self.assertRaises(
-            AssertionError, self.field.parse_line, "  \t \t ")
+            AssertionError, self.field.parseLine, "  \t \t ")
 
     def test_parse_empty_lines_have_no_meaning(self):
         parsed = self.field.parse("\n\n\n\n\n\n\n\n")
@@ -357,7 +357,7 @@ class TestWorkItemsText(TestCase):
         self.assertEqual([(wi['title'], wi['sequence']) for wi in parsed], 
                          [("A single work item", 0), ("A second work item", 1),
                           ("Work item for a milestone", 2)])
-         
+
 
 
 class TestBlacklistableContentNameField(TestCaseWithFactory):

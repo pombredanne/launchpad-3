@@ -864,12 +864,13 @@ class PublicPersonChoice(PersonChoice):
 
 class WorkItemsText(Text):
 
-    def parse_line(self, line):
+    def parseLine(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
         try:
             title, status = line.rsplit(':', 1)
         except ValueError:
-            raise LaunchpadValidationError('Missing work item status.')
+            raise LaunchpadValidationError(
+                'Missing work item status on "%s".' % line)
 
         status = status.strip().lower()
 
@@ -881,7 +882,7 @@ class WorkItemsText(Text):
                 title = title[off + 1:].strip()
             else:
                 raise LaunchpadValidationError(
-                    'Missing closing "]" for assignee')
+                    'Missing closing "]" for assignee on "%s".' % line)
 
         if title == '':
             raise LaunchpadValidationError(
@@ -907,7 +908,7 @@ class WorkItemsText(Text):
                 milestone_part = milestone_match.group(1).strip()
                 milestone = milestone_part.split()[-1]
             else:
-                new_work_item = self.parse_line(line)
+                new_work_item = self.parseLine(line)
                 new_work_item['milestone'] = milestone
                 new_work_item['sequence'] = sequence
                 sequence += 1
