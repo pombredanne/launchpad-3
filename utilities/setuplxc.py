@@ -811,7 +811,9 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # APT repository update.
     for apt_reposirory in APT_REPOSITORIES:
         repository = apt_reposirory.format(distro=LXC_GUEST_OS)
-        root_sshcall('add-apt-repository -y {}'.format(repository))
+        assume_yes = '' if LXC_GUEST_OS == 'lucid' else '-y'
+        root_sshcall('add-apt-repository {} {}'.format(
+            assume_yes, repository))
     # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
     # containers currently does not work.
     root_sshcall("echo 'mountall hold' | dpkg --set-selections")
