@@ -88,7 +88,7 @@ lxc.network.flags = up
 """
 LXC_PATH = '/var/lib/lxc/'
 RESOLV_FILE = '/etc/resolv.conf'
-SSH_KEY_PATH = 'id_rsa'
+SSH_KEY_NAME = 'id_rsa'
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -529,18 +529,25 @@ def handle_ssh_keys(namespace):
         >>> private = r'PRIVATE\nKEY'
         >>> public = r'PUBLIC\nKEY'
         >>> namespace = argparse.Namespace(
-        ...     private_key=private, public_key=public)
+        ...     private_key=private, public_key=public,
+        ...     ssh_key_name='id_rsa', home_dir='/tmp/')
         >>> handle_ssh_keys(namespace)
         >>> namespace.private_key == private.decode('string-escape')
         True
         >>> namespace.public_key == public.decode('string-escape')
         True
 
+    After this handler is called, the ssh key path is present as an attribute
+    of the namespace::
+
+        >>> namespace.ssh_key_path
+        '/tmp/.ssh/id_rsa'
+
     Keys are None if they are not provided and can not be found in the
     current home directory::
 
         >>> namespace = argparse.Namespace(
-        ...     private_key=None, public_key=None,
+        ...     private_key=None, public_key=None, ssh_key_name='id_rsa',
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
         >>> print namespace.private_key
@@ -552,20 +559,21 @@ def handle_ssh_keys(namespace):
     ValidationError will be raised.
 
         >>> namespace = argparse.Namespace(
-        ...     private_key=private, public_key=None,
+        ...     private_key=private, public_key=None, ssh_key_name='id_rsa',
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: arguments private-key...
     """
-    for attr, filename in (
-        ('private_key', 'id_rsa'),
-        ('public_key', 'id_rsa.pub')):
+    namespace.ssh_key_path = os.path.join(
+        namespace.home_dir, '.ssh', namespace.ssh_key_name)
+    for attr, path in (
+        ('private_key', namespace.ssh_key_path),
+        ('public_key', namespace.ssh_key_path + '.pub')):
         value = getattr(namespace, attr)
         if value:
             setattr(namespace, attr, value.decode('string-escape'))
         else:
-            path = os.path.join(namespace.home_dir, '.ssh', filename)
             try:
                 value = open(path).read()
             except IOError:
@@ -661,9 +669,9 @@ parser.add_argument(
     metavar='LXC_NAME (default={})'.format(LXC_NAME),
     help='The LXC container name.')
 parser.add_argument(
-    '-s', '--ssh-key-path', default=SSH_KEY_PATH,
-    metavar='SSH_KEY_PATH (default={})'.format(SSH_KEY_PATH),
-    help='The ssh key path used to connect to the LXC container.')
+    '-s', '--ssh-key-name', default=SSH_KEY_NAME,
+    metavar='SSH_KEY_NAME (default={})'.format(SSH_KEY_NAME),
+    help='The ssh key name used to connect to the LXC container.')
 parser.add_argument(
     '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
     metavar='DEPENDENCIES_DIR (default={})'.format(DEPENDENCIES_DIR),
@@ -693,9 +701,6 @@ def initialize_host(
     # Create the user (if he does not exist).
     if not user_exists(user):
         subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
-    # Generate root ssh keys if they do not exist.
-    if not os.path.exists('/root/.ssh/id_rsa.pub'):
-        generate_ssh_keys('/root/.ssh/')
     with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
@@ -704,27 +709,26 @@ def initialize_host(
             os.makedirs(ssh_dir)
         # Generate user ssh keys if none are supplied.
         valid_ssh_keys = True
+        pub_key_path = ssh_key_path + '.pub'
         if private_key is None:
-            generate_ssh_keys(ssh_dir)
-            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
-            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
+            generate_ssh_keys(ssh_key_path)
+            private_key = open(ssh_key_path).read()
+            public_key = open(pub_key_path).read()
             valid_ssh_keys = False
-        priv_file = os.path.join(ssh_dir, 'id_rsa')
-        pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
         known_hosts = os.path.join(ssh_dir, 'known_hosts')
         known_host_content = subprocess.check_output([
             'ssh-keyscan', '-t', 'rsa', 'bazaar.launchpad.net'])
         for filename, contents, mode in [
-            (priv_file, private_key, 'w'),
-            (pub_file, public_key, 'w'),
+            (ssh_key_path, private_key, 'w'),
+            (pub_key_path, public_key, 'w'),
             (auth_file, public_key, 'a'),
             (known_hosts, known_host_content, 'a'),
             ]:
             with open(filename, mode) as f:
                 f.write('{}\n'.format(contents))
             os.chmod(filename, 0644)
-        os.chmod(priv_file, 0600)
+        os.chmod(ssh_key_path, 0600)
         # Set up bzr and Launchpad authentication.
         subprocess.call(['bzr', 'whoami', formataddr((fullname, email))])
         if valid_ssh_keys:
@@ -768,7 +772,7 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_lxc(user, lxcname, ssh_key_path):
+def create_lxc(user, lxcname, ssh_key_name):
     """Create the LXC container that will be used for ephemeral instances."""
     # XXX 2012-02-02 gmb bug=925024:
     #     These calls need to be removed once the lxc vs. apparmor bug
@@ -808,8 +812,6 @@ def create_lxc(user, lxcname, ssh_key_path):
     # Set up root ssh key.
     user_authorized_keys = os.path.expanduser(
         '~' + user + '/.ssh/authorized_keys')
-    with open(user_authorized_keys, 'a') as f:
-        f.write(open('/root/.ssh/id_rsa.pub').read())
     dst = get_container_path(lxcname, '/root/.ssh/')
     if not os.path.exists(dst):
         os.makedirs(dst)
@@ -829,7 +831,7 @@ def create_lxc(user, lxcname, ssh_key_path):
             break
 
 
-def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
+def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_name):
     """Set up the Launchpad development environment inside the LXC container.
     """
     root_sshcall = ssh(lxcname)
@@ -887,7 +889,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     root_sshcall('cd {} && make install'.format(checkout_dir))
 
 
-def stop_lxc(lxcname, ssh_key_path):
+def stop_lxc(lxcname, ssh_key_name):
     """Stop the lxc instance named `lxcname`."""
     ssh(lxcname)('poweroff')
     timeout = 30
