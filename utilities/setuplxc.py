@@ -293,7 +293,7 @@ def ssh(location, user=None, caller=subprocess.call):
         sshcmd = (
             'ssh',
             '-t',
-            '-t', # Yes, this second -t is deliberate. See `man ssh`.
+            '-t',  # Yes, this second -t is deliberate. See `man ssh`.
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
@@ -369,8 +369,9 @@ class ArgumentParser(argparse.ArgumentParser):
                 if option_strings:
                     args.append(option_strings[0])
                 if isinstance(value, list):
-                    value = ','.join(value)
-                args.append(value)
+                    args.extend(value)
+                elif not isinstance(value, bool):
+                    args.append(value)
         return args
 
     def _validate(self, namespace):
@@ -723,8 +724,8 @@ def initialize_host(
         uid = pwd.getpwnam(user)[2]
         script.write('#!/bin/sh\n')
         script.write(
-            'lxc-execute -n lptests --' # Run the named LXC container.
-            ' /usr/bin/sudo -u#{} -i'.format(uid)+ # Drop root privileges.
+            'lxc-execute -n lptests --'  # Run the named LXC container.
+            ' /usr/bin/sudo -u#{} -i'.format(uid) +  # Drop root privileges.
             ' make -C /var/lib/buildbot/lp schema\n')
         os.chmod(build_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
@@ -835,8 +836,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
-        checkout_dir, dependencies_dir))
+        'cd {} && utilities/update-sourcecode --use-http '
+        '"{}/sourcecode"'.format(checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(
         checkout_dir, dependencies_dir))
