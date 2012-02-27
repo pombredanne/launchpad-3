@@ -8,7 +8,7 @@ import simplejson
 
 from zope.component import getUtility
 
-from lp.app.enums import InformationVisibilityPolicy
+from lp.registry.enums import AccessPolicyType
 from lp.registry.services.accesspolicyservice import AccessPolicyService
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
@@ -25,7 +25,7 @@ class ApiTestMixin:
         json_policies = self._getAccessPolicies()
         policies = simplejson.loads(json_policies)
         expected_polices = []
-        for x, policy in enumerate(InformationVisibilityPolicy):
+        for x, policy in enumerate(AccessPolicyType):
             item = dict(
                 index=x,
                 value=policy.token,
