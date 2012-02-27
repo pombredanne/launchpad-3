@@ -369,8 +369,9 @@ class ArgumentParser(argparse.ArgumentParser):
                 if option_strings:
                     args.append(option_strings[0])
                 if isinstance(value, list):
-                    value = ','.join(value)
-                args.append(value)
+                    args.extend(value)
+                elif not isinstance(value, bool):
+                    args.append(value)
         return args
 
     def _validate(self, namespace):
