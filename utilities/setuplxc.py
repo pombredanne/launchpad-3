@@ -736,7 +736,7 @@ def initialize_host(
             lxc-stop -n lptests
             lxc-wait -n lptests -s STOPPED
             """))
-            os.chmod(build_script_file, 0555)
+        os.chmod(build_script_file, 0555)
     test_script_file = '/usr/local/bin/launchpad-lxc-test'
     with open(test_script_file, 'w') as script:
         script.write(textwrap.dedent(r"""\
@@ -747,7 +747,7 @@ def initialize_host(
                 --server-args='-screen 0 1024x768x24' \
                 -a $PWD/bin/test --subunit $@
             """))
-            os.chmod(test_script_file, 0555)
+        os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/lauchpad-buildbot'
     with open(sudoers_file, 'w') as sudoers:
