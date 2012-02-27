@@ -695,9 +695,7 @@ def initialize_host(
         subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
     # Generate root ssh keys if they do not exist.
     if not os.path.exists('/root/.ssh/id_rsa.pub'):
-        subprocess.call([
-            'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
-            '-f', '/root/.ssh/id_rsa'])
+        generate_ssh_keys('/root/.ssh/')
     with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
@@ -707,9 +705,7 @@ def initialize_host(
         # Generate user ssh keys if none are supplied.
         valid_ssh_keys = True
         if private_key is None:
-            subprocess.call([
-                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
-                '-f', os.path.join(ssh_dir, 'id_rsa')])
+            generate_ssh_keys(ssh_dir)
             private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
             public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
             valid_ssh_keys = False
