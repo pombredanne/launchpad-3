@@ -171,21 +171,6 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
 
-    def test_locationless(self):
-        # The locationless layout has no optional content.
-        view = self.makeTemplateView('locationless')
-        content = BeautifulSoup(view())
-        self.verify_base_layout_html_element(content)
-        self.verify_base_layout_head_parts(view, content)
-        document = find_tag_by_id(content, 'document')
-        self.verify_base_layout_body_parts(document)
-        classes = 'tab-overview locationless public yui3-skin-sam'.split()
-        self.assertEqual(classes, document['class'].split())
-        self.assertEqual(None, document.find(True, id='registration'))
-        self.assertEqual(None, document.find(True, id='watermark'))
-        self.assertEqual(None, document.find(True, id='side-portlets'))
-        self.assertEqual(None, document.find(True, id='globalsearch'))
-
     def test_contact_support_logged_in(self):
         # The support link points to /support when the user is logged in.
         view = self.makeTemplateView('main_only')
@@ -232,8 +217,8 @@ class TestBaseLayout(TestCaseWithFactory):
 
     def test_user_with_launchpad_view(self):
         # Users with launchpad.View do not see the sharing explanation.
-        # See the main_side, main_only, locationless, and searchless
-        # tests to know what content is provides to the user who can view.
+        # See the main_side, main_only, and searchless tests to know
+        # what content is provides to the user who can view.
         view = self.makeTemplateView('main_side')
         content = extract_text(find_tag_by_id(view(), 'maincontent'))
         self.assertNotIn(

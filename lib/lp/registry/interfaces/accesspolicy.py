@@ -63,6 +63,12 @@ class IAccessPolicy(Interface):
 
 
 class IAccessPolicyArtifact(Interface):
+    """An association between an artifact and a policy.
+
+    For example, an security bug in Ubuntu associated with the Ubuntu
+    security policy so people with a grant for that policy can see it.
+    """
+
     abstract_artifact = Attribute("Abstract artifact")
     policy = Attribute("Access policy")
 
@@ -196,6 +202,7 @@ class IAccessPolicyGrantSource(Interface):
 
 
 class IAccessPolicyGrantFlatSource(Interface):
+    """Experimental query utility to search through the flattened schema."""
 
     def findGranteesByPolicy(policies):
         """Find the `IPerson`s with access grants for the policies.
