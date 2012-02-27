@@ -54,7 +54,11 @@ BEGIN
                             AND AccessArtifactGrant.artifact = artifact_id)
                 WHERE
                     AccessArtifactGrant.grantee IS NULL
-                    AND BugSubscription.bug = bug_id;
+                    AND BugSubscription.bug = bug_id
+                ORDER BY
+                    artifact_id,
+                    BugSubscription.person,
+                    BugSubscription.date_created;
 
         -- Ensure that AccessPolicyArtifacts match the implied policy
         -- type and the tasks' pillars.
