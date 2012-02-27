@@ -211,10 +211,10 @@ def file_prepend(filename, line):
             f.writelines(lines)
 
 
-def generate_ssh_keys(directory, filename='id_rsa'):
+def generate_ssh_keys(path):
     """Generate ssh key pair saving them inside the given `directory`.
 
-        >>> generate_ssh_keys('/tmp/')
+        >>> generate_ssh_keys('/tmp/id_rsa')
         0
         >>> open('/tmp/id_rsa').readlines()[0].strip()
         '-----BEGIN RSA PRIVATE KEY-----'
@@ -222,21 +222,7 @@ def generate_ssh_keys(directory, filename='id_rsa'):
         True
         >>> os.remove('/tmp/id_rsa')
         >>> os.remove('/tmp/id_rsa.pub')
-
-    The key filename can be changed using the `filename` keyword argument
-    (default is 'id_rsa')::
-
-        >>> generate_ssh_keys('/tmp/', 'custom_key')
-        0
-        >>> os.path.exists('/tmp/custom_key')
-        True
-        >>> os.path.exists('/tmp/id_rsa')
-        False
-
-        >>> os.remove('/tmp/custom_key')
-        >>> os.remove('/tmp/custom_key.pub')
     """
-    path = os.path.join(directory, filename)
     return subprocess.call([
         'ssh-keygen', '-q', '-t', 'rsa', '-N', '', '-f', path])
 
