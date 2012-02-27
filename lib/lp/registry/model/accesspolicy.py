@@ -11,6 +11,7 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
+import pytz
 from storm.expr import (
     And,
     Or,
@@ -236,7 +237,7 @@ class AccessArtifactGrant(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
     grantor_id = Int(name='grantor')
     grantor = Reference(grantor_id, 'Person.id')
-    date_created = DateTime()
+    date_created = DateTime(tzinfo=pytz.UTC)
 
     @property
     def concrete_artifact(self):
@@ -283,7 +284,7 @@ class AccessPolicyGrant(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
     grantor_id = Int(name='grantor')
     grantor = Reference(grantor_id, 'Person.id')
-    date_created = DateTime()
+    date_created = DateTime(tzinfo=pytz.UTC)
 
     @classmethod
     def grant(cls, grants):
