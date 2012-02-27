@@ -50,7 +50,6 @@ class AccessArtifact(StormBase):
     @property
     def concrete_artifact(self):
         artifact = self.bug or self.branch
-        assert artifact is not None
         return artifact
 
     @classmethod
