@@ -11,7 +11,10 @@ __all__ = [
     'IAccessArtifactGrantSource',
     'IAccessArtifactSource',
     'IAccessPolicy',
+    'IAccessPolicyArtifact',
+    'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
+    'IAccessPolicyGrantFlatSource',
     'IAccessPolicyGrantSource',
     'IAccessPolicySource',
     ]
@@ -57,6 +60,11 @@ class IAccessPolicy(Interface):
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
+
+
+class IAccessPolicyArtifact(Interface):
+    abstract_artifact = Attribute("Abstract artifact")
+    policy = Attribute("Access policy")
 
 
 class IAccessPolicyGrant(Interface):
@@ -117,6 +125,29 @@ class IAccessArtifactGrantSource(Interface):
         """Delete all `IAccessArtifactGrant` objects for the artifacts."""
 
 
+class IAccessPolicyArtifactSource(Interface):
+
+    def create(links):
+        """Create `IAccessPolicyArtifacts`s.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs to link.
+        """
+
+    def find(links):
+        """Return the specified `IAccessPolicyArtifacts`s if they exist.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs.
+        """
+
+    def findByArtifact(artifacts):
+        """Return all `IAccessPolicyArtifact` objects for the artifacts."""
+
+    def findByPolicy(policies):
+        """Return all `IAccessPolicyArtifact` objects for the policies."""
+
+
 class IAccessPolicySource(Interface):
 
     def create(pillars_and_types):
@@ -161,4 +192,15 @@ class IAccessPolicyGrantSource(Interface):
         """
 
     def findByPolicy(policies):
-        """Return all `IAccessPolicyGrant` objects for the artifacts."""
+        """Return all `IAccessPolicyGrant` objects for the policies."""
+
+
+class IAccessPolicyGrantFlatSource(Interface):
+
+    def findGranteesByPolicy(policies):
+        """Find the `IPerson`s with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        """
