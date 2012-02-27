@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import textwrap
 
 
 DEPENDENCIES_DIR = '~/dependencies'
@@ -724,18 +725,35 @@ def initialize_host(
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
     with open(build_script_file, 'w') as script:
-        uid = pwd.getpwnam(user)[2]
-        script.write('#!/bin/sh\n')
-        script.write(
-            'lxc-execute -n lptests --' # Run the named LXC container.
-            ' /usr/bin/sudo -u#{} -i'.format(uid)+ # Drop root privileges.
-            ' make -C /var/lib/buildbot/lp schema\n') # do the build
-        os.chmod(build_script_file, 0555)
+        script.write(textwrap.dedent(r"""\
+            #!/bin/sh
+            set -uex
+            lxc-start -n lptests -d
+            lxc-wait -n lptests -s RUNNING
+            sleep 30 # aparently RUNNING isn't quite enough
+            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \
+                make -C /var/lib/buildbot/lp/build schema"
+            lxc-stop -n lptests
+            lxc-wait -n lptests -s STOPPED
+            """))
+            os.chmod(build_script_file, 0555)
+    test_script_file = '/usr/local/bin/launchpad-lxc-test'
+    with open(test_script_file, 'w') as script:
+        script.write(textwrap.dedent(r"""\
+            #!/bin/sh
+            set -uex
+            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \
+                --error-file=/var/tmp/xvfb-errors.log \
+                --server-args='-screen 0 1024x768x24' \
+                -a $PWD/bin/test --subunit $@
+            """))
+            os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/lauchpad-buildbot'
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
-        sudoers.write(' /usr/local/bin/launchpad-lxc-build\n')
+        sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
+        sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
         # The sudoers must have this mode or it will be ignored.
         os.chmod(sudoers_file, 0440)
     with cd(dependencies_dir):
