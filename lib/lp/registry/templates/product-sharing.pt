@@ -15,7 +15,8 @@
                 function(Y) {
             Y.on('domready', function() {
                 var config = ${view/json_sharing_picker_config}
-                Y.lp.registry.disclosure.sharing.setup_product_sharing(config);
+                var view_widget = new Y.lp.registry.disclosure.sharing.ProductSharingView(config);
+                view_widget.render();
             });
           });
     "/>

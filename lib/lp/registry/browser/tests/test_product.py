@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
+from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -9,6 +10,7 @@ import datetime
 
 import pytz
 import simplejson
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -422,3 +424,14 @@ class TestProductSharingView(TestCaseWithFactory):
             picker_config['header'])
         self.assertEqual(
             'ValidPillarOwner', picker_config['vocabulary'])
+
+    def test_view_data_model(self):
+        # Test that the json request cache contains the view data model.
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, name='+sharing')
+        cache = IJSONRequestCache(view.request)
+        self.assertIsNotNone(cache.objects.get('access_policies'))
+        self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+        aps = getUtility(IService, 'accesspolicy')
+        observers = aps.getProductObservers(product)
+        self.assertTrue(observers, cache.objects.get('observer_data'))
