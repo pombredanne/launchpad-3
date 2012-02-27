@@ -53,6 +53,7 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful import ResourceJSONEncoder
 import pytz
 import simplejson
@@ -85,6 +86,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
+from lp.app.interfaces.services import IService
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -162,6 +164,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -2439,6 +2442,19 @@ class ProductSharingView(LaunchpadView):
             result.append(item)
         return result
 
+    @property
+    def sharing_permissions(self):
+        # TODO - use proper model class
+        sharing_permissions = [
+            {'value': 'all', 'name': 'All',
+             'title': 'share bug and branch subscriptions'},
+            {'value': 'some', 'name': 'Some',
+             'title': 'share bug and branch subscriptions'},
+            {'value': 'nothing', 'name': 'Nothing',
+             'title': 'revoke all bug and branch subscriptions'}
+        ]
+        return sharing_permissions
+
     @cachedproperty
     def sharing_vocabulary(self):
         registry = getVocabularyRegistry()
@@ -2452,7 +2468,6 @@ class ProductSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            access_policies=self.access_policies,
             vocabulary='ValidPillarOwner',
             vocabulary_filters=self.sharing_vocabulary_filters,
             header='Grant access to %s'
@@ -2462,3 +2477,16 @@ class ProductSharingView(LaunchpadView):
     def json_sharing_picker_config(self):
         return simplejson.dumps(
             self.sharing_picker_config, cls=ResourceJSONEncoder)
+
+    @property
+    def observer_data(self):
+        aps = getUtility(IService, 'accesspolicy')
+        observers = aps.getProductObservers(self.context)
+        return observers
+
+    def initialize(self):
+        super(ProductSharingView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['access_policies'] = self.access_policies
+        cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['observer_data'] = self.observer_data

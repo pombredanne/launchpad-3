@@ -13,10 +13,16 @@ __all__ = [
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
+    export_write_operation,
     operation_for_version,
+    operation_parameters,
     )
+from lazr.restful.fields import Reference
 
+from lp import _
 from lp.app.interfaces.services import IService
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 
 
 class IAccessPolicyService(IService):
@@ -30,3 +36,18 @@ class IAccessPolicyService(IService):
     @operation_for_version('devel')
     def getAccessPolicies():
         """Return the access policy types."""
+
+    @export_read_operation()
+    @operation_parameters(
+        product=Reference(IProduct, title=_('Product'), required=True))
+    @operation_for_version('devel')
+    def getProductObservers(product):
+        """Return people/teams who can see product artifacts."""
+
+    @export_write_operation()
+    @operation_parameters(
+        product=Reference(IProduct, title=_('Product'), required=True),
+        observer=Reference(IPerson, title=_('Observer'), required=True))
+    @operation_for_version('devel')
+    def deleteProductObserver(product, observer):
+        """Remove an observer from a product."""

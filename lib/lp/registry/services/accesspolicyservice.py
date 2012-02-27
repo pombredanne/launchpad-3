@@ -9,13 +9,20 @@ __all__ = [
     ]
 
 import simplejson
-from lazr.restful import ResourceJSONEncoder
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.utils import get_current_web_service_request
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.enums import InformationVisibilityPolicy
 from lp.registry.interfaces.accesspolicyservice import (
     IAccessPolicyService,
     )
+from lp.registry.interfaces.person import IPersonSet
 
 
 class AccessPolicyService:
@@ -43,3 +50,28 @@ class AccessPolicyService:
             )
             policies.append(item)
         return simplejson.dumps(policies, cls=ResourceJSONEncoder)
+
+    def getProductObservers(self, product):
+        """See `IAccessPolicyService`."""
+        # TODO - replace this sample data with something real
+        result = []
+        request = get_current_web_service_request()
+        personset = getUtility(IPersonSet)
+        for id in range(1, 4):
+            person = personset.get(id)
+            resource = EntryResource(person, request)
+            person_data = resource.toDataForJSON()
+            permissions = {
+                'PUBLICSECURITY': 'some',
+                'EMBARGOEDSECURITY': 'all'
+            }
+            if id > 2:
+                permissions['USERDATA'] = 'some'
+            person_data['permissions'] = permissions
+            result.append(person_data)
+        return result
+
+    def deleteProductObserver(self, product, observer):
+        """See `IAccessPolicyService`."""
+        # TODO - implement this
+        pass

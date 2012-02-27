@@ -416,7 +416,6 @@ class TestProductSharingView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         view = create_view(product, name='+sharing')
         picker_config = simplejson.loads(view.json_sharing_picker_config)
-        self.assertTrue('access_policies' in picker_config)
         self.assertTrue('vocabulary_filters' in picker_config)
         self.assertEqual(
             'Grant access to %s' % product.displayname,

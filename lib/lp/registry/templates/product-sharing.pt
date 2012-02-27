@@ -20,7 +20,7 @@
           });
     "/>
 
-    <!-- Mustache templates -->
+    <!-- Handlebars templates -->
     <script id="observer-table-template" type="text/x-template"
         tal:content="structure string:
         <table class='disclosure listing' id='observer-table'>
@@ -39,7 +39,7 @@
             <tbody id='observer-table-body'>
                 {{#observers}}
                 <tr id='permission-{{name}}'><td>
-                    <a href='#' class='sprite person'>{{display_name}}
+                    <a href='{{web_link}}' class='sprite person'>{{display_name}}
                     <span class='formHelp'>{{role}}</span></a>
                 </td>
                 <td id='remove-{{name}}'>
@@ -65,7 +65,7 @@
          tal:content="structure string:
        {{#access_policies}}
        <li><span id='{{policy}}-permission'>
-         <span class='value'>xxxxxxx</span>
+         <span class='value'></span>
          <a href='#'>
            <img class='editicon sprite edit'/>
          </a>
