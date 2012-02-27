@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+<!--
+Copyright 2012 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<html>
+  <head>
+      <title>Observer Table Widget Tests</title>
+
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+
+      <script type="text/javascript"
+              src="../../../../../../build/js/lp/app/testing/testrunner.js"></script>
+
+      <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
+
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/mustache.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/activator/activator.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/picker/picker.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/picker/person_picker.js"></script>
+       <script type="text/javascript"
+               src="../../../../../../build/js/lp/app/picker/picker_patcher.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/expander.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/anim/anim.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/effects/effects.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/extras/extras.js"></script>
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../observer_table_widget.js"></script>
+
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_observer_table_widget.js"></script>
+
+
+    <!-- Handlebars templates -->
+    <script id="observer-table-template" type="text/x-template">
+        <table class='disclosure listing' id='observer-table'>
+            <thead>
+                <tr><th style='width: 33%' colspan='2'>User or Team</th>
+                    <th colspan='2'>
+                        Sharing
+                        <span class='help'>
+                            (<a class='js-action help' target='help'
+                                href='permissions_help.html'>help</a>)
+                        </span>
+                    </th>
+                    <th style='width: ' colspan='1'>Shared items</th>
+                </tr>
+            </thead>
+            <tbody id='observer-table-body'>
+                {{#observers}}
+                <tr id='permission-{{name}}'><td>
+                    <a href='{{web_link}}' class='sprite person'>{{display_name}}
+                    <span class='formHelp'>{{role}}</span></a>
+                </td>
+                <td id='remove-{{name}}'>
+                    <a title='Share nothing with this user'
+                       href='#' class='sprite remove'>
+                    </a>
+                </td>
+                <td id='td-permission-{{name}}'>
+                    <span class='sortkey'>1</span>
+                    <ul class='horizontal'>
+                       {{>observer_access_policies}}
+                    </ul>
+                </td>
+                <td></td>
+                <td><span class='formHelp'>No items shared</span>
+                </td>
+                </tr>
+                {{/observers}}
+            </tbody>
+        </table>
+    </script>
+     <script id='observer-access-policy' type="text/x-template">
+       {{#access_policies}}
+       <li><span id='{{policy}}-permission'>
+         <span class='value'></span>
+         <a href='#'>
+           <img class='editicon sprite edit'/>
+         </a>
+       </span></li>
+       {{/access_policies}}
+    </script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <li>lp.registry.disclosure.observertable.test</li>
+        </ul>
+        <table id='observer-table'>
+        </table>
+    </body>
+</html>
