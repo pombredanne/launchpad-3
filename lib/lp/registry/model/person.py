@@ -3526,6 +3526,42 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
+    def _mergeAccessArtifactGrant(self, cur, from_id, to_id):
+        # Update only the AccessArtifactGrants that will not conflict.
+        cur.execute('''
+            UPDATE AccessArtifactGrant
+            SET grantee=%(to_id)d
+            WHERE
+                grantee = %(from_id)d
+                AND artifact NOT IN (
+                    SELECT artifact
+                    FROM AccessArtifactGrant
+                    WHERE grantee = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AccessArtifactGrant WHERE grantee = %(from_id)d
+            ''' % vars())
+
+    def _mergeAccessPolicyGrant(self, cur, from_id, to_id):
+        # Update only the AccessPolicyGrants that will not conflict.
+        cur.execute('''
+            UPDATE AccessPolicyGrant
+            SET grantee=%(to_id)d
+            WHERE
+                grantee = %(from_id)d
+                AND policy NOT IN (
+                    SELECT policy
+                    FROM AccessPolicyGrant
+                    WHERE grantee = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AccessPolicyGrant WHERE grantee = %(from_id)d
+            ''' % vars())
+
     def _mergeBranches(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
         branches = getUtility(IBranchCollection).ownedBy(from_person)
@@ -4078,6 +4114,11 @@ class PersonSet:
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey', 'owner'))
+
+        self._mergeAccessArtifactGrant(cur, from_id, to_id)
+        self._mergeAccessPolicyGrant(cur, from_id, to_id)
+        skip.append(('accessartifactgrant', 'grantee'))
+        skip.append(('accesspolicygrant', 'grantee'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.

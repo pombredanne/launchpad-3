@@ -115,10 +115,7 @@ from lp.app.browser.tales import (
     MenuAPI,
     )
 from lp.app.browser.vocabulary import vocabulary_filters
-from lp.app.enums import (
-    InformationVisibilityPolicy,
-    ServiceUsage,
-    )
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -164,6 +161,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -2432,7 +2430,7 @@ class ProductSharingView(LaunchpadView):
     @property
     def access_policies(self):
         result = []
-        for x, policy in enumerate(InformationVisibilityPolicy):
+        for x, policy in enumerate(AccessPolicyType):
             item = dict(
                 index=x,
                 value=policy.token,

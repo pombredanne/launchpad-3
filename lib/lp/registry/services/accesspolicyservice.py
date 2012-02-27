@@ -18,7 +18,7 @@ from lazr.restful.utils import get_current_web_service_request
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.enums import InformationVisibilityPolicy
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicyservice import (
     IAccessPolicyService,
     )
@@ -41,7 +41,7 @@ class AccessPolicyService:
 
     def getAccessPolicies(self):
         policies = []
-        for x, policy in enumerate(InformationVisibilityPolicy):
+        for x, policy in enumerate(AccessPolicyType):
             item = dict(
                 index=x,
                 value=policy.token,
