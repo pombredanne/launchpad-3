@@ -111,7 +111,7 @@ class TestStrippableText(TestCase):
         self.assertEqual(None, field.validate(u'  a  '))
 
 
-class TestWorkItemsTextValidation(TestCaseWithFactory):
+class TestWorkItemsTextAssigneeAndMilestone(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
