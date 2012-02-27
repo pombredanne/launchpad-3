@@ -210,6 +210,36 @@ def file_prepend(filename, line):
             f.writelines(lines)
 
 
+def generate_ssh_keys(directory, filename='id_rsa'):
+    """Generate ssh key pair saving them inside the given `directory`.
+
+        >>> generate_ssh_keys('/tmp/')
+        0
+        >>> open('/tmp/id_rsa').readlines()[0].strip()
+        '-----BEGIN RSA PRIVATE KEY-----'
+        >>> open('/tmp/id_rsa.pub').read().startswith('ssh-rsa')
+        True
+        >>> os.remove('/tmp/id_rsa')
+        >>> os.remove('/tmp/id_rsa.pub')
+
+    The key filename can be changed using the `filename` keyword argument
+    (default is 'id_rsa')::
+
+        >>> generate_ssh_keys('/tmp/', 'custom_key')
+        0
+        >>> os.path.exists('/tmp/custom_key')
+        True
+        >>> os.path.exists('/tmp/id_rsa')
+        False
+
+        >>> os.remove('/tmp/custom_key')
+        >>> os.remove('/tmp/custom_key.pub')
+    """
+    path = os.path.join(directory, filename)
+    return subprocess.call([
+        'ssh-keygen', '-q', '-t', 'rsa', '-N', '', '-f', path])
+
+
 def get_container_path(lxcname, path='', base_path=LXC_PATH):
     """Return the path of LXC container called `lxcname`.
 
