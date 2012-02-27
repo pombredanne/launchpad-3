@@ -288,7 +288,7 @@ def get_user_home(user):
     return pwd.getpwnam(user).pw_dir
 
 
-def ssh(location, user=None, caller=subprocess.call):
+def ssh(location, user=None, key=None, caller=subprocess.call):
     """Return a callable that can be used to run ssh shell commands.
 
     The ssh `location` and, optionally, `user` must be given.
@@ -297,13 +297,20 @@ def ssh(location, user=None, caller=subprocess.call):
     The callable internally uses the given `caller`::
 
         >>> def caller(cmd):
-        ...     print cmd
+        ...     print tuple(cmd)
         >>> sshcall = ssh('example.com', 'myuser', caller=caller)
         >>> root_sshcall = ssh('example.com', caller=caller)
         >>> sshcall('ls -l') # doctest: +ELLIPSIS
         ('ssh', '-t', ..., 'myuser@example.com', '--', 'ls -l')
         >>> root_sshcall('ls -l') # doctest: +ELLIPSIS
         ('ssh', '-t', ..., 'example.com', '--', 'ls -l')
+
+    The ssh key path can be optionally provided::
+
+        >>> root_sshcall = ssh('example.com', key='/tmp/foo', caller=caller)
+        >>> root_sshcall('ls -l') # doctest: +ELLIPSIS
+        ('ssh', '-t', ..., '-i', '/tmp/foo', 'example.com', '--', 'ls -l')
+
 
     If the ssh command exits with an error code, an `SSHError` is raised::
 
@@ -317,21 +324,23 @@ def ssh(location, user=None, caller=subprocess.call):
         >>> sshcall = ssh('loc', caller=lambda cmd: 1)
         >>> sshcall('ls -l', ignore_errors=True)
     """
+    sshcmd = [
+        'ssh',
+        '-t',
+        '-t',  # Yes, this second -t is deliberate. See `man ssh`.
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        ]
+    if key is not None:
+        sshcmd.extend(['-i', key])
     if user is not None:
         location = '{}@{}'.format(user, location)
+    sshcmd.extend([location, '--'])
 
     def _sshcall(cmd, ignore_errors=False):
-        sshcmd = (
-            'ssh',
-            '-t',
-            '-t',  # Yes, this second -t is deliberate. See `man ssh`.
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
-            location,
-            '--', cmd,
-            )
-        if caller(sshcmd) and not ignore_errors:
-            raise SSHError('Error running command: ' + ' '.join(sshcmd))
+        command = sshcmd + [cmd]
+        if caller(command) and not ignore_errors:
+            raise SSHError('Error running command: ' + ' '.join(command))
 
     return _sshcall
 
