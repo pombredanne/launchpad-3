@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model classes for pillar and artifact access policies."""
@@ -54,7 +54,6 @@ class AccessArtifact(StormBase):
     @property
     def concrete_artifact(self):
         artifact = self.bug or self.branch
-        assert artifact is not None
         return artifact
 
     @classmethod
@@ -109,9 +108,9 @@ class AccessArtifact(StormBase):
     def delete(cls, concrete_artifacts):
         """See `IAccessPolicyArtifactSource`."""
         abstracts = list(cls.find(concrete_artifacts))
-        ids = [abstract.id for abstract in abstracts]
-        if len(ids) == 0:
+        if len(abstracts) == 0:
             return
+        ids = [abstract.id for abstract in abstracts]
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
