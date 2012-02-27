@@ -39,7 +39,13 @@ import subprocess
 import sys
 import time
 
-
+APT_REPOSITORIES = (
+    'deb http://archive.ubuntu.com/ubuntu {distro} multiverse',
+    'deb http://archive.ubuntu.com/ubuntu {distro}-updates multiverse',
+    'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
+    'ppa:launchpad/ppa',
+    'ppa:bzr/ppa',
+    )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
@@ -81,16 +87,6 @@ lxc.network.link = {interface}
 lxc.network.flags = up
 """
 LXC_PATH = '/var/lib/lxc/'
-LXC_REPOS = (
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid-updates main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid-security main universe multiverse',
-    'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
-    'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
-    )
 RESOLV_FILE = '/etc/resolv.conf'
 
 
@@ -812,9 +808,9 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall = ssh(lxcname)
     sshcall = ssh(lxcname, user)
     # APT repository update.
-    sources = get_container_path(lxcname, '/etc/apt/sources.list')
-    with open(sources, 'w') as f:
-        f.write('\n'.join(LXC_REPOS))
+    for apt_reposirory in APT_REPOSITORIES:
+        repository = apt_reposirory.format(distro=LXC_GUEST_OS)
+        root_sshcall('add-apt-repository -y {}'.format(repository))
     # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
     # containers currently does not work.
     root_sshcall("echo 'mountall hold' | dpkg --set-selections")
