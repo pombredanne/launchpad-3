@@ -48,7 +48,7 @@ APT_REPOSITORIES = (
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -816,11 +816,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall("echo 'mountall hold' | dpkg --set-selections")
     # Upgrading packages.
     root_sshcall(
-        'apt-get update && '
-        'DEBIAN_FRONTEND=noninteractive '
-        'apt-get -y install language-pack-en')
-    root_sshcall(
-        'DEBIAN_FRONTEND=noninteractive apt-get -y '
+        'apt-get update && DEBIAN_FRONTEND=noninteractive LANG=C apt-get -y '
         'install {}'.format(LP_DEB_DEPENDENCIES))
     # We install lxc in the guest so that lxc-execute will work on the
     # container.  We use --no-install-recommends at the recommendation
