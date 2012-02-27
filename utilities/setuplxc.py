@@ -818,10 +818,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall(
         'apt-get update && '
         'DEBIAN_FRONTEND=noninteractive '
-        'apt-get -y --allow-unauthenticated install language-pack-en')
+        'apt-get -y install language-pack-en')
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
-        '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
+        'install {}'.format(LP_DEB_DEPENDENCIES))
     # We install lxc in the guest so that lxc-execute will work on the
     # container.  We use --no-install-recommends at the recommendation
     # of the Canonical lxc maintainers because all we need is a file
