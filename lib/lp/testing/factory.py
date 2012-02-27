@@ -139,8 +139,15 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
+    AccessPolicyType,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -4368,6 +4375,42 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None,
+                         type=AccessPolicyType.PROPRIETARY):
+        if pillar is None:
+            pillar = self.makeProduct()
+        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        return policies[0]
+
+    def makeAccessArtifact(self, concrete=None):
+        if concrete is None:
+            concrete = self.makeBranch()
+        artifacts = getUtility(IAccessArtifactSource).ensure([concrete])
+        return artifacts[0]
+
+    def makeAccessArtifactGrant(self, artifact=None, grantee=None,
+                                grantor=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        [grant] = getUtility(IAccessArtifactGrantSource).grant(
+            [(artifact, grantee, grantor)])
+        return grant
+
+    def makeAccessPolicyGrant(self, policy=None, grantee=None, grantor=None):
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        [grant] = getUtility(IAccessPolicyGrantSource).grant(
+            [(policy, grantee, grantor)])
+        return grant
 
     def makeFakeFileUpload(self, filename=None, content=None):
         """Return a zope.publisher.browser.FileUpload like object.
