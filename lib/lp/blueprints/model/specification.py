@@ -225,6 +225,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     @property
     def workitems_text(self):
+        """See ISpecification."""
         workitems_lines = []
         milestone = None
         for work_item in self.work_items:
@@ -235,9 +236,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 if work_item.sequence > 0:
                     workitems_lines.append("")
                 workitems_lines.append("Work items for %s:" % milestone.name)
+            assignee = work_item.assignee
+            if assignee is not None:
+                assignee_part = "[%s] " % assignee.name
+            else:
+                assignee_part = ""
             # work_items are ordered by sequence
-            workitems_lines.append("%s: %s" % (work_item.title,
-                                               work_item.status))
+            workitems_lines.append("%s%s: %s" % (assignee_part,
+                                                 work_item.title,
+                                                 work_item.status.name))
         return "\n".join(workitems_lines)
 
     @property
@@ -269,6 +276,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def setWorkItems(self, new_work_items):
         field = ISpecification['workitems_text'].bind(self)
         self.updateWorkItems(field.parseAndValidate(new_work_items))
+
     def _deleteWorkItemsNotMatching(self, titles):
         """Delete all work items whose title does not match the given ones.
 

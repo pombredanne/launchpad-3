@@ -53,7 +53,6 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
-    'WorkItemParseError',
     'WorkItemsText',
     'is_public_person_or_closed_team',
     'is_public_person',
@@ -61,7 +60,6 @@ __all__ = [
 
 
 import re
-import sys
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -864,10 +862,6 @@ class PublicPersonChoice(PersonChoice):
             raise PrivateTeamNotAllowed(value)
 
 
-class WorkItemParseError(Exception):
-    """An error when parsing a work item line from a blueprint."""
-
-
 class WorkItemsText(Text):
 
     def parse_line(self, line):
@@ -875,7 +869,7 @@ class WorkItemsText(Text):
         try:
             title, status = line.rsplit(':', 1)
         except ValueError:
-            raise WorkItemParseError('Missing work item status.')
+            raise LaunchpadValidationError('Missing work item status.')
 
         status = status.strip().lower()
 
@@ -886,15 +880,16 @@ class WorkItemsText(Text):
                 assignee = title[1:off]
                 title = title[off + 1:].strip()
             else:
-                raise WorkItemParseError('Missing closing "]" for assignee')
+                raise LaunchpadValidationError(
+                    'Missing closing "]" for assignee')
 
         if title == '':
-            raise WorkItemParseError(
+            raise LaunchpadValidationError(
                 'No work item title found on "%s"' % line)
 
         valid_statuses = SpecificationWorkItemStatus.items
         if status not in [item.name.lower() for item in valid_statuses]:
-            raise WorkItemParseError('Unknown status: %s' % status)
+            raise LaunchpadValidationError('Unknown status: %s' % status)
         status = valid_statuses[status.upper()]
 
         return {'title': title, 'status': status, 'assignee': assignee}
@@ -920,17 +915,9 @@ class WorkItemsText(Text):
         return work_items
 
     def validate(self, value):
-        try:
-            self.parseAndValidate(value)
-        except:
-            exc_info = sys.exc_info()
-            # Re-raise the exception as LaunchpadValidationError
-            raise LaunchpadValidationError, exc_info[1], exc_info[2]
+        self.parseAndValidate(value)
 
     def parseAndValidate(self, text):
-        # We need this because we want to pass the work_item dicts with the
-        # assignee/milestone objects validated to
-        # Specification.setWorkItems().
         work_items = self.parse(text)
         for work_item in work_items:
             work_item['assignee'] = self.getAssignee(work_item['assignee'])
@@ -940,7 +927,6 @@ class WorkItemsText(Text):
     def getAssignee(self, assignee_name):
         if assignee_name is None:
             return None
-        # XXX importing this from the top of this file fails
         from lp.registry.interfaces.person import IPersonSet
         assignee = getUtility(IPersonSet).getByName(assignee_name)
         if assignee is None:
@@ -951,14 +937,23 @@ class WorkItemsText(Text):
         if milestone_name is None:
             return None
 
-        product = self.context.target
+        target = self.context.target
 
-        # XXX importing this from the top of this file fails
+        milestone = None
+        from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.milestone import IMilestoneSet
-        milestone = getUtility(IMilestoneSet).getByNameAndProduct(
-            milestone_name, product)
+        from lp.registry.interfaces.product import IProduct
+        if IProduct.providedBy(target):
+            milestone = getUtility(IMilestoneSet).getByNameAndProduct(
+                milestone_name, target)
+        elif IDistribution.providedBy(target):
+            milestone = getUtility(IMilestoneSet).getByNameAndDistribution(
+                milestone_name, target)
+        else:
+            raise AssertionError("Unexpected target type.")
+
         if milestone is None:
             raise LaunchpadValidationError("The milestone '%s' is not valid "
-                                           "for the product '%s'." % \
-                                               (milestone_name, product.name))
+                                           "for the target '%s'." % \
+                                               (milestone_name, target.name))
         return milestone

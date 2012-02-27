@@ -27,7 +27,6 @@ from lp.services.fields import (
     FormattableDate,
     is_public_person_or_closed_team,
     StrippableText,
-    WorkItemParseError,
     WorkItemsText,
     )
 from lp.testing import (
@@ -115,111 +114,111 @@ class TestWorkItemsTextAssigneeAndMilestone(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestWorkItemsTextAssigneeAndMilestone, self).setUp()
+        self.field = WorkItemsText(__name__='test')
+
     def test_unknown_assignee_is_rejected(self):
-        field = WorkItemsText(__name__='test')
         person_name = 'test-person'
         self.assertRaises(
-            LaunchpadValidationError, field.getAssignee, person_name)
+            LaunchpadValidationError, self.field.getAssignee, person_name)
 
     def test_validate_valid_assignee(self):
-        field = WorkItemsText(__name__='test')
         assignee = self.factory.makePerson()
-        self.assertEqual(assignee, field.getAssignee(assignee.name))
+        self.assertEqual(assignee, self.field.getAssignee(assignee.name))
 
     def test_validate_unset_assignee(self):
-        field = WorkItemsText(__name__='test')
-        self.assertIs(None, field.getAssignee(None))
+        self.assertIs(None, self.field.getAssignee(None))
 
     def test_validate_unset_milestone(self):
-        field = WorkItemsText(None, __name__='test')
-        self.assertIs(None, field.getMilestone(None))
+        self.assertIs(None, self.field.getMilestone(None))
 
     def test_validate_unknown_milestone(self):
         specification = self.factory.makeSpecification()
-        field = WorkItemsText(__name__='test')
-        field.context = specification
-        milestone_name = '2012.02'
+        field = self.field.bind(specification)
         self.assertRaises(
-            LaunchpadValidationError, field.getMilestone, milestone_name)
+            LaunchpadValidationError, field.getMilestone, 'does-not-exist')
 
-    def test_validate_valid_milestone(self):
-        milestone_name = 'test-milestone'
-        milestone = self.factory.makeMilestone(name=milestone_name)
+    def test_validate_valid_product_milestone(self):
+        milestone = self.factory.makeMilestone()
         specification = self.factory.makeSpecification(
             product=milestone.product)
-        field = WorkItemsText(__name__='test')
-        field.context = specification
-        self.assertEqual(milestone, field.getMilestone(milestone_name))
+        field = self.field.bind(specification)
+        self.assertEqual(milestone, field.getMilestone(milestone.name))
+
+    def test_validate_valid_distro_milestone(self):
+        distro = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(distribution=distro)
+        specification = self.factory.makeSpecification(
+            distribution=milestone.distribution)
+        field = self.field.bind(specification)
+        self.assertEqual(milestone, field.getMilestone(milestone.name))
 
     def test_validate_invalid_milestone(self):
         milestone_name = 'test-milestone'
         self.factory.makeMilestone(name=milestone_name)
+        # Milestone exists but is not a target for this spec.
         specification = self.factory.makeSpecification(product=None)
-        field = WorkItemsText(__name__='test')
-        field.context = specification
+        field = self.field.bind(specification)
         self.assertRaises(
             LaunchpadValidationError, field.getMilestone, milestone_name)
 
 
 class TestWorkItemsText(TestCase):
 
+    def setUp(self):
+        super(TestWorkItemsText, self).setUp()
+        self.field = WorkItemsText(__name__='test')
+
     def test_validate_raises_LaunchpadValidationError(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            LaunchpadValidationError, field.validate,
+            LaunchpadValidationError, self.field.validate,
             'This is not a valid work item.')
 
     def test_single_line_parsing(self):
-        field = WorkItemsText(__name__='test')
         work_items_title = 'Test this work item'
-        parsed = field.parse_line('%s: TODO' % (work_items_title))
+        parsed = self.field.parse_line('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
         self.assertEqual(parsed['status'], SpecificationWorkItemStatus.TODO)
 
     def test_url_and_colon_in_title(self):
-        field = WorkItemsText(__name__='test')
         work_items_title = 'Test this: which is a url: http://www.linaro.org/'
-        parsed = field.parse_line('%s: TODO' % (work_items_title))
+        parsed = self.field.parse_line('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
 
     def test_silly_caps_status_parsing(self):
-        field = WorkItemsText(__name__='test')
-        parsed_upper = field.parse_line('Test this work item: TODO    ')
+        parsed_upper = self.field.parse_line('Test this work item: TODO    ')
         self.assertEqual(parsed_upper['status'],
                          SpecificationWorkItemStatus.TODO)
-        parsed_lower = field.parse_line('Test this work item:     todo')
+        parsed_lower = self.field.parse_line('Test this work item:     todo')
         self.assertEqual(parsed_lower['status'],
                          SpecificationWorkItemStatus.TODO)
-        parsed_camel = field.parse_line('Test this work item: ToDo')
+        parsed_camel = self.field.parse_line('Test this work item: ToDo')
         self.assertEqual(parsed_camel['status'],
                          SpecificationWorkItemStatus.TODO)
 
     def test_parse_line_without_status_fails(self):
         # We should require an explicit status to avoid the problem of work
         # items with a url but no status.
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            WorkItemParseError, field.parse_line,
+            LaunchpadValidationError, self.field.parse_line,
             'Missing status')
 
     def test_parse_line_without_title_fails(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            WorkItemParseError, field.parse_line,
+            LaunchpadValidationError, self.field.parse_line,
             ':TODO')
 
     def test_parse_line_without_title_with_assignee_fails(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            WorkItemParseError, field.parse_line,
+            LaunchpadValidationError, self.field.parse_line,
             '[test-person] :TODO')
 
     def test_multi_line_parsing(self):
-        field = WorkItemsText(__name__='test')
         title_1 = 'Work item 1'
         title_2 = 'Work item 2'
         work_items_text = "%s: TODO\n%s: POSTPONED" % (title_1, title_2)
-        parsed = field.parse(work_items_text)
+        parsed = self.field.parse(work_items_text)
         self.assertEqual(
             parsed, [{'title': title_1,
                       'status': SpecificationWorkItemStatus.TODO,
@@ -229,55 +228,77 @@ class TestWorkItemsText(TestCase):
                       'assignee': None, 'milestone': None, 'sequence': 1}])
 
     def test_parse_assignee(self):
-        field = WorkItemsText(__name__='test')
         title = 'Work item 1'
         assignee = 'test-person'
         work_items_text = "[%s]%s: TODO" % (assignee, title)
-        parsed = field.parse_line(work_items_text)
+        parsed = self.field.parse_line(work_items_text)
         self.assertEqual(parsed['assignee'], assignee)
 
     def test_parse_assignee_with_space(self):
-        field = WorkItemsText(__name__='test')
         title = 'Work item 1'
         assignee = 'test-person'
         work_items_text = "[%s] %s: TODO" % (assignee, title)
-        parsed = field.parse_line(work_items_text)
+        parsed = self.field.parse_line(work_items_text)
         self.assertEqual(parsed['assignee'], assignee)
 
     def test_parse_line_with_missing_closing_bracket_for_assignee(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            WorkItemParseError, field.parse_line,
+            LaunchpadValidationError, self.field.parse_line,
             "[test-person A single work item: TODO")
 
     def test_parse_line_with_invalid_status(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            WorkItemParseError, field.parse_line,
+            LaunchpadValidationError, self.field.parse_line,
             'Invalid status: FOO')
 
+    def test_parse_line_todo_status(self):
+        status = SpecificationWorkItemStatus.TODO.name
+        work_items_text = "Just a work item: %s" % status
+        parsed = self.field.parse_line(work_items_text)
+        self.assertEqual(parsed['status'].name, status)
+
+    def test_parse_line_done_status(self):
+        status = SpecificationWorkItemStatus.DONE.name
+        work_items_text = "Just a work item: %s" % status
+        parsed = self.field.parse_line(work_items_text)
+        self.assertEqual(parsed['status'].name, status)
+
+    def test_parse_line_postponed_status(self):
+        status = SpecificationWorkItemStatus.POSTPONED.name
+        work_items_text = "Just a work item: %s" % status
+        parsed = self.field.parse_line(work_items_text)
+        self.assertEqual(parsed['status'].name, status)
+
+    def test_parse_line_inprogress_status(self):
+        status = SpecificationWorkItemStatus.INPROGRESS.name
+        work_items_text = "Just a work item: %s" % status
+        parsed = self.field.parse_line(work_items_text)
+        self.assertEqual(parsed['status'].name, status)
+
+    def test_parse_line_blocked_status(self):
+        status = SpecificationWorkItemStatus.BLOCKED.name
+        work_items_text = "Just a work item: %s" % status
+        parsed = self.field.parse_line(work_items_text)
+        self.assertEqual(parsed['status'].name, status)
+
     def test_parse_empty_line_raises(self):
-        field = WorkItemsText(__name__='test')
         self.assertRaises(
-            AssertionError, field.parse_line, "  \t \t ")
+            AssertionError, self.field.parse_line, "  \t \t ")
 
     def test_parse_empty_lines_have_no_meaning(self):
-        field = WorkItemsText(__name__='test')
-        parsed = field.parse("\n\n\n\n\n\n\n\n")
+        parsed = self.field.parse("\n\n\n\n\n\n\n\n")
         self.assertEqual(parsed, [])
 
     def test_parse_milestone(self):
-        field = WorkItemsText(__name__='test')
         milestone = '2012.02'
         title = "Work item for a milestone"
         work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
-        parsed = field.parse(work_items_text)
+        parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed, [{'title': title,
                       'status': SpecificationWorkItemStatus.TODO,
                       'assignee': None, 'milestone': milestone, 'sequence': 0}])
         
     def test_parse_multi_milestones(self):
-        field = WorkItemsText(__name__='test')
         milestone_1 = '2012.02'
         milestone_2 = '2012.03'
         title_1 = "Work item for a milestone"
@@ -285,7 +306,7 @@ class TestWorkItemsText(TestCase):
         work_items_text = ("Work items for %s:\n%s: POSTPONED\n\nWork items "
                            "for %s:\n%s: TODO" % (milestone_1, title_1,
                                                   milestone_2, title_2))
-        parsed = field.parse(work_items_text)
+        parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed,
                          [{'title': title_1,
                            'status': SpecificationWorkItemStatus.POSTPONED,
@@ -299,7 +320,6 @@ class TestWorkItemsText(TestCase):
     def test_parse_orphaned_work_items(self):
         # Work items not in a milestone block belong to the latest specified 
         # milestone.
-        field = WorkItemsText(__name__='test')
         milestone_1 = '2012.02'
         milestone_2 = '2012.03'
         title_1 = "Work item for a milestone"
@@ -309,7 +329,7 @@ class TestWorkItemsText(TestCase):
             "Work items for %s:\n%s: POSTPONED\n\nWork items for %s:\n%s: "
             "TODO\n\n%s: TODO" % (milestone_1, title_1, milestone_2, title_2,
                                   title_3))
-        parsed = field.parse(work_items_text)
+        parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed, 
                          [{'title': title_1,
                            'status': SpecificationWorkItemStatus.POSTPONED,
@@ -325,15 +345,11 @@ class TestWorkItemsText(TestCase):
                            'sequence': 2}])
 
     def test_sequence_single_workitem(self):
-        field = WorkItemsText(__name__='test')
-        parsed = field.parse("A single work item: TODO")
+        parsed = self.field.parse("A single work item: TODO")
         self.assertEqual(0, parsed[0]['sequence'])
 
     def test_only_workitems_get_sequence(self):
-        # We will not keep blank lines, and milestone headers will be
-        # regenerated, right?
-        field = WorkItemsText(__name__='test')
-        parsed = field.parse("A single work item: TODO\n"
+        parsed = self.field.parse("A single work item: TODO\n"
                              "A second work item: TODO\n"
                              "\n"
                              "Work items for 2012.02:\n"

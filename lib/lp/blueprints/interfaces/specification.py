@@ -304,7 +304,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
         as_of="devel")
-    # TODO: we need to add a test for this
     workitems_text = exported(
         WorkItemsText(
             title=_('Work Items'), required=False, readonly=True,

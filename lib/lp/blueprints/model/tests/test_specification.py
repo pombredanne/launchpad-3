@@ -152,6 +152,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def assertWorkItemsTextContains(self, spec, work_items):
+        expected = "\n".join(
+            ["%s: %s" % (wi.title, wi.status.name) for wi in work_items])
+        self.assertEqual(expected, spec.workitems_text)
+
     def test_anonymous_newworkitem_not_allowed(self):
         spec = self.factory.makeSpecification()
         login(ANONYMOUS)
@@ -183,44 +188,48 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         spec = self.factory.makeSpecification()
         self.assertEqual('', spec.workitems_text)
 
-    def test_workitems_text_single_workitem(self):
-        spec = self.factory.makeSpecification()
-        login_person(spec.owner)
-        work_item = spec.newWorkItem(title=u'new-work-item', sequence=0,
-                                     status=SpecificationWorkItemStatus.TODO)
-        expected_wi_text = "%s: Todo" % work_item.title
-        self.assertEqual(expected_wi_text, spec.workitems_text)
+    def test_workitems_text_deleted_workitem(self):
+        work_item = self.factory.makeSpecificationWorkItem(deleted=True)
+        self.assertEqual('', work_item.specification.workitems_text)
 
-    def test_workitems_text_multi_workitems(self):
-        spec = self.factory.makeSpecification()
-        login_person(spec.owner)
-        work_item1 = spec.newWorkItem(
-            title=u'new-work-item', sequence=0,
+    def test_workitems_text_single_workitem(self):
+        work_item = self.factory.makeSpecificationWorkItem()
+        self.assertWorkItemsTextContains(work_item.specification, [work_item])
+
+    def test_workitems_text_multi_workitems_all_statuses(self):
+        work_item1 = self.factory.makeSpecificationWorkItem(
             status=SpecificationWorkItemStatus.TODO)
-        work_item2 = spec.newWorkItem(
-            title=u'another-work-item', sequence=1,
+        work_item2 = self.factory.makeSpecificationWorkItem(
+            specification=work_item1.specification,
+            status=SpecificationWorkItemStatus.DONE)
+        work_item3 = self.factory.makeSpecificationWorkItem(
+            specification=work_item1.specification,
             status=SpecificationWorkItemStatus.POSTPONED)
-        expected_wi_text = ("%s: Todo\n"
-                            "%s: Postponed" % \
-                                (work_item1.title, work_item2.title))
-        self.assertEqual(expected_wi_text, spec.workitems_text)
+        work_item4 = self.factory.makeSpecificationWorkItem(
+            specification=work_item1.specification,
+            status=SpecificationWorkItemStatus.INPROGRESS)
+        work_item5 = self.factory.makeSpecificationWorkItem(
+            specification=work_item1.specification,
+            status=SpecificationWorkItemStatus.BLOCKED)
+        work_items = [work_item1, work_item2, work_item3, work_item4, work_item5]
+        self.assertWorkItemsTextContains(work_item1.specification, work_items)
 
     def test_workitems_text_with_milestone(self):
         spec = self.factory.makeSpecification()
-        milestone = self.factory.makeMilestone()
+        milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item = spec.newWorkItem(
             title=u'new-work-item', sequence=0,
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
         expected_wi_text = ("Work items for %s:\n"
-                            "%s: Todo" % \
+                            "%s: TODO" % \
                                 (milestone.name, work_item.title))
         self.assertEqual(expected_wi_text, spec.workitems_text)
 
     def test_workitems_text_with_implicit_and_explicit_milestone(self):
         spec = self.factory.makeSpecification()
-        milestone = self.factory.makeMilestone()
+        milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item1 = spec.newWorkItem(
             title=u'Work item with default milestone', sequence=0,
@@ -230,17 +239,17 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             title=u'Work item with set milestone', sequence=1,
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
-        expected_wi_text = ("%s: Todo\n"
+        expected_wi_text = ("%s: TODO\n"
                             "\nWork items for %s:\n"
-                            "%s: Todo" % \
+                            "%s: TODO" % \
                                 (work_item1.title, milestone.name,
                                  work_item2.title))
         self.assertEqual(expected_wi_text, spec.workitems_text)
 
     def test_workitems_text_with_different_milestones(self):
         spec = self.factory.makeSpecification()
-        milestone1 = self.factory.makeMilestone()
-        milestone2 = self.factory.makeMilestone()
+        milestone1 = self.factory.makeMilestone(product=spec.product)
+        milestone2 = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item1 = spec.newWorkItem(
             title=u'Work item with first milestone', sequence=0,
@@ -251,12 +260,22 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone2)
         expected_wi_text = ("Work items for %s:\n"
-                            "%s: Todo\n"
+                            "%s: TODO\n"
                             "\nWork items for %s:\n"
-                            "%s: Todo" % \
-                                (milestone1.name, work_item1.title, milestone2.name,
-                                 work_item2.title))
+                            "%s: TODO" % \
+                                (milestone1.name, work_item1.title,
+                                 milestone2.name, work_item2.title))
         self.assertEqual(expected_wi_text, spec.workitems_text)
+
+    def test_workitems_text_with_assignee(self):
+        assignee = self.factory.makePerson()
+        work_item = self.factory.makeSpecificationWorkItem(assignee=assignee)
+        expected_wi_text = ("[%s] %s: %s" % \
+                                (work_item.assignee.name, work_item.title,
+                                 work_item.status.name))
+        self.assertEqual(expected_wi_text,
+                         work_item.specification.workitems_text)
+
     def test_work_items_property(self):
         spec = self.factory.makeSpecification()
         wi1 = self.factory.makeSpecificationWorkItem(
