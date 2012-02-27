@@ -12,7 +12,7 @@ import simplejson
 from lazr.restful import ResourceJSONEncoder
 from zope.interface import implements
 
-from lp.app.enums import InformationVisibilityPolicy
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicyservice import (
     IAccessPolicyService,
     )
@@ -34,7 +34,7 @@ class AccessPolicyService:
 
     def getAccessPolicies(self):
         policies = []
-        for x, policy in enumerate(InformationVisibilityPolicy):
+        for x, policy in enumerate(AccessPolicyType):
             item = dict(
                 index=x,
                 value=policy.token,

@@ -163,27 +163,27 @@ class TestBugTaskView(TestCaseWithFactory):
                 source_branch=source_branch)
 
     def test_rendered_query_counts_reduced_with_branches(self):
-        f = self.factory
-        owner = f.makePerson()
-        ds = f.makeDistroSeries()
-        bug = f.makeBug()
+        owner = self.factory.makePerson()
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug()
         sourcepackages = [
-            f.makeSourcePackage(distroseries=ds, publish=True)
+            self.factory.makeSourcePackage(distroseries=ds, publish=True)
             for i in range(5)]
         for sp in sourcepackages:
-            f.makeBugTask(bug=bug, owner=owner, target=sp)
-        url = canonical_url(bug.default_bugtask)
+            self.factory.makeBugTask(bug=bug, owner=owner, target=sp)
+        task = bug.default_bugtask
+        url = canonical_url(task)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
         self.assertThat(recorder, HasQueryCount(LessThan(107)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
@@ -1797,7 +1797,8 @@ def make_bug_task_listing_item(factory):
     owner = factory.makePerson()
     bug = factory.makeBug(
         owner=owner, private=True, security_related=True)
-    bugtask = bug.default_bugtask
+    with person_logged_in(owner):
+        bugtask = bug.default_bugtask
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])

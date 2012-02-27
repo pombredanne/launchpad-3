@@ -48,6 +48,7 @@ import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
+from bzrlib.revision import Revision as BzrRevision
 import pytz
 from pytz import UTC
 import simplejson
@@ -138,8 +139,15 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
+    AccessPolicyType,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -1545,6 +1553,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
+    def makeBzrRevision(self, revision_id=None, parent_ids=None, **kwargs):
+        if revision_id is None:
+            revision_id = self.getUniqueString('revision-id')
+        if parent_ids is None:
+            parent_ids = []
+        return BzrRevision(
+            message=self.getUniqueString('message'),
+            revision_id=revision_id,
+            committer=self.getUniqueString('committer'),
+            parent_ids=parent_ids,
+            timestamp=0, timezone=0, properties=kwargs)
+
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
@@ -1679,7 +1699,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # fromText() creates a bug watch associated with the bug.
             with person_logged_in(owner):
                 getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
-        bugtask = bug.default_bugtask
+        bugtask = removeSecurityProxy(bug).default_bugtask
         if date_closed is not None:
             with person_logged_in(owner):
                 bugtask.transitionToStatus(
@@ -1716,7 +1736,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # Find and return the existing target if one exists.
         if bug is not None and target is not None:
-            existing_bugtask = bug.getBugTask(target)
+            existing_bugtask = removeSecurityProxy(bug).getBugTask(target)
             if existing_bugtask is not None:
                 return existing_bugtask
 
@@ -1755,7 +1775,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distroseries=target.distribution.currentseries,
                     sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
-            prerequisite = bug and bug.getBugTask(prerequisite_target)
+            prerequisite = bug and removeSecurityProxy(bug).getBugTask(
+                prerequisite_target)
             if prerequisite is None:
                 prerequisite = self.makeBugTask(
                     bug, prerequisite_target, publish=publish)
@@ -4355,6 +4376,42 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
+
+    def makeAccessPolicy(self, pillar=None,
+                         type=AccessPolicyType.PROPRIETARY):
+        if pillar is None:
+            pillar = self.makeProduct()
+        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        return policies[0]
+
+    def makeAccessArtifact(self, concrete=None):
+        if concrete is None:
+            concrete = self.makeBranch()
+        artifacts = getUtility(IAccessArtifactSource).ensure([concrete])
+        return artifacts[0]
+
+    def makeAccessArtifactGrant(self, artifact=None, grantee=None,
+                                grantor=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        [grant] = getUtility(IAccessArtifactGrantSource).grant(
+            [(artifact, grantee, grantor)])
+        return grant
+
+    def makeAccessPolicyGrant(self, policy=None, grantee=None, grantor=None):
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        [grant] = getUtility(IAccessPolicyGrantSource).grant(
+            [(policy, grantee, grantor)])
+        return grant
 
     def makeFakeFileUpload(self, filename=None, content=None):
         """Return a zope.publisher.browser.FileUpload like object.

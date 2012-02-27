@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -722,6 +722,10 @@
                 attributes="
                     id
                     private
+                    userCanView"/>
+            <require
+                permission="launchpad.View"
+                attributes="
                     bugtasks
                     default_bugtask
                     affected_pillars
@@ -741,7 +745,6 @@
                     official_tags
                     who_made_private
                     date_made_private
-                    userCanView
                     userCanSetCommentVisibility
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
@@ -751,10 +754,7 @@
                     heat_last_updated
                     has_patches
                     latest_patch
-                    latest_patch_uploaded"/>
-            <require
-                permission="launchpad.View"
-                attributes="
+                    latest_patch_uploaded
                     datecreated
                     name
                     title
@@ -821,8 +821,7 @@
                     isUserAffected
                     getHWSubmissions
                     isExpirable
-                    isMuted
-                    "/>
+                    isMuted"/>
             <require
                 permission="launchpad.Edit"
                 attributes="

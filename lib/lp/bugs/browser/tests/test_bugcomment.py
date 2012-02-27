@@ -16,10 +16,8 @@ from soupmatchers import (
     HTMLContains,
     Tag,
     )
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.bugs.browser.bugcomment import (
     BugComment,
@@ -36,7 +34,6 @@ from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
     login_person,
-    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -239,19 +236,16 @@ class TestBugHideCommentControls(
 
     def getContext(self, comment_owner=None):
         """Required by the mixin."""
-        administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
-        with person_logged_in(administrator):
+        with celebrity_logged_in('admin'):
             self.factory.makeBugComment(bug=bug, owner=comment_owner)
         return bug
 
     def getView(self, context, user=None, no_login=False):
         """Required by the mixin."""
-        view = self.getViewBrowser(
-            context=context.default_bugtask,
-            user=user,
-            no_login=no_login)
-        return view
+        task = removeSecurityProxy(context).default_bugtask
+        return self.getViewBrowser(
+            context=task, user=user, no_login=no_login)
 
     def _test_hide_link_visible(self, context, user):
         view = self.getView(context=context, user=user)

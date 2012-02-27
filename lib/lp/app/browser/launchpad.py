@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'DoesNotExistView',
+    'ExceptionHierarchy',
     'Hierarchy',
     'IcingFolder',
     'iter_view_registrations',
@@ -332,6 +333,14 @@ class Hierarchy(LaunchpadView):
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
         return len(self.items) > 1 and not has_major_heading
+
+
+class ExceptionHierarchy(Hierarchy):
+
+    @property
+    def objects(self):
+        """Return an empty list because the traversal is not safe or sane."""
+        return []
 
 
 class Macro:

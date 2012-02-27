@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -613,7 +613,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bugtask_b = self.factory.makeBugTask(bug=bug, target=product_series_b)
         naked_bugtask_a = removeSecurityProxy(bugtask_a)
         naked_bugtask_b = removeSecurityProxy(bugtask_b)
-        naked_default_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_default_bugtask = removeSecurityProxy(bug).default_bugtask
         return (bug, bug_owner, naked_bugtask_a, naked_bugtask_b,
                 naked_default_bugtask)
 
@@ -748,7 +748,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=True, security_related=False, who=who)
             subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
@@ -763,7 +763,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner)),
             subscribers)
