@@ -138,53 +138,46 @@ class BugTaskImportance(DBEnumeratedType):
     UNKNOWN = DBItem(999, """
         Unknown
 
-        The severity of this bug task is unknown.
+        The importance of this bug is not known.
         """)
 
     CRITICAL = DBItem(50, """
         Critical
 
-        This bug is essential to fix as soon as possible. It affects
-        system stability, data integrity and/or remote access
-        security.
+        This bug must be fixed as soon as possible.
         """)
 
     HIGH = DBItem(40, """
         High
 
-        This bug needs urgent attention from the maintainer or
-        upstream. It affects local system security or data integrity.
+        This bug is important, but doesn't need to be done immediately. It
+        should be scheduled for work soon.
         """)
 
     MEDIUM = DBItem(30, """
         Medium
 
-        This bug warrants an upload just to fix it, but can be put
-        off until other major or critical bugs have been fixed.
+        This bug should be fixed, but can wait until more serious bugs have
+        been dealt with.
         """)
 
     LOW = DBItem(20, """
         Low
 
-        This bug does not warrant an upload just to fix it, but
-        it should be fixed, if possible, next time the maintainer
-        does an upload. For example, it might be a typo in a document.
+        This is a minor bug and can be fixed when it’s convenient. For
+        example, it might be a typo.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug, but a request for an enhancement or
-        new feature that does not yet exist in the package. It does
-        not affect system stability. For example: it might be a
-        usability or documentation fix.
+        This is not a bug. It’s a request for an enhancement or new feature.
         """)
 
     UNDECIDED = DBItem(5, """
         Undecided
 
-        A relevant developer or manager has not yet decided how
-        important this bug is.
+        This bug's importance has not yet been decided.
         """)
 
 
@@ -197,8 +190,7 @@ class BugTaskStatus(DBEnumeratedType):
     NEW = DBItem(10, """
         New
 
-        This is a new bug and has not yet been confirmed by the maintainer of
-        this product or source package.
+        This is a new bug. It hasn’t been looked at yet.
         """)
 
     # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
@@ -209,31 +201,28 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        More info is required before making further progress on this bug,
-        likely from the reporter. E.g. the exact error message the user saw,
-        the URL the user was visiting when the bug occurred, etc.
+        The reporter of this bug needs to provide more information before
+        anyone can act on it.
         """)
 
     OPINION = DBItem(16, """
         Opinion
 
-        The bug remains open for discussion only. This status is usually
-        used where there is disagreement over whether the bug is relevant
-        to the current target and whether it should be fixed.
+        The bug remains open for discussion only; there is disagreement over
+        whether the bug is relevant and whether it should be fixed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It could be a support request, spam, or a
-        misunderstanding.
+        This is not a bug. It might be a support request or spam.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This will not be fixed. For example, this might be a bug but it's not
-        considered worth fixing, or it might not be fixed in this release.
+        This bug will not be fixed. It doesn't mean the bug isn't valid, it
+        just doesn't fit with the project's plans.
         """)
 
     EXPIRED = DBItem(19, """
@@ -245,44 +234,40 @@ class BugTaskStatus(DBEnumeratedType):
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed, verified, and confirmed as something
-        needing fixing. Anyone can set this status.
+        This bug has been reviewed and verified by someone other than the
+        reporter.
         """)
 
     TRIAGED = DBItem(21, """
         Triaged
 
-        This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug supervisor to
-        set this status, so it carries more weight than merely
-        Confirmed.
+        This bug has been reviewed and verified by a bug supervisor.
         """)
 
     INPROGRESS = DBItem(22, """
         In Progress
 
-        The person assigned to fix this bug is currently working on fixing it.
+        The person assigned to fix this bug is working on it.
         """)
 
     FIXCOMMITTED = DBItem(25, """
         Fix Committed
 
-        This bug has been fixed in version control, but the fix has
-        not yet made it into a released version of the affected
-        software.
+        A fix for this bug has been created but is not yet available in a
+        released or deployed version of the affected software.
         """)
 
     FIXRELEASED = DBItem(30, """
         Fix Released
 
-        The fix for this bug is available in a released version of the
-        affected software.
+        The fix for this bug is available in a released or deployed version of
+        the affected software.
         """)
 
     UNKNOWN = DBItem(999, """
         Unknown
 
-        The status of this bug task is unknown.
+        The status of this bug is not known.
         """)
 
 
