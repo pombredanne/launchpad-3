@@ -772,7 +772,7 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_lxc(user, lxcname, ssh_key_name):
+def create_lxc(user, lxcname, ssh_key_path):
     """Create the LXC container that will be used for ephemeral instances."""
     # XXX 2012-02-02 gmb bug=925024:
     #     These calls need to be removed once the lxc vs. apparmor bug
@@ -817,7 +817,7 @@ def create_lxc(user, lxcname, ssh_key_name):
         os.makedirs(dst)
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container.
-    sshcall = ssh(lxcname, user)
+    sshcall = ssh(lxcname, user, key=ssh_key_path)
     trials = 60
     while True:
         trials -= 1
@@ -831,11 +831,11 @@ def create_lxc(user, lxcname, ssh_key_name):
             break
 
 
-def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_name):
+def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     """Set up the Launchpad development environment inside the LXC container.
     """
-    root_sshcall = ssh(lxcname)
-    sshcall = ssh(lxcname, user)
+    root_sshcall = ssh(lxcname, key=ssh_key_path)
+    sshcall = ssh(lxcname, user, key=ssh_key_path)
     # APT repository update.
     for apt_repository in APT_REPOSITORIES:
         repository = apt_repository.format(distro=LXC_GUEST_OS)
@@ -889,9 +889,9 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_name):
     root_sshcall('cd {} && make install'.format(checkout_dir))
 
 
-def stop_lxc(lxcname, ssh_key_name):
+def stop_lxc(lxcname, ssh_key_path):
     """Stop the lxc instance named `lxcname`."""
-    ssh(lxcname)('poweroff')
+    ssh(lxcname, key=ssh_key_path)('poweroff')
     timeout = 30
     while timeout:
         try:
