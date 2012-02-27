@@ -809,8 +809,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall = ssh(lxcname)
     sshcall = ssh(lxcname, user)
     # APT repository update.
-    for apt_reposirory in APT_REPOSITORIES:
-        repository = apt_reposirory.format(distro=LXC_GUEST_OS)
+    for apt_repository in APT_REPOSITORIES:
+        repository = apt_repository.format(distro=LXC_GUEST_OS)
         assume_yes = '' if LXC_GUEST_OS == 'lucid' else '-y'
         root_sshcall('add-apt-repository {} "{}"'.format(
             assume_yes, repository))
