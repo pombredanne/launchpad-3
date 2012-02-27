@@ -88,6 +88,7 @@ lxc.network.flags = up
 """
 LXC_PATH = '/var/lib/lxc/'
 RESOLV_FILE = '/etc/resolv.conf'
+SSH_KEY_NAME = 'id_rsa'
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -665,6 +666,10 @@ parser.add_argument(
     metavar='LXC_NAME (default={})'.format(LXC_NAME),
     help='The LXC container name.')
 parser.add_argument(
+    '-s', '--ssh-key-name', default=SSH_KEY_NAME,
+    metavar='SSH_KEY_NAME (default={})'.format(SSH_KEY_NAME),
+    help='The ssh key name used to connect to the LXC container.')
+parser.add_argument(
     '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
     metavar='DEPENDENCIES_DIR (default={})'.format(DEPENDENCIES_DIR),
     help='The directory of the Launchpad dependencies to be created. '
@@ -684,7 +689,7 @@ parser.validators = (
 
 
 def initialize_host(
-    user, fullname, email, lpuser, private_key, public_key,
+    user, fullname, email, lpuser, private_key, public_key, ssh_key_name,
     dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
@@ -768,7 +773,7 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_lxc(user, lxcname):
+def create_lxc(user, lxcname, ssh_key_name):
     """Create the LXC container that will be used for ephemeral instances."""
     # XXX 2012-02-02 gmb bug=925024:
     #     These calls need to be removed once the lxc vs. apparmor bug
@@ -829,7 +834,7 @@ def create_lxc(user, lxcname):
             break
 
 
-def initialize_lxc(user, dependencies_dir, directory, lxcname):
+def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_name):
     """Set up the Launchpad development environment inside the LXC container.
     """
     root_sshcall = ssh(lxcname)
@@ -887,7 +892,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall('cd {} && make install'.format(checkout_dir))
 
 
-def stop_lxc(lxcname):
+def stop_lxc(lxcname, ssh_key_name):
     """Stop the lxc instance named `lxcname`."""
     ssh(lxcname)('poweroff')
     timeout = 30
@@ -908,13 +913,15 @@ def stop_lxc(lxcname):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    lxc_name, dependencies_dir, directory):
+    lxc_name, ssh_key_name, dependencies_dir, directory):
     function_args_map = OrderedDict((
-        ('initialize_host', (user, fullname, email, lpuser, private_key,
-                             public_key, dependencies_dir, directory)),
-        ('create_lxc', (user, lxc_name)),
-        ('initialize_lxc', (user, dependencies_dir, directory, lxc_name)),
-        ('stop_lxc', (lxc_name,)),
+        ('initialize_host', (
+            user, fullname, email, lpuser, private_key, public_key,
+            ssh_key_name, dependencies_dir, directory)),
+        ('create_lxc', (user, lxc_name, ssh_key_name)),
+        ('initialize_lxc', (
+            user, dependencies_dir, directory, lxc_name, ssh_key_name)),
+        ('stop_lxc', (lxc_name, ssh_key_name)),
         ))
     if actions is None:
         actions = function_args_map.keys()
@@ -938,6 +945,7 @@ if __name__ == '__main__':
             args.public_key,
             args.actions,
             args.lxc_name,
+            args.ssh_key_name,
             args.dependencies_dir,
             args.directory,
             )
