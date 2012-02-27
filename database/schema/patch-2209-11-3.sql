@@ -7,7 +7,7 @@ SET client_min_messages=ERROR;
 -- with its legacy data.
 
 CREATE OR REPLACE FUNCTION bug_mirror_legacy_access(bug_id integer) RETURNS void
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 DECLARE
     bug_row record;
