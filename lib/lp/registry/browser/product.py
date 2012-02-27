@@ -162,7 +162,6 @@ from lp.registry.browser.pillar import (
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.enums import AccessPolicyType
-from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
