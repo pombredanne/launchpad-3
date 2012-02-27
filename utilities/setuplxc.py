@@ -720,7 +720,9 @@ def initialize_host(
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
-            os.makedirs(os.path.join(dependencies_dir, subdir))
+            path = os.path.join(dependencies_dir, subdir)
+            if not os.path.exists(path):
+                os.makedirs(path)
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
