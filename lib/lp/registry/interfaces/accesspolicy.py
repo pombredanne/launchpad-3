@@ -65,7 +65,7 @@ class IAccessPolicy(Interface):
 class IAccessPolicyArtifact(Interface):
     """An association between an artifact and a policy.
 
-    For example, an security bug in Ubuntu associated with the Ubuntu
+    For example, a security bug in Ubuntu is associated with the Ubuntu
     security policy so people with a grant for that policy can see it.
     """
 
