@@ -15,8 +15,8 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.store import EmptyResultSet
 from storm.expr import Join
+from storm.store import EmptyResultSet
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 

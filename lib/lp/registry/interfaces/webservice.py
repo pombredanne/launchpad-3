@@ -43,6 +43,8 @@ __all__ = [
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from lp import _schema_circular_imports
+from lp.app.interfaces.services import IServiceFactory
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -101,10 +103,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
-
-# Services
-from lp.app.interfaces.services import IServiceFactory
-from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 
 
 _schema_circular_imports

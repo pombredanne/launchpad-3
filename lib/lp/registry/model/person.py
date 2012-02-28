@@ -44,7 +44,6 @@ from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
     )
-
 import pytz
 from sqlobject import (
     BoolCol,

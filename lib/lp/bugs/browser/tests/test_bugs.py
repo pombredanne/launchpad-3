@@ -6,17 +6,16 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
+
 from zope.component import getUtility
 
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
-from lp.testing import (
-    set_feature_flag,
-    feature_flags,
-    )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     celebrity_logged_in,
+    feature_flags,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
