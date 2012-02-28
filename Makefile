@@ -64,7 +64,7 @@ BUILDOUT_BIN = \
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
     bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
-    bin/watch_jsbuild.py
+    bin/watch_jsbuild
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -181,7 +181,7 @@ jsbuild_widget_css: bin/jsbuild
 	    --builddir $(LP_BUILT_JS_ROOT)
 
 jsbuild_watch:
-	$(PY) bin/watch_jsbuild.py
+	$(PY) bin/watch_jsbuild
 
 $(JS_LP): jsbuild_widget_css
 $(JS_YUI):
