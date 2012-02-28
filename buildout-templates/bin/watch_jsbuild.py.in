@@ -1,92 +1,30 @@
 #!/usr/bin/env python
+import os
+from jsautobiuld import YUIBuilder
 
 # Using ionotify we watch our sources of JavaScript in order to know we should
 # build when the files change.
 
-import lpjsmin
-import pyinotify
-import os
-import re
-import shutil
-from convoy.meta import Builder
+def lp_path_builder(changed_path, **builder_props):
+    """The custom bit of LP code that determines where files get moved to"""
+    # to start out let's assume your CWD is where we're referencing things from
+    CWD = os.getcwd()
+    JSDIR = os.path.join(CWD, builder_props['build_dir'])
+    RENAME = re.compile("^.*lib/lp/(.*)/javascript")
 
-BUILD_DIR = 'build/js/lp'
-WATCH_DIR = 'lib'
-META_NAME = 'LP_MODULES'
-
-# to start out let's assume your CWD is where we're referencing things from
-CWD = os.getcwd()
-JSDIR = os.path.join(CWD, BUILD_DIR)
-FILTERS = [
-    # ignore test files
-    lambda x: x.startswith('test_'),
-    # ignore directories
-    lambda x: os.path.isdir(x),
-    # ignore files that don't end in .js
-    lambda x: not x.endswith('.js'),
-]
-RENAME = re.compile("^.*lib/lp/(.*)/javascript")
-
-
-def build_path(path):
-    match = RENAME.search(path)
+    match = RENAME.search(changed_path)
     js_dir = match.groups()[0]
-    return os.path.join(JSDIR, RENAME.sub(js_dir, path))
-
-
-def copyfile(src, dst):
-    # make sure the directory for it exists
-    d = os.path.dirname(dst)
-    if not os.path.exists(d):
-        os.makedirs(d)
-    shutil.copyfile(src, dst)
-
-
-class HandleChanges(pyinotify.ProcessEvent):
-    def process_IN_CREATE(self, event):
-        if event.mask == pyinotify.IN_CREATE:
-            needs_filtering = [f(event.name) for f in FILTERS]
-            if True in needs_filtering:
-                pass
-            else:
-                new_path = build_path(event.pathname)
-                copyfile(event.pathname, new_path)
-                lpjsmin.minify(new_path)
-                # we now need to update the meta.js file for our new module
-                Builder(
-                    name=META_NAME,
-                    src_dir=os.path.abspath(BUILD_DIR),
-                    output=os.path.join(BUILD_DIR, 'meta.js'),
-                    exclude_regex='-min.js',
-                    ext=False,
-                    include_skin=False,
-                    ).do_build()
-
-    def process_IN_MODIFY(self, event):
-        if event.mask == pyinotify.IN_MODIFY:
-            needs_filtering = [f(event.name) for f in FILTERS]
-            if True in needs_filtering:
-                pass
-            else:
-                new_path = build_path(event.pathname)
-                copyfile(event.pathname, new_path)
-                lpjsmin.minify(new_path)
+    return os.path.join(JSDIR, RENAME.sub(js_dir, changed_path))
 
 
 if __name__ == "__main__":
-    print "Watching '%s' for JS changes" % WATCH_DIR
-    # Instanciate a new WatchManager (will be used to store watches).
-    wm = pyinotify.WatchManager()
+    build_dir = 'build/js/lp'
+    meta_name = 'LP_MODULES'
+    watch_dir = 'lib'
 
-    # watched events
-    mask = pyinotify.IN_MODIFY | pyinotify.IN_CREATE
+    builder = YUIBuilder(lp_path_builder,
+            build_dir,
+            watch_dir=watch_dir,
+            meta_jsmodule=meta_name)
 
-    # Associate this WatchManager with a Notifier (will be used to report and
-    # process events).
-    handler = HandleChanges()
-    notifier = pyinotify.Notifier(wm, handler)
-
-    # Add a new watch on cwd for ALL_EVENTS.
-    # Loop forever and handle events.
-    wm.add_watch(WATCH_DIR, mask, rec=True)
-    notifier.loop()
+    builder.run()
