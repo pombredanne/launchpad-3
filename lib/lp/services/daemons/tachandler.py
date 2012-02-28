@@ -76,6 +76,7 @@ class TacTestSetup(TacTestFixture):
                 else:
                     logfile.truncate(0)
 
+    @property
     def daemon_directory(self):
         return os.path.abspath(
             os.path.join(os.path.dirname(lp.__file__), os.pardir, os.pardir,
