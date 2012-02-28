@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'AccessArtifact',
     'AccessPolicy',
+    'AccessPolicyArtifact',
     'AccessPolicyGrant',
     ]
 
+import pytz
 from storm.expr import (
     And,
     Or,
@@ -28,8 +30,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessPolicy,
+    IAccessPolicyArtifact,
     IAccessPolicyGrant,
     )
+from lp.registry.model.person import Person
 from lp.services.database.bulk import create
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
@@ -178,6 +182,47 @@ class AccessPolicy(StormBase):
             Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
 
 
+class AccessPolicyArtifact(StormBase):
+    implements(IAccessPolicyArtifact)
+
+    __storm_table__ = 'AccessPolicyArtifact'
+    __storm_primary__ = 'abstract_artifact_id', 'policy_id'
+
+    abstract_artifact_id = Int(name='artifact')
+    abstract_artifact = Reference(
+        abstract_artifact_id, 'AccessArtifact.id')
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
+
+    @classmethod
+    def create(cls, links):
+        """See `IAccessPolicyArtifactSource`."""
+        return create(
+            (cls.abstract_artifact, cls.policy), links,
+            get_objects=True)
+
+    @classmethod
+    def find(cls, links):
+        """See `IAccessArtifactGrantSource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(
+                And(cls.abstract_artifact == artifact, cls.policy == policy)
+                for (artifact, policy) in links)))
+
+    @classmethod
+    def findByArtifact(cls, artifacts):
+        """See `IAccessPolicyArtifactSource`."""
+        ids = [artifact.id for artifact in artifacts]
+        return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
+
+    @classmethod
+    def findByPolicy(cls, policies):
+        """See `IAccessPolicyArtifactSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(cls, cls.policy_id.is_in(ids))
+
+
 class AccessArtifactGrant(StormBase):
     implements(IAccessArtifactGrant)
 
@@ -191,7 +236,7 @@ class AccessArtifactGrant(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
     grantor_id = Int(name='grantor')
     grantor = Reference(grantor_id, 'Person.id')
-    date_created = DateTime()
+    date_created = DateTime(tzinfo=pytz.UTC)
 
     @property
     def concrete_artifact(self):
@@ -238,7 +283,7 @@ class AccessPolicyGrant(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
     grantor_id = Int(name='grantor')
     grantor = Reference(grantor_id, 'Person.id')
-    date_created = DateTime()
+    date_created = DateTime(tzinfo=pytz.UTC)
 
     @classmethod
     def grant(cls, grants):
@@ -260,3 +305,23 @@ class AccessPolicyGrant(StormBase):
         """See `IAccessPolicyGrantSource`."""
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
+
+
+class AccessPolicyGrantFlat(StormBase):
+    __storm_table__ = 'AccessPolicyGrantFlat'
+
+    id = Int(primary=True)
+    policy_id = Int(name='policy')
+    policy = Reference(policy_id, 'AccessPolicy.id')
+    abstract_artifact_id = Int(name='artifact')
+    abstract_artifact = Reference(
+        abstract_artifact_id, 'AccessArtifact.id')
+    grantee_id = Int(name='grantee')
+    grantee = Reference(grantee_id, 'Person.id')
+
+    @classmethod
+    def findGranteesByPolicy(cls, policies):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(
+            Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
