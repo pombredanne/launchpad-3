@@ -6,6 +6,7 @@ __metaclass__ = type
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -25,4 +26,5 @@ class TestNotificationRecipientSet(TestCaseWithFactory):
         notifier = self.factory.makePerson()
         with person_logged_in(notifier):
             recipients.add([notified_team], 'some reason', 'some header')
-        self.assertEqual([notified_team], recipients.getRecipients())
+        with celebrity_logged_in("admin"):
+            self.assertEqual([notified_team], recipients.getRecipients())
