@@ -262,6 +262,7 @@ Valid names work as expected.
     >>> print rebuild_archive.name
     there-we-go
 
+    >>> rebuild_archive.enable()
     >>> login(ANONYMOUS)
 
 Please note that copy archive displayname doesn't follow the name change.
