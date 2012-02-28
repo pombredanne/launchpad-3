@@ -788,7 +788,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
         if email is not None:
-            team.setContactAddress(
+            removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
         if icon is not None:
             naked_team.icon = icon
