@@ -12,6 +12,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 
+
 class TestNotificationRecipientSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
