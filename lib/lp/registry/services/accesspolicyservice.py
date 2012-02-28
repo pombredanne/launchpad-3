@@ -40,6 +40,7 @@ class AccessPolicyService:
         return 'accesspolicy'
 
     def getAccessPolicies(self):
+        """See `IAccessPolicyService`."""
         policies = []
         for x, policy in enumerate(AccessPolicyType):
             item = dict(
@@ -49,7 +50,20 @@ class AccessPolicyService:
                 description=policy.value.description
             )
             policies.append(item)
-        return simplejson.dumps(policies, cls=ResourceJSONEncoder)
+        return policies
+
+    def getSharingPermissions(self):
+        """See `IAccessPolicyService`."""
+        # TODO - use proper model class
+        sharing_permissions = [
+            {'value': 'all', 'name': 'All',
+             'title': 'share bug and branch subscriptions'},
+            {'value': 'some', 'name': 'Some',
+             'title': 'share bug and branch subscriptions'},
+            {'value': 'nothing', 'name': 'Nothing',
+             'title': 'revoke all bug and branch subscriptions'}
+        ]
+        return sharing_permissions
 
     def getProductObservers(self, product):
         """See `IAccessPolicyService`."""

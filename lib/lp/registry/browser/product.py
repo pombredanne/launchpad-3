@@ -2426,31 +2426,16 @@ class ProductSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    def _getAccessPolicyService(self):
+        return getUtility(IService, 'accesspolicy')
+
     @property
     def access_policies(self):
-        result = []
-        for x, policy in enumerate(AccessPolicyType):
-            item = dict(
-                index=x,
-                value=policy.token,
-                title=policy.title,
-                description=policy.value.description
-            )
-            result.append(item)
-        return result
+        return self._getAccessPolicyService().getAccessPolicies()
 
     @property
     def sharing_permissions(self):
-        # TODO - use proper model class
-        sharing_permissions = [
-            {'value': 'all', 'name': 'All',
-             'title': 'share bug and branch subscriptions'},
-            {'value': 'some', 'name': 'Some',
-             'title': 'share bug and branch subscriptions'},
-            {'value': 'nothing', 'name': 'Nothing',
-             'title': 'revoke all bug and branch subscriptions'}
-        ]
-        return sharing_permissions
+        return self._getAccessPolicyService().getSharingPermissions()
 
     @cachedproperty
     def sharing_vocabulary(self):
@@ -2477,9 +2462,7 @@ class ProductSharingView(LaunchpadView):
 
     @property
     def observer_data(self):
-        aps = getUtility(IService, 'accesspolicy')
-        observers = aps.getProductObservers(self.context)
-        return observers
+        return self._getAccessPolicyService().getProductObservers(self.context)
 
     def initialize(self):
         super(ProductSharingView, self).initialize()

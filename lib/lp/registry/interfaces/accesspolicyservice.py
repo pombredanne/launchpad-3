@@ -32,10 +32,11 @@ class IAccessPolicyService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
-    @export_read_operation()
-    @operation_for_version('devel')
     def getAccessPolicies():
         """Return the access policy types."""
+
+    def getSharingPermissions():
+        """Return the access policy sharing permissions."""
 
     @export_read_operation()
     @operation_parameters(
