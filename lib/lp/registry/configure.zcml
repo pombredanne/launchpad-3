@@ -1930,6 +1930,17 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessArtifactSource"/>
     </securedutility>
     <class
+        class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
         class="lp.registry.model.accesspolicy.AccessArtifactGrant">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrant"/>
@@ -1950,5 +1961,11 @@
         provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrantFlat"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
     </securedutility>
 </configure>

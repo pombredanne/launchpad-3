@@ -1,22 +1,23 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from storm.exceptions import LostObjectError
-from testtools.matchers import (
-    AllMatch,
-    )
+from testtools.matchers import AllMatch
 from zope.component import getUtility
 
 from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicy,
     IAccessArtifact,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicy,
+    IAccessPolicyArtifact,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -264,6 +265,61 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
 
+class TestAccessPolicyArtifact(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessPolicyArtifact(),
+            Provides(IAccessPolicyArtifact))
+
+
+class TestAccessPolicyArtifactSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_create(self):
+        wanted = [
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
+            ]
+        links = getUtility(IAccessPolicyArtifactSource).create(wanted)
+        self.assertContentEqual(
+            wanted,
+            [(link.abstract_artifact, link.policy) for link in links])
+
+    def test_find(self):
+        links = [self.factory.makeAccessPolicyArtifact() for i in range(3)]
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).find(
+                [(link.abstract_artifact, link.policy) for link in links]))
+
+    def test_findByArtifact(self):
+        # findByArtifact() finds only the relevant links.
+        artifact = self.factory.makeAccessArtifact()
+        links = [
+            self.factory.makeAccessPolicyArtifact(artifact=artifact)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [artifact]))
+
+    def test_findByPolicy(self):
+        # findByPolicy() finds only the relevant links.
+        policy = self.factory.makeAccessPolicy()
+        links = [
+            self.factory.makeAccessPolicyArtifact(policy=policy)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
+
+
 class TestAccessPolicyGrant(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
@@ -305,3 +361,30 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
         self.assertContentEqual(
             grants,
             getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))
+
+
+class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_findGranteesByPolicy(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        # People with grants on the policy show up.
+        policy = self.factory.makeAccessPolicy()
+        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        # But not people with grants on artifacts.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        # Unless the artifacts are linked to the policy.
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee, artifact_grant.grantee],
+            apgfs.findGranteesByPolicy([policy]))

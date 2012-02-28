@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for pillar and artifact access policies."""
@@ -11,7 +11,10 @@ __all__ = [
     'IAccessArtifactGrantSource',
     'IAccessArtifactSource',
     'IAccessPolicy',
+    'IAccessPolicyArtifact',
+    'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
+    'IAccessPolicyGrantFlatSource',
     'IAccessPolicyGrantSource',
     'IAccessPolicySource',
     ]
@@ -23,11 +26,22 @@ from zope.interface import (
 
 
 class IAccessArtifact(Interface):
+    """An artifact that has its own access control rules.
+
+    Examples are a bug or a branch.
+    """
+
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
 
 
 class IAccessArtifactGrant(Interface):
+    """A grant for a person or team to access an artifact.
+
+    For example, the reporter of an embargoed security bug has a grant for
+    that bug.
+    """
+
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
@@ -37,12 +51,35 @@ class IAccessArtifactGrant(Interface):
 
 
 class IAccessPolicy(Interface):
+    """A policy to govern access to a category of a project's artifacts.
+
+    An example is Ubuntu security, which controls access to Ubuntu's embargoed
+    security bugs.
+    """
+
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
 
 
+class IAccessPolicyArtifact(Interface):
+    """An association between an artifact and a policy.
+
+    For example, a security bug in Ubuntu is associated with the Ubuntu
+    security policy so people with a grant for that policy can see it.
+    """
+
+    abstract_artifact = Attribute("Abstract artifact")
+    policy = Attribute("Access policy")
+
+
 class IAccessPolicyGrant(Interface):
+    """A grant for a person or team to access all of a policy's artifacts.
+
+    For example, the Canonical security team has a grant for Ubuntu's
+    security policy so they can see embargoed security bugs.
+    """
+
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
@@ -94,6 +131,29 @@ class IAccessArtifactGrantSource(Interface):
         """Delete all `IAccessArtifactGrant` objects for the artifacts."""
 
 
+class IAccessPolicyArtifactSource(Interface):
+
+    def create(links):
+        """Create `IAccessPolicyArtifacts`s.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs to link.
+        """
+
+    def find(links):
+        """Return the specified `IAccessPolicyArtifacts`s if they exist.
+
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs.
+        """
+
+    def findByArtifact(artifacts):
+        """Return all `IAccessPolicyArtifact` objects for the artifacts."""
+
+    def findByPolicy(policies):
+        """Return all `IAccessPolicyArtifact` objects for the policies."""
+
+
 class IAccessPolicySource(Interface):
 
     def create(pillars_and_types):
@@ -138,4 +198,16 @@ class IAccessPolicyGrantSource(Interface):
         """
 
     def findByPolicy(policies):
-        """Return all `IAccessPolicyGrant` objects for the artifacts."""
+        """Return all `IAccessPolicyGrant` objects for the policies."""
+
+
+class IAccessPolicyGrantFlatSource(Interface):
+    """Experimental query utility to search through the flattened schema."""
+
+    def findGranteesByPolicy(policies):
+        """Find the `IPerson`s with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        """
