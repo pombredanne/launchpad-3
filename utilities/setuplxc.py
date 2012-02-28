@@ -212,7 +212,7 @@ def file_prepend(filename, line):
 
 
 def generate_ssh_keys(path):
-    """Generate ssh key pair saving them inside the given `directory`.
+    """Generate ssh key pair, saving them inside the given `directory`.
 
         >>> generate_ssh_keys('/tmp/id_rsa')
         0
