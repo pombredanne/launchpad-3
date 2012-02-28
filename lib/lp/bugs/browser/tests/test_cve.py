@@ -6,11 +6,11 @@
 from operator import attrgetter
 import re
 
+from lp.bugs.browser.cvereport import BugTaskCve
 from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.bugs.browser.cvereport import BugTaskCve
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,

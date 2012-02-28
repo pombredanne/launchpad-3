@@ -8,14 +8,12 @@ __all__ = [
     'AccessPolicyService',
     ]
 
-import simplejson
 from lazr.restful import ResourceJSONEncoder
+import simplejson
 from zope.interface import implements
 
 from lp.registry.enums import AccessPolicyType
-from lp.registry.interfaces.accesspolicyservice import (
-    IAccessPolicyService,
-    )
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 
 
 class AccessPolicyService:

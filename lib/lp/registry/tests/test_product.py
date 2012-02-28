@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from lp.services.webapp.interaction import ANONYMOUS
 
+
 __metaclass__ = type
 
 from cStringIO import StringIO

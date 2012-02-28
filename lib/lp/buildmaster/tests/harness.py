@@ -13,6 +13,7 @@ __all__ = [
 import os
 
 import canonical
+
 from lp.services.daemons.tachandler import TacTestSetup
 from lp.services.osutils import remove_tree
 

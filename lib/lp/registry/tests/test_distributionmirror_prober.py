@@ -12,6 +12,7 @@ import logging
 import os
 from StringIO import StringIO
 
+import canonical
 from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
 from twisted.internet import (
@@ -24,7 +25,6 @@ from twisted.web import server
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-import canonical
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror

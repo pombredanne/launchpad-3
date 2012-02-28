@@ -6,12 +6,9 @@
 __metaclass__ = type
 
 import datetime
+
 import transaction
 
-from lp.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.registry.model.milestonetag import (
     MilestoneTag,
     ProjectGroupMilestoneTag,
@@ -20,6 +17,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
     )
 
 

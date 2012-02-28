@@ -22,7 +22,6 @@ from operator import itemgetter
 import urllib
 
 from storm.expr import Join
-
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -34,19 +33,19 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.person import IPerson
 from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
-from lp.registry.interfaces.person import IPerson
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.menu import  (
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
-from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
