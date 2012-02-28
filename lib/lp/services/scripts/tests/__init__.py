@@ -11,7 +11,6 @@ import os
 import subprocess
 
 import canonical
-
 from lp.services.config import config
 
 

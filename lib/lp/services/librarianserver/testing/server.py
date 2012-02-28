@@ -15,12 +15,12 @@ import tempfile
 from textwrap import dedent
 import warnings
 
-import canonical
 from fixtures import (
     Fixture,
     FunctionFixture,
     )
 
+import canonical
 from lp.services.config import config
 from lp.services.daemons.tachandler import (
     TacException,
