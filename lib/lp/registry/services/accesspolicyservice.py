@@ -14,7 +14,7 @@ from lazr.restful.utils import get_current_web_service_request
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import AccessPolicyType, SharingPermission
 from lp.registry.interfaces.accesspolicyservice import (
     IAccessPolicyService,
     )
@@ -50,15 +50,14 @@ class AccessPolicyService:
 
     def getSharingPermissions(self):
         """See `IAccessPolicyService`."""
-        # TODO - use proper model class
-        sharing_permissions = [
-            {'value': 'all', 'name': 'All',
-             'title': 'share bug and branch subscriptions'},
-            {'value': 'some', 'name': 'Some',
-             'title': 'share bug and branch subscriptions'},
-            {'value': 'nothing', 'name': 'Nothing',
-             'title': 'revoke all bug and branch subscriptions'}
-        ]
+        sharing_permissions = []
+        for permission in SharingPermission:
+            item = dict(
+                value=permission.token,
+                title=permission.title,
+                description=permission.value.description
+            )
+            sharing_permissions.append(item)
         return sharing_permissions
 
     def getProductObservers(self, product):
@@ -72,14 +71,27 @@ class AccessPolicyService:
             resource = EntryResource(person, request)
             person_data = resource.toDataForJSON()
             permissions = {
-                'PUBLICSECURITY': 'some',
-                'EMBARGOEDSECURITY': 'all'
+                'PUBLICSECURITY': 'SOME',
+                'EMBARGOEDSECURITY': 'ALL'
             }
             if id > 2:
-                permissions['USERDATA'] = 'some'
+                permissions['USERDATA'] = 'SOME'
             person_data['permissions'] = permissions
             result.append(person_data)
         return result
+
+    def addProductObserver(self, product, observer, access_policy,
+                              sharing_permission):
+        """See `IAccessPolicyService`."""
+        # TODO - implement this
+        request = get_current_web_service_request()
+        resource = EntryResource(observer, request)
+        person_data = resource.toDataForJSON()
+        permissions = {
+            access_policy.name: sharing_permission.name,
+        }
+        person_data['permissions'] = permissions
+        return person_data
 
     def deleteProductObserver(self, product, observer):
         """See `IAccessPolicyService`."""

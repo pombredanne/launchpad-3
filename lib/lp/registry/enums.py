@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
     'PersonTransferJobType',
+    'SharingPermission',
     ]
 
 from lazr.enum import (
@@ -56,6 +57,31 @@ class AccessPolicyType(DBEnumeratedType):
 
         Only users with permission to see the project's artifacts containing
         proprietary data can see this information.
+        """)
+
+
+class SharingPermission(DBEnumeratedType):
+    """Sharing permission.
+
+    The level of access granted for a particular access policy.
+    """
+
+    NOTHING = DBItem(1, """
+        Nothing
+
+        Revoke all bug and branch subscriptions.
+        """)
+
+    ALL = DBItem(2, """
+        All
+
+        Share all bugs and branches.
+        """)
+
+    SOME = DBItem(3, """
+        Some
+
+        Share bug and branch subscriptions.
         """)
 
 

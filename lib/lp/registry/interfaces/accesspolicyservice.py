@@ -10,6 +10,8 @@ __all__ = [
     'IAccessPolicyService',
     ]
 
+from zope.schema import Choice
+
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
@@ -21,6 +23,10 @@ from lazr.restful.fields import Reference
 
 from lp import _
 from lp.app.interfaces.services import IService
+from lp.registry.enums import (
+    AccessPolicyType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 
@@ -44,6 +50,17 @@ class IAccessPolicyService(IService):
     @operation_for_version('devel')
     def getProductObservers(product):
         """Return people/teams who can see product artifacts."""
+
+    @export_write_operation()
+    @operation_parameters(
+        product=Reference(IProduct, title=_('Product'), required=True),
+        observer=Reference(IPerson, title=_('Observer'), required=True),
+        access_policy=Choice(vocabulary=AccessPolicyType),
+        sharing_permission=Choice(vocabulary=SharingPermission))
+    @operation_for_version('devel')
+    def addProductObserver(product, observer, access_policy,
+                              sharing_permission):
+        """Add an observer with the access policy to a product."""
 
     @export_write_operation()
     @operation_parameters(
