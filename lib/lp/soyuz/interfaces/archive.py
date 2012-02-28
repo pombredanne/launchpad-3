@@ -321,10 +321,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
         description=_(
             "Create debug symbol packages for builds in the archive."))
 
-    authorized_size = Int(
-        title=_("Authorized size"), required=False,
-        max=2 ** 31 - 1,
-        description=_("Maximum size, in MiB, allowed for the archive."))
+    authorized_size = exported(
+        Int(
+            title=_("Authorized size"), required=False,
+            max=2 ** 31 - 1,
+            description=_("Maximum size, in MiB, allowed for the archive.")))
 
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
