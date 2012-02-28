@@ -61,8 +61,8 @@ will match the activity we just created:
 If no activity has occurred for a script, getLastActivity() returns
 None:
 
-    >>> activity = getUtility(IScriptActivitySet).getLastActivity(
-    ...     'no-script-name')
+    >>> print getUtility(IScriptActivitySet).getLastActivity(
+    ...     'no-such-script')
     None
 
 If the hostname parameter is omitted, it defaults to the host the
