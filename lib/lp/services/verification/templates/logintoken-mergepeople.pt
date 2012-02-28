@@ -6,7 +6,7 @@
 <tal:do-this-first tal:content="view/processForm" />
 
 <html
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
 >
 <body>
   <div class="top-portlet" metal:fill-slot="main">

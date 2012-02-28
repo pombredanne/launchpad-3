@@ -657,11 +657,10 @@ class RevisionsAddedJob(BranchJobDerived):
             merged_revisions = self.getMergedRevisionIDs(revision_id, graph)
             authors = self.getAuthors(merged_revisions, graph)
             revision_set = RevisionSet()
-            rev_authors = set(revision_set.acquireRevisionAuthor(author) for
-                              author in authors)
+            rev_authors = revision_set.acquireRevisionAuthors(authors)
             outf = StringIO()
             pretty_authors = []
-            for rev_author in rev_authors:
+            for rev_author in rev_authors.values():
                 if rev_author.person is None:
                     displayname = rev_author.name
                 else:
