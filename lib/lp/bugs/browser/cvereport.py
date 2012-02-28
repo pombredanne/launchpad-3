@@ -91,7 +91,8 @@ class CVEReportView(LaunchpadView):
                 bugtask,
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
-                has_patch=badges['has_patch'])
+                has_patch=badges['has_patch'],
+                tags='')
             if bugtask.status in RESOLVED_BUGTASK_STATUSES:
                 current_bugtaskcves = resolved_bugtaskcves
             else:
