@@ -8,11 +8,7 @@ __all__ = [
     'AccessPolicyService',
     ]
 
-import simplejson
-from lazr.restful import (
-    EntryResource,
-    ResourceJSONEncoder,
-    )
+from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_web_service_request
 
 from zope.component import getUtility
