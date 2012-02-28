@@ -201,8 +201,8 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        The reporter of this bug needs to provide more information before
-        anyone can act on it.
+        The reporter of this bug needs to provide more information before it
+        can be confirmed.
         """)
 
     OPINION = DBItem(16, """
