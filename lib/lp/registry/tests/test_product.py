@@ -1,6 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lp.services.webapp.interaction import ANONYMOUS
 
 
 __metaclass__ = type
@@ -44,11 +43,9 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
-from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     celebrity_logged_in,
     login,
-    login_celebrity,
     login_person,
     TestCase,
     TestCaseWithFactory,
