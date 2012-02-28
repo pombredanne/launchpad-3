@@ -164,14 +164,14 @@ class BugTaskImportance(DBEnumeratedType):
     LOW = DBItem(20, """
         Low
 
-        This is a minor bug and can be fixed when it’s convenient. For
+        This is a minor bug and can be fixed when it's convenient. For
         example, it might be a typo.
         """)
 
     WISHLIST = DBItem(10, """
         Wishlist
 
-        This is not a bug. It’s a request for an enhancement or new feature.
+        This is not a bug. It's a request for an enhancement or new feature.
         """)
 
     UNDECIDED = DBItem(5, """
@@ -190,7 +190,7 @@ class BugTaskStatus(DBEnumeratedType):
     NEW = DBItem(10, """
         New
 
-        This is a new bug. It hasn’t been looked at yet.
+        This is a new bug. It hasn't been looked at yet.
         """)
 
     # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
