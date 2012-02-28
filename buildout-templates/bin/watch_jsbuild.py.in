@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
-from jsautobiuld import YUIBuilder
+import re
+from jsautobuild import YUIBuilder
 
 # Using ionotify we watch our sources of JavaScript in order to know we should
 # build when the files change.
