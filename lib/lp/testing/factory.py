@@ -2690,11 +2690,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        archive = getUtility(IArchiveSet).new(
-            owner=owner, purpose=purpose,
-            distribution=distribution, name=name, displayname=displayname,
-            enabled=enabled, require_virtualized=virtualized,
-            description=description)
+        with person_logged_in(owner):
+            archive = getUtility(IArchiveSet).new(
+                owner=owner, purpose=purpose,
+                distribution=distribution, name=name, displayname=displayname,
+                enabled=enabled, require_virtualized=virtualized,
+                description=description)
 
         if private:
             naked_archive = removeSecurityProxy(archive)
@@ -3749,14 +3750,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
-        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
-            source_package_release=source_package_release,
-            processor=processor,
-            distro_arch_series=distroarchseries,
-            status=status,
-            archive=archive,
-            pocket=pocket,
-            date_created=date_created)
+        with person_logged_in(archive.owner):
+            binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+                source_package_release=source_package_release,
+                processor=processor,
+                distro_arch_series=distroarchseries,
+                status=status,
+                archive=archive,
+                pocket=pocket,
+                date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         IStore(binary_package_build).flush()
@@ -3823,10 +3825,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive=archive, distroseries=distroseries,
                 date_uploaded=date_uploaded, **kwargs)
 
-        spph = getUtility(IPublishingSet).newSourcePublication(
-            archive, sourcepackagerelease, distroseries,
-            sourcepackagerelease.component, sourcepackagerelease.section,
-            pocket, ancestor)
+        with person_logged_in(archive.owner):
+            spph = getUtility(IPublishingSet).newSourcePublication(
+                archive, sourcepackagerelease, distroseries,
+                sourcepackagerelease.component, sourcepackagerelease.section,
+                pocket, ancestor)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status

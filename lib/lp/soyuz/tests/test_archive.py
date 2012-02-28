@@ -616,7 +616,8 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkUpload_disabled_archive(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(
             purpose=ArchivePurpose.PRIMARY)
-        removeSecurityProxy(archive).disable()
+        archive = removeSecurityProxy(archive)
+        archive.disable()
         self.assertCannotUpload(
             ArchiveDisabled, archive, self.factory.makePerson(),
             self.factory.makeSourcePackageName(),
