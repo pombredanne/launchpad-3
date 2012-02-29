@@ -3,18 +3,20 @@
 
 """Tests for core services infrastructure."""
 
+from lazr.restful.interfaces._rest import IHTTPResource
 from zope.component import getUtility
 from zope.interface.declarations import implements
 
-from lazr.restful.interfaces._rest import IHTTPResource
-
-from lp.app.interfaces.services import IService, IServiceFactory
+from lp.app.interfaces.services import (
+    IService,
+    IServiceFactory,
+    )
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.testing import (
     FakeAdapterMixin,
+    login,
     TestCaseWithFactory,
     )
-from lp.testing import login
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 

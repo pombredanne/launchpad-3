@@ -15,9 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.enums import AccessPolicyType
-from lp.registry.interfaces.accesspolicyservice import (
-    IAccessPolicyService,
-    )
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.person import IPersonSet
 
 

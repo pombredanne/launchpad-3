@@ -33,7 +33,10 @@
       <thead>
         <tr>
           <th colspan="2" style="width: 33%">User or Team</th>
-          <th colspan="2" style="width: ">Sharing <span class="help">(<a href="permissions_help.html" target="help" class="js-action help">help</a>)</span></th>
+          <th colspan="2" style="width: ">Sharing <span class="help">
+            (<a href="/+help-registry/sharing.html"
+              target="help" class="js-action help">help</a>)</span>
+          </th>
           <th colspan="1" style="width: ">Shared items</th>
         </tr>
       </thead>
