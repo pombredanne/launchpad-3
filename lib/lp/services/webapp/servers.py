@@ -1427,7 +1427,7 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
-    # For now, the same as public requests.
+    # For now, the same as public requests except that there's no SSL.
 
     strict_transport_security = False
 
