@@ -8,8 +8,6 @@ __metaclass__ = type
 from cookielib import domain_match
 
 from lazr.uri import URI
-from storm.zope.interfaces import IZStorm
-from zope.component import getUtility
 from zope.session.http import CookieClientIdManager
 
 from lp.services.config import config
@@ -42,6 +40,7 @@ def get_cookie_domain(request_domain):
     return None
 
 ANNOTATION_KEY = 'lp.services.webapp.session.sid'
+
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
