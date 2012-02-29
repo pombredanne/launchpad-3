@@ -78,7 +78,7 @@ class AccessPolicyService:
         person_by_id = {}
         request = get_current_web_service_request()
         for g in grants:
-            if not person_by_id.has_key(g.grantee.id):
+            if not g.grantee.id in person_by_id:
                 resource = EntryResource(g.grantee, request)
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}

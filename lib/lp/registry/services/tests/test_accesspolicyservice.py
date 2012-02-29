@@ -1,6 +1,5 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantSource, IAccessPolicySource
 
 __metaclass__ = type
 
@@ -12,6 +11,10 @@ from zope.component import getUtility
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import AccessPolicyType, SharingPermission
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantSource,
+    IAccessPolicySource,
+    )
 from lp.registry.services.accesspolicyservice import AccessPolicyService
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
@@ -78,7 +81,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self._test_addPillarObserver(product)
 
-    def test_addProductObserver(self):
+    def test_addDistroObserver(self):
         distro = self.factory.makeDistribution()
         self._test_addPillarObserver(distro)
 
