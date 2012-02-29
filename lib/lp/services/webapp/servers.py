@@ -569,6 +569,15 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         # Our response always vary based on authentication.
         self.response.setHeader('Vary', 'Cookie, Authorization')
 
+        # Prevent clickjacking and content sniffing attacks.
+        self.response.setHeader('X-Frame-Options', 'SAMEORIGIN')
+        self.response.setHeader('X-Content-Type-Options', 'nosniff')
+
+        # And tell browsers that we always use SSL.
+        # 2592000 = 30 days in seconds
+        self.response.setHeader(
+            'Strict-Transport-Security', 'max-age=2592000')
+
     @property
     def stepstogo(self):
         return StepsToGo(self)
