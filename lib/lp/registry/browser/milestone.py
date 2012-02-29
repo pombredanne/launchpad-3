@@ -254,7 +254,7 @@ class MilestoneViewMixin(object):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self._bug_badge_properties[bugtask]
-        tags = ''
+        tags = ()
         return BugTaskListingItem(
             bugtask,
             badge_property['has_branch'],

@@ -1793,7 +1793,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, tags=''):
+def make_bug_task_listing_item(factory, tags=()):
     owner = factory.makePerson()
     bug = factory.makeBug(
         owner=owner, private=True, security_related=True)
