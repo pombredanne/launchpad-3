@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
-from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -15,6 +14,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.services import IService
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (
     IProductSet,
