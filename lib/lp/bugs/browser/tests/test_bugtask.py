@@ -1859,6 +1859,33 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         view.initialize()
         return view
 
+    def invalidate_caches(self, obj):
+        store = Store.of(obj)
+        # Make sure everything is in the database.
+        store.flush()
+        # And invalidate the cache (not a reset, because that stops us using
+        # the domain objects)
+        store.invalidate()
+
+    def test_rendered_query_counts_constant_with_many_bugtasks(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        buggy_product = self.factory.makeProduct()
+        for _ in range(10):
+            self.factory.makeBug(product=buggy_product)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(bug)
+        # count with single task
+        url = canonical_url(product, view_name='+bugs')
+        self.getUserBrowser(url)
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        # count with many tasks
+        buggy_url = canonical_url(buggy_product, view_name='+bugs')
+        self.getUserBrowser(buggy_url)
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
         view = self.makeView()
