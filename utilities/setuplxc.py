@@ -727,27 +727,28 @@ def initialize_host(
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
     with open(build_script_file, 'w') as script:
-        script.write(textwrap.dedent(r"""\
+        script.write(textwrap.dedent("""\
             #!/bin/sh
             set -uex
             lxc-start -n lptests -d
             lxc-wait -n lptests -s RUNNING
             sleep 30 # aparently RUNNING isn't quite enough
-            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \
-                make -C /var/lib/buildbot/lp/build schema"
+            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
+                make -C /var/lib/buildbot/lp schema"
             lxc-stop -n lptests
             lxc-wait -n lptests -s STOPPED
             """))
         os.chmod(build_script_file, 0555)
     test_script_file = '/usr/local/bin/launchpad-lxc-test'
     with open(test_script_file, 'w') as script:
-        script.write(textwrap.dedent(r"""\
+        script.write(textwrap.dedent("""
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \
-                --error-file=/var/tmp/xvfb-errors.log \
-                --server-args='-screen 0 1024x768x24' \
-                -a $PWD/bin/test --subunit $@
+            sshpass -p ubuntu \\
+                lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
+                    --error-file=/var/tmp/xvfb-errors.log \\
+                    --server-args='-screen 0 1024x768x24' \\
+                    -a $PWD/bin/test --subunit $@
             """))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
@@ -842,7 +843,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall(
         'apt-get update && '
         'DEBIAN_FRONTEND=noninteractive '
-        'apt-get -y --allow-unauthenticated install language-pack-en')
+        'apt-get -y --allow-unauthenticated '
+        'install language-pack-en testrepository sshpass')
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
         '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
