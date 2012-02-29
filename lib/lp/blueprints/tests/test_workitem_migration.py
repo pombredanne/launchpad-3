@@ -6,17 +6,14 @@ __metaclass__ = type
 from textwrap import dedent
 
 from testtools.matchers import (
-    MatchesRegex,
     MatchesStructure,
     )
 
-import transaction
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.script import run_script
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.workitemmigration import (
@@ -267,33 +264,3 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             Complexity:
             [user1] milestone1: 10
             """).strip(), spec.whiteboard.strip())
-
-
-class TestMigrationScript(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def test_script_run_as_subprocess(self):
-        whiteboard = dedent("""
-            Work items:
-            A single work item: TODO
-            Another work item: DONE
-            """)
-        spec = self.factory.makeSpecification(whiteboard=whiteboard)
-
-        # Make all this visible to the script we're about to run.
-        transaction.commit()
-
-        return_code, stdout, stderr = run_script(
-            'scripts/migrate-workitems-from-whiteboard.py')
-        self.assertEqual(
-            0, return_code,
-            "Script run failed; retval=%s, stdout=%s, stderr=%s " % (
-                return_code, stdout, stderr))
-        self.assertEqual('', stdout)
-        self.assertThat(stderr, MatchesRegex(
-            "INFO    Creating lockfile:"
-            " /var/lock/launchpad-workitem-migration-script.lock\n"
-            "INFO    Migrating work items from the whiteboard of 1 specs\n"
-            "INFO    Migrated 2 work items from the whiteboard of"
-            " <Specification %d u'%s' for u'%s'>\n"
-            "INFO    Done.\n" % (spec.id, spec.name, spec.product.name)))

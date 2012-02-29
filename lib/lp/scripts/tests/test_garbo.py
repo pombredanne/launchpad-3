@@ -12,6 +12,7 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
+from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -29,12 +30,15 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
+    MatchesRegex,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -1013,6 +1017,54 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, bug.heat_last_updated)
+
+    def test_SpecificationWorkitemMigrator(self):
+        # When the migration is successful we remove all work-items from the
+        # whiteboard.
+        switch_dbuser('testadmin')
+        milestone = self.factory.makeMilestone()
+        person = self.factory.makePerson()
+        whiteboard = dedent("""
+            Work items for %s:
+            [%s] A single work item: TODO
+
+            Work items:
+            Another work item: DONE
+            """ % (milestone.name, person.name))
+        spec = self.factory.makeSpecification(
+            product=milestone.product, whiteboard=whiteboard)
+        transaction.commit()
+
+        self.runHourly(test_args=['--experimental'])
+
+        self.assertThat(spec.whiteboard, MatchesRegex('\s'))
+        self.assertEqual(2, spec.work_items.count())
+        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
+            assignee=person, title="A single work item",
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone, specification=spec))
+        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
+            assignee=None, title="Another work item",
+            status=SpecificationWorkItemStatus.DONE,
+            milestone=None, specification=spec))
+
+    def test_SpecificationWorkitemMigrator_parse_error(self):
+        # When we fail to parse any work items in the whiteboard we leave it
+        # untouched and don't create any SpecificationWorkItem entries.
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A work item: TODO
+            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        transaction.commit()
+
+        self.runHourly(test_args=['--experimental'])
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
 
 
 class TestGarboTasks(TestCaseWithFactory):

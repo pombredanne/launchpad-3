@@ -26,7 +26,6 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from pytz import timezone
 from storm.expr import In
 from storm.locals import (
     Max,
@@ -39,6 +38,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.workitemmigration import extractWorkItemsFromWhiteboard
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -63,6 +64,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
+    quote_like,
     session_store,
     sqlvalues,
     )
@@ -988,6 +990,68 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+class SpecificationWorkitemMigrator(TunableLoop):
+    """Migrate work-items from Specification.whiteboard to
+    SpecificationWorkItem.
+
+    Migrating work items from the whiteboard is an all-or-nothing thing; if we
+    encounter any errors when parsing the whiteboard of a spec, we abort the
+    transaction and leave its whiteboard unchanged.
+
+    On a test with production data, only 100 whiteboards (out of almost 2500)
+    could not be migrated. On 24 of those the assignee in at least one work
+    item is not valid, on 33 the status of a work item is not valid and on 42
+    one or more milestones are not valid.
+    """
+
+    offset = 0
+
+    def __init__(self, log, abort_time=None):
+        super(SpecificationWorkitemMigrator, self).__init__(
+            log, abort_time=abort_time)
+        # Get only the specs which contain "work items" in their whiteboard
+        # and which don't have any SpecificationWorkItems.
+        query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
+            'work items')
+        query += (" and id not in (select distinct specification from "
+                  "SpecificationWorkItem)")
+        self.specs = IMasterStore(Specification).find(Specification, query)
+        self.total = self.specs.count()
+        self.log.info(
+            "Migrating work items from the whiteboard of %d specs"
+            % self.total)
+
+    def getNextBatch(self, chunk_size):
+        end_at = self.offset + int(chunk_size)
+        return self.specs[self.offset:end_at]
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.offset >= self.total
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        for spec in self.getNextBatch(chunk_size):
+            try:
+                work_items = extractWorkItemsFromWhiteboard(spec)
+            except Exception, e:
+                self.log.info(
+                    "Failed to parse whiteboard of %s: %s" % (
+                        spec, unicode(e)))
+                transaction.abort()
+                continue
+
+            if len(work_items) > 0:
+                self.log.info(
+                    "Migrated %d work items from the whiteboard of %s" % (
+                        len(work_items), spec))
+                transaction.commit()
+            else:
+                self.log.info(
+                    "No work items found on the whiteboard of %s" % spec)
+        self.offset += chunk_size
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1239,7 +1303,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         ]
-    experimental_tunable_loops = []
+    experimental_tunable_loops = [
+        SpecificationWorkitemMigrator,
+        ]
 
     # 1 hour, minus 5 minutes for cleanup. This ensures the script is
     # fully terminated before the next scheduled hourly run kicks in.
