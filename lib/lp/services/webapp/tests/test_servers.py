@@ -36,6 +36,7 @@ from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     ApplicationServerSettingRequestFactory,
+    FeedsBrowserRequest,
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
     VHostWebServiceRequestPublicationFactory,
@@ -375,6 +376,16 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=2592000')
+
+
+class TestFeedsBrowserRequest(TestCase):
+    """Tests for `FeedsBrowserRequest`."""
+
+    def test_not_strict_transport_security(self):
+        # Feeds are served over HTTP, so no Strict-Transport-Security
+        # header is sent.
+        response = FeedsBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertIs(None, response.getHeader('Strict-Transport-Security'))
 
 
 class TestLaunchpadBrowserRequestMixin:

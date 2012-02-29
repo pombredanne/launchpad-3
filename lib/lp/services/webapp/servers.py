@@ -558,6 +558,8 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
 
     implements(IBasicLaunchpadRequest)
 
+    strict_transport_security = True
+
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
@@ -573,10 +575,12 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         self.response.setHeader('X-Frame-Options', 'SAMEORIGIN')
         self.response.setHeader('X-Content-Type-Options', 'nosniff')
 
-        # And tell browsers that we always use SSL.
-        # 2592000 = 30 days in seconds
-        self.response.setHeader(
-            'Strict-Transport-Security', 'max-age=2592000')
+        if self.strict_transport_security:
+            # And tell browsers that we always use SSL unless we're on
+            # an insecure vhost.
+            # 2592000 = 30 days in seconds
+            self.response.setHeader(
+                'Strict-Transport-Security', 'max-age=2592000')
 
     @property
     def stepstogo(self):
@@ -1114,6 +1118,9 @@ class FeedsPublication(LaunchpadBrowserPublication):
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(lp.layers.FeedsLayer)
+
+    # Feeds is not served over SSL, so don't force SSL.
+    strict_transport_security = False
 
 
 # ---- apidoc
