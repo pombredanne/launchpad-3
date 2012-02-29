@@ -19,8 +19,8 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.store import Store
 from storm.expr import In
+from storm.store import Store
 # Zope
 from zope.interface import implements
 

@@ -16,6 +16,7 @@ from zope.security.interfaces import (
     ForbiddenAttribute,
     Unauthorized,
     )
+
 from lp.app.interfaces.launchpad import IPrivacy
 
 

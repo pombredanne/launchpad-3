@@ -14,10 +14,11 @@ from lazr.restful.utils import get_current_web_service_request
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import AccessPolicyType, SharingPermission
-from lp.registry.interfaces.accesspolicyservice import (
-    IAccessPolicyService,
+from lp.registry.enums import (
+    AccessPolicyType,
+    SharingPermission,
     )
+from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 from lp.registry.interfaces.person import IPersonSet
 
 

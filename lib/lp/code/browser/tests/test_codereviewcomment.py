@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Not
 from soupmatchers import (
     HTMLContains,
     Tag,
     )
+from testtools.matchers import Not
 
 from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,

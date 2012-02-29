@@ -9,13 +9,13 @@ from datetime import (
     datetime,
     timedelta,
     )
-from testtools.matchers import Equals
 import time
 from unittest import TestCase
 
 import psycopg2
 import pytz
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -28,9 +28,7 @@ from lp.code.model.revision import (
     )
 from lp.registry.model.karma import Karma
 from lp.scripts.garbo import RevisionAuthorEmailLinker
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    )
+from lp.services.database.lpstorm import IMasterObject
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.log.logger import DevNullLogger

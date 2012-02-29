@@ -9,6 +9,7 @@ __metaclass__ = type
 import unittest
 
 from contrib.oauth import OAuthRequest
+
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

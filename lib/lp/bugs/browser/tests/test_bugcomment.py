@@ -18,11 +18,11 @@ from soupmatchers import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.bugs.browser.bugcomment import (
     BugComment,
     group_comments_with_activity,
     )
+from lp.bugs.interfaces.bugmessage import IBugComment
 from lp.coop.answersbugs.visibility import (
     TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
