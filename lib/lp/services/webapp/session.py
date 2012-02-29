@@ -105,6 +105,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         cookie = request.response.getCookie(self.namespace)
         uri = URI(request.getURL())
 
+        # Forbid browsers from exposing it to JS.
+        cookie['HttpOnly'] = True
+
         # Set secure flag on cookie.
         if uri.scheme != 'http':
             cookie['secure'] = True

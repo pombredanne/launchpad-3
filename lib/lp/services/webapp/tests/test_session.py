@@ -3,7 +3,15 @@
 
 import unittest
 
-from lp.services.webapp.session import get_cookie_domain
+from testtools.matchers import Contains
+
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.session import (
+    LaunchpadCookieClientIdManager,
+    get_cookie_domain,
+    )
+from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 class GetCookieDomainTestCase(unittest.TestCase):
@@ -38,3 +46,17 @@ class GetCookieDomainTestCase(unittest.TestCase):
                          '.launchpad.dev')
         self.assertEqual(get_cookie_domain('bugs.launchpad.dev'),
                          '.launchpad.dev')
+
+
+class TestLaunchpadCookieClientIdManager(TestCase):
+
+    layer = FunctionalLayer
+
+    def test_httponly(self):
+        # Authentication cookies are marked as httponly, so JavaScript
+        # can't read them directly.
+        request = LaunchpadTestRequest()
+        LaunchpadCookieClientIdManager().setRequestId(request, 'some-id')
+        self.assertThat(
+            dict(request.response.getHeaders())['Set-Cookie'],
+            Contains('; httponly;'))
