@@ -39,6 +39,7 @@ from lp.services.webapp.servers import (
     FeedsBrowserRequest,
     LaunchpadBrowserRequest,
     LaunchpadTestRequest,
+    PrivateXMLRPCRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
     web_service_request_to_browser_request,
@@ -387,6 +388,16 @@ class TestFeedsBrowserRequest(TestCase):
         # Feeds are served over HTTP, so no Strict-Transport-Security
         # header is sent.
         response = FeedsBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertIs(None, response.getHeader('Strict-Transport-Security'))
+
+
+class TestPrivateXMLRPCRequest(TestCase):
+    """Tests for `PrivateXMLRPCRequest`."""
+
+    def test_not_strict_transport_security(self):
+        # Private XML-RPC is served over HTTP, so no Strict-Transport-Security
+        # header is sent.
+        response = PrivateXMLRPCRequest(StringIO.StringIO(''), {}).response
         self.assertIs(None, response.getHeader('Strict-Transport-Security'))
 
 
