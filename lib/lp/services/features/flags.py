@@ -31,7 +31,9 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -79,6 +81,13 @@ flag_info = sorted([
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -124,12 +133,6 @@ flag_info = sorted([
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
-     '',
-     '',
-     ''),
-    ('malone.disable_targetnamesearch',
-     'boolean',
-     'If true, disables consultation of target names during bug text search.',
      '',
      '',
      ''),

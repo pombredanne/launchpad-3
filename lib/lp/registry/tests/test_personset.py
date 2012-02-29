@@ -13,6 +13,7 @@ import pytz
 
 from testtools.matchers import (
     LessThan,
+    MatchesStructure,
     )
 
 from zope.component import getUtility
@@ -23,6 +24,7 @@ from lp.registry.errors import (
     InvalidName,
     NameAlreadyTaken,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantSource
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -526,6 +528,48 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # See comments in assertConflictingSubscriptionDeletes.
         dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp)
+
+    def test_merge_accesspolicygrants(self):
+        # AccessPolicyGrants are transferred from the duplicate.
+        person = self.factory.makePerson()
+        grant = self.factory.makeAccessPolicyGrant()
+        self._do_premerge(grant.grantee, person)
+
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertEqual(
+            grant.grantee, source.findByPolicy([grant.policy]).one().grantee)
+        with person_logged_in(person):
+            self._do_merge(grant.grantee, person)
+        self.assertEqual(
+            person, source.findByPolicy([grant.policy]).one().grantee)
+
+    def test_merge_accesspolicygrants_conflicts(self):
+        # Conflicting AccessPolicyGrants are deleted.
+        policy = self.factory.makeAccessPolicy()
+
+        person = self.factory.makePerson()
+        person_grantor = self.factory.makePerson()
+        person_grant = self.factory.makeAccessPolicyGrant(
+            grantee=person, grantor=person_grantor, policy=policy)
+        person_grant_date = person_grant.date_created
+
+        duplicate = self.factory.makePerson()
+        duplicate_grantor = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            grantee=duplicate, grantor=duplicate_grantor, policy=policy)
+
+        self._do_premerge(duplicate, person)
+        with person_logged_in(person):
+            self._do_merge(duplicate, person)
+
+        # Only one grant for the policy exists: the retained person's.
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertThat(
+            source.findByPolicy([policy]).one(),
+            MatchesStructure.byEquality(
+                policy=policy,
+                grantee=person,
+                date_created=person_grant_date))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.

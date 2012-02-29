@@ -32,6 +32,15 @@
         module="lp.registry.feed.announcement"
         classes="LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
         />
+    <browser:url
+       for="lp.app.interfaces.services.IServiceFactory"
+       path_expression="string:+services"
+       parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+       for="lp.app.interfaces.services.IService"
+       path_expression="string:${name}"
+       parent_utility="lp.app.interfaces.services.IServiceFactory"/>
 
 <facet facet="overview">
     <browser:page

@@ -13,6 +13,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import iso8601
 import logging
 import multiprocessing
 import os
@@ -25,12 +26,14 @@ from contrib.glock import (
     )
 from psycopg2 import IntegrityError
 import pytz
+from pytz import timezone
 from storm.expr import In
 from storm.locals import (
     Max,
     Min,
     SQL,
     )
+from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -62,6 +65,11 @@ from lp.services.database.sqlbase import (
     cursor,
     session_store,
     sqlvalues,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
+    make_script_feature_controller,
     )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -776,22 +784,24 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 5000
 
-    def __init__(self, log, abort_time=None, max_heat_age=None):
+    def __init__(self, log, abort_time=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
         self.total_processed = 0
         self.is_done = False
         self.offset = 0
-        if max_heat_age is None:
-            max_heat_age = config.calculate_bug_heat.max_heat_age
-        self.max_heat_age = max_heat_age
 
         self.store = IMasterStore(Bug)
 
     @property
     def _outdated_bugs(self):
+        try:
+            last_updated_cutoff = iso8601.parse_date(
+                getFeatureFlag('bugs.heat_updates.cutoff'))
+        except iso8601.ParseError:
+            return EmptyResultSet()
         outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)
+            last_updated_cutoff)
         # We remove the security proxy so that we can access the set()
         # method of the result set.
         return removeSecurityProxy(outdated_bugs)
@@ -1116,6 +1126,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         """
         self.logger.debug(
             "Worker thread %s running.", threading.currentThread().name)
+        install_feature_controller(make_script_feature_controller(self.name))
         self.login()
 
         while True:

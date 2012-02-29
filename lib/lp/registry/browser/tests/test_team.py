@@ -465,7 +465,7 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
             ['name', 'displayname'], view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do not see the the displayname field.
+        # Registry experts do not see the displayname field.
         team = self.factory.makeTeam()
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
@@ -811,7 +811,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (
-            'Test Team is queued to be be merged or deleted '
+            'Test Team is queued to be merged or deleted '
             'in a few minutes.')
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)

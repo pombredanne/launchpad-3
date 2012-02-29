@@ -8,6 +8,7 @@ __metaclass__ = type
 import datetime
 
 import pytz
+import simplejson
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -403,3 +404,22 @@ class TestProductRdfView(BrowserTestCase):
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
             'application/rdf+xml', browser.headers['Content-type'])
+
+
+class TestProductSharingView(TestCaseWithFactory):
+    """Test the ProductSharingView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_picker_config(self):
+        # Test the config passed to the disclosure sharing picker.
+        product = self.factory.makeProduct()
+        view = create_view(product, name='+sharing')
+        picker_config = simplejson.loads(view.json_sharing_picker_config)
+        self.assertTrue('access_policies' in picker_config)
+        self.assertTrue('vocabulary_filters' in picker_config)
+        self.assertEqual(
+            'Grant access to %s' % product.displayname,
+            picker_config['header'])
+        self.assertEqual(
+            'ValidPillarOwner', picker_config['vocabulary'])

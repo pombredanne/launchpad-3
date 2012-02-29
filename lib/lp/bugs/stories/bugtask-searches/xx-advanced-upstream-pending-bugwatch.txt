@@ -31,7 +31,7 @@ product. He does not provide bug watch information.
     ...     'I just want to register that it is upstream').selected = True
     >>> browser.getControl('Add to Bug Report').click()
     >>> browser.title
-    'Bug #... in alsa-utils: ...Test Bug 1...'
+    'Bug #... : Bugs : alsa-utils'
 
 Sample Person visits the advanced search page for alsa-utils, and
 chooses to search for all bugs that need to be forwarded upstream.
