@@ -42,8 +42,8 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
-    CodeReviewVote,
     CodeReviewNotificationLevel,
+    CodeReviewVote,
     )
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext,

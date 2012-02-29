@@ -18,10 +18,10 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
-    person_logged_in,
     ANONYMOUS,
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (

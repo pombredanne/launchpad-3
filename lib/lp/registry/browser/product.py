@@ -52,8 +52,8 @@ from datetime import (
 from operator import attrgetter
 
 from lazr.delegates import delegates
-from lazr.restful.interface import copy_field
 from lazr.restful import ResourceJSONEncoder
+from lazr.restful.interface import copy_field
 import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile

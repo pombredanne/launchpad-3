@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from textwrap import dedent
 import doctest
+from textwrap import dedent
 
 import soupmatchers
 from storm.expr import LeftJoin
@@ -68,9 +68,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import (
-    extract_text,
-    )
+from lp.testing.pages import extract_text
 from lp.testing.views import (
     create_initialized_view,
     create_view,

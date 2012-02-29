@@ -18,9 +18,8 @@ import logging
 import os
 import socket
 import tempfile
-import xmlrpclib
-
 from urlparse import urlparse
+import xmlrpclib
 
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (

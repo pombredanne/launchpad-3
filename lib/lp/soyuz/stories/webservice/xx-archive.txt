@@ -976,18 +976,18 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
-    authorized_size: 2048
+    authorized_size: u'tag:launchpad.net:2008:redacted'
     commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-    external_dependencies: None
+    external_dependencies: u'tag:launchpad.net:2008:redacted'
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
-    require_virtualized: True
+    require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'

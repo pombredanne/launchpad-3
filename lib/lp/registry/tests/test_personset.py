@@ -7,15 +7,12 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import transaction
-
 import pytz
-
 from testtools.matchers import (
     LessThan,
     MatchesStructure,
     )
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -62,9 +59,7 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import (
-    ArchiveStatus,
-    )
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -76,7 +71,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
