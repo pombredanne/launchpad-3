@@ -4763,7 +4763,7 @@ def get_recipients(person):
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
     """
-    if person.preferredemail:
+    if removeSecurityProxy(person).preferredemail:
         return [person]
     elif person.is_team:
         # Get transitive members of a team that does not itself have a
