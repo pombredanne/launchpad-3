@@ -2316,7 +2316,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
-        tags = self.tags_for_batch.get(bugtask.id, '')
+        tags = self.tags_for_batch.get(bugtask.id, ())
         if (IMaloneApplication.providedBy(self.target_context) or
             IPerson.providedBy(self.target_context)):
             # XXX Tom Berger bug=529846
