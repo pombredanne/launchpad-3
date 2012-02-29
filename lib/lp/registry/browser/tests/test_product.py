@@ -433,5 +433,5 @@ class TestProductSharingView(TestCaseWithFactory):
         self.assertIsNotNone(cache.objects.get('access_policies'))
         self.assertIsNotNone(cache.objects.get('sharing_permissions'))
         aps = getUtility(IService, 'accesspolicy')
-        observers = aps.getProductObservers(product)
+        observers = aps.getPillarObservers(product)
         self.assertTrue(observers, cache.objects.get('observer_data'))

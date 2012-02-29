@@ -18,8 +18,11 @@ from lp.registry.enums import (
     AccessPolicyType,
     SharingPermission,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicySource,
+    IAccessPolicyGrantSource,
+    IAccessArtifactGrantSource)
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
-from lp.registry.interfaces.person import IPersonSet
 
 
 class AccessPolicyService:
@@ -61,40 +64,59 @@ class AccessPolicyService:
             sharing_permissions.append(item)
         return sharing_permissions
 
-    def getProductObservers(self, product):
+    def getPillarObservers(self, pillar):
         """See `IAccessPolicyService`."""
-        # TODO - replace this sample data with something real
+
+        # Currently support querying for sharing_permission = ALL
+        # TODO - support querying for sharing_permission = SOME
+
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        policy_grant_source = getUtility(IAccessPolicyGrantSource)
+        grants = policy_grant_source.findByPolicy(policies)
+
         result = []
+        person_by_id = {}
         request = get_current_web_service_request()
-        personset = getUtility(IPersonSet)
-        for id in range(1, 4):
-            person = personset.get(id)
-            resource = EntryResource(person, request)
-            person_data = resource.toDataForJSON()
-            permissions = {
-                'PUBLICSECURITY': 'SOME',
-                'EMBARGOEDSECURITY': 'ALL'
-            }
-            if id > 2:
-                permissions['USERDATA'] = 'SOME'
-            person_data['permissions'] = permissions
+        for g in grants:
+            if not person_by_id.has_key(g.grantee.id):
+                resource = EntryResource(g.grantee, request)
+                person_data = resource.toDataForJSON()
+                person_data['permissions'] = {}
+                person_by_id[g.grantee.id] = person_data
+            person_data = person_by_id[g.grantee.id]
+            person_data['permissions'][g.policy.type.name] = (
+                SharingPermission.ALL.name)
             result.append(person_data)
         return result
 
-    def addProductObserver(self, product, observer, access_policy,
-                              sharing_permission):
+    def addPillarObserver(self, pillar, observer, access_policy, user):
         """See `IAccessPolicyService`."""
-        # TODO - implement this
+
+        # Create a pillar access policy if one doesn't exist.
+        policy_source = getUtility(IAccessPolicySource)
+        pillar_access_policy = [(pillar, access_policy)]
+        policies = list(policy_source.find(pillar_access_policy))
+        if len(policies) == 0:
+            [policy] = policy_source.create(pillar_access_policy)
+        else:
+            policy = policies[0]
+        # We have a policy, create the grant if it doesn't exist.
+        policy_grant_source = getUtility(IAccessPolicyGrantSource)
+        grants = list(policy_grant_source.find([(policy, observer)]))
+        if len(grants) == 0:
+            policy_grant_source.grant([(policy, observer, user)])
+
+        # Return observer data to the caller.
         request = get_current_web_service_request()
         resource = EntryResource(observer, request)
         person_data = resource.toDataForJSON()
         permissions = {
-            access_policy.name: sharing_permission.name,
+            access_policy.name: SharingPermission.ALL.name,
         }
         person_data['permissions'] = permissions
         return person_data
 
-    def deleteProductObserver(self, product, observer):
+    def deletePillarObserver(self, pillar, observer, access_policy):
         """See `IAccessPolicyService`."""
         # TODO - implement this
         pass

@@ -2461,7 +2461,7 @@ class ProductSharingView(LaunchpadView):
 
     @property
     def observer_data(self):
-        return self._getAccessPolicyService().getProductObservers(self.context)
+        return self._getAccessPolicyService().getPillarObservers(self.context)
 
     def initialize(self):
         super(ProductSharingView, self).initialize()

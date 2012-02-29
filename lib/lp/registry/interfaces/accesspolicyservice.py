@@ -13,11 +13,13 @@ __all__ = [
 from zope.schema import Choice
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
     operation_for_version,
     operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 
@@ -28,7 +30,7 @@ from lp.registry.enums import (
     SharingPermission,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.pillar import IPillar
 
 
 class IAccessPolicyService(IService):
@@ -46,26 +48,32 @@ class IAccessPolicyService(IService):
 
     @export_read_operation()
     @operation_parameters(
-        product=Reference(IProduct, title=_('Product'), required=True))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getProductObservers(product):
-        """Return people/teams who can see product artifacts."""
+    def getPillarObservers(pillar):
+        """Return people/teams who can see pillar artifacts."""
 
     @export_write_operation()
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
-        product=Reference(IProduct, title=_('Product'), required=True),
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy=Choice(vocabulary=AccessPolicyType),
-        sharing_permission=Choice(vocabulary=SharingPermission))
+        access_policy=Choice(vocabulary=AccessPolicyType))
     @operation_for_version('devel')
-    def addProductObserver(product, observer, access_policy,
-                              sharing_permission):
-        """Add an observer with the access policy to a product."""
+    def addPillarObserver(pillar, observer, access_policy, user):
+        """Add an observer with the access policy to a pillar."""
 
     @export_write_operation()
     @operation_parameters(
-        product=Reference(IProduct, title=_('Product'), required=True),
-        observer=Reference(IPerson, title=_('Observer'), required=True))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        observer=Reference(IPerson, title=_('Observer'), required=True),
+        access_policy=Choice(vocabulary=AccessPolicyType))
     @operation_for_version('devel')
-    def deleteProductObserver(product, observer):
-        """Remove an observer from a product."""
+    def deletePillarObserver(pillar, observer, access_policy):
+        """Remove an observer from a pillar.
+
+        :param pillar: the pillar from which to remove access
+        :param observer: the person or team to remove
+        :param access_policy: if None, remove all access, otherwise just remove
+                              the specified access_policy
+        """
