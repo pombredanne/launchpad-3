@@ -9,18 +9,17 @@ from testtools.matchers import (
     MatchesStructure,
     )
 
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
-from lp.testing.layers import DatabaseFunctionalLayer
-
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.workitemmigration import (
     extractWorkItemsFromWhiteboard,
     WorkitemParser,
     WorkItemParseError,
     )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class FakeSpecification(object):
@@ -144,10 +143,8 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         work_items = extractWorkItemsFromWhiteboard(spec)
         self.assertEqual(1, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=None, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=None,
-            specification=spec))
+            assignee=None, title="A single work item", milestone=None,
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
 
     def test_multiple_work_items(self):
         whiteboard = dedent("""
@@ -159,15 +156,11 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         work_items = extractWorkItemsFromWhiteboard(spec)
         self.assertEqual(2, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=None, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=None,
-            specification=spec))
+            assignee=None, title="A single work item", milestone=None,
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
         self.assertThat(work_items[1], MatchesStructure.byEquality(
-            assignee=None, title="Another work item",
-            status=SpecificationWorkItemStatus.DONE,
-            milestone=None,
-            specification=spec))
+            assignee=None, title="Another work item", milestone=None,
+            status=SpecificationWorkItemStatus.DONE, specification=spec))
 
     def test_work_item_with_assignee(self):
         person = self.factory.makePerson()
@@ -179,16 +172,13 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         work_items = extractWorkItemsFromWhiteboard(spec)
         self.assertEqual(1, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=person, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=None,
-            specification=spec))
+            assignee=person, title="A single work item", milestone=None,
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
 
     def test_work_item_with_nonexistent_assignee(self):
         whiteboard = dedent("""
             Work items:
-            [nonono] A single work item: TODO
-            """)
+            [nonexistentperson] A single work item: TODO""")
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
         self.assertRaises(ValueError, extractWorkItemsFromWhiteboard, spec)
 
@@ -203,10 +193,8 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         work_items = extractWorkItemsFromWhiteboard(spec)
         self.assertEqual(1, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=None, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=milestone,
-            specification=spec))
+            assignee=None, title="A single work item", milestone=milestone,
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
 
     def test_work_item_with_unknown_milestone(self):
         whiteboard = dedent("""
@@ -231,8 +219,7 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         self.assertEqual(1, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
             assignee=None, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            specification=spec))
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
 
     def test_whiteboard_with_all_possible_sections(self):
         whiteboard = dedent("""
@@ -250,10 +237,8 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
         work_items = extractWorkItemsFromWhiteboard(spec)
         self.assertEqual(1, len(work_items))
         self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=None, title="A single work item",
-            status=SpecificationWorkItemStatus.TODO,
-            milestone=None,
-            specification=spec))
+            assignee=None, title="A single work item", milestone=None,
+            status=SpecificationWorkItemStatus.TODO, specification=spec))
 
         # Now assert that the work items were removed from the whiteboard.
         self.assertEqual(dedent("""
@@ -262,5 +247,4 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             Acceptance: Baz foo
 
             Complexity:
-            [user1] milestone1: 10
-            """).strip(), spec.whiteboard.strip())
+            [user1] milestone1: 10""").strip(), spec.whiteboard.strip())
