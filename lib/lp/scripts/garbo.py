@@ -13,7 +13,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import iso8601
 import logging
 import multiprocessing
 import os
@@ -24,6 +23,7 @@ from contrib.glock import (
     GlobalLock,
     LockAlreadyAcquired,
     )
+import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from pytz import timezone

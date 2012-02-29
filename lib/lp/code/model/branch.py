@@ -133,9 +133,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.config import config
-from lp.services.database.bulk import (
-    load_related,
-    )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,

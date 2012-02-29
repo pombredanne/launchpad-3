@@ -5,14 +5,16 @@ __metaclass__ = type
 
 
 import simplejson
-
 from zope.component import getUtility
 
 from lp.registry.enums import AccessPolicyType
 from lp.registry.services.accesspolicyservice import AccessPolicyService
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
-from lp.testing import WebServiceTestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    WebServiceTestCase,
+    )
 from lp.testing.layers import AppServerLayer
 from lp.testing.pages import LaunchpadWebServiceCaller
 

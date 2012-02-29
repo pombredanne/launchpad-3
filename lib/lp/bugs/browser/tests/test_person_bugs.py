@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-from lp.app.errors import UnexpectedFormData
 from lp.app.browser.tales import MenuAPI
+from lp.app.errors import UnexpectedFormData
 from lp.bugs.browser import person
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import (
