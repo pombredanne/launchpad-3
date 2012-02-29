@@ -374,6 +374,8 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             response.getHeader('X-Content-Type-Options'), 'nosniff')
         self.assertEquals(
+            response.getHeader('X-XSS-Protection'), '1; mode=block')
+        self.assertEquals(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=2592000')
 

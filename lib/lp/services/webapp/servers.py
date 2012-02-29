@@ -574,6 +574,7 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
         # Prevent clickjacking and content sniffing attacks.
         self.response.setHeader('X-Frame-Options', 'SAMEORIGIN')
         self.response.setHeader('X-Content-Type-Options', 'nosniff')
+        self.response.setHeader('X-XSS-Protection', '1; mode=block')
 
         if self.strict_transport_security:
             # And tell browsers that we always use SSL unless we're on
