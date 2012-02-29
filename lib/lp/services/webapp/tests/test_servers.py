@@ -366,6 +366,16 @@ class TestBasicLaunchpadRequest(TestCase):
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
+    def test_baserequest_security_headers(self):
+        response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertEquals(
+            response.getHeader('X-Frame-Options'), 'SAMEORIGIN')
+        self.assertEquals(
+            response.getHeader('X-Content-Type-Options'), 'nosniff')
+        self.assertEquals(
+            response.getHeader(
+                'Strict-Transport-Security'), 'max-age=2592000')
+
 
 class TestLaunchpadBrowserRequestMixin:
     """Tests for `LaunchpadBrowserRequestMixin`.
