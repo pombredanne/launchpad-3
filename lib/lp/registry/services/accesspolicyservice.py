@@ -21,7 +21,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     IAccessPolicyGrantSource,
-    IAccessArtifactGrantSource)
+    )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
 
 
@@ -89,12 +89,12 @@ class AccessPolicyService:
             result.append(person_data)
         return result
 
-    def addPillarObserver(self, pillar, observer, access_policy, user):
+    def addPillarObserver(self, pillar, observer, access_policy_type, user):
         """See `IAccessPolicyService`."""
 
         # Create a pillar access policy if one doesn't exist.
         policy_source = getUtility(IAccessPolicySource)
-        pillar_access_policy = [(pillar, access_policy)]
+        pillar_access_policy = [(pillar, access_policy_type)]
         policies = list(policy_source.find(pillar_access_policy))
         if len(policies) == 0:
             [policy] = policy_source.create(pillar_access_policy)
@@ -111,12 +111,12 @@ class AccessPolicyService:
         resource = EntryResource(observer, request)
         person_data = resource.toDataForJSON()
         permissions = {
-            access_policy.name: SharingPermission.ALL.name,
+            access_policy_type.name: SharingPermission.ALL.name,
         }
         person_data['permissions'] = permissions
         return person_data
 
-    def deletePillarObserver(self, pillar, observer, access_policy):
+    def deletePillarObserver(self, pillar, observer, access_policy_type):
         """See `IAccessPolicyService`."""
         # TODO - implement this
         pass

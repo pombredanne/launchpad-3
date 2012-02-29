@@ -25,10 +25,7 @@ from lazr.restful.fields import Reference
 
 from lp import _
 from lp.app.interfaces.services import IService
-from lp.registry.enums import (
-    AccessPolicyType,
-    SharingPermission,
-    )
+from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
 
@@ -58,22 +55,22 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy=Choice(vocabulary=AccessPolicyType))
+        access_policy_type=Choice(vocabulary=AccessPolicyType))
     @operation_for_version('devel')
-    def addPillarObserver(pillar, observer, access_policy, user):
+    def addPillarObserver(pillar, observer, access_policy_type, user):
         """Add an observer with the access policy to a pillar."""
 
     @export_write_operation()
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy=Choice(vocabulary=AccessPolicyType))
+        access_policy_type=Choice(vocabulary=AccessPolicyType))
     @operation_for_version('devel')
-    def deletePillarObserver(pillar, observer, access_policy):
+    def deletePillarObserver(pillar, observer, access_policy_type):
         """Remove an observer from a pillar.
 
         :param pillar: the pillar from which to remove access
         :param observer: the person or team to remove
-        :param access_policy: if None, remove all access, otherwise just remove
-                              the specified access_policy
+        :param access_policy_type: if None, remove all access, otherwise just
+                                   remove the specified access_policy
         """
