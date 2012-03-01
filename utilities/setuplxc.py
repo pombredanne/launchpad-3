@@ -44,7 +44,7 @@ import textwrap
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en',
-    'testrepository', 'sshpass']
+    'testrepository']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -745,11 +745,10 @@ def initialize_host(
         script.write(textwrap.dedent("""
             #!/bin/sh
             set -uex
-            sshpass -p ubuntu \\
-                lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
-                    --error-file=/var/tmp/xvfb-errors.log \\
-                    --server-args='-screen 0 1024x768x24' \\
-                    -a $PWD/bin/test --subunit $@
+            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
+                --error-file=/var/tmp/xvfb-errors.log \\
+                --server-args='-screen 0 1024x768x24' \\
+                -a $PWD/bin/test --subunit $@
             """))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
