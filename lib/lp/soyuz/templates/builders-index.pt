@@ -81,7 +81,7 @@
                </tr>
              </tbody>
            </table>
-           <p class="discreet" tal:condition="view/user">
+           <p tal:condition="view/user">
               Updated on
               <span tal:replace="structure view/user/fmt:local-time"/>
            </p>
@@ -142,11 +142,11 @@
                             replace="string:job" />
               <tal:plural condition="python: size != 1"
                           replace="string:jobs" />
-              (<span class="discreet"
-                     tal:content="builder_group/duration/fmt:approximateduration"
-                >two minutes</span>)
+              (<span
+                 tal:content="builder_group/duration/fmt:approximateduration"
+                 >two minutes</span>)
             </tal:queue>
-            <span tal:condition="not: size" class="discreet">empty</span>
+            <span tal:condition="not: size">empty</span>
          </td>
        </tr>
      </tbody>
