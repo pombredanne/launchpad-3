@@ -43,8 +43,7 @@ import textwrap
 
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en',
-    'testrepository']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -733,7 +732,20 @@ def initialize_host(
             set -uex
             lxc-start -n lptests -d
             lxc-wait -n lptests -s RUNNING
-            sleep 30 # aparently RUNNING isn't quite enough
+            # Repeatedly try to connect over SSH until we either succeed
+            # or time out.
+            for i in $(seq 1 30); do
+                ssh -n -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lptests -- :
+                if [ ! 255 -eq $? ]; then
+                    # If ssh returns 255 then its connection failed.
+                    # Anything else is either success (status 0) or a
+                    # failure from whatever we ran over the SSH connection.
+                    # In those cases we want to stop looping, so we break
+                    # here.
+                    break;
+                fi
+                sleep 1
+            done
             su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
                 make -C /var/lib/buildbot/lp schema"
             lxc-stop -n lptests
@@ -752,7 +764,7 @@ def initialize_host(
             """))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
-    sudoers_file = '/etc/sudoers.d/lauchpad-buildbot'
+    sudoers_file = '/etc/sudoers.d/launchpad-buildbot'
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
         sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
