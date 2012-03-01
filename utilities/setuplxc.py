@@ -732,20 +732,7 @@ def initialize_host(
             set -uex
             lxc-start -n lptests -d
             lxc-wait -n lptests -s RUNNING
-            # Repeatedly try to connect over SSH until we either succeed
-            # or time out.
-            for i in $(seq 1 30); do
-                ssh -n -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null lptests -- :
-                if [ ! 255 -eq $? ]; then
-                    # If ssh returns 255 then its connection failed.
-                    # Anything else is either success (status 0) or a
-                    # failure from whatever we ran over the SSH connection.
-                    # In those cases we want to stop looping, so we break
-                    # here.
-                    break;
-                fi
-                sleep 1
-            done
+            sleep 30 # aparently RUNNING isn't quite enough
             su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
                 make -C /var/lib/buildbot/lp schema"
             lxc-stop -n lptests
