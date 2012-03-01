@@ -72,19 +72,19 @@ class AccessPolicyService:
 
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        grants = policy_grant_source.findByPolicy(policies)
+        policy_grants = policy_grant_source.findByPolicy(policies)
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
-        for g in grants:
-            if not g.grantee.id in person_by_id:
-                resource = EntryResource(g.grantee, request)
+        for policy_grant in policy_grants:
+            if not policy_grant.grantee.id in person_by_id:
+                resource = EntryResource(policy_grant.grantee, request)
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}
-                person_by_id[g.grantee.id] = person_data
-            person_data = person_by_id[g.grantee.id]
-            person_data['permissions'][g.policy.type.name] = (
+                person_by_id[policy_grant.grantee.id] = person_data
+            person_data = person_by_id[policy_grant.grantee.id]
+            person_data['permissions'][policy_grant.policy.type.name] = (
                 SharingPermission.ALL.name)
             result.append(person_data)
         return result
@@ -95,15 +95,12 @@ class AccessPolicyService:
         # Create a pillar access policy if one doesn't exist.
         policy_source = getUtility(IAccessPolicySource)
         pillar_access_policy = [(pillar, access_policy_type)]
-        policies = list(policy_source.find(pillar_access_policy))
-        if len(policies) == 0:
+        policy = policy_source.find(pillar_access_policy).one()
+        if policy is None:
             [policy] = policy_source.create(pillar_access_policy)
-        else:
-            policy = policies[0]
         # We have a policy, create the grant if it doesn't exist.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        grants = list(policy_grant_source.find([(policy, observer)]))
-        if len(grants) == 0:
+        if policy_grant_source.find([(policy, observer)]).count() == 0:
             policy_grant_source.grant([(policy, observer, user)])
 
         # Return observer data to the caller.

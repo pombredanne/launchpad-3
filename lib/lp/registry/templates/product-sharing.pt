@@ -11,11 +11,11 @@
     <metal:block fill-slot="head_epilogue">
     <script tal:content="structure string:
             LPJS.use('base', 'node', 'event',
-                    'lp.registry.disclosure.sharing',
+                    'lp.registry.disclosure.pillarsharingview',
                 function(Y) {
             Y.on('domready', function() {
                 var config = ${view/json_sharing_picker_config}
-                var view_widget = new Y.lp.registry.disclosure.sharing.PillarSharingView(config);
+                var view_widget = new Y.lp.registry.disclosure.pillarsharingview.PillarSharingView(config);
                 view_widget.render();
             });
           });

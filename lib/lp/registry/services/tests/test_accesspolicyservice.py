@@ -36,7 +36,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         self.service = getUtility(IService, 'accesspolicy')
 
     def _makeObserverData(self, observer):
-        # Unpack an observer into it's attributes and add in permissions.
+        # Unpack an observer into its attributes and add in permissions.
         request = get_current_web_service_request()
         resource = EntryResource(observer, request)
         observer_data = resource.toDataForJSON()
