@@ -1004,6 +1004,7 @@ class SpecificationWorkitemMigrator(TunableLoop):
     one or more milestones are not valid.
     """
 
+    maximum_chunk_size = 500
     offset = 0
 
     def __init__(self, log, abort_time=None):
