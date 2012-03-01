@@ -29,7 +29,7 @@ __all__ = [
 
 from collections import namedtuple, OrderedDict
 from contextlib import contextmanager
-from email.Utils import parseaddr
+from email.Utils import parseaddr, formataddr
 import argparse
 import os
 import platform
@@ -38,11 +38,12 @@ import shutil
 import subprocess
 import sys
 import time
+import textwrap
 
 
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -140,23 +141,23 @@ def cd(directory):
 
 
 def file_append(filename, line):
-    """Append given `line`, if not present, at the end of `filename`.
+    r"""Append given `line`, if not present, at the end of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     Nothing happens if the file already contains the given `line`::
 
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     A new line is automatically added before the given `line` if it is not
     present at the end of current file content::
@@ -165,9 +166,9 @@ def file_append(filename, line):
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
         >>> f.write('line1')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
     """
     with open(filename, 'a+') as f:
         content = f.read()
@@ -179,30 +180,30 @@ def file_append(filename, line):
 
 
 def file_prepend(filename, line):
-    """Insert given `line`, if not present, at the beginning of `filename`.
+    r"""Insert given `line`, if not present, at the beginning of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file starts with the given `line`, nothing happens::
 
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file contains the given `line`, but not at the beginning,
     the line is moved on top::
 
-        >>> file_prepend(f.name, 'line1\\n')
+        >>> file_prepend(f.name, 'line1\n')
         >>> open(f.name).read()
-        'line1\\nline0\\n'
+        'line1\nline0\n'
     """
     with open(filename, 'r+') as f:
         lines = f.readlines()
@@ -297,7 +298,7 @@ def ssh(location, user=None, caller=subprocess.call):
         sshcmd = (
             'ssh',
             '-t',
-            '-t', # Yes, this second -t is deliberate. See `man ssh`.
+            '-t',  # Yes, this second -t is deliberate. See `man ssh`.
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
@@ -499,12 +500,12 @@ def handle_userdata(namespace, whois=bzr_whois):
 
 
 def handle_ssh_keys(namespace):
-    """Handle private and public ssh keys.
+    r"""Handle private and public ssh keys.
 
     Keys contained in the namespace are escaped::
 
-        >>> private = r'PRIVATE\\nKEY'
-        >>> public = r'PUBLIC\\nKEY'
+        >>> private = r'PRIVATE\nKEY'
+        >>> public = r'PUBLIC\nKEY'
         >>> namespace = argparse.Namespace(
         ...     private_key=private, public_key=public)
         >>> handle_ssh_keys(namespace)
@@ -703,8 +704,7 @@ def initialize_host(
             os.chmod(filename, 0644)
         os.chmod(priv_file, 0600)
         # Set up bzr and Launchpad authentication.
-        subprocess.call([
-            'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
+        subprocess.call(['bzr', 'whoami', formataddr((fullname, email))])
         if valid_ssh_keys:
             subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
@@ -720,7 +720,44 @@ def initialize_host(
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
-            os.makedirs(os.path.join(dependencies_dir, subdir))
+            path = os.path.join(dependencies_dir, subdir)
+            if not os.path.exists(path):
+                os.makedirs(path)
+    # We need a script that will run the LP build inside LXC.  It is run as
+    # root (see below) but drops root once inside the LXC container.
+    build_script_file = '/usr/local/bin/launchpad-lxc-build'
+    with open(build_script_file, 'w') as script:
+        script.write(textwrap.dedent("""\
+            #!/bin/sh
+            set -uex
+            lxc-start -n lptests -d
+            lxc-wait -n lptests -s RUNNING
+            sleep 30 # aparently RUNNING isn't quite enough
+            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
+                make -C /var/lib/buildbot/lp schema"
+            lxc-stop -n lptests
+            lxc-wait -n lptests -s STOPPED
+            """))
+        os.chmod(build_script_file, 0555)
+    test_script_file = '/usr/local/bin/launchpad-lxc-test'
+    with open(test_script_file, 'w') as script:
+        script.write(textwrap.dedent("""
+            #!/bin/sh
+            set -uex
+            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
+                --error-file=/var/tmp/xvfb-errors.log \\
+                --server-args='-screen 0 1024x768x24' \\
+                -a $PWD/bin/test --subunit $@
+            """))
+        os.chmod(test_script_file, 0555)
+    # Add a file to sudoers.d that will let the buildbot user run the above.
+    sudoers_file = '/etc/sudoers.d/launchpad-buildbot'
+    with open(sudoers_file, 'w') as sudoers:
+        sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
+        sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
+        sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
+        # The sudoers must have this mode or it will be ignored.
+        os.chmod(sudoers_file, 0440)
     with cd(dependencies_dir):
         with su(user) as env:
             subprocess.call([
@@ -826,8 +863,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
-        checkout_dir, dependencies_dir))
+        ('cd {} && utilities/update-sourcecode --use-http '
+         '"{}/sourcecode"').format(checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(
         checkout_dir, dependencies_dir))
