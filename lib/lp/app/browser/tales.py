@@ -670,7 +670,11 @@ class ObjectFormatterAPI:
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail
         if len(text) > 64:
-            return '%s...' % text[0:64]
+            truncated = '%s...' % text[0:64]
+            if truncated.count(u'\u201c') > truncated.count(u'\u201cd'):
+                # Close the open smartquote if it was dropped.
+                truncated += u'\u201d'
+            return truncated
         return text
 
     def pagetitle(self):
