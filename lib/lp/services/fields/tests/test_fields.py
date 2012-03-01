@@ -110,13 +110,31 @@ class TestStrippableText(TestCase):
         self.assertEqual(None, field.validate(u'  a  '))
 
 
-class TestWorkItemsTextAssigneeAndMilestone(TestCaseWithFactory):
+class TestWorkItemsTextValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestWorkItemsTextAssigneeAndMilestone, self).setUp()
+        super(TestWorkItemsTextValidation, self).setUp()
         self.field = WorkItemsText(__name__='test')
+
+    def test_parseandvalidate(self):
+        status = SpecificationWorkItemStatus.TODO
+        assignee = self.factory.makePerson()
+        milestone = self.factory.makeMilestone()
+        title = 'A work item'
+        specification = self.factory.makeSpecification(
+            product=milestone.product)
+        field = self.field.bind(specification)
+        work_items_text = ("Work items for %s:\n"
+                           "[%s]%s: %s" % (milestone.name, assignee.name, title,
+                                           status.name))
+        work_item = field.parseAndValidate(work_items_text)[0]
+        self.assertEqual({'assignee': assignee,
+                          'milestone': milestone,
+                          'sequence': 0,
+                          'status': status,
+                          'title': title}, work_item)
 
     def test_unknown_assignee_is_rejected(self):
         person_name = 'test-person'
@@ -163,6 +181,21 @@ class TestWorkItemsTextAssigneeAndMilestone(TestCaseWithFactory):
         self.assertRaises(
             LaunchpadValidationError, field.getMilestone, milestone_name)
 
+    def test_validate_invalid_status(self):
+        self.assertRaises(
+            LaunchpadValidationError, self.field.getStatus,
+            'Invalid status: FOO')
+
+    def test_validate_valid_statuses(self):
+        statuses = [SpecificationWorkItemStatus.TODO,
+                    SpecificationWorkItemStatus.DONE,
+                    SpecificationWorkItemStatus.POSTPONED,
+                    SpecificationWorkItemStatus.INPROGRESS,
+                    SpecificationWorkItemStatus.BLOCKED]
+        for status in statuses:
+            validated_status = self.field.getStatus(status.name)
+            self.assertEqual(validated_status, status)
+
 
 class TestWorkItemsText(TestCase):
 
@@ -179,7 +212,7 @@ class TestWorkItemsText(TestCase):
         work_items_title = 'Test this work item'
         parsed = self.field.parseLine('%s: TODO' % (work_items_title))
         self.assertEqual(parsed['title'], work_items_title)
-        self.assertEqual(parsed['status'], SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed['status'], 'TODO')
 
     def test_url_and_colon_in_title(self):
         work_items_title = 'Test this: which is a url: http://www.linaro.org/'
@@ -188,14 +221,11 @@ class TestWorkItemsText(TestCase):
 
     def test_silly_caps_status_parsing(self):
         parsed_upper = self.field.parseLine('Test this work item: TODO    ')
-        self.assertEqual(parsed_upper['status'],
-                         SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_upper['status'], 'TODO')
         parsed_lower = self.field.parseLine('Test this work item:     todo')
-        self.assertEqual(parsed_lower['status'],
-                         SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_lower['status'], 'TODO')
         parsed_camel = self.field.parseLine('Test this work item: ToDo')
-        self.assertEqual(parsed_camel['status'],
-                         SpecificationWorkItemStatus.TODO)
+        self.assertEqual(parsed_camel['status'], 'TODO')
 
     def test_parseLine_without_status_fails(self):
         # We should require an explicit status to avoid the problem of work
@@ -221,10 +251,10 @@ class TestWorkItemsText(TestCase):
         parsed = self.field.parse(work_items_text)
         self.assertEqual(
             parsed, [{'title': title_1,
-                      'status': SpecificationWorkItemStatus.TODO,
+                      'status': 'TODO',
                       'assignee': None, 'milestone': None, 'sequence': 0},
                      {'title': title_2,
-                      'status': SpecificationWorkItemStatus.POSTPONED,
+                      'status': 'POSTPONED',
                       'assignee': None, 'milestone': None, 'sequence': 1}])
 
     def test_parse_assignee(self):
@@ -246,41 +276,6 @@ class TestWorkItemsText(TestCase):
             LaunchpadValidationError, self.field.parseLine,
             "[test-person A single work item: TODO")
 
-    def test_parseLine_with_invalid_status(self):
-        self.assertRaises(
-            LaunchpadValidationError, self.field.parseLine,
-            'Invalid status: FOO')
-
-    def test_parseLine_todo_status(self):
-        status = SpecificationWorkItemStatus.TODO.name
-        work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parseLine(work_items_text)
-        self.assertEqual(parsed['status'].name, status)
-
-    def test_parseLine_done_status(self):
-        status = SpecificationWorkItemStatus.DONE.name
-        work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parseLine(work_items_text)
-        self.assertEqual(parsed['status'].name, status)
-
-    def test_parseLine_postponed_status(self):
-        status = SpecificationWorkItemStatus.POSTPONED.name
-        work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parseLine(work_items_text)
-        self.assertEqual(parsed['status'].name, status)
-
-    def test_parseLine_inprogress_status(self):
-        status = SpecificationWorkItemStatus.INPROGRESS.name
-        work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parseLine(work_items_text)
-        self.assertEqual(parsed['status'].name, status)
-
-    def test_parseLine_blocked_status(self):
-        status = SpecificationWorkItemStatus.BLOCKED.name
-        work_items_text = "Just a work item: %s" % status
-        parsed = self.field.parseLine(work_items_text)
-        self.assertEqual(parsed['status'].name, status)
-
     def test_parse_empty_line_raises(self):
         self.assertRaises(
             AssertionError, self.field.parseLine, "  \t \t ")
@@ -289,13 +284,18 @@ class TestWorkItemsText(TestCase):
         parsed = self.field.parse("\n\n\n\n\n\n\n\n")
         self.assertEqual(parsed, [])
 
+    def test_parse_status(self):
+        work_items_text = "A single work item: TODO"
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(parsed[0]['status'], 'TODO')
+
     def test_parse_milestone(self):
         milestone = '2012.02'
         title = "Work item for a milestone"
         work_items_text = "Work items for %s:\n%s: TODO" % (milestone, title)
         parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed, [{'title': title,
-                      'status': SpecificationWorkItemStatus.TODO,
+                      'status': 'TODO',
                       'assignee': None, 'milestone': milestone, 'sequence': 0}])
         
     def test_parse_multi_milestones(self):
@@ -309,11 +309,11 @@ class TestWorkItemsText(TestCase):
         parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed,
                          [{'title': title_1,
-                           'status': SpecificationWorkItemStatus.POSTPONED,
+                           'status': 'POSTPONED',
                            'assignee': None, 'milestone': milestone_1,
                            'sequence': 0},
                           {'title': title_2,
-                           'status': SpecificationWorkItemStatus.TODO,
+                           'status': 'TODO',
                            'assignee': None, 'milestone': milestone_2,
                            'sequence': 1}])
 
@@ -332,15 +332,15 @@ class TestWorkItemsText(TestCase):
         parsed = self.field.parse(work_items_text)
         self.assertEqual(parsed, 
                          [{'title': title_1,
-                           'status': SpecificationWorkItemStatus.POSTPONED,
+                           'status': 'POSTPONED',
                            'assignee': None, 'milestone': milestone_1,
                            'sequence': 0},
                           {'title': title_2,
-                           'status': SpecificationWorkItemStatus.TODO,
+                           'status': 'TODO',
                            'assignee': None, 'milestone': milestone_2,
                            'sequence': 1},
                           {'title': title_3,
-                           'status': SpecificationWorkItemStatus.TODO,
+                           'status': 'TODO',
                            'assignee': None, 'milestone': milestone_2,
                            'sequence': 2}])
 

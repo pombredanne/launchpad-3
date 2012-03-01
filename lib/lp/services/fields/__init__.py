@@ -112,6 +112,8 @@ from lp.services.webapp.interfaces import ILaunchBag
 KEEP_SAME_IMAGE = object()
 # Regexp for detecting milestone headers in work items text.
 MILESTONE_RE = re.compile('^work items(.*)\s*:\s*$', re.I)
+# Regexp for work items.
+WORKITEM_RE = re.compile('^(.*)\s*:\s*(.*)\s*$', re.I)
 
 
 # Field Interfaces
@@ -868,13 +870,13 @@ class WorkItemsText(Text):
 
     def parseLine(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
-        try:
-            title, status = line.rsplit(':', 1)
-        except ValueError:
+        workitem_match = WORKITEM_RE.search(line)
+        if workitem_match:
+            title = workitem_match.group(1)
+            status = workitem_match.group(2)
+        else:
             raise LaunchpadValidationError(
-                'Missing work item status on "%s".' % line)
-
-        status = status.strip().lower()
+                'Invalid work item format: "%s"' % line)
 
         assignee = None
         if title.startswith('['):
@@ -890,12 +892,8 @@ class WorkItemsText(Text):
             raise LaunchpadValidationError(
                 'No work item title found on "%s"' % line)
 
-        valid_statuses = SpecificationWorkItemStatus.items
-        if status not in [item.name.lower() for item in valid_statuses]:
-            raise LaunchpadValidationError('Unknown status: %s' % status)
-        status = valid_statuses[status.upper()]
-
-        return {'title': title, 'status': status, 'assignee': assignee}
+        return {'title': title, 'status': status.strip().upper(),
+                'assignee': assignee}
 
     def parse(self, text):
         sequence = 0
@@ -922,9 +920,16 @@ class WorkItemsText(Text):
     def parseAndValidate(self, text):
         work_items = self.parse(text)
         for work_item in work_items:
+            work_item['status'] = self.getStatus(work_item['status'])
             work_item['assignee'] = self.getAssignee(work_item['assignee'])
             work_item['milestone'] = self.getMilestone(work_item['milestone'])
         return work_items
+
+    def getStatus(self, text):
+        valid_statuses = SpecificationWorkItemStatus.items
+        if text.lower() not in [item.name.lower() for item in valid_statuses]:
+            raise LaunchpadValidationError('Unknown status: %s' % text)
+        return valid_statuses[text.upper()]
 
     def getAssignee(self, assignee_name):
         if assignee_name is None:
