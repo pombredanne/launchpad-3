@@ -113,7 +113,8 @@ KEEP_SAME_IMAGE = object()
 # Regexp for detecting milestone headers in work items text.
 MILESTONE_RE = re.compile('^work items(.*)\s*:\s*$', re.I)
 # Regexp for work items.
-WORKITEM_RE = re.compile('^(.*)\s*:\s*(.*)\s*$', re.I)
+WORKITEM_RE = re.compile(
+    '^(\[(?P<assignee>.*)\])?\s*(?P<title>.*)\s*:\s*(?P<status>.*)\s*$', re.I)
 
 
 # Field Interfaces
@@ -870,27 +871,21 @@ class WorkItemsText(Text):
 
     def parseLine(self, line):
         assert line.strip() != '', "Please don't give us an empty line"
+
         workitem_match = WORKITEM_RE.search(line)
         if workitem_match:
-            title = workitem_match.group(1)
-            status = workitem_match.group(2)
+            assignee = workitem_match.group('assignee')
+            title = workitem_match.group('title')
+            status = workitem_match.group('status')
         else:
             raise LaunchpadValidationError(
                 'Invalid work item format: "%s"' % line)
-
-        assignee = None
-        if title.startswith('['):
-            if ']' in title:
-                off = title.index(']')
-                assignee = title[1:off]
-                title = title[off + 1:].strip()
-            else:
-                raise LaunchpadValidationError(
-                    'Missing closing "]" for assignee on "%s".' % line)
-
         if title == '':
             raise LaunchpadValidationError(
                 'No work item title found on "%s"' % line)
+        if title.startswith('['):
+            raise LaunchpadValidationError(
+                'Missing closing "]" for assignee on "%s".' % line)
 
         return {'title': title, 'status': status.strip().upper(),
                 'assignee': assignee}
