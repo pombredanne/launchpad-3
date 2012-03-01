@@ -72,7 +72,7 @@ class AccessPolicyService:
             resource = EntryResource(person, request)
             person_data = resource.toDataForJSON()
             permissions = {
-                'PUBLICSECURITY': 'SOME',
+                'PROPRIETARY': 'SOME',
                 'EMBARGOEDSECURITY': 'ALL'
             }
             if id > 2:
