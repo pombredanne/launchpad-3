@@ -8,7 +8,7 @@ i18n:domain="malone"
 >
 
 <metal:block fill-slot="head_epilogue">
-<meta condition="not: view/should_show_bug_information"
+<meta tal:condition="not: view/should_show_bug_information"
     name="robots" content="noindex,nofollow" />
 
 <tal:comment replace="nothing">
