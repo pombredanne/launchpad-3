@@ -30,7 +30,6 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
-    MatchesRegex,
     MatchesStructure,
     )
 import transaction
@@ -76,6 +75,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features import getFeatureFlag
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -1018,6 +1018,21 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertNotEqual(old_update, bug.heat_last_updated)
 
+    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
+        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        transaction.commit()
+
+        self.runHourly()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
     def test_SpecificationWorkitemMigrator(self):
         # When the migration is successful we remove all work-items from the
         # whiteboard.
@@ -1033,11 +1048,13 @@ class TestGarbo(TestCaseWithFactory):
             """ % (milestone.name, person.name))
         spec = self.factory.makeSpecification(
             product=milestone.product, whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly(test_args=['--experimental'])
+        self.runHourly()
 
-        self.assertThat(spec.whiteboard, MatchesRegex('\s'))
+        self.assertEqual('', spec.whiteboard.strip())
         self.assertEqual(2, spec.work_items.count())
         self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
             assignee=person, title="A single work item",
@@ -1058,9 +1075,11 @@ class TestGarbo(TestCaseWithFactory):
             Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
             """)
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly(test_args=['--experimental'])
+        self.runHourly()
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())

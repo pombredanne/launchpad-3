@@ -1009,6 +1009,17 @@ class SpecificationWorkitemMigrator(TunableLoop):
     def __init__(self, log, abort_time=None):
         super(SpecificationWorkitemMigrator, self).__init__(
             log, abort_time=abort_time)
+
+        if not getFeatureFlag('garbo.workitem_migrator.enabled'):
+            self.log.info(
+                "Not migrating work items. Change the "
+                "garbo.workitem_migrator.enabled feature flag if you want "
+                "to enable this.")
+            # This will cause isDone() to return True, thus skipping the work
+            # item migration.
+            self.total = 0
+            return
+
         # Get only the specs which contain "work items" in their whiteboard
         # and which don't have any SpecificationWorkItems.
         query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
@@ -1302,10 +1313,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        ]
-    experimental_tunable_loops = [
         SpecificationWorkitemMigrator,
         ]
+    experimental_tunable_loops = []
 
     # 1 hour, minus 5 minutes for cleanup. This ensures the script is
     # fully terminated before the next scheduled hourly run kicks in.
