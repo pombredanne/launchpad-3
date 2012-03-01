@@ -43,7 +43,7 @@ import textwrap
 
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en', 'testrepository', 'sshpass']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -844,7 +844,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
         'apt-get update && '
         'DEBIAN_FRONTEND=noninteractive '
         'apt-get -y --allow-unauthenticated '
-        'install language-pack-en testrepository sshpass')
+        'install language-pack-en')
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
         '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
