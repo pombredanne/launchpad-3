@@ -43,7 +43,8 @@ import textwrap
 
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en', 'testrepository', 'sshpass']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en',
+    'testrepository', 'sshpass']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -298,7 +299,7 @@ def ssh(location, user=None, caller=subprocess.call):
         sshcmd = (
             'ssh',
             '-t',
-            '-t', # Yes, this second -t is deliberate. See `man ssh`.
+            '-t',  # Yes, this second -t is deliberate. See `man ssh`.
             '-o', 'StrictHostKeyChecking=no',
             '-o', 'UserKnownHostsFile=/dev/null',
             location,
@@ -843,8 +844,7 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall(
         'apt-get update && '
         'DEBIAN_FRONTEND=noninteractive '
-        'apt-get -y --allow-unauthenticated '
-        'install language-pack-en')
+        'apt-get -y --allow-unauthenticated install language-pack-en')
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
         '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
@@ -865,8 +865,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
-        checkout_dir, dependencies_dir))
+        ('cd {} && utilities/update-sourcecode --use-http '
+         '"{}/sourcecode"').format(checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(
         checkout_dir, dependencies_dir))
