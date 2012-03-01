@@ -2161,13 +2161,14 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, request=None,
+                 has_specification, has_patch, tags, request=None,
                  target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
+        self.tags = tags
         self.request = request
         self.target_context = target_context
 
@@ -2230,7 +2231,7 @@ class BugTaskListingItem:
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
             'tags': [{'url': base_tag_url + urllib.quote(tag), 'tag': tag}
-                for tag in self.bug.tags],
+                for tag in self.tags],
             'title': self.bug.title,
             }
 
@@ -2275,6 +2276,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
 
+    @cachedproperty
+    def tags_for_batch(self):
+        """Return a dict matching bugtask to it's tags."""
+        return getUtility(IBugTaskSet).getBugTaskTags(self.currentBatch())
+
     def getCookieName(self):
         """Return the cookie name used in bug listings js code."""
         cookie_name_template = '%s-buglist-fields'
@@ -2310,6 +2316,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
+        tags = self.tags_for_batch.get(bugtask.id, ())
         if (IMaloneApplication.providedBy(self.target_context) or
             IPerson.providedBy(self.target_context)):
             # XXX Tom Berger bug=529846
@@ -2323,6 +2330,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],
+            tags,
             request=self.request,
             target_context=target_context)
 
