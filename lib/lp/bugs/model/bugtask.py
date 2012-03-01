@@ -21,6 +21,7 @@ __all__ = [
     ]
 
 
+from collections import defaultdict
 import datetime
 from itertools import chain
 from operator import attrgetter
@@ -1379,6 +1380,23 @@ class BugTaskSet:
                 bugs_and_tasks[bug] = []
             bugs_and_tasks[bug].append(task)
         return bugs_and_tasks
+
+    def getBugTaskTags(self, bugtasks):
+        """See `IBugTaskSet`"""
+        # Import locally to avoid circular imports.
+        from lp.bugs.model.bug import Bug, BugTag
+        bugtask_ids = set(bugtask.id for bugtask in bugtasks)
+        bug_ids = set(bugtask.bugID for bugtask in bugtasks)
+        tags = IStore(BugTag).find(
+            (BugTag.tag, BugTask.id),
+            BugTask.bug == Bug.id,
+            BugTag.bug == Bug.id,
+            BugTag.bugID.is_in(bug_ids),
+            BugTask.id.is_in(bugtask_ids))
+        tags_by_bugtask = defaultdict(list)
+        for tag_name, bugtask_id in tags:
+            tags_by_bugtask[bugtask_id].append(tag_name)
+        return dict(tags_by_bugtask)
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""

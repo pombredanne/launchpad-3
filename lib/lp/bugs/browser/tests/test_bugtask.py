@@ -1793,7 +1793,7 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory):
+def make_bug_task_listing_item(factory, tags=()):
     owner = factory.makePerson()
     bug = factory.makeBug(
         owner=owner, private=True, security_related=True)
@@ -1808,6 +1808,7 @@ def make_bug_task_listing_item(factory):
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
+        tags,
         target_context=bugtask.target)
 
 
@@ -2339,9 +2340,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
 
     def test_model_tags(self):
         """Model contains bug tags."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        tags = ['tag1', 'tag2']
+        owner, item = make_bug_task_listing_item(self.factory, tags=tags)
         with person_logged_in(owner):
-            item.bug.tags = ['tag1', 'tag2']
             self.assertEqual(2, len(item.model['tags']))
             self.assertTrue('tag' in item.model['tags'][0].keys())
             self.assertTrue('url' in item.model['tags'][0].keys())
