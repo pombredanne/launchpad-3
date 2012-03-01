@@ -276,10 +276,6 @@ class TestWorkItemsText(TestCase):
             LaunchpadValidationError, self.field.parseLine,
             "[test-person A single work item: TODO")
 
-    def test_parse_empty_line_raises(self):
-        self.assertRaises(
-            AssertionError, self.field.parseLine, "  \t \t ")
-
     def test_parse_empty_lines_have_no_meaning(self):
         parsed = self.field.parse("\n\n\n\n\n\n\n\n")
         self.assertEqual(parsed, [])

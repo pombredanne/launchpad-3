@@ -197,22 +197,19 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         self.assertWorkItemsTextContains(work_item.specification, [work_item])
 
     def test_workitems_text_multi_workitems_all_statuses(self):
-        work_item1 = self.factory.makeSpecificationWorkItem(
+        spec = self.factory.makeSpecification()
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.TODO)
-        work_item2 = self.factory.makeSpecificationWorkItem(
-            specification=work_item1.specification,
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.DONE)
-        work_item3 = self.factory.makeSpecificationWorkItem(
-            specification=work_item1.specification,
+        work_item3 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.POSTPONED)
-        work_item4 = self.factory.makeSpecificationWorkItem(
-            specification=work_item1.specification,
+        work_item4 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.INPROGRESS)
-        work_item5 = self.factory.makeSpecificationWorkItem(
-            specification=work_item1.specification,
+        work_item5 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.BLOCKED)
         work_items = [work_item1, work_item2, work_item3, work_item4, work_item5]
-        self.assertWorkItemsTextContains(work_item1.specification, work_items)
+        self.assertWorkItemsTextContains(spec, work_items)
 
     def test_workitems_text_with_milestone(self):
         spec = self.factory.makeSpecification()

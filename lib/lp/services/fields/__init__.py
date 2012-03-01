@@ -870,8 +870,6 @@ class PublicPersonChoice(PersonChoice):
 class WorkItemsText(Text):
 
     def parseLine(self, line):
-        assert line.strip() != '', "Please don't give us an empty line"
-
         workitem_match = WORKITEM_RE.search(line)
         if workitem_match:
             assignee = workitem_match.group('assignee')
