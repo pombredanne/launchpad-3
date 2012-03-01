@@ -1475,6 +1475,12 @@ class IBugTaskSet(Interface):
         :return: A dictionary mapping the bugs to their bugtasks.
         """
 
+    def getBugTaskTags(bugtasks):
+        """Return a set of bugtasks bug tags
+
+        Return a dict mapping from bugtask to tag.
+        """
+
     def getBugTaskBadgeProperties(bugtasks):
         """Return whether the bugtasks should have badges.
 
