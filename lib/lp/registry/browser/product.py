@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
+from zope.security.interfaces import Unauthorized
 
 __metaclass__ = type
 
@@ -178,6 +179,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -582,6 +584,13 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        text = 'Sharing'
+        enabled = getFeatureFlag(
+            'disclosure.enhanced_sharing.enabled') is not None
+        return Link('+sharing', text, icon='edit', enabled=enabled)
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -600,7 +609,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = ['edit', 'review_license', 'administer']
+        links = ['edit', 'review_license', 'administer', 'sharing']
         add_subscribe_link(links)
         return links
 
@@ -2424,6 +2433,11 @@ class ProductSharingView(LaunchpadView):
 
     page_title = "Sharing"
     label = "Sharing information"
+
+    def __init__(self, context, request):
+        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+            raise Unauthorized("This feature is not yet available.")
+        super(ProductSharingView, self).__init__(context, request)
 
     def _getAccessPolicyService(self):
         return getUtility(IService, 'accesspolicy')

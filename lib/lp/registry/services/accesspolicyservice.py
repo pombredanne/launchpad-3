@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
+from lp.services.webapp.authorization import available_with_permission
 
 __metaclass__ = type
 __all__ = [
@@ -64,6 +65,7 @@ class AccessPolicyService:
             sharing_permissions.append(item)
         return sharing_permissions
 
+    @available_with_permission('launchpad.Driver', 'pillar')
     def getPillarObservers(self, pillar):
         """See `IAccessPolicyService`."""
 
@@ -89,6 +91,7 @@ class AccessPolicyService:
             result.append(person_data)
         return result
 
+    @available_with_permission('launchpad.Edit', 'pillar')
     def addPillarObserver(self, pillar, observer, access_policy_type, user):
         """See `IAccessPolicyService`."""
 
@@ -113,6 +116,7 @@ class AccessPolicyService:
         person_data['permissions'] = permissions
         return person_data
 
+    @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarObserver(self, pillar, observer, access_policy_type):
         """See `IAccessPolicyService`."""
         # TODO - implement this

@@ -8,13 +8,10 @@ __metaclass__ = type
 import datetime
 
 import pytz
-import simplejson
-from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
-from lp.app.interfaces.services import IService
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import (
     IProductSet,
@@ -406,32 +403,3 @@ class TestProductRdfView(BrowserTestCase):
             content_disposition, browser.headers['Content-disposition'])
         self.assertEqual(
             'application/rdf+xml', browser.headers['Content-type'])
-
-
-class TestProductSharingView(TestCaseWithFactory):
-    """Test the ProductSharingView."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_picker_config(self):
-        # Test the config passed to the disclosure sharing picker.
-        product = self.factory.makeProduct()
-        view = create_view(product, name='+sharing')
-        picker_config = simplejson.loads(view.json_sharing_picker_config)
-        self.assertTrue('vocabulary_filters' in picker_config)
-        self.assertEqual(
-            'Grant access to %s' % product.displayname,
-            picker_config['header'])
-        self.assertEqual(
-            'ValidPillarOwner', picker_config['vocabulary'])
-
-    def test_view_data_model(self):
-        # Test that the json request cache contains the view data model.
-        product = self.factory.makeProduct()
-        view = create_initialized_view(product, name='+sharing')
-        cache = IJSONRequestCache(view.request)
-        self.assertIsNotNone(cache.objects.get('access_policies'))
-        self.assertIsNotNone(cache.objects.get('sharing_permissions'))
-        aps = getUtility(IService, 'accesspolicy')
-        observers = aps.getPillarObservers(product)
-        self.assertTrue(observers, cache.objects.get('observer_data'))

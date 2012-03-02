@@ -20,7 +20,7 @@ from zope.interface import classProvides
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.checker import CheckerPublic
-from zope.security.interfaces import ISecurityPolicy
+from zope.security.interfaces import ISecurityPolicy, Unauthorized
 from zope.security.management import (
     checkPermission as zcheckPermission,
     getInteraction,
@@ -352,3 +352,51 @@ class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):
     def __init__(self, *participations):
         PermissiveSecurityPolicy.__init__(self, *participations)
         self.extras = InteractionExtras()
+
+
+class available_with_permission:
+    """Function decorator that ensures the user has the given permission on
+    a context object.
+
+    The context object is one of the function arguments and is specified by
+    nominating the argument name. If no keyword arguments are present, then the
+    first non-keyword argument is used.
+
+    Use it like:
+
+        @available_with_permission('launchpad.Edit', 'context_arg')
+        def some_function(self, context_arg, another_arg):
+            # do something
+
+    And the calling code would be:
+        obj.some_function(context, another)
+    or
+        obj.some_function(context_arg=context, another_arg=another)
+
+    """
+
+    def __init__(self, permission, context_parameter):
+        """Make a new available_with_permission function decorator.
+
+        `permission` is the string permission name, like 'launchpad.Edit'.
+        `context_parameter` is the name of the function argument which
+                            contains the context object.
+        """
+        self.permission = permission
+        self.context_parameter = context_parameter
+
+    def __call__(self, func):
+        permission = self.permission
+        context_parameter = self.context_parameter
+        
+        def permission_checker(self, *args, **kwargs):
+            if context_parameter in kwargs:
+                context = kwargs[context_parameter]
+            else:
+                context = args[0]
+            if not check_permission(permission, context):
+                raise Unauthorized(
+                    "Permission %s required on %s."
+                        % (permission, context))
+            return func(self, *args, **kwargs)
+        return permission_checker

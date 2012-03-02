@@ -4,10 +4,12 @@
 __metaclass__ = type
 
 
-import simplejson
+import transaction
+
 from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_web_service_request
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import AccessPolicyType, SharingPermission
@@ -16,12 +18,15 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.services.accesspolicyservice import AccessPolicyService
+from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    login,
+    login_person,
     TestCaseWithFactory,
     WebServiceTestCase,
-    )
+    ws_object)
 from lp.testing.layers import AppServerLayer, DatabaseFunctionalLayer
 from lp.testing.pages import LaunchpadWebServiceCaller
 
@@ -45,7 +50,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         return observer_data
 
     def _test_getPillarObservers(self, pillar):
-        """getPillarObservers returns the expected data."""
+        # getPillarObservers returns the expected data.
         access_policy = self.factory.makeAccessPolicy(pillar=pillar)
         grantee = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policy, grantee)
@@ -54,12 +59,39 @@ class TestAccessPolicyService(TestCaseWithFactory):
         self.assertContentEqual(person_data, observer)
 
     def test_getProductObservers(self):
-        product = self.factory.makeProduct()
+        # Users with launchpad.Driver can view observers.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        login_person(driver)
         self._test_getPillarObservers(product)
 
     def test_getDistroObservers(self):
-        distro = self.factory.makeDistribution()
+        # Users with launchpad.Driver can view observers.
+        driver = self.factory.makePerson()
+        distro = self.factory.makeDistribution(driver=driver)
+        login_person(driver)
         self._test_getPillarObservers(distro)
+
+    def _test_getPillarObserversUnauthorized(self, pillar):
+        # getPillarObservers raises an Unauthorized exception if the user is
+        # not permitted to do so.
+        access_policy = self.factory.makeAccessPolicy(pillar=pillar)
+        grantee = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(access_policy, grantee)
+        self.assertRaises(
+            Unauthorized, self.service.getPillarObservers, pillar)
+
+    def test_getPillarObserversAnonymous(self):
+        # Anonymous users are not allowed.
+        product = self.factory.makeProduct()
+        login(ANONYMOUS)
+        self._test_getPillarObserversUnauthorized(product)
+
+    def test_getPillarObserversAnyone(self):
+        # Unauthorized users are not allowed.
+        product = self.factory.makeProduct()
+        login_person(self.factory.makePerson())
+        self._test_getPillarObserversUnauthorized(product)
 
     def _test_addPillarObserver(self, pillar):
         """addPillarObservers works and returns the expected data."""
@@ -78,34 +110,63 @@ class TestAccessPolicyService(TestCaseWithFactory):
         self.assertContentEqual(expected_observer_data, observer_data)
 
     def test_addProductObserver(self):
-        product = self.factory.makeProduct()
+        # Users with launchpad.Edit can add observers.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
         self._test_addPillarObserver(product)
 
     def test_addDistroObserver(self):
-        distro = self.factory.makeDistribution()
+        # Users with launchpad.Edit can add observers.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
         self._test_addPillarObserver(distro)
+
+    def _test_addPillarObserverUnauthorized(self, pillar):
+        # addPillarObserver raises an Unauthorized exception if the user is
+        # not permitted to do so.
+        observer = self.factory.makePerson()
+        access_policy_type = AccessPolicyType.USERDATA
+        user = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.service.addPillarObserver,
+            pillar, observer, access_policy_type, user)
+
+    def test_addPillarObserverAnonymous(self):
+        # Anonymous users are not allowed.
+        product = self.factory.makeProduct()
+        login(ANONYMOUS)
+        self._test_addPillarObserverUnauthorized(product)
+
+    def test_addPillarObserverAnyone(self):
+        # Unauthorized users are not allowed.
+        product = self.factory.makeProduct()
+        login_person(self.factory.makePerson())
+        self._test_addPillarObserverUnauthorized(product)
 
 
 class ApiTestMixin:
     """Common tests for launchpadlib and webservice."""
 
-    def test_getAccessPolicies(self):
-        # Test the getAccessPolicies method.
-        json_policies = self._getAccessPolicies()
-        policies = simplejson.loads(json_policies)
-        expected_polices = []
-        for x, policy in enumerate(AccessPolicyType):
-            item = dict(
-                index=x,
-                value=policy.token,
-                title=policy.title,
-                description=policy.value.description
-            )
-            expected_polices.append(item)
-        self.assertContentEqual(expected_polices, policies)
+    def setUp(self):
+        super(ApiTestMixin, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(driver=self.driver)
+        access_policy = self.factory.makeAccessPolicy(pillar=self.pillar)
+        self.grantee = self.factory.makePerson(name='grantee')
+        self.factory.makeAccessPolicyGrant(
+            policy=access_policy, grantee=self.grantee)
+        transaction.commit()
+
+    def test_getPillarObservers(self):
+        # Test the getPillarObservers method.
+        [json_data] = self._getPillarObservers()
+        self.assertEqual('grantee', json_data['name'])
+        self.assertIn('permissions', json_data)
 
 
-class TestWebService(WebServiceTestCase, ApiTestMixin):
+class TestWebService(ApiTestMixin, WebServiceTestCase):
     """Test the web service interface for the Access Policy Service."""
 
     def setUp(self):
@@ -126,22 +187,26 @@ class TestWebService(WebServiceTestCase, ApiTestMixin):
             '/+services/accesspolicy',
             api_method, api_version='devel', **kwargs).jsonBody()
 
-    def _getAccessPolicies(self):
-        return self._named_get('getAccessPolicies')
+    def _getPillarObservers(self):
+        pillar_uri = canonical_url(self.pillar, force_local_path=True)
+        return self._named_get(
+            'getPillarObservers', pillar=pillar_uri)
 
 
-class TestLaunchpadlib(TestCaseWithFactory, ApiTestMixin):
+class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
     """Test launchpadlib access for the Access Policy Service."""
 
     layer = AppServerLayer
 
     def setUp(self):
         super(TestLaunchpadlib, self).setUp()
-        self.launchpad = self.factory.makeLaunchpadService()
+        self.launchpad = self.factory.makeLaunchpadService(person=self.driver)
 
-    def _getAccessPolicies(self):
+    def _getPillarObservers(self):
         # XXX 2012-02-23 wallyworld bug 681767
         # Launchpadlib can't do relative url's
         service = self.launchpad.load(
             '%s/+services/accesspolicy' % self.launchpad._root_uri)
-        return service.getAccessPolicies()
+        ws_pillar = ws_object(self.launchpad, self.pillar)
+#        login_person(self.driver)
+        return service.getPillarObservers(pillar=ws_pillar)
