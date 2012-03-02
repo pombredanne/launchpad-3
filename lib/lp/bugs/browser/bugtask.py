@@ -2200,7 +2200,7 @@ class BugTaskListingItem:
             date_last_updated = self.bug.date_last_updated
         last_updated_formatter = DateTimeFormatterAPI(date_last_updated)
         last_updated = last_updated_formatter.displaydate()
-        badges = getAdapter(self.bugtask, IPathAdapter, 'image').badges()
+        badges = getAdapter(self, IPathAdapter, 'image').badges()
         target_image = getAdapter(self.target, IPathAdapter, 'image')
         if self.bugtask.milestone is not None:
             milestone_name = self.bugtask.milestone.displayname
