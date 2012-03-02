@@ -1028,7 +1028,7 @@ class TestGarbo(TestCaseWithFactory):
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
@@ -1052,7 +1052,7 @@ class TestGarbo(TestCaseWithFactory):
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual('', spec.whiteboard.strip())
         self.assertEqual(2, spec.work_items.count())
@@ -1079,7 +1079,7 @@ class TestGarbo(TestCaseWithFactory):
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
