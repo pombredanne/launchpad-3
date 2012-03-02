@@ -190,7 +190,7 @@
                    class="parent-version">
                    <tal:replace
                         replace="difference/parent_source_version"/></a>
-                <span class="discreet">
+                <span class="lesser">
                   (<a tal:define="changelog_url python:view.parent_changelog_url(difference)"
                       tal:attributes="href changelog_url">changelog</a>)
                 </span>
@@ -235,7 +235,7 @@
                                 creator parent_source_pub/sourcepackagerelease/creator"
                         condition="python: uploader not in (None, creator)">
                       <br />
-                      <span class="discreet nowrap">
+                      <span class="lesser nowrap">
                         (uploaded by <a tal:attributes="href uploader/fmt:url"
                          tal:content="uploader/fmt:displayname" />)
                       </span>
@@ -257,7 +257,7 @@
                                 creator source_pub/sourcepackagerelease/creator"
                         condition="python: uploader not in (None, creator)">
                       <br />
-                      <span class="discreet nowrap">
+                      <span class="lesser nowrap">
                         (uploaded by <a tal:attributes="href uploader/fmt:url"
                          tal:content="uploader/fmt:displayname" />)
                       </span>
