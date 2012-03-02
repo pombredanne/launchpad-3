@@ -652,8 +652,6 @@ class CommonMenuLinks:
     def activate_ppa(self):
         target = "+activate-ppa"
         text = 'Create a new PPA'
-        summary = ('Acknowledge terms of service for Launchpad Personal '
-                   'Package Archive and create a new PPA.')
         return Link(target, text, summary, icon='add')
 
     def related_software_summary(self):
