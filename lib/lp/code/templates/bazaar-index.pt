@@ -34,9 +34,10 @@
           </a>
         </li>
       </ul>
-      <form class="central" action="/projects/" method="get">
-        <input id="text" type="text" name="text" size="50" />
-        <input type="submit" value="Find a Project" />
+      <form id="search-projects-form" class="central" method="get"
+        tal:attributes="action string:${rooturl}projects">
+        <input type="text" name="text" size="50" />
+        <input type="submit" name="search" value="Find a Project" />
       </form>
       <script type="text/javascript">
           LPJS.use('lp', function (Y) {

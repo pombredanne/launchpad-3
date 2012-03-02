@@ -1205,7 +1205,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    custom_widget('name', TextWidget, width=20)
+    custom_widget('name', TextWidget, displayWidth=20)
 
     @property
     def label(self):

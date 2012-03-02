@@ -136,7 +136,8 @@ question.
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
-    Mozilla Thunderbird does not use Launchpad to track bugs. ...
+    Mozilla Thunderbird does not use Launchpad to track bugs.
+    Mozilla Thunderbird does not use Launchpad for support questions. ...
 
 The page is present, but without a comment field or a button to create
 the question.
