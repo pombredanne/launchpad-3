@@ -11,12 +11,8 @@ from zope.security.interfaces import (
     Unauthorized,
     )
 
-from lp.app.interfaces.launchpad import (
-    IPrivacy,
-    )
-from lp.app.model.launchpad import (
-    Privacy,
-    )
+from lp.app.interfaces.launchpad import IPrivacy
+from lp.app.model.launchpad import Privacy
 from lp.testing import TestCase
 from lp.testing.layers import FunctionalLayer
 

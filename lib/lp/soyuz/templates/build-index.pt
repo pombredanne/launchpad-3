@@ -222,14 +222,12 @@
     <h2>Binary packages</h2>
 
     <tal:upload_done condition="view/has_published_binaries">
-      <p class="discreet">Binary packages produced by this build:</p>
+      <p>Binary packages produced by this build:</p>
     </tal:upload_done>
     <tal:upload_not_done condition="not: view/has_published_binaries">
-      <p class="discreet"
-         tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
+      <p tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
         >Binary packages awaiting publication:</p>
-      <p class="discreet"
-         tal:condition="not: view/package_upload/status/enumvalue:ACCEPTED"
+      <p tal:condition="not: view/package_upload/status/enumvalue:ACCEPTED"
         >Binary packages awaiting approval
          in <span tal:replace="view/package_upload/status/name"
               >NEW</span> queue:</p>
@@ -256,7 +254,7 @@
       Files section.
     </tal:comment>
     <h2>Built files</h2>
-    <p class="discreet">Files resulting from this build:</p>
+    <p>Files resulting from this build:</p>
     <ul>
       <li tal:repeat="file view/files">
         <a class="sprite download"
@@ -277,7 +275,7 @@
          tal:content="structure logtail/fmt:text-to-html">
       <p>Things are crashing and burning all over the place.</p>
     </div>
-    <p class="discreet" tal:condition="view/user">
+    <p tal:condition="view/user">
       Updated on <span tal:replace="structure view/user/fmt:local-time"/>
     </p>
   </metal:macro>

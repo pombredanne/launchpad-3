@@ -11,9 +11,7 @@ __all__ = [
     'ProjectView',
     ]
 
-from lp.app.browser.launchpadform import (
-    action,
-    )
+from lp.app.browser.launchpadform import action
 from lp.registry.browser.project import ProjectEditView
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp import (

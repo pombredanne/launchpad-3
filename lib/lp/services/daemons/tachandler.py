@@ -11,28 +11,17 @@ __all__ = [
     ]
 
 
-import errno
 import os
-import socket
-import subprocess
 import sys
-import time
-import warnings
 
-from fixtures import Fixture
 from txfixtures.tachandler import (
     TacException,
     TacTestFixture,
     )
 
+import lp
 from lp.services.daemons import readyservice
-from lp.services.osutils import (
-    get_pid_from_file,
-    kill_by_pidfile,
-    remove_if_exists,
-    two_stage_kill,
-    until_no_eintr,
-    )
+from lp.services.osutils import remove_if_exists
 
 
 twistd_script = os.path.abspath(os.path.join(
@@ -86,6 +75,12 @@ class TacTestSetup(TacTestFixture):
                         break
                 else:
                     logfile.truncate(0)
+
+    @property
+    def daemon_directory(self):
+        return os.path.abspath(
+            os.path.join(os.path.dirname(lp.__file__), os.pardir, os.pardir,
+            'daemons'))
 
     def setUpRoot(self):
         """Override this.

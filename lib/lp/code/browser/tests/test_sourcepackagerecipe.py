@@ -39,9 +39,7 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
-from lp.services.propertycache import (
-    clear_property_cache,
-    )
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest

@@ -44,7 +44,6 @@ from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
     )
-
 import pytz
 from sqlobject import (
     BoolCol,
@@ -1709,12 +1708,12 @@ class Person(
         if self.isAnyPillarOwner():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "maintains one ore more products, project groups, or "
+                "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "is the security contact for one ore more products, "
+                "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
@@ -4764,7 +4763,7 @@ def get_recipients(person):
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
     """
-    if person.preferredemail:
+    if removeSecurityProxy(person).preferredemail:
         return [person]
     elif person.is_team:
         # Get transitive members of a team that does not itself have a
