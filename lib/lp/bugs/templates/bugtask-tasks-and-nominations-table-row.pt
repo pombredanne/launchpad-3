@@ -46,7 +46,7 @@
 
     <tal:conjoined-task condition="data/is_conjoined_slave">
     <td colspan="5" style="vertical-align: middle">
-      <span class="lesser lesser" style="font-size: 100%">
+      <span class="lesser">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
           Hoary
