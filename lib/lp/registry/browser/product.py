@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
-from zope.security.interfaces import Unauthorized
 
 __metaclass__ = type
 
@@ -74,6 +73,7 @@ from zope.interface import (
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
+from zope.security.interfaces import Unauthorized
 from zope.schema import (
     Bool,
     Choice,

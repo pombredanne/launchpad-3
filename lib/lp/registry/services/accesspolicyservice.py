@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
-from lp.services.webapp.authorization import available_with_permission
 
 __metaclass__ = type
 __all__ = [
@@ -24,6 +23,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
+from lp.services.webapp.authorization import available_with_permission
 
 
 class AccessPolicyService:
