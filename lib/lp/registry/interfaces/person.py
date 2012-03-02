@@ -506,10 +506,9 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
-        having a PPA.
+        Only Launchpad admins and team members can view the team's data.
+        Other users may only know of the team if it is placed
+        in a public relationship such as subscribing to a bug.
         """)
 
 
@@ -695,9 +694,9 @@ class IPersonPublic(IPrivacy):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  "
-                   "Private means the team is completely "
-                   "hidden."),
+                   "Anyone can see a public team's data. Only team members "
+                   "and Launchpad admins can see private team data. "
+                   "Private teams cannot become public."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC, readonly=True))
 
