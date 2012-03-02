@@ -1708,12 +1708,12 @@ class Person(
         if self.isAnyPillarOwner():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "maintains one ore more products, project groups, or "
+                "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "is the security contact for one ore more products, "
+                "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
