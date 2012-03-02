@@ -280,6 +280,7 @@
     </div>
 
     <div class="portlet">
+      <p tal:condition="view/whiteboard_widget" class="informational message">Please note that work items go in the separate Work Items input field below.</p>
       <div class="wide" tal:content="structure view/whiteboard_widget" />
     </div>
 
