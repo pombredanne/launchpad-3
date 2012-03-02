@@ -21,7 +21,8 @@
                 contentBox: ${view/widget_css_selector},
                 accept_empty: ${view/accept_empty},
                 multiline: true,
-                buttons: 'top'
+                buttons: 'top',
+		edit_shows_message: ${view/edit_shows_message}
             });
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {

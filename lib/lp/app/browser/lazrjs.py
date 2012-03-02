@@ -119,13 +119,17 @@ class TextWidgetBase(WidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, title, content_box_id,
-                 edit_view, edit_url, edit_title):
+                 edit_view, edit_url, edit_title, edit_shows_message=False):
         super(TextWidgetBase, self).__init__(
             context, exported_field, content_box_id,
             edit_view, edit_url, edit_title)
         self.accept_empty = simplejson.dumps(self.optional_field)
         self.title = title
         self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
+        if edit_shows_message:
+            self.edit_shows_message = 'true'
+        else:
+            self.edit_shows_message = 'false'
 
     @property
     def json_attribute_uri(self):
@@ -197,7 +201,7 @@ class TextAreaEditorWidget(TextWidgetBase):
 
     def __init__(self, context, exported_field, title, content_box_id=None,
                  edit_view="+edit", edit_url=None, edit_title='',
-                 hide_empty=True, linkify_text=True):
+                 hide_empty=True, linkify_text=True, edit_shows_message=False):
         """Create the widget wrapper.
 
         :param context: The object that is being edited.
@@ -218,7 +222,8 @@ class TextAreaEditorWidget(TextWidgetBase):
         """
         super(TextAreaEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
-            edit_view, edit_url, edit_title)
+            edit_view, edit_url, edit_title,
+            edit_shows_message=edit_shows_message)
         self.hide_empty = hide_empty
         self.linkify_text = linkify_text
 
