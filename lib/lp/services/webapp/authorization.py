@@ -388,7 +388,7 @@ class available_with_permission:
     def __call__(self, func):
         permission = self.permission
         context_parameter = self.context_parameter
-        
+
         def permission_checker(self, *args, **kwargs):
             if context_parameter in kwargs:
                 context = kwargs[context_parameter]
