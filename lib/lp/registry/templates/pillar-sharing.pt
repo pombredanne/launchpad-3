@@ -25,8 +25,8 @@
 <body>
   <div metal:fill-slot="main">
     <p>
-      Proprietary, embargoed security, or user-data information about this
-      project is shared with these users and teams.
+      Proprietary, embargoed security, or user-data information is
+      shared with these users and teams.
     </p>
 
     <table id="observer-table" class="disclosure listing">

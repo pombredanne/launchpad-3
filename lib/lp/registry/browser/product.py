@@ -41,7 +41,6 @@ __all__ = [
     'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
-    'ProductSharingView',
     ]
 
 
@@ -52,11 +51,8 @@ from datetime import (
 from operator import attrgetter
 
 from lazr.delegates import delegates
-from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import IJSONRequestCache
 import pytz
-import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -73,21 +69,17 @@ from zope.interface import (
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.security.interfaces import Unauthorized
 from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
-from lp.app.interfaces.services import IService
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -115,7 +107,6 @@ from lp.app.browser.tales import (
     format_link,
     MenuAPI,
     )
-from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -2427,59 +2418,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
-
-
-class ProductSharingView(LaunchpadView):
-
-    page_title = "Sharing"
-    label = "Sharing information"
-
-    def __init__(self, context, request):
-        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
-            raise Unauthorized("This feature is not yet available.")
-        super(ProductSharingView, self).__init__(context, request)
-
-    def _getAccessPolicyService(self):
-        return getUtility(IService, 'accesspolicy')
-
-    @property
-    def access_policies(self):
-        return self._getAccessPolicyService().getAccessPolicies()
-
-    @property
-    def sharing_permissions(self):
-        return self._getAccessPolicyService().getSharingPermissions()
-
-    @cachedproperty
-    def sharing_vocabulary(self):
-        registry = getVocabularyRegistry()
-        return registry.get(
-            IVocabulary, 'ValidPillarOwner')
-
-    @cachedproperty
-    def sharing_vocabulary_filters(self):
-        return vocabulary_filters(self.sharing_vocabulary)
-
-    @property
-    def sharing_picker_config(self):
-        return dict(
-            vocabulary='ValidPillarOwner',
-            vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to %s'
-                % self.context.displayname)
-
-    @property
-    def json_sharing_picker_config(self):
-        return simplejson.dumps(
-            self.sharing_picker_config, cls=ResourceJSONEncoder)
-
-    @property
-    def observer_data(self):
-        return self._getAccessPolicyService().getPillarObservers(self.context)
-
-    def initialize(self):
-        super(ProductSharingView, self).initialize()
-        cache = IJSONRequestCache(self.request)
-        cache.objects['access_policies'] = self.access_policies
-        cache.objects['sharing_permissions'] = self.sharing_permissions
-        cache.objects['observer_data'] = self.observer_data
