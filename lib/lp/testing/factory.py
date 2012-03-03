@@ -848,7 +848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None):
+                      productseries=None, name=None, active=True):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -864,7 +864,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name))
+                      name=name, active=active))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
