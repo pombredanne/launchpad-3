@@ -30,7 +30,7 @@ from lp.testing.views import (
 FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 
 
-class PillarSharingViewTestMixin(TestCaseWithFactory):
+class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
     layer = DatabaseFunctionalLayer
@@ -88,7 +88,8 @@ class PillarSharingViewTestMixin(TestCaseWithFactory):
             self.assertEqual(observers, cache.objects.get('observer_data'))
 
 
-class TestProductSharingView(PillarSharingViewTestMixin):
+class TestProductSharingView(PillarSharingViewTestMixin,
+                                 TestCaseWithFactory):
     """Test the PillarSharingView with products."""
 
     def setUp(self):
@@ -98,7 +99,8 @@ class TestProductSharingView(PillarSharingViewTestMixin):
         login_person(self.driver)
 
 
-class TestDistributionSharingView(PillarSharingViewTestMixin):
+class TestDistributionSharingView(PillarSharingViewTestMixin,
+                                      TestCaseWithFactory):
     """Test the PillarSharingView with distributions."""
 
     def setUp(self):
