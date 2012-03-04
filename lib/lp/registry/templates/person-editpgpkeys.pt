@@ -171,7 +171,7 @@
                 <td><input type="text" size="50" name="fingerprint" /></td>
                 </div>
               </tr>
-              <tr class="discreet">
+              <tr class="lesser">
                 <th>Example:</th>
                 <td>
                   <code>27E0 7815 B47C 0397 90D5&nbsp;&nbsp;8589 27D9 A27B F3F9 6058</code>
