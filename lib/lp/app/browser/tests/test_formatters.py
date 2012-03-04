@@ -79,7 +79,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         view.request.traversed_objects = [project, bug.bugtasks[0], view]
         formatter = ObjectFormatterAPI(view)
         detail = u'%s \u201c%s\u201d' % (bug.displayname, title)
-        expected_title = u'%s... : Bugs : Fnord' % detail[0:64]
+        expected_title = u'%s...\u201d : Bugs : Fnord' % detail[0:64]
         self.assertEqual(expected_title, formatter.pagetitle())
 
 

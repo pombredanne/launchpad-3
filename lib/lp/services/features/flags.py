@@ -287,6 +287,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('garbo.workitem_migrator.enabled',
+     'boolean',
+     ('If true, garbo will try to migrate work items from the whiteboard of '
+      'specifications.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

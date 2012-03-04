@@ -22,9 +22,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.testing import (
-    celebrity_logged_in,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -299,21 +297,3 @@ class TestBugCreation(TestCaseWithFactory):
         params.setBugTarget(product=target)
         bug = getUtility(IBugSet).createBug(params)
         self.assertEqual([cve], [cve_link.cve for cve_link in bug.cve_links])
-
-
-class TestLimitedViewBugSecurityAdapter(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
-
-    def test_user_private_bug_subscribed_to_public_dup(self):
-        # A user has limited visibility of a private bug if they are
-        # subscribed to a duplicate.
-        bug = self.factory.makeBug(private=True)
-        person = self.factory.makePerson()
-        dup = self.factory.makeBug()
-        with person_logged_in(dup.owner):
-            dup.subscribe(person, dup.owner)
-        with celebrity_logged_in('admin'):
-            dup.markAsDuplicate(bug)
-        with person_logged_in(person):
-            self.assertFalse(check_permission('launchpad.View', bug))
-            self.assertTrue(check_permission('launchpad.LimitedView', bug))
