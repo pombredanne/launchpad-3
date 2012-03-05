@@ -730,7 +730,7 @@ class IProductPublic(
                     "commercial subscription to use launchpad.")))
 
     has_current_commercial_subscription = Attribute("""
-        Whether commercial subscription is current or expired.""")
+        Whether the project has a current commercial subscription.""")
 
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
