@@ -788,7 +788,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
         if email is not None:
-            team.setContactAddress(
+            removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
         if icon is not None:
             naked_team.icon = icon
@@ -848,7 +848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None):
+                      productseries=None, name=None, active=True):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -864,7 +864,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name))
+                      name=name, active=active))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -2690,7 +2690,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        with person_logged_in(owner):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
             archive = getUtility(IArchiveSet).new(
                 owner=owner, purpose=purpose,
                 distribution=distribution, name=name, displayname=displayname,
@@ -3750,7 +3751,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
-        with person_logged_in(archive.owner):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
             binary_package_build = getUtility(IBinaryPackageBuildSet).new(
                 source_package_release=source_package_release,
                 processor=processor,
@@ -3825,7 +3827,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive=archive, distroseries=distroseries,
                 date_uploaded=date_uploaded, **kwargs)
 
-        with person_logged_in(archive.owner):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
             spph = getUtility(IPublishingSet).newSourcePublication(
                 archive, sourcepackagerelease, distroseries,
                 sourcepackagerelease.component, sourcepackagerelease.section,

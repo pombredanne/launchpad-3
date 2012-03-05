@@ -1153,6 +1153,21 @@ multiple bug tasks in one go.
      has_specification: False
 
 
+Bugtask Tags
+------------
+
+List of bugtasks often need to display related tags.  Since tags are
+related to bugtasks via bugs, BugTaskSet has a method getBugTaskTags
+that can calculate the tags in one query.
+
+    >>> some_bugtask.bug.tags = [u'foo', u'bar']
+    >>> another_bugtask.bug.tags = [u'baz', u'bop']
+    >>> tags_by_task = getUtility(IBugTaskSet).getBugTaskTags([
+    ...     some_bugtask, another_bugtask])
+    >>> print tags_by_task
+    {3: [u'foo', u'bar'], 6: [u'bop', u'baz']}
+
+
 Similar bugs
 ------------
 
