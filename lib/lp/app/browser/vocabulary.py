@@ -269,7 +269,7 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             maintainer = self.getMaintainer(target)
             if maintainer is not None:
                 picker_entry.details.append(
-                    'Maintainer: %s' % self.getMaintainer(target))
+                    'Maintainer: %s' % maintainer)
             commercial_subscription = self.getCommercialSubscription(target)
             if commercial_subscription is not None:
                 picker_entry.details.append(
