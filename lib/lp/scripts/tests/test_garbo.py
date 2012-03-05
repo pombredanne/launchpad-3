@@ -51,6 +51,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1013,6 +1014,22 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(old_update, bug.heat_last_updated)
         self.runHourly()
         self.assertNotEqual(old_update, bug.heat_last_updated)
+
+    def test_AccessPolicyDistributionAddition(self):
+        switch_dbuser('testadmin')
+        distribution = self.factory.makeDistribution()
+        transaction.commit()
+        self.runHourly()
+        ap = getUtility(IAccessPolicySource).findByPillar((distribution,))
+        self.assertEqual(2, ap.count())
+
+    def test_AccessPolicyProductAddition(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        transaction.commit()
+        self.runHourly()
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        self.assertEqual(2, ap.count())
 
 
 class TestGarboTasks(TestCaseWithFactory):
