@@ -1026,7 +1026,7 @@ class AccessPolicyDistributionAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findDistributions()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.PROPRIETARY))
+            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 
@@ -1054,7 +1054,7 @@ class AccessPolicyProductAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findProducts()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.PROPRIETARY))
+            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 
