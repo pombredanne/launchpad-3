@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 __metaclass__ = type
 __all__ = [
@@ -94,6 +95,9 @@ class AccessPolicyService:
     @available_with_permission('launchpad.Edit', 'pillar')
     def addPillarObserver(self, pillar, observer, access_policy_type, user):
         """See `IAccessPolicyService`."""
+
+        # We do not support adding observers to project groups.
+        assert not IProjectGroup.providedBy(pillar)
 
         # Create a pillar access policy if one doesn't exist.
         policy_source = getUtility(IAccessPolicySource)

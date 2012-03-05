@@ -109,6 +109,14 @@ class TestAccessPolicyService(TestCaseWithFactory):
         expected_observer_data = self._makeObserverData(observer)
         self.assertContentEqual(expected_observer_data, observer_data)
 
+    def test_addProjectGroupObserver_not_allowed(self):
+        # We cannot add observers to ProjectGroups.
+        owner = self.factory.makePerson()
+        project_group = self.factory.makeProject(owner=owner)
+        login_person(owner)
+        self.assertRaises(
+            AssertionError, self._test_addPillarObserver, project_group)
+
     def test_addProductObserver(self):
         # Users with launchpad.Edit can add observers.
         owner = self.factory.makePerson()
