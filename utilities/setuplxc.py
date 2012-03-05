@@ -9,6 +9,7 @@ __all__ = [
     'ArgumentParser',
     'cd',
     'create_lxc',
+    'create_scripts',
     'file_append',
     'file_prepend',
     'get_container_path',
@@ -663,7 +664,8 @@ parser.add_argument(
          'rather than bzr+ssh.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
-    choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
+    choices=('initialize_host', 'create_scripts', 'create_lxc',
+             'initialize_lxc', 'stop_lxc'),
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
     '-n', '--lxc-name', default=LXC_NAME,
@@ -750,46 +752,57 @@ def initialize_host(
             path = os.path.join(dependencies_dir, subdir)
             if not os.path.exists(path):
                 os.makedirs(path)
+    with cd(dependencies_dir):
+        with su(user) as env:
+            subprocess.call([
+                'bzr', 'co', '--lightweight',
+                LP_SOURCE_DEPS, 'download-cache'])
+
+
+def create_scripts(user, directory, lxcname, ssh_key_path):
+    """Create scripts to update the Launchpad environment and run tests."""
+    mapping = {
+        'user': user,
+        'lxcname': lxcname,
+        'ssh_key_path': ssh_key_path,
+        'checkout_dir': os.path.join(directory, LP_CHECKOUT),
+        }
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
     with open(build_script_file, 'w') as script:
-        script.write(textwrap.dedent("""\
+        script.write(textwrap.dedent("""
             #!/bin/sh
             set -uex
-            lxc-start -n lptests -d
-            lxc-wait -n lptests -s RUNNING
-            sleep 30 # aparently RUNNING isn't quite enough
-            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
-                make -C /var/lib/buildbot/lp schema"
-            lxc-stop -n lptests
-            lxc-wait -n lptests -s STOPPED
-            """))
+            lxc-start -n {lxcname} -d
+            lxc-wait -n {lxcname} -s RUNNING
+            sleep 30  # aparently RUNNING isn't quite enough
+            su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                -i '{ssh_key_path}' {lxcname} make -C {checkout_dir} schema"
+            lxc-stop -n {lxcname}
+            lxc-wait -n {lxcname} -s STOPPED
+            """.format(**mapping)))
         os.chmod(build_script_file, 0555)
+    # We need a script to test launchpad using LXC ephemeral instances.
     test_script_file = '/usr/local/bin/launchpad-lxc-test'
     with open(test_script_file, 'w') as script:
         script.write(textwrap.dedent("""
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
-                --error-file=/var/tmp/xvfb-errors.log \\
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \\
+                -b $PWD -- xvfb-run --error-file=/var/tmp/xvfb-errors.log \\
                 --server-args='-screen 0 1024x768x24' \\
                 -a $PWD/bin/test --subunit $@
-            """))
+            """.format(**mapping)))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
-    sudoers_file = '/etc/sudoers.d/launchpad-buildbot'
+    sudoers_file = '/etc/sudoers.d/launchpad-' + user
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
         sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
         sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
         # The sudoers must have this mode or it will be ignored.
         os.chmod(sudoers_file, 0440)
-    with cd(dependencies_dir):
-        with su(user) as env:
-            subprocess.call([
-                'bzr', 'co', '--lightweight',
-                LP_SOURCE_DEPS, 'download-cache'])
 
 
 def create_lxc(user, lxcname, ssh_key_path):
@@ -935,6 +948,7 @@ def main(
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
             ssh_key_path, dependencies_dir, directory)),
+        ('create_scripts', (user, directory, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
             user, dependencies_dir, directory, lxc_name, ssh_key_path)),
