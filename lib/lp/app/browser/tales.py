@@ -2757,6 +2757,6 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
     def formatted_displayname(self, view_name=None):
         return dedent("""\
             <strong>%s</strong>
-            <span class="discreet"> on </span>
+            <span class="lesser"> on </span>
             <strong>%s</strong>
         """ % (escape(self._context.nickname), escape(self._context.network)))
