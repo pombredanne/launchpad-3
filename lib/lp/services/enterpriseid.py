@@ -1,7 +1,7 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Enterprise ID utilities"""
+"""Enterprise ID utilities."""
 
 __metaclass__ = type
 __all__ = [
@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import os
-import sys
 
 from lp.registry.model.person import Person
 from lp.services.config import config
