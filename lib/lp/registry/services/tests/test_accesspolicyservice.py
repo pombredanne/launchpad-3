@@ -40,13 +40,15 @@ class TestAccessPolicyService(TestCaseWithFactory):
         super(TestAccessPolicyService, self).setUp()
         self.service = getUtility(IService, 'accesspolicy')
 
-    def _makeObserverData(self, observer):
+    def _makeObserverData(self, observer, policy_types):
         # Unpack an observer into its attributes and add in permissions.
         request = get_current_web_service_request()
         resource = EntryResource(observer, request)
         observer_data = resource.toDataForJSON()
-        observer_data['permissions'] = {
-            AccessPolicyType.PROPRIETARY.name: SharingPermission.ALL.name}
+        permissions = {}
+        for policy in policy_types:
+            permissions[policy.name] = SharingPermission.ALL.name
+        observer_data['permissions'] = permissions
         return observer_data
 
     def _test_getAccessPolicies(self, pillar, expected_policies):
@@ -55,7 +57,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         for x, policy in enumerate(expected_policies):
             item = dict(
                 index=x,
-                value=policy.value,
+                value=policy.name,
                 title=policy.title,
                 description=policy.description
             )
@@ -92,12 +94,15 @@ class TestAccessPolicyService(TestCaseWithFactory):
 
     def _test_getPillarObservers(self, pillar):
         # getPillarObservers returns the expected data.
-        access_policy = self.factory.makeAccessPolicy(pillar=pillar)
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=pillar,
+            type=AccessPolicyType.PROPRIETARY)
         grantee = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policy, grantee)
         [observer] = self.service.getPillarObservers(pillar)
-        person_data = self._makeObserverData(grantee)
-        self.assertContentEqual(person_data, observer)
+        person_data = self._makeObserverData(
+            grantee, [AccessPolicyType.PROPRIETARY])
+        self.assertEqual(person_data, observer)
 
     def test_getProductObservers(self):
         # Users with launchpad.Driver can view observers.
@@ -137,26 +142,40 @@ class TestAccessPolicyService(TestCaseWithFactory):
     def _test_addPillarObserver(self, pillar):
         """addPillarObservers works and returns the expected data."""
         observer = self.factory.makePerson()
-        access_policy_type = AccessPolicyType.USERDATA
-        user = self.factory.makePerson()
+        grantor = self.factory.makePerson()
+        # Make an existing grant to ensure addPillarObserver handles that
+        # correctly.
+        policy = self.factory.makeAccessPolicy(
+            pillar=pillar, type=AccessPolicyType.EMBARGOEDSECURITY)
+        self.factory.makeAccessPolicyGrant(
+            policy, grantee=observer, grantor=grantor)
+        # Now call addPillarObserver will the grants we want.
+        access_policy_types = [
+            AccessPolicyType.EMBARGOEDSECURITY,
+            AccessPolicyType.USERDATA]
         observer_data = self.service.addPillarObserver(
-            pillar, observer, access_policy_type, user)
-        [policy] = getUtility(IAccessPolicySource).findByPillar([pillar])
+            pillar, observer, access_policy_types, grantor)
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        [grant] = policy_grant_source.findByPolicy([policy])
-        self.assertEqual(user, grant.grantor)
-        self.assertEqual(observer, grant.grantee)
-        self.assertEqual(policy, grant.policy)
-        expected_observer_data = self._makeObserverData(observer)
-        self.assertContentEqual(expected_observer_data, observer_data)
+        grants = policy_grant_source.findByPolicy(policies)
+        self.assertEqual(grants.count(), len(access_policy_types))
+        for grant in grants:
+            self.assertEqual(grantor, grant.grantor)
+            self.assertEqual(observer, grant.grantee)
+            self.assertIn(grant.policy.type, access_policy_types)
+        expected_observer_data = self._makeObserverData(
+            observer, access_policy_types)
+        self.assertEqual(expected_observer_data, observer_data)
 
     def test_addProjectGroupObserver_not_allowed(self):
         # We cannot add observers to ProjectGroups.
         owner = self.factory.makePerson()
         project_group = self.factory.makeProject(owner=owner)
+        observer = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
-            AssertionError, self._test_addPillarObserver, project_group)
+            AssertionError, self.service.addPillarObserver,
+            project_group, observer, [AccessPolicyType.USERDATA], owner)
 
     def test_addProductObserver(self):
         # Users with launchpad.Edit can add observers.
@@ -180,7 +199,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         user = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.service.addPillarObserver,
-            pillar, observer, access_policy_type, user)
+            pillar, observer, [access_policy_type], user)
 
     def test_addPillarObserverAnonymous(self):
         # Anonymous users are not allowed.

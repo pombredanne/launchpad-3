@@ -10,7 +10,10 @@ __all__ = [
     'IAccessPolicyService',
     ]
 
-from zope.schema import Choice
+from zope.schema import (
+    Choice,
+    List,
+    )
 
 from lazr.restful.declarations import (
     call_with,
@@ -55,10 +58,10 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy_type=Choice(vocabulary=AccessPolicyType))
+        access_policy_types=List(Choice(vocabulary=AccessPolicyType)))
     @operation_for_version('devel')
-    def addPillarObserver(pillar, observer, access_policy_type, user):
-        """Add an observer with the access policy to a pillar."""
+    def addPillarObserver(pillar, observer, access_policy_types, user):
+        """Add an observer with the access policies to a pillar."""
 
     @export_write_operation()
     @operation_parameters(

@@ -58,7 +58,7 @@ class AccessPolicyService:
         for x, policy in enumerate(allowed_policy_types):
             item = dict(
                 index=x,
-                value=policy.value,
+                value=policy.name,
                 title=policy.title,
                 description=policy.description
             )
@@ -104,30 +104,42 @@ class AccessPolicyService:
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def addPillarObserver(self, pillar, observer, access_policy_type, user):
+    def addPillarObserver(self, pillar, observer, access_policy_types, user):
         """See `IAccessPolicyService`."""
 
         # We do not support adding observers to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
-        # Create a pillar access policy if one doesn't exist.
+        pillar_policy_types = [(pillar, access_policy_type)
+                            for access_policy_type in access_policy_types]
+
+        # Create and missing pillar access policies.
         policy_source = getUtility(IAccessPolicySource)
-        pillar_access_policy = [(pillar, access_policy_type)]
-        policy = policy_source.find(pillar_access_policy).one()
-        if policy is None:
-            [policy] = policy_source.create(pillar_access_policy)
-        # We have a policy, create the grant if it doesn't exist.
+        pillar_policies = list(policy_source.find(pillar_policy_types))
+        existing_policy_types = [(pillar, pillar_policy.type)
+                                 for pillar_policy in pillar_policies]
+        required_policies = (
+            set(pillar_policy_types).difference(existing_policy_types))
+        if len(required_policies) > 0:
+            pillar_policies.extend(policy_source.create(required_policies))
+
+        # We have the policies, create the grant if they doesn't exist.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        if policy_grant_source.find([(policy, observer)]).count() == 0:
-            policy_grant_source.grant([(policy, observer, user)])
+        policy_grants = [(policy, observer) for policy in pillar_policies]
+        existing_grants = [(grant.policy, grant.grantee)
+                        for grant in policy_grant_source.find(policy_grants)]
+        required_grants = set(policy_grants).difference(existing_grants)
+        if len(required_grants) > 0:
+            policy_grant_source.grant([(policy, observer, user)
+                                    for policy, observer in required_grants])
 
         # Return observer data to the caller.
         request = get_current_web_service_request()
         resource = EntryResource(observer, request)
         person_data = resource.toDataForJSON()
-        permissions = {
-            access_policy_type.name: SharingPermission.ALL.name,
-        }
+        permissions = {}
+        for access_policy_type in access_policy_types:
+            permissions[access_policy_type.name] = SharingPermission.ALL.name
         person_data['permissions'] = permissions
         return person_data
 
