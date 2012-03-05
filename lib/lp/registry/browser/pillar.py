@@ -241,7 +241,7 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def access_policies(self):
-        return self._getAccessPolicyService().getAccessPolicies()
+        return self._getAccessPolicyService().getAccessPolicies(self.context)
 
     @property
     def sharing_permissions(self):

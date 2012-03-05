@@ -49,6 +49,47 @@ class TestAccessPolicyService(TestCaseWithFactory):
             AccessPolicyType.PROPRIETARY.name: SharingPermission.ALL.name}
         return observer_data
 
+    def _test_getAccessPolicies(self, pillar, expected_policies):
+        policy_data = self.service.getAccessPolicies(pillar)
+        expected_data = []
+        for x, policy in enumerate(expected_policies):
+            item = dict(
+                index=x,
+                value=policy.value,
+                title=policy.title,
+                description=policy.description
+            )
+            expected_data.append(item)
+        self.assertContentEqual(expected_data, policy_data)
+
+    def test_getAccessPolicies_product(self):
+        product = self.factory.makeProduct()
+        self._test_getAccessPolicies(
+            product,
+            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+
+    def test_getAccessPolicies_expired_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self._test_getAccessPolicies(
+            product,
+            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+
+    def test_getAccessPolicies_commercial_product(self):
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        self._test_getAccessPolicies(
+            product,
+            [AccessPolicyType.EMBARGOEDSECURITY,
+             AccessPolicyType.USERDATA,
+             AccessPolicyType.PROPRIETARY])
+
+    def test_getAccessPolicies_distro(self):
+        distro = self.factory.makeDistribution()
+        self._test_getAccessPolicies(
+            distro,
+            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+
     def _test_getPillarObservers(self, pillar):
         # getPillarObservers returns the expected data.
         access_policy = self.factory.makeAccessPolicy(pillar=pillar)

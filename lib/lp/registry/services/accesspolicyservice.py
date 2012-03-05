@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 __metaclass__ = type
@@ -41,18 +42,28 @@ class AccessPolicyService:
         """See `IService`."""
         return 'accesspolicy'
 
-    def getAccessPolicies(self):
+    def getAccessPolicies(self, pillar):
         """See `IAccessPolicyService`."""
-        policies = []
-        for x, policy in enumerate(AccessPolicyType):
+
+        allowed_policy_types = [
+            AccessPolicyType.EMBARGOEDSECURITY,
+            AccessPolicyType.USERDATA]
+        # Products with current commercial subscriptions are also allowed to
+        # have a PROPRIETARY access policy.
+        if (IProduct.providedBy(pillar) and
+                pillar.has_current_commercial_subscription):
+            allowed_policy_types.append(AccessPolicyType.PROPRIETARY)
+
+        policies_data = []
+        for x, policy in enumerate(allowed_policy_types):
             item = dict(
                 index=x,
-                value=policy.token,
+                value=policy.value,
                 title=policy.title,
-                description=policy.value.description
+                description=policy.description
             )
-            policies.append(item)
-        return policies
+            policies_data.append(item)
+        return policies_data
 
     def getSharingPermissions(self):
         """See `IAccessPolicyService`."""

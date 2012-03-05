@@ -37,8 +37,8 @@ class IAccessPolicyService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
-    def getAccessPolicies():
-        """Return the access policy types."""
+    def getAccessPolicies(pillar):
+        """Return the allowed access policy types for the given pillar."""
 
     def getSharingPermissions():
         """Return the access policy sharing permissions."""
