@@ -245,9 +245,12 @@ class Testget_contact_email_addresses(TestCaseWithFactory):
     def test_private_team(self):
         email = 'team@canonical.com'
         team = self.factory.makeTeam(
-            name='breaks-things', email=email, visibility=PersonVisibility.PRIVATE)
+            name='breaks-things',
+            email=email,
+            visibility=PersonVisibility.PRIVATE)
         result = get_contact_email_addresses(team)
         self.assertEqual(set(['team@canonical.com']), result)
+
 
 def test_suite():
     suite = DocTestSuite('lp.services.mail.helpers')
