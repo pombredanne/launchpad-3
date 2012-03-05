@@ -98,7 +98,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
@@ -1536,15 +1535,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def toTerm(self, project):
         """Return the term for this object."""
-        if project.commercial_subscription is None:
-            sub_status = "(no subscription)"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                project.commercial_subscription.date_expires)
-            sub_status = "(expires %s)" % date_formatter.displaydate()
-        return SimpleTerm(project,
-                          project.name,
-                          '%s %s' % (project.displayname, sub_status))
+        return SimpleTerm(project, project.name, project.displayname)
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
