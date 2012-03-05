@@ -108,7 +108,7 @@ class ArchiveJobDerived(BaseRunnableJob):
         """Get a job by id.
 
         :return: the ArchiveJob with the specified id, as the current
-                 BugJobDerived subclass.
+                 ArchiveJobDerived subclass.
         :raises: SQLObjectNotFound if there is no job with the specified id,
                  or its job_type does not match the desired subclass.
         """
@@ -121,7 +121,7 @@ class ArchiveJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready BugJobs."""
+        """Iterate through all ready ArchiveJobs."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             ArchiveJob,
