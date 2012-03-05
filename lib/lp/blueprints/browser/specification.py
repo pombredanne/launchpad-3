@@ -650,7 +650,7 @@ class SpecificationView(SpecificationSimpleView):
         return TextAreaEditorWidget(
             self.context, ISpecification['whiteboard'], title="Whiteboard",
             edit_view='+whiteboard', edit_title='Edit whiteboard',
-            hide_empty=False, edit_shows_message=True)
+            hide_empty=False)
 
     @property
     def workitems_text_widget(self):
