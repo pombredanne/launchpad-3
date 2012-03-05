@@ -143,6 +143,12 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(spec.whiteboard, spec_webservice.whiteboard)
 
+    def test_representation_contains_workitems(self):
+        work_item = self.factory.makeSpecificationWorkItem()
+        spec_webservice = self.getSpecOnWebservice(work_item.specification)
+        self.assertEqual(work_item.specification.work_items_text,
+                         spec_webservice.work_items_text)
+
     def test_representation_contains_milestone(self):
         product = self.factory.makeProduct()
         productseries = self.factory.makeProductSeries(product=product)

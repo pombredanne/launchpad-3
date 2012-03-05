@@ -224,6 +224,30 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
+    def workitems_text(self):
+        """See ISpecification."""
+        workitems_lines = []
+        milestone = None
+        for work_item in self.work_items:
+            if work_item.milestone != milestone:
+                milestone = work_item.milestone
+                # Separate milestone blocks, but no blank line if this is the
+                # first work item
+                if work_item.sequence > 0:
+                    workitems_lines.append("")
+                workitems_lines.append("Work items for %s:" % milestone.name)
+            assignee = work_item.assignee
+            if assignee is not None:
+                assignee_part = "[%s] " % assignee.name
+            else:
+                assignee_part = ""
+            # work_items are ordered by sequence
+            workitems_lines.append("%s%s: %s" % (assignee_part,
+                                                 work_item.title,
+                                                 work_item.status.name))
+        return "\n".join(workitems_lines)
+
+    @property
     def target(self):
         """See ISpecification."""
         if self.product:
@@ -248,6 +272,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return Store.of(self).find(
             SpecificationWorkItem, specification=self,
             deleted=False).order_by("sequence")
+
+    def setWorkItems(self, new_work_items):
+        field = ISpecification['workitems_text'].bind(self)
+        self.updateWorkItems(field.parseAndValidate(new_work_items))
 
     def _deleteWorkItemsNotMatching(self, titles):
         """Delete all work items whose title does not match the given ones.
@@ -570,7 +598,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard"))
+                               "whiteboard", "workitems_text"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -1035,7 +1063,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
+        drafter=None, whiteboard=None, workitems_text=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
