@@ -771,14 +771,14 @@ def create_scripts(user, directory, lxcname, ssh_key_path):
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
     with open(build_script_file, 'w') as script:
-        script.write(textwrap.dedent("""
+        script.write(textwrap.dedent("""\
             #!/bin/sh
             set -uex
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
             sleep 30  # aparently RUNNING isn't quite enough
             su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
-                -i '{ssh_key_path}' {lxcname} make -C {checkout_dir} schema"
+                -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
             """.format(**mapping)))
@@ -786,14 +786,19 @@ def create_scripts(user, directory, lxcname, ssh_key_path):
     # We need a script to test launchpad using LXC ephemeral instances.
     test_script_file = '/usr/local/bin/launchpad-lxc-test'
     with open(test_script_file, 'w') as script:
-        script.write(textwrap.dedent("""
+        # We intentionally generate a very long line for the
+        # lxc-start-ephemeral command below because ssh does not propagate
+        # quotes the way we want.  E.g.,
+        #     touch a; touch b; ssh localhost -- ls "a b"
+        # succeeds, when it should say that the file "a b" does not exist.
+        script.write(textwrap.dedent(re.sub(' {2,}', ' ', """\
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \\
-                -b $PWD -- xvfb-run --error-file=/var/tmp/xvfb-errors.log \\
-                --server-args='-screen 0 1024x768x24' \\
-                -a $PWD/bin/test --subunit $@
-            """.format(**mapping)))
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \
+                -b $PWD -- "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
+                --server-args='-screen 0 1024x768x24' \
+                -a $PWD/bin/test --subunit $@"
+            """).format(**mapping)))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/launchpad-' + user
