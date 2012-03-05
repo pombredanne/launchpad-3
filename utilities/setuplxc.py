@@ -35,11 +35,12 @@ import argparse
 import os
 import platform
 import pwd
+import re
 import shutil
 import subprocess
 import sys
-import time
 import textwrap
+import time
 
 APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro} multiverse',
