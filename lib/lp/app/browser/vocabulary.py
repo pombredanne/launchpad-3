@@ -350,6 +350,16 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
         """See `TargetPickerEntrySource`"""
         return target.summary
 
+    def getCommercialSubscription(self, target):
+        """See `TargetPickerEntrySource`"""
+        if target.commercial_subscription:
+            if target.has_current_commercial_subscription:
+                return 'Active'
+            else:
+                return 'Expired'
+        else:
+            return 'None'
+
 
 @adapter(IDistribution)
 class DistributionPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
