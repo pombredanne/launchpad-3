@@ -133,6 +133,7 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+        DatabaseLayer.force_dirty_database()
 
 
 class BulkFoo(Storm):
