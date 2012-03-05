@@ -948,7 +948,7 @@ def main(
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
             ssh_key_path, dependencies_dir, directory)),
-        ('create_scripts', user, directory, lxc_name, ssh_key_path),
+        ('create_scripts', (user, directory, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
             user, dependencies_dir, directory, lxc_name, ssh_key_path)),
