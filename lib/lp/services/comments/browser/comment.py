@@ -14,7 +14,7 @@ from lp.services.utils import obfuscate_email
 from lp.services.webapp.publisher import (
     DataDownloadView,
     LaunchpadView,
-    UserAttributeCache
+    UserAttributeCache,
     )
 
 

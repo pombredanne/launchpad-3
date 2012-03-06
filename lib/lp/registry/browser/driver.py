@@ -13,7 +13,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasAppointedDriver
 from lp.services.webapp.publisher import canonical_url

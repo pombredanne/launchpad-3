@@ -276,7 +276,21 @@ flag_info = sorted([
     ('disclosure.enhanced_choice_popup.enabled',
      'boolean',
      ('If true, will include any available descriptive text with each choice '
-      'item in the selection popup'),
+      'item in the selection popup.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.enabled',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'to maintain the new disclosure data model.'),
+     '',
+     '',
+     ''),
+    ('garbo.workitem_migrator.enabled',
+     'boolean',
+     ('If true, garbo will try to migrate work items from the whiteboard of '
+      'specifications.'),
      '',
      '',
      ''),

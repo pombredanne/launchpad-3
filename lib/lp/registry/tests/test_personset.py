@@ -7,15 +7,12 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import transaction
-
 import pytz
-
 from testtools.matchers import (
     LessThan,
     MatchesStructure,
     )
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -35,6 +32,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     TeamEmailAddressError,
+    TeamMembershipStatus,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.model.person import (
@@ -62,9 +60,7 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import (
-    ArchiveStatus,
-    )
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -76,7 +72,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
@@ -579,6 +574,23 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         job = self.person_set.mergeAsync(from_person, to_person)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+
+    def test_mergeProposedInvitedTeamMembership(self):
+        # Proposed and invited memberships are declined.
+        TMS = TeamMembershipStatus
+        dupe_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        inviting_team = self.factory.makeTeam()
+        proposed_team = self.factory.makeTeam()
+        with celebrity_logged_in('admin'):
+            # Login as a user who can work with all these teams.
+            inviting_team.addMember(
+                dupe_team, inviting_team.teamowner)
+            proposed_team.addMember(
+                dupe_team, dupe_team.teamowner, status=TMS.PROPOSED)
+            self._do_merge(dupe_team, test_team, test_team.teamowner)
+            self.assertEqual(0, inviting_team.invited_member_count)
+            self.assertEqual(0, proposed_team.proposed_member_count)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

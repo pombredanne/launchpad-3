@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import contextlib
+
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 import transaction
@@ -12,8 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.browser.team import (
     TeamIndexMenu,
-    TeamOverviewMenu,
     TeamMailingListArchiveView,
+    TeamOverviewMenu,
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (

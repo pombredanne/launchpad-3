@@ -146,6 +146,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -787,7 +788,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
         if email is not None:
-            team.setContactAddress(
+            removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
         if icon is not None:
             naked_team.icon = icon
@@ -847,7 +848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None):
+                      productseries=None, name=None, active=True):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -863,7 +864,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name))
+                      name=name, active=active))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -2689,11 +2690,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        archive = getUtility(IArchiveSet).new(
-            owner=owner, purpose=purpose,
-            distribution=distribution, name=name, displayname=displayname,
-            enabled=enabled, require_virtualized=virtualized,
-            description=description)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            archive = getUtility(IArchiveSet).new(
+                owner=owner, purpose=purpose,
+                distribution=distribution, name=name, displayname=displayname,
+                enabled=enabled, require_virtualized=virtualized,
+                description=description)
 
         if private:
             naked_archive = removeSecurityProxy(archive)
@@ -3748,14 +3751,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
-        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
-            source_package_release=source_package_release,
-            processor=processor,
-            distro_arch_series=distroarchseries,
-            status=status,
-            archive=archive,
-            pocket=pocket,
-            date_created=date_created)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+                source_package_release=source_package_release,
+                processor=processor,
+                distro_arch_series=distroarchseries,
+                status=status,
+                archive=archive,
+                pocket=pocket,
+                date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         IStore(binary_package_build).flush()
@@ -3822,10 +3827,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive=archive, distroseries=distroseries,
                 date_uploaded=date_uploaded, **kwargs)
 
-        spph = getUtility(IPublishingSet).newSourcePublication(
-            archive, sourcepackagerelease, distroseries,
-            sourcepackagerelease.component, sourcepackagerelease.section,
-            pocket, ancestor)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            spph = getUtility(IPublishingSet).newSourcePublication(
+                archive, sourcepackagerelease, distroseries,
+                sourcepackagerelease.component, sourcepackagerelease.section,
+                pocket, ancestor)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
@@ -4389,6 +4396,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             concrete = self.makeBranch()
         artifacts = getUtility(IAccessArtifactSource).ensure([concrete])
         return artifacts[0]
+
+    def makeAccessPolicyArtifact(self, artifact=None, policy=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        [link] = getUtility(IAccessPolicyArtifactSource).create(
+            [(artifact, policy)])
+        return link
 
     def makeAccessArtifactGrant(self, artifact=None, grantee=None,
                                 grantor=None):

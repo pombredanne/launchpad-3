@@ -14,8 +14,8 @@ __all__ = [
 
 
 from collections import defaultdict
-from itertools import chain
 from functools import partial
+from itertools import chain
 from operator import (
     attrgetter,
     itemgetter,

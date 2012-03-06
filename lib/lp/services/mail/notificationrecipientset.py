@@ -102,7 +102,7 @@ class NotificationRecipientSet:
                 # Bypass zope's security because IEmailAddress.email is not
                 # public.
                 preferred_email = removeSecurityProxy(
-                    receiving_person.preferredemail)
+                    receiving_person).preferredemail
                 email = str(preferred_email.email)
                 self._receiving_people.add((email, receiving_person))
                 old_person = self._emailToPerson.get(email)

@@ -1424,10 +1424,10 @@
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        permission="launchpad.Edit"
+        permission="launchpad.Driver"
         name="+sharing"
-        class="lp.registry.browser.product.ProductSharingView"
-        template="../templates/product-sharing.pt"/>
+        class="lp.registry.browser.pillar.PillarSharingView"
+        template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -1790,6 +1790,12 @@
         module="lp.registry.browser.distribution"
         classes="
             DistributionNavigation"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="launchpad.Driver"
+        name="+sharing"
+        class="lp.registry.browser.pillar.PillarSharingView"
+        template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionArchiveMirrorsView"

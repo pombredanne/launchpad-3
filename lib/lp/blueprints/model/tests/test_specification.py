@@ -9,6 +9,7 @@ from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
+from zope.security.interfaces import Unauthorized
 
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specification import ISpecification
@@ -19,13 +20,12 @@ from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.registry.model.milestone import Milestone
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    TestCaseWithFactory,
     ANONYMOUS,
     login,
     login_person,
+    TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from zope.security.interfaces import Unauthorized
 
 
 class TestSpecificationDependencies(TestCaseWithFactory):

@@ -11,11 +11,12 @@
     <metal:block fill-slot="head_epilogue">
     <script tal:content="structure string:
             LPJS.use('base', 'node', 'event',
-                    'lp.registry.disclosure.sharing',
+                    'lp.registry.disclosure.pillarsharingview',
                 function(Y) {
             Y.on('domready', function() {
                 var config = ${view/json_sharing_picker_config}
-                Y.lp.registry.disclosure.sharing.setup_product_sharing(config);
+                var view_widget = new Y.lp.registry.disclosure.pillarsharingview.PillarSharingView(config);
+                view_widget.render();
             });
           });
     "/>
@@ -24,19 +25,11 @@
 <body>
   <div metal:fill-slot="main">
     <p>
-      Proprietary, embargoed security, or user-data information about this
-      project is shared with these users and teams.
+      Proprietary, embargoed security, or user-data information is
+      shared with these users and teams.
     </p>
 
     <table id="observer-table" class="disclosure listing">
-      <thead>
-        <tr>
-          <th colspan="2" style="width: 33%">User or Team</th>
-          <th colspan="2" style="width: ">Sharing <span class="help">(<a href="permissions_help.html" target="help" class="js-action help">help</a>)</span></th>
-          <th colspan="1" style="width: ">Shared items</th>
-        </tr>
-      </thead>
-      <tbody id="observer-table-body"></tbody>
     </table>
   </div>
 

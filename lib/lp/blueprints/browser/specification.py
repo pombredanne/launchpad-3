@@ -195,6 +195,7 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
@@ -697,7 +698,7 @@ class SpecificationEditView(LaunchpadEditFormView):
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
-    custom_widget('specurl', TextWidget, width=60)
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @property
     def adapters(self):

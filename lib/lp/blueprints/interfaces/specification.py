@@ -65,7 +65,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget,
     )
 from lp.blueprints.interfaces.specificationworkitem import (
-    ISpecificationWorkItem
+    ISpecificationWorkItem,
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget

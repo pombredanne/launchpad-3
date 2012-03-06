@@ -6,25 +6,23 @@ __all__ = [
     'SpecificationWorkItem',
     ]
 
-from zope.interface import implements
-
 from storm.locals import (
     Bool,
     Int,
     Reference,
     Unicode,
     )
-
-from lp.services.database.constants import DEFAULT
-from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.enumcol import EnumCol
-from lp.services.database.stormbase import StormBase
+from zope.interface import implements
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.blueprints.interfaces.specificationworkitem import (
     ISpecificationWorkItem,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.stormbase import StormBase
 
 
 class SpecificationWorkItem(StormBase):

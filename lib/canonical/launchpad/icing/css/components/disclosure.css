@@ -1,0 +1,25 @@
+table.disclosure td {
+    padding: 0;
+    margin: 0;
+}
+table.disclosure ul {
+    margin-top: 3px
+}
+table.disclosure ul.horizontal li {
+  display: inline;
+  list-style-type: none;
+  padding-right: 10px;
+}
+table.disclosure ul.horizontal li div {
+  display: inline;
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    background-color: #dcdcdc;
+    padding: 3px;
+    width: auto;
+    overflow: hidden;
+}
+table.disclosure tr.spacebefore > td {
+  padding-top: 1em;
+}
