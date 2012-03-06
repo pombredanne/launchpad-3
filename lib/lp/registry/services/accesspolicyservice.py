@@ -104,8 +104,8 @@ class AccessPolicyService:
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def updatePillarObserver(self,
-                                pillar, observer, access_policy_types, user):
+    def updatePillarObserver(self, pillar, observer, access_policy_types,
+                             user):
         """See `IAccessPolicyService`."""
 
         # We do not support adding observers to project groups.
