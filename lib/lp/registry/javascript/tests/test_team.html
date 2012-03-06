@@ -46,7 +46,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <tr>
                 <td rowspan="2"><input type="radio" value="OPEN"
                    name="field.subscriptionpolicy"
-                   id="field.subscriptionpolicy.0" class="radioType"></td>
+                   id="field.subscriptionpolicy.0" class="radioType" /></td>
                 <td><label for="field.subscriptionpolicy.0">Open Team</label></td>
             </tr>
             <tr>
@@ -55,7 +55,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <tr>
                 <td rowspan="2"><input type="radio" value="DELEGATED"
                    name="field.subscriptionpolicy"
-                   id="field.subscriptionpolicy.1" class="radioType"></td>
+                   id="field.subscriptionpolicy.1" class="radioType" /></td>
                 <td><label for="field.subscriptionpolicy.1">Delegated Team</label></td>
             </tr>
             <tr>
@@ -64,7 +64,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <tr>
                 <td rowspan="2"><input type="radio" value="MODERATED"
                    name="field.subscriptionpolicy"
-                   id="field.subscriptionpolicy.2" class="radioType"></td>
+                   id="field.subscriptionpolicy.2" class="radioType" /></td>
                 <td><label for="field.subscriptionpolicy.2">Moderated Team</label></td>
             </tr>
             <tr>
@@ -73,7 +73,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             <tr>
                 <td rowspan="2"><input type="radio" value="RESTRICTED"
                    name="field.subscriptionpolicy"
-                   id="field.subscriptionpolicy.3" checked="checked" class="radioType"></td>
+                   id="field.subscriptionpolicy.3" checked="checked" class="radioType" /></td>
                 <td><label for="field.subscriptionpolicy.3">Restricted Team</label></td>
             </tr>
             <tr>
@@ -83,10 +83,16 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         </div>
         </div>
 
-        <select size="1" name="field.visibility" id="field.visibility">
-        <option value="PUBLIC" selected="selected">Public</option>
-        <option value="PRIVATE">Private</option>
-        </select>
+        <div>
+            <label for="field.visibility">Visibility:</label>
+            <div>
+                <select id="field.visibility" name="field.visibility" size="1">
+                    <option selected="selected" value="PUBLIC">Public</option>
+                    <option value="PRIVATE">Private</option>
+                </select>
+            </div>
+            <p class="formHelp">Help text</p>
+        </div>
         </script>
 </body>
 </html>
