@@ -114,7 +114,7 @@ class AccessPolicyService:
         pillar_policy_types = [(pillar, access_policy_type)
                             for access_policy_type in access_policy_types]
 
-        # Create and missing pillar access policies.
+        # Create any missing pillar access policies.
         policy_source = getUtility(IAccessPolicySource)
         pillar_policies = list(policy_source.find(pillar_policy_types))
         existing_policy_types = [(pillar, pillar_policy.type)
@@ -139,6 +139,7 @@ class AccessPolicyService:
                 for grant in policy_grant_source.find(possible_policy_grants)]
 
         grants_to_revoke = set(possible_grants).difference(policy_grants)
+        # Create any newly required grants.
         if len(required_grants) > 0:
             policy_grant_source.grant([(policy, observer, user)
                                     for policy, observer in required_grants])
