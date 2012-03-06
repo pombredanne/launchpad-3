@@ -29,5 +29,14 @@ class TeamFutureWorkView(LaunchpadView):
         return "Work for %s in the near future." % self.label
 
     @property
+    def upcoming_bp_count(self):
+        return len([1,2,3,4])
+
+    @property
+    def upcoming_wi_count(self):
+        return len([1,2,3,4,5,6,7,8,9,0])
+
+    @property
     def blueprints(self):
+        # XXX this didn't work. spec for a team does not give specs for all team members
         return self.context.valid_specifications
