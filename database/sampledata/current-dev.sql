@@ -3219,13 +3219,6 @@ INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:
 ALTER TABLE bugcve ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bugjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugjob ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, 'BAZBAZ', NULL, NULL);
