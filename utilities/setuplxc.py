@@ -51,7 +51,8 @@ APT_REPOSITORIES = (
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
+    'python-shell-toolbox']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
