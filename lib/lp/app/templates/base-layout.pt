@@ -43,15 +43,6 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
-    <tal:comment condition="nothing">
-      Removing the below <noscript></noscript> snippet makes two tests fail
-      with redirection problems:
-        xx-ubuntu-filebug.txt
-        xx-bug-reporting-tools.txt
-      No time to look into it now, so keeping it in. XXX Danilo 20110715
-    </tal:comment>
-    <noscript></noscript>
-
     <tal:view condition="not: view/macro:is-page-contentless">
       <meta name="description"
         tal:condition="view/page_description | nothing"
