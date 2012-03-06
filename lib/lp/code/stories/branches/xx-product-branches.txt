@@ -176,6 +176,9 @@ perform the task.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing import celebrity_logged_in
+    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
     >>> login(ANONYMOUS)
     >>> product = getUtility(IProductSet).getByName('firefox')
     >>> old_branch = product.development_focus.branch
@@ -191,12 +194,10 @@ perform the task.
     ...         print extract_text(link)
 
     >>> def setup_code_hosting(productname):
-    ...     admin_browser.open('http://code.launchpad.dev/%s' % productname)
-    ...     admin_browser.getLink('Configure code hosting').click()
-    ...     admin_browser.getControl(
-    ...         'Create a new, empty branch').click()
-    ...     admin_browser.getControl('Branch name').value = 'trunk'
-    ...     admin_browser.getControl('Update').click()
+    ...     with celebrity_logged_in('admin'):
+    ...         product = getUtility(IProductSet).getByName(productname)
+    ...         branch = factory.makeProductBranch(product=product)
+    ...         product.development_focus.branch = branch
 
 The involvement portlet is not shown if the product does not have code
 hosting configured or if it is not using Launchpad.

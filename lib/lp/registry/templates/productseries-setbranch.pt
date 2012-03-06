@@ -39,15 +39,6 @@
 
         <tr>
           <td>
-            <label tal:replace="structure view/branch_type_create">
-              Create a new, empty branch in Launchpad and link
-              to this series
-            </label>
-          </td>
-        </tr>
-
-        <tr>
-          <td>
             <label tal:replace="structure view/branch_type_import">
               Import a branch hosted somewhere else
             </label>

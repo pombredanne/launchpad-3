@@ -809,16 +809,12 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
 
 
 LINK_LP_BZR = 'link-lp-bzr'
-CREATE_NEW = 'create-new'
 IMPORT_EXTERNAL = 'import-external'
 
 
 BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
     SimpleTerm(LINK_LP_BZR, LINK_LP_BZR,
                _("Link to a Bazaar branch already on Launchpad")),
-    SimpleTerm(CREATE_NEW, CREATE_NEW,
-               _("Create a new, empty branch in Launchpad and "
-                 "link to this series")),
     SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
                _("Import a branch hosted somewhere else")),
     ))
@@ -937,7 +933,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
          self.branch_type_create,
          self.branch_type_import) = [
             render_radio_widget_part(widget, value, current_value)
-            for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
+            for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
@@ -945,10 +941,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'branch_location',
                 'The branch location must be set.')
-
-    def _validateCreateNew(self, data):
-        """Validate data for create new case."""
-        self._validateBranch(data)
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -1026,10 +1018,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             # Mark other widgets as non-required.
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
                                'branch_name', 'branch_owner'], False)
-        elif branch_type == CREATE_NEW:
-            self._setRequired(
-                ['branch_location', 'repo_url', 'rcs_type', 'cvs_module'],
-                False)
         elif branch_type == IMPORT_EXTERNAL:
             rcs_type = data.get('rcs_type')
 
@@ -1057,8 +1045,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
             self._validateLinkLpBzr(data)
-        elif branch_type == CREATE_NEW:
-            self._validateCreateNew(data)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
 
@@ -1085,16 +1071,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
 
-            # Create a new branch.
-            if branch_type == CREATE_NEW:
-                branch = self._createBzrBranch(branch_name, branch_owner)
-                if branch is not None:
-                    self.context.branch = branch
-                    self.request.response.addInfoNotification(
-                        'New branch created and linked to the series.')
-
             # Import or mirror an external branch.
-            elif branch_type == IMPORT_EXTERNAL:
+            if branch_type == IMPORT_EXTERNAL:
                 # Either create an externally hosted bzr branch
                 # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')

@@ -214,34 +214,3 @@ Now registering again with the same name.
     There is 1 error.
     Landscape Developers already has a branch for GNOME Terminal called main.
 
-
-Attempting to create a branch in a forbidden project
-----------------------------------------------------
-
-The branch visibility policy for a product may specify that certain
-groups of people cannot create branches.  An example of this in the
-sample data is the landscape project.  Only landscape developers can
-create branches for landscape.
-
-When registering a branch from the product pages, there is no product
-widget, so errors are set at the page level.
-
-    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> owner_browser.open('http://code.launchpad.dev/landscape')
-    >>> owner_browser.getLink('Configure code hosting').click()
-    >>> owner_browser.getControl(
-    ...     'Create a new, empty branch').click()
-    >>> owner_browser.getControl('Branch name').value = 'trunk'
-    >>> owner_browser.getControl('Update').click()
-
-    >>> user_browser.open('http://code.launchpad.dev/landscape')
-    >>> user_browser.getLink("Register a branch").click()
-    >>> user_browser.getControl('Name').value = 'landscape1'
-    >>> user_browser.getControl('Register Branch').click()
-    >>> messages = find_tags_by_class(user_browser.contents, 'message')
-    >>> for element in messages:
-    ...     print element.renderContents()
-    There is 1 error.
-    You are not allowed to create branches in The Landscape Project.
-
-
