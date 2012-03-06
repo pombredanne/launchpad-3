@@ -2161,14 +2161,15 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, tags, request=None,
-                 target_context=None):
+                 has_specification, has_patch, tags,
+                 people, request=None, target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
         self.tags = tags
+        self.people = people
         self.request = request
         self.target_context = target_context
 
@@ -2207,8 +2208,9 @@ class BugTaskListingItem:
         else:
             milestone_name = None
         assignee = None
-        if self.assignee is not None:
-            assignee = self.assignee.displayname
+        if self.assigneeID is not None:
+            assignee = self.people[self.assigneeID].displayname
+        reporter = self.people[self.bug.ownerID]
 
         base_tag_url = "%s/?field.tag=" % canonical_url(
             self.bugtask.target,
@@ -2227,7 +2229,7 @@ class BugTaskListingItem:
             'importance_class': 'importance' + self.importance.name,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
-            'reporter': self.bug.owner.displayname,
+            'reporter': reporter.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
             'tags': [{'url': base_tag_url + urllib.quote(tag), 'tag': tag}
@@ -2281,6 +2283,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """Return a dict matching bugtask to it's tags."""
         return getUtility(IBugTaskSet).getBugTaskTags(self.currentBatch())
 
+    @cachedproperty
+    def bugtask_people(self):
+        """Return a mapping of assignee/reporter to bugtask."""
+        return getUtility(IBugTaskSet).getBugTaskPeople(self.currentBatch())
+
     def getCookieName(self):
         """Return the cookie name used in bug listings js code."""
         cookie_name_template = '%s-buglist-fields'
@@ -2331,6 +2338,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_specification'],
             badge_property['has_patch'],
             tags,
+            self.bugtask_people,
             request=self.request,
             target_context=target_context)
 
