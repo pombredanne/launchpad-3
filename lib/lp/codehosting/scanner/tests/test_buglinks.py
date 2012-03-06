@@ -8,7 +8,6 @@ __metaclass__ = type
 from bzrlib.revision import Revision
 from zope.component import getUtility
 from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
@@ -270,10 +269,9 @@ class TestSubscription(TestCaseWithFactory):
                 revprops={
                     'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
         bzr_revision = tree.branch.repository.get_revision(revision_id)
-        revno = 1
         revision_set = getUtility(IRevisionSet)
-        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
-        notify(events.NewRevision(
-            db_branch, tree.branch, db_revision, bzr_revision, revno))
+        revision_set.newFromBazaarRevisions([bzr_revision])
+        notify(events.NewMainlineRevisions(
+            db_branch, tree.branch, [bzr_revision]))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
         self.assertIsNot(None, bug_branch)

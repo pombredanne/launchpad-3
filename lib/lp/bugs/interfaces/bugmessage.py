@@ -31,8 +31,8 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.registry.interfaces.person import IPerson
-from lp.services.fields import Title
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.fields import Title
 from lp.services.messages.interfaces.message import IMessage
 
 

@@ -14,8 +14,8 @@ __all__ = [
 
 
 from collections import defaultdict
-from itertools import chain
 from functools import partial
+from itertools import chain
 from operator import (
     attrgetter,
     itemgetter,
@@ -26,6 +26,7 @@ from storm.expr import (
     And,
     Insert,
     Or,
+    SQL,
     )
 from storm.info import (
     get_cls_info,
@@ -168,7 +169,9 @@ def load_related(object_type, owning_objects, foreign_keys):
 
 def _dbify_value(col, val):
     """Convert a value into a form that Storm can compile directly."""
-    if isinstance(col, Reference):
+    if isinstance(val, SQL):
+        return (val,)
+    elif isinstance(col, Reference):
         # References are mainly meant to be used as descriptors, so we
         # have to perform a bit of evil here to turn the (potentially
         # None) value into a sequence of primary key values.
@@ -192,14 +195,16 @@ def _dbify_column(col):
         return (col,)
 
 
-def create(columns, values, return_created=True):
+def create(columns, values, get_objects=False,
+           get_primary_keys=False):
     """Create a large number of objects efficiently.
 
     :param cols: The Storm columns to insert values into. Must be from a
         single class.
     :param values: A list of lists of values for the columns.
-    :param return_created: Retrieve the created objects.
-    :return: A list of the created objects if return_created, otherwise None.
+    :param get_objects: Return the created objects.
+    :param get_primary_keys: Return the created primary keys.
+    :return: A list of the created objects if get_created, otherwise None.
     """
     # Flatten Reference faux-columns into their primary keys.
     db_cols = list(chain.from_iterable(map(_dbify_column, columns)))
@@ -208,9 +213,12 @@ def create(columns, values, return_created=True):
         raise ValueError(
             "The Storm columns to insert values into must be from a single "
             "class.")
+    if get_objects and get_primary_keys:
+        raise ValueError(
+            "get_objects and get_primary_keys are mutually exclusive.")
 
     if len(values) == 0:
-        return [] if return_created else None
+        return [] if (get_objects or get_primary_keys) else None
 
     [cls] = clses
     primary_key = get_cls_info(cls).primary_key
@@ -223,12 +231,15 @@ def create(columns, values, return_created=True):
             _dbify_value(col, val) for col, val in zip(columns, value)))
         for value in values]
 
-    if not return_created:
-        IStore(cls).execute(Insert(db_cols, expr=db_values))
-        return None
-    else:
+    if get_objects or get_primary_keys:
         result = IStore(cls).execute(
             Returning(Insert(
                 db_cols, expr=db_values, primary_columns=primary_key)))
         keys = map(itemgetter(0), result) if len(primary_key) == 1 else result
-        return load(cls, keys)
+        if get_objects:
+            return load(cls, keys)
+        else:
+            return list(keys)
+    else:
+        IStore(cls).execute(Insert(db_cols, expr=db_values))
+        return None

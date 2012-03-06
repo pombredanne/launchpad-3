@@ -28,6 +28,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    Insert,
     NamedFunc,
     Not,
     Or,
@@ -883,13 +884,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
-        data = []
-        for revid, sequence in revision_id_sequence_pairs:
-            data.append('(%s, %s)' % sqlvalues(revid, sequence))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
-            % data)
+        store.execute(Insert(('revision_id', 'sequence'),
+            table=['RevidSequence'], expr=revision_id_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)

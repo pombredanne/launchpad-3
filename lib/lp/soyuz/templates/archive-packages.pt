@@ -192,7 +192,7 @@ tr#package-counters p{
           <p>The following information is related to the total published
              packages in the repository (not on your system).</p>
           <div id="package-counters">
-            <p class="discreet">
+            <p>
               Package counters and estimated archive size temporarily
               unavailable.
             </p>

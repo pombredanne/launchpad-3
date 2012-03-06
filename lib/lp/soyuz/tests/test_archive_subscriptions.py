@@ -72,9 +72,9 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
 
         # Before a subscription, accessing the view name will raise.
         login_person(self.subscriber)
-        view = create_initialized_view(
+        self.assertRaises(
+            Unauthorized, create_initialized_view,
             self.archive, '+index', principal=self.subscriber)
-        self.assertRaises(Unauthorized, view.render)
 
         login_person(self.owner)
         self.archive.newSubscription(
@@ -82,6 +82,8 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
 
         # When a subscription exists, it's fine.
         login_person(self.subscriber)
+        view = create_initialized_view(
+            self.archive, '+index', principal=self.subscriber)
         self.assertIn(self.archive.displayname, view.render())
 
         # Just to double check, by default, the subscriber still can't see the

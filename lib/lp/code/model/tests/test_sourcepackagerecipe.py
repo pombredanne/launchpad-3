@@ -372,8 +372,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).disable()
         (distroseries,) = list(recipe.distroseries)
-        self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
-                ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
+        with person_logged_in(ppa.owner):
+            self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
+                    ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildScore(self):
         """Normal build requests have a relatively low queue score (2405)."""

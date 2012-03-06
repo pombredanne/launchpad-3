@@ -11,12 +11,12 @@ __all__ = [
     'IServiceFactory',
     ]
 
-from zope.interface import Interface
-from zope.schema import TextLine
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     )
+from zope.interface import Interface
+from zope.schema import TextLine
 
 from lp import _
 

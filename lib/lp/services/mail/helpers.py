@@ -262,5 +262,5 @@ def get_contact_email_addresses(person):
     # Circular imports force this import.
     from lp.registry.model.person import get_recipients
     return set(
-        str(removeSecurityProxy(mail_person.preferredemail).email)
+        str(removeSecurityProxy(mail_person).preferredemail.email)
         for mail_person in get_recipients(person))
