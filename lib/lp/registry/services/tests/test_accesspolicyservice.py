@@ -139,21 +139,29 @@ class TestAccessPolicyService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._test_getPillarObserversUnauthorized(product)
 
-    def _test_addPillarObserver(self, pillar):
-        """addPillarObservers works and returns the expected data."""
+    def _test_updatePillarObserver(self, pillar):
+        """updatePillarObservers works and returns the expected data."""
         observer = self.factory.makePerson()
         grantor = self.factory.makePerson()
-        # Make an existing grant to ensure addPillarObserver handles that
-        # correctly.
+
+        # Make existing grants to ensure updatePillarObserver handles those
+        # cases correctly.
+        # First, a grant that is in the add set - it wil be retained.
         policy = self.factory.makeAccessPolicy(
             pillar=pillar, type=AccessPolicyType.EMBARGOEDSECURITY)
         self.factory.makeAccessPolicyGrant(
             policy, grantee=observer, grantor=grantor)
-        # Now call addPillarObserver will the grants we want.
+        # Second, a grant that is not in the add set - it will be deleted.
+        policy = self.factory.makeAccessPolicy(
+            pillar=pillar, type=AccessPolicyType.PROPRIETARY)
+        self.factory.makeAccessPolicyGrant(
+            policy, grantee=observer, grantor=grantor)
+
+        # Now call updatePillarObserver will the grants we want.
         access_policy_types = [
             AccessPolicyType.EMBARGOEDSECURITY,
             AccessPolicyType.USERDATA]
-        observer_data = self.service.addPillarObserver(
+        observer_data = self.service.updatePillarObserver(
             pillar, observer, access_policy_types, grantor)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
@@ -167,51 +175,51 @@ class TestAccessPolicyService(TestCaseWithFactory):
             observer, access_policy_types)
         self.assertEqual(expected_observer_data, observer_data)
 
-    def test_addProjectGroupObserver_not_allowed(self):
+    def test_updateProjectGroupObserver_not_allowed(self):
         # We cannot add observers to ProjectGroups.
         owner = self.factory.makePerson()
         project_group = self.factory.makeProject(owner=owner)
         observer = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
-            AssertionError, self.service.addPillarObserver,
+            AssertionError, self.service.updatePillarObserver,
             project_group, observer, [AccessPolicyType.USERDATA], owner)
 
-    def test_addProductObserver(self):
+    def test_updateProductObserver(self):
         # Users with launchpad.Edit can add observers.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._test_addPillarObserver(product)
+        self._test_updatePillarObserver(product)
 
-    def test_addDistroObserver(self):
+    def test_updateDistroObserver(self):
         # Users with launchpad.Edit can add observers.
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
-        self._test_addPillarObserver(distro)
+        self._test_updatePillarObserver(distro)
 
-    def _test_addPillarObserverUnauthorized(self, pillar):
-        # addPillarObserver raises an Unauthorized exception if the user is
+    def _test_updatePillarObserverUnauthorized(self, pillar):
+        # updatePillarObserver raises an Unauthorized exception if the user is
         # not permitted to do so.
         observer = self.factory.makePerson()
         access_policy_type = AccessPolicyType.USERDATA
         user = self.factory.makePerson()
         self.assertRaises(
-            Unauthorized, self.service.addPillarObserver,
+            Unauthorized, self.service.updatePillarObserver,
             pillar, observer, [access_policy_type], user)
 
-    def test_addPillarObserverAnonymous(self):
+    def test_updatePillarObserverAnonymous(self):
         # Anonymous users are not allowed.
         product = self.factory.makeProduct()
         login(ANONYMOUS)
-        self._test_addPillarObserverUnauthorized(product)
+        self._test_updatePillarObserverUnauthorized(product)
 
-    def test_addPillarObserverAnyone(self):
+    def test_updatePillarObserverAnyone(self):
         # Unauthorized users are not allowed.
         product = self.factory.makeProduct()
         login_person(self.factory.makePerson())
-        self._test_addPillarObserverUnauthorized(product)
+        self._test_updatePillarObserverUnauthorized(product)
 
 
 class ApiTestMixin:

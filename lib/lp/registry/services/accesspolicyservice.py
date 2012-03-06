@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import IProjectGroup
 
 __metaclass__ = type
 __all__ = [
@@ -25,6 +23,8 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -104,7 +104,8 @@ class AccessPolicyService:
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def addPillarObserver(self, pillar, observer, access_policy_types, user):
+    def updatePillarObserver(self,
+                                pillar, observer, access_policy_types, user):
         """See `IAccessPolicyService`."""
 
         # We do not support adding observers to project groups.
@@ -123,15 +124,27 @@ class AccessPolicyService:
         if len(required_policies) > 0:
             pillar_policies.extend(policy_source.create(required_policies))
 
-        # We have the policies, create the grant if they doesn't exist.
+        # We have the policies, we need to figure out which grants we need to
+        # create. We also need to revoke any grants which are not required.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, observer) for policy in pillar_policies]
         existing_grants = [(grant.policy, grant.grantee)
                         for grant in policy_grant_source.find(policy_grants)]
         required_grants = set(policy_grants).difference(existing_grants)
+
+        all_pillar_policies = policy_source.findByPillar([pillar])
+        possible_policy_grants = [(policy, observer)
+                for policy in all_pillar_policies]
+        possible_grants = [(grant.policy, grant.grantee)
+                for grant in policy_grant_source.find(possible_policy_grants)]
+
+        grants_to_revoke = set(possible_grants).difference(policy_grants)
         if len(required_grants) > 0:
             policy_grant_source.grant([(policy, observer, user)
                                     for policy, observer in required_grants])
+        # Now revoke any existing grants no longer required.
+        if len(grants_to_revoke) > 0:
+            policy_grant_source.revoke(grants_to_revoke)
 
         # Return observer data to the caller.
         request = get_current_web_service_request()

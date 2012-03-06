@@ -362,6 +362,32 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))
 
+    def test_revoke(self):
+        # revoke() removes the specified grants.
+        policy = self.factory.makeAccessPolicy()
+        grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+        other_grants.extend([
+            self.factory.makeAccessPolicyGrant()
+            for i in range(3)])
+
+        to_delete = [(grant.policy, grant.grantee) for grant in grants]
+        getUtility(IAccessPolicyGrantSource).revoke(to_delete)
+        IStore(policy).invalidate()
+
+        for grant in grants:
+            self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertEqual(
+            0, getUtility(IAccessPolicyGrantSource).find(to_delete).count())
+        for other_grant in other_grants:
+            self.assertIsNot(None, other_grant.grantor)
+
 
 class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
