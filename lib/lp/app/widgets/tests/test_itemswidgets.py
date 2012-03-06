@@ -1,9 +1,15 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 from unittest import TestCase
-from lazr.enum._enum import DBEnumeratedType, DBItem
+
+from lazr.enum._enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.services.features.testing import FeatureFixture
+
 
 __metaclass__ = type
 

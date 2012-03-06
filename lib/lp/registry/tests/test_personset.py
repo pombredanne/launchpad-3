@@ -7,14 +7,12 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import transaction
-
 import pytz
-
 from testtools.matchers import (
     LessThan,
+    MatchesStructure,
     )
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -23,6 +21,7 @@ from lp.registry.errors import (
     InvalidName,
     NameAlreadyTaken,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantSource
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -33,6 +32,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     TeamEmailAddressError,
+    TeamMembershipStatus,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.model.person import (
@@ -60,9 +60,7 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import (
-    ArchiveStatus,
-    )
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -74,7 +72,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
@@ -527,6 +524,48 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp)
 
+    def test_merge_accesspolicygrants(self):
+        # AccessPolicyGrants are transferred from the duplicate.
+        person = self.factory.makePerson()
+        grant = self.factory.makeAccessPolicyGrant()
+        self._do_premerge(grant.grantee, person)
+
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertEqual(
+            grant.grantee, source.findByPolicy([grant.policy]).one().grantee)
+        with person_logged_in(person):
+            self._do_merge(grant.grantee, person)
+        self.assertEqual(
+            person, source.findByPolicy([grant.policy]).one().grantee)
+
+    def test_merge_accesspolicygrants_conflicts(self):
+        # Conflicting AccessPolicyGrants are deleted.
+        policy = self.factory.makeAccessPolicy()
+
+        person = self.factory.makePerson()
+        person_grantor = self.factory.makePerson()
+        person_grant = self.factory.makeAccessPolicyGrant(
+            grantee=person, grantor=person_grantor, policy=policy)
+        person_grant_date = person_grant.date_created
+
+        duplicate = self.factory.makePerson()
+        duplicate_grantor = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            grantee=duplicate, grantor=duplicate_grantor, policy=policy)
+
+        self._do_premerge(duplicate, person)
+        with person_logged_in(person):
+            self._do_merge(duplicate, person)
+
+        # Only one grant for the policy exists: the retained person's.
+        source = getUtility(IAccessPolicyGrantSource)
+        self.assertThat(
+            source.findByPolicy([policy]).one(),
+            MatchesStructure.byEquality(
+                policy=policy,
+                grantee=person,
+                date_created=person_grant_date))
+
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
         from_person = self.factory.makePerson()
@@ -535,6 +574,23 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         job = self.person_set.mergeAsync(from_person, to_person)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
+
+    def test_mergeProposedInvitedTeamMembership(self):
+        # Proposed and invited memberships are declined.
+        TMS = TeamMembershipStatus
+        dupe_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        inviting_team = self.factory.makeTeam()
+        proposed_team = self.factory.makeTeam()
+        with celebrity_logged_in('admin'):
+            # Login as a user who can work with all these teams.
+            inviting_team.addMember(
+                dupe_team, inviting_team.teamowner)
+            proposed_team.addMember(
+                dupe_team, dupe_team.teamowner, status=TMS.PROPOSED)
+            self._do_merge(dupe_team, test_team, test_team.teamowner)
+            self.assertEqual(0, inviting_team.invited_member_count)
+            self.assertEqual(0, proposed_team.proposed_member_count)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

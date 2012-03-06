@@ -28,11 +28,11 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
+    BugNotificationRecipient,
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.services.config import config
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
@@ -165,14 +165,9 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def addNotificationRecipient(self, notification, person):
         # Manually insert BugNotificationRecipient for
         # construct_email_notifications to work.
-        # Not sure why using SQLObject constructor doesn't work (it
-        # tries to insert a row with only the ID which fails).
-        Store.of(notification).execute("""
-            INSERT INTO BugNotificationRecipient
-              (bug_notification, person, reason_header, reason_body)
-              VALUES (%s, %s, %s, %s)""" % sqlvalues(
-                          notification, person,
-                          u'reason header', u'reason body'))
+        BugNotificationRecipient(
+            bug_notification=notification, person=person,
+            reason_header=u'reason header', reason_body=u'reason body')
 
     def addNotification(self, person, bug=None):
         # Add a notification along with recipient data.

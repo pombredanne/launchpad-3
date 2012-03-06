@@ -582,8 +582,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # the given bug watches.
         error = BugWatchActivityStatus.PRIVATE_REMOTE_BUG
         getUtility(IBugWatchSet).bulkAddActivity(
-            self.bug_watches, error, "Forbidden", "OOPS-1234")
-        self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
+            self.bug_watches, error, "OOPS-1234")
+        self._checkActivityForBugWatches(error, None, "OOPS-1234")
 
     def test_bulkAddActivity_with_id_list(self):
         # The ids of bug watches can be passed in.

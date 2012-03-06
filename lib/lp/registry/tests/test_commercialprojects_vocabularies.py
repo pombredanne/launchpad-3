@@ -6,9 +6,7 @@
 __metaclass__ = type
 
 from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.registry.interfaces.product import (
-    License,
-    )
+from lp.registry.interfaces.product import License
 from lp.registry.vocabularies import CommercialProjectsVocabulary
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (

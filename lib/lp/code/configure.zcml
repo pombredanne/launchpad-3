@@ -514,8 +514,8 @@
       for="lp.codehosting.scanner.events.IRevisionsRemoved"
       handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
   <subscriber
-      for="lp.codehosting.scanner.events.INewRevision"
-      handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
+      for="lp.codehosting.scanner.events.INewMainlineRevisions"
+      handler="lp.codehosting.scanner.buglinks.got_new_mainline_revisions"/>
   <subscriber
       for="lp.codehosting.scanner.events.IScanCompleted"
       handler="lp.codehosting.scanner.mergedetection.auto_merge_proposals"/>

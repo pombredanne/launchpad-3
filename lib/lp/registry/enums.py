@@ -5,15 +5,58 @@
 
 __metaclass__ = type
 __all__ = [
-    'PersonTransferJobType',
+    'AccessPolicyType',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
+    'PersonTransferJobType',
     ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+
+
+class AccessPolicyType(DBEnumeratedType):
+    """Access policy type.
+
+    The policies used to control which users and teams can see various
+    Launchpad artifacts, including bugs and branches.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can see this information.
+        """)
+
+    PUBLICSECURITY = DBItem(2, """
+        Public Security
+
+        Everyone can see this information pertaining to a resolved security
+        related bug.
+        """)
+
+    EMBARGOEDSECURITY = DBItem(3, """
+        Embargoed Security
+
+        Only users with permission to see the project's security related
+        artifacts can see this information.
+        """)
+
+    USERDATA = DBItem(4, """
+        User Data
+
+        Only users with permission to see the project's artifacts containing
+        user data can see this information.
+        """)
+
+    PROPRIETARY = DBItem(5, """
+        Proprietary
+
+        Only users with permission to see the project's artifacts containing
+        proprietary data can see this information.
+        """)
 
 
 class DistroSeriesDifferenceStatus(DBEnumeratedType):

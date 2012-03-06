@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<html metal:use-macro="view/macro:page/locationless">
+<html metal:use-macro="view/macro:page/main_only">
   <body>
     <div class="top-portlet" metal:fill-slot="main">
       <h1>You are already logged in</h1>
