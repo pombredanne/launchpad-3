@@ -111,14 +111,15 @@ class AccessPolicyService:
         # We do not support adding observers to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
-        pillar_policy_types = [(pillar, access_policy_type)
-                            for access_policy_type in access_policy_types]
+        pillar_policy_types = [
+            (pillar, access_policy_type)
+            for access_policy_type in access_policy_types]
 
         # Create any missing pillar access policies.
         policy_source = getUtility(IAccessPolicySource)
         pillar_policies = list(policy_source.find(pillar_policy_types))
-        existing_policy_types = [(pillar, pillar_policy.type)
-                                 for pillar_policy in pillar_policies]
+        existing_policy_types = [
+            (pillar, pillar_policy.type) for pillar_policy in pillar_policies]
         required_policies = (
             set(pillar_policy_types).difference(existing_policy_types))
         if len(required_policies) > 0:
@@ -128,15 +129,17 @@ class AccessPolicyService:
         # create. We also need to revoke any grants which are not required.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         policy_grants = [(policy, observer) for policy in pillar_policies]
-        existing_grants = [(grant.policy, grant.grantee)
-                        for grant in policy_grant_source.find(policy_grants)]
+        existing_grants = [
+            (grant.policy, grant.grantee)
+            for grant in policy_grant_source.find(policy_grants)]
         required_grants = set(policy_grants).difference(existing_grants)
 
         all_pillar_policies = policy_source.findByPillar([pillar])
-        possible_policy_grants = [(policy, observer)
-                for policy in all_pillar_policies]
-        possible_grants = [(grant.policy, grant.grantee)
-                for grant in policy_grant_source.find(possible_policy_grants)]
+        possible_policy_grants = [
+            (policy, observer) for policy in all_pillar_policies]
+        possible_grants = [
+            (grant.policy, grant.grantee)
+            for grant in policy_grant_source.find(possible_policy_grants)]
 
         grants_to_revoke = set(possible_grants).difference(policy_grants)
         # Create any newly required grants.
