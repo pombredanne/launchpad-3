@@ -2613,8 +2613,11 @@ class BugSubscriptionInfo:
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+                Not(In(
+                    BugSubscription.person_id,
+                    Select(
+                        BugMute.person_id, BugMute.bug_id == Bug.id,
+                        tables=[BugMute]))))
 
     @property
     def duplicate_subscribers(self):
