@@ -9,13 +9,25 @@
 
 
 <div metal:fill-slot="main">
-    <p tal:content="structure view/page_description">
-      Some text
-    </p>
+  <h2>Upcoming work for <span tal:replace="structure context/displayname"
+      /></h2>
 
-    <p>This team has <span tal:content="structure view/upcoming_bp_count">1</span> upcoming Blueprints with a total of <span tal:content="structure view/upcoming_wi_count">42</span> work items.
+  <p>This team has <span tal:replace="view/upcoming_bp_count" /> upcoming
+    Blueprints with a total of <span tal:replace="view/upcoming_wi_count" /> work items.
 
-    <span>X of these are assigned to Y.</span></p>
+  <span>X of these are assigned to Y.</span></p>
+
+  <div tal:repeat="item view/work_item_groups">
+    <h3 tal:content="item/0" />
+    <table>
+      <tr tal:repeat="group item/1">
+        <td><span tal:replace="wi/label" /></td>
+        <td><span tal:replace="wi/assignee" /></td>
+        <td><span tal:replace="wi/priority" /></td>
+        <td><span tal:replace="wi/items" /></td>
+      </tr>
+    </table>
+  </div>
 
 </div>
 
