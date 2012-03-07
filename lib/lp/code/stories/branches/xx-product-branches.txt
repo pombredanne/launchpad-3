@@ -169,7 +169,7 @@ default listings.
 Involvement portlet
 ===================
 
-There are several links in the side portlet:  'Register a branch',
+There are several links in the side portlet:
 'Import a branch', 'Configure code hosting', and 'Define branch
 visibility'.  The links are only shown if the user has permission to
 perform the task.
@@ -213,7 +213,6 @@ hosting configured or if it is not using Launchpad.
     LAUNCHPAD
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
-    Register a branch
     Import a branch
     Configure code hosting
     Define branch visibility
@@ -224,7 +223,6 @@ perform, everything except defining branch visibility.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(owner_browser)
-    Register a branch
     Import a branch
     Configure code hosting
 
@@ -232,7 +230,6 @@ And a regular user can only register and import branches.
 
     >>> user_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(user_browser)
-    Register a branch
     Import a branch
 
 If the product specifies that it officially uses Launchpad code, then
@@ -243,7 +240,6 @@ the 'Import a branch' button is still shown.
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(browser)
-    Register a branch
     Import a branch
 
 

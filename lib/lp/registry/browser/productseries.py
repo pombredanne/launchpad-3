@@ -225,7 +225,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     """The get involved menu."""
     usedfor = IProductSeriesInvolved
     links = [
-        'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
+        'report_bug', 'help_translate', 'register_blueprint']
 
     @property
     def view(self):
@@ -234,14 +234,6 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     @property
     def pillar(self):
         return self.view.context.product
-
-    def submit_code(self):
-        target = canonical_url(
-            self.pillar, view_name='+addbranch', rootsite='code')
-        enabled = self.view.codehosting_usage == ServiceUsage.LAUNCHPAD
-        return Link(
-            target, 'Submit code', icon='code', enabled=enabled)
-
 
 class ProductSeriesInvolvementView(PillarView):
     """Encourage configuration of involvement links for project series."""

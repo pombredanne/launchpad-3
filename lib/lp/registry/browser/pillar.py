@@ -55,8 +55,7 @@ class InvolvedMenu(NavigationMenu):
     """The get involved menu."""
     usedfor = IInvolved
     links = [
-        'report_bug', 'ask_question', 'help_translate', 'submit_code',
-        'register_blueprint']
+        'report_bug', 'ask_question', 'help_translate', 'register_blueprint']
 
     @property
     def pillar(self):
@@ -76,18 +75,6 @@ class InvolvedMenu(NavigationMenu):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
             enabled=service_uses_launchpad(self.pillar.translations_usage))
-
-    def submit_code(self):
-        if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD,
-                ServiceUsage.EXTERNAL,
-                ]:
-            enabled = True
-        else:
-            enabled = False
-        return Link(
-            '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
