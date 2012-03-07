@@ -4,15 +4,17 @@
 __metaclass__ = type
 
 
-import transaction
-
 from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_web_service_request
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.services import IService
-from lp.registry.enums import AccessPolicyType, SharingPermission
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -26,8 +28,12 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     WebServiceTestCase,
-    ws_object)
-from lp.testing.layers import AppServerLayer, DatabaseFunctionalLayer
+    ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
@@ -46,7 +52,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         resource = EntryResource(observer, request)
         observer_data = resource.toDataForJSON()
         observer_data['permissions'] = {
-            AccessPolicyType.PROPRIETARY.name: SharingPermission.ALL.name}
+            InformationType.PROPRIETARY.name: SharingPermission.ALL.name}
         return observer_data
 
     def _test_getPillarObservers(self, pillar):
@@ -96,7 +102,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
     def _test_addPillarObserver(self, pillar):
         """addPillarObservers works and returns the expected data."""
         observer = self.factory.makePerson()
-        access_policy_type = AccessPolicyType.USERDATA
+        access_policy_type = InformationType.USERDATA
         user = self.factory.makePerson()
         observer_data = self.service.addPillarObserver(
             pillar, observer, access_policy_type, user)
@@ -135,7 +141,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         # addPillarObserver raises an Unauthorized exception if the user is
         # not permitted to do so.
         observer = self.factory.makePerson()
-        access_policy_type = AccessPolicyType.USERDATA
+        access_policy_type = InformationType.USERDATA
         user = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.service.addPillarObserver,

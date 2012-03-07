@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact access policy services."""
-from lp.registry.interfaces.projectgroup import IProjectGroup
 
 __metaclass__ = type
 __all__ = [
@@ -16,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.enums import (
-    AccessPolicyType,
+    InformationType,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -24,6 +23,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -44,7 +44,7 @@ class AccessPolicyService:
     def getAccessPolicies(self):
         """See `IAccessPolicyService`."""
         policies = []
-        for x, policy in enumerate(AccessPolicyType):
+        for x, policy in enumerate(InformationType):
             item = dict(
                 index=x,
                 value=policy.token,
