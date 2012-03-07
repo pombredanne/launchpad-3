@@ -99,10 +99,10 @@ class AccessPolicyService:
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}
                 person_by_id[policy_grant.grantee.id] = person_data
+                result.append(person_data)
             person_data = person_by_id[policy_grant.grantee.id]
             person_data['permissions'][policy_grant.policy.type.name] = (
                 SharingPermission.ALL.name)
-            result.append(person_data)
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')

@@ -68,7 +68,7 @@ class IAccessPolicyService(IService):
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
         access_policy_types=List(
-            Choice(vocabulary=AccessPolicyType, required=False)))
+            Choice(vocabulary=AccessPolicyType), required=False))
     @operation_for_version('devel')
     def deletePillarObserver(pillar, observer, access_policy_types):
         """Remove an observer from a pillar.
