@@ -20,7 +20,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from zope.schema import Choice
+from zope.schema import (
+    Choice,
+    List,
+    )
 
 from lp import _
 from lp.app.interfaces.services import IService
@@ -36,8 +39,8 @@ class IAccessPolicyService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
-    def getAccessPolicies():
-        """Return the access policy types."""
+    def getAccessPolicies(pillar):
+        """Return the allowed access policy types for the given pillar."""
 
     def getSharingPermissions():
         """Return the access policy sharing permissions."""
@@ -54,10 +57,10 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy_type=Choice(vocabulary=InformationType))
+        access_policy_type=List(Choice(vocabulary=InformationType)))
     @operation_for_version('devel')
-    def addPillarObserver(pillar, observer, access_policy_type, user):
-        """Add an observer with the access policy to a pillar."""
+    def updatePillarObserver(pillar, observer, access_policy_types, user):
+        """Ensure observer has the grants for access policies on a pillar."""
 
     @export_write_operation()
     @operation_parameters(

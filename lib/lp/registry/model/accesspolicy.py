@@ -306,6 +306,11 @@ class AccessPolicyGrant(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
+    @classmethod
+    def revoke(cls, grants):
+        """See `IAccessPolicyGrantSource`."""
+        cls.find(grants).remove()
+
 
 class AccessPolicyGrantFlat(StormBase):
     __storm_table__ = 'AccessPolicyGrantFlat'

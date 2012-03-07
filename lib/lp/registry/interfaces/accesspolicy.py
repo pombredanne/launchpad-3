@@ -200,6 +200,13 @@ class IAccessPolicyGrantSource(Interface):
     def findByPolicy(policies):
         """Return all `IAccessPolicyGrant` objects for the policies."""
 
+    def revoke(grants):
+        """Revoke the specified grants.
+
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
+        """
+
 
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
