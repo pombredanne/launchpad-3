@@ -775,12 +775,22 @@ def create_scripts(user, directory, lxcname, ssh_key_path):
     with open(build_script_file, 'w') as script:
         script.write(textwrap.dedent("""\
             #!/bin/sh
-            set -uex
+            set -ux
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
-            sleep 30  # aparently RUNNING isn't quite enough
-            su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
-                -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
+            for i in $(seq 1 60); do
+                su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                    -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
+                if [ ! 255 -eq $? ]; then
+                    # If ssh returns 255 then its connection failed.
+                    # Anything else is either success (status 0) or a
+                    # failure from whatever we ran over the SSH connection.
+                    # In those cases we want to stop looping, so we break
+                    # here.
+                    break;
+                fi
+                sleep 1
+            done
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
             """.format(**mapping)))
