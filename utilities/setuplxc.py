@@ -761,13 +761,12 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_scripts(user, directory, lxcname, ssh_key_path):
+def create_scripts(user, lxcname, ssh_key_path):
     """Create scripts to update the Launchpad environment and run tests."""
     mapping = {
-        'user': user,
         'lxcname': lxcname,
         'ssh_key_path': ssh_key_path,
-        'checkout_dir': os.path.join(directory, LP_CHECKOUT),
+        'user': user,
         }
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
@@ -965,7 +964,7 @@ def main(
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
             ssh_key_path, dependencies_dir, directory)),
-        ('create_scripts', (user, directory, lxc_name, ssh_key_path)),
+        ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
             user, dependencies_dir, directory, lxc_name, ssh_key_path)),
