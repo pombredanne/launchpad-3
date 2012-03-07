@@ -777,7 +777,7 @@ def create_scripts(user, lxcname, ssh_key_path):
             set -ux
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
-            for i in $(seq 1 60); do
+            for i in $(seq 1 30); do
                 su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
                     -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
                 if [ ! 255 -eq $? ]; then
