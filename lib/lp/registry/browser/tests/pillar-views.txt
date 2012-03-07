@@ -84,7 +84,6 @@ to configure each service.
     report_bug
     ask_question
     help_translate
-    submit_code
 
     >>> for link in view.configuration_links:
     ...     print link['link'].name

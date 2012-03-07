@@ -235,6 +235,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     def pillar(self):
         return self.view.context.product
 
+
 class ProductSeriesInvolvementView(PillarView):
     """Encourage configuration of involvement links for project series."""
 
@@ -922,7 +923,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         vocab = widget.vocabulary
 
         (self.branch_type_link,
-         self.branch_type_create,
          self.branch_type_import) = [
             render_radio_widget_part(widget, value, current_value)
             for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
