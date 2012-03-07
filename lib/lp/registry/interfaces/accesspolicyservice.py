@@ -57,7 +57,7 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy_type=List(Choice(vocabulary=InformationType)))
+        access_policy_types=List(Choice(vocabulary=InformationType)))
     @operation_for_version('devel')
     def updatePillarObserver(pillar, observer, access_policy_types, user):
         """Ensure observer has the grants for access policies on a pillar."""
