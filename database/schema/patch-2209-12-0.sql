@@ -4,7 +4,7 @@
 SET client_min_messages=ERROR;
 
 -- Prepare to remove the old access policy schema.
-ALTER TABLE Branch ADD COLUMN information_type INTEGER DEFAULT 1;
-ALTER TABLE Bug ADD COLUMN information_type INTEGER DEFAULT 1;
+ALTER TABLE Branch ADD COLUMN information_type INTEGER;
+ALTER TABLE Bug ADD COLUMN information_type INTEGER;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 12, 0);
