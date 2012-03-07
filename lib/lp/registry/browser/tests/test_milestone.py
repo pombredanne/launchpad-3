@@ -288,9 +288,12 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         #  4. Load links to specifications.
         #  5. Load links to branches.
         #  6. Loads milestones
+        #  7. Loads tags
+        #  8. All related people
+        #  9. XXX: deryck should we trim queries here.... ?
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=7)
+            self.milestone, bugtask_count, query_limit=9)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
