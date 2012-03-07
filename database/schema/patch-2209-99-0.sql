@@ -241,9 +241,9 @@ BEGIN
             IF NOT check_only THEN
                 DELETE FROM BugTaskFlat WHERE bugtask = task_id;
             END IF;
-            RETURN TRUE;
-        ELSE
             RETURN FALSE;
+        ELSE
+            RETURN TRUE;
         END IF;
     END IF;
 
