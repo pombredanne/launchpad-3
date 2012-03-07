@@ -63,7 +63,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.model.accesspolicy import AccessPolicy
 from lp.registry.model.distribution import Distribution
@@ -1026,7 +1026,7 @@ class AccessPolicyDistributionAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findDistributions()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 
@@ -1054,7 +1054,7 @@ class AccessPolicyProductAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findProducts()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 

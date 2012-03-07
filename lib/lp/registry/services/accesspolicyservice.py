@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.enums import (
-    AccessPolicyType,
+    InformationType,
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
@@ -44,15 +44,14 @@ class AccessPolicyService:
 
     def getAccessPolicies(self, pillar):
         """See `IAccessPolicyService`."""
-
         allowed_policy_types = [
-            AccessPolicyType.EMBARGOEDSECURITY,
-            AccessPolicyType.USERDATA]
+            InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA]
         # Products with current commercial subscriptions are also allowed to
         # have a PROPRIETARY access policy.
         if (IProduct.providedBy(pillar) and
                 pillar.has_current_commercial_subscription):
-            allowed_policy_types.append(AccessPolicyType.PROPRIETARY)
+            allowed_policy_types.append(InformationType.PROPRIETARY)
 
         policies_data = []
         for x, policy in enumerate(allowed_policy_types):
