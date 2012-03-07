@@ -39,7 +39,7 @@ are sent to other vhosts in the same domain.
     >>> browser.cookies.keys()
     ['launchpad_tests']
     >>> session_cookie_name = browser.cookies.keys()[0]
-    >>> browser.cookies
+    >>> browser.cookies.getinfo(session_cookie_name)['domain']
     '.launchpad.dev'
 
 If we visit another vhost in the domain, we remain logged in.
