@@ -241,7 +241,6 @@ class ProductSeriesInvolvementView(PillarView):
 
     implements(IProductSeriesInvolved)
     has_involvement = True
-    visible_disabled_link_names = ['submit_code']
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
