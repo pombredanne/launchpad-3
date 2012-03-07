@@ -1385,9 +1385,9 @@ class NestedTempfile(fixtures.Fixture):
 
 
 @contextmanager
-def temp_dir():
+def temp_dir(dir=None):
     """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp()
+    tempdir = tempfile.mkdtemp(dir=dir)
     yield tempdir
     shutil.rmtree(tempdir, ignore_errors=True)
 

@@ -11,12 +11,12 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessArtifactSource,
-    IAccessPolicySource,
     IAccessPolicyArtifactSource,
+    IAccessPolicySource,
     )
 from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
@@ -57,9 +57,9 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         grant_count = len(grants)
 
         if removeSecurityProxy(bug).security_related:
-            policy_type = AccessPolicyType.EMBARGOEDSECURITY
+            policy_type = InformationType.EMBARGOEDSECURITY
         else:
-            policy_type = AccessPolicyType.USERDATA
+            policy_type = InformationType.USERDATA
 
         # Get the relevant access policies, confirming that there's one
         # for every pillar.
@@ -81,7 +81,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
     def makeBugAndPolicies(self, private=False, policy_types=None):
         if policy_types is None:
             policy_types = [
-                AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY]
+                InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
         product = self.factory.makeProduct()
         for policy_type in policy_types:
             self.factory.makeAccessPolicy(pillar=product, type=policy_type)
@@ -125,7 +125,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # Adding a task on a new product links its policy.
         product = self.factory.makeProduct()
         self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.USERDATA)
+            pillar=product, type=InformationType.USERDATA)
 
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, product)
@@ -135,7 +135,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # Removing a task removes its policy.
         product = self.factory.makeProduct()
         self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.USERDATA)
+            pillar=product, type=InformationType.USERDATA)
 
         bug = self.makeBugAndPolicies(private=True)
         task = bug.addTask(bug.owner, product)
@@ -167,19 +167,19 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         [artifact] = getUtility(IAccessArtifactSource).find([bug])
         self.assertEqual((1, 1), self.assertMirrored(bug))
         self.assertContentEqual(
-            [AccessPolicyType.USERDATA],
+            [InformationType.USERDATA],
             self.getPolicyTypesForArtifact(artifact))
         bug.security_related = True
         self.assertEqual((1, 1), self.assertMirrored(bug))
         self.assertContentEqual(
-            [AccessPolicyType.EMBARGOEDSECURITY],
+            [InformationType.EMBARGOEDSECURITY],
             self.getPolicyTypesForArtifact(artifact))
 
     def test_productseries_task(self):
         # A productseries task causes a link to its product's policy.
         productseries = self.factory.makeProductSeries()
         self.factory.makeAccessPolicy(
-            pillar=productseries.product, type=AccessPolicyType.USERDATA)
+            pillar=productseries.product, type=InformationType.USERDATA)
 
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, productseries)
@@ -192,7 +192,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # A distribution task causes a link to its policy.
         distro = self.factory.makeDistribution()
         self.factory.makeAccessPolicy(
-            pillar=distro, type=AccessPolicyType.USERDATA)
+            pillar=distro, type=InformationType.USERDATA)
 
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, distro)
@@ -203,7 +203,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # policy.
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeAccessPolicy(
-            pillar=distroseries.distribution, type=AccessPolicyType.USERDATA)
+            pillar=distroseries.distribution, type=InformationType.USERDATA)
 
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, distroseries)

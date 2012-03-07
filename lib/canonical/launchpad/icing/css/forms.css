@@ -55,6 +55,9 @@ button.overlay-close-button {
     display: block;
     margin-top: 4px;
     }
+.selection-choices {
+    margin: 0.75em 0 0 1em
+    }
 .fieldRequired, .fieldOptional {
     color: #999;
     }
