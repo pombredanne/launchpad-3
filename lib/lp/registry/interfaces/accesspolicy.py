@@ -160,7 +160,7 @@ class IAccessPolicySource(Interface):
         """Create an `IAccessPolicy` for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             create `IAccessPolicy` objects for.
         :return: a collection of the created `IAccessPolicy` objects.
         """
@@ -169,7 +169,7 @@ class IAccessPolicySource(Interface):
         """Return the `IAccessPolicy`s for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             find.
         """
 

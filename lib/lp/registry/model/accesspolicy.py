@@ -24,7 +24,7 @@ from storm.references import Reference
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -125,7 +125,7 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
-    type = DBEnum(allow_none=True, enum=AccessPolicyType)
+    type = DBEnum(allow_none=True, enum=InformationType)
 
     @property
     def pillar(self):

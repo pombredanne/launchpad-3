@@ -4,15 +4,17 @@
 __metaclass__ = type
 
 
-import transaction
-
 from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_web_service_request
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.services import IService
-from lp.registry.enums import AccessPolicyType, SharingPermission
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -26,8 +28,12 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     WebServiceTestCase,
-    ws_object)
-from lp.testing.layers import AppServerLayer, DatabaseFunctionalLayer
+    ws_object,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
@@ -51,8 +57,8 @@ class TestAccessPolicyService(TestCaseWithFactory):
         observer_data['permissions'] = permissions
         return observer_data
 
-    def _test_getAccessPolicies(self, pillar, expected_policies):
-        policy_data = self.service.getAccessPolicies(pillar)
+    def _test_getInformationTypes(self, pillar, expected_policies):
+        policy_data = self.service.getInformationTypes(pillar)
         expected_data = []
         for x, policy in enumerate(expected_policies):
             item = dict(
@@ -64,44 +70,44 @@ class TestAccessPolicyService(TestCaseWithFactory):
             expected_data.append(item)
         self.assertContentEqual(expected_data, policy_data)
 
-    def test_getAccessPolicies_product(self):
+    def test_getInformationTypes_product(self):
         product = self.factory.makeProduct()
-        self._test_getAccessPolicies(
+        self._test_getInformationTypes(
             product,
-            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
 
-    def test_getAccessPolicies_expired_commercial_product(self):
+    def test_getInformationTypes_expired_commercial_product(self):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product, expired=True)
-        self._test_getAccessPolicies(
+        self._test_getInformationTypes(
             product,
-            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
 
-    def test_getAccessPolicies_commercial_product(self):
+    def test_getInformationTypes_commercial_product(self):
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product)
-        self._test_getAccessPolicies(
+        self._test_getInformationTypes(
             product,
-            [AccessPolicyType.EMBARGOEDSECURITY,
-             AccessPolicyType.USERDATA,
-             AccessPolicyType.PROPRIETARY])
+            [InformationType.EMBARGOEDSECURITY,
+             InformationType.USERDATA,
+             InformationType.PROPRIETARY])
 
-    def test_getAccessPolicies_distro(self):
+    def test_getInformationTypes_distro(self):
         distro = self.factory.makeDistribution()
-        self._test_getAccessPolicies(
+        self._test_getInformationTypes(
             distro,
-            [AccessPolicyType.EMBARGOEDSECURITY, AccessPolicyType.USERDATA])
+            [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
 
     def _test_getPillarObservers(self, pillar):
         # getPillarObservers returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
             pillar=pillar,
-            type=AccessPolicyType.PROPRIETARY)
+            type=InformationType.PROPRIETARY)
         grantee = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policy, grantee)
         [observer] = self.service.getPillarObservers(pillar)
         person_data = self._makeObserverData(
-            grantee, [AccessPolicyType.PROPRIETARY])
+            grantee, [InformationType.PROPRIETARY])
         self.assertEqual(person_data, observer)
 
     def test_getProductObservers(self):
@@ -148,31 +154,31 @@ class TestAccessPolicyService(TestCaseWithFactory):
         # cases correctly.
         # First, a grant that is in the add set - it wil be retained.
         policy = self.factory.makeAccessPolicy(
-            pillar=pillar, type=AccessPolicyType.EMBARGOEDSECURITY)
+            pillar=pillar, type=InformationType.EMBARGOEDSECURITY)
         self.factory.makeAccessPolicyGrant(
             policy, grantee=observer, grantor=grantor)
         # Second, a grant that is not in the add set - it will be deleted.
         policy = self.factory.makeAccessPolicy(
-            pillar=pillar, type=AccessPolicyType.PROPRIETARY)
+            pillar=pillar, type=InformationType.PROPRIETARY)
         self.factory.makeAccessPolicyGrant(
             policy, grantee=observer, grantor=grantor)
 
         # Now call updatePillarObserver will the grants we want.
-        access_policy_types = [
-            AccessPolicyType.EMBARGOEDSECURITY,
-            AccessPolicyType.USERDATA]
+        information_types = [
+            InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA]
         observer_data = self.service.updatePillarObserver(
-            pillar, observer, access_policy_types, grantor)
+            pillar, observer, information_types, grantor)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         grants = policy_grant_source.findByPolicy(policies)
-        self.assertEqual(grants.count(), len(access_policy_types))
+        self.assertEqual(grants.count(), len(information_types))
         for grant in grants:
             self.assertEqual(grantor, grant.grantor)
             self.assertEqual(observer, grant.grantee)
-            self.assertIn(grant.policy.type, access_policy_types)
+            self.assertIn(grant.policy.type, information_types)
         expected_observer_data = self._makeObserverData(
-            observer, access_policy_types)
+            observer, information_types)
         self.assertEqual(expected_observer_data, observer_data)
 
     def test_updateProjectGroupObserver_not_allowed(self):
@@ -183,7 +189,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             AssertionError, self.service.updatePillarObserver,
-            project_group, observer, [AccessPolicyType.USERDATA], owner)
+            project_group, observer, [InformationType.USERDATA], owner)
 
     def test_updateProductObserver(self):
         # Users with launchpad.Edit can add observers.
@@ -203,11 +209,10 @@ class TestAccessPolicyService(TestCaseWithFactory):
         # updatePillarObserver raises an Unauthorized exception if the user is
         # not permitted to do so.
         observer = self.factory.makePerson()
-        access_policy_type = AccessPolicyType.USERDATA
         user = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.service.updatePillarObserver,
-            pillar, observer, [access_policy_type], user)
+            pillar, observer, [InformationType.USERDATA], user)
 
     def test_updatePillarObserverAnonymous(self):
         # Anonymous users are not allowed.
@@ -223,13 +228,13 @@ class TestAccessPolicyService(TestCaseWithFactory):
 
     def _test_deletePillarObserver(self, pillar, types_to_delete=None):
         # Make grants for some information types.
-        access_policy_types = [
-            AccessPolicyType.EMBARGOEDSECURITY,
-            AccessPolicyType.USERDATA]
+        information_types = [
+            InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA]
         access_policies = []
-        for policy_type in access_policy_types:
+        for info_type in information_types:
             access_policy = self.factory.makeAccessPolicy(
-                pillar=pillar, type=policy_type)
+                pillar=pillar, type=info_type)
             access_policies.append(access_policy)
         grantee = self.factory.makePerson()
         # Make some access policy grants for our observer.
@@ -250,14 +255,14 @@ class TestAccessPolicyService(TestCaseWithFactory):
         # grantee.
         expected_data = []
         if types_to_delete is not None:
-            expected_access_policy_types = (
-                set(access_policy_types).difference(types_to_delete))
+            expected_information_types = (
+                set(information_types).difference(types_to_delete))
             remaining_grantee_person_data = self._makeObserverData(
-                grantee, expected_access_policy_types)
+                grantee, expected_information_types)
             expected_data.append(remaining_grantee_person_data)
         # Add the data for the other observer.
         another_person_data = self._makeObserverData(
-            another, access_policy_types[:1])
+            another, information_types[:1])
         expected_data.append(another_person_data)
         self.assertContentEqual(
             expected_data, self.service.getPillarObservers(pillar))
@@ -275,7 +280,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._test_deletePillarObserver(product, [AccessPolicyType.USERDATA])
+        self._test_deletePillarObserver(product, [InformationType.USERDATA])
 
     def test_deleteDistroObserverAll(self):
         # Users with launchpad.Edit can delete all access for an observer.
@@ -290,7 +295,7 @@ class TestAccessPolicyService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
-        self._test_deletePillarObserver(distro, [AccessPolicyType.USERDATA])
+        self._test_deletePillarObserver(distro, [InformationType.USERDATA])
 
 
 class ApiTestMixin:
