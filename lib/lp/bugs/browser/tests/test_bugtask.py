@@ -1794,12 +1794,14 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
 
 
 def make_bug_task_listing_item(factory, bugtask=None):
-    owner = factory.makePerson()
     if bugtask is None:
+        owner = factory.makePerson()
         bug = factory.makeBug(
             owner=owner, private=True, security_related=True)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
+    else:
+        owner = bugtask.bug.owner
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
@@ -2359,7 +2361,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """Model contains expected fields with expected values."""
         assignee = self.factory.makePerson(displayname='Example Person')
         bug = self.factory.makeBug()
-        removeSecurityProxy(bug).default_bugtask.transitionToAssignee(assignee)
+        with person_logged_in(bug.owner):
+            removeSecurityProxy(bug).default_bugtask.transitionToAssignee(
+                assignee)
         owner, item = make_bug_task_listing_item(
             self.factory, bugtask=bug.default_bugtask)
         with person_logged_in(owner):
