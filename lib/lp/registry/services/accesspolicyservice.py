@@ -19,7 +19,9 @@ from lp.registry.enums import (
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
     IAccessPolicySource,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
@@ -161,7 +163,32 @@ class AccessPolicyService:
         return person_data
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def deletePillarObserver(self, pillar, observer, access_policy_type):
+    def deletePillarObserver(self, pillar, observer,
+                             access_policy_types=None):
         """See `IAccessPolicyService`."""
-        # TODO - implement this
-        pass
+
+        policy_source = getUtility(IAccessPolicySource)
+        if access_policy_types is None:
+            # We delete all policy grants for the pillar.
+            pillar_policies = policy_source.findByPillar([pillar])
+        else:
+            # We delete selected policy grants for the pillar.
+            pillar_policy_types = [
+                (pillar, access_policy_type)
+                for access_policy_type in access_policy_types]
+            pillar_policies = list(policy_source.find(pillar_policy_types))
+
+        # First delete any access policy grants.
+        policy_grant_source = getUtility(IAccessPolicyGrantSource)
+        policy_grants = [(policy, observer) for policy in pillar_policies]
+        grants = [
+            (grant.policy, grant.grantee)
+            for grant in policy_grant_source.find(policy_grants)]
+        policy_grant_source.revoke(grants)
+
+        # Second delete any access artifact grants.
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        to_delete = ap_grant_flat.findArtifactsByGrantee(
+            observer, pillar_policies)
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(to_delete)

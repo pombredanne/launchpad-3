@@ -221,6 +221,77 @@ class TestAccessPolicyService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._test_updatePillarObserverUnauthorized(product)
 
+    def _test_deletePillarObserver(self, pillar, types_to_delete=None):
+        # Make grants for some information types.
+        access_policy_types = [
+            AccessPolicyType.EMBARGOEDSECURITY,
+            AccessPolicyType.USERDATA]
+        access_policies = []
+        for policy_type in access_policy_types:
+            access_policy = self.factory.makeAccessPolicy(
+                pillar=pillar, type=policy_type)
+            access_policies.append(access_policy)
+        grantee = self.factory.makePerson()
+        # Make some access policy grants for our observer.
+        for access_policy in access_policies:
+            self.factory.makeAccessPolicyGrant(access_policy, grantee)
+        # Make some artifact grants for our observer.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, grantee)
+        for access_policy in access_policies:
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=access_policy)
+        # Make some access policy grants for another observer.
+        another = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(access_policies[0], another)
+        # Delete data for a specific information type.
+        self.service.deletePillarObserver(pillar, grantee, types_to_delete)
+        # Assemble the expected data for the remaining access grants for
+        # grantee.
+        expected_data = []
+        if types_to_delete is not None:
+            expected_access_policy_types = (
+                set(access_policy_types).difference(types_to_delete))
+            remaining_grantee_person_data = self._makeObserverData(
+                grantee, expected_access_policy_types)
+            expected_data.append(remaining_grantee_person_data)
+        # Add the data for the other observer.
+        another_person_data = self._makeObserverData(
+            another, access_policy_types[:1])
+        expected_data.append(another_person_data)
+        self.assertContentEqual(
+            expected_data, self.service.getPillarObservers(pillar))
+
+    def test_deleteProductObserverAll(self):
+        # Users with launchpad.Edit can delete all access for an observer.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        self._test_deletePillarObserver(product)
+
+    def test_deleteProductObserverPolicies(self):
+        # Users with launchpad.Edit can delete selected policy access for an
+        # observer.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        self._test_deletePillarObserver(product, [AccessPolicyType.USERDATA])
+
+    def test_deleteDistroObserverAll(self):
+        # Users with launchpad.Edit can delete all access for an observer.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
+        self._test_deletePillarObserver(distro)
+
+    def test_deleteDistroObserverPolicies(self):
+        # Users with launchpad.Edit can delete selected policy access for an
+        # observer.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
+        self._test_deletePillarObserver(distro, [AccessPolicyType.USERDATA])
+
 
 class ApiTestMixin:
     """Common tests for launchpadlib and webservice."""
