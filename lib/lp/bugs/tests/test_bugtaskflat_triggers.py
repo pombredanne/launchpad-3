@@ -43,7 +43,7 @@ BUGTASKFLAT_COLUMNS = (
     'access_grants',
     )
 
-BugTaskFlat = namedtuple('BugTaskFlat', ' '.join(BUGTASKFLAT_COLUMNS))
+BugTaskFlat = namedtuple('BugTaskFlat', BUGTASKFLAT_COLUMNS)
 
 
 class BugTaskFlatTestMixin(TestCaseWithFactory):
@@ -75,12 +75,44 @@ class BugTaskFlatTestMixin(TestCaseWithFactory):
     def getBugTaskFlat(self, bugtask):
         if hasattr(bugtask, 'id'):
             bugtask = bugtask.id
+        assert bugtask is not None
         result = IStore(Bug).execute(
             "SELECT %s FROM bugtaskflat WHERE bugtask = ?"
             % ', '.join(BUGTASKFLAT_COLUMNS), (bugtask,)).get_one()
         if result is not None:
             result = BugTaskFlat(*result)
         return result
+
+    @contextmanager
+    def bugtaskflat_is_deleted(self, bugtask):
+        old_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        self.assertIsNot(None, old_row)
+        yield
+        new_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        self.assertIs(None, new_row)
+
+    @contextmanager
+    def bugtaskflat_is_updated(self, bugtask, expected_fields):
+        old_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        yield
+        new_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        changed_fields = [
+            field for field in BugTaskFlat._fields
+            if getattr(old_row, field) != getattr(new_row, field)]
+        self.assertEqual(expected_fields, changed_fields)
+
+    @contextmanager
+    def bugtaskflat_is_identical(self, bugtask):
+        old_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        yield
+        new_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        self.assertEqual(old_row, new_row)
 
 
 class TestBugTaskFlatten(BugTaskFlatTestMixin):
@@ -128,24 +160,6 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
 
     layer = DatabaseFunctionalLayer
 
-    @contextmanager
-    def bugtaskflat_is_updated(self, bugtask):
-        old_row = self.getBugTaskFlat(bugtask)
-        self.assertFlattened(bugtask)
-        yield
-        new_row = self.getBugTaskFlat(bugtask)
-        self.assertFlattened(bugtask)
-        self.assertNotEqual(old_row, new_row)
-
-    @contextmanager
-    def bugtaskflat_is_identical(self, bugtask):
-        old_row = self.getBugTaskFlat(bugtask)
-        self.assertFlattened(bugtask)
-        yield
-        new_row = self.getBugTaskFlat(bugtask)
-        self.assertFlattened(bugtask)
-        self.assertEqual(old_row, new_row)
-
     def test_bugtask_create(self):
         # Triggers maintain BugTaskFlat when a task is created.
         task = self.factory.makeBugTask()
@@ -155,14 +169,14 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         # Triggers maintain BugTaskFlat when a task is deleted.
         task = self.factory.makeBugTask()
         with person_logged_in(task.owner):
-            with self.bugtaskflat_is_updated(task):
+            with self.bugtaskflat_is_deleted(task):
                 task.delete()
 
     def test_bugtask_change(self):
         # Triggers maintain BugTaskFlat when a task is changed.
         task = self.factory.makeBugTask()
         with person_logged_in(task.owner):
-            with self.bugtaskflat_is_updated(task):
+            with self.bugtaskflat_is_updated(task, ['status']):
                 task.transitionToStatus(BugTaskStatus.UNKNOWN, task.owner)
 
     def test_bugtask_change_unflattened(self):
@@ -176,7 +190,7 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         # Triggers maintain BugTaskFlat when a bug is changed
         task = self.factory.makeBugTask()
         with person_logged_in(task.owner):
-            with self.bugtaskflat_is_updated(task):
+            with self.bugtaskflat_is_updated(task, ['security_related']):
                 task.bug.security_related = True
 
     def test_bug_change_unflattened(self):
