@@ -33,6 +33,13 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
         # BugTaskFlat.
         self.assertIs(True, self.checkFlattened(bugtask))
 
+    def assertFlattens(self, bugtask):
+        # Assert that the BugTask isn't correctly represented in
+        # BugTaskFlat, but a call to bugtask_flatten fixes it.
+        self.assertFalse(self.checkFlattened(bugtask))
+        self.checkFlattened(bugtask, check_only=False)
+        self.assertTrue(self.checkFlattened(bugtask))
+
     def test_new_bug(self):
         # Triggers maintain BugTaskFlat when a task is created.
         task = self.factory.makeBugTask()
@@ -46,9 +53,7 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
         with dbuser('testadmin'):
             IStore(Bug).execute(
                 "DELETE FROM BugTaskFlat WHERE bugtask = ?", (task.id,))
-        self.assertFalse(self.checkFlattened(task))
-        self.checkFlattened(task, check_only=False)
-        self.assertTrue(self.checkFlattened(task))
+        self.assertFlattens(task)
 
     def test_bugtask_flatten_updates(self):
         # bugtask_flatten() returns true if the BugTaskFlat is out of
@@ -59,15 +64,12 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
             IStore(Bug).execute(
                 "UPDATE BugTaskFlat SET status = ? WHERE bugtask = ?",
                 (BugTaskStatus.UNKNOWN.value, task.id))
-        self.assertFalse(self.checkFlattened(task))
-        self.checkFlattened(task, check_only=False)
-        self.assertTrue(self.checkFlattened(task))
+        self.assertFlattens(task)
 
     def test_bugtask_flatten_deletes(self):
         # bugtask_flatten() returns true if the BugTaskFlat exists but
         # the task doesn't, and optionally deletes it.
-        task = self.factory.makeBugTask()
-        self.assertTrue(self.checkFlattened(task))
+        self.assertTrue(self.checkFlattened(200))
         with dbuser('testadmin'):
             IStore(Bug).execute(
                 "INSERT INTO bugtaskflat "
@@ -77,6 +79,4 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
                 "VALUES "
                 "(1, 200, 1, false, false, "
                 " current_timestamp at time zone 'UTC', 999, 1, 1, 1, true);")
-        self.assertFalse(self.checkFlattened(200))
-        self.checkFlattened(200, check_only=False)
-        self.assertTrue(self.checkFlattened(200))
+        self.assertFlattens(200)
