@@ -218,3 +218,10 @@ class IAccessPolicyGrantFlatSource(Interface):
 
         :param policies: a collection of `IAccesPolicy`s.
         """
+
+    def findArtifactsByGrantee(grantee, policies):
+        """Find the `IAccessArtifact`s for grantee and policies.
+
+        :param grantee: the access artifact grantee.
+        :param policies: a collection of `IAccesPolicy`s.
+        """

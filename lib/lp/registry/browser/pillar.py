@@ -240,8 +240,8 @@ class PillarSharingView(LaunchpadView):
         return getUtility(IService, 'accesspolicy')
 
     @property
-    def access_policies(self):
-        return self._getAccessPolicyService().getAccessPolicies(self.context)
+    def information_types(self):
+        return self._getAccessPolicyService().getInformationTypes(self.context)
 
     @property
     def sharing_permissions(self):
@@ -279,6 +279,6 @@ class PillarSharingView(LaunchpadView):
         if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        cache.objects['access_policies'] = self.access_policies
+        cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['observer_data'] = self.observer_data

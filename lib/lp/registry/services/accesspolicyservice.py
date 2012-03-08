@@ -19,7 +19,9 @@ from lp.registry.enums import (
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
     IAccessPolicySource,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     )
 from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
@@ -29,7 +31,7 @@ from lp.services.webapp.authorization import available_with_permission
 
 
 class AccessPolicyService:
-    """Service providing operations for access policies.
+    """Service providing operations for adding and removing pillar observers.
 
     Service is accessed via a url of the form
     '/services/accesspolicy?ws.op=...
@@ -42,27 +44,27 @@ class AccessPolicyService:
         """See `IService`."""
         return 'accesspolicy'
 
-    def getAccessPolicies(self, pillar):
+    def getInformationTypes(self, pillar):
         """See `IAccessPolicyService`."""
-        allowed_policy_types = [
+        allowed_types = [
             InformationType.EMBARGOEDSECURITY,
             InformationType.USERDATA]
         # Products with current commercial subscriptions are also allowed to
-        # have a PROPRIETARY access policy.
+        # have a PROPRIETARY information type.
         if (IProduct.providedBy(pillar) and
                 pillar.has_current_commercial_subscription):
-            allowed_policy_types.append(InformationType.PROPRIETARY)
+            allowed_types.append(InformationType.PROPRIETARY)
 
-        policies_data = []
-        for x, policy in enumerate(allowed_policy_types):
+        result_data = []
+        for x, policy in enumerate(allowed_types):
             item = dict(
                 index=x,
                 value=policy.name,
                 title=policy.title,
                 description=policy.description
             )
-            policies_data.append(item)
-        return policies_data
+            result_data.append(item)
+        return result_data
 
     def getSharingPermissions(self):
         """See `IAccessPolicyService`."""
@@ -96,31 +98,31 @@ class AccessPolicyService:
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}
                 person_by_id[policy_grant.grantee.id] = person_data
+                result.append(person_data)
             person_data = person_by_id[policy_grant.grantee.id]
             person_data['permissions'][policy_grant.policy.type.name] = (
                 SharingPermission.ALL.name)
-            result.append(person_data)
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def updatePillarObserver(self, pillar, observer, access_policy_types,
+    def updatePillarObserver(self, pillar, observer, information_types,
                              user):
         """See `IAccessPolicyService`."""
 
         # We do not support adding observers to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
-        pillar_policy_types = [
-            (pillar, access_policy_type)
-            for access_policy_type in access_policy_types]
+        pillar_info_types = [
+            (pillar, information_type)
+            for information_type in information_types]
 
         # Create any missing pillar access policies.
         policy_source = getUtility(IAccessPolicySource)
-        pillar_policies = list(policy_source.find(pillar_policy_types))
+        pillar_policies = list(policy_source.find(pillar_info_types))
         existing_policy_types = [
             (pillar, pillar_policy.type) for pillar_policy in pillar_policies]
         required_policies = (
-            set(pillar_policy_types).difference(existing_policy_types))
+            set(pillar_info_types).difference(existing_policy_types))
         if len(required_policies) > 0:
             pillar_policies.extend(policy_source.create(required_policies))
 
@@ -154,13 +156,38 @@ class AccessPolicyService:
         resource = EntryResource(observer, request)
         person_data = resource.toDataForJSON()
         permissions = {}
-        for access_policy_type in access_policy_types:
-            permissions[access_policy_type.name] = SharingPermission.ALL.name
+        for information_type in information_types:
+            permissions[information_type.name] = SharingPermission.ALL.name
         person_data['permissions'] = permissions
         return person_data
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def deletePillarObserver(self, pillar, observer, access_policy_type):
+    def deletePillarObserver(self, pillar, observer,
+                             information_types=None):
         """See `IAccessPolicyService`."""
-        # TODO - implement this
-        pass
+
+        policy_source = getUtility(IAccessPolicySource)
+        if information_types is None:
+            # We delete all policy grants for the pillar.
+            pillar_policies = policy_source.findByPillar([pillar])
+        else:
+            # We delete selected policy grants for the pillar.
+            pillar_policy_types = [
+                (pillar, information_type)
+                for information_type in information_types]
+            pillar_policies = list(policy_source.find(pillar_policy_types))
+
+        # First delete any access policy grants.
+        policy_grant_source = getUtility(IAccessPolicyGrantSource)
+        policy_grants = [(policy, observer) for policy in pillar_policies]
+        grants = [
+            (grant.policy, grant.grantee)
+            for grant in policy_grant_source.find(policy_grants)]
+        policy_grant_source.revoke(grants)
+
+        # Second delete any access artifact grants.
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        to_delete = ap_grant_flat.findArtifactsByGrantee(
+            observer, pillar_policies)
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(to_delete)

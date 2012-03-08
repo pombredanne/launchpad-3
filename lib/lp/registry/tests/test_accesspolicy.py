@@ -414,3 +414,19 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [policy_grant.grantee, artifact_grant.grantee],
             apgfs.findGranteesByPolicy([policy]))
+
+    def test_findArtifactsByGrantee(self):
+        # findArtifactsByGrantee() returns the artifacts for grantee for any of
+        # the policies.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        policy = self.factory.makeAccessPolicy()
+        grantee = self.factory.makePerson()
+        # Artifacts not linked to the policy do not show up.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, grantee)
+        self.assertContentEqual(
+            [], apgfs.findArtifactsByGrantee(grantee, [policy]))
+        # Artifacts linked to the policy do show up.
+        self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+        self.assertContentEqual(
+            [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))
