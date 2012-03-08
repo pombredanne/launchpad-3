@@ -10,7 +10,11 @@ from zope.component import getUtility
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
-from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessArtifactGrantSource,
+    IAccessPolicyArtifactSource,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -212,3 +216,28 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
         with self.bugtaskflat_is_updated(task, ['access_grants']):
             self.factory.makeAccessArtifactGrant(artifact=artifact)
+
+    def test_accessartifactgrant_delete(self):
+        # Deleting an AccessArtifactGrant updates the relevant bugs.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        self.factory.makeAccessArtifactGrant(artifact=artifact)
+        with self.bugtaskflat_is_updated(task, ['access_grants']):
+            getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                [artifact])
+
+    def test_accesspolicyartifact_create(self):
+        # Creating an AccessPolicyArtifact updates the relevant bugtasks.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        with self.bugtaskflat_is_updated(task, ['access_policies']):
+            self.factory.makeAccessPolicyArtifact(artifact=artifact)
+
+    def test_accesspolicyartifact_delete(self):
+        # Deleting an AccessPolicyArtifact updates the relevant bugtasks.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        self.factory.makeAccessPolicyArtifact(artifact=artifact)
+        with self.bugtaskflat_is_updated(task, ['access_policies']):
+            getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
+                [artifact])
