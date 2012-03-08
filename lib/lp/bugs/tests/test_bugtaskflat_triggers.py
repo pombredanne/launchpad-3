@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from collections import namedtuple
 from contextlib import contextmanager
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -15,6 +16,34 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
+
+BUGTASKFLAT_COLUMNS = (
+    'bugtask',
+    'bug',
+    'datecreated',
+    'duplicateof',
+    'bug_owner',
+    'fti',
+    'private',
+    'security_related',
+    'date_last_updated',
+    'heat',
+    'product',
+    'productseries',
+    'distribution',
+    'distroseries',
+    'sourcepackagename',
+    'status',
+    'importance',
+    'assignee',
+    'milestone',
+    'owner',
+    'active',
+    'access_policies',
+    'access_grants',
+    )
+
+BugTaskFlat = namedtuple('BugTaskFlat', ' '.join(BUGTASKFLAT_COLUMNS))
 
 
 class BugTaskFlatTestMixin(TestCaseWithFactory):
@@ -46,9 +75,12 @@ class BugTaskFlatTestMixin(TestCaseWithFactory):
     def getBugTaskFlat(self, bugtask):
         if hasattr(bugtask, 'id'):
             bugtask = bugtask.id
-        return IStore(Bug).execute(
-            "SELECT * FROM bugtaskflat WHERE bugtask = ?",
-            (bugtask,)).get_one()
+        result = IStore(Bug).execute(
+            "SELECT %s FROM bugtaskflat WHERE bugtask = ?"
+            % ', '.join(BUGTASKFLAT_COLUMNS), (bugtask,)).get_one()
+        if result is not None:
+            result = BugTaskFlat(*result)
+        return result
 
 
 class TestBugTaskFlatten(BugTaskFlatTestMixin):
