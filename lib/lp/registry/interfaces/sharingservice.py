@@ -1,13 +1,13 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Interfaces for access policy service."""
+"""Interfaces for sharing service."""
 
 
 __metaclass__ = type
 
 __all__ = [
-    'IAccessPolicyService',
+    'ISharingService',
     ]
 
 from lazr.restful.declarations import (
@@ -32,7 +32,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
 
 
-class IAccessPolicyService(IService):
+class ISharingService(IService):
 
     # XXX 2012-02-24 wallyworld bug 939910
     # Need to export for version 'beta' even though we only want to use it in
@@ -49,31 +49,31 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getPillarObservers(pillar):
+    def getPillarSharees(pillar):
         """Return people/teams who can see pillar artifacts."""
 
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
-        observer=Reference(IPerson, title=_('Observer'), required=True),
+        sharee=Reference(IPerson, title=_('Sharee'), required=True),
         information_types=List(Choice(vocabulary=InformationType)))
     @operation_for_version('devel')
-    def updatePillarObserver(pillar, observer, information_types, user):
-        """Ensure observer has the grants for information types on a pillar."""
+    def sharePillarInformation(pillar, sharee, information_types, user):
+        """Ensure sharee has the grants for information types on a pillar."""
 
     @export_write_operation()
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
-        observer=Reference(IPerson, title=_('Observer'), required=True),
+        sharee=Reference(IPerson, title=_('Sharee'), required=True),
         information_types=List(
             Choice(vocabulary=InformationType), required=False))
     @operation_for_version('devel')
-    def deletePillarObserver(pillar, observer, information_types):
-        """Remove an observer from a pillar.
+    def deletePillarSharee(pillar, sharee, information_types):
+        """Remove a sharee from a pillar.
 
         :param pillar: the pillar from which to remove access
-        :param observer: the person or team to remove
+        :param sharee: the person or team to remove
         :param information_types: if None, remove all access, otherwise just
                                    remove the specified access_policies
         """

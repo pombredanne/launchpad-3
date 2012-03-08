@@ -7,7 +7,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>Observer Picker Tests</title>
+      <title>Sharee Table Widget Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -35,11 +35,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/activator/activator.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/person_picker.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/registry/sharing/shareepicker.js"></script>
        <script type="text/javascript"
                src="../../../../../../build/js/lp/app/picker/picker_patcher.js"></script>
       <script type="text/javascript"
@@ -54,15 +58,17 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../../build/js/lp/app/extras/extras.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../observerpicker.js"></script>
+      <script type="text/javascript" src="../shareetable.js"></script>
 
       <!-- The test suite -->
-      <script type="text/javascript" src="test_observerpicker.js"></script>
+      <script type="text/javascript" src="test_shareetable.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.registry.disclosure.observerpicker.test</li>
+            <li>lp.registry.sharing.shareetable.test</li>
         </ul>
+        <table id='sharee-table'>
+        </table>
     </body>
 </html>

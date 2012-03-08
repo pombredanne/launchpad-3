@@ -83,9 +83,9 @@ class PillarSharingViewTestMixin:
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
-            aps = getUtility(IService, 'accesspolicy')
-            observers = aps.getPillarObservers(self.pillar)
-            self.assertEqual(observers, cache.objects.get('observer_data'))
+            aps = getUtility(IService, 'sharing')
+            observers = aps.getPillarSharees(self.pillar)
+            self.assertEqual(observers, cache.objects.get('sharee_data'))
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,
