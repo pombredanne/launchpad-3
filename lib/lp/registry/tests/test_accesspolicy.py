@@ -264,6 +264,16 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
+    def test_revokeByArtifact(self):
+        # revokeByArtifact() removes the relevant grants.
+        artifact = self.factory.makeAccessArtifact()
+        grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
+
 
 class TestAccessPolicyArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -318,6 +328,21 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
         self.assertContentEqual(
             links,
             getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
+
+    def test_deleteByArtifact(self):
+        # deleteByArtifact() removes the relevant grants.
+        grant = self.factory.makeAccessPolicyArtifact()
+        other_grant = self.factory.makeAccessPolicyArtifact()
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
+            [grant.abstract_artifact])
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [grant.abstract_artifact]))
+        self.assertContentEqual(
+            [other_grant],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_grant.abstract_artifact]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
