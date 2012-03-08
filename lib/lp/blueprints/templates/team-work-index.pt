@@ -17,18 +17,18 @@
 
   <span>X of these are assigned to Y.</span></p>
 
-  <div tal:repeat="item view/work_item_groups">
-    <h3 tal:content="item/0" />
-    <table>
-      <tr tal:repeat="group item/1">
-        <td><span tal:replace="wi/label" /></td>
-        <td><span tal:replace="wi/assignee" /></td>
-        <td><span tal:replace="wi/priority" /></td>
-        <td><span tal:replace="wi/items" /></td>
-      </tr>
-    </table>
+  <div tal:repeat="milestone_group view/work_item_groups">
+      <h3 tal:content="milestone_group/milestone" />
+      <table>
+        <tr tal:repeat="group milestone_group/group">
+          <td><span tal:replace="group/label" /></td>
+          <td><span tal:replace="group/target" /></td>
+          <td><span tal:replace="group/assignee" /></td>
+          <td><span tal:replace="group/priority" /></td>
+          <td><span tal:replace="group/items" /></td>
+        </tr>
+      </table>
   </div>
-
 </div>
 
   </body>

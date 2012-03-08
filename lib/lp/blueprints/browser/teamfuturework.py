@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'TeamFutureWorkView',
     ]
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.services.webapp import (
     LaunchpadView,
     )
@@ -52,12 +53,31 @@ class TeamFutureWorkView(LaunchpadView):
         # Here we're returning a single list, but we want them grouped by
         # milestone.
         milestone1_groups = [
-            # Need to use WorkItemAbstraction instead of integers on the list
-            # of items here.
-            WorkItemGroup('Foo', 'saglado', 'High', [1,2,3]),
-            WorkItemGroup('Bar', 'salgado', 'Normal', [1,2,3])]
-        return [('Milestone 1', milestone1_groups)]
+            WorkItemGroup('Foo', 'project1', 'saglado', 'High', [
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project1'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.INPROGRESS, False, False, None, 'project1'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project1')]),
+            WorkItemGroup('Bar', 'project2', 'salgado', 'Normal', [
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project2'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.INPROGRESS, False, False, None, 'project2'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project2')])]
+        milestone2_groups = [
+            WorkItemGroup('Foo', 'project1', 'saglado', 'High', [
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project1'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.INPROGRESS, False, False, None, 'project1'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project1')]),
+            WorkItemGroup('Bar', 'project2', 'salgado', 'Normal', [
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project2'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.INPROGRESS, False, False, None, 'project2'),
+                    WorkItemAbstraction(None, SpecificationWorkItemStatus.TODO, False, False, None, 'project2')])]
+        return [MilestoneGroup('Milestone 1', milestone1_groups), MilestoneGroup('Milestone 2', milestone2_groups)]
 
+
+class MilestoneGroup:
+
+    def __init__(self, milestone, group):
+        self.milestone = milestone
+        self.group = group
 
 
 class WorkItemGroup:
@@ -79,13 +99,11 @@ class WorkItemGroup:
 
 
 class WorkItemAbstraction:
-    # XXX: What does it mean for a bug to be complete? IBugTask.is_complete,
-    # probably.
-    is_complete = False
-    is_foreign = False
-    assignee = object()
-    priority = object()
-    status = object()
-    # Needed for bugs as we aggregate bugs from multiple
-    # targets into a single WorkItemGroup
-    target = object()
+
+    def __init__(self, assignee, status, is_complete, is_foreign, priority, target):
+        self.assignee = assignee
+        self.status = status
+        self.is_complete = is_complete
+        self.is_foreign = is_foreign
+        self.priority = priority
+        self.target = target
