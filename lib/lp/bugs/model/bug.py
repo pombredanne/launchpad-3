@@ -2232,18 +2232,6 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None):
-        """See `IBug`."""
-        """See `IBug`."""
-        if timestamp is None:
-            timestamp = UTC_NOW
-
-        if heat < 0:
-            heat = 0
-
-        self.heat = heat
-        self.heat_last_updated = timestamp
-
     def updateHeat(self):
         """See `IBug`."""
         # We need to flush the store first to ensure that changes are

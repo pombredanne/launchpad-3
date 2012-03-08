@@ -16,8 +16,7 @@ Updating bug heat on-the-fly
 ----------------------------
 
 The IBug.updateHeat() method updates a Bug's heat using data already in
-the database. Where setHeat() can be used for setting bug heat to a
-specific value, updateHeat() uses a stored procedure in the database to
+the database. updateHeat() uses a stored procedure in the database to
 calculate the heat overall.
 
 We'll create a new bug with a heat of 0 for the sake of testing.
@@ -25,10 +24,7 @@ We'll create a new bug with a heat of 0 for the sake of testing.
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(bug).setHeat(0)
-
-    >>> bug.heat
-    0
+    >>> removeSecurityProxy(bug).heat = 0
 
 Calling updateHeat() will update the bug's heat. Since this new bug has
 one subscriber (the bug owner) and one affected user (ditto) its
@@ -154,9 +150,7 @@ and will cause the bug's heat to be recalculated.
 
 We'll set the bug's heat to 0 first to demonstrate this.
 
-    >>> removeSecurityProxy(bug).setHeat(0)
-    >>> bug.heat
-    0
+    >>> removeSecurityProxy(bug).heat = 0
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import timezone
@@ -201,15 +195,15 @@ oldest a bug's heat can be before it gets included in the returned set.
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
 
-IBug.setHeat() takes a timestamp parameter so that we can set the
-heat_last_updated date manually for the purposes of testing. If we make
-a bug's heat older than the cutoff that we pass to
+If we make a bug's heat older than the cutoff that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
     >>> old_heat_bug = factory.makeBug()
-    >>> removeSecurityProxy(old_heat_bug).setHeat(
-    ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
+    >>> naked_bug = removeSecurityProxy(old_heat_bug)
+    >>> naked_bug.heat = 0
+    >>> naked_bug.heat_last_updated = datetime.now(
+    ...     timezone('UTC')) - timedelta(days=2)
 
     >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
     ...     yesterday)

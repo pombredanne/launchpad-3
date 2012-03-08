@@ -1029,7 +1029,7 @@ Another way of sorting searches is by bug heat.
     ...     orderby='id', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for task in ubuntu_tasks:
-    ...     removeSecurityProxy(task.bug).setHeat(task.bug.id)
+    ...     removeSecurityProxy(task.bug).heat = task.bug.id
     >>> transaction.commit()
     >>> params = BugTaskSearchParams(
     ...     orderby='-heat', user=None)
