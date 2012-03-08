@@ -226,11 +226,11 @@ def summarize_requests():
     timeline = get_request_timeline(request)
     from lp.services.webapp.errorlog import (
         maybe_record_user_requested_oops)
-    oopsid = maybe_record_user_requested_oops()
-    if oopsid is None:
+    maybe_record_user_requested_oops()
+    if request.oopsid is None:
         oops_str = ""
     else:
-        oops_str = " %s" % oopsid
+        oops_str = " %s" % request.oopsid
     log = "%s queries/external actions issued in %.2f seconds%s" % (
         len(timeline.actions), secs, oops_str)
     return log

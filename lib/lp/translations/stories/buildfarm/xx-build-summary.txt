@@ -71,6 +71,7 @@ Show summary
 The job's summary shows that what type of job this is.  It also links
 to the branch.
 
+    >>> user_browser.mech_browser.set_handle_equiv(False)
     >>> user_browser.open(builder_page)
     >>> print extract_text(find_build_summary(user_browser))
     Working on TranslationTemplatesBuildJob for branch ...
