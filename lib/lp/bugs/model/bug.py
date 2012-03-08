@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -2006,7 +2006,7 @@ class Bug(SQLBase):
         return self.users_affected_count_with_dupes > 1
 
     def maybeConfirmBugtasks(self):
-        """Maybe try to confirm our new bugtasks."""
+        """See `IBug`."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
                 bugtask.maybeConfirm()
