@@ -70,7 +70,7 @@ class ISharingService(IService):
             Choice(vocabulary=InformationType), required=False))
     @operation_for_version('devel')
     def deletePillarSharee(pillar, sharee, information_types):
-        """Remove an sharee from a pillar.
+        """Remove a sharee from a pillar.
 
         :param pillar: the pillar from which to remove access
         :param sharee: the person or team to remove

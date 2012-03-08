@@ -47,7 +47,7 @@ class TestSharingService(TestCaseWithFactory):
         self.service = getUtility(IService, 'sharing')
 
     def _makeShareeData(self, sharee, policy_types):
-        # Unpack an sharee into its attributes and add in permissions.
+        # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
         resource = EntryResource(sharee, request)
         sharee_data = resource.toDataForJSON()
@@ -268,7 +268,7 @@ class TestSharingService(TestCaseWithFactory):
             expected_data, self.service.getPillarSharees(pillar))
 
     def test_deleteProductShareeAll(self):
-        # Users with launchpad.Edit can delete all access for an sharee.
+        # Users with launchpad.Edit can delete all access for a sharee.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
@@ -283,7 +283,7 @@ class TestSharingService(TestCaseWithFactory):
         self._test_deletePillarSharee(product, [InformationType.USERDATA])
 
     def test_deleteDistroShareeAll(self):
-        # Users with launchpad.Edit can delete all access for an sharee.
+        # Users with launchpad.Edit can delete all access for a sharee.
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
@@ -319,7 +319,7 @@ class ApiTestMixin:
 
 
 class TestWebService(ApiTestMixin, WebServiceTestCase):
-    """Test the web service interface for the Access Policy Service."""
+    """Test the web service interface for the Sharing Service."""
 
     def setUp(self):
         super(TestWebService, self).setUp()
@@ -346,7 +346,7 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
 
 
 class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
-    """Test launchpadlib access for the Access Policy Service."""
+    """Test launchpadlib access for the Sharing Service."""
 
     layer = AppServerLayer
 
