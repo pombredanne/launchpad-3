@@ -153,6 +153,9 @@ class IAccessPolicyArtifactSource(Interface):
     def findByPolicy(policies):
         """Return all `IAccessPolicyArtifact` objects for the policies."""
 
+    def deleteByArtifact(artifacts):
+        """Delete all `IAccesyPolicyArtifact` objects for the artifacts."""
+
 
 class IAccessPolicySource(Interface):
 
@@ -160,7 +163,7 @@ class IAccessPolicySource(Interface):
         """Create an `IAccessPolicy` for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             create `IAccessPolicy` objects for.
         :return: a collection of the created `IAccessPolicy` objects.
         """
@@ -169,7 +172,7 @@ class IAccessPolicySource(Interface):
         """Return the `IAccessPolicy`s for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             find.
         """
 
@@ -200,6 +203,13 @@ class IAccessPolicyGrantSource(Interface):
     def findByPolicy(policies):
         """Return all `IAccessPolicyGrant` objects for the policies."""
 
+    def revoke(grants):
+        """Revoke the specified grants.
+
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
+        """
+
 
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
@@ -209,5 +219,12 @@ class IAccessPolicyGrantFlatSource(Interface):
 
         This includes grants for artifacts in the policies.
 
+        :param policies: a collection of `IAccesPolicy`s.
+        """
+
+    def findArtifactsByGrantee(grantee, policies):
+        """Find the `IAccessArtifact`s for grantee and policies.
+
+        :param grantee: the access artifact grantee.
         :param policies: a collection of `IAccesPolicy`s.
         """

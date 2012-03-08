@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for access policy service."""
@@ -11,12 +11,25 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_read_operation,
+    export_write_operation,
     operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.schema import (
+    Choice,
+    List,
     )
 
+from lp import _
 from lp.app.interfaces.services import IService
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pillar import IPillar
 
 
 class IAccessPolicyService(IService):
@@ -26,7 +39,41 @@ class IAccessPolicyService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
+    def getInformationTypes(pillar):
+        """Return the allowed information types for the given pillar."""
+
+    def getSharingPermissions():
+        """Return the information sharing permissions."""
+
     @export_read_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getAccessPolicies():
-        """Return the access policy types."""
+    def getPillarObservers(pillar):
+        """Return people/teams who can see pillar artifacts."""
+
+    @export_write_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        observer=Reference(IPerson, title=_('Observer'), required=True),
+        information_types=List(Choice(vocabulary=InformationType)))
+    @operation_for_version('devel')
+    def updatePillarObserver(pillar, observer, information_types, user):
+        """Ensure observer has the grants for information types on a pillar."""
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        observer=Reference(IPerson, title=_('Observer'), required=True),
+        information_types=List(
+            Choice(vocabulary=InformationType), required=False))
+    @operation_for_version('devel')
+    def deletePillarObserver(pillar, observer, information_types):
+        """Remove an observer from a pillar.
+
+        :param pillar: the pillar from which to remove access
+        :param observer: the person or team to remove
+        :param information_types: if None, remove all access, otherwise just
+                                   remove the specified access_policies
+        """

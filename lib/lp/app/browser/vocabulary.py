@@ -235,6 +235,10 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
         """Gets the maintainer information for the target picker entry."""
         raise NotImplemented
 
+    def getCommercialSubscription(self, target):
+        """Gets the commercial subscription details for the target."""
+        return None
+
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
@@ -265,7 +269,11 @@ class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             maintainer = self.getMaintainer(target)
             if maintainer is not None:
                 picker_entry.details.append(
-                    'Maintainer: %s' % self.getMaintainer(target))
+                    'Maintainer: %s' % maintainer)
+            commercial_subscription = self.getCommercialSubscription(target)
+            if commercial_subscription is not None:
+                picker_entry.details.append(
+                    'Commercial Subscription: %s' % commercial_subscription)
         return entries
 
 
@@ -341,6 +349,16 @@ class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
     def getDescription(self, target):
         """See `TargetPickerEntrySource`"""
         return target.summary
+
+    def getCommercialSubscription(self, target):
+        """See `TargetPickerEntrySource`"""
+        if target.commercial_subscription:
+            if target.has_current_commercial_subscription:
+                return 'Active'
+            else:
+                return 'Expired'
+        else:
+            return 'None'
 
 
 @adapter(IDistribution)

@@ -258,9 +258,20 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         duplicate_bug, duplicate_bug_subscription = (
             self._create_duplicate_subscription())
         with person_logged_in(duplicate_bug.owner):
-            self.bug.mute(duplicate_bug.owner, duplicate_bug.owner)
+            duplicate_bug.mute(duplicate_bug.owner, duplicate_bug.owner)
         found_subscriptions = self.getInfo().duplicate_subscriptions
         self.assertContentEqual([], found_subscriptions)
+
+    def test_duplicate_other_mute(self):
+        # If some other bug is muted, the dupe is still listed.
+        duplicate_bug, duplicate_bug_subscription = (
+            self._create_duplicate_subscription())
+        with person_logged_in(duplicate_bug.owner):
+            self.factory.makeBug().mute(
+                duplicate_bug.owner, duplicate_bug.owner)
+        found_subscriptions = self.getInfo().duplicate_subscriptions
+        self.assertContentEqual(
+            [duplicate_bug_subscription], found_subscriptions)
 
     def test_duplicate_for_private_bug(self):
         # The set of subscribers from duplicate bugs is always empty when the
