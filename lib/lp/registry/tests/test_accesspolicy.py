@@ -264,6 +264,16 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
+    def test_revokeByArtifact(self):
+        # revokeByArtifact() removes the relevant grants.
+        artifact = self.factory.makeAccessArtifact()
+        grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
+
 
 class TestAccessPolicyArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -318,6 +328,21 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
         self.assertContentEqual(
             links,
             getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
+
+    def test_deleteByArtifact(self):
+        # deleteByArtifact() removes the relevant grants.
+        grant = self.factory.makeAccessPolicyArtifact()
+        other_grant = self.factory.makeAccessPolicyArtifact()
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
+            [grant.abstract_artifact])
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [grant.abstract_artifact]))
+        self.assertContentEqual(
+            [other_grant],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_grant.abstract_artifact]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
@@ -414,3 +439,19 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [policy_grant.grantee, artifact_grant.grantee],
             apgfs.findGranteesByPolicy([policy]))
+
+    def test_findArtifactsByGrantee(self):
+        # findArtifactsByGrantee() returns the artifacts for grantee for any of
+        # the policies.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        policy = self.factory.makeAccessPolicy()
+        grantee = self.factory.makePerson()
+        # Artifacts not linked to the policy do not show up.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, grantee)
+        self.assertContentEqual(
+            [], apgfs.findArtifactsByGrantee(grantee, [policy]))
+        # Artifacts linked to the policy do show up.
+        self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+        self.assertContentEqual(
+            [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))

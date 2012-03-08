@@ -1009,8 +1009,10 @@ class Bug(SQLBase):
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id).config(
-                    distinct=(BugSubscription.person_id,)),
+                    BugSubscription.person_id,
+                    BugSubscription.date_created,
+                    BugSubscription.id
+                    ).config(distinct=(BugSubscription.person_id,)),
             operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):

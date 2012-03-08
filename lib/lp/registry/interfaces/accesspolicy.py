@@ -153,6 +153,9 @@ class IAccessPolicyArtifactSource(Interface):
     def findByPolicy(policies):
         """Return all `IAccessPolicyArtifact` objects for the policies."""
 
+    def deleteByArtifact(artifacts):
+        """Delete all `IAccesyPolicyArtifact` objects for the artifacts."""
+
 
 class IAccessPolicySource(Interface):
 
@@ -216,5 +219,12 @@ class IAccessPolicyGrantFlatSource(Interface):
 
         This includes grants for artifacts in the policies.
 
+        :param policies: a collection of `IAccesPolicy`s.
+        """
+
+    def findArtifactsByGrantee(grantee, policies):
+        """Find the `IAccessArtifact`s for grantee and policies.
+
+        :param grantee: the access artifact grantee.
         :param policies: a collection of `IAccesPolicy`s.
         """

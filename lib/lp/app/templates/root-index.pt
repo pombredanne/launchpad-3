@@ -136,7 +136,7 @@
               xml:lang="en" lang="en" dir="ltr"
               tal:attributes="action string:${rooturl}+search"
               method="get" accept-charset="UTF-8">
-              <input id="text" type="text" name="field.text" size="25%" />
+              <input id="text" type="text" name="field.text" size="25" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
             <script type="text/javascript">
