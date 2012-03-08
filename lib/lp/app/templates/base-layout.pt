@@ -43,15 +43,6 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
-    <tal:comment condition="nothing">
-      Removing the below <noscript></noscript> snippet makes two tests fail
-      with redirection problems:
-        xx-ubuntu-filebug.txt
-        xx-bug-reporting-tools.txt
-      No time to look into it now, so keeping it in. XXX Danilo 20110715
-    </tal:comment>
-    <noscript></noscript>
-
     <tal:view condition="not: view/macro:is-page-contentless">
       <meta name="description"
         tal:condition="view/page_description | nothing"
@@ -176,6 +167,21 @@
 
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
+    <metal:debug-timeline
+      use-macro="context/@@+base-layout-macros/debug-timeline" />
+    <tal:comment
+        tal:condition="request/features/visible_render_time"
+        define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
+        replace='structure string:&lt;script type="text/javascript"&gt;
+      var render_time = "${render_time}";
+      LPJS.use("node", "lp.ajax_log" , function(Y) {
+        Y.on("domready", function() {
+          var node = Y.one("#rendertime");
+          node.set("innerHTML", render_time);
+          var ajax_log = new Y.lp.ajax_log();
+        });
+      });
+    &lt;/script&gt;' />
   </body>
 
 <tal:template>
@@ -196,24 +202,5 @@
 
     --&gt;" />
 </tal:template>
-
-
-<metal:debug-timeline
-  use-macro="context/@@+base-layout-macros/debug-timeline" />
-
-<tal:comment
-    tal:condition="request/features/visible_render_time"
-    define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
-    replace='structure string:&lt;script type="text/javascript"&gt;
-  var render_time = "${render_time}";
-  LPJS.use("node", "lp.ajax_log" , function(Y) {
-    Y.on("domready", function() {
-      var node = Y.one("#rendertime");
-      node.set("innerHTML", render_time);
-      var ajax_log = new Y.lp.ajax_log();
-    });
-  });
-&lt;/script&gt;' />
-
 </html>
 </metal:page>
