@@ -222,6 +222,11 @@ class AccessPolicyArtifact(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
+    @classmethod
+    def deleteByArtifact(cls, artifacts):
+        """See `IAccessPolicyArtifactSource`."""
+        cls.findByArtifact(artifacts).remove()
+
 
 class AccessArtifactGrant(StormBase):
     implements(IAccessArtifactGrant)
