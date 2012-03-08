@@ -15,6 +15,7 @@ __all__ = [
 import calendar
 import datetime
 import httplib
+import itertools
 import operator
 
 from lazr.delegates import delegates
@@ -37,7 +38,6 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Not,
     Or,
@@ -115,7 +115,9 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.enums import InformationType
 from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -1489,6 +1491,12 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
+
+        # Add default AccessPolicies.
+        policies = itertools.product(
+            (product,), (InformationType.USERDATA,
+                InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
 
         return product
 
