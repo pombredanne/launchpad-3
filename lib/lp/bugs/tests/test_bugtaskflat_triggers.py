@@ -6,12 +6,15 @@ __metaclass__ = type
 from collections import namedtuple
 from contextlib import contextmanager
 
+from zope.component import getUtility
+
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
+from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
-    person_logged_in,
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
@@ -160,6 +163,12 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
 
     layer = DatabaseFunctionalLayer
 
+    def makeLoggedInTask(self, private=False):
+        owner = self.factory.makePerson()
+        login_person(owner)
+        bug = self.factory.makeBug(private=private, owner=owner)
+        return bug.default_bugtask
+
     def test_bugtask_create(self):
         # Triggers maintain BugTaskFlat when a task is created.
         task = self.factory.makeBugTask()
@@ -167,35 +176,39 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
 
     def test_bugtask_delete(self):
         # Triggers maintain BugTaskFlat when a task is deleted.
-        task = self.factory.makeBugTask()
-        with person_logged_in(task.owner):
-            with self.bugtaskflat_is_deleted(task):
-                task.delete()
+        task = self.makeLoggedInTask()
+        # We need a second task before it will let us delete the first.
+        self.factory.makeBugTask(bug=task.bug)
+        with self.bugtaskflat_is_deleted(task):
+            task.delete()
 
     def test_bugtask_change(self):
         # Triggers maintain BugTaskFlat when a task is changed.
-        task = self.factory.makeBugTask()
-        with person_logged_in(task.owner):
-            with self.bugtaskflat_is_updated(task, ['status']):
-                task.transitionToStatus(BugTaskStatus.UNKNOWN, task.owner)
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_updated(task, ['status']):
+            task.transitionToStatus(BugTaskStatus.UNKNOWN, task.owner)
 
     def test_bugtask_change_unflattened(self):
         # Some fields on BugTask aren't mirrored, so don't trigger updates.
-        task = self.factory.makeBugTask()
-        with person_logged_in(task.owner):
-            with self.bugtaskflat_is_identical(task):
-                task.bugwatch = self.factory.makeBugWatch()
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_identical(task):
+            task.bugwatch = self.factory.makeBugWatch()
 
     def test_bug_change(self):
         # Triggers maintain BugTaskFlat when a bug is changed
-        task = self.factory.makeBugTask()
-        with person_logged_in(task.owner):
-            with self.bugtaskflat_is_updated(task, ['security_related']):
-                task.bug.security_related = True
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_updated(task, ['security_related']):
+            task.bug.security_related = True
 
     def test_bug_change_unflattened(self):
         # Some fields on Bug aren't mirrored, so don't trigger updates.
-        task = self.factory.makeBugTask()
-        with person_logged_in(task.owner):
-            with self.bugtaskflat_is_identical(task):
-                task.bug.who_made_private = task.owner
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_identical(task):
+            task.bug.who_made_private = task.owner
+
+    def test_accessartifactgrant_create(self):
+        # Creating an AccessArtifactGrant updates the relevant bugs.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        with self.bugtaskflat_is_updated(task, ['access_grants']):
+            self.factory.makeAccessArtifactGrant(artifact=artifact)
