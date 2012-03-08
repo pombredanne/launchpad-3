@@ -761,13 +761,12 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_scripts(user, directory, lxcname, ssh_key_path):
+def create_scripts(user, lxcname, ssh_key_path):
     """Create scripts to update the Launchpad environment and run tests."""
     mapping = {
-        'user': user,
         'lxcname': lxcname,
         'ssh_key_path': ssh_key_path,
-        'checkout_dir': os.path.join(directory, LP_CHECKOUT),
+        'user': user,
         }
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
@@ -775,12 +774,22 @@ def create_scripts(user, directory, lxcname, ssh_key_path):
     with open(build_script_file, 'w') as script:
         script.write(textwrap.dedent("""\
             #!/bin/sh
-            set -uex
+            set -ux
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
-            sleep 30  # aparently RUNNING isn't quite enough
-            su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
-                -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
+            for i in $(seq 1 30); do
+                su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                    -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
+                if [ ! 255 -eq $? ]; then
+                    # If ssh returns 255 then its connection failed.
+                    # Anything else is either success (status 0) or a
+                    # failure from whatever we ran over the SSH connection.
+                    # In those cases we want to stop looping, so we break
+                    # here.
+                    break;
+                fi
+                sleep 1
+            done
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
             """.format(**mapping)))
@@ -955,7 +964,7 @@ def main(
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
             ssh_key_path, dependencies_dir, directory)),
-        ('create_scripts', (user, directory, lxc_name, ssh_key_path)),
+        ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
             user, dependencies_dir, directory, lxc_name, ssh_key_path)),
