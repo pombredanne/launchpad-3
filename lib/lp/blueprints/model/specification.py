@@ -227,7 +227,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def workitems_text(self):
         """See ISpecification."""
         workitems_lines = []
-        milestone = None
+        # This marks no possible milestone or None
+        milestone = -1
         for work_item in self.work_items:
             if work_item.milestone != milestone:
                 milestone = work_item.milestone
@@ -235,7 +236,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # first work item
                 if work_item.sequence > 0:
                     workitems_lines.append("")
-                workitems_lines.append("Work items for %s:" % milestone.name)
+                if milestone is None:
+                    workitems_lines.append("Work items:")
+                else:
+                    workitems_lines.append("Work items for %s:" % milestone.name)
             assignee = work_item.assignee
             if assignee is not None:
                 assignee_part = "[%s] " % assignee.name

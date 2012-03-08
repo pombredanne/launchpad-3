@@ -153,6 +153,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSpecificationWorkItems, self).setUp()
+        self.wi_header =  self.factory.makeMilestone(
+            name='none-milestone-as-header')
+
     def assertWorkItemsTextContains(self, spec, items):
         expected_lines = []
         for item in items:
@@ -165,7 +170,10 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             else:
                 self.assertIsInstance(item, Milestone)
                 expected_lines.append(u"")
-                expected_lines.append(u"Work items for %s:" % item.name)
+                if item == self.wi_header:
+                    expected_lines.append(u"Work items:")
+                else:
+                    expected_lines.append(u"Work items for %s:" % item.name)
         expected = "\n".join(expected_lines)
         self.assertEqual(expected, spec.workitems_text)
 
@@ -206,7 +214,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     def test_workitems_text_single_workitem(self):
         work_item = self.factory.makeSpecificationWorkItem()
-        self.assertWorkItemsTextContains(work_item.specification, [work_item])
+        self.assertWorkItemsTextContains(work_item.specification,
+                                         [self.wi_header, work_item])
 
     def test_workitems_text_multi_workitems_all_statuses(self):
         spec = self.factory.makeSpecification()
@@ -220,7 +229,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             status=SpecificationWorkItemStatus.INPROGRESS)
         work_item5 = self.factory.makeSpecificationWorkItem(specification=spec,
             status=SpecificationWorkItemStatus.BLOCKED)
-        work_items = [work_item1, work_item2, work_item3, work_item4, work_item5]
+        work_items = [self.wi_header, work_item1, work_item2, work_item3,
+                      work_item4, work_item5]
         self.assertWorkItemsTextContains(spec, work_items)
 
     def test_workitems_text_with_milestone(self):
@@ -246,7 +256,22 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             title=u'Work item with set milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
-        items = [work_item1, milestone, work_item2]
+        items = [self.wi_header, work_item1, milestone, work_item2]
+        self.assertWorkItemsTextContains(spec, items)
+
+    def test_workitems_text_with_implicit_and_explicit_milestone_reversed(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone(product=spec.product)
+        login_person(spec.owner)
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with set milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with default milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=None)
+        items = [milestone, work_item1, self.wi_header, work_item2]
         self.assertWorkItemsTextContains(spec, items)
 
     def test_workitems_text_with_different_milestones(self):
@@ -268,7 +293,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_workitems_text_with_assignee(self):
         assignee = self.factory.makePerson()
         work_item = self.factory.makeSpecificationWorkItem(assignee=assignee)
-        self.assertWorkItemsTextContains(work_item.specification, [work_item])
+        self.assertWorkItemsTextContains(work_item.specification, [self.wi_header, work_item])
 
     def test_work_items_property(self):
         spec = self.factory.makeSpecification()

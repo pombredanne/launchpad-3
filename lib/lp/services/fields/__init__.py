@@ -898,7 +898,10 @@ class WorkItemsText(Text):
             milestone_match = MILESTONE_RE.search(line)
             if milestone_match:
                 milestone_part = milestone_match.group(1).strip()
-                milestone = milestone_part.split()[-1]
+                if milestone_part == '':
+                    milestone = None
+                else:
+                    milestone = milestone_part.split()[-1]
             else:
                 new_work_item = self.parseLine(line)
                 new_work_item['milestone'] = milestone
