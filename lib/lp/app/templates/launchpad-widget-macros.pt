@@ -92,8 +92,7 @@
       tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
 
       <script type="text/javascript">
-          LPJS.use(
-              'lang', 'node', 'lp.app.calendar', function(Y) {
+          LPJS.use('lang', 'node', 'lp.app.calendar', function(Y) {
                   Y.lp.app.calendar.setup_calendar_widgets();
               }
           );
