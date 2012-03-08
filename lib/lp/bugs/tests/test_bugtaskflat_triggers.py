@@ -3,21 +3,24 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
+
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestBugTaskFlatTrigger(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class BugTaskFlatTestMixin(TestCaseWithFactory):
 
     def setUp(self):
-        super(TestBugTaskFlatTrigger, self).setUp()
+        super(BugTaskFlatTestMixin, self).setUp()
         self.useFixture(FeatureFixture(
             {'disclosure.allow_multipillar_private_bugs.enabled': 'true'}))
 
@@ -40,12 +43,19 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
         self.checkFlattened(bugtask, check_only=False)
         self.assertTrue(self.checkFlattened(bugtask))
 
-    def test_new_bug(self):
-        # Triggers maintain BugTaskFlat when a task is created.
-        task = self.factory.makeBugTask()
-        self.assertFlattened(task)
+    def getBugTaskFlat(self, bugtask):
+        if hasattr(bugtask, 'id'):
+            bugtask = bugtask.id
+        return IStore(Bug).execute(
+            "SELECT * FROM bugtaskflat WHERE bugtask = ?",
+            (bugtask,)).get_one()
 
-    def test_bugtask_flatten_creates(self):
+
+class TestBugTaskFlatten(BugTaskFlatTestMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create(self):
         # bugtask_flatten() returns true if the BugTaskFlat is missing,
         # and optionally creates it.
         task = self.factory.makeBugTask()
@@ -55,7 +65,7 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
                 "DELETE FROM BugTaskFlat WHERE bugtask = ?", (task.id,))
         self.assertFlattens(task)
 
-    def test_bugtask_flatten_updates(self):
+    def test_update(self):
         # bugtask_flatten() returns true if the BugTaskFlat is out of
         # date, and optionally updates it.
         task = self.factory.makeBugTask()
@@ -66,7 +76,7 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
                 (BugTaskStatus.UNKNOWN.value, task.id))
         self.assertFlattens(task)
 
-    def test_bugtask_flatten_deletes(self):
+    def test_delete(self):
         # bugtask_flatten() returns true if the BugTaskFlat exists but
         # the task doesn't, and optionally deletes it.
         self.assertTrue(self.checkFlattened(200))
@@ -80,3 +90,66 @@ class TestBugTaskFlatTrigger(TestCaseWithFactory):
                 "(1, 200, 1, false, false, "
                 " current_timestamp at time zone 'UTC', 999, 1, 1, 1, true);")
         self.assertFlattens(200)
+
+
+class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    @contextmanager
+    def bugtaskflat_is_updated(self, bugtask):
+        old_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        yield
+        new_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        self.assertNotEqual(old_row, new_row)
+
+    @contextmanager
+    def bugtaskflat_is_identical(self, bugtask):
+        old_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        yield
+        new_row = self.getBugTaskFlat(bugtask)
+        self.assertFlattened(bugtask)
+        self.assertEqual(old_row, new_row)
+
+    def test_bugtask_create(self):
+        # Triggers maintain BugTaskFlat when a task is created.
+        task = self.factory.makeBugTask()
+        self.assertFlattened(task)
+
+    def test_bugtask_delete(self):
+        # Triggers maintain BugTaskFlat when a task is deleted.
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            with self.bugtaskflat_is_updated(task):
+                task.delete()
+
+    def test_bugtask_change(self):
+        # Triggers maintain BugTaskFlat when a task is changed.
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            with self.bugtaskflat_is_updated(task):
+                task.transitionToStatus(BugTaskStatus.UNKNOWN, task.owner)
+
+    def test_bugtask_change_unflattened(self):
+        # Some fields on BugTask aren't mirrored, so don't trigger updates.
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            with self.bugtaskflat_is_identical(task):
+                task.bugwatch = self.factory.makeBugWatch()
+
+    def test_bug_change(self):
+        # Triggers maintain BugTaskFlat when a bug is changed
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            with self.bugtaskflat_is_updated(task):
+                task.bug.security_related = True
+
+    def test_bug_change_unflattened(self):
+        # Some fields on Bug aren't mirrored, so don't trigger updates.
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            with self.bugtaskflat_is_identical(task):
+                task.bug.who_made_private = task.owner
