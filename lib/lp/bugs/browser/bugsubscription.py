@@ -35,6 +35,7 @@ from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
@@ -56,7 +57,6 @@ from lp.services.webapp.authorization import (
     check_permission,
     precache_permission_for_objects,
     )
-from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.services.webapp.menu import structured
 
 

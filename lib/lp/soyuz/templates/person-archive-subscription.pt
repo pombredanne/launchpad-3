@@ -58,7 +58,7 @@
         <input type="hidden" name="regenerate" value="1" />
         <input type="submit" name="regenerate_btn" value="Reset Password" />
       </form>
-      <p class="discreet">
+      <p>
          Note: after resetting the password for your personal
          access &mdash; and updating your sources.list with the new
          entries &mdash; you may need to wait for up to ten minutes before

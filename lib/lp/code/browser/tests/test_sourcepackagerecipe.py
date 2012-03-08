@@ -39,9 +39,7 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
-from lp.services.propertycache import (
-    clear_property_cache,
-    )
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -1255,7 +1253,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
                     naked_build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
-        # When there are 4+ pending builds, only the the most
+        # When there are 4+ pending builds, only the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
             [build4, build3, build2, build1, build6],

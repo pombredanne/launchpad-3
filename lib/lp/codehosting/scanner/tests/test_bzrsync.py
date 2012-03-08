@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0141
@@ -582,8 +582,8 @@ class TestPlanDatabaseChanges(BzrSyncTestCase):
         self.assertIn(merge_id, branchrevisions_to_delete)
 
 
-class TestBzrSyncOneRevision(BzrSyncTestCase):
-    """Tests for `BzrSync.syncOneRevision`."""
+class TestBzrSyncRevisions(BzrSyncTestCase):
+    """Tests for `BzrSync.syncRevisions`."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
@@ -606,7 +606,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(None, fake_rev, {'rev42': None})
+        self.bzrsync.syncRevisions(None, [fake_rev], {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
@@ -620,7 +620,7 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def _makeProductSeries(self, mode=None):
         """Switch to the Launchpad db user to create and configure a
-        product series that is linked to the the branch.
+        product series that is linked to the branch.
         """
         with lp_dbuser():
             self.product_series = self.factory.makeProductSeries()

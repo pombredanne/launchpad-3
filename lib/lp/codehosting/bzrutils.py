@@ -329,12 +329,3 @@ def write_locked(branch):
         yield
     finally:
         branch.unlock()
-
-
-@contextmanager
-def server(server):
-    server.start_server()
-    try:
-        yield server
-    finally:
-        server.stop_server()

@@ -124,8 +124,7 @@ not there.
 
  == Registration information ==
 
-The distroseries pages presents the registeration information besides
-its main 'heading'.
+The distroseries pages presents the registeration information.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
 
@@ -134,10 +133,6 @@ its main 'heading'.
     Registered by
     Registry Administrators
     on 2006-10-16
-
-    >>> print extract_text(find_main_content(anon_browser.contents))
-    Ubuntu Linux
-    ...
 
     >>> print anon_browser.getLink('Ubuntu Team').url
     http://launchpad.dev/~ubuntu-team

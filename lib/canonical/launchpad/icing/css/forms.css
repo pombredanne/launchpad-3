@@ -43,6 +43,7 @@ textarea {
     display: block;
     width: 90%;
     max-width: 60em;
+    padding: 2px;
     }
 button {
     padding: 0;
@@ -53,6 +54,9 @@ button.overlay-close-button {
     height: 15px;
     display: block;
     margin-top: 4px;
+    }
+.selection-choices {
+    margin: 0.75em 0 0 1em
     }
 .fieldRequired, .fieldOptional {
     color: #999;
@@ -223,6 +227,18 @@ h1 .yui3-ieditor-errors {
     /* lazr is injecting presumptive markup. */
     font-size: 12px;
     line-height: 30px;
+    }
+.step-links {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-right: 10em;
+    text-align: right;
+    }
+.step-links button.next {
+    padding-top: 10px;
+    }
+.step-links .prev {
+    margin-right: 2em;
     }
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;

@@ -147,31 +147,9 @@ class CodeVHostBreadcrumb(Breadcrumb):
 class BranchBadges(HasBadgeBase):
     badges = "private", "bug", "blueprint", "warning", "mergeproposal"
 
-    def isBugBadgeVisible(self):
-        """Show a bug badge if the branch is linked to bugs."""
-        # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.linked_bugs:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', bug):
-                return True
-        return False
-
-    def isBlueprintBadgeVisible(self):
-        """Show a blueprint badge if the branch is linked to blueprints."""
-        # When specs get privacy, this will need to be adjusted.
-        return self.context.spec_links.count() > 0
-
     def isWarningBadgeVisible(self):
         """Show a warning badge if there are mirror failures."""
         return self.context.mirror_failures > 0
-
-    def isMergeproposalBadgeVisible(self):
-        """Show a proposal badge if there are any landing targets."""
-        for proposal in self.context.landing_targets:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', proposal):
-                return True
-        return False
 
     def getBadge(self, badge_name):
         """See `IHasBadges`."""
@@ -861,7 +839,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues',
+             'active_reviews', 'mergequeues', 'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
@@ -946,6 +924,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             '+activereviews',
             'Active reviews')
 
+    def source_package_recipes(self):
+        return Link(
+            '+recipes',
+            'Source package recipes',
+            enabled=IPerson.providedBy(self.context))
+
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by self.person."""
@@ -1012,6 +996,7 @@ class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
 

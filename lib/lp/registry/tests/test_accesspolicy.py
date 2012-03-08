@@ -1,19 +1,23 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from storm.exceptions import LostObjectError
-from storm.store import Store
-from testtools.matchers import MatchesStructure
+from testtools.matchers import AllMatch
 from zope.component import getUtility
 
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
+    IAccessArtifact,
+    IAccessArtifactGrant,
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -39,66 +43,236 @@ class TestAccessPolicy(TestCaseWithFactory):
 class TestAccessPolicySource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_create_for_product(self):
-        product = self.factory.makeProduct()
-        type = AccessPolicyType.SECURITY
-        policy = getUtility(IAccessPolicySource).create(product, type)
+    def test_create(self):
+        wanted = [
+            (self.factory.makeProduct(), InformationType.PROPRIETARY),
+            (self.factory.makeDistribution(), InformationType.USERDATA),
+            ]
+        policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertThat(
-            policy,
-            MatchesStructure.byEquality(pillar=product, type=type))
+            policies,
+            AllMatch(Provides(IAccessPolicy)))
+        self.assertContentEqual(
+            wanted,
+            [(policy.pillar, policy.type) for policy in policies])
 
-    def test_getByID(self):
-        # getByID finds the right policy.
-        policy = self.factory.makeAccessPolicy()
-        # Flush so we get an ID.
-        Store.of(policy).flush()
-        self.assertEqual(
-            policy, getUtility(IAccessPolicySource).getByID(policy.id))
-
-    def test_getByID_nonexistent(self):
-        # getByID returns None if the policy doesn't exist.
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicySource).getByID(
-                self.factory.getUniqueInteger()))
-
-    def test_getByPillarAndType(self):
-        # getByPillarAndType finds the right policy.
+    def test_find(self):
+        # find() finds the right policies.
         product = self.factory.makeProduct()
+        distribution = self.factory.makeDistribution()
+        other_product = self.factory.makeProduct()
 
-        private_policy = self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.PRIVATE)
-        security_policy = self.factory.makeAccessPolicy(
-            pillar=product, type=AccessPolicyType.SECURITY)
-        self.assertEqual(
-            private_policy,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.PRIVATE))
-        self.assertEqual(
-            security_policy,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.SECURITY))
+        wanted = [
+            (product, InformationType.PROPRIETARY),
+            (product, InformationType.USERDATA),
+            (distribution, InformationType.PROPRIETARY),
+            (distribution, InformationType.USERDATA),
+            (other_product, InformationType.PROPRIETARY),
+            ]
+        getUtility(IAccessPolicySource).create(wanted)
 
-    def test_getByPillarAndType_nonexistent(self):
-        # getByPillarAndType returns None if the policy doesn't exist.
-        # Create policy identifiers, and an unrelated policy.
-        self.factory.makeAccessPolicy(type=AccessPolicyType.PRIVATE)
-        product = self.factory.makeProduct()
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicySource).getByPillarAndType(
-                product, AccessPolicyType.PRIVATE))
+        query = [
+            (product, InformationType.PROPRIETARY),
+            (product, InformationType.USERDATA),
+            (distribution, InformationType.USERDATA),
+            ]
+        self.assertContentEqual(
+            query,
+            [(policy.pillar, policy.type) for policy in
+             getUtility(IAccessPolicySource).find(query)])
+
+        query = [(distribution, InformationType.PROPRIETARY)]
+        self.assertContentEqual(
+            query,
+            [(policy.pillar, policy.type) for policy in
+             getUtility(IAccessPolicySource).find(query)])
+
+    def test_findByID(self):
+        # findByID finds the right policies.
+        policies = [self.factory.makeAccessPolicy() for i in range(2)]
+        self.factory.makeAccessPolicy()
+        self.assertContentEqual(
+            policies,
+            getUtility(IAccessPolicySource).findByID(
+                [policy.id for policy in policies]))
 
     def test_findByPillar(self):
         # findByPillar finds only the relevant policies.
         product = self.factory.makeProduct()
-        policies = [
-            self.factory.makeAccessPolicy(pillar=product, type=type)
-            for type in AccessPolicyType.items]
-        self.factory.makeAccessPolicy()
+        distribution = self.factory.makeProduct()
+        other_product = self.factory.makeProduct()
+        wanted = [
+            (pillar, type)
+            for type in InformationType.items
+            for pillar in (product, distribution, other_product)]
+        policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByPillar(product))
+            getUtility(IAccessPolicySource).findByPillar(
+                [product, distribution, other_product]))
+        self.assertContentEqual(
+            [policy for policy in policies if policy.pillar == product],
+            getUtility(IAccessPolicySource).findByPillar([product]))
+
+
+class TestAccessArtifact(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessArtifact(),
+            Provides(IAccessArtifact))
+
+
+class TestAccessArtifactSourceOnce(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_ensure_other_fails(self):
+        # ensure() rejects unsupported objects.
+        self.assertRaises(
+            ValueError,
+            getUtility(IAccessArtifactSource).ensure,
+            [self.factory.makeProduct()])
+
+
+class BaseAccessArtifactTests:
+    layer = DatabaseFunctionalLayer
+
+    def getConcreteArtifact(self):
+        raise NotImplementedError()
+
+    def test_ensure(self):
+        # ensure() creates abstract artifacts which map to the
+        # concrete ones.
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        self.assertContentEqual(
+            concretes,
+            [abstract.concrete_artifact for abstract in abstracts])
+
+    def test_find(self):
+        # find() finds abstract artifacts which map to the concrete ones.
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        self.assertContentEqual(
+            abstracts, getUtility(IAccessArtifactSource).find(concretes))
+
+    def test_ensure_twice(self):
+        # ensure() will reuse an existing matching abstract artifact if
+        # it exists.
+        concrete1 = self.getConcreteArtifact()
+        concrete2 = self.getConcreteArtifact()
+        [abstract1] = getUtility(IAccessArtifactSource).ensure([concrete1])
+
+        abstracts = getUtility(IAccessArtifactSource).ensure(
+            [concrete1, concrete2])
+        self.assertIn(abstract1, abstracts)
+        self.assertContentEqual(
+            [concrete1, concrete2],
+            [abstract.concrete_artifact for abstract in abstracts])
+
+    def test_delete(self):
+        # delete() removes the abstract artifacts and any associated
+        # grants.
+        concretes = [self.getConcreteArtifact() for i in range(2)]
+        abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
+        grant = self.factory.makeAccessArtifactGrant(artifact=abstracts[0])
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessArtifactGrant(
+                artifact=self.factory.makeAccessArtifact()),
+            self.factory.makeAccessPolicyGrant(
+                policy=self.factory.makeAccessPolicy()),
+            ]
+
+        getUtility(IAccessArtifactSource).delete(concretes)
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertRaises(
+            LostObjectError, getattr, abstracts[0], 'concrete_artifact')
+
+        for other_grant in other_grants:
+            self.assertIsNot(None, other_grant.grantor)
+
+    def test_delete_noop(self):
+        # delete() works even if there's no abstract artifact.
+        concrete = self.getConcreteArtifact()
+        getUtility(IAccessArtifactSource).delete([concrete])
+
+
+class TestAccessArtifactBranch(BaseAccessArtifactTests,
+                               TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeBranch()
+
+
+class TestAccessArtifactBug(BaseAccessArtifactTests,
+                            TestCaseWithFactory):
+
+    def getConcreteArtifact(self):
+        return self.factory.makeBug()
+
+
+class TestAccessArtifactGrant(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_provides_interface(self):
+        self.assertThat(
+            self.factory.makeAccessArtifactGrant(),
+            Provides(IAccessArtifactGrant))
+
+    def test_concrete_artifact(self):
+        bug = self.factory.makeBug()
+        abstract = self.factory.makeAccessArtifact(bug)
+        grant = self.factory.makeAccessArtifactGrant(artifact=abstract)
+        self.assertEqual(bug, grant.concrete_artifact)
+
+
+class TestAccessArtifactGrantSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_grant(self):
+        wanted = [
+            (self.factory.makeAccessArtifact(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            (self.factory.makeAccessArtifact(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            ]
+        grants = getUtility(IAccessArtifactGrantSource).grant(wanted)
+        self.assertContentEqual(
+            wanted,
+            [(g.abstract_artifact, g.grantee, g.grantor) for g in grants])
+
+    def test_find(self):
+        # find() finds the right grants.
+        grants = [self.factory.makeAccessArtifactGrant() for i in range(2)]
+        self.assertContentEqual(
+            grants,
+            getUtility(IAccessArtifactGrantSource).find(
+                [(g.abstract_artifact, g.grantee) for g in grants]))
+
+    def test_findByArtifact(self):
+        # findByArtifact() finds only the relevant grants.
+        artifact = self.factory.makeAccessArtifact()
+        grants = [
+            self.factory.makeAccessArtifactGrant(artifact=artifact)
+            for i in range(3)]
+        self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            grants,
+            getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
+
+    def test_revokeByArtifact(self):
+        # revokeByArtifact() removes the relevant grants.
+        artifact = self.factory.makeAccessArtifact()
+        grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
 
 
 class TestAccessPolicyArtifact(TestCaseWithFactory):
@@ -109,100 +283,66 @@ class TestAccessPolicyArtifact(TestCaseWithFactory):
             self.factory.makeAccessPolicyArtifact(),
             Provides(IAccessPolicyArtifact))
 
-    def test_policy(self):
-        policy = self.factory.makeAccessPolicy()
-        self.assertEqual(
-            policy,
-            self.factory.makeAccessPolicyArtifact(policy=policy).policy)
 
-
-class TestAccessPolicyArtifactSourceOnce(TestCaseWithFactory):
+class TestAccessPolicyArtifactSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_ensure_other_fails(self):
-        # ensure() rejects unsupported objects.
-        self.assertRaises(
-            ValueError,
-            getUtility(IAccessPolicyArtifactSource).ensure,
-            self.factory.makeProduct())
-
-
-class BaseAccessPolicyArtifactTests:
-    layer = DatabaseFunctionalLayer
-
-    def getConcreteArtifact(self):
-        raise NotImplementedError()
-
-    def test_ensure(self):
-        # ensure() creates an abstract artifact which maps to the
-        # concrete one.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        Store.of(abstract).flush()
-        self.assertEqual(concrete, abstract.concrete_artifact)
-
-    def test_get(self):
-        # get() finds an abstract artifact which maps to the concrete
-        # one.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        self.assertEqual(
-            abstract, getUtility(IAccessPolicyArtifactSource).get(concrete))
-
-    def test_ensure_twice(self):
-        # ensure() will reuse an existing matching abstract artifact if
-        # it exists.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        Store.of(abstract).flush()
-        self.assertEqual(
-            abstract.id,
-            getUtility(IAccessPolicyArtifactSource).ensure(concrete).id)
-
-    def test_delete(self):
-        # delete() removes the abstract artifact and any associated
-        # grants.
-        concrete = self.getConcreteArtifact()
-        abstract = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        grant = self.factory.makeAccessPolicyGrant(object=abstract)
-
-        # Make some other grants to ensure they're unaffected.
-        other_grants = [
-            self.factory.makeAccessPolicyGrant(
-                object=self.factory.makeAccessPolicyArtifact()),
-            self.factory.makeAccessPolicyGrant(
-                object=self.factory.makeAccessPolicy()),
+    def test_create(self):
+        wanted = [
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
+            (self.factory.makeAccessArtifact(),
+             self.factory.makeAccessPolicy()),
             ]
+        links = getUtility(IAccessPolicyArtifactSource).create(wanted)
+        self.assertContentEqual(
+            wanted,
+            [(link.abstract_artifact, link.policy) for link in links])
 
-        getUtility(IAccessPolicyArtifactSource).delete(concrete)
-        IStore(grant).invalidate()
-        self.assertRaises(LostObjectError, getattr, grant, 'policy')
-        self.assertRaises(
-            LostObjectError, getattr, abstract, 'concrete_artifact')
+    def test_find(self):
+        links = [self.factory.makeAccessPolicyArtifact() for i in range(3)]
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).find(
+                [(link.abstract_artifact, link.policy) for link in links]))
 
-        for other_grant in other_grants:
-            self.assertEqual(
-                other_grant,
-                getUtility(IAccessPolicyGrantSource).getByID(other_grant.id))
+    def test_findByArtifact(self):
+        # findByArtifact() finds only the relevant links.
+        artifact = self.factory.makeAccessArtifact()
+        links = [
+            self.factory.makeAccessPolicyArtifact(artifact=artifact)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [artifact]))
 
-    def test_delete_noop(self):
-        # delete() works even if there's no abstract artifact.
-        concrete = self.getConcreteArtifact()
-        getUtility(IAccessPolicyArtifactSource).delete(concrete)
+    def test_findByPolicy(self):
+        # findByPolicy() finds only the relevant links.
+        policy = self.factory.makeAccessPolicy()
+        links = [
+            self.factory.makeAccessPolicyArtifact(policy=policy)
+            for i in range(3)]
+        self.factory.makeAccessPolicyArtifact()
+        self.assertContentEqual(
+            links,
+            getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
 
-
-class TestAccessPolicyArtifactBranch(BaseAccessPolicyArtifactTests,
-                                     TestCaseWithFactory):
-
-    def getConcreteArtifact(self):
-        return self.factory.makeBranch()
-
-
-class TestAccessPolicyArtifactBug(BaseAccessPolicyArtifactTests,
-                                  TestCaseWithFactory):
-
-    def getConcreteArtifact(self):
-        return self.factory.makeBug()
+    def test_deleteByArtifact(self):
+        # deleteByArtifact() removes the relevant grants.
+        grant = self.factory.makeAccessPolicyArtifact()
+        other_grant = self.factory.makeAccessPolicyArtifact()
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
+            [grant.abstract_artifact])
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [grant.abstract_artifact]))
+        self.assertContentEqual(
+            [other_grant],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_grant.abstract_artifact]))
 
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
@@ -213,75 +353,105 @@ class TestAccessPolicyGrant(TestCaseWithFactory):
             self.factory.makeAccessPolicyGrant(),
             Provides(IAccessPolicyGrant))
 
-    def test_concrete_artifact(self):
-        bug = self.factory.makeBug()
-        abstract = self.factory.makeAccessPolicyArtifact(bug)
-        grant = self.factory.makeAccessPolicyGrant(
-            object=abstract)
-        self.assertEqual(bug, grant.concrete_artifact)
-
-    def test_no_concrete_artifact(self):
-        grant = self.factory.makeAccessPolicyGrant(
-            object=self.factory.makeAccessPolicy())
-        self.assertIs(None, grant.concrete_artifact)
-
 
 class TestAccessPolicyGrantSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
-    def test_grant_for_policy(self):
-        policy = self.factory.makeAccessPolicy()
-        grantee = self.factory.makePerson()
-        grantor = self.factory.makePerson()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
-            grantee, grantor, policy)
-        self.assertThat(
-            grant,
-            MatchesStructure.byEquality(
-                grantee=grantee,
-                grantor=grantor,
-                policy=policy,
-                abstract_artifact=None,
-                concrete_artifact=None,))
+    def test_grant(self):
+        wanted = [
+            (self.factory.makeAccessPolicy(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            (self.factory.makeAccessPolicy(), self.factory.makePerson(),
+             self.factory.makePerson()),
+            ]
+        grants = getUtility(IAccessPolicyGrantSource).grant(wanted)
+        self.assertContentEqual(
+            wanted, [(g.policy, g.grantee, g.grantor) for g in grants])
 
-    def test_grant_with_artifact(self):
-        artifact = self.factory.makeAccessPolicyArtifact()
-        grantee = self.factory.makePerson()
-        grantor = self.factory.makePerson()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
-            grantee, grantor, artifact)
-        self.assertThat(
-            grant,
-            MatchesStructure.byEquality(
-                grantee=grantee,
-                grantor=grantor,
-                policy=None,
-                abstract_artifact=artifact,
-                concrete_artifact=artifact.concrete_artifact))
-
-    def test_getByID(self):
-        # getByID finds the right grant.
-        grant = self.factory.makeAccessPolicyGrant()
-        # Flush so we get an ID.
-        Store.of(grant).flush()
-        self.assertEqual(
-            grant,
-            getUtility(IAccessPolicyGrantSource).getByID(grant.id))
-
-    def test_getByID_nonexistent(self):
-        # getByID returns None if the grant doesn't exist.
-        self.assertIs(
-            None,
-            getUtility(IAccessPolicyGrantSource).getByID(
-                self.factory.getUniqueInteger()))
+    def test_find(self):
+        # find() finds the right grants.
+        grants = [self.factory.makeAccessPolicyGrant() for i in range(2)]
+        self.assertContentEqual(
+            grants,
+            getUtility(IAccessPolicyGrantSource).find(
+                [(g.policy, g.grantee) for g in grants]))
 
     def test_findByPolicy(self):
-        # findByPolicy finds only the relevant grants.
+        # findByPolicy() finds only the relevant grants.
         policy = self.factory.makeAccessPolicy()
         grants = [
-            self.factory.makeAccessPolicyGrant(object=policy)
+            self.factory.makeAccessPolicyGrant(policy=policy)
             for i in range(3)]
         self.factory.makeAccessPolicyGrant()
         self.assertContentEqual(
             grants,
-            getUtility(IAccessPolicyGrantSource).findByPolicy(policy))
+            getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))
+
+    def test_revoke(self):
+        # revoke() removes the specified grants.
+        policy = self.factory.makeAccessPolicy()
+        grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+        other_grants.extend([
+            self.factory.makeAccessPolicyGrant()
+            for i in range(3)])
+
+        to_delete = [(grant.policy, grant.grantee) for grant in grants]
+        getUtility(IAccessPolicyGrantSource).revoke(to_delete)
+        IStore(policy).invalidate()
+
+        for grant in grants:
+            self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertEqual(
+            0, getUtility(IAccessPolicyGrantSource).find(to_delete).count())
+        for other_grant in other_grants:
+            self.assertIsNot(None, other_grant.grantor)
+
+
+class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_findGranteesByPolicy(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        # People with grants on the policy show up.
+        policy = self.factory.makeAccessPolicy()
+        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        # But not people with grants on artifacts.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            [policy_grant.grantee], apgfs.findGranteesByPolicy([policy]))
+
+        # Unless the artifacts are linked to the policy.
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=policy)
+        self.assertContentEqual(
+            [policy_grant.grantee, artifact_grant.grantee],
+            apgfs.findGranteesByPolicy([policy]))
+
+    def test_findArtifactsByGrantee(self):
+        # findArtifactsByGrantee() returns the artifacts for grantee for any of
+        # the policies.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        policy = self.factory.makeAccessPolicy()
+        grantee = self.factory.makePerson()
+        # Artifacts not linked to the policy do not show up.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, grantee)
+        self.assertContentEqual(
+            [], apgfs.findArtifactsByGrantee(grantee, [policy]))
+        # Artifacts linked to the policy do show up.
+        self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+        self.assertContentEqual(
+            [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))

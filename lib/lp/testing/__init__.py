@@ -107,6 +107,7 @@ from testtools.matchers import (
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
+    ComponentLookupError,
     getMultiAdapter,
     getSiteManager,
     getUtility,
@@ -1190,7 +1191,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line, env=None, cwd=None):
+def run_script(cmd_line, env=None):
     """Run the given command line as a subprocess.
 
     :param cmd_line: A command line suitable for passing to
@@ -1206,7 +1207,7 @@ def run_script(cmd_line, env=None, cwd=None):
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, env=env, cwd=cwd)
+        stderr=subprocess.PIPE, env=env)
     (out, err) = process.communicate()
     return out, err, process.returncode
 
@@ -1519,3 +1520,18 @@ class FakeAdapterMixin:
 
     def getAdapter(self, for_interfaces, provided_interface, name=None):
         return getMultiAdapter(for_interfaces, provided_interface, name=name)
+
+    def registerUtility(self, component, for_interface, name=''):
+        try:
+            current_commponent = getUtility(for_interface, name=name)
+        except ComponentLookupError:
+            current_commponent = None
+        site_manager = getSiteManager()
+        site_manager.registerUtility(component, for_interface, name)
+        self.addCleanup(
+            site_manager.unregisterUtility, component, for_interface, name)
+        if current_commponent is not None:
+            # Restore the default utility.
+            self.addCleanup(
+                site_manager.registerUtility, current_commponent,
+                for_interface, name)

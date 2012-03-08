@@ -66,6 +66,7 @@ from lp.testing import (
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
+    DatabaseLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -1066,6 +1067,7 @@ class TestCheckTeamParticipationScript(TestCase):
             self.addDetail("stdout", text_content(out))
         if err != "":
             self.addDetail("stderr", text_content(err))
+        DatabaseLayer.force_dirty_database()
         return process.poll(), out, err
 
     def test_no_output_if_no_invalid_entries(self):

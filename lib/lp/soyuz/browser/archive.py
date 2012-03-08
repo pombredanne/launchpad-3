@@ -505,7 +505,7 @@ class ArchiveMenuMixin:
     def delete(self):
         """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        link = Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='trash-icon')
 
         # This link should not be available for copy archives or
         # archives without any sources.
@@ -520,7 +520,7 @@ class ArchiveMenuMixin:
     def copy(self):
         """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        link = Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='package-sync')
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
