@@ -39,11 +39,11 @@ class IAccessPolicyService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
-    def getAccessPolicies(pillar):
-        """Return the allowed access policy types for the given pillar."""
+    def getInformationTypes(pillar):
+        """Return the allowed information types for the given pillar."""
 
     def getSharingPermissions():
-        """Return the access policy sharing permissions."""
+        """Return the information sharing permissions."""
 
     @export_read_operation()
     @operation_parameters(
@@ -57,22 +57,23 @@ class IAccessPolicyService(IService):
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy_types=List(Choice(vocabulary=InformationType)))
+        information_types=List(Choice(vocabulary=InformationType)))
     @operation_for_version('devel')
-    def updatePillarObserver(pillar, observer, access_policy_types, user):
-        """Ensure observer has the grants for access policies on a pillar."""
+    def updatePillarObserver(pillar, observer, information_types, user):
+        """Ensure observer has the grants for information types on a pillar."""
 
     @export_write_operation()
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         observer=Reference(IPerson, title=_('Observer'), required=True),
-        access_policy_type=Choice(vocabulary=InformationType, required=False))
+        information_types=List(
+            Choice(vocabulary=InformationType), required=False))
     @operation_for_version('devel')
-    def deletePillarObserver(pillar, observer, access_policy_type):
+    def deletePillarObserver(pillar, observer, information_types):
         """Remove an observer from a pillar.
 
         :param pillar: the pillar from which to remove access
         :param observer: the person or team to remove
-        :param access_policy_type: if None, remove all access, otherwise just
-                                   remove the specified access_policy
+        :param information_types: if None, remove all access, otherwise just
+                                   remove the specified access_policies
         """

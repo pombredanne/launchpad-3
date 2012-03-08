@@ -12,6 +12,7 @@ import transaction
 
 from lp.code.bzr import branch_changed
 from lp.codehosting.upgrade import Upgrader
+from lp.codehosting.tests.test_upgrade import upgrade_target
 from lp.testing import (
     person_logged_in,
     run_script,
@@ -46,7 +47,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         tree.commit('foo', committer='jrandom@example.org')
         with person_logged_in(branch.owner):
             branch_changed(branch, tree.branch)
-        target = self.makeTemporaryDirectory()
+        target = self.useContext(upgrade_target())
         upgrader = Upgrader(branch, target, logging.getLogger(), tree.branch)
         return upgrader
 

@@ -474,25 +474,24 @@
 
 
 <metal:debug-timeline define-macro="debug-timeline">
-  <a name="debug_timeline"
-    id="debug_timeline"
-    class="hidden"
-    >
-    <table
-      tal:condition="request/features/visible_render_time"
-      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
-      class="debug-timeline listing"
-      >
+  <a tal:condition="request/features/visible_render_time"
+     tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
+     id="debug_timeline" class="hidden">
+    <table class="debug-timeline listing">
       <thead>
-	<th>Duration</th>
-	<th>Action</th>
+        <tr>
+          <th>Duration</th>
+          <th>Action</th>
+        </tr>
       </thead>
-      <tr tal:repeat="action timeline_actions">
-	<td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
-	<td style="font-family: monospace; text-align: left;">
-          <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
-	</td>
-      </tr>
+      <tbody>
+        <tr tal:repeat="action timeline_actions">
+          <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
+          <td style="font-family: monospace; text-align: left;">
+            <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </a>
 </metal:debug-timeline>
