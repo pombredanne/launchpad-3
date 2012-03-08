@@ -95,8 +95,21 @@
        using the command:<br/>
       <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
-
   </tal:has-branches>
+
+  <p id="push-instructions"
+    tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
+    You can push the branch directly to Launchpad with the command:<br />
+    <tt><strong>
+      bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/<tal:series replace="context/name"/>
+    </strong></tt>
+    <tal:no-keys condition="not:view/user/sshkeys">
+      <br/>To authenticate with the Launchpad branch upload service,
+      you need to
+      <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+        register a SSH key</a>.
+    </tal:no-keys>
+  </p>
 
   <div tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
     <div
