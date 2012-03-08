@@ -13,12 +13,19 @@ that exists externally in a variety of version control systems.
     >>> login_person(product.owner)
     >>> view = create_initialized_view(series, name='+setbranch',
     ...                                principal=product.owner)
-    >>> print find_tag_by_id(view.render(), 'maincontent')
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content
     <div...
     ...Link to a Bazaar branch already on Launchpad...
     ...Import a branch hosted somewhere else...
     ...Branch name:...
     ...Branch owner:...
+
+The user can see instructions to push a branch.
+
+    >>> instructions = find_tag_by_id(content, 'push-instructions')
+    >>> 'bzr push lp:~' in str(instructions)
+    True
 
 
 Linking to an existing branch
