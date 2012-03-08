@@ -54,7 +54,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1028,7 +1028,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         ap = getUtility(IAccessPolicySource).findByPillar((distribution,))
         expected = [
-            AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY]
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
     def test_AccessPolicyProductAddition(self):
@@ -1038,7 +1038,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         ap = getUtility(IAccessPolicySource).findByPillar((product,))
         expected = [
-            AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY]
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
         self.assertContentEqual(expected, [policy.type for policy in ap])
 
     def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):

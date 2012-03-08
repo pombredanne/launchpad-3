@@ -729,6 +729,9 @@ class IProductPublic(
                     "Whether the project's licensing requires a new "
                     "commercial subscription to use launchpad.")))
 
+    has_current_commercial_subscription = Attribute("""
+        Whether the project has a current commercial subscription.""")
+
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 

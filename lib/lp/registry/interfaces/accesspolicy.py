@@ -163,7 +163,7 @@ class IAccessPolicySource(Interface):
         """Create an `IAccessPolicy` for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             create `IAccessPolicy` objects for.
         :return: a collection of the created `IAccessPolicy` objects.
         """
@@ -172,7 +172,7 @@ class IAccessPolicySource(Interface):
         """Return the `IAccessPolicy`s for the given pillars and types.
 
         :param pillars_and_types: a collection of
-            (`IProduct` or `IDistribution`, `IAccessPolicyType`) pairs to
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
             find.
         """
 
@@ -202,6 +202,13 @@ class IAccessPolicyGrantSource(Interface):
 
     def findByPolicy(policies):
         """Return all `IAccessPolicyGrant` objects for the policies."""
+
+    def revoke(grants):
+        """Revoke the specified grants.
+
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
+        """
 
 
 class IAccessPolicyGrantFlatSource(Interface):
