@@ -1,5 +1,9 @@
 __metaclass__ = type
 
+
+__all__ = ['upgrade_target']
+
+
 import logging
 from os.path import dirname
 
@@ -29,6 +33,12 @@ from lp.testing import (
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
+def upgrade_target():
+    branch_root_parent = dirname(
+        config.codehosting.mirrored_branches_root)
+    return(temp_dir(dir=branch_root_parent))
+
+
 class TestUpgrader(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
@@ -56,9 +66,7 @@ class TestUpgrader(TestCaseWithFactory):
         :param bzr_branch: the bzr branch to use.
         :param branch: The DB branch to use.
         """
-        branch_root_parent = dirname(
-            config.codehosting.mirrored_branches_root)
-        target_dir = self.useContext(temp_dir(dir=branch_root_parent))
+        target_dir = self.useContext(upgrade_target())
         return Upgrader(
             branch, target_dir, logging.getLogger(), bzr_branch)
 
