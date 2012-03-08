@@ -145,12 +145,12 @@ class TestSharingService(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self._test_getPillarShareesUnauthorized(product)
 
-    def _test_updatePillarSharee(self, pillar):
-        """updatePillarSharees works and returns the expected data."""
+    def _test_sharePillarInformation(self, pillar):
+        """sharePillarInformations works and returns the expected data."""
         sharee = self.factory.makePerson()
         grantor = self.factory.makePerson()
 
-        # Make existing grants to ensure updatePillarSharee handles those
+        # Make existing grants to ensure sharePillarInformation handles those
         # cases correctly.
         # First, a grant that is in the add set - it wil be retained.
         policy = self.factory.makeAccessPolicy(
@@ -163,11 +163,11 @@ class TestSharingService(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(
             policy, grantee=sharee, grantor=grantor)
 
-        # Now call updatePillarSharee will the grants we want.
+        # Now call sharePillarInformation will the grants we want.
         information_types = [
             InformationType.EMBARGOEDSECURITY,
             InformationType.USERDATA]
-        sharee_data = self.service.updatePillarSharee(
+        sharee_data = self.service.sharePillarInformation(
             pillar, sharee, information_types, grantor)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
@@ -188,7 +188,7 @@ class TestSharingService(TestCaseWithFactory):
         sharee = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(
-            AssertionError, self.service.updatePillarSharee,
+            AssertionError, self.service.sharePillarInformation,
             project_group, sharee, [InformationType.USERDATA], owner)
 
     def test_updateProductSharee(self):
@@ -196,35 +196,35 @@ class TestSharingService(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
         login_person(owner)
-        self._test_updatePillarSharee(product)
+        self._test_sharePillarInformation(product)
 
     def test_updateDistroSharee(self):
         # Users with launchpad.Edit can add sharees.
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
-        self._test_updatePillarSharee(distro)
+        self._test_sharePillarInformation(distro)
 
-    def _test_updatePillarShareeUnauthorized(self, pillar):
-        # updatePillarSharee raises an Unauthorized exception if the user is
+    def _test_sharePillarInformationUnauthorized(self, pillar):
+        # sharePillarInformation raises an Unauthorized exception if the user is
         # not permitted to do so.
         sharee = self.factory.makePerson()
         user = self.factory.makePerson()
         self.assertRaises(
-            Unauthorized, self.service.updatePillarSharee,
+            Unauthorized, self.service.sharePillarInformation,
             pillar, sharee, [InformationType.USERDATA], user)
 
-    def test_updatePillarShareeAnonymous(self):
+    def test_sharePillarInformationAnonymous(self):
         # Anonymous users are not allowed.
         product = self.factory.makeProduct()
         login(ANONYMOUS)
-        self._test_updatePillarShareeUnauthorized(product)
+        self._test_sharePillarInformationUnauthorized(product)
 
-    def test_updatePillarShareeAnyone(self):
+    def test_sharePillarInformationAnyone(self):
         # Unauthorized users are not allowed.
         product = self.factory.makeProduct()
         login_person(self.factory.makePerson())
-        self._test_updatePillarShareeUnauthorized(product)
+        self._test_sharePillarInformationUnauthorized(product)
 
     def _test_deletePillarSharee(self, pillar, types_to_delete=None):
         # Make grants for some information types.

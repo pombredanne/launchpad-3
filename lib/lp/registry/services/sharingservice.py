@@ -105,7 +105,7 @@ class SharingService:
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def updatePillarSharee(self, pillar, sharee, information_types,
+    def sharePillarInformation(self, pillar, sharee, information_types,
                              user):
         """See `ISharingService`."""
 

@@ -59,7 +59,7 @@ class ISharingService(IService):
         sharee=Reference(IPerson, title=_('Sharee'), required=True),
         information_types=List(Choice(vocabulary=InformationType)))
     @operation_for_version('devel')
-    def updatePillarSharee(pillar, sharee, information_types, user):
+    def sharePillarInformation(pillar, sharee, information_types, user):
         """Ensure sharee has the grants for information types on a pillar."""
 
     @export_write_operation()
