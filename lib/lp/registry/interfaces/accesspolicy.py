@@ -153,6 +153,9 @@ class IAccessPolicyArtifactSource(Interface):
     def findByPolicy(policies):
         """Return all `IAccessPolicyArtifact` objects for the policies."""
 
+    def deleteByArtifact(artifacts):
+        """Delete all `IAccesyPolicyArtifact` objects for the artifacts."""
+
 
 class IAccessPolicySource(Interface):
 
