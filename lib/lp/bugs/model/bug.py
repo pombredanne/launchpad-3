@@ -1998,8 +1998,7 @@ class Bug(SQLBase):
         store.invalidate(self)
 
     def shouldConfirmBugtasks(self):
-        """Should we try to confirm this bug's bugtasks?
-        The answer is yes if more than one user is affected."""
+        """See `IBug`."""
         # == 2 would probably be sufficient once we have all legacy bug tasks
         # confirmed.  For now, this is a compromise: we don't need a migration
         # step, but we will make some unnecessary comparisons.
@@ -2972,12 +2971,6 @@ class BugSet:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, Bug.id.is_in(bug_numbers))
-        return result_set.order_by('id')
-
-    def dangerousGetAllBugs(self):
-        """See `IBugSet`."""
-        store = IStore(Bug)
-        result_set = store.find(Bug)
         return result_set.order_by('id')
 
     def getBugsWithOutdatedHeat(self, cutoff):

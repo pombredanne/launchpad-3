@@ -12,7 +12,6 @@ __all__ = [
     'CreatedBugWithNoBugTasksError',
     'IBug',
     'IBugAddForm',
-    'IBugAdmin',
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugEdit',
@@ -201,6 +200,7 @@ def optional_message_subject_field():
 
 class IBugPublic(IPrivacy):
     """Public attributes for a Bug."""
+
     id = exported(
         Int(title=_('Bug ID'), required=True, readonly=True))
     # This is redefined from IPrivacy.private because the attribute is
@@ -216,8 +216,9 @@ class IBugPublic(IPrivacy):
         """Return True if `user` can see this IBug, false otherwise."""
 
 
-class IBugView(IHasLinkedBranches):
+class IBugView(Interface):
     """IBug attributes that require launchpad.View permission."""
+
     name = exported(
         BugNameField(
             title=_('Nickname'), required=False,
@@ -348,12 +349,6 @@ class IBugView(IHasLinkedBranches):
         "The message that was specified when creating the bug")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = exported(
-        CollectionField(
-            title=_("Branches associated with this bug, usually "
-            "branches on which this bug is being fixed."),
-            value_type=Reference(schema=IBugBranch),
-            readonly=True))
     tags = exported(List(
         title=_("Tags"),
         description=_("Space-separated keywords for classifying "
@@ -436,12 +431,6 @@ class IBugView(IHasLinkedBranches):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    @accessor_for(linked_branches)
-    @call_with(user=REQUEST_USER)
-    @export_read_operation()
-    @operation_for_version('beta')
-    def getVisibleLinkedBranches(user):
-        """Rertun the linked to this bug that are visible by `user`."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -694,11 +683,36 @@ class IBugView(IHasLinkedBranches):
             returned.
         """
     
+    def shouldConfirmBugtasks():
+        """Should we try to confirm this bug's bugtasks?
+
+        Return True if more than one user is affected."""
+
     def maybeConfirmBugtasks():
         """Maybe try to confirm our new bugtasks."""
 
+    def personIsDirectSubscriber(person):
+        """Return True if the person is a direct subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsAlsoNotifiedSubscriber(person):
+        """Return True if the person is an indirect subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsSubscribedToDuplicate(person):
+        """Return True if the person subscribed to a duplicate of this `IBug`.
+
+        Otherwise, return False.
+        """
+
 
 class IBugEdit(Interface):
+    """IBug attributes that require launchpad.Edit permission."""
+
     @call_with(owner=REQUEST_USER)
     @operation_parameters(
         data=Bytes(constraint=attachment_size_constraint),
@@ -1019,18 +1033,24 @@ class IBugEdit(Interface):
         """Update the heat for the bug."""
 
 
-class IBugAdmin(Interface):
-    heat_last_updated = Datetime(
-        title=_('Heat Last Updated'), required=False, readonly=True)
-
-    def setHeat(heat, timestamp=None):
-        """Set the heat for the bug."""
-
-
-
-class IBug(IBugPublic, IBugView, IBugEdit, IBugAdmin):
+class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
+
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this bug, usually "
+            "branches on which this bug is being fixed."),
+            value_type=Reference(schema=IBugBranch),
+            readonly=True))
+
+    @accessor_for(linked_branches)
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('beta')
+    def getVisibleLinkedBranches(user):
+        """Return the branches linked to this bug that are visible by
+        `user`."""
 
 
 # We are forced to define these now to avoid circular import problems.
@@ -1242,37 +1262,6 @@ class IBugSet(Interface):
 
         :param bug_numbers: An iterable of bug numbers for which we should
             return Bugs.
-        """
-
-    def personIsDirectSubscriber(person):
-        """Return True if the person is a direct subscriber to this `IBug`.
-
-        Otherwise, return False.
-        """
-
-    def personIsAlsoNotifiedSubscriber(person):
-        """Return True if the person is an indirect subscriber to this `IBug`.
-
-        Otherwise, return False.
-        """
-
-    def personIsSubscribedToDuplicate(person):
-        """Return True if the person subscribed to a duplicate of this `IBug`.
-
-        Otherwise, return False.
-        """
-
-    def dangerousGetAllBugs():
-        # XXX 2010-01-08 gmb bug=505850:
-        #     Note, this method should go away when we have a proper
-        #     permissions system for scripts.
-        """DO NOT CALL THIS METHOD.
-
-        This method exists solely to allow the bug heat script to grab
-        all the bugs in the database - including private ones - and
-        iterate over them. DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE
-        DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
-        USE THIS ANYWAY.
         """
 
     def getBugsWithOutdatedHeat(cutoff):

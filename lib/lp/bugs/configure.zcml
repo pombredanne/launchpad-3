@@ -720,18 +720,21 @@
                 interface="lp.bugs.interfaces.bug.IBugPublic"/>
             <require
                 permission="launchpad.View"
-                interface="lp.bugs.interfaces.bug.IBugView"/>
+                interface="lp.bugs.interfaces.bug.IBugView"
+                attributes="
+                    linked_branches
+                    getVisibleLinkedBranches"/>
             <require
                 permission="launchpad.Edit"
                 interface="lp.bugs.interfaces.bug.IBugEdit"
+                attributes="
+                    linkBranch
+                    unlinkBranch"
                 set_attributes="
-                    date_last_updated date_made_private datecreated
-                    name owner ownerID security_related tags title
-                    description who_made_private"/>
-            <require
-                permission="launchpad.Admin"
-                interface="lp.bugs.interfaces.bug.IBugAdmin"
-                set_attributes="heat_last_updated"/>
+                    name
+                    tags
+                    title
+                    description"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
