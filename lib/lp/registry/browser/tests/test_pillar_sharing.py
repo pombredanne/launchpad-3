@@ -81,7 +81,7 @@ class PillarSharingViewTestMixin:
         with FeatureFixture(FLAG):
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
-            self.assertIsNotNone(cache.objects.get('access_policies'))
+            self.assertIsNotNone(cache.objects.get('information_types'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
             aps = getUtility(IService, 'accesspolicy')
             observers = aps.getPillarObservers(self.pillar)
