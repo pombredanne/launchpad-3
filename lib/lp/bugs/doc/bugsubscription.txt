@@ -358,7 +358,6 @@ subscribed to the dupe target.
     Ubuntu Team
 
     >>> linux_source_bug_dupe.markAsDuplicate(linux_source_bug)
-    >>> linux_source_bug_dupe.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     No Privileges Person
@@ -435,7 +434,6 @@ any subscribers not converted to direct subscribers.
 
     >>> linux_source_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> linux_source_bug.syncUpdate()
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -911,7 +909,6 @@ subscriptions themselves, rather than the subscribers.
     ...     owner=keybuk)
     >>> dupe_ff_bug = firefox.createBug(params)
     >>> dupe_ff_bug.markAsDuplicate(ff_bug)
-    >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
