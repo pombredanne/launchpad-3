@@ -31,7 +31,8 @@ A user can choose to link to an existing branch on Launchpad.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> firefox = productset.getByName('firefox')
-    >>> branch = factory.makeBranch(name="firefox-hosted-branch", product=firefox)
+    >>> branch = factory.makeBranch(
+    ...     name="firefox-hosted-branch", product=firefox)
     >>> branch_name = branch.unique_name
     >>> logout()
 
@@ -57,7 +58,8 @@ the branch name to use in Launchpad, and the branch owner.
     >>> browser.getControl('Import a branch hosted somewhere else').click()
     >>> browser.getControl('Branch name').value = 'bzr-firefox-branch'
     >>> browser.getControl('Bazaar', index=0).click()
-    >>> browser.getControl('Branch URL').value = 'https://bzr.example.com/branch'
+    >>> browser.getControl('Branch URL').value = (
+    ...     'https://bzr.example.com/branch')
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -72,7 +74,8 @@ The process is the same for a Git external branch, though the novel
     >>> browser.getControl('Import a branch hosted somewhere else').click()
     >>> browser.getControl('Branch name').value = 'git-firefox-branch'
     >>> browser.getControl('Git').click()
-    >>> browser.getControl('Branch URL').value = 'git://git.example.com/branch'
+    >>> browser.getControl('Branch URL').value = (
+    ...     'git://git.example.com/branch')
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -86,7 +89,8 @@ Likewise Subversion can use the "svn://" scheme.
     >>> browser.getControl('Import a branch hosted somewhere else').click()
     >>> browser.getControl('Branch name').value = 'svn-firefox-branch'
     >>> browser.getControl('SVN').click()
-    >>> browser.getControl('Branch URL').value = 'svn://svn.example.com/branch'
+    >>> browser.getControl('Branch URL').value = (
+    ...     'svn://svn.example.com/branch')
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -100,7 +104,8 @@ The branch owner can be the logged in user or one of her teams.
     >>> browser.getControl('Import a branch hosted somewhere else').click()
     >>> browser.getControl('Branch name').value = 'hg-firefox-branch'
     >>> browser.getControl('Mercurial').click()
-    >>> browser.getControl('Branch URL').value = 'http://hg.example.com/branch'
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://hg.example.com/branch')
     >>> browser.getControl('Branch owner').value = ['hwdb-team']
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):

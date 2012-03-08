@@ -264,7 +264,8 @@ shows correct singular and plural forms.
 
     >>> setup_code_hosting('gnome-terminal')
     >>> print_portlet('gnome-terminal')
-    GNOME Terminal has 9 active branches owned by 2 people and 2 teams. There were 0 commits in the last month.
+    GNOME Terminal has 9 active branches owned by 2 people and 2 teams.
+    There were 0 commits in the last month.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
@@ -273,17 +274,20 @@ shows correct singular and plural forms.
     >>> logout()
     >>> setup_code_hosting('fooix')
     >>> print_portlet('fooix')
-    Fooix has 2 active branches owned by 2 people. There were 0 commits in the last month.
+    Fooix has 2 active branches owned by 2 people.
+    There were 0 commits in the last month.
 
     >>> print_portlet('evolution')
-    Evolution has 3 active branches owned by 1 person and 1 team. There were 0 commits in the last month.
+    Evolution has 3 active branches owned by 1 person and 1 team.
+    There were 0 commits in the last month.
 
     >>> login(ANONYMOUS)
     >>> dinky = factory.makeProduct('dinky')
     >>> logout()
     >>> setup_code_hosting('dinky')
     >>> print_portlet('dinky')
-    Dinky has 1 active branch owned by 1 person. There were 0 commits in the last month.
+    Dinky has 1 active branch owned by 1 person. There were 0 commits in
+    the last month.
 
 
 Product has Branches, but none initially visible
