@@ -169,7 +169,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
                                                     item.status.name))
             else:
                 self.assertIsInstance(item, Milestone)
-                expected_lines.append(u"")
+                if expected_lines != []:
+                    expected_lines.append(u"")
                 if item == self.wi_header:
                     expected_lines.append(u"Work items:")
                 else:
