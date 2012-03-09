@@ -47,6 +47,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -448,12 +449,20 @@ class ProductLicensingTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_get_licenses(self):
+    def test_getLicenses(self):
         # License are assigned a list, but return a tuple.
         product = self.factory.makeProduct(
             licenses=[License.GNU_GPL_V2, License.MIT])
         self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
 
+    def test_setLicense_also_sets_reviewed(self):
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.GNU_GPL_V2]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
