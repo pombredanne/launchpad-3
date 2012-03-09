@@ -222,6 +222,11 @@ class AccessPolicyArtifact(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
+    @classmethod
+    def deleteByArtifact(cls, artifacts):
+        """See `IAccessPolicyArtifactSource`."""
+        cls.findByArtifact(artifacts).remove()
+
 
 class AccessArtifactGrant(StormBase):
     implements(IAccessArtifactGrant)
@@ -330,3 +335,13 @@ class AccessPolicyGrantFlat(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(
             Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+
+    @classmethod
+    def findArtifactsByGrantee(cls, grantee, policies):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(
+            AccessArtifact,
+            AccessArtifact.id == cls.abstract_artifact_id,
+            cls.grantee_id == grantee.id,
+            cls.policy_id.is_in(ids))

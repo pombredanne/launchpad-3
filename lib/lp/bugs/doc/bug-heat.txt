@@ -12,46 +12,19 @@ A bug's heat is calculated automatically when it is created.
     >>> bug.heat
     6
 
-Its heat_last_updated time will be the same as its datecreated attribute.
-
-    >>> bug.heat_last_updated == bug.datecreated
-    True
-
-The bug's heat can be set by calling its setHeat() method. We'll commit
-the transaction first so that heat_last_updated gets changed.
-
-    >>> import transaction
-    >>> transaction.commit()
-
-    >>> bug.setHeat(42)
-    >>> bug.heat
-    42
-
-Its heat_last_updated will also have been updated.
-
-    >>> bug.heat_last_updated == bug.datecreated
-    False
-
-    >>> bug.heat_last_updated
-    datetime.datetime(..., tzinfo=<UTC>)
-
-
 Updating bug heat on-the-fly
 ----------------------------
 
 The IBug.updateHeat() method updates a Bug's heat using data already in
-the database. Where setHeat() can be used for setting bug heat to a
-specific value, updateHeat() uses a stored procedure in the database to
+the database. updateHeat() uses a stored procedure in the database to
 calculate the heat overall.
 
 We'll create a new bug with a heat of 0 for the sake of testing.
 
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
-    >>> bug.setHeat(0)
-
-    >>> bug.heat
-    0
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(bug).heat = 0
 
 Calling updateHeat() will update the bug's heat. Since this new bug has
 one subscriber (the bug owner) and one affected user (ditto) its
@@ -177,9 +150,7 @@ and will cause the bug's heat to be recalculated.
 
 We'll set the bug's heat to 0 first to demonstrate this.
 
-    >>> bug.setHeat(0)
-    >>> bug.heat
-    0
+    >>> removeSecurityProxy(bug).heat = 0
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import timezone
@@ -206,12 +177,14 @@ It's possible to get the set of bugs whose heat hasn't been updated for
 a given amount of time by calling IBugSet's getBugsWithOutdatedHeat()
 method.
 
-First, we'll set the heat of all bugs so that none of them are out of
-date.
+First, we'll set the heat_last_updated of all bugs so that none of them are
+out of date.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> for bug in getUtility(IBugSet).dangerousGetAllBugs():
-    ...     bug.setHeat(0)
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.services.database.lpstorm import IStore
+    >>> IStore(Bug).find(Bug).set(
+    ...     heat_last_updated=datetime.now(timezone('UTC')))
 
 If we call getBugsWithOutdatedHeat() now, the set that is returned will
 be empty because all the bugs have been recently updated.
@@ -222,15 +195,15 @@ oldest a bug's heat can be before it gets included in the returned set.
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
 
-IBug.setHeat() takes a timestamp parameter so that we can set the
-heat_last_updated date manually for the purposes of testing. If we make
-a bug's heat older than the cutoff that we pass to
+If we make a bug's heat older than the cutoff that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
     >>> old_heat_bug = factory.makeBug()
-    >>> old_heat_bug.setHeat(
-    ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
+    >>> naked_bug = removeSecurityProxy(old_heat_bug)
+    >>> naked_bug.heat = 0
+    >>> naked_bug.heat_last_updated = datetime.now(
+    ...     timezone('UTC')) - timedelta(days=2)
 
     >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
     ...     yesterday)
@@ -247,7 +220,7 @@ updated.
 
 We'll set the new bug's heat_last_updated to None manually.
 
-    >>> new_bug.heat_last_updated = None
+    >>> removeSecurityProxy(new_bug).heat_last_updated = None
 
     >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
     ...     yesterday)

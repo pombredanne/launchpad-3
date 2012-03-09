@@ -7,7 +7,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>Observer Table Widget Tests</title>
+      <title>Pillar Sharing View Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -27,9 +27,13 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- Dependencies -->
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/testing/mockio.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript"
@@ -37,13 +41,13 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/picker/person_picker.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/registry/disclosure/observerpicker.js"></script>
        <script type="text/javascript"
                src="../../../../../../build/js/lp/app/picker/picker_patcher.js"></script>
       <script type="text/javascript"
@@ -56,19 +60,27 @@ GNU Affero General Public License version 3 (see the file LICENSE).
           src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
       <script type="text/javascript"
           src="../../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/registry/sharing/shareetable.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/registry/sharing/shareepicker.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../observertable.js"></script>
+      <script type="text/javascript" src="../pillarsharingview.js"></script>
 
       <!-- The test suite -->
-      <script type="text/javascript" src="test_observertable.js"></script>
+      <script type="text/javascript" src="test_pillarsharingview.js"></script>
 
+      <script id="test-fixture" type="text/x-template">
+          <table id='sharee-table'></table>
+          <a id='add-sharee-link' class='sprite add js-action' href="#">Share</a>
+      </script>
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <li>lp.registry.disclosure.observertable.test</li>
+            <li>lp.registry.sharing.pillarsharingview.test</li>
         </ul>
-        <table id='observer-table'>
-        </table>
+        <div id='fixture'>
+        </div>
     </body>
 </html>

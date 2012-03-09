@@ -236,16 +236,16 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
-    def _getAccessPolicyService(self):
-        return getUtility(IService, 'accesspolicy')
+    def _getSharingService(self):
+        return getUtility(IService, 'sharing')
 
     @property
-    def access_policies(self):
-        return self._getAccessPolicyService().getAccessPolicies(self.context)
+    def information_types(self):
+        return self._getSharingService().getInformationTypes(self.context)
 
     @property
     def sharing_permissions(self):
-        return self._getAccessPolicyService().getSharingPermissions()
+        return self._getSharingService().getSharingPermissions()
 
     @cachedproperty
     def sharing_vocabulary(self):
@@ -271,14 +271,14 @@ class PillarSharingView(LaunchpadView):
             self.sharing_picker_config, cls=ResourceJSONEncoder)
 
     @property
-    def observer_data(self):
-        return self._getAccessPolicyService().getPillarObservers(self.context)
+    def sharee_data(self):
+        return self._getSharingService().getPillarSharees(self.context)
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
         if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        cache.objects['access_policies'] = self.access_policies
+        cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
-        cache.objects['observer_data'] = self.observer_data
+        cache.objects['sharee_data'] = self.sharee_data
