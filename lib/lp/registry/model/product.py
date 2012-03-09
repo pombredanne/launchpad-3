@@ -771,6 +771,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
+        if (License.OTHER_PROPRIETARY in licenses
+            and self.commercial_subscription is None):
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            now = datetime.datetime.now(pytz.UTC)
+            date_expires = now + datetime.timedelta(days=30)
+            sales_system_id = 'complimentary-30-day-%s' % now
+            whiteboard = "Complimentary 30 day subscription."
+            subscription = CommercialSubscription(
+                product=self, date_starts=now, date_expires=date_expires,
+                registrant=lp_janitor, purchaser=lp_janitor,
+                sales_system_id=sales_system_id, whiteboard=whiteboard)
+            get_property_cache(self).commercial_subscription = subscription
 
     licenses = property(_getLicenses, _setLicenses)
 

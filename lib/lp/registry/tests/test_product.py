@@ -10,6 +10,7 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -19,6 +20,7 @@ from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -524,6 +526,26 @@ class ProductLicensingTestCase(TestCaseWithFactory):
                 'testing', product.commercial_subscription.sales_system_id)
             self.assertEqual(
                 date_expires, product.commercial_subscription.date_expires)
+
+    def test_setLicense_proprietary_without_commercial_subscription(self):
+        # Proprietary projects without a commercial subscriptions are
+        # given a complimentary 30 day commercial subscription.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_PROPRIETARY]
+        with celebrity_logged_in('admin'):
+            cs = product.commercial_subscription
+            self.assertIsNotNone(cs)
+            self.assertIn('complimentary-30-day', cs.sales_system_id)
+            now = datetime.datetime.now(pytz.UTC)
+            self.assertTrue(now >= cs.date_starts)
+            future_30_days = now + datetime.timedelta(days=30)
+            self.assertTrue(future_30_days >= cs.date_expires)
+            self.assertEqual(
+                "Complimentary 30 day subscription.", cs.whiteboard)
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            self.assertEqual(lp_janitor, cs.registrant)
+            self.assertEqual(lp_janitor, cs.purchaser)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
