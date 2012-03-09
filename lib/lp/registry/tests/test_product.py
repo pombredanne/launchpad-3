@@ -37,6 +37,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import (
     IProduct,
+    IProductSet,
     License,
     )
 from lp.registry.interfaces.series import SeriesStatus
@@ -550,7 +551,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
     def test_new_proprietary_has_commercial_subscription(self):
         # New proprietary projects are given a complimentary 30 day
         # commercial subscription.
-        product = self.factory.makeProduct(
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2',
             licenses=[License.OTHER_PROPRIETARY])
         with celebrity_logged_in('admin'):
             cs = product.commercial_subscription
