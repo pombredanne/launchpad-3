@@ -478,6 +478,20 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         with celebrity_logged_in('registry_experts'):
             self.assertIs(False, product.project_reviewed)
 
+    def test_setLicense_without_empty_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', [])
+
+    def test_setLicense_without_non_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', ['bogus'])
+
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """Test product snapshots.
