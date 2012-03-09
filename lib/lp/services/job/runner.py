@@ -204,12 +204,6 @@ class BaseJobRunner(LazrJobRunner):
     def job_str(job):
         return LazrJobRunner.job_str(removeSecurityProxy(job))
 
-    def commit(self):
-        transaction.commit()
-
-    def abort(self):
-        transaction.abort()
-
     def runJob(self, job):
         super(BaseJobRunner, self).runJob(IRunnableJob(job))
 
