@@ -443,6 +443,19 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
             'new', self.product.commercial_subscription.sales_system_id)
 
 
+class ProductLicensingTestCase(TestCaseWithFactory):
+    """Test the rules of licenses and commercial subscriptions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_get_licenses(self):
+        # License are assigned a list, but return a tuple.
+        product = self.factory.makeProduct(
+            licenses=[License.GNU_GPL_V2, License.MIT])
+        self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
+
+
+
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """Test product snapshots.
 
