@@ -163,7 +163,7 @@ class IPillarPerson(Interface):
     """A Person's connection to a Pillar."""
 
     person = Attribute("The person associated with the pillar.")
-    pillar = Reference(IPillar)
+    pillar = Attribute("The pillar associated with the person.")
 
 
 class IPillarPersonFactory(Interface):
