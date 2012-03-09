@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+
 import transaction
 from zope.component import getUtility
 from zope.interface.exceptions import Invalid
@@ -590,32 +592,39 @@ class TestTeamWorkItems(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getWorkItems(self):
-        current_milestone = self.factory.makeMilestone()
+        current_milestone = self.factory.makeMilestone(
+            dateexpected=datetime(2050, 1, 1))
         future_milestone = self.factory.makeMilestone(
-            product=current_milestone.product)
+            product=current_milestone.product,
+            dateexpected=datetime(2060, 1, 1))
         team = self.factory.makeTeam()
         assigned_spec = self.factory.makeSpecification(
             assignee=team.teamowner, milestone=current_milestone,
             product=current_milestone.product)
         workitem_from_assigned_spec = self.factory.makeSpecificationWorkItem(
-            specification=assigned_spec)
+            title=u'workitem_from_assigned_spec', specification=assigned_spec)
         future_spec = self.factory.makeSpecification(
             milestone=future_milestone, product=future_milestone.product)
         workitem_from_future_spec = self.factory.makeSpecificationWorkItem(
+            title=u'workitem_from_future_spec not assigned to team member',
             specification=future_spec, milestone=current_milestone)
         assigned_workitem_from_future_spec = (
             self.factory.makeSpecificationWorkItem(
+                title=u'workitem_from_future_spec assigned to team member',
                 specification=future_spec, milestone=current_milestone,
                 assignee=team.teamowner))
         foreign_spec = self.factory.makeSpecification(
             milestone=current_milestone, product=current_milestone.product)
         workitem_from_foreign_spec = self.factory.makeSpecificationWorkItem(
+            title=u'workitem_from_foreign_spec not assigned to team member',
             specification=foreign_spec)
         assigned_workitem_from_foreign_spec = (
             self.factory.makeSpecificationWorkItem(
+                title=u'workitem_from_foreign_spec assigned to team member',
                 specification=foreign_spec, assignee=team.teamowner))
 
-        work_items = removeSecurityProxy(team).getWorkItemsFor(current_milestone)
+        work_items = removeSecurityProxy(team).getWorkItemsDueIn(
+            current_milestone.dateexpected)
 
         # TODO: Is the order correct here?  Should we set different statuses
         # on those to properly test the sort order?

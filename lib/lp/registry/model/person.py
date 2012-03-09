@@ -62,6 +62,7 @@ from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
+    Coalesce,
     Desc,
     Exists,
     In,
@@ -222,6 +223,7 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
+from lp.registry.model.milestone import Milestone
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1676,11 +1678,24 @@ class Person(
         return admin_of_teams.union(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
-    def getWorkItemsFor(self, milestone):
-        return Store.of(self).find(
-            SpecificationWorkItem,
-            SpecificationWorkItem.assignee_id.is_in(
-                [member.id for member in self.all_members_prepopulated]))
+    def getWorkItemsDueIn(self, date):
+        store = Store.of(self)
+        participant_ids = store.find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id)
+        WorkItem = SpecificationWorkItem
+        origin = [
+            WorkItem,
+            Join(Specification, WorkItem.specification == Specification.id),
+            Join(Milestone,
+                 Coalesce(WorkItem.milestone_id,
+                          Specification.milestoneID) == Milestone.id),
+            ]
+        return store.using(*origin).find(
+            WorkItem,
+            AND(Milestone.dateexpected == date,
+                OR(Specification.assigneeID.is_in(participant_ids),
+                   WorkItem.assignee_id.is_in(participant_ids))
+                ))
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
