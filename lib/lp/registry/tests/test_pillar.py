@@ -21,6 +21,7 @@ from lp.testing.layers import (
     )
 from lp.testing.matchers import Provides
 
+
 class TestPillarNameSet(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -30,8 +31,8 @@ class TestPillarNameSet(TestCaseWithFactory):
         first one on the list.
         """
         login('mark@example.com')
-        lz_foo = self.factory.makeProduct(name='lz-foo')
-        lz_bar = self.factory.makeProduct(name='lz-bar')
+        self.factory.makeProduct(name='lz-foo')
+        self.factory.makeProduct(name='lz-bar')
         launchzap = self.factory.makeProduct(name='launchzap')
         launchzap.setAliases(['lz'])
         pillar_set = getUtility(IPillarNameSet)

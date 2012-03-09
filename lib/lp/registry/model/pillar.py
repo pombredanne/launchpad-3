@@ -46,7 +46,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.services.config import config
 from lp.services.database.sqlbase import (
-    cursor,
     SQLBase,
     sqlvalues,
     )
@@ -342,7 +341,7 @@ class HasAliasMixin:
 
 
 class PillarPerson:
-    
+
     implements(IPillarPerson)
 
     classProvides(IPillarPersonFactory)
