@@ -1572,7 +1572,7 @@ class ProductPrivateBugsMixin():
         return parent.updateContextFromData(data, context, notify_modified)
 
 
-class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
+class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     implements(IProductEditMenu)
@@ -1626,13 +1626,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        previous_licenses = self.context.licenses
         self.updateContextFromData(data)
-        # only send email the first time licenses are set
-        if len(previous_licenses) == 0:
-            # self.product is expected by notifyCommercialMailingList
-            self.product = self.context
-            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
