@@ -547,6 +547,25 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
 
+    def test_new_proprietary_has_commercial_subscription(self):
+        # New proprietary projects are given a complimentary 30 day
+        # commercial subscription.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        with celebrity_logged_in('admin'):
+            cs = product.commercial_subscription
+            self.assertIsNotNone(cs)
+            self.assertIn('complimentary-30-day', cs.sales_system_id)
+            now = datetime.datetime.now(pytz.UTC)
+            self.assertTrue(now >= cs.date_starts)
+            future_30_days = now + datetime.timedelta(days=30)
+            self.assertTrue(future_30_days >= cs.date_expires)
+            self.assertEqual(
+                "Complimentary 30 day subscription.", cs.whiteboard)
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            self.assertEqual(lp_janitor, cs.registrant)
+            self.assertEqual(lp_janitor, cs.purchaser)
+
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """Test product snapshots.
