@@ -10,6 +10,7 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -19,6 +20,7 @@ from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -35,6 +37,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import (
     IProduct,
+    IProductSet,
     License,
     )
 from lp.registry.interfaces.series import SeriesStatus
@@ -47,6 +50,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -441,6 +445,129 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
         # before the cache is populated.
         self.assertEqual(
             'new', self.product.commercial_subscription.sales_system_id)
+
+
+class ProductLicensingTestCase(TestCaseWithFactory):
+    """Test the rules of licenses and commercial subscriptions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getLicenses(self):
+        # License are assigned a list, but return a tuple.
+        product = self.factory.makeProduct(
+            licenses=[License.GNU_GPL_V2, License.MIT])
+        self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
+
+    def test_setLicense_handles_no_change(self):
+        # The project_reviewed property is not reset, if the new licenses
+        # are identical to the current licenses.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.MIT]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(True, product.project_reviewed)
+
+    def test_setLicense_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if the licenses
+        # change.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.GNU_GPL_V2]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_license_info_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if license_info
+        # changes.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_OPEN_SOURCE])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.license_info = 'zlib'
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_setLicense_without_empty_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', [])
+
+    def test_setLicense_without_non_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', ['bogus'])
+
+    def test_setLicense_non_proprietary(self):
+        # Non-proprietary projects are not given a complimentary
+        # commercial subscription.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        self.assertIsNone(product.commercial_subscription)
+
+    def test_setLicense_proprietary_with_commercial_subscription(self):
+        # Proprietary projects with existing commercial subscriptions are not
+        # given a complimentary commercial subscription.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('admin'):
+            product.commercial_subscription.sales_system_id = 'testing'
+            date_expires = product.commercial_subscription.date_expires
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_PROPRIETARY]
+        with celebrity_logged_in('admin'):
+            self.assertEqual(
+                'testing', product.commercial_subscription.sales_system_id)
+            self.assertEqual(
+                date_expires, product.commercial_subscription.date_expires)
+
+    def test_setLicense_proprietary_without_commercial_subscription(self):
+        # Proprietary projects without a commercial subscriptions are
+        # given a complimentary 30 day commercial subscription.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_PROPRIETARY]
+        with celebrity_logged_in('admin'):
+            cs = product.commercial_subscription
+            self.assertIsNotNone(cs)
+            self.assertIn('complimentary-30-day', cs.sales_system_id)
+            now = datetime.datetime.now(pytz.UTC)
+            self.assertTrue(now >= cs.date_starts)
+            future_30_days = now + datetime.timedelta(days=30)
+            self.assertTrue(future_30_days >= cs.date_expires)
+            self.assertEqual(
+                "Complimentary 30 day subscription.", cs.whiteboard)
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            self.assertEqual(lp_janitor, cs.registrant)
+            self.assertEqual(lp_janitor, cs.purchaser)
+
+    def test_new_proprietary_has_commercial_subscription(self):
+        # New proprietary projects are given a complimentary 30 day
+        # commercial subscription.
+        owner = self.factory.makePerson()
+        product = getUtility(IProductSet).createProduct(
+            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2',
+            licenses=[License.OTHER_PROPRIETARY])
+        with celebrity_logged_in('admin'):
+            cs = product.commercial_subscription
+            self.assertIsNotNone(cs)
+            self.assertIn('complimentary-30-day', cs.sales_system_id)
+            now = datetime.datetime.now(pytz.UTC)
+            self.assertTrue(now >= cs.date_starts)
+            future_30_days = now + datetime.timedelta(days=30)
+            self.assertTrue(future_30_days >= cs.date_expires)
+            self.assertEqual(
+                "Complimentary 30 day subscription.", cs.whiteboard)
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            self.assertEqual(lp_janitor, cs.registrant)
+            self.assertEqual(lp_janitor, cs.purchaser)
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):

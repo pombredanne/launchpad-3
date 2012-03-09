@@ -306,25 +306,6 @@ is reviewed, but not approved requires a commercial subscription.
     >>> bzr.qualifies_for_free_hosting
     False
 
-If the licenses or license_info attributes are changed, the
-project_reviewed and license_approved attributes are reset to false.
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.license_info = 'foo'
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.licenses = [License.BSD]
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
 When the products license is OTHER_OPEN_SOURCE or the license_info
 attribute contains a description of another license, the product
 requires approval for free hosting. The qualifies_for_free_hosting
