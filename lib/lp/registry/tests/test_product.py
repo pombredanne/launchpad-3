@@ -503,6 +503,28 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertRaises(
                 ValueError, setattr, product, 'licenses', ['bogus'])
 
+    def test_setLicense_non_proprietary(self):
+        # Non-proprietary projects are not given a complimentary
+        # commercial subscription.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        self.assertIsNone(product.commercial_subscription)
+
+    def test_setLicense_proprietary_with_commercial_subscription(self):
+        # Proprietary projects with existing commercial subscriptions are not
+        # given a complimentary commercial subscription.
+        product = self.factory.makeProduct()
+        self.factory.makeCommercialSubscription(product)
+        with celebrity_logged_in('admin'):
+            product.commercial_subscription.sales_system_id = 'testing'
+            date_expires = product.commercial_subscription.date_expires
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_PROPRIETARY]
+        with celebrity_logged_in('admin'):
+            self.assertEqual(
+                'testing', product.commercial_subscription.sales_system_id)
+            self.assertEqual(
+                date_expires, product.commercial_subscription.date_expires)
+
 
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """Test product snapshots.
