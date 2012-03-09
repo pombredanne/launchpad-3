@@ -11,11 +11,11 @@
     <metal:block fill-slot="head_epilogue">
     <script tal:content="structure string:
             LPJS.use('base', 'node', 'event',
-                    'lp.registry.disclosure.pillarsharingview',
+                    'lp.registry.sharing.pillarsharingview',
                 function(Y) {
             Y.on('domready', function() {
                 var config = ${view/json_sharing_picker_config}
-                var view_widget = new Y.lp.registry.disclosure.pillarsharingview.PillarSharingView(config);
+                var view_widget = new Y.lp.registry.sharing.pillarsharingview.PillarSharingView(config);
                 view_widget.render();
             });
           });
@@ -29,7 +29,7 @@
       shared with these users and teams.
     </p>
 
-    <table id="observer-table" class="disclosure listing">
+    <table id="sharee-table" class="disclosure listing">
     </table>
   </div>
 
@@ -41,7 +41,7 @@
     set the numbers in this portlet.
     </tal:comment>
     <div id="portlet-disclosure-links" class="first portlet">
-      <a id='add-observer-link' class='sprite add js-action' href="#">Share</a>
+      <a id='add-sharee-link' class='sprite add js-action' href="#">Share</a>
     </div>
     <div id="portlet-disclosure-summary" class="portlet">
       <p>
