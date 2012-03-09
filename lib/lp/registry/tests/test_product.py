@@ -11,6 +11,7 @@ import pytz
 from testtools.matchers import MatchesAll
 import transaction
 from zope.component import getUtility
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -55,6 +56,7 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.event import TestEventListener
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -451,6 +453,19 @@ class ProductLicensingTestCase(TestCaseWithFactory):
     """Test the rules of licenses and commercial subscriptions."""
 
     layer = DatabaseFunctionalLayer
+    event_listener = None
+
+    def setup_event_listener(self):
+        self.events = []
+        if self.event_listener is None:
+            self.event_listener = TestEventListener(
+                IProduct, IObjectModifiedEvent, self.on_event)
+        else:
+            self.event_listener._active = True
+        self.addCleanup(self.event_listener.unregister)
+
+    def on_event(self, thing, event):
+        self.events.append(event)
 
     def test_getLicenses(self):
         # License are assigned a list, but return a tuple.
@@ -464,10 +479,24 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(licenses=[License.MIT])
         with celebrity_logged_in('registry_experts'):
             product.project_reviewed = True
+        self.setup_event_listener()
         with person_logged_in(product.owner):
             product.licenses = [License.MIT]
         with celebrity_logged_in('registry_experts'):
             self.assertIs(True, product.project_reviewed)
+        self.assertEqual([], self.events)
+
+    def test_setLicense(self):
+        # The project_reviewed property is not reset, if the new licenses
+        # are identical to the current licenses.
+        product = self.factory.makeProduct()
+        self.setup_event_listener()
+        with person_logged_in(product.owner):
+            product.licenses = [License.MIT]
+        self.assertEqual((License.MIT, ), product.licenses)
+        self.assertEqual(1, len(self.events))
+        self.assertEqual(product, self.events[0].object)
+        self.assertEqual(['licenses'], self.events[0].edited_fields)
 
     def test_setLicense_also_sets_reviewed(self):
         # The project_reviewed attribute it set to False if the licenses

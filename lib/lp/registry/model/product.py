@@ -783,6 +783,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 registrant=lp_janitor, purchaser=lp_janitor,
                 sales_system_id=sales_system_id, whiteboard=whiteboard)
             get_property_cache(self).commercial_subscription = subscription
+        # Do not use a snapshot because the past is unintersting.
+        notify(ObjectModifiedEvent(self, self, edited_fields=['licenses']))
 
     licenses = property(_getLicenses, _setLicenses)
 
