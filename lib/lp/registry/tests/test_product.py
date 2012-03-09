@@ -456,11 +456,25 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
 
     def test_setLicense_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if the licenses
+        # change.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with celebrity_logged_in('registry_experts'):
             product.project_reviewed = True
         with person_logged_in(product.owner):
             product.licenses = [License.GNU_GPL_V2]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_license_info_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if license_info
+        # changes.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_OPEN_SOURCE])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.license_info = 'zlib'
         with celebrity_logged_in('registry_experts'):
             self.assertIs(False, product.project_reviewed)
 
