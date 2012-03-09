@@ -583,3 +583,45 @@ class TestPersonJoinTeam(TestCaseWithFactory):
         members = list(team.approvedmembers)
         self.assertEqual(1, len(members))
         self.assertEqual(user, members[0])
+
+
+class TestTeamWorkItems(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getWorkItems(self):
+        current_milestone = self.factory.makeMilestone()
+        future_milestone = self.factory.makeMilestone(
+            product=current_milestone.product)
+        team = self.factory.makeTeam()
+        assigned_spec = self.factory.makeSpecification(
+            assignee=team.teamowner, milestone=current_milestone,
+            product=current_milestone.product)
+        workitem_from_assigned_spec = self.factory.makeSpecificationWorkItem(
+            specification=assigned_spec)
+        future_spec = self.factory.makeSpecification(
+            milestone=future_milestone, product=future_milestone.product)
+        workitem_from_future_spec = self.factory.makeSpecificationWorkItem(
+            specification=future_spec, milestone=current_milestone)
+        assigned_workitem_from_future_spec = (
+            self.factory.makeSpecificationWorkItem(
+                specification=future_spec, milestone=current_milestone,
+                assignee=team.teamowner))
+        foreign_spec = self.factory.makeSpecification(
+            milestone=current_milestone, product=current_milestone.product)
+        workitem_from_foreign_spec = self.factory.makeSpecificationWorkItem(
+            specification=foreign_spec)
+        assigned_workitem_from_foreign_spec = (
+            self.factory.makeSpecificationWorkItem(
+                specification=foreign_spec, assignee=team.teamowner))
+
+        work_items = removeSecurityProxy(team).getWorkItemsFor(current_milestone)
+
+        # TODO: Is the order correct here?  Should we set different statuses
+        # on those to properly test the sort order?
+        expected = [
+            workitem_from_assigned_spec,
+            assigned_workitem_from_future_spec,
+            assigned_workitem_from_foreign_spec]
+        self.assertEqual(expected, list(work_items))
+

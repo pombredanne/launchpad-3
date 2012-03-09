@@ -127,6 +127,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -1674,6 +1675,12 @@ class Person(
             clauseTables=['TeamParticipation', 'TeamMembership'])
         return admin_of_teams.union(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
+
+    def getWorkItemsFor(self, milestone):
+        return Store.of(self).find(
+            SpecificationWorkItem,
+            SpecificationWorkItem.assignee_id.is_in(
+                [member.id for member in self.all_members_prepopulated]))
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
