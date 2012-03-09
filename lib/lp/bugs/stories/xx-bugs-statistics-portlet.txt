@@ -25,8 +25,8 @@ general stats.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
 
 
@@ -37,8 +37,8 @@ general stats.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     2 Open CVE bugs - CVE reports
 
 Once the user has identified themselves, show information on assigned and
@@ -55,8 +55,8 @@ reported bugs.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
 
 
@@ -71,8 +71,8 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     2 Open CVE bugs - CVE reports
 
 The content includes a link to the distribution CVE report.
@@ -96,8 +96,8 @@ link to review nominations.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
@@ -109,8 +109,8 @@ link to review nominations.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug - CVE report
 
 Once the user has identified themselves, show information on assigned and
@@ -127,8 +127,8 @@ reported bugs.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
@@ -144,8 +144,8 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug - CVE report
 
 The content includes a link to the distribution CVE report.
@@ -168,8 +168,8 @@ If the user is not logged-in general stats are shown.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
@@ -179,8 +179,8 @@ If the user is not logged-in general stats are shown.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     2 Open CVE bugs
 
 Once the user has identified themselves, show information on assigned and
@@ -197,8 +197,8 @@ reported bugs.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
@@ -212,8 +212,8 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     2 Open CVE bugs
 
 Note that the "CVE reports" link is not shown above; distribution
@@ -240,8 +240,8 @@ option to subscribe to bug mail.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
@@ -251,8 +251,8 @@ option to subscribe to bug mail.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug
 
 Once the user has identified themselves, show information on assigned and
@@ -269,8 +269,8 @@ reported bugs.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
@@ -284,8 +284,8 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug
 
 Note that the "CVE reports" link is not shown above; source packages
@@ -311,8 +311,8 @@ If the user is not logged-in general stats are shown.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
@@ -322,8 +322,8 @@ If the user is not logged-in general stats are shown.
     1 Critical bug
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug
 
 Once the user has identified themselves, show information on assigned
@@ -340,8 +340,8 @@ and reported bugs.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
@@ -360,8 +360,8 @@ and reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug
 
 Note that the "CVE reports" link is not shown above; project groups do
@@ -387,8 +387,8 @@ If the user is not logged-in general stats are shown.
     Critical bugs
     High importance bugs
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
@@ -398,8 +398,8 @@ If the user is not logged-in general stats are shown.
     1 Critical bug
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug - CVE report
 
 Once the user has identified him or herself, information on assigned
@@ -416,8 +416,8 @@ bugs is also shown.
     Bugs reported by me
     Bugs affecting me
     <BLANKLINE>
-    Bugs with patches
     Bugs fixed elsewhere
+    Bugs with patches
     Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
@@ -436,8 +436,8 @@ bugs is also shown.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs with patches
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     1 Open CVE bug - CVE report
 
 
@@ -457,8 +457,9 @@ remove it, there's a feature flag to hide the count.
     >>> print_bugfilters_portlet_filled(user_browser, path)
     3 New bugs
     ...
-    0 Bugs with patches
+    <BLANKLINE>
     0 Bugs fixed elsewhere
+    0 Bugs with patches
     ...
 
     >>> from lp.services.features.testing import FeatureFixture
@@ -467,6 +468,7 @@ remove it, there's a feature flag to hide the count.
     ...     print print_bugfilters_portlet_filled(user_browser, path)
     3 New bugs
     ...
-    0 Bugs with patches
+    <BLANKLINE>
       Bugs fixed elsewhere
+    0 Bugs with patches
     ...
