@@ -153,8 +153,8 @@ class TestSharingService(TestCaseWithFactory):
         # Make existing grants to ensure sharePillarInformation handles those
         # cases correctly.
         # First, a grant that is in the add set - it wil be retained.
-        policy = self.factory.makeAccessPolicy(
-            pillar=pillar, type=InformationType.EMBARGOEDSECURITY)
+        policy = getUtility(IAccessPolicySource).find(((
+            pillar, InformationType.EMBARGOEDSECURITY),))[0]
         self.factory.makeAccessPolicyGrant(
             policy, grantee=sharee, grantor=grantor)
         # Second, a grant that is not in the add set - it will be deleted.
