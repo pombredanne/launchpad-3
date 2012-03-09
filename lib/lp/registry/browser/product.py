@@ -1572,7 +1572,7 @@ class ProductPrivateBugsMixin():
         return parent.updateContextFromData(data, context, notify_modified)
 
 
-class ProductEditView(LaunchpadEditFormView):
+class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     implements(IProductEditMenu)
