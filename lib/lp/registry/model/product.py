@@ -757,10 +757,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # project_reviewed & licenses at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
-        # $product/+edit doesn't require a license if a license hasn't
-        # already been set, but updateContextFromData() updates all the
-        # fields, so we have to avoid this assertion when the attribute
-        # isn't actually being changed.
         if len(licenses) == 0:
             raise ValueError('licenses argument must not be empty.')
         for license in licenses:
