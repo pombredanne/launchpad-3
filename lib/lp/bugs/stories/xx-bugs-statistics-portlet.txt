@@ -445,3 +445,28 @@ The content includes a link to the distribution CVE report.
 
     >>> print user_browser.getLink('CVE report').url
     http://bugs.launchpad.dev/firefox/+cve
+
+
+Hiding "Bugs fixed elsewhere" counts
+------------------------------------
+
+The count of bugs fixed elsewhere is of dubious utility, and it's
+expensive to calculate when generating BugSummary. As a trial before we
+remove it, there's a feature flag to hide the count.
+
+    >>> print_bugfilters_portlet_filled(user_browser, path)
+    3 New bugs
+    ...
+    0 Bugs with patches
+    0 Bugs fixed elsewhere
+    ...
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> with FeatureFixture(
+    ...     {'bugs.statistics_portlet.hide_fixed_elsewhere_count': 'true'}):
+    ...     print print_bugfilters_portlet_filled(user_browser, path)
+    3 New bugs
+    ...
+    0 Bugs with patches
+      Bugs fixed elsewhere
+    ...
