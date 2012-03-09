@@ -1679,19 +1679,37 @@ class Person(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
     def getWorkItemsDueIn(self, date):
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
         store = Store.of(self)
+        # XXX: This is not running as a subquery as I was expecting, so
+        # it causes this method to execute 3 DB queries. This may or may not
+        # be ok; need to find out.
         participant_ids = store.find(
             TeamParticipation.personID, TeamParticipation.teamID == self.id)
         WorkItem = SpecificationWorkItem
         origin = [
             WorkItem,
             Join(Specification, WorkItem.specification == Specification.id),
+            LeftJoin(Product, Specification.product == Product.id),
+            LeftJoin(Distribution,
+                     Specification.distribution == Distribution.id),
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
+            Join(Person,
+                 Coalesce(WorkItem.assignee_id,
+                          Specification.assigneeID) == Person.id),
             ]
         return store.using(*origin).find(
-            WorkItem,
+            # Apparently including the spec/milestone/person here means we
+            # won't cause any more hits to the DB when we reach to
+            # WorkItem.milestone/spec/person.  Need to confirm that because
+            # this is one of the things we need to ensure. Possibly by writing
+            # a test.
+            (Specification, WorkItem, Milestone, Person, Product,
+             Distribution),
             AND(Milestone.dateexpected == date,
                 OR(Specification.assigneeID.is_in(participant_ids),
                    WorkItem.assignee_id.is_in(participant_ids))

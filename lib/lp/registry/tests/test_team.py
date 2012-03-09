@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from testtools.matchers import LessThan
+
 import transaction
 from zope.component import getUtility
 from zope.interface.exceptions import Invalid
@@ -37,12 +39,14 @@ from lp.testing import (
     login_celebrity,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestTeamContactAddress(TestCaseWithFactory):
@@ -603,6 +607,10 @@ class TestTeamWorkItems(TestCaseWithFactory):
             product=current_milestone.product)
         workitem_from_assigned_spec = self.factory.makeSpecificationWorkItem(
             title=u'workitem_from_assigned_spec', specification=assigned_spec)
+        second_workitem_from_assigned_spec = (
+            self.factory.makeSpecificationWorkItem(
+                title=u'second workitem_from_assigned_spec',
+                specification=assigned_spec))
         future_spec = self.factory.makeSpecification(
             milestone=future_milestone, product=future_milestone.product)
         workitem_from_future_spec = self.factory.makeSpecificationWorkItem(
@@ -629,8 +637,24 @@ class TestTeamWorkItems(TestCaseWithFactory):
         # TODO: Is the order correct here?  Should we set different statuses
         # on those to properly test the sort order?
         expected = [
-            workitem_from_assigned_spec,
-            assigned_workitem_from_future_spec,
-            assigned_workitem_from_foreign_spec]
+            (assigned_spec, workitem_from_assigned_spec),
+            (assigned_spec, second_workitem_from_assigned_spec),
+            (future_spec, assigned_workitem_from_future_spec),
+            (foreign_spec, assigned_workitem_from_foreign_spec)]
         self.assertEqual(expected, list(work_items))
 
+    # TODO: We need to create workitem entries for this test.
+    def test_query_counts(self):
+        team = self.factory.makeTeam()
+        with StormStatementRecorder() as recorder:
+            work_items = list(
+                removeSecurityProxy(team).getWorkItemsDueIn(
+                    datetime(2010, 1, 1)))
+        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+
+        with StormStatementRecorder() as recorder:
+            for spec, work_item, milestone, assignee in work_items:
+                work_item.assignee
+                work_item.specification
+                work_item.milestone
+        self.assertThat(recorder, HasQueryCount(LessThan(1)))
