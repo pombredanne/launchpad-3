@@ -369,6 +369,9 @@ table.summary ul, table.summary ul li {
     margin: 0;
     padding: 0;
     }
+tt.command {
+    padding-left: 2em;
+    }
 .results {
     background-color: #f4f4f4;
     padding: 2px 10px 5px 10px;
