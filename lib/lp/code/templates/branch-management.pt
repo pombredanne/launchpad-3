@@ -14,7 +14,7 @@
       tal:condition="view/bzr_download_url">
     <dt>Get this branch:</dt>
     <dd>
-      <tt>
+      <tt class="command">
         bzr branch
         <span class="branch-url" tal:content="view/bzr_download_url" />
       </tt>
@@ -45,7 +45,7 @@
           <dl id="upload-url">
             <dt>Update this branch:</dt>
             <dd>
-              <tt>
+              <tt class="command">
               bzr push
               <tal:use-existing condition="view/is_empty_directory">
               --use-existing
