@@ -209,7 +209,7 @@ tr.white {
 tr.shaded {
     background-color: #f6f6f6;
     }
-table .amount {
+table .amount, table .action-icons {
     text-align: right;
     }
 table.contributions th {
