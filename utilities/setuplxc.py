@@ -767,6 +767,7 @@ def create_scripts(user, lxcname, ssh_key_path):
         'lxcname': lxcname,
         'ssh_key_path': ssh_key_path,
         'user': user,
+        'user_home': get_user_home(user),
         }
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
@@ -806,7 +807,8 @@ def create_scripts(user, lxcname, ssh_key_path):
             #!/bin/sh
             set -uex
             lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \
-                -b $PWD -- "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
+                -b '{user_home}' -- \
+                "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
                 --server-args='-screen 0 1024x768x24' \
                 -a $PWD/bin/test --subunit $@"
             """).format(**mapping)))
