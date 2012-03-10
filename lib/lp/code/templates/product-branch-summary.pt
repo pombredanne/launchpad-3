@@ -118,7 +118,7 @@
        tal:condition="not: context/codehosting_usage/enumvalue:LAUNCHPAD"
        tal:define="configure_codehosting view/configure_codehosting |
        nothing">
-      <p style="margin-top: 10px;">
+      <p>
         <a class="sprite maybe"
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>

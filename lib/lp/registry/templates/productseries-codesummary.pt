@@ -78,6 +78,13 @@
   <div id="branch-revision-details" tal:condition="context/branch/revision_count">
     <span tal:replace="context/branch/revision_count">35</span> revisions.
   </div>
+
+  <p>
+    You can get a copy of the development focus branch using the command:<br />
+    <tt class="command">
+      bzr brnch <tal:products replace="context/branch/bzr_identity"/>
+    </tt>
+  </p>
 </tal:block>
 
 </div>
