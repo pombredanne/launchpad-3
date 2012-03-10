@@ -24,8 +24,6 @@ body.global-notification-visible .login-logout {
     font-size: 14px;
     line-height: 21px;
     font-weight: bold;
-    -moz-box-shadow: 0 0 5px #333;
-    -webkit-box-shadow: 0 0 5px #333;
     box-shadow: 0 0 5px #333;
     }
 .global-notification .sprite.notification-private {
@@ -36,7 +34,8 @@ body.global-notification-visible .login-logout {
     margin-right: 10px;
     padding: 0;
     }
-.global-notification-close, .global-notification-close:active,
+.global-notification-close,
+.global-notification-close:active,
 .global-notification-close:visited {
     color: #e47a7a;
     }
