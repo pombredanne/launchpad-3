@@ -84,7 +84,6 @@ to configure each service.
     report_bug
     ask_question
     help_translate
-    submit_code
 
     >>> for link in view.configuration_links:
     ...     print link['link'].name
@@ -268,7 +267,6 @@ The menu when viewed from a product page.
     http://bugs.launchpad.dev/bread/+filebug
     http://answers.launchpad.dev/bread/+addquestion
     http://translations.launchpad.dev/bread
-    http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
 
     >>> from lp.registry.browser.pillar import InvolvedMenu

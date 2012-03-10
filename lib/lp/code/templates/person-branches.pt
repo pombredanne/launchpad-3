@@ -13,9 +13,6 @@
   <div tal:define="menu context/menu:branches"
        tal:condition="view/show_action_menu"
        class="first portlet">
-    <div tal:define="link menu/addbranch"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
   </div>
 
   <tal:summary replace="structure context/@@+codesummary"/>

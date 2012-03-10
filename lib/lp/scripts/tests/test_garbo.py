@@ -1012,14 +1012,15 @@ class TestGarbo(TestCaseWithFactory):
         now = datetime.now(UTC)
         cutoff = now - timedelta(days=1)
         old_update = now - timedelta(days=2)
-        bug.heat_last_updated = old_update
+        naked_bug = removeSecurityProxy(bug)
+        naked_bug.heat_last_updated = old_update
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'bugs.heat_updates.cutoff',
             cutoff.isoformat().decode('ascii')))
         transaction.commit()
-        self.assertEqual(old_update, bug.heat_last_updated)
+        self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
-        self.assertNotEqual(old_update, bug.heat_last_updated)
+        self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
     def test_AccessPolicyDistributionAddition(self):
         switch_dbuser('testadmin')

@@ -4,8 +4,6 @@
 """All the interfaces that are exposed through the webservice."""
 
 __all__ = [
-    'IAccessPolicyService',
-    'IServiceFactory',
     'DerivationError',
     'ICommercialSubscription',
     'IDistribution',
@@ -31,6 +29,8 @@ __all__ = [
     'IProductSet',
     'IProjectGroup',
     'IProjectGroupSet',
+    'IServiceFactory',
+    'ISharingService',
     'ISSHKey',
     'ISourcePackage',
     'ISourcePackageName',
@@ -44,7 +44,7 @@ __all__ = [
 # import bugs.  Break this up into a per-package thing.
 from lp import _schema_circular_imports
 from lp.app.interfaces.services import IServiceFactory
-from lp.registry.interfaces.accesspolicyservice import IAccessPolicyService
+from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
