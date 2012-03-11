@@ -1,25 +1,23 @@
 table.sharing td {
-    padding: 0;
+    padding: 2px 0 2px 0;
     margin: 0;
-}
+    }
 table.sharing ul {
-    margin-top: 3px
-}
+    margin-top: 3px;
+    }
 table.sharing ul.horizontal li {
-  display: inline;
-  list-style-type: none;
-  padding-right: 10px;
-}
+    display: inline;
+    list-style-type: none;
+    padding-right: 10px;
+    }
 table.sharing ul.horizontal li div {
-  display: inline;
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
+    display: inline;
+    border-radius: 5px;
     background-color: #dcdcdc;
     padding: 3px;
     width: auto;
     overflow: hidden;
-}
+    }
 table.sharing tr.spacebefore > td {
-  padding-top: 1em;
-}
+    padding-top: 1em;
+    }
