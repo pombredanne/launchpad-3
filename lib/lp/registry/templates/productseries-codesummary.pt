@@ -82,7 +82,7 @@
   <p>
     You can get a copy of the development focus branch using the command:<br />
     <tt class="command">
-      bzr brnch <tal:products replace="context/branch/bzr_identity"/>
+      bzr branch <tal:products replace="context/branch/bzr_identity"/>
     </tt>
   </p>
 </tal:block>
