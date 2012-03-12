@@ -542,8 +542,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertTrue(now >= cs.date_starts)
             future_30_days = now + datetime.timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
-            self.assertEqual(
-                "Complimentary 30 day subscription.", cs.whiteboard)
+            self.assertIn(
+                "Complimentary 30 day subscription. -- Launchpad",
+                cs.whiteboard)
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
@@ -563,8 +564,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertTrue(now >= cs.date_starts)
             future_30_days = now + datetime.timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
-            self.assertEqual(
-                "Complimentary 30 day subscription.", cs.whiteboard)
+            self.assertIn(
+                "Complimentary 30 day subscription. -- Launchpad",
+                cs.whiteboard)
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)

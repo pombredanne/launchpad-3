@@ -777,7 +777,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             now = datetime.datetime.now(pytz.UTC)
             date_expires = now + datetime.timedelta(days=30)
             sales_system_id = 'complimentary-30-day-%s' % now
-            whiteboard = "Complimentary 30 day subscription."
+            whiteboard = (
+                "Complimentary 30 day subscription. -- Launchpad %s" %
+                now.date().isoformat())
             subscription = CommercialSubscription(
                 product=self, date_starts=now, date_expires=date_expires,
                 registrant=lp_janitor, purchaser=lp_janitor,
