@@ -322,19 +322,19 @@ class ApiTestMixin:
         super(ApiTestMixin, self).setUp()
         self.owner = self.factory.makePerson()
         self.pillar = self.factory.makeProduct(owner=self.owner)
-        self.grantee = self.factory.makePerson()
+        self.grantee = self.factory.makePerson(name='grantee')
         self.grantor = self.factory.makePerson()
         self.grantee_uri = canonical_url(self.grantee, force_local_path=True)
         self.grantor_uri = canonical_url(self.grantor, force_local_path=True)
-
         transaction.commit()
 
     def test_getPillarSharees(self):
         # Test the getPillarSharees method.
         [json_data] = self._getPillarSharees()
         self.assertEqual('grantee', json_data['name'])
-        print json_data
-        self.assertIn('permissions', json_data)
+        self.assertEqual(
+            {InformationType.USERDATA.name: SharingPermission.ALL.name},
+            json_data['permissions'])
 
 
 class TestWebService(ApiTestMixin, WebServiceTestCase):
@@ -374,7 +374,8 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
         return self._named_post(
             'sharePillarInformation', pillar=pillar_uri,
             sharee=self.grantee_uri,
-            permissions={InformationType.USERDATA: SharingPermission.ALL},
+            permissions={
+                InformationType.USERDATA.title: SharingPermission.ALL.title},
             user=self.grantor_uri)
 
 
@@ -401,4 +402,6 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         ws_grantee = ws_object(self.launchpad, self.grantee)
         return self.service.sharePillarInformation(pillar=ws_pillar,
             sharee=ws_grantee,
-            permissions={InformationType.USERDATA: SharingPermission.ALL})
+            permissions={
+                InformationType.USERDATA.title: SharingPermission.ALL.title}
+        )

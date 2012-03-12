@@ -154,7 +154,6 @@ class SharingService:
         for (information_type, permission) in permissions.items():
             permission_data[information_type.name] = permission.name
         person_data['permissions'] = permission_data
-        print permission_data
         return person_data
 
     @available_with_permission('launchpad.Edit', 'pillar')
