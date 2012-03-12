@@ -967,28 +967,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        product = getUtility(IProductSet).createProduct(
-            owner,
-            name,
-            displayname,
-            title,
-            summary,
-            self.getUniqueString('description'),
-            licenses=licenses,
-            project=project,
-            registrant=registrant,
-            icon=icon)
-        naked_product = removeSecurityProxy(product)
-        if official_malone is not None:
-            naked_product.official_malone = official_malone
-        if translations_usage is not None:
-            naked_product.translations_usage = translations_usage
-        if bug_supervisor is not None:
-            naked_product.bug_supervisor = bug_supervisor
-        if driver is not None:
-            naked_product.driver = driver
-        if security_contact is not None:
-            naked_product.security_contact = security_contact
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner,
+                name,
+                displayname,
+                title,
+                summary,
+                self.getUniqueString('description'),
+                licenses=licenses,
+                project=project,
+                registrant=registrant,
+                icon=icon)
+            if official_malone is not None:
+                product.official_malone = official_malone
+            if translations_usage is not None:
+                product.translations_usage = translations_usage
+            if bug_supervisor is not None:
+                product.bug_supervisor = bug_supervisor
+            if driver is not None:
+                product.driver = driver
+            if security_contact is not None:
+                product.security_contact = security_contact
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
