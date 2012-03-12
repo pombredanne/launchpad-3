@@ -54,6 +54,8 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -136,6 +138,7 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+        DatabaseLayer.force_dirty_database()
 
 
 class BulkFoo(Storm):
@@ -1009,14 +1012,35 @@ class TestGarbo(TestCaseWithFactory):
         now = datetime.now(UTC)
         cutoff = now - timedelta(days=1)
         old_update = now - timedelta(days=2)
-        bug.heat_last_updated = old_update
+        naked_bug = removeSecurityProxy(bug)
+        naked_bug.heat_last_updated = old_update
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'bugs.heat_updates.cutoff',
             cutoff.isoformat().decode('ascii')))
         transaction.commit()
-        self.assertEqual(old_update, bug.heat_last_updated)
+        self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
-        self.assertNotEqual(old_update, bug.heat_last_updated)
+        self.assertNotEqual(old_update, naked_bug.heat_last_updated)
+
+    def test_AccessPolicyDistributionAddition(self):
+        switch_dbuser('testadmin')
+        distribution = self.factory.makeDistribution()
+        transaction.commit()
+        self.runHourly()
+        ap = getUtility(IAccessPolicySource).findByPillar((distribution,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
+    def test_AccessPolicyProductAddition(self):
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct()
+        transaction.commit()
+        self.runHourly()
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
 
     def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
         self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
@@ -1028,7 +1052,7 @@ class TestGarbo(TestCaseWithFactory):
         spec = self.factory.makeSpecification(whiteboard=whiteboard)
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
@@ -1052,7 +1076,7 @@ class TestGarbo(TestCaseWithFactory):
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual('', spec.whiteboard.strip())
         self.assertEqual(2, spec.work_items.count())
@@ -1079,11 +1103,10 @@ class TestGarbo(TestCaseWithFactory):
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
 
-        self.runHourly()
+        self.runFrequently()
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
-
 
 
 class TestGarboTasks(TestCaseWithFactory):

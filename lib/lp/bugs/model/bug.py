@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1009,8 +1009,10 @@ class Bug(SQLBase):
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id).config(
-                    distinct=(BugSubscription.person_id,)),
+                    BugSubscription.person_id,
+                    BugSubscription.date_created,
+                    BugSubscription.id
+                    ).config(distinct=(BugSubscription.person_id,)),
             operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
@@ -1996,15 +1998,14 @@ class Bug(SQLBase):
         store.invalidate(self)
 
     def shouldConfirmBugtasks(self):
-        """Should we try to confirm this bug's bugtasks?
-        The answer is yes if more than one user is affected."""
+        """See `IBug`."""
         # == 2 would probably be sufficient once we have all legacy bug tasks
         # confirmed.  For now, this is a compromise: we don't need a migration
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
     def maybeConfirmBugtasks(self):
-        """Maybe try to confirm our new bugtasks."""
+        """See `IBug`."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
                 bugtask.maybeConfirm()
@@ -2230,18 +2231,6 @@ class Bug(SQLBase):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
-
-    def setHeat(self, heat, timestamp=None):
-        """See `IBug`."""
-        """See `IBug`."""
-        if timestamp is None:
-            timestamp = UTC_NOW
-
-        if heat < 0:
-            heat = 0
-
-        self.heat = heat
-        self.heat_last_updated = timestamp
 
     def updateHeat(self):
         """See `IBug`."""
@@ -2613,8 +2602,11 @@ class BugSubscriptionInfo:
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+                Not(In(
+                    BugSubscription.person_id,
+                    Select(
+                        BugMute.person_id, BugMute.bug_id == Bug.id,
+                        tables=[BugMute]))))
 
     @property
     def duplicate_subscribers(self):
@@ -2967,12 +2959,6 @@ class BugSet:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, Bug.id.is_in(bug_numbers))
-        return result_set.order_by('id')
-
-    def dangerousGetAllBugs(self):
-        """See `IBugSet`."""
-        store = IStore(Bug)
-        result_set = store.find(Bug)
         return result_set.order_by('id')
 
     def getBugsWithOutdatedHeat(self, cutoff):

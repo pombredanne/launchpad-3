@@ -1,6 +1,10 @@
 form {
     margin-bottom: 1em;
     }
+form.inline {
+    display: inline;
+    margin: 0;
+    }
 form h1 {
     margin-bottom: 1em;
     }
@@ -54,6 +58,9 @@ button.overlay-close-button {
     height: 15px;
     display: block;
     margin-top: 4px;
+    }
+.selection-choices {
+    margin: 0.75em 0 0 1em
     }
 .fieldRequired, .fieldOptional {
     color: #999;
@@ -367,9 +374,7 @@ table.form .error {
     position: relative;
     }
 .important-notice-balloon {
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
+    border-radius: 5px;
     background-color: #ededed;
     padding: 1em;
     border: 1px solid #000;

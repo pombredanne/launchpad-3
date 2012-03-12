@@ -13,6 +13,7 @@ __all__ = [
     'canonical_name',
     'canonical_url',
     'ContextMenu',
+    'available_with_permission',
     'enabled_with_permission',
     'expand_numbers',
     'FacetMenu',

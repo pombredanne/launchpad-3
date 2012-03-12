@@ -139,9 +139,9 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
-    AccessPolicyType,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -848,7 +848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None):
+                      productseries=None, name=None, active=True):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -864,7 +864,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name))
+                      name=name, active=active))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -4385,7 +4385,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_version=package_version, requester=requester)
 
     def makeAccessPolicy(self, pillar=None,
-                         type=AccessPolicyType.PROPRIETARY):
+                         type=InformationType.PROPRIETARY):
         if pillar is None:
             pillar = self.makeProduct()
         policies = getUtility(IAccessPolicySource).create([(pillar, type)])

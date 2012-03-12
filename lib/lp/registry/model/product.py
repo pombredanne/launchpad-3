@@ -37,7 +37,6 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Not,
     Or,
@@ -758,14 +757,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # project_reviewed & licenses at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
-        # $product/+edit doesn't require a license if a license hasn't
-        # already been set, but updateContextFromData() updates all the
-        # fields, so we have to avoid this assertion when the attribute
-        # isn't actually being changed.
-        assert len(licenses) != 0, "licenses argument must not be empty"
+        if len(licenses) == 0:
+            raise ValueError('licenses argument must not be empty.')
         for license in licenses:
             if license not in License:
-                raise AssertionError("%s is not a License" % license)
+                raise ValueError("%s is not a License." % license)
 
         for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self,

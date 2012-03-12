@@ -1,14 +1,15 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enums for the Registry app."""
 
 __metaclass__ = type
 __all__ = [
-    'AccessPolicyType',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
+    'InformationType',
     'PersonTransferJobType',
+    'SharingPermission',
     ]
 
 from lazr.enum import (
@@ -17,10 +18,10 @@ from lazr.enum import (
     )
 
 
-class AccessPolicyType(DBEnumeratedType):
-    """Access policy type.
+class InformationType(DBEnumeratedType):
+    """Information Type.
 
-    The policies used to control which users and teams can see various
+    The types used to control which users and teams can see various
     Launchpad artifacts, including bugs and branches.
     """
 
@@ -30,8 +31,8 @@ class AccessPolicyType(DBEnumeratedType):
         Everyone can see this information.
         """)
 
-    PUBLICSECURITY = DBItem(2, """
-        Public Security
+    UNEMBARGOEDSECURITY = DBItem(2, """
+        Unembargoed Security
 
         Everyone can see this information pertaining to a resolved security
         related bug.
@@ -56,6 +57,31 @@ class AccessPolicyType(DBEnumeratedType):
 
         Only users with permission to see the project's artifacts containing
         proprietary data can see this information.
+        """)
+
+
+class SharingPermission(DBEnumeratedType):
+    """Sharing permission.
+
+    The level of access granted for a particular access policy.
+    """
+
+    NOTHING = DBItem(1, """
+        Nothing
+
+        Revoke all bug and branch subscriptions.
+        """)
+
+    ALL = DBItem(2, """
+        All
+
+        Share all bugs and branches.
+        """)
+
+    SOME = DBItem(3, """
+        Some
+
+        Share bug and branch subscriptions.
         """)
 
 

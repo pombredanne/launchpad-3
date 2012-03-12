@@ -24,7 +24,7 @@ from storm.references import Reference
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -125,7 +125,7 @@ class AccessPolicy(StormBase):
     product = Reference(product_id, 'Product.id')
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, 'Distribution.id')
-    type = DBEnum(allow_none=True, enum=AccessPolicyType)
+    type = DBEnum(allow_none=True, enum=InformationType)
 
     @property
     def pillar(self):
@@ -222,6 +222,11 @@ class AccessPolicyArtifact(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
+    @classmethod
+    def deleteByArtifact(cls, artifacts):
+        """See `IAccessPolicyArtifactSource`."""
+        cls.findByArtifact(artifacts).remove()
+
 
 class AccessArtifactGrant(StormBase):
     implements(IAccessArtifactGrant)
@@ -306,6 +311,11 @@ class AccessPolicyGrant(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(cls, cls.policy_id.is_in(ids))
 
+    @classmethod
+    def revoke(cls, grants):
+        """See `IAccessPolicyGrantSource`."""
+        cls.find(grants).remove()
+
 
 class AccessPolicyGrantFlat(StormBase):
     __storm_table__ = 'AccessPolicyGrantFlat'
@@ -325,3 +335,13 @@ class AccessPolicyGrantFlat(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(
             Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+
+    @classmethod
+    def findArtifactsByGrantee(cls, grantee, policies):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(
+            AccessArtifact,
+            AccessArtifact.id == cls.abstract_artifact_id,
+            cls.grantee_id == grantee.id,
+            cls.policy_id.is_in(ids))

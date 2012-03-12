@@ -2372,8 +2372,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_model_age(self):
         """Model contains bug age."""
         owner, item = make_bug_task_listing_item(self.factory)
+        bug = removeSecurityProxy(item.bug)
+        bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
         with person_logged_in(owner):
-            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
             self.assertEqual('3 days old', item.model['age'])
 
     def test_model_tags(self):
@@ -2399,9 +2400,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_updated if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2000, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2000, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
 
@@ -2409,8 +2410,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_message if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2001, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])

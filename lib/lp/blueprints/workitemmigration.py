@@ -81,7 +81,9 @@ def milestone_extract(text, valid_milestones):
         for word in words:
             if word == milestone.name:
                 return milestone
-    raise WorkItemParseError("No valid milestones found in %s" % words)
+    raise WorkItemParseError(
+        "No valid milestones found in %s. Valid milestone names are %s"
+        % (words, [m.name for m in valid_milestones]))
 
 
 def extractWorkItemsFromWhiteboard(spec):
@@ -94,7 +96,7 @@ def extractWorkItemsFromWhiteboard(spec):
     in_wi_block = False
     new_whiteboard = []
 
-    target_milestones = list(spec.target.milestones)
+    target_milestones = list(spec.target.all_milestones)
     wi_lines = []
     # Iterate over all lines in the whiteboard and whenever we find a line
     # matching work_items_re we 'continue' and store the following lines

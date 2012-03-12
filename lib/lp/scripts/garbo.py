@@ -13,6 +13,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import itertools
 import logging
 import multiprocessing
 import os
@@ -26,7 +27,12 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import In
+from storm.expr import (
+    Exists,
+    In,
+    Not,
+    Select,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -57,7 +63,12 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.model.accesspolicy import AccessPolicy
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
@@ -990,6 +1001,64 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
+class AccessPolicyDistributionAddition(TunableLoop):
+    """A `TunableLoop` to add AccessPolicy for all distributions."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(AccessPolicyDistributionAddition, self).__init__(
+            log, abort_time)
+        self.transaction = transaction
+        self.store = IMasterStore(Distribution)
+
+    def findDistributions(self):
+        return self.store.find(
+            Distribution,
+            Not(Exists(
+                Select(AccessPolicy.id,
+                tables=[AccessPolicy], where=[
+                    AccessPolicy.distribution_id == Distribution.id]))))
+
+    def isDone(self):
+        return self.findDistributions().is_empty()
+
+    def __call__(self, chunk_size):
+        policies = itertools.product(
+            self.findDistributions()[:chunk_size],
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
+        self.transaction.commit()
+
+
+class AccessPolicyProductAddition(TunableLoop):
+    """A `TunableLoop` to add AccessPolicy for all products."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(AccessPolicyProductAddition, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.store = IMasterStore(Product)
+
+    def findProducts(self):
+        return self.store.find(
+            Product,
+            Not(Exists(
+                Select(AccessPolicy.id, tables=[AccessPolicy], where=[
+                    AccessPolicy.product_id == Product.id]))))
+
+    def isDone(self):
+        return self.findProducts().is_empty()
+
+    def __call__(self, chunk_size):
+        policies = itertools.product(
+            self.findProducts()[:chunk_size],
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
+        self.transaction.commit()
+
+
 class SpecificationWorkitemMigrator(TunableLoop):
     """Migrate work-items from Specification.whiteboard to
     SpecificationWorkItem.
@@ -1293,6 +1362,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
+        SpecificationWorkitemMigrator,
         ]
     experimental_tunable_loops = []
 
@@ -1314,7 +1384,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        SpecificationWorkitemMigrator,
+        AccessPolicyDistributionAddition,
+        AccessPolicyProductAddition,
         ]
     experimental_tunable_loops = []
 
