@@ -1075,6 +1075,31 @@ class SpecificationWorkitemMigrator(TunableLoop):
 
     maximum_chunk_size = 500
     offset = 0
+    projects_to_migrate = [
+        'linaro-graphics-misc', 'linaro-powerdebug', 'linaro-mm-sig',
+        'linaro-patchmetrics', 'linaro-android-mirror', 'u-boot-linaro',
+        'lava-dashboard-tool', 'lava-celery', 'smartt', 'linaro-power-kernel',
+        'linaro-django-xmlrpc', 'linaro-multimedia-testcontent',
+        'linaro-status-website', 'linaro-octo-armhf', 'svammel', 'libmatrix',
+        'glproxy', 'lava-test', 'cbuild', 'linaro-ci',
+        'linaro-multimedia-ucm', 'linaro-ubuntu',
+        'linaro-android-infrastructure', 'linaro-wordpress-registration-form',
+        'linux-linaro', 'lava-server', 'linaro-android-build-tools',
+        'linaro-graphics-dashboard', 'linaro-fetch-image', 'unity-gles',
+        'lava-kernel-ci-views', 'cortex-strings', 'glmark2-extra',
+        'lava-dashboard', 'linaro-multimedia-speex', 'glcompbench',
+        'igloocommunity', 'linaro-validation-misc', 'linaro-websites',
+        'linaro-graphics-tests', 'linaro-android',
+        'jenkins-plugin-shell-status', 'binutils-linaro',
+        'linaro-multimedia-project', 'lava-qatracker',
+        'linaro-toolchain-binaries', 'linaro-image-tools',
+        'linaro-toolchain-misc', 'qemu-linaro', 'linaro-toolchain-benchmarks',
+        'lava-dispatcher', 'gdb-linaro', 'lava-android-test', 'libjpeg-turbo',
+        'lava-scheduler-tool', 'glmark2', 'linaro-infrastructure-misc',
+        'lava-lab', 'linaro-android-frontend', 'linaro-powertop',
+        'linaro-license-protection', 'gcc-linaro', 'lava-scheduler',
+        'linaro-offspring', 'linaro-python-dashboard-bundle',
+        'linaro-power-qa', 'lava-tool', 'linaro']
 
     def __init__(self, log, abort_time=None):
         super(SpecificationWorkitemMigrator, self).__init__(
@@ -1090,9 +1115,13 @@ class SpecificationWorkitemMigrator(TunableLoop):
             self.total = 0
             return
 
+        quoted_names = [
+            "'%s'" % name for name in self.projects_to_migrate]
+        query = ("product in (select id from product where name in (%s))"
+            % ",".join(quoted_names))
         # Get only the specs which contain "work items" in their whiteboard
         # and which don't have any SpecificationWorkItems.
-        query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
+        query += " and whiteboard ilike '%%' || %s || '%%'" % quote_like(
             'work items')
         query += (" and id not in (select distinct specification from "
                   "SpecificationWorkItem)")
