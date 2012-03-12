@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+"""Functions and classes that are subscribed to registry events."""
 
 __metaclass__ = type
 
