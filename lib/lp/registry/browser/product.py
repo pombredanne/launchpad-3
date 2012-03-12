@@ -628,7 +628,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branch_add',
         'branchvisibility',
         'rdf',
         'branding',
@@ -685,11 +684,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branchvisibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
