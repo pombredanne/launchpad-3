@@ -33,7 +33,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import random
 import re
 import subprocess
@@ -1678,7 +1681,7 @@ class Person(
         return admin_of_teams.union(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
-    def getWorkItemsDueIn(self, date):
+    def getWorkItemsDueBefore(self, date):
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
@@ -1702,7 +1705,7 @@ class Person(
                  Coalesce(WorkItem.assignee_id,
                           Specification.assigneeID) == Person.id),
             ]
-        return store.using(*origin).find(
+        result = store.using(*origin).find(
             # Apparently including the spec/milestone/person here means we
             # won't cause any more hits to the DB when we reach to
             # WorkItem.milestone/spec/person.  Need to confirm that because
@@ -1710,10 +1713,32 @@ class Person(
             # a test.
             (Specification, WorkItem, Milestone, Person, Product,
              Distribution),
-            AND(Milestone.dateexpected == date,
+            AND(Milestone.dateexpected <= date,
                 OR(Specification.assigneeID.is_in(participant_ids),
                    WorkItem.assignee_id.is_in(participant_ids))
                 ))
+        wis_by_date = {}
+        for (spec, wi, milestone, person, product, distro) in result:
+            if milestone.dateexpected not in wis_by_date:
+                wis_by_date[milestone.dateexpected] = []
+            wis_by_date[milestone.dateexpected].append(wi)
+        groups_by_date = {}
+        for date, items in wis_by_date.items():
+            work_items_by_spec = {}
+            for item in items:
+                spec = item.specification
+                if spec not in work_items_by_spec:
+                    if spec.product is None:
+                        target = spec.distro
+                    else:
+                        target = spec.product
+                    work_items_by_spec[spec] = WorkItemGroup(
+                            'label', target, spec.assignee, spec.priority, [])
+                work_items_by_spec[spec].items.append(item)
+            groups_by_date[date] = work_items_by_spec.values()
+        # TODO: We need to include bugs as well.
+        # TODO: When we have done thatneed to sort the items for every milestone
+        return groups_by_date
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
@@ -4860,3 +4885,31 @@ def _get_recipients_for_team(team):
         recipient_ids,
         need_validity=True,
         need_preferred_email=True)
+
+class WorkItemGroup:
+
+    def __init__(self, label, target, assignee, priority, items):
+        self.label = label
+        self.target = target
+        self.assignee = assignee
+        self.priority = priority
+        self.is_future = False
+        # Should this be ordered by state?
+        self.items = items
+        self.progressbar = object()  # What should we use here?
+        # In case this is a Blueprint, we may not have all work items included
+        # here (because they're targeted to a different milestone or targeted
+        # to somebody who's not a member of this team), so here we'd store the
+        # total count of work items on this BP.
+        self.total_workitems = int()
+
+
+class WorkItemAbstraction:
+
+    def __init__(self, assignee, status, is_complete, is_foreign, priority, target):
+        self.assignee = assignee
+        self.status = status
+        self.is_complete = is_complete
+        self.is_foreign = is_foreign
+        self.priority = priority
+        self.target = target

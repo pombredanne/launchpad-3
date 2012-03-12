@@ -596,8 +596,9 @@ class TestTeamWorkItems(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getWorkItems(self):
+        next_date = datetime(2050, 1, 1)
         current_milestone = self.factory.makeMilestone(
-            dateexpected=datetime(2050, 1, 1))
+            dateexpected=next_date)
         future_milestone = self.factory.makeMilestone(
             product=current_milestone.product,
             dateexpected=datetime(2060, 1, 1))
@@ -631,24 +632,24 @@ class TestTeamWorkItems(TestCaseWithFactory):
                 title=u'workitem_from_foreign_spec assigned to team member',
                 specification=foreign_spec, assignee=team.teamowner))
 
-        work_items = removeSecurityProxy(team).getWorkItemsDueIn(
+        work_items = removeSecurityProxy(team).getWorkItemsDueBefore(
             current_milestone.dateexpected)
 
         # TODO: Is the order correct here?  Should we set different statuses
         # on those to properly test the sort order?
         expected = [
-            (assigned_spec, workitem_from_assigned_spec),
-            (assigned_spec, second_workitem_from_assigned_spec),
-            (future_spec, assigned_workitem_from_future_spec),
-            (foreign_spec, assigned_workitem_from_foreign_spec)]
-        self.assertEqual(expected, list(work_items))
+            (assigned_spec, workitem_from_assigned_spec, current_milestone, team.teamowner, current_milestone.product, None),
+            (assigned_spec, second_workitem_from_assigned_spec, current_milestone, team.teamowner, current_milestone.product, None),
+            (future_spec, assigned_workitem_from_future_spec, current_milestone, team.teamowner, future_milestone.product, None),
+            (foreign_spec, assigned_workitem_from_foreign_spec, current_milestone, team.teamowner, current_milestone.product, None)]
+        self.assertEqual(expected, work_items)
 
     # TODO: We need to create workitem entries for this test.
     def test_query_counts(self):
         team = self.factory.makeTeam()
         with StormStatementRecorder() as recorder:
             work_items = list(
-                removeSecurityProxy(team).getWorkItemsDueIn(
+                removeSecurityProxy(team).getWorkItemsDueBefore(
                     datetime(2010, 1, 1)))
         self.assertThat(recorder, HasQueryCount(LessThan(2)))
 
