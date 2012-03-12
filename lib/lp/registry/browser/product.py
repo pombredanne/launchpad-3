@@ -77,7 +77,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -177,11 +176,6 @@ from lp.services.fields import (
     PublicPersonChoice,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.helpers import get_email_template
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -200,7 +194,6 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import (
-    ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
 from lp.services.webapp.menu import NavigationMenu
@@ -308,74 +301,6 @@ class ProductLicenseMixin:
         else:
             # Launchpad is ok with all licenses used in this project.
             pass
-
-    def notifyCommercialMailingList(self):
-        """Notify user about Launchpad license rules."""
-        licenses = list(self.product.licenses)
-        needs_email = (
-            License.OTHER_PROPRIETARY in licenses
-            or License.OTHER_OPEN_SOURCE in licenses
-            or [License.DONT_KNOW] == licenses)
-        if not needs_email:
-            # The project has a recognized license.
-            return
-
-        def indent(text):
-            if text is None:
-                return None
-            text = '\n    '.join(line for line in text.split('\n'))
-            text = '    ' + text
-            return text
-
-        user = getUtility(ILaunchBag).user
-        user_address = format_address(
-            user.displayname, user.preferredemail.email)
-        from_address = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
-        commercial_address = format_address(
-            'Commercial', 'commercial@launchpad.net')
-        license_titles = '\n'.join(
-            license.title for license in self.product.licenses)
-        substitutions = dict(
-            user_browsername=user.displayname,
-            user_name=user.name,
-            product_name=self.product.name,
-            product_url=canonical_url(self.product),
-            product_summary=indent(self.product.summary),
-            license_titles=indent(license_titles),
-            license_info=indent(self.product.license_info))
-        # Email the user about license policy.
-        subject = (
-            "License information for %(product_name)s "
-            "in Launchpad" % substitutions)
-        template = get_email_template(
-            'product-other-license.txt', app='registry')
-        message = template % substitutions
-        simple_sendmail(
-            from_address, user_address,
-            subject, message, headers={'Reply-To': commercial_address})
-        # Inform that Launchpad recognized the license change.
-        self._addLicenseChangeToReviewWhiteboard()
-        self.request.response.addInfoNotification(_(
-            "Launchpad is free to use for software under approved "
-            "licenses. The Launchpad team will be in contact with "
-            "you soon."))
-
-    def _addLicenseChangeToReviewWhiteboard(self):
-        """Update the whiteboard for the reviewer's benefit."""
-        now = self._formatDate()
-        whiteboard = 'User notified of license policy on %s.' % now
-        naked_product = removeSecurityProxy(self.product)
-        if naked_product.reviewer_whiteboard is None:
-            naked_product.reviewer_whiteboard = whiteboard
-        else:
-            naked_product.reviewer_whiteboard += '\n' + whiteboard
-
-    def _formatDate(self, now=None):
-        """Return the date formatted for messages."""
-        if now is None:
-            now = datetime.now(tz=pytz.UTC)
-        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -1620,13 +1545,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        previous_licenses = self.context.licenses
         self.updateContextFromData(data)
-        # only send email the first time licenses are set
-        if len(previous_licenses) == 0:
-            # self.product is expected by notifyCommercialMailingList
-            self.product = self.context
-            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
