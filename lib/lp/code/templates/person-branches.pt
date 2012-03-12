@@ -26,7 +26,7 @@
     You can push (upload) personal branches
     (those not related to a project) with the following command:
     <br/>
-    <tt>bzr push lp:~<tal:name
+    <tt class="command">bzr push lp:~<tal:name
       replace="view/user/name"/>/+junk/<em>BRANCHNAME</em></tt>
   </p>
 

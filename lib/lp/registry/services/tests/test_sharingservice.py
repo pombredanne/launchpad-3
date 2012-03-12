@@ -153,8 +153,8 @@ class TestSharingService(TestCaseWithFactory):
         # Make existing grants to ensure sharePillarInformation handles those
         # cases correctly.
         # First, a grant that is in the add set - it wil be retained.
-        policy = self.factory.makeAccessPolicy(
-            pillar=pillar, type=InformationType.EMBARGOEDSECURITY)
+        policy = getUtility(IAccessPolicySource).find(((
+            pillar, InformationType.EMBARGOEDSECURITY),))[0]
         self.factory.makeAccessPolicyGrant(
             policy, grantee=sharee, grantor=grantor)
         # Second, a grant that is not in the add set - it will be deleted.
@@ -227,15 +227,9 @@ class TestSharingService(TestCaseWithFactory):
         self._test_sharePillarInformationUnauthorized(product)
 
     def _test_deletePillarSharee(self, pillar, types_to_delete=None):
-        # Make grants for some information types.
-        information_types = [
-            InformationType.EMBARGOEDSECURITY,
-            InformationType.USERDATA]
-        access_policies = []
-        for info_type in information_types:
-            access_policy = self.factory.makeAccessPolicy(
-                pillar=pillar, type=info_type)
-            access_policies.append(access_policy)
+        access_policies = getUtility(IAccessPolicySource).findByPillar(
+            (pillar,))
+        information_types = [ap.type for ap in access_policies]
         grantee = self.factory.makePerson()
         # Make some access policy grants for our sharee.
         for access_policy in access_policies:

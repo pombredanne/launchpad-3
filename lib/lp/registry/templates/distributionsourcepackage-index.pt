@@ -90,7 +90,7 @@
             </dd>
           </dl>
         </div>
-        <p style="font-size: 80%;">
+        <p class="lesser">
           <sup>*</sup>actual publishing details may vary in this distribution, these are just the package defaults.
         </p>
       </div><!--portlet-->

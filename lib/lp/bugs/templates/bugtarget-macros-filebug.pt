@@ -492,7 +492,7 @@
       because in that situation we're showing the form after an error
       message and in that context the message makes no sense.
     </tal:comment>
-    <p style="margin-top: 1em" tal:condition="view/contextUsesMalone">
+    <p tal:condition="view/contextUsesMalone">
       <input id="bug-not-already-reported" type="button"
              name="field.bug_already_reported_as"
              value="No, I need to report a new bug" />
