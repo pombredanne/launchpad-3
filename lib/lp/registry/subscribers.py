@@ -25,37 +25,34 @@ from lp.services.webapp.publisher import canonical_url
 
 
 def product_licenses_modified(product, event):
-    if 'licenses' not in event.edited_fields:
-        return
-    licenses = list(product.licenses)
-    needs_email = (
-        License.OTHER_PROPRIETARY in licenses
-        or License.OTHER_OPEN_SOURCE in licenses
-        or [License.DONT_KNOW] == licenses)
-    if not needs_email:
-        # The project has a recognized license.
-        return
-    user = IPerson(event.user)
-    notification = LicenseNotification(product, user)
-    notification.send()
+    """Send a notification if licenses changed and a license is special."""
+    licenses_changed = 'licenses' in event.edited_fields
+    needs_notification = LicenseNotification.needs_notification(product)
+    if licenses_changed and needs_notification:
+        user = IPerson(event.user)
+        notification = LicenseNotification(product, user)
+        notification.send()
 
 
 class LicenseNotification:
-    # XXX sinzui 2012-03-09: This was extracted from ProductLicenseMixin in
-    # lp.registry.browser.product.
+    """Send notification about special licenses to the user."""
 
     def __init__(self, product, user):
         self.product = product
         self.user = user
 
-    def send(self):
-        licenses = list(self.product.licenses)
-        needs_email = (
+    @staticmethod
+    def needs_notification(product):
+        licenses = list(product.licenses)
+        return (
             License.OTHER_PROPRIETARY in licenses
             or License.OTHER_OPEN_SOURCE in licenses
             or [License.DONT_KNOW] == licenses)
-        if not needs_email:
-            # The project has a recognized license.
+
+    def send(self):
+        """Send a message to the user about the product's license."""
+        if not self.needs_notification(self.product):
+            # The project has a common license.
             return False
         user_address = format_address(
             self.user.displayname, self.user.preferredemail.email)
@@ -89,11 +86,19 @@ class LicenseNotification:
 
     @staticmethod
     def _indent(text):
+        """Indent the text to be included in the message."""
         if text is None:
             return None
         text = '\n    '.join(line for line in text.split('\n'))
         text = '    ' + text
         return text
+
+    @staticmethod
+    def _formatDate(now=None):
+        """Return the date formatted for messages."""
+        if now is None:
+            now = datetime.now(tz=pytz.UTC)
+        return now.strftime('%Y-%m-%d')
 
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
@@ -104,10 +109,3 @@ class LicenseNotification:
             naked_product.reviewer_whiteboard = whiteboard
         else:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
-
-    @staticmethod
-    def _formatDate(now=None):
-        """Return the date formatted for messages."""
-        if now is None:
-            now = datetime.now(tz=pytz.UTC)
-        return now.strftime('%Y-%m-%d')
