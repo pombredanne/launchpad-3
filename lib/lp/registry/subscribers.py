@@ -11,21 +11,31 @@ from datetime import datetime
 
 import pytz
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import License
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 
 
 def product_licenses_modified(product, event):
-    user = getUtility(ILaunchBag).user
+    if 'licenses' not in event.edited_fields:
+        return
+    licenses = list(product.licenses)
+    needs_email = (
+        License.OTHER_PROPRIETARY in licenses
+        or License.OTHER_OPEN_SOURCE in licenses
+        or [License.DONT_KNOW] == licenses)
+    if not needs_email:
+        # The project has a recognized license.
+        return
+    user = IPerson(event.user)
     notification = LicenseNotification(product, user)
     notification.send()
 
@@ -39,6 +49,14 @@ class LicenseNotification:
         self.user = user
 
     def send(self):
+        licenses = list(self.product.licenses)
+        needs_email = (
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
+        if not needs_email:
+            # The project has a recognized license.
+            return False
         user_address = format_address(
             self.user.displayname, self.user.preferredemail.email)
         from_address = format_address(
@@ -67,6 +85,7 @@ class LicenseNotification:
             subject, message, headers={'Reply-To': commercial_address})
         # Inform that Launchpad recognized the license change.
         self._addLicenseChangeToReviewWhiteboard()
+        return True
 
     @staticmethod
     def _indent(text):
