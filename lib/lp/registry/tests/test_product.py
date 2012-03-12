@@ -581,8 +581,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertTrue(now >= cs.date_starts)
             future_30_days = now + datetime.timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
-            self.assertEqual(
-                "Complimentary 30 day subscription.", cs.whiteboard)
+            self.assertIn(
+                "Complimentary 30 day subscription. -- Launchpad",
+                cs.whiteboard)
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
@@ -591,9 +592,10 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         # New proprietary projects are given a complimentary 30 day
         # commercial subscription.
         owner = self.factory.makePerson()
-        product = getUtility(IProductSet).createProduct(
-            owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2',
-            licenses=[License.OTHER_PROPRIETARY])
+        with person_logged_in(owner):
+            product = getUtility(IProductSet).createProduct(
+                owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2',
+                licenses=[License.OTHER_PROPRIETARY])
         with celebrity_logged_in('admin'):
             cs = product.commercial_subscription
             self.assertIsNotNone(cs)
@@ -602,8 +604,9 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertTrue(now >= cs.date_starts)
             future_30_days = now + datetime.timedelta(days=30)
             self.assertTrue(future_30_days >= cs.date_expires)
-            self.assertEqual(
-                "Complimentary 30 day subscription.", cs.whiteboard)
+            self.assertIn(
+                "Complimentary 30 day subscription. -- Launchpad",
+                cs.whiteboard)
             lp_janitor = getUtility(ILaunchpadCelebrities).janitor
             self.assertEqual(lp_janitor, cs.registrant)
             self.assertEqual(lp_janitor, cs.purchaser)
