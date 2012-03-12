@@ -806,8 +806,7 @@ def create_scripts(user, lxcname, ssh_key_path):
         script.write(textwrap.dedent(re.sub(' {2,}', ' ', """\
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \
-                -b '{user_home}' -- \
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
                 "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
                 --server-args='-screen 0 1024x768x24' \
                 -a $PWD/bin/test --subunit $@"
