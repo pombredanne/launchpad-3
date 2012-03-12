@@ -1732,10 +1732,11 @@ class Person(
                         target = spec.distro
                     else:
                         target = spec.product
-                    work_items_by_spec[spec] = WorkItemGroup(
+                    work_items_by_spec[spec] = WorkItemContainer(
                             'label', target, spec.assignee, spec.priority, [])
-                work_items_by_spec[spec].items.append(item)
-            groups_by_date[date] = work_items_by_spec.values()
+                work_items_by_spec[spec].append(item)
+            groups_by_date[date] = sorted(
+                work_items_by_spec.values(), key=attrgetter('priority'))
         # TODO: We need to include bugs as well.
         # TODO: When we have done thatneed to sort the items for every milestone
         return groups_by_date
@@ -4886,22 +4887,44 @@ def _get_recipients_for_team(team):
         need_validity=True,
         need_preferred_email=True)
 
-class WorkItemGroup:
+
+class WorkItemContainer:
+    """A container of work items.
+
+    This might represent a Specification with its SpecificationWorkItems or
+    just a collection of bug tasks.
+    """
 
     def __init__(self, label, target, assignee, priority, items):
+        self._items = items
         self.label = label
         self.target = target
         self.assignee = assignee
         self.priority = priority
+
+        # Is this container targeted to a milestone that is farther into the
+        # future than the milestone to which .items are targeted to?
         self.is_future = False
-        # Should this be ordered by state?
-        self.items = items
+
+        # Is this container assigned to a person which is not a member of the
+        # team we're dealing with here?
+        self.is_foreign = False
+
         self.progressbar = object()  # What should we use here?
+
         # In case this is a Blueprint, we may not have all work items included
         # here (because they're targeted to a different milestone or targeted
         # to somebody who's not a member of this team), so here we'd store the
         # total count of work items on this BP.
         self.total_workitems = int()
+
+    @property
+    def items(self):
+        # TODO: sort the items, and maybe even skip the ones that are DONE?
+        return self._items
+
+    def append(self, item):
+        self._items.append(item)
 
 
 class WorkItemAbstraction:
