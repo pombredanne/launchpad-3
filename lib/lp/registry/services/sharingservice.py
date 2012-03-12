@@ -81,37 +81,32 @@ class SharingService:
     @available_with_permission('launchpad.Driver', 'pillar')
     def getPillarSharees(self, pillar):
         """See `ISharingService`."""
-
-        # Currently support querying for sharing_permission = ALL
-        # TODO - support querying for sharing_permission = SOME
-
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
-        policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        policy_grants = policy_grant_source.findByPolicy(policies)
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        grant_permissions = ap_grant_flat.findGranteesByPolicy(policies)
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
-        for policy_grant in policy_grants:
-            if not policy_grant.grantee.id in person_by_id:
-                resource = EntryResource(policy_grant.grantee, request)
+        for (grantee, policy, sharing_permission) in grant_permissions:
+            if not grantee.id in person_by_id:
+                resource = EntryResource(grantee, request)
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}
-                person_by_id[policy_grant.grantee.id] = person_data
+                person_by_id[grantee.id] = person_data
                 result.append(person_data)
-            person_data = person_by_id[policy_grant.grantee.id]
-            person_data['permissions'][policy_grant.policy.type.name] = (
-                SharingPermission.ALL.name)
+            person_data = person_by_id[grantee.id]
+            person_data['permissions'][policy.type.name] = sharing_permission
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def sharePillarInformation(self, pillar, sharee, information_types,
-                             user):
+    def sharePillarInformation(self, pillar, sharee, permissions, user):
         """See `ISharingService`."""
 
         # We do not support adding sharees to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
+        information_types = permissions.keys()
         pillar_info_types = [
             (pillar, information_type)
             for information_type in information_types]
@@ -155,10 +150,11 @@ class SharingService:
         request = get_current_web_service_request()
         resource = EntryResource(sharee, request)
         person_data = resource.toDataForJSON()
-        permissions = {}
-        for information_type in information_types:
-            permissions[information_type.name] = SharingPermission.ALL.name
-        person_data['permissions'] = permissions
+        permission_data = {}
+        for (information_type, permission) in permissions.items():
+            permission_data[information_type.name] = permission.name
+        person_data['permissions'] = permission_data
+        print permission_data
         return person_data
 
     @available_with_permission('launchpad.Edit', 'pillar')

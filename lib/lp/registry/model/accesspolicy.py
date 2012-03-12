@@ -15,6 +15,7 @@ import pytz
 from storm.expr import (
     And,
     Or,
+    SQL,
     )
 from storm.properties import (
     DateTime,
@@ -333,8 +334,18 @@ class AccessPolicyGrantFlat(StormBase):
     def findGranteesByPolicy(cls, policies):
         """See `IAccessPolicyGrantFlatSource`."""
         ids = [policy.id for policy in policies]
+        sharing_permission_term = SQL("""
+            CASE(
+                MIN(COALESCE(artifact, 0)))
+            WHEN 0 THEN 'ALL'
+            ELSE 'SOME'
+            END
+        """)
         return IStore(cls).find(
-            Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+            (Person, AccessPolicy, sharing_permission_term),
+            Person.id == cls.grantee_id,
+            AccessPolicy.id == cls.policy_id,
+            cls.policy_id.is_in(ids)).group_by(Person, AccessPolicy)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):
