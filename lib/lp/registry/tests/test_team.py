@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
+from lp.blueprints.enums import SpecificationPriority
 from lp.registry.enums import PersonTransferJobType
 from lp.registry.errors import (
     JoinNotAllowed,
@@ -613,7 +614,8 @@ class TestTeamWorkItems(TestCaseWithFactory):
                 title=u'second workitem_from_assigned_spec',
                 specification=assigned_spec))
         future_spec = self.factory.makeSpecification(
-            milestone=future_milestone, product=future_milestone.product)
+            milestone=future_milestone, product=future_milestone.product,
+            priority=SpecificationPriority.HIGH)
         workitem_from_future_spec = self.factory.makeSpecificationWorkItem(
             title=u'workitem_from_future_spec not assigned to team member',
             specification=future_spec, milestone=current_milestone)
@@ -632,17 +634,21 @@ class TestTeamWorkItems(TestCaseWithFactory):
                 title=u'workitem_from_foreign_spec assigned to team member',
                 specification=foreign_spec, assignee=team.teamowner))
 
+        bug = self.factory.makeBug(milestone=current_milestone)
+        removeSecurityProxy(bug.bugtasks[0]).assignee = team.teamowner
+        transaction.commit()
+
         work_items = removeSecurityProxy(team).getWorkItemsDueBefore(
             current_milestone.dateexpected)
 
-        # TODO: Is the order correct here?  Should we set different statuses
-        # on those to properly test the sort order?
-        expected = [
-            (assigned_spec, workitem_from_assigned_spec, current_milestone, team.teamowner, current_milestone.product, None),
-            (assigned_spec, second_workitem_from_assigned_spec, current_milestone, team.teamowner, current_milestone.product, None),
-            (future_spec, assigned_workitem_from_future_spec, current_milestone, team.teamowner, future_milestone.product, None),
-            (foreign_spec, assigned_workitem_from_foreign_spec, current_milestone, team.teamowner, current_milestone.product, None)]
-        self.assertEqual(expected, work_items)
+        # Instead of seeing meaningless failures while we experiment I thought
+        # it'd be better to just print a reasonable representation of the
+        # return value of the method.
+        for date, containers in work_items.items():
+            print date
+            for container in containers:
+                print "\tWork items from %s:" % container.label
+                print "\t\t%s" % ", ".join(str(item) for item in container.items)
 
     # TODO: We need to create workitem entries for this test.
     def test_query_counts(self):

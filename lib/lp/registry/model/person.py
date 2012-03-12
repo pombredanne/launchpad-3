@@ -1705,41 +1705,72 @@ class Person(
                  Coalesce(WorkItem.assignee_id,
                           Specification.assigneeID) == Person.id),
             ]
-        result = store.using(*origin).find(
-            # Apparently including the spec/milestone/person here means we
-            # won't cause any more hits to the DB when we reach to
-            # WorkItem.milestone/spec/person.  Need to confirm that because
-            # this is one of the things we need to ensure. Possibly by writing
-            # a test.
+        # First we select all SpecificationWorkItem objects we want to
+        # display. Notice that we can't assume we want to display all
+        # work-items of a given Specification because work items may, for
+        # instance, be assigned to somebody who's not a member of this team.
+        workitems = store.using(*origin).find(
             (Specification, WorkItem, Milestone, Person, Product,
              Distribution),
             AND(Milestone.dateexpected <= date,
                 OR(Specification.assigneeID.is_in(participant_ids),
                    WorkItem.assignee_id.is_in(participant_ids))
                 ))
-        wis_by_date = {}
-        for (spec, wi, milestone, person, product, distro) in result:
-            if milestone.dateexpected not in wis_by_date:
-                wis_by_date[milestone.dateexpected] = []
-            wis_by_date[milestone.dateexpected].append(wi)
-        groups_by_date = {}
-        for date, items in wis_by_date.items():
-            work_items_by_spec = {}
-            for item in items:
-                spec = item.specification
-                if spec not in work_items_by_spec:
-                    if spec.product is None:
-                        target = spec.distro
-                    else:
-                        target = spec.product
-                    work_items_by_spec[spec] = WorkItemContainer(
-                            'label', target, spec.assignee, spec.priority, [])
-                work_items_by_spec[spec].append(item)
-            groups_by_date[date] = sorted(
-                work_items_by_spec.values(), key=attrgetter('priority'))
+
+        # Now we need to regroup our work items by specification and by date
+        # because that's how they'll end up being displayed. While we do this
+        # we store all the data we need into WorkItemContainer objects because
+        # that's what we want to return.
+        containers_by_date = {}
+        containers_by_spec = {}
+        for spec, wi, milestone, person, product, distro in workitems:
+            if milestone.dateexpected not in containers_by_date:
+                containers_by_date[milestone.dateexpected] = []
+            container = containers_by_spec.get(spec)
+            if container is None:
+                container = WorkItemContainer(
+                    spec.name, spec.target, spec.assignee, spec.priority, [])
+                containers_by_spec[spec] = container
+                containers_by_date[milestone.dateexpected].append(container)
+            container.append(wi)
+
+        for date in containers_by_date:
+            containers_by_date[date].sort(
+                key=attrgetter('priority'), reverse=True)
+
         # TODO: We need to include bugs as well.
-        # TODO: When we have done thatneed to sort the items for every milestone
-        return groups_by_date
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugtask import BugTask
+        origin = [
+            BugTask,
+            Join(Bug, BugTask.bug == Bug.id),
+            LeftJoin(Product, BugTask.product == Product.id),
+            LeftJoin(Distribution, BugTask.distribution == Distribution.id),
+            Join(Milestone, BugTask.milestoneID == Milestone.id),
+            Join(Person, BugTask.assigneeID == Person.id),
+            ]
+        bugtasks = store.using(*origin).find(
+            (Bug, BugTask, Milestone),
+            AND(Milestone.dateexpected <= date,
+                BugTask.assigneeID.is_in(participant_ids))
+            )
+        bug_containers_by_date = {}
+        # Group all bug tasks by their milestone.dateexpected.
+        for bug, task, milestone in bugtasks:
+            container = bug_containers_by_date.get(milestone.dateexpected)
+            if container is None:
+                container = WorkItemContainer(
+                    'Aggregated bugs', 'N/A', 'N/A', 'N/A', [])
+                bug_containers_by_date[milestone.dateexpected] = container
+                # Also append our new container to the dictionary we're going
+                # to return.
+                if milestone.dateexpected not in containers_by_date:
+                    containers_by_date[milestone.dateexpected] = []
+                containers_by_date[milestone.dateexpected].append(container)
+            container.append(task)
+
+        return containers_by_date
+
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
@@ -4920,6 +4951,8 @@ class WorkItemContainer:
 
     @property
     def items(self):
+        # If we have a reference to the spec that this was generated from we
+        # could get the list of work items by doing something like
         # TODO: sort the items, and maybe even skip the ones that are DONE?
         return self._items
 
