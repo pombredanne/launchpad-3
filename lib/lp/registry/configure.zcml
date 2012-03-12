@@ -1056,7 +1056,7 @@
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
         <allow
