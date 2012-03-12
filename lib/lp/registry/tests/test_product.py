@@ -27,10 +27,12 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     CommercialSubscribersOnly,
     OpenTeamLinkageError,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -347,6 +349,14 @@ class TestProduct(TestCaseWithFactory):
         self.factory.makeCommercialSubscription(product)
         product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
+
+    def test_product_creation_creates_accesspolicies(self):
+        # Creating a new product also creates AccessPolicies for it.
+        product = self.factory.makeProduct()
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
 
 
 class TestProductFiles(TestCase):
