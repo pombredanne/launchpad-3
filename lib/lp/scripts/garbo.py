@@ -1115,10 +1115,8 @@ class SpecificationWorkitemMigrator(TunableLoop):
             self.total = 0
             return
 
-        quoted_names = [
-            "'%s'" % name for name in self.projects_to_migrate]
-        query = ("product in (select id from product where name in (%s))"
-            % ",".join(quoted_names))
+        query = ("product in (select id from product where name in %s)"
+            % ",".join(sqlvalues(self.projects_to_migrate)))
         # Get only the specs which contain "work items" in their whiteboard
         # and which don't have any SpecificationWorkItems.
         query += " and whiteboard ilike '%%' || %s || '%%'" % quote_like(
