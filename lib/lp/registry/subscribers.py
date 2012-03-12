@@ -50,6 +50,16 @@ class LicenseNotification:
             or License.OTHER_OPEN_SOURCE in licenses
             or [License.DONT_KNOW] == licenses)
 
+    def get_template_name(self):
+        licenses = list(self.product.licenses)
+        if [License.DONT_KNOW] == licenses:
+            template_name = 'product-license-dont-know.txt'
+        elif License.OTHER_PROPRIETARY in licenses:
+            template_name = 'product-license-other-proprietary.txt'
+        else:
+            template_name = 'product-license-other-open-source.txt'
+        return template_name
+
     def send(self):
         """Send a message to the user about the product's license."""
         if not self.needs_notification(self.product):
@@ -76,7 +86,7 @@ class LicenseNotification:
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
         template = get_email_template(
-            'product-other-license.txt', app='registry')
+            self.get_template_name(), app='registry')
         message = template % substitutions
         simple_sendmail(
             from_address, user_address,
