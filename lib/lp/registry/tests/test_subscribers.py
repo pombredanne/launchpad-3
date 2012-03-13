@@ -151,23 +151,23 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         result = LicenseNotification._formatDate(now)
         self.assertEqual('2005-06-15', result)
 
-    def test_get_template_name_other_dont_know(self):
+    def test_getTemplateName_other_dont_know(self):
         product, user = self.make_product_user([License.DONT_KNOW])
         notification = LicenseNotification(product, user)
         self.assertEqual(
             'product-license-dont-know.txt',
-            notification.get_template_name())
+            notification.getTemplateName())
 
-    def test_get_template_name_propietary(self):
+    def test_getTemplateName_propietary(self):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         notification = LicenseNotification(product, user)
         self.assertEqual(
             'product-license-other-proprietary.txt',
-            notification.get_template_name())
+            notification.getTemplateName())
 
-    def test_get_template_name_other_open_source(self):
+    def test_getTemplateName_other_open_source(self):
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
         notification = LicenseNotification(product, user)
         self.assertEqual(
             'product-license-other-open-source.txt',
-            notification.get_template_name())
+            notification.getTemplateName())
