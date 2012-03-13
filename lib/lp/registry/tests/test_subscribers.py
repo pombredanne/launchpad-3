@@ -19,6 +19,7 @@ from lp.registry.subscribers import (
     )
 from lp.testing import (
     login_person,
+    logout,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -144,6 +145,21 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
+
+    def test_display_known_license(self):
+        # A known license does display a notice.
+        product, user = self.make_product_user([License.GNU_GPL_V2])
+        notification = LicenseNotification(product, user)
+        result = notification.display()
+        self.assertIs(False, result)
+
+    def test_display_no_request(self):
+        # A known license does display a notice.
+        product, user = self.make_product_user([License.GNU_GPL_V2])
+        notification = LicenseNotification(product, user)
+        logout()
+        result = notification.display()
+        self.assertIs(False, result)
 
     def test_formatDate(self):
         # Verify the date format.

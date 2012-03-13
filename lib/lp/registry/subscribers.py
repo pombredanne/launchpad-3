@@ -23,7 +23,10 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.publisher import (
+    canonical_url,
+    get_current_browser_request,
+    )
 
 
 def product_licenses_modified(product, event):
@@ -78,13 +81,6 @@ class LicenseNotification:
         message = message % (self.product.displayname, iso_date)
         return textwrap.fill(message, 72)
 
-    def display(self):
-        """Show a message in a browser page about the product's license."""
-        if not self.needs_notification(self.product):
-            # The project has a common license.
-            return False
-        # self.request.response.addNotification()
-
     def send(self):
         """Send a message to the user about the product's license."""
         if not self.needs_notification(self.product):
@@ -116,6 +112,15 @@ class LicenseNotification:
         # Inform that Launchpad recognized the license change.
         self._addLicenseChangeToReviewWhiteboard()
         return True
+
+    def display(self):
+        """Show a message in a browser page about the product's license."""
+        if not self.needs_notification(self.product):
+            # The project has a common license.
+            return False
+        request = get_current_browser_request()
+        if request is None:
+            return False
 
     @staticmethod
     def _formatDate(now=None):
