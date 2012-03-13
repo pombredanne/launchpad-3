@@ -2203,7 +2203,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def main_action(self, data):
         """See `MultiStepView`."""
         self.product = self.create_product(data)
-        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.link_source_package(self.product, data)
 

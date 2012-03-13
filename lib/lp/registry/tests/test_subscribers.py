@@ -104,7 +104,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
             'Commercial <commercial@launchpad.net>',
             notification['Reply-To'])
 
-    def test_notifyCommercialMailingList_known_license(self):
+    def test_send_known_license(self):
         # A known license does not generate an email.
         product, user = self.make_product_user([License.GNU_GPL_V2])
         notification = LicenseNotification(product, user)
@@ -112,7 +112,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertIs(False, result)
         self.assertEqual(0, len(pop_notifications()))
 
-    def test_notifyCommercialMailingList_other_dont_know(self):
+    def test_send_other_dont_know(self):
         # An Other/I don't know license sends one email.
         product, user = self.make_product_user([License.DONT_KNOW])
         notification = LicenseNotification(product, user)
@@ -123,7 +123,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
 
-    def test_notifyCommercialMailingList_other_open_source(self):
+    def test_send_other_open_source(self):
         # An Other/Open Source license sends one email.
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
         notification = LicenseNotification(product, user)
@@ -134,7 +134,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
 
-    def test_notifyCommercialMailingList_other_proprietary(self):
+    def test_send_other_proprietary(self):
         # An Other/Proprietary license sends one email.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         notification = LicenseNotification(product, user)
