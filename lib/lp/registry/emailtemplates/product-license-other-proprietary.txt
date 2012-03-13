@@ -16,7 +16,8 @@ on Launchpad in the same manner as any other project. Project's with a
 commercial-use subscription may have private-by-default bugs, and you
 may also request the setup of private code hosting. As the maintainer of
 a project with a commercial-use subscription, you may create private
-teams with private mailing lists and package archives.
+teams with private mailing lists and private package archives.
+https://help.launchpad.net/CommercialHosting
 
 Launchpad is a collaboration site that is free to use for projects
 with an approved open source license.  When you registered your

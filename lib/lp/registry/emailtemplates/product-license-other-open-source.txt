@@ -28,6 +28,7 @@ If your project's licensing does not meet the guidelines we will
 consider it "Proprietary" and mark it as such in Launchpad.  Proprietary
 projects can use Launchpad by purchasing a commercial-use subscription
 which costs US$250/year/project.
+https://help.launchpad.net/CommercialHosting
 
 Thanks,
 
