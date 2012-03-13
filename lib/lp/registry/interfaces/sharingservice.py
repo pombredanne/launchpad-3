@@ -72,7 +72,7 @@ class ISharingService(IService):
         :param sharee: the person or team to grant
         :param permissions: a dict of {InformationType: SharingPermission}
             if SharingPermission is ALL, then create an access policy grant
-            if SharingPermission is SOME, then remove any access policy grant
+            if SharingPermission is SOME, then remove any access policy grants
             if SharingPermission is NONE, then remove all grants for the access
             policy
         :param user: the user making the request
