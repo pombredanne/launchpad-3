@@ -919,6 +919,8 @@ class TestBugPrivacy(TestCaseWithFactory):
 
     def test_bug_information_type(self):
         # Bugs have the correct corresponding information type.
+        # Public security bugs are currently untested since it is impossible
+        # to create one at the moment.
         bug = self.factory.makeBug()
         private_bug = self.factory.makeBug(private=True)
         private_sec_bug = self.factory.makeBug(
