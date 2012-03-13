@@ -88,6 +88,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         """
         # Create a temporary file that will be a new .htpasswd.
         pub_config = getPubConfig(ppa)
+        if not os.path.exists(pub_config.htaccessroot):
+            os.makedirs(pub_config.htaccessroot)
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         os.close(fd)
 
