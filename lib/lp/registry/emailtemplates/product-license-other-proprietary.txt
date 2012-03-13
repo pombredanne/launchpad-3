@@ -11,6 +11,13 @@ subscription which costs US$250/year/project.  Follow the instructions
 presented on your project overview page to purchase a subscription
 voucher.
 
+A commercial-use subscription allows you to host your commercial project
+on Launchpad in the same manner as any other project. Project's with a
+commercial-use subscription may have private-by-default bugs, and you
+may also request the setup of private code hosting. As the maintainer of
+a project with a commercial-use subscription, you may create private
+teams with private mailing lists and package archives.
+
 Launchpad is a collaboration site that is free to use for projects
 with an approved open source license.  When you registered your
 project the list of licenses presented are the ones we automatically
