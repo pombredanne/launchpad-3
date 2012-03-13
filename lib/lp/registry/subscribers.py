@@ -51,6 +51,7 @@ class LicenseNotification:
             or [License.DONT_KNOW] == licenses)
 
     def getTemplateName(self):
+        """Return the name of the email template for the licensing case."""
         licenses = list(self.product.licenses)
         if [License.DONT_KNOW] == licenses:
             template_name = 'product-license-dont-know.txt'
@@ -61,6 +62,7 @@ class LicenseNotification:
         return template_name
 
     def getCommercialUseMessage(self):
+        """Return a message explaining the current commercial subscription."""
         commercial_subscription = self.product.commercial_subscription
         if commercial_subscription is None:
             return ''
