@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
