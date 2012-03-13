@@ -23,6 +23,7 @@ from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp.menu import structured
 from lp.services.webapp.publisher import (
     canonical_url,
     get_current_browser_request,
@@ -119,7 +120,11 @@ class LicenseNotification:
         message = self.getCommercialUseMessage()
         if request is None or message == '':
             return False
-        request.response.addNotification(message)
+        safe_message = structured(
+            '%s<br />Learn more about '
+            '<a href="https://help.launchpad.net/CommercialHosting">'
+            'commercial subscriptions</a>', message)
+        request.response.addNotification(safe_message)
         return True
 
     @staticmethod

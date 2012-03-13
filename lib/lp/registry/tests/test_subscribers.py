@@ -174,6 +174,22 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         request = get_current_browser_request()
         self.assertEqual(1, len(request.response.notifications))
         self.assertIn(message, request.response.notifications[0].message)
+        self.assertIn(
+            '<a href="https://help.launchpad.net/CommercialHosting">',
+            request.response.notifications[0].message)
+
+    def test_display_escapee_user_data(self):
+        # A notification is added if there is a message to show.
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        product.displayname = '<b>Look</b>'
+        notification = LicenseNotification(product, user)
+        result = notification.display()
+        self.assertIs(True, result)
+        request = get_current_browser_request()
+        self.assertEqual(1, len(request.response.notifications))
+        self.assertIn(
+            '&lt;b&gt;Look&lt;/b&gt;',
+            request.response.notifications[0].message)
 
     def test_formatDate(self):
         # Verify the date format.
