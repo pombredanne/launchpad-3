@@ -220,8 +220,8 @@ class TestSharingService(TestCaseWithFactory):
         self._test_sharePillarInformation(distro)
 
     def _test_sharePillarInformationUnauthorized(self, pillar):
-        # sharePillarInformation raises an Unauthorized exception if the user is
-        # not permitted to do so.
+        # sharePillarInformation raises an Unauthorized exception if the user
+        # is not permitted to do so.
         sharee = self.factory.makePerson()
         user = self.factory.makePerson()
         self.assertRaises(
