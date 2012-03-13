@@ -1,7 +1,8 @@
-Hello %(user_name)s,
+Hello %(user_displayname)s,
 
 You recently stated that the project '%(product_name)s'
 in Launchpad is proprietary.
+%(product_url)s
 
 Proprietary projects can use Launchpad by purchasing a commercial-use
 subscription which costs US$250/year/project.  Follow the instructions

@@ -71,16 +71,11 @@ class LicenseNotification:
             "Launchpad", config.canonical.noreply_from_address)
         commercial_address = format_address(
             'Commercial', 'commercial@launchpad.net')
-        license_titles = '\n'.join(
-            license.title for license in self.product.licenses)
         substitutions = dict(
-            user_browsername=self.user.displayname,
+            user_displayname=self.user.displayname,
             user_name=self.user.name,
             product_name=self.product.name,
-            product_url=canonical_url(self.product),
-            product_summary=self._indent(self.product.summary),
-            license_titles=self._indent(license_titles),
-            license_info=self._indent(self.product.license_info))
+            product_url=canonical_url(self.product),)
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "

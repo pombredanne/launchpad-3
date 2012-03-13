@@ -1,7 +1,8 @@
-Hello %(user_name)s,
+Hello %(user_displayname)s,
 
 You recently stated that you don't know the license of the project
 '%(product_name)s' in Launchpad.
+%(product_url)s
 
 We urge you to update the licensing in Launchpad as soon as you learn or
 decide the license so that other users understand the terms of that the
