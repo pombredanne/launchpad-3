@@ -53,7 +53,7 @@ class TestSharingService(TestCaseWithFactory):
         sharee_data = resource.toDataForJSON()
         permissions = {}
         for (policy, permission) in policy_permissions:
-            permissions[policy.name] = permission.name
+            permissions[policy.name] = unicode(permission.name)
         sharee_data['permissions'] = permissions
         return sharee_data
 
@@ -164,34 +164,57 @@ class TestSharingService(TestCaseWithFactory):
         # Make existing grants to ensure sharePillarInformation handles those
         # cases correctly.
         # First, a grant that is in the add set - it wil be retained.
-        policy = getUtility(IAccessPolicySource).find(((
+        es_policy = getUtility(IAccessPolicySource).find(((
             pillar, InformationType.EMBARGOEDSECURITY),))[0]
+        ud_policy = getUtility(IAccessPolicySource).find(((
+            pillar, InformationType.USERDATA),))[0]
         self.factory.makeAccessPolicyGrant(
-            policy, grantee=sharee, grantor=grantor)
-        # Second, a grant that is not in the add set - it will be deleted.
-        policy = self.factory.makeAccessPolicy(
+            es_policy, grantee=sharee, grantor=grantor)
+        # Second, grants that are not in the all set - they will be deleted.
+        p_policy = self.factory.makeAccessPolicy(
             pillar=pillar, type=InformationType.PROPRIETARY)
         self.factory.makeAccessPolicyGrant(
-            policy, grantee=sharee, grantor=grantor)
+            p_policy, grantee=sharee, grantor=grantor)
+        self.factory.makeAccessPolicyGrant(
+            ud_policy, grantee=sharee, grantor=grantor)
+
+        # We also make some artifact grants.
+        # First, a grant which will be retained.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, sharee)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact, policy=es_policy)
+        # Second, grants which will be deleted because their policies have
+        # information types in the 'some' or 'nothing' category.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, sharee)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact, policy=p_policy)
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, sharee)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact, policy=ud_policy)
 
         # Now call sharePillarInformation will the grants we want.
         permissions = {
             InformationType.EMBARGOEDSECURITY: SharingPermission.ALL,
-            InformationType.USERDATA: SharingPermission.SOME}
+            InformationType.USERDATA: SharingPermission.SOME,
+            InformationType.PROPRIETARY: SharingPermission.NOTHING}
         sharee_data = self.service.sharePillarInformation(
             pillar, sharee, permissions, grantor)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        grants = policy_grant_source.findByPolicy(policies)
-        self.assertEqual(grants.count(), len(permissions))
-        for grant in grants:
-            self.assertEqual(grantor, grant.grantor)
-            self.assertEqual(sharee, grant.grantee)
+        [grant] = policy_grant_source.findByPolicy(policies)
+        self.assertEqual(grantor, grant.grantor)
+        self.assertEqual(sharee, grant.grantee)
         expected_permissions = [
             (InformationType.EMBARGOEDSECURITY, SharingPermission.ALL),
             (InformationType.USERDATA, SharingPermission.SOME)]
         expected_sharee_data = self._makeShareeData(
             sharee, expected_permissions)
+        self.assertEqual(expected_sharee_data, sharee_data)
+        # Check that getPillarSharees returns what we expect.
+        [sharee_data] = self.service.getPillarSharees(pillar)
         self.assertEqual(expected_sharee_data, sharee_data)
 
     def test_updateProjectGroupSharee_not_allowed(self):
