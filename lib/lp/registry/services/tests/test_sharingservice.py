@@ -104,8 +104,9 @@ class TestSharingService(TestCaseWithFactory):
             pillar=pillar,
             type=InformationType.PROPRIETARY)
         grantee = self.factory.makePerson()
+        # Make access policy grant so that 'All' is returned.
         self.factory.makeAccessPolicyGrant(access_policy, grantee)
-
+        # Make access artifact grants so that 'Some' is returned.
         artifact_grant = self.factory.makeAccessArtifactGrant()
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=access_policy)
@@ -344,6 +345,7 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
         super(TestWebService, self).setUp()
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
+        self._sharePillarInformation()
 
     def test_url(self):
         # Test that the url for the service is correct.
@@ -364,7 +366,6 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
             api_method, api_version='devel', **kwargs).jsonBody()
 
     def _getPillarSharees(self):
-        self._sharePillarInformation()
         pillar_uri = canonical_url(self.pillar, force_local_path=True)
         return self._named_get(
             'getPillarSharees', pillar=pillar_uri)
