@@ -46,7 +46,8 @@ class TestAccessPolicySource(TestCaseWithFactory):
     def test_create(self):
         wanted = [
             (self.factory.makeProduct(), InformationType.PROPRIETARY),
-            (self.factory.makeDistribution(), InformationType.USERDATA),
+            (self.factory.makeDistribution(),
+                InformationType.UNEMBARGOEDSECURITY),
             ]
         policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertThat(
@@ -64,17 +65,17 @@ class TestAccessPolicySource(TestCaseWithFactory):
 
         wanted = [
             (product, InformationType.PROPRIETARY),
-            (product, InformationType.USERDATA),
+            (product, InformationType.UNEMBARGOEDSECURITY),
             (distribution, InformationType.PROPRIETARY),
-            (distribution, InformationType.USERDATA),
+            (distribution, InformationType.UNEMBARGOEDSECURITY),
             (other_product, InformationType.PROPRIETARY),
             ]
         getUtility(IAccessPolicySource).create(wanted)
 
         query = [
             (product, InformationType.PROPRIETARY),
-            (product, InformationType.USERDATA),
-            (distribution, InformationType.USERDATA),
+            (product, InformationType.UNEMBARGOEDSECURITY),
+            (distribution, InformationType.UNEMBARGOEDSECURITY),
             ]
         self.assertContentEqual(
             query,
@@ -101,18 +102,24 @@ class TestAccessPolicySource(TestCaseWithFactory):
         product = self.factory.makeProduct()
         distribution = self.factory.makeProduct()
         other_product = self.factory.makeProduct()
-        wanted = [
-            (pillar, type)
-            for type in InformationType.items
-            for pillar in (product, distribution, other_product)]
-        policies = getUtility(IAccessPolicySource).create(wanted)
+        policies = (
+            (product, InformationType.EMBARGOEDSECURITY),
+            (product, InformationType.USERDATA),
+            (distribution, InformationType.EMBARGOEDSECURITY),
+            (distribution, InformationType.USERDATA),
+            (other_product, InformationType.EMBARGOEDSECURITY),
+            (other_product, InformationType.USERDATA),
+            )
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByPillar(
-                [product, distribution, other_product]))
+            [(ap.pillar, ap.type)
+                for ap in getUtility(IAccessPolicySource).findByPillar(
+                [product, distribution, other_product])])
         self.assertContentEqual(
-            [policy for policy in policies if policy.pillar == product],
-            getUtility(IAccessPolicySource).findByPillar([product]))
+            [policy for policy in policies if policy[0] == product],
+            [(ap.pillar, ap.type)
+                for ap in getUtility(IAccessPolicySource).findByPillar(
+                    [product])])
 
 
 class TestAccessArtifact(TestCaseWithFactory):

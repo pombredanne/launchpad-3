@@ -78,13 +78,8 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # properly.
         return grant_count, policy_count
 
-    def makeBugAndPolicies(self, private=False, policy_types=None):
-        if policy_types is None:
-            policy_types = [
-                InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+    def makeBugAndPolicies(self, private=False):
         product = self.factory.makeProduct()
-        for policy_type in policy_types:
-            self.factory.makeAccessPolicy(pillar=product, type=policy_type)
         bug = self.factory.makeBug(private=private, product=product)
         return removeSecurityProxy(bug)
 
@@ -124,9 +119,6 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
     def test_add_task(self):
         # Adding a task on a new product links its policy.
         product = self.factory.makeProduct()
-        self.factory.makeAccessPolicy(
-            pillar=product, type=InformationType.USERDATA)
-
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, product)
         self.assertEqual((1, 2), self.assertMirrored(bug))
@@ -134,9 +126,6 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
     def test_remove_task(self):
         # Removing a task removes its policy.
         product = self.factory.makeProduct()
-        self.factory.makeAccessPolicy(
-            pillar=product, type=InformationType.USERDATA)
-
         bug = self.makeBugAndPolicies(private=True)
         task = bug.addTask(bug.owner, product)
         Store.of(bug).flush()
@@ -178,9 +167,6 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
     def test_productseries_task(self):
         # A productseries task causes a link to its product's policy.
         productseries = self.factory.makeProductSeries()
-        self.factory.makeAccessPolicy(
-            pillar=productseries.product, type=InformationType.USERDATA)
-
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, productseries)
         self.assertEqual((1, 2), self.assertMirrored(bug))
@@ -191,9 +177,6 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
     def test_distribution_task(self):
         # A distribution task causes a link to its policy.
         distro = self.factory.makeDistribution()
-        self.factory.makeAccessPolicy(
-            pillar=distro, type=InformationType.USERDATA)
-
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, distro)
         self.assertEqual((1, 2), self.assertMirrored(bug))
@@ -202,9 +185,6 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         # A distroseries task causes a link to its distribution's
         # policy.
         distroseries = self.factory.makeDistroSeries()
-        self.factory.makeAccessPolicy(
-            pillar=distroseries.distribution, type=InformationType.USERDATA)
-
         bug = self.makeBugAndPolicies(private=True)
         bug.addTask(bug.owner, distroseries)
         self.assertEqual((1, 2), self.assertMirrored(bug))

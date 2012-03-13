@@ -110,16 +110,8 @@ class SharingService:
         pillar_info_types = [
             (pillar, information_type)
             for information_type in information_types]
-
-        # Create any missing pillar access policies.
         policy_source = getUtility(IAccessPolicySource)
         pillar_policies = list(policy_source.find(pillar_info_types))
-        existing_policy_types = [
-            (pillar, pillar_policy.type) for pillar_policy in pillar_policies]
-        required_policies = (
-            set(pillar_info_types).difference(existing_policy_types))
-        if len(required_policies) > 0:
-            pillar_policies.extend(policy_source.create(required_policies))
 
         # We have the policies, we need to figure out which grants we need to
         # create. We also need to revoke any grants which are not required.
