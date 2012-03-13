@@ -32,9 +32,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_celebrity,
@@ -596,14 +598,15 @@ class TestTeamWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_getWorkItems(self):
+    def _createWorkItems(self):
         next_date = datetime(2050, 1, 1)
         current_milestone = self.factory.makeMilestone(
             dateexpected=next_date)
+        self.current_milestone = current_milestone
         future_milestone = self.factory.makeMilestone(
             product=current_milestone.product,
             dateexpected=datetime(2060, 1, 1))
-        team = self.factory.makeTeam()
+        self.team = team = self.factory.makeTeam()
         assigned_spec = self.factory.makeSpecification(
             assignee=team.teamowner, milestone=current_milestone,
             product=current_milestone.product)
@@ -636,10 +639,51 @@ class TestTeamWorkItems(TestCaseWithFactory):
 
         bug = self.factory.makeBug(milestone=current_milestone)
         removeSecurityProxy(bug.bugtasks[0]).assignee = team.teamowner
+
+        # XXX: The two tasks created here are actually "conjoined", which means
+        # changes made to one propagate to the other. That is a very
+        # complicated thing, I don't know what purpose it serves and have no
+        # idea whether we need to show both tasks here or just the master.
+        # Currently both are returned, but I suspect we should show just the
+        # master.
+        # Create a BugTask whose target is a ProductSeries
+        bug2 = self.factory.makeBug(series=current_milestone.productseries)
+        # The call above created 2 BugTasks (one for the product and one for
+        # the productseries), but we only care about the second one (for the
+        # PS) so we'll set the milestone/assignee just for it.
+        removeSecurityProxy(bug2.bugtasks[1]).assignee = team.teamowner
+        removeSecurityProxy(bug2.bugtasks[1]).milestone = current_milestone
+
+        # Create a BugTask whose target is a DistroSeries
+        current_distro_milestone = self.factory.makeMilestone(
+            distribution=self.factory.makeDistribution(),
+            dateexpected=next_date)
+        bug3 = self.factory.makeBug(
+            series=current_distro_milestone.distroseries)
+        # The call above created 2 BugTasks (one for the distro and one for
+        # the distroseries), but we only care about the second one (for the
+        # DS) so we'll set the milestone/assignee just for it.
+        removeSecurityProxy(bug3.bugtasks[1]).assignee = team.teamowner
+        removeSecurityProxy(bug3.bugtasks[1]).milestone = current_distro_milestone
+
+        # Create a BugTask whose target is a SourcePackageName
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=current_distro_milestone.distroseries)
+        bug4 = self.factory.makeBug()
+        nomination = self.factory.makeBugNomination(bug4, sourcepackage)
+        removeSecurityProxy(nomination).approve(
+            current_distro_milestone.distribution.owner)
+        removeSecurityProxy(bug4.bugtasks[1]).assignee = team.teamowner
+        removeSecurityProxy(bug4.bugtasks[1]).milestone = current_distro_milestone
+
+
         transaction.commit()
 
-        work_items = removeSecurityProxy(team).getWorkItemsDueBefore(
-            current_milestone.dateexpected)
+    def test_getWorkItems(self):
+        self._createWorkItems()
+
+        work_items = removeSecurityProxy(self.team).getWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
 
         # Instead of seeing meaningless failures while we experiment I thought
         # it'd be better to just print a reasonable representation of the
@@ -650,18 +694,25 @@ class TestTeamWorkItems(TestCaseWithFactory):
                 print "\tWork items from %s:" % container.label
                 print "\t\t%s" % ", ".join(str(item) for item in container.items)
 
-    # TODO: We need to create workitem entries for this test.
     def test_query_counts(self):
-        team = self.factory.makeTeam()
+        self._createWorkItems()
+        dateexpected = self.current_milestone.dateexpected
+        flush_database_caches()
         with StormStatementRecorder() as recorder:
-            work_items = list(
-                removeSecurityProxy(team).getWorkItemsDueBefore(
-                    datetime(2010, 1, 1)))
-        self.assertThat(recorder, HasQueryCount(LessThan(2)))
+            containers = removeSecurityProxy(self.team).getWorkItemsDueBefore(
+                dateexpected)
+        # One query to get all team members;
+        # One to get all SpecWorkItems;
+        # One to get all BugTasks.
+        self.assertThat(recorder, HasQueryCount(LessThan(4)))
 
         with StormStatementRecorder() as recorder:
-            for spec, work_item, milestone, assignee in work_items:
-                work_item.assignee
-                work_item.specification
-                work_item.milestone
+            for date, containers in containers.items():
+                for container in containers:
+                    for item in container.items:
+                        item.assignee
+                        canonical_url(item.assignee)
+                        item.status
+                        item.priority
+                        canonical_url(item.target)
         self.assertThat(recorder, HasQueryCount(LessThan(1)))

@@ -1689,8 +1689,8 @@ class Person(
         # XXX: This is not running as a subquery as I was expecting, so
         # it causes this method to execute 3 DB queries. This may or may not
         # be ok; need to find out.
-        participant_ids = store.find(
-            TeamParticipation.personID, TeamParticipation.teamID == self.id)
+        participant_ids = list(store.find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id))
         WorkItem = SpecificationWorkItem
         origin = [
             WorkItem,
@@ -1732,31 +1732,38 @@ class Person(
                     spec.name, spec.target, spec.assignee, spec.priority, [])
                 containers_by_spec[spec] = container
                 containers_by_date[milestone.dateexpected].append(container)
-            container.append(wi)
+            container.append(GenericWorkItem.from_workitem(wi))
 
         for date in containers_by_date:
             containers_by_date[date].sort(
                 key=attrgetter('priority'), reverse=True)
 
-        # TODO: We need to include bugs as well.
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
         origin = [
             BugTask,
             Join(Bug, BugTask.bug == Bug.id),
             LeftJoin(Product, BugTask.product == Product.id),
             LeftJoin(Distribution, BugTask.distribution == Distribution.id),
+            LeftJoin(DistroSeries, BugTask.distroseries == DistroSeries.id),
+            LeftJoin(ProductSeries, BugTask.productseries == ProductSeries.id),
+            LeftJoin(SourcePackageName,
+                     BugTask.sourcepackagename == SourcePackageName.id),
             Join(Milestone, BugTask.milestoneID == Milestone.id),
             Join(Person, BugTask.assigneeID == Person.id),
             ]
         bugtasks = store.using(*origin).find(
-            (Bug, BugTask, Milestone),
+            (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
+             DistroSeries, SourcePackageName, Person),
             AND(Milestone.dateexpected <= date,
                 BugTask.assigneeID.is_in(participant_ids))
             )
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
-        for bug, task, milestone in bugtasks:
+        for bug, task, _, _, _, _, _, _, _ in bugtasks:
             container = bug_containers_by_date.get(milestone.dateexpected)
             if container is None:
                 container = WorkItemContainer(
@@ -1767,7 +1774,7 @@ class Person(
                 if milestone.dateexpected not in containers_by_date:
                     containers_by_date[milestone.dateexpected] = []
                 containers_by_date[milestone.dateexpected].append(container)
-            container.append(task)
+            container.append(GenericWorkItem.from_bugtask(task))
 
         return containers_by_date
 
@@ -4941,31 +4948,61 @@ class WorkItemContainer:
         # team we're dealing with here?
         self.is_foreign = False
 
-        self.progressbar = object()  # What should we use here?
-
         # In case this is a Blueprint, we may not have all work items included
         # here (because they're targeted to a different milestone or targeted
         # to somebody who's not a member of this team), so here we'd store the
         # total count of work items on this BP.
+        # XXX: This may not be needed, after all.
         self.total_workitems = int()
 
     @property
     def items(self):
         # If we have a reference to the spec that this was generated from we
         # could get the list of work items by doing something like
-        # TODO: sort the items, and maybe even skip the ones that are DONE?
+        # TODO: sort the items
         return self._items
+
+    @property
+    def percent_done(self):
+        # TODO:
+        return 0
 
     def append(self, item):
         self._items.append(item)
 
 
-class WorkItemAbstraction:
+class GenericWorkItem:
 
-    def __init__(self, assignee, status, is_complete, is_foreign, priority, target):
+    def __init__(self, assignee, status, priority, target, bugtask=None,
+                 work_item=None):
         self.assignee = assignee
         self.status = status
-        self.is_complete = is_complete
-        self.is_foreign = is_foreign
+        # XXX: For bugtasks this is actually called 'importance'
         self.priority = priority
         self.target = target
+
+        # XXX: We may not need these two here.
+        self.bugtask = bugtask
+        self.work_item = work_item
+
+    @classmethod
+    def from_bugtask(cls, bugtask):
+        # TODO: IBugTask.target can be IProductSeries, IDistroSeries, etc, so
+        # our code will have to deal with that.
+        return cls(
+            bugtask.assignee, bugtask.status, bugtask.importance,
+            bugtask.target, bugtask=bugtask)
+
+    @classmethod
+    def from_workitem(cls, work_item):
+        assignee = work_item.assignee
+        if assignee is None:
+            assignee = work_item.specification.assignee
+        return cls(
+            assignee, work_item.status, work_item.specification.priority,
+            work_item.specification.target, work_item=work_item)
+
+    @property
+    def is_done(self):
+        # TODO:
+        return False
