@@ -17,6 +17,7 @@ from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
     )
+from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
@@ -146,20 +147,33 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
 
-    def test_display_known_license(self):
-        # A known license does display a notice.
-        product, user = self.make_product_user([License.GNU_GPL_V2])
-        notification = LicenseNotification(product, user)
-        result = notification.display()
-        self.assertIs(False, result)
-
     def test_display_no_request(self):
-        # A known license does display a notice.
+        # If there is no request, there is no reason to show a message in
+        # the browser.
         product, user = self.make_product_user([License.GNU_GPL_V2])
         notification = LicenseNotification(product, user)
         logout()
         result = notification.display()
         self.assertIs(False, result)
+
+    def test_display_no_message(self):
+        # A notification is not added if there is no message to show.
+        product, user = self.make_product_user([License.GNU_GPL_V2])
+        notification = LicenseNotification(product, user)
+        result = notification.display()
+        self.assertEqual('', notification.getCommercialUseMessage())
+        self.assertIs(False, result)
+
+    def test_display_has_message(self):
+        # A notification is added if there is a message to show.
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        notification = LicenseNotification(product, user)
+        result = notification.display()
+        message = notification.getCommercialUseMessage()
+        self.assertIs(True, result)
+        request = get_current_browser_request()
+        self.assertEqual(1, len(request.response.notifications))
+        self.assertIn(message, request.response.notifications[0].message)
 
     def test_formatDate(self):
         # Verify the date format.

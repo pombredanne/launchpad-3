@@ -115,12 +115,12 @@ class LicenseNotification:
 
     def display(self):
         """Show a message in a browser page about the product's license."""
-        if not self.needs_notification(self.product):
-            # The project has a common license.
-            return False
         request = get_current_browser_request()
-        if request is None:
+        message = self.getCommercialUseMessage()
+        if request is None or message == '':
             return False
+        request.response.addNotification(message)
+        return True
 
     @staticmethod
     def _formatDate(now=None):
