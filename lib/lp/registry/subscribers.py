@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import textwrap
 
 import pytz
 
@@ -68,17 +69,14 @@ class LicenseNotification:
             return ''
         iso_date = commercial_subscription.date_expires.date().isoformat()
         if not self.product.has_current_commercial_subscription:
-            return (
-                "%s's commercial subscription expired on %s" %
-                (self.product.displayname, iso_date))
+            message = "%s's commercial subscription expired on %s."
         elif 'complimentary' in commercial_subscription.sales_system_id:
-            return (
-                "%s's complimentary commercial subscription expires on %s" %
-                (self.product.displayname, iso_date))
+            message = (
+                "%s's complimentary commercial subscription expires on %s.")
         else:
-            return (
-                "%s's commercial subscription expires on %s" %
-                (self.product.displayname, iso_date))
+            message = "%s's commercial subscription expires on %s."
+        message = message % (self.product.displayname, iso_date)
+        return textwrap.fill(message, 72)
 
     def send(self):
         """Send a message to the user about the product's license."""

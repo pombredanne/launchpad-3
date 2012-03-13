@@ -181,7 +181,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         notification = LicenseNotification(product, user)
         message = (
-            "Ball's complimentary commercial subscription expires on %s" %
+            "Ball's complimentary commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
         self.assertEqual(message, notification.getCommercialUseMessage())
 
@@ -191,7 +191,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
         notification = LicenseNotification(product, user)
         message = (
-            "Ball's commercial subscription expires on %s" %
+            "Ball's commercial subscription expires on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
         self.assertEqual(message, notification.getCommercialUseMessage())
 
@@ -201,7 +201,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
         notification = LicenseNotification(product, user)
         message = (
-            "Ball's commercial subscription expired on %s" %
+            "Ball's commercial subscription expired on %s." %
             product.commercial_subscription.date_expires.date().isoformat())
         self.assertEqual(message, notification.getCommercialUseMessage())
         self.assertEqual(message, notification.getCommercialUseMessage())
