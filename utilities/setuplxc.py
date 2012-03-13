@@ -805,8 +805,8 @@ def create_scripts(user, lxcname, ssh_key_path):
         script.write(textwrap.dedent(re.sub(' {2,}', ' ', """\
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} \
-                -b $PWD -- "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
+                "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
                 --server-args='-screen 0 1024x768x24' \
                 -a $PWD/bin/test --subunit $@"
             """).format(**mapping)))
@@ -819,6 +819,12 @@ def create_scripts(user, lxcname, ssh_key_path):
         sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
         # The sudoers must have this mode or it will be ignored.
         os.chmod(sudoers_file, 0440)
+    # XXX 2012-03-13 frankban bug=944386:
+    #     Disable hardlink restriction. This workaround needs
+    #     to be removed once the kernel bug is resolved.
+    procfile = '/proc/sys/kernel/yama/protected_nonaccess_hardlinks'
+    with open(procfile, 'w') as f:
+        f.write('0\n')
 
 
 def create_lxc(user, lxcname, ssh_key_path):

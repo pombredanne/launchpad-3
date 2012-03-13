@@ -99,7 +99,7 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
     BugCannotBePrivate,
     InvalidDuplicateValue,

@@ -12,7 +12,7 @@ from testtools.matchers import (
     )
 from zope.security.interfaces import Unauthorized
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     launchpadlib_for,
