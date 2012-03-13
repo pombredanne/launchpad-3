@@ -10,6 +10,7 @@ __all__ = [
     'PillarView',
     'PillarBugsMenu',
     'PillarSharingView',
+    'PillarPersonSharingView',
     ]
 
 
@@ -269,3 +270,16 @@ class PillarSharingView(LaunchpadView):
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['sharee_data'] = self.sharee_data
+
+
+class PillarPersonSharingView(LaunchpadView):
+    
+    page_title = "Person or team"
+    label = "Information shared with person or team"
+
+    def initialize(self):
+        self.pillar = self.context.pillar
+        self.person = self.context.person
+
+        self.label = "Information shared with %s" % self.person.displayname
+        self.page_title = "%s" % self.person.displayname
