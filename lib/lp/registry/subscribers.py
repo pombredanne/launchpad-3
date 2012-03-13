@@ -50,7 +50,7 @@ class LicenseNotification:
             or License.OTHER_OPEN_SOURCE in licenses
             or [License.DONT_KNOW] == licenses)
 
-    def get_template_name(self):
+    def getTemplateName(self):
         licenses = list(self.product.licenses)
         if [License.DONT_KNOW] == licenses:
             template_name = 'product-license-dont-know.txt'
@@ -59,6 +59,24 @@ class LicenseNotification:
         else:
             template_name = 'product-license-other-open-source.txt'
         return template_name
+
+    def getCommercialUseMessage(self):
+        commercial_subscription = self.product.commercial_subscription
+        if commercial_subscription is None:
+            return ''
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        if not self.product.has_current_commercial_subscription:
+            return (
+                "%s's commercial subscription expired on %s" %
+                (self.product.displayname, iso_date))
+        elif 'complimentary' in commercial_subscription.sales_system_id:
+            return (
+                "%s's complimentary commercial subscription expires on %s" %
+                (self.product.displayname, iso_date))
+        else:
+            return (
+                "%s's commercial subscription expires on %s" %
+                (self.product.displayname, iso_date))
 
     def send(self):
         """Send a message to the user about the product's license."""
@@ -75,13 +93,15 @@ class LicenseNotification:
             user_displayname=self.user.displayname,
             user_name=self.user.name,
             product_name=self.product.name,
-            product_url=canonical_url(self.product),)
+            product_url=canonical_url(self.product),
+            commercial_use_expiration=self.getCommercialUseMessage(),
+            )
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
         template = get_email_template(
-            self.get_template_name(), app='registry')
+            self.getTemplateName(), app='registry')
         message = template % substitutions
         simple_sendmail(
             from_address, user_address,

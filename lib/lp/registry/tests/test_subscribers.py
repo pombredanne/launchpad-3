@@ -171,3 +171,37 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(
             'product-license-other-open-source.txt',
             notification.getTemplateName())
+
+    def test_getCommercialUseMessage_without_commercial_subscription(self):
+        product, user = self.make_product_user([License.MIT])
+        notification = LicenseNotification(product, user)
+        self.assertEqual('', notification.getCommercialUseMessage())
+
+    def test_getCommercialUseMessage_with_complimentary_cs(self):
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        notification = LicenseNotification(product, user)
+        message = (
+            "Ball's complimentary commercial subscription expires on %s" %
+            product.commercial_subscription.date_expires.date().isoformat())
+        self.assertEqual(message, notification.getCommercialUseMessage())
+
+    def test_getCommercialUseMessage_with_commercial_subscription(self):
+        product, user = self.make_product_user([License.MIT])
+        self.factory.makeCommercialSubscription(product)
+        product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
+        notification = LicenseNotification(product, user)
+        message = (
+            "Ball's commercial subscription expires on %s" %
+            product.commercial_subscription.date_expires.date().isoformat())
+        self.assertEqual(message, notification.getCommercialUseMessage())
+
+    def test_getCommercialUseMessage_with_expired_cs(self):
+        product, user = self.make_product_user([License.MIT])
+        self.factory.makeCommercialSubscription(product, expired=True)
+        product.licenses = [License.MIT, License.OTHER_PROPRIETARY]
+        notification = LicenseNotification(product, user)
+        message = (
+            "Ball's commercial subscription expired on %s" %
+            product.commercial_subscription.date_expires.date().isoformat())
+        self.assertEqual(message, notification.getCommercialUseMessage())
+        self.assertEqual(message, notification.getCommercialUseMessage())
