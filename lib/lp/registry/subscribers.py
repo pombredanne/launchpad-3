@@ -113,15 +113,6 @@ class LicenseNotification:
         return True
 
     @staticmethod
-    def _indent(text):
-        """Indent the text to be included in the message."""
-        if text is None:
-            return None
-        text = '\n    '.join(line for line in text.split('\n'))
-        text = '    ' + text
-        return text
-
-    @staticmethod
     def _formatDate(now=None):
         """Return the date formatted for messages."""
         if now is None:
