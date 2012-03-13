@@ -78,6 +78,13 @@ class LicenseNotification:
         message = message % (self.product.displayname, iso_date)
         return textwrap.fill(message, 72)
 
+    def display(self):
+        """Show a message in a browser page about the product's license."""
+        if not self.needs_notification(self.product):
+            # The project has a common license.
+            return False
+        # self.request.response.addNotification()
+
     def send(self):
         """Send a message to the user about the product's license."""
         if not self.needs_notification(self.product):
