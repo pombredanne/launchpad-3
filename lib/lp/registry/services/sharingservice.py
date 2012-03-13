@@ -109,14 +109,14 @@ class SharingService:
         # Separate out the info types according to permission.
         information_types = permissions.keys()
         info_types_for_all = [
-                    info_type for info_type in information_types
-                    if permissions[info_type] == SharingPermission.ALL]
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.ALL]
         info_types_for_some = [
-                    info_type for info_type in information_types
-                    if permissions[info_type] == SharingPermission.SOME]
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.SOME]
         info_types_for_nothing = [
-                    info_type for info_type in information_types
-                    if permissions[info_type] == SharingPermission.NOTHING]
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.NOTHING]
 
         # The wanted policies are for the information_types in all.
         required_pillar_info_types = [
@@ -129,8 +129,8 @@ class SharingService:
         # We need to figure out which policy grants to create or delete.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         wanted_policy_grants = [(policy, sharee)
-                        for policy in wanted_pillar_policies
-                        if policy.type in info_types_for_all]
+            for policy in wanted_pillar_policies
+            if policy.type in info_types_for_all]
         existing_policy_grants = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(wanted_policy_grants)]
