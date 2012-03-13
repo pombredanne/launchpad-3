@@ -17,7 +17,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications,

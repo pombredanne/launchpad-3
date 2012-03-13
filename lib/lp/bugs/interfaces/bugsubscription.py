@@ -32,7 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.services.fields import PersonChoice
 from lp.services.webservice.apihelpers import patch_reference_property
 

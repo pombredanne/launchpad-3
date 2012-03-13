@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.adapters.bugchange import BugTitleChange
-from lp.bugs.enum import (
+from lp.bugs.enums import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
