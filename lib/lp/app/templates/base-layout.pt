@@ -80,10 +80,10 @@
       </div><!--id="locationbar"-->
 
       <div id="watermark" class="watermark-apps-portlet">
-        <div>
+        <div class="flowed-block">
           <span tal:replace="structure view/watermark:logo"></span>
         </div>
-        <div class="wide">
+        <div class="flowed-block wide">
           <h2 tal:replace="structure view/watermark:heading">
             Celso Providelo
           </h2>

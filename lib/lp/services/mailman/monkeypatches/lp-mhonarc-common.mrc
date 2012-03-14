@@ -128,7 +128,7 @@ ul ul {
   </div>
   <h1>$ML-NAME$ team mailing list archive</h1>
   <div id="watermark" class="watermark-apps-portlet">
-    <div class="wide">
+    <div class="flowed-block wide">
 </DefineVar>
 
 <DefineVar>
