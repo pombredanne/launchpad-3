@@ -142,7 +142,7 @@ i18n:domain="malone"
         </ul>
 
       </div>
-      <div class="portlet" tal:condition="view/show_config_portlet">
+      <div class="portlet">
         <ul tal:define="menu context/menu:bugs">
           <li tal:condition="menu/subscribe_to_bug_mail/enabled|nothing">
             <a tal:replace="structure menu/subscribe_to_bug_mail/fmt:link" />
@@ -150,6 +150,10 @@ i18n:domain="malone"
           <li tal:condition="menu/edit_bug_mail/enabled|nothing">
             <a tal:replace="structure menu/edit_bug_mail/fmt:link" />
           </li>
+        </ul>
+      </div>
+      <div class="portlet" tal:condition="view/show_config_portlet">
+        <ul tal:define="menu context/menu:bugs">
           <li tal:condition="menu/configure_bugtracker/enabled|nothing">
             <a tal:replace="structure menu/configure_bugtracker/fmt:link" />
           </li>
