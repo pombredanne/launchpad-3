@@ -164,8 +164,7 @@ class YUITestFixtureControllerView(LaunchpadView):
     INDEX = 'INDEX'
 
     page_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
           <title>Test</title>
@@ -213,8 +212,7 @@ class YUITestFixtureControllerView(LaunchpadView):
         """)
 
     index_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
           <title>YUI XHR Tests</title>
