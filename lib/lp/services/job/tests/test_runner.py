@@ -550,16 +550,16 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.oops_capture.sync()
         oops = self.oopses[0]
-        self.assertEqual(
-            ('TimeoutError', 'Job ran too long.'),
-            (oops['type'], oops['value']))
+        expected_exception = ('TimeoutError', 'Job ran too long.')
+        self.assertEqual(expected_exception, (oops['type'], oops['value']))
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
-            INFO Running through Twisted.
-            INFO Running StuckJob \(ID .*\).
-            INFO Running StuckJob \(ID .*\).
-            INFO Job resulted in OOPS: .*
-            """)))
+                INFO Running through Twisted.
+                INFO Running StuckJob \(ID .*\).
+                INFO Running StuckJob \(ID .*\).
+                ERROR OOPS while executing job \d+: \['OOPS-.*\] %s\('%s',\)
+                INFO Job resulted in OOPS: .*
+            """ % (expected_exception))))
 
     def test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
@@ -584,8 +584,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
                 INFO Running through Twisted.
                 INFO Running ShorterStuckJob \(ID .*\).
                 INFO Running ShorterStuckJob \(ID .*\).
+                ERROR OOPS while executing job \d+: \['OOPS-.*\] %s\('%s',\)
                 INFO Job resulted in OOPS: %s
-                """) % oops['id']))
+                """) % ('TimeoutError', 'Job ran too long.', oops['id'])))
         self.assertEqual(('TimeoutError', 'Job ran too long.'),
                          (oops['type'], oops['value']))
 

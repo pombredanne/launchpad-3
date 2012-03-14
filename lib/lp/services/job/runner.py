@@ -176,16 +176,22 @@ class BaseRunnableJob(BaseRunnableJobSource):
             return
         ctrl.send()
 
+    def makeOopsReport(self, oops_config, info):
+        """Generate an OOPS report using the given OOPS configuration."""
+        return oops_config.create(
+            context=dict(exc_info=info))
+
 
 class BaseJobRunner(LazrJobRunner):
     """Runner of Jobs."""
 
     def __init__(self, logger=None, error_utility=None):
-        super(BaseJobRunner, self).__init__(logger)
         self.oops_ids = []
-        self.error_utility = error_utility
-        if self.error_utility is None:
-            self.error_utility = errorlog.globalErrorUtility
+        if error_utility is None:
+            error_utility = errorlog.globalErrorUtility
+        super(BaseJobRunner, self).__init__(
+            logger, oops_config=error_utility._oops_config,
+            oopsMessage=error_utility.oopsMessage)
 
     def acquireLease(self, job):
         self.logger.debug(
@@ -206,47 +212,6 @@ class BaseJobRunner(LazrJobRunner):
 
     def runJob(self, job):
         super(BaseJobRunner, self).runJob(IRunnableJob(job))
-
-    def runJobHandleError(self, job):
-        """Run the specified job, handling errors.
-
-        Most errors will be logged as Oopses.  Jobs in user_error_types won't.
-        The list of complete or incomplete jobs will be updated.
-        """
-        job = IRunnableJob(job)
-        with self.error_utility.oopsMessage(
-            dict(job.getOopsVars())):
-            try:
-                try:
-                    self.logger.debug('Running %r', job)
-                    self.runJob(job)
-                except job.user_error_types, e:
-                    self.logger.info('Job %r failed with user error %r.' %
-                        (job, e))
-                    job.notifyUserError(e)
-                except Exception:
-                    info = sys.exc_info()
-                    return self._doOops(job, info)
-            except Exception:
-                # This only happens if sending attempting to notify users
-                # about errors fails for some reason (like a misconfigured
-                # email server).
-                self.logger.exception(
-                    "Failed to notify users about a failure.")
-                info = sys.exc_info()
-                # Returning the oops says something went wrong.
-                return self.error_utility.raising(info)
-
-    def _doOops(self, job, info):
-        """Report an OOPS for the provided job and info.
-
-        :param job: The IRunnableJob whose run failed.
-        :param info: The standard sys.exc_info() value.
-        :return: the Oops that was reported.
-        """
-        oops = self.error_utility.raising(info)
-        job.notifyOops(oops)
-        return oops
 
     def _logOopsId(self, oops_id):
         """Report oopses by id to the log."""
