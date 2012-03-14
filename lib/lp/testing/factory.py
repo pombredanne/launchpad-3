@@ -967,7 +967,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        with person_logged_in(owner):
+        with celebrity_logged_in('admin'):
             product = getUtility(IProductSet).createProduct(
                 owner,
                 name,
