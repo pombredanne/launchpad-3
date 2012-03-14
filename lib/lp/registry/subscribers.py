@@ -27,6 +27,8 @@ from lp.services.webapp.publisher import canonical_url
 
 def product_licenses_modified(product, event):
     """Send a notification if licenses changed and a license is special."""
+    if not event.edited_fields:
+        return
     licenses_changed = 'licenses' in event.edited_fields
     needs_notification = LicenseNotification.needs_notification(product)
     if licenses_changed and needs_notification:
