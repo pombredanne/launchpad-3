@@ -76,6 +76,7 @@ div.watermark-apps-portlet {
     }
 /* The inline title editor (used on Product:+index) shows up as a div
  * here, and .flowed-block is used to exclude it.
+ */
 div.watermark-apps-portlet div.flowed-block {
     display: inline-block;
     vertical-align: middle;
