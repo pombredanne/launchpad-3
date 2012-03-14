@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
+    'SpecificationEditWorkItemsView',
     'SpecificationGoalDecideView',
     'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
@@ -411,7 +412,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal',
+             'whiteboard', 'proposegoal', 'workitems',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
@@ -519,6 +520,11 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     def whiteboard(self):
         text = 'Edit whiteboard'
         return Link('+whiteboard', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def workitems(self):
+        text = 'Edit work items'
+        return Link('+workitems', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
@@ -648,6 +654,14 @@ class SpecificationView(SpecificationSimpleView):
             hide_empty=False)
 
     @property
+    def workitems_text_widget(self):
+        """The Work Items text as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['workitems_text'], title="Work Items",
+            edit_view='+workitems', edit_title='Edit work items',
+            hide_empty=False)
+
+    @property
     def direction_widget(self):
         return BooleanChoiceWidget(
             self.context, ISpecification['direction_approved'],
@@ -708,6 +722,12 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
     custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditWorkItemsView(SpecificationEditView):
+    label = 'Edit specification work items'
+    field_names = ['workitems_text']
+    custom_widget('workitems_text', TextAreaWidget, height=15)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):

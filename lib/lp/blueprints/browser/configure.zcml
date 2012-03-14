@@ -373,6 +373,12 @@
             permission="launchpad.AnyPerson"
             template="../templates/specification-edit.pt"/>
         <browser:page
+            name="+workitems"
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specification.SpecificationEditWorkItemsView"
+            permission="launchpad.AnyPerson"
+            template="../templates/specification-edit.pt"/>
+        <browser:page
             name="+people"
             for="lp.blueprints.interfaces.specification.ISpecification"
             class="lp.blueprints.browser.specification.SpecificationEditPeopleView"
