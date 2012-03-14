@@ -66,33 +66,36 @@
     color: #f00;
     background-color: transparent;
     }
+/* The actions row of the watermark is reused by our mhonarc templates,
+ * which we can't easily change. So about half of this is overcomplex to
+ * support them too.
+ */
 div.watermark-apps-portlet {
     clear: both;
-    margin-bottom: .5em;
-    white-space: no-wrap;
+    margin-bottom: 0.8em;
     }
-div.watermark-apps-portlet .wide {
+div.watermark-apps-portlet div {
+    display: inline-block;
+    vertical-align: middle;
+    }
+div.watermark-apps-portlet div.wide {
     width: 75%;
-    vertical-align: bottom;
-    margin-bottom: 0.3em;
     }
 div.watermark-apps-portlet img {
+    display: block;
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
-    margin-top: 0px;
-    margin-bottom: 6px;
-    color: #000000;
+    color: #000;
     font-weight: bold;
     font-size: 30px;
-    line-height: 34px;
-    clear: none;
-    }
-div.watermark-apps-portlet span img {
-    float: none;
     margin: 0;
-    font-weight: bold;
-    clear: none;
+    }
+.watermark-apps-portlet ul {
+    margin-top: 10px;
+    white-space: nowrap;
+    /* Vertical centreing should ignore the bottom padding of the <li>s. */
+    margin-bottom: -0.3em;
     }
 .watermark-apps-portlet li {
     display: inline;
@@ -110,7 +113,6 @@ div.watermark-apps-portlet span img {
     }
 .watermark-apps-portlet li a:link, .watermark-apps-portlet li a:visited {
     color: #000;
-    background-color: #fff;
     text-decoration: none;
     }
 .watermark-apps-portlet li.active a, .watermark-apps-portlet li.active span {
@@ -124,18 +126,6 @@ div.watermark-apps-portlet span img {
     }
 .watermark-apps-portlet li.disabled-tab {
     color: #747474;
-    }
-.flowed-block {
-    display: table-cell;
-    display: inline-table;
-    display: inline-block;
-    text-align: left;
-    vertical-align: top;
-    }
-.facetmenu {
-    /* Facet menu, a.k.a. application tabs */
-    width: 100%;
-    white-space: nowrap;
     }
 .context-publication {
     margin-bottom: 1em;
