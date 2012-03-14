@@ -2285,7 +2285,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def bugtask_people(self):
-        """Return a mapping of assignee/reporter to bugtask."""
+        """Return mapping of people related to this bugtask set."""
         return getUtility(IBugTaskSet).getBugTaskPeople(self.currentBatch())
 
     def getCookieName(self):
