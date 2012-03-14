@@ -19,7 +19,7 @@ from zope.security import (
     proxy,
     )
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.model.bug import BugAffectsPerson
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.code.model.branchjob import (

@@ -17,7 +17,7 @@ import transaction
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionNavigation,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,

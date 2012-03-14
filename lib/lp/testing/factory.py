@@ -139,9 +139,9 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionSet,
     )
 from lp.registry.enums import (
-    AccessPolicyType,
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -4388,7 +4388,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_version=package_version, requester=requester)
 
     def makeAccessPolicy(self, pillar=None,
-                         type=AccessPolicyType.PROPRIETARY):
+                         type=InformationType.PROPRIETARY):
         if pillar is None:
             pillar = self.makeProduct()
         policies = getUtility(IAccessPolicySource).create([(pillar, type)])

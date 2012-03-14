@@ -247,12 +247,41 @@ class TestWorkItemsText(TestCase):
     def test_multi_line_parsing(self):
         title_1 = 'Work item 1'
         title_2 = 'Work item 2'
-        work_items_text = "%s: TODO\n%s: POSTPONED" % (title_1, title_2)
+        work_items_text = "Work items:\n%s: TODO\n%s: POSTPONED" % (title_1,
+                                                                  title_2)
         parsed = self.field.parse(work_items_text)
         self.assertEqual(
             parsed, [{'title': title_1,
                       'status': 'TODO',
                       'assignee': None, 'milestone': None, 'sequence': 0},
+                     {'title': title_2,
+                      'status': 'POSTPONED',
+                      'assignee': None, 'milestone': None, 'sequence': 1}])
+
+    def test_multi_line_parsing_different_milestones(self):
+        title_1 = 'Work item 1'
+        title_2 = 'Work item 2'
+        work_items_text = ("Work items:\n%s: TODO\nWork items for test-ms:\n"
+                           "%s: POSTPONED" % (title_1, title_2))
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title_1,
+                      'status': 'TODO',
+                      'assignee': None, 'milestone': None, 'sequence': 0},
+                     {'title': title_2,
+                      'status': 'POSTPONED',
+                      'assignee': None, 'milestone': 'test-ms', 'sequence': 1}])
+
+    def test_multi_line_parsing_different_milestones_reversed(self):
+        title_1 = 'Work item 1'
+        title_2 = 'Work item 2'
+        work_items_text = ("Work items for test-ms:\n%s: TODO\nWork items:\n"
+                           "%s: POSTPONED" % (title_1, title_2))
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title_1,
+                      'status': 'TODO',
+                      'assignee': None, 'milestone': 'test-ms', 'sequence': 0},
                      {'title': title_2,
                       'status': 'POSTPONED',
                       'assignee': None, 'milestone': None, 'sequence': 1}])

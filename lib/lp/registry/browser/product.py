@@ -41,7 +41,6 @@ __all__ = [
     'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
-    'ProductSharingView',
     ]
 
 
@@ -52,10 +51,8 @@ from datetime import (
 from operator import attrgetter
 
 from lazr.delegates import delegates
-from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interface import copy_field
 import pytz
-import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -76,9 +73,7 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -112,7 +107,6 @@ from lp.app.browser.tales import (
     format_link,
     MenuAPI,
     )
-from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
@@ -159,7 +153,6 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.enums import AccessPolicyType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,
@@ -177,6 +170,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -581,6 +575,13 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        text = 'Sharing'
+        enabled = getFeatureFlag(
+            'disclosure.enhanced_sharing.enabled') is not None
+        return Link('+sharing', text, icon='edit', enabled=enabled)
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -599,7 +600,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = ['edit', 'review_license', 'administer']
+        links = ['edit', 'review_license', 'administer', 'sharing']
         add_subscribe_link(links)
         return links
 
@@ -627,7 +628,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branch_add',
         'branchvisibility',
         'rdf',
         'branding',
@@ -684,11 +684,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
     def branchvisibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
@@ -2417,46 +2412,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def adapters(self):
         """See `LaunchpadFormView`"""
         return {IProductEditPeopleSchema: self.context}
-
-
-class ProductSharingView(LaunchpadView):
-
-    page_title = "Sharing"
-    label = "Sharing information"
-
-    @property
-    def access_policies(self):
-        result = []
-        for x, policy in enumerate(AccessPolicyType):
-            item = dict(
-                index=x,
-                value=policy.token,
-                title=policy.title,
-                description=policy.value.description
-            )
-            result.append(item)
-        return result
-
-    @cachedproperty
-    def sharing_vocabulary(self):
-        registry = getVocabularyRegistry()
-        return registry.get(
-            IVocabulary, 'ValidPillarOwner')
-
-    @cachedproperty
-    def sharing_vocabulary_filters(self):
-        return vocabulary_filters(self.sharing_vocabulary)
-
-    @property
-    def sharing_picker_config(self):
-        return dict(
-            access_policies=self.access_policies,
-            vocabulary='ValidPillarOwner',
-            vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to %s'
-                % self.context.displayname)
-
-    @property
-    def json_sharing_picker_config(self):
-        return simplejson.dumps(
-            self.sharing_picker_config, cls=ResourceJSONEncoder)

@@ -10,6 +10,7 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -24,10 +25,12 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     CommercialSubscribersOnly,
     OpenTeamLinkageError,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -47,6 +50,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -342,6 +346,14 @@ class TestProduct(TestCaseWithFactory):
         product.setPrivateBugs(True, bug_supervisor)
         self.assertTrue(product.private_bugs)
 
+    def test_product_creation_creates_accesspolicies(self):
+        # Creating a new product also creates AccessPolicies for it.
+        product = self.factory.makeProduct()
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
@@ -441,6 +453,66 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
         # before the cache is populated.
         self.assertEqual(
             'new', self.product.commercial_subscription.sales_system_id)
+
+
+class ProductLicensingTestCase(TestCaseWithFactory):
+    """Test the rules of licenses and commercial subscriptions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getLicenses(self):
+        # License are assigned a list, but return a tuple.
+        product = self.factory.makeProduct(
+            licenses=[License.GNU_GPL_V2, License.MIT])
+        self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
+
+    def test_setLicense_handles_no_change(self):
+        # The project_reviewed property is not reset, if the new licenses
+        # are identical to the current licenses.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.MIT]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(True, product.project_reviewed)
+
+    def test_setLicense_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if the licenses
+        # change.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.GNU_GPL_V2]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_license_info_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if license_info
+        # changes.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_OPEN_SOURCE])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.license_info = 'zlib'
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_setLicense_without_empty_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', [])
+
+    def test_setLicense_without_non_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', ['bogus'])
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):

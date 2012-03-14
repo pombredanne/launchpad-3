@@ -4037,6 +4037,23 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_id, team_id))
 
+    def _mergeProposedInvitedTeamMembership(self, cur, from_id, to_id):
+        # Memberships in an intermediate state are declined to avoid
+        # cyclic membership errors and confusion about who the proposed
+        # member is.
+        TMS = TeamMembershipStatus
+        update_template = ("""
+            UPDATE TeamMembership
+            SET status = %s
+            WHERE
+                person = %s
+                AND status = %s
+            """)
+        cur.execute(update_template % sqlvalues(
+            TMS.DECLINED, from_id, TMS.PROPOSED))
+        cur.execute(update_template % sqlvalues(
+            TMS.INVITATION_DECLINED, from_id, TMS.INVITED))
+
     def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
         # Merge the karma total cache so the user does not think the karma
         # was lost.
@@ -4320,6 +4337,7 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id))
 
         self._mergeTeamMembership(cur, from_id, to_id)
+        self._mergeProposedInvitedTeamMembership(cur, from_id, to_id)
 
         # Flag the person as merged
         cur.execute('''

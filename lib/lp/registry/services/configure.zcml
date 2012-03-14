@@ -9,10 +9,10 @@
 
     <!-- Named Services -->
     <securedutility
-        name="accesspolicy"
-        class="lp.registry.services.accesspolicyservice.AccessPolicyService"
+        name="sharing"
+        class="lp.registry.services.sharingservice.SharingService"
         provides="lp.app.interfaces.services.IService">
         <allow
-            interface="lp.registry.interfaces.accesspolicyservice.IAccessPolicyService"/>
+            interface="lp.registry.interfaces.sharingservice.ISharingService"/>
     </securedutility>
 </configure>

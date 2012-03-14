@@ -7,7 +7,7 @@ from storm.exceptions import LostObjectError
 from testtools.matchers import AllMatch
 from zope.component import getUtility
 
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -45,8 +45,9 @@ class TestAccessPolicySource(TestCaseWithFactory):
 
     def test_create(self):
         wanted = [
-            (self.factory.makeProduct(), AccessPolicyType.PROPRIETARY),
-            (self.factory.makeDistribution(), AccessPolicyType.USERDATA),
+            (self.factory.makeProduct(), InformationType.PROPRIETARY),
+            (self.factory.makeDistribution(),
+                InformationType.UNEMBARGOEDSECURITY),
             ]
         policies = getUtility(IAccessPolicySource).create(wanted)
         self.assertThat(
@@ -63,25 +64,25 @@ class TestAccessPolicySource(TestCaseWithFactory):
         other_product = self.factory.makeProduct()
 
         wanted = [
-            (product, AccessPolicyType.PROPRIETARY),
-            (product, AccessPolicyType.USERDATA),
-            (distribution, AccessPolicyType.PROPRIETARY),
-            (distribution, AccessPolicyType.USERDATA),
-            (other_product, AccessPolicyType.PROPRIETARY),
+            (product, InformationType.PROPRIETARY),
+            (product, InformationType.UNEMBARGOEDSECURITY),
+            (distribution, InformationType.PROPRIETARY),
+            (distribution, InformationType.UNEMBARGOEDSECURITY),
+            (other_product, InformationType.PROPRIETARY),
             ]
         getUtility(IAccessPolicySource).create(wanted)
 
         query = [
-            (product, AccessPolicyType.PROPRIETARY),
-            (product, AccessPolicyType.USERDATA),
-            (distribution, AccessPolicyType.USERDATA),
+            (product, InformationType.PROPRIETARY),
+            (product, InformationType.UNEMBARGOEDSECURITY),
+            (distribution, InformationType.UNEMBARGOEDSECURITY),
             ]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
              getUtility(IAccessPolicySource).find(query)])
 
-        query = [(distribution, AccessPolicyType.PROPRIETARY)]
+        query = [(distribution, InformationType.PROPRIETARY)]
         self.assertContentEqual(
             query,
             [(policy.pillar, policy.type) for policy in
@@ -101,18 +102,24 @@ class TestAccessPolicySource(TestCaseWithFactory):
         product = self.factory.makeProduct()
         distribution = self.factory.makeProduct()
         other_product = self.factory.makeProduct()
-        wanted = [
-            (pillar, type)
-            for type in AccessPolicyType.items
-            for pillar in (product, distribution, other_product)]
-        policies = getUtility(IAccessPolicySource).create(wanted)
+        policies = (
+            (product, InformationType.EMBARGOEDSECURITY),
+            (product, InformationType.USERDATA),
+            (distribution, InformationType.EMBARGOEDSECURITY),
+            (distribution, InformationType.USERDATA),
+            (other_product, InformationType.EMBARGOEDSECURITY),
+            (other_product, InformationType.USERDATA),
+            )
         self.assertContentEqual(
             policies,
-            getUtility(IAccessPolicySource).findByPillar(
-                [product, distribution, other_product]))
+            [(ap.pillar, ap.type)
+                for ap in getUtility(IAccessPolicySource).findByPillar(
+                [product, distribution, other_product])])
         self.assertContentEqual(
-            [policy for policy in policies if policy.pillar == product],
-            getUtility(IAccessPolicySource).findByPillar([product]))
+            [policy for policy in policies if policy[0] == product],
+            [(ap.pillar, ap.type)
+                for ap in getUtility(IAccessPolicySource).findByPillar(
+                    [product])])
 
 
 class TestAccessArtifact(TestCaseWithFactory):
@@ -264,6 +271,16 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
+    def test_revokeByArtifact(self):
+        # revokeByArtifact() removes the relevant grants.
+        artifact = self.factory.makeAccessArtifact()
+        grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
+
 
 class TestAccessPolicyArtifact(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -319,6 +336,21 @@ class TestAccessPolicyArtifactSource(TestCaseWithFactory):
             links,
             getUtility(IAccessPolicyArtifactSource).findByPolicy([policy]))
 
+    def test_deleteByArtifact(self):
+        # deleteByArtifact() removes the relevant grants.
+        grant = self.factory.makeAccessPolicyArtifact()
+        other_grant = self.factory.makeAccessPolicyArtifact()
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
+            [grant.abstract_artifact])
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [grant.abstract_artifact]))
+        self.assertContentEqual(
+            [other_grant],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_grant.abstract_artifact]))
+
 
 class TestAccessPolicyGrant(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -362,6 +394,32 @@ class TestAccessPolicyGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessPolicyGrantSource).findByPolicy([policy]))
 
+    def test_revoke(self):
+        # revoke() removes the specified grants.
+        policy = self.factory.makeAccessPolicy()
+        grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+
+        # Make some other grants to ensure they're unaffected.
+        other_grants = [
+            self.factory.makeAccessPolicyGrant(policy=policy)
+            for i in range(3)]
+        other_grants.extend([
+            self.factory.makeAccessPolicyGrant()
+            for i in range(3)])
+
+        to_delete = [(grant.policy, grant.grantee) for grant in grants]
+        getUtility(IAccessPolicyGrantSource).revoke(to_delete)
+        IStore(policy).invalidate()
+
+        for grant in grants:
+            self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertEqual(
+            0, getUtility(IAccessPolicyGrantSource).find(to_delete).count())
+        for other_grant in other_grants:
+            self.assertIsNot(None, other_grant.grantor)
+
 
 class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -388,3 +446,19 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [policy_grant.grantee, artifact_grant.grantee],
             apgfs.findGranteesByPolicy([policy]))
+
+    def test_findArtifactsByGrantee(self):
+        # findArtifactsByGrantee() returns the artifacts for grantee for any of
+        # the policies.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        policy = self.factory.makeAccessPolicy()
+        grantee = self.factory.makePerson()
+        # Artifacts not linked to the policy do not show up.
+        artifact = self.factory.makeAccessArtifact()
+        self.factory.makeAccessArtifactGrant(artifact, grantee)
+        self.assertContentEqual(
+            [], apgfs.findArtifactsByGrantee(grantee, [policy]))
+        # Artifacts linked to the policy do show up.
+        self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+        self.assertContentEqual(
+            [artifact], apgfs.findArtifactsByGrantee(grantee, [policy]))
