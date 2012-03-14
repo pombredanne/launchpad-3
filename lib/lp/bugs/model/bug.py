@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -99,7 +99,7 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
     BugCannotBePrivate,
     InvalidDuplicateValue,
@@ -157,6 +157,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -180,6 +181,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -351,6 +353,8 @@ class Bug(SQLBase):
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -1009,8 +1013,10 @@ class Bug(SQLBase):
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id).config(
-                    distinct=(BugSubscription.person_id,)),
+                    BugSubscription.person_id,
+                    BugSubscription.date_created,
+                    BugSubscription.id
+                    ).config(distinct=(BugSubscription.person_id,)),
             operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
@@ -1691,6 +1697,16 @@ class Bug(SQLBase):
 
         return bugtask
 
+    def _setInformationType(self):
+        if self.private and self.security_related:
+            self.information_type = InformationType.EMBARGOEDSECURITY
+        elif self.private:
+            self.information_type = InformationType.USERDATA
+        elif self.security_related:
+            self.information_type = InformationType.UNEMBARGOEDSECURITY
+        else:
+            self.information_type = InformationType.PUBLIC
+
     def setPrivacyAndSecurityRelated(self, private, security_related, who):
         """ See `IBug`."""
         private_changed = False
@@ -1740,6 +1756,8 @@ class Bug(SQLBase):
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
+
+        self._setInformationType()
 
         if private_changed or security_related_changed:
             changed_fields = []
@@ -1996,15 +2014,14 @@ class Bug(SQLBase):
         store.invalidate(self)
 
     def shouldConfirmBugtasks(self):
-        """Should we try to confirm this bug's bugtasks?
-        The answer is yes if more than one user is affected."""
+        """See `IBug`."""
         # == 2 would probably be sufficient once we have all legacy bug tasks
         # confirmed.  For now, this is a compromise: we don't need a migration
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
     def maybeConfirmBugtasks(self):
-        """Maybe try to confirm our new bugtasks."""
+        """See `IBug`."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
                 bugtask.maybeConfirm()
@@ -2230,18 +2247,6 @@ class Bug(SQLBase):
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
-
-    def setHeat(self, heat, timestamp=None):
-        """See `IBug`."""
-        """See `IBug`."""
-        if timestamp is None:
-            timestamp = UTC_NOW
-
-        if heat < 0:
-            heat = 0
-
-        self.heat = heat
-        self.heat_last_updated = timestamp
 
     def updateHeat(self):
         """See `IBug`."""
@@ -2613,8 +2618,11 @@ class BugSubscriptionInfo:
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+                Not(In(
+                    BugSubscription.person_id,
+                    Select(
+                        BugMute.person_id, BugMute.bug_id == Bug.id,
+                        tables=[BugMute]))))
 
     @property
     def duplicate_subscribers(self):
@@ -2850,6 +2858,8 @@ class BugSet:
         if notify_event:
             notify(event)
 
+        bug._setInformationType()
+
         # Calculate the bug's initial heat.
         bug.updateHeat()
 
@@ -2967,12 +2977,6 @@ class BugSet:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, Bug.id.is_in(bug_numbers))
-        return result_set.order_by('id')
-
-    def dangerousGetAllBugs(self):
-        """See `IBugSet`."""
-        store = IStore(Bug)
-        result_set = store.find(Bug)
         return result_set.order_by('id')
 
     def getBugsWithOutdatedHeat(self, cutoff):

@@ -40,7 +40,10 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.restful.utils import get_current_browser_request
+from lazr.restful.utils import (
+    get_current_browser_request,
+    smartquote,
+    )
 import pytz
 from sqlobject import (
     BoolCol,
@@ -1705,12 +1708,12 @@ class Person(
         if self.isAnyPillarOwner():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "maintains one ore more products, project groups, or "
+                "maintains one or more projects, project groups, or "
                 "distributions." % policy)
         if self.isAnySecurityContact():
             raise TeamSubscriptionPolicyError(
                 "The team subscription policy cannot be %s because it "
-                "is the security contact for one ore more products, "
+                "is the security contact for one or more projects, "
                 "project groups, or distributions." % policy)
 
         # Does this team have any PPAs
@@ -1777,6 +1780,8 @@ class Person(
     @property
     def title(self):
         """See `IPerson`."""
+        if self.is_team:
+            return smartquote('"%s" team') % self.displayname
         return self.displayname
 
     @property
@@ -3520,6 +3525,42 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
+    def _mergeAccessArtifactGrant(self, cur, from_id, to_id):
+        # Update only the AccessArtifactGrants that will not conflict.
+        cur.execute('''
+            UPDATE AccessArtifactGrant
+            SET grantee=%(to_id)d
+            WHERE
+                grantee = %(from_id)d
+                AND artifact NOT IN (
+                    SELECT artifact
+                    FROM AccessArtifactGrant
+                    WHERE grantee = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AccessArtifactGrant WHERE grantee = %(from_id)d
+            ''' % vars())
+
+    def _mergeAccessPolicyGrant(self, cur, from_id, to_id):
+        # Update only the AccessPolicyGrants that will not conflict.
+        cur.execute('''
+            UPDATE AccessPolicyGrant
+            SET grantee=%(to_id)d
+            WHERE
+                grantee = %(from_id)d
+                AND policy NOT IN (
+                    SELECT policy
+                    FROM AccessPolicyGrant
+                    WHERE grantee = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM AccessPolicyGrant WHERE grantee = %(from_id)d
+            ''' % vars())
+
     def _mergeBranches(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
         branches = getUtility(IBranchCollection).ownedBy(from_person)
@@ -3894,6 +3935,23 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_id, team_id))
 
+    def _mergeProposedInvitedTeamMembership(self, cur, from_id, to_id):
+        # Memberships in an intermediate state are declined to avoid
+        # cyclic membership errors and confusion about who the proposed
+        # member is.
+        TMS = TeamMembershipStatus
+        update_template = ("""
+            UPDATE TeamMembership
+            SET status = %s
+            WHERE
+                person = %s
+                AND status = %s
+            """)
+        cur.execute(update_template % sqlvalues(
+            TMS.DECLINED, from_id, TMS.PROPOSED))
+        cur.execute(update_template % sqlvalues(
+            TMS.INVITATION_DECLINED, from_id, TMS.INVITED))
+
     def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
         # Merge the karma total cache so the user does not think the karma
         # was lost.
@@ -4073,6 +4131,11 @@ class PersonSet:
             % vars())
         skip.append(('gpgkey', 'owner'))
 
+        self._mergeAccessArtifactGrant(cur, from_id, to_id)
+        self._mergeAccessPolicyGrant(cur, from_id, to_id)
+        skip.append(('accessartifactgrant', 'grantee'))
+        skip.append(('accesspolicygrant', 'grantee'))
+
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
         self._mergeBranches(from_person, to_person)
@@ -4172,6 +4235,7 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id))
 
         self._mergeTeamMembership(cur, from_id, to_id)
+        self._mergeProposedInvitedTeamMembership(cur, from_id, to_id)
 
         # Flag the person as merged
         cur.execute('''
@@ -4717,7 +4781,7 @@ def get_recipients(person):
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
     """
-    if person.preferredemail:
+    if removeSecurityProxy(person).preferredemail:
         return [person]
     elif person.is_team:
         # Get transitive members of a team that does not itself have a

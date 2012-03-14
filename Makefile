@@ -60,10 +60,11 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
+    bin/watch_jsbuild
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -179,13 +180,16 @@ jsbuild_widget_css: bin/jsbuild
 	    --srcdir lib/lp/app/javascript \
 	    --builddir $(LP_BUILT_JS_ROOT)
 
+jsbuild_watch:
+	$(PY) bin/watch_jsbuild
+
 $(JS_LP): jsbuild_widget_css
 $(JS_YUI):
 	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+	cat $^ | bin/lpjsmin > $@
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif

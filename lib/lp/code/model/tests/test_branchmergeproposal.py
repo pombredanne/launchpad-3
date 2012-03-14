@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -1283,10 +1283,11 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         with person_logged_in(person):
             private_bug = self.factory.makeBug(private=True, owner=person)
             bmp.source_branch.linkBug(private_bug, person)
+            private_tasks = private_bug.bugtasks
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
         all_bugtasks = list(bug.bugtasks)
-        all_bugtasks.extend(private_bug.bugtasks)
+        all_bugtasks.extend(private_tasks)
         self.assertEqual(
             all_bugtasks, list(bmp.getRelatedBugTasks(person)))
 
@@ -1853,10 +1854,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
         # show that we are not reusing the objects.
-        preview_diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff).id
-        diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff).diff_id
+        preview_diff_id = removeSecurityProxy(merge_proposal.preview_diff).id
+        diff_id = removeSecurityProxy(merge_proposal.preview_diff).diff_id
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
         self.assertEqual(diff_text, merge_proposal.preview_diff.text)
         self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)

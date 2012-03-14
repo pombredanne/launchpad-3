@@ -12,7 +12,6 @@ import logging
 
 from lazr.delegates import delegates
 from lazr.jobrunner.runjobs import SuspendJobException
-import simplejson
 from storm.locals import (
     And,
     Int,
@@ -41,13 +40,13 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -297,9 +296,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
-            simplejson.dumps(metadata, ensure_ascii=False))
-        format_string = "(%s)" % ", ".join(["%s"] * len(data))
-        return format_string % sqlvalues(*data)
+            metadata)
+        return data
 
     @classmethod
     def createMultiple(cls, target_distroseries, copy_tasks, requester,
@@ -313,20 +311,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 target_distroseries, copy_policy, include_binaries, job_id,
                 task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
-        result = store.execute("""
-            INSERT INTO PackageCopyJob (
-                job_type,
-                target_distroseries,
-                copy_policy,
-                source_archive,
-                target_archive,
-                package_name,
-                job,
-                json_data)
-            VALUES %s
-            RETURNING id
-            """ % ", ".join(job_contents))
-        return [job_id for job_id, in result]
+        return bulk.create(
+                (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
+                 PackageCopyJob.copy_policy, PackageCopyJob.source_archive,
+                 PackageCopyJob.target_archive, PackageCopyJob.package_name,
+                 PackageCopyJob.job_id, PackageCopyJob.metadata),
+                job_contents, get_primary_keys=True)
 
     @classmethod
     def getActiveJobs(cls, target_archive):

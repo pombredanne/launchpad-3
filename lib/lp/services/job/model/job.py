@@ -28,13 +28,11 @@ from storm.locals import (
 import transaction
 from zope.interface import implements
 
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.sqlbase import (
-    quote,
-    SQLBase,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -128,15 +126,10 @@ class Job(SQLBase):
         :param request: The `IPerson` requesting the jobs.
         :return: An iterable of `Job.id` values for the new jobs.
         """
-        job_contents = [
-            "(%s, %s)" % (
-                quote(JobStatus.WAITING), quote(requester))] * num_jobs
-        result = store.execute("""
-            INSERT INTO Job (status, requester)
-            VALUES %s
-            RETURNING id
-            """ % ", ".join(job_contents))
-        return [job_id for job_id, in result]
+        return bulk.create(
+                (Job._status, Job.requester),
+                [(JobStatus.WAITING, requester) for i in range(num_jobs)],
+                get_primary_keys=True)
 
     def acquireLease(self, duration=300):
         """See `IJob`."""

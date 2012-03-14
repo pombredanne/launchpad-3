@@ -57,10 +57,9 @@ drops the resulting message in Mailman's incoming queue.
 
     # The path to the binary we're testing is relative to the top of the
     # Launchpad source tree.
-    >>> import canonical
-    >>> launchpad_top = os.path.dirname(
-    ...     os.path.dirname(os.path.dirname(canonical.__file__)))
-    >>> binary = os.path.join(launchpad_top,
+    >>> import lp
+    >>> binary = os.path.join(
+    ...     os.path.dirname(lp.__file__), os.pardir, os.pardir,
     ...     'lib/mailman/mail/mailman')
 
     >>> mailman = subprocess.Popen(

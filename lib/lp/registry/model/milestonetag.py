@@ -10,24 +10,26 @@ __all__ = [
     ]
 
 
-from zope.interface import implements
-from zope.component import getUtility
-
-from lp.services.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    DEFAULT_FLAVOR,
-    )
-
-from lp.blueprints.model.specification import Specification
-from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
-from lp.registry.model.milestone import MilestoneData, Milestone
-from lp.registry.model.product import Product
 from storm.locals import (
     DateTime,
     Int,
-    Unicode,
     Reference,
+    Unicode,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+
+from lp.blueprints.model.specification import Specification
+from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
+from lp.registry.model.milestone import (
+    Milestone,
+    MilestoneData,
+    )
+from lp.registry.model.product import Product
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 
 

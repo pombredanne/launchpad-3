@@ -51,6 +51,7 @@ setup(
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',
+        'lpjsmin',
         # Required for launchpadlib
         'keyring',
         'manuel',
@@ -175,7 +176,6 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian = '
                 'lp.scripts.runlaunchpad:start_librarian',
-            'ec2 = devscripts.ec2test.entrypoint:main',
         ]
     ),
 )

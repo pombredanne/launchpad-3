@@ -24,7 +24,6 @@ from twisted.web import server
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-import canonical
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -81,9 +80,8 @@ class HTTPServerTestSetup(TacTestSetup):
 
     @property
     def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/distributionmirror_http_server.tac'))
+        return os.path.join(
+            self.daemon_directory, 'distributionmirror_http_server.tac')
 
     @property
     def pidfile(self):
@@ -236,7 +234,6 @@ class TestProberProtocolAndFactory(TrialTestCase):
         d = self._createProberAndProbe(self.urls['timeout'])
         return self.assertFailure(d, ProberTimeout)
 
-
     def test_prober_user_agent(self):
         protocol = RedirectAwareProberProtocol()
 
@@ -302,7 +299,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         # Restore the globals that our tests fiddle with.
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
-        super(TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).tearDown()
+        super(
+            TestProberFactoryRequestTimeoutRatioWithoutTwisted,
+            self).tearDown()
 
     def _createProberStubConnectAndProbe(self, requests, timeouts):
         """Create a ProberFactory object with a URL inside self.host and call

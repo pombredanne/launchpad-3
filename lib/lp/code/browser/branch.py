@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -103,7 +102,6 @@ from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
     RevisionControlSystems,
-    UICreatableBranchType,
     )
 from lp.code.errors import (
     BranchCreationForbidden,
@@ -122,10 +120,8 @@ from lp.code.interfaces.branch import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import (
-    IPerson,
     IPersonSet,
     )
 from lp.registry.interfaces.productseries import IProductSeries
@@ -1152,77 +1148,6 @@ class BranchReviewerEditView(BranchEditFormView):
     @property
     def initial_values(self):
         return {'reviewer': self.context.code_reviewer}
-
-
-class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
-
-    class schema(Interface):
-        use_template(
-            IBranch, include=['owner', 'name', 'lifecycle_status'])
-
-    for_input = True
-    field_names = ['owner', 'name', 'lifecycle_status']
-
-    branch = None
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-
-    initial_focus_widget = 'name'
-
-    @property
-    def page_title(self):
-        return 'Register a branch'
-
-    @property
-    def initial_values(self):
-        return {
-            'owner': self.default_owner,
-            'branch_type': UICreatableBranchType.MIRRORED}
-
-    @property
-    def target(self):
-        """The branch target for the context."""
-        return IBranchTarget(self.context)
-
-    @property
-    def default_owner(self):
-        """The default owner of branches in this context.
-
-        If the context is a person, then it's the context. If the context is
-        not a person, then the default owner is the currently logged-in user.
-        """
-        return IPerson(self.context, self.user)
-
-    @action('Register Branch', name='add')
-    def add_action(self, action, data):
-        """Handle a request to create a new branch for this product."""
-        try:
-            namespace = self.target.getNamespace(data['owner'])
-            self.branch = namespace.createBranch(
-                branch_type=BranchType.HOSTED,
-                name=data['name'],
-                registrant=self.user,
-                url=None,
-                lifecycle_status=data['lifecycle_status'])
-        except BranchCreationForbidden:
-            self.addError(
-                "You are not allowed to create branches in %s." %
-                self.context.displayname)
-        except BranchExists, e:
-            self._setBranchExists(e.existing_branch)
-        else:
-            self.next_url = canonical_url(self.branch)
-
-    def validate(self, data):
-        owner = data['owner']
-
-        if not self.user.inTeam(owner):
-            self.setFieldError(
-                'owner',
-                'You are not a member of %s' % owner.displayname)
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
 
 
 class BranchSubscriptionsView(LaunchpadView):

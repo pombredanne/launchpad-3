@@ -878,13 +878,6 @@
             name="+activereviews"
             template="../templates/active-reviews.pt"/>
         <browser:page
-            name="+addbranch"
-            for="lp.registry.interfaces.person.IPerson"
-            layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.branch.BranchAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/branch-add.pt"/>
-        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
@@ -926,22 +919,6 @@
         permission="zope.Public"
         name="+count-summary"
         template="../templates/branch-count-summary.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.product.IProduct"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
 
     <browser:menus
         classes="ProductBranchesMenu"

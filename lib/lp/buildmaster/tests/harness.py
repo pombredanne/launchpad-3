@@ -12,7 +12,6 @@ __all__ = [
 
 import os
 
-import canonical
 from lp.services.daemons.tachandler import TacTestSetup
 from lp.services.osutils import remove_tree
 
@@ -27,9 +26,9 @@ class BuilddManagerTestSetup(TacTestSetup):
 
         :param content: A string to use as the content of the file.
         :param repeat: The number of times to repeat the string in the file.
-            This is meant to be used to easily create larger files. 
+            This is meant to be used to easily create larger files.
         """
-        self.logfilecontent = content*repeat
+        self.logfilecontent = content * repeat
 
     def setUpRoot(self):
         """Create `TacTestSetup.root` for storing the log and pid files.
@@ -49,10 +48,7 @@ class BuilddManagerTestSetup(TacTestSetup):
     @property
     def tacfile(self):
         """Absolute path to the 'buildd-manager' tac file."""
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/buildd-manager.tac'
-            ))
+        return os.path.join(self.daemon_directory, 'buildd-manager.tac')
 
     @property
     def pidfile(self):

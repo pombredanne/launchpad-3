@@ -163,27 +163,27 @@ class TestBugTaskView(TestCaseWithFactory):
                 source_branch=source_branch)
 
     def test_rendered_query_counts_reduced_with_branches(self):
-        f = self.factory
-        owner = f.makePerson()
-        ds = f.makeDistroSeries()
-        bug = f.makeBug()
+        owner = self.factory.makePerson()
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug()
         sourcepackages = [
-            f.makeSourcePackage(distroseries=ds, publish=True)
+            self.factory.makeSourcePackage(distroseries=ds, publish=True)
             for i in range(5)]
         for sp in sourcepackages:
-            f.makeBugTask(bug=bug, owner=owner, target=sp)
-        url = canonical_url(bug.default_bugtask)
+            self.factory.makeBugTask(bug=bug, owner=owner, target=sp)
+        task = bug.default_bugtask
+        url = canonical_url(task)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
         self.assertThat(recorder, HasQueryCount(LessThan(107)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
-        self.invalidate_caches(bug.default_bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
@@ -1793,11 +1793,12 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory):
+def make_bug_task_listing_item(factory, tags=()):
     owner = factory.makePerson()
     bug = factory.makeBug(
         owner=owner, private=True, security_related=True)
-    bugtask = bug.default_bugtask
+    with person_logged_in(owner):
+        bugtask = bug.default_bugtask
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
@@ -1807,6 +1808,7 @@ def make_bug_task_listing_item(factory):
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
+        tags,
         target_context=bugtask.target)
 
 
@@ -1856,6 +1858,33 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         view = getMultiAdapter((bugtask.target, request), name='+bugs')
         view.initialize()
         return view
+
+    def invalidate_caches(self, obj):
+        store = Store.of(obj)
+        # Make sure everything is in the database.
+        store.flush()
+        # And invalidate the cache (not a reset, because that stops us using
+        # the domain objects)
+        store.invalidate()
+
+    def test_rendered_query_counts_constant_with_many_bugtasks(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        buggy_product = self.factory.makeProduct()
+        for _ in range(10):
+            self.factory.makeBug(product=buggy_product)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(bug)
+        # count with single task
+        url = canonical_url(product, view_name='+bugs')
+        self.getUserBrowser(url)
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
+        # count with many tasks
+        buggy_url = canonical_url(buggy_product, view_name='+bugs')
+        self.getUserBrowser(buggy_url)
+        self.assertThat(recorder, HasQueryCount(LessThan(24)))
 
     def test_mustache_model_missing_if_no_flag(self):
         """The IJSONRequestCache should contain mustache_model."""
@@ -2332,15 +2361,16 @@ class TestBugTaskListingItem(TestCaseWithFactory):
     def test_model_age(self):
         """Model contains bug age."""
         owner, item = make_bug_task_listing_item(self.factory)
+        bug = removeSecurityProxy(item.bug)
+        bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
         with person_logged_in(owner):
-            item.bug.datecreated = datetime.now(UTC) - timedelta(3, 0, 0)
             self.assertEqual('3 days old', item.model['age'])
 
     def test_model_tags(self):
         """Model contains bug tags."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        tags = ['tag1', 'tag2']
+        owner, item = make_bug_task_listing_item(self.factory, tags=tags)
         with person_logged_in(owner):
-            item.bug.tags = ['tag1', 'tag2']
             self.assertEqual(2, len(item.model['tags']))
             self.assertTrue('tag' in item.model['tags'][0].keys())
             self.assertTrue('url' in item.model['tags'][0].keys())
@@ -2356,9 +2386,9 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_updated if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2000, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2001, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2000, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
 
@@ -2366,8 +2396,8 @@ class TestBugTaskListingItem(TestCaseWithFactory):
         """last_updated uses date_last_message if newer."""
         owner, item = make_bug_task_listing_item(self.factory)
         with person_logged_in(owner):
-            item.bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
-            removeSecurityProxy(item.bug).date_last_message = datetime(
-                2001, 1, 1, tzinfo=UTC)
+            bug = removeSecurityProxy(item.bug)
+            bug.date_last_updated = datetime(2000, 1, 1, tzinfo=UTC)
+            bug.date_last_message = datetime(2001, 1, 1, tzinfo=UTC)
             self.assertEqual(
                 'on 2001-01-01', item.model['last_updated'])
