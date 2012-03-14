@@ -99,7 +99,7 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import (
     BugCannotBePrivate,
     InvalidDuplicateValue,
@@ -157,6 +157,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -180,6 +181,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -351,6 +353,8 @@ class Bug(SQLBase):
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -1693,6 +1697,16 @@ class Bug(SQLBase):
 
         return bugtask
 
+    def _setInformationType(self):
+        if self.private and self.security_related:
+            self.information_type = InformationType.EMBARGOEDSECURITY
+        elif self.private:
+            self.information_type = InformationType.USERDATA
+        elif self.security_related:
+            self.information_type = InformationType.UNEMBARGOEDSECURITY
+        else:
+            self.information_type = InformationType.PUBLIC
+
     def setPrivacyAndSecurityRelated(self, private, security_related, who):
         """ See `IBug`."""
         private_changed = False
@@ -1742,6 +1756,8 @@ class Bug(SQLBase):
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
+
+        self._setInformationType()
 
         if private_changed or security_related_changed:
             changed_fields = []
@@ -2841,6 +2857,8 @@ class BugSet:
         # Tell everyone.
         if notify_event:
             notify(event)
+
+        bug._setInformationType()
 
         # Calculate the bug's initial heat.
         bug.updateHeat()

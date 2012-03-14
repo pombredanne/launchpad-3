@@ -67,10 +67,18 @@ class ParseApacheLogs(LaunchpadCronScript):
         raise NotImplementedError
 
     def main(self):
-        files_to_parse = get_files_to_parse(
-            glob.glob(os.path.join(self.root, self.log_file_glob)))
-
         self.setUpUtilities()
+
+        # Materialize the list of files to parse. It is better to do the
+        # checks now, rather than potentially hours later when the
+        # generator gets around to it, because there is a reasonable
+        # chance log rotation will have kicked in and removed our oldest
+        # files. Note that we still error if a file we want to parse
+        # disappears before we get around to parsing it, which is
+        # desirable behavior.
+        files_to_parse = list(get_files_to_parse(
+            glob.glob(os.path.join(self.root, self.log_file_glob))))
+
         country_set = getUtility(ICountrySet)
         parsed_lines = 0
         max_parsed_lines = getattr(
