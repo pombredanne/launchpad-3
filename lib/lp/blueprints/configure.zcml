@@ -181,7 +181,8 @@
     <require
         permission="launchpad.AnyPerson"
         attributes="linkBug
-                    unlinkBug"/>
+                    unlinkBug
+                    setWorkItems"/>
   </class>
 
   <class class="lp.blueprints.model.specificationbug.SpecificationBug">

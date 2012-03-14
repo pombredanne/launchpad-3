@@ -37,7 +37,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
     IBugNotificationFilter,

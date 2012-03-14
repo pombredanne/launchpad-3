@@ -1191,7 +1191,7 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line, env=None):
+def run_script(cmd_line, env=None, cwd=None):
     """Run the given command line as a subprocess.
 
     :param cmd_line: A command line suitable for passing to
@@ -1207,7 +1207,7 @@ def run_script(cmd_line, env=None):
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, env=env)
+        stderr=subprocess.PIPE, env=env, cwd=cwd)
     (out, err) = process.communicate()
     return out, err, process.returncode
 
@@ -1385,9 +1385,9 @@ class NestedTempfile(fixtures.Fixture):
 
 
 @contextmanager
-def temp_dir():
+def temp_dir(dir=None):
     """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp()
+    tempdir = tempfile.mkdtemp(dir=dir)
     yield tempdir
     shutil.rmtree(tempdir, ignore_errors=True)
 
