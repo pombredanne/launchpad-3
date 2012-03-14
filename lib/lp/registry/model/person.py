@@ -181,7 +181,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IPersonSettings,
     ITeam,
-    IWorkItemContainer,
     OPEN_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
@@ -4930,8 +4929,6 @@ class WorkItemContainer:
     This might represent a Specification with its SpecificationWorkItems or
     just a collection of bug tasks.
     """
-
-    implements(IWorkItemContainer)
 
     def __init__(self, label, target, assignee, priority, items):
         self._items = items

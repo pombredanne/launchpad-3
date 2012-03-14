@@ -29,7 +29,6 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'IWorkItemContainer',
     'ImmutableVisibilityError',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
@@ -1872,15 +1871,6 @@ class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
 # doing so when defined.
 PersonChoice.schema = IPerson
 
-
-class IWorkItemContainer(IPrivacy):
-    """ This should be something else than IPrivacy. """
-    label = Attribute('Title')
-
-    target = Attribute('text')
-#    assignee
-#    priority
-#    items
 
 class ITeamPublic(Interface):
     """Public attributes of a Team."""
