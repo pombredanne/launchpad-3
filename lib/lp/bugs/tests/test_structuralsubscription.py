@@ -13,7 +13,7 @@ from storm.store import (
 from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,

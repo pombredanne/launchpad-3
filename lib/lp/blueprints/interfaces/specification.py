@@ -79,6 +79,7 @@ from lp.services.fields import (
     PublicPersonChoice,
     Summary,
     Title,
+    WorkItemsText,
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.menu import structured
@@ -302,6 +303,13 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
              description=_(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
+        as_of="devel")
+    workitems_text = exported(
+        WorkItemsText(
+            title=_('Work Items'), required=False, readonly=True,
+            description=_(
+                "Work items for this specification input in a text format. "
+                "Your changes will override the current work items.")),
         as_of="devel")
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
@@ -616,6 +624,16 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
 
     export_as_webservice_entry(as_of="beta")
 
+    @mutator_for(ISpecificationPublic['workitems_text'])
+    @operation_parameters(new_work_items=WorkItemsText())
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setWorkItems(new_work_items):
+        """Set work items on this specification.
+
+        :param new_work_items: Work items to set.
+        """
+
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
@@ -694,6 +712,7 @@ class ISpecificationDelta(Interface):
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
     whiteboard = Attribute("The spec whiteboard or None.")
+    workitems_text = Attribute("The spec work items as text or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distroseries = Attribute("The series to which this is targeted.")
