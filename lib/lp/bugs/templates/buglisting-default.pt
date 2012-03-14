@@ -143,16 +143,17 @@ i18n:domain="malone"
 
       </div>
       <div class="portlet" tal:condition="view/show_config_portlet">
-        <tal:bugtracker
-           define="link context/menu:bugs/configure_bugtracker|nothing"
-           condition="link">
-          <ul tal:condition="link/enabled"
-              style="padding-top: 1em">
-            <li>
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-          </ul>
-        </tal:bugtracker>
+        <ul tal:define="menu context/menu:bugs">
+          <li tal:condition="menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/subscribe_to_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="menu/edit_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/edit_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="menu/configure_bugtracker/enabled|nothing">
+            <a tal:replace="structure menu/configure_bugtracker/fmt:link" />
+          </li>
+        </ul>
         <dl tal:define="bug_supervisor context/bug_supervisor"
             id="bug-supervisor">
           <dt>Bug supervisor:</dt>
