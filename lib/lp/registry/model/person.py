@@ -33,10 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import attrgetter
 import random
 import re
 import subprocess
@@ -184,6 +181,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IPersonSettings,
     ITeam,
+    IWorkItemContainer,
     OPEN_TEAM_POLICY,
     PersonalStanding,
     PersonCreationRationale,
@@ -4933,6 +4931,8 @@ class WorkItemContainer:
     just a collection of bug tasks.
     """
 
+    implements(IWorkItemContainer)
+
     def __init__(self, label, target, assignee, priority, items):
         self._items = items
         self.label = label
@@ -4973,13 +4973,14 @@ class WorkItemContainer:
 
 class GenericWorkItem:
 
-    def __init__(self, assignee, status, priority, target, bugtask=None,
+    def __init__(self, assignee, status, priority, target, title, bugtask=None,
                  work_item=None):
         self.assignee = assignee
         self.status = status
         # XXX: For bugtasks this is actually called 'importance'
         self.priority = priority
         self.target = target
+        self.title = title
 
         # XXX: We may not need these two here.
         self.bugtask = bugtask
@@ -4991,7 +4992,7 @@ class GenericWorkItem:
         # our code will have to deal with that.
         return cls(
             bugtask.assignee, bugtask.status, bugtask.importance,
-            bugtask.target, bugtask=bugtask)
+            bugtask.target, bugtask.title, bugtask=bugtask)
 
     @classmethod
     def from_workitem(cls, work_item):
@@ -5000,7 +5001,8 @@ class GenericWorkItem:
             assignee = work_item.specification.assignee
         return cls(
             assignee, work_item.status, work_item.specification.priority,
-            work_item.specification.target, work_item=work_item)
+            work_item.specification.target, work_item.title,
+            work_item=work_item)
 
     @property
     def is_done(self):

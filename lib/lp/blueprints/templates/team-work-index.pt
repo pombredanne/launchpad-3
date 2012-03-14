@@ -15,19 +15,36 @@
   <p>This team has <span tal:replace="view/upcoming_bp_count" /> upcoming
     Blueprints with a total of <span tal:replace="view/upcoming_wi_count" /> work items.
 
-  <span>X of these are assigned to Y.</span></p>
-
-  <div tal:repeat="milestone_group view/work_item_groups">
-      <h3 tal:content="milestone_group/milestone" />
-      <table>
-        <tr tal:repeat="group milestone_group/group">
-          <td><span tal:replace="group/label" /></td>
-          <td><span tal:replace="group/target" /></td>
-          <td><span tal:replace="group/assignee" /></td>
-          <td><span tal:replace="group/priority" /></td>
-          <td><span tal:replace="group/items" /></td>
-        </tr>
+  <div tal:repeat="pair view/work_item_containers">
+    <!-- XXX: We shouldn't call python to do this, but we might not get dicts in here later -->
+    <div tal:define="date python: pair[0]; containers python: pair[1]">
+      <h3 tal:content="date" />
+      <table border=1>
+	  <tr>
+	    <th>Blueprint</th>
+	    <th>Component</th>
+	    <th>Priority</th>
+	    <th>Assignee</th>
+	    <th>Progress</th>
+	  </tr>
+	<div tal:repeat="container containers">
+          <tr>
+            <td><span tal:replace="container/label" /></td>
+            <td><span tal:replace="container/target" /></td>
+            <td><span tal:replace="container/priority" /></td>
+            <td><span tal:replace="container/assignee" /></td>
+	    <td><span tal:replace="container/percent_done" />% of 100%</td>
+	  </tr>
+	  <tr tal:repeat="workitem container/items">
+	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
+	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/target" /></td>
+	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority" /></td>
+	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/assignee" /></td>
+	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/status" /></td>
+	  </tr>
+	</div>
       </table>
+    </div>
   </div>
 </div>
 

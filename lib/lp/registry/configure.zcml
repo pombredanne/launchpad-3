@@ -30,6 +30,27 @@
                                                         into specific interfaces for each persmission. -->
 
     <class
+        class="lp.registry.model.person.WorkItemContainer">
+        <allow
+            attributes="
+                label
+                target
+                assignee
+                priority
+		percent_done
+                items"/>
+    </class>
+    <class
+        class="lp.registry.model.person.GenericWorkItem">
+        <allow
+            attributes="
+                title
+                target
+                assignee
+                priority
+                status"/>
+    </class>
+    <class
         class="lp.registry.model.teammembership.TeamMembership">
         <require
             permission="zope.Public"
