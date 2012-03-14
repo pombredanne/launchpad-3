@@ -77,7 +77,7 @@ class Test_is_read_only(TestCase):
         self.assertFalse(
             request.annotations.get(READ_ONLY_MODE_ANNOTATIONS_KEY))
 
-    def test_cached_value_takes_precedence(self): 
+    def test_cached_value_takes_precedence(self):
         # Once the request has the read-only flag, we don't check for the
         # presence of the read-only.txt file anymore, so it could be removed
         # and the request would still be in read-only mode.
