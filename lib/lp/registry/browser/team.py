@@ -1589,12 +1589,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
 
-    @enabled_with_permission('launchpad.View')
-    def upcomingteamwork(self):
-        target = '+upcomingteamwork'
-        text = 'Upcoming work for this team'
-        return Link(target, text, icon='team')
-
 
 class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
@@ -1628,7 +1622,6 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'view_recipes',
         'subscriptions',
         'structural_subscriptions',
-        'upcomingteamwork',
         ]
 
 
