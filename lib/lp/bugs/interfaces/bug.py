@@ -82,6 +82,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
@@ -211,6 +212,12 @@ class IBugPublic(IPrivacy):
                            "their subscribers."),
              default=False,
              readonly=True))
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=False, readonly=True,
+            description=_(
+                'The type of information contained in this bug report.')))
 
     def userCanView(user):
         """Return True if `user` can see this IBug, false otherwise."""
@@ -430,7 +437,6 @@ class IBugView(Interface):
 
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
-
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -682,7 +688,7 @@ class IBugView(Interface):
         :param end_date: The latest date for which activity can be
             returned.
         """
-    
+
     def shouldConfirmBugtasks():
         """Should we try to confirm this bug's bugtasks?
 
