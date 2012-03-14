@@ -789,7 +789,7 @@ def create_scripts(user, lxcname, ssh_key_path):
             lxc-wait -n {lxcname} -s RUNNING
 
             delay=30
-            while [ $delay -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
+            while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
             do
                 delay=$(( $delay - 1 ))
                 sleep 1
