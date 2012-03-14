@@ -37,7 +37,7 @@
                 target
                 assignee
                 priority
-		percent_done
+                percent_done
                 items"/>
     </class>
     <class

@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from testtools.matchers import LessThan
 
@@ -640,12 +643,6 @@ class TestTeamWorkItems(TestCaseWithFactory):
         bug = self.factory.makeBug(milestone=current_milestone)
         removeSecurityProxy(bug.bugtasks[0]).assignee = team.teamowner
 
-        # XXX: The two tasks created here are actually "conjoined", which means
-        # changes made to one propagate to the other. That is a very
-        # complicated thing, I don't know what purpose it serves and have no
-        # idea whether we need to show both tasks here or just the master.
-        # Currently both are returned, but I suspect we should show just the
-        # master.
         # Create a BugTask whose target is a ProductSeries
         bug2 = self.factory.makeBug(series=current_milestone.productseries)
         # The call above created 2 BugTasks (one for the product and one for
@@ -666,7 +663,7 @@ class TestTeamWorkItems(TestCaseWithFactory):
         removeSecurityProxy(bug3.bugtasks[1]).assignee = team.teamowner
         removeSecurityProxy(bug3.bugtasks[1]).milestone = current_distro_milestone
 
-        # Create a BugTask whose target is a SourcePackageName
+        # Create a BugTask whose target is a DistributionSourcePackage
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=current_distro_milestone.distroseries)
         bug4 = self.factory.makeBug()
@@ -675,24 +672,6 @@ class TestTeamWorkItems(TestCaseWithFactory):
             current_distro_milestone.distribution.owner)
         removeSecurityProxy(bug4.bugtasks[1]).assignee = team.teamowner
         removeSecurityProxy(bug4.bugtasks[1]).milestone = current_distro_milestone
-
-
-        transaction.commit()
-
-    def test_getWorkItems(self):
-        self._createWorkItems()
-
-        work_items = removeSecurityProxy(self.team).getWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
-
-        # Instead of seeing meaningless failures while we experiment I thought
-        # it'd be better to just print a reasonable representation of the
-        # return value of the method.
-        for date, containers in work_items.items():
-            print date
-            for container in containers:
-                print "\tWork items from %s:" % container.label
-                print "\t\t%s" % ", ".join(str(item) for item in container.items)
 
     def test_query_counts(self):
         self._createWorkItems()
@@ -716,3 +695,76 @@ class TestTeamWorkItems(TestCaseWithFactory):
                         item.priority
                         canonical_url(item.target)
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
+
+    # XXX: This test should die and be replaced with more specific tests that
+    # just assert that some specific bug/wi is returned, like the ones below.
+    def test_getWorkItems(self):
+        self._createWorkItems()
+
+        work_items = removeSecurityProxy(self.team).getWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        # Instead of seeing meaningless failures while we experiment I thought
+        # it'd be better to just print a reasonable representation of the
+        # return value of the method.
+        for date, containers in work_items.items():
+            print date
+            for container in containers:
+                print "\tWork items from %s:" % container.label
+                print "\t\t%s" % ", ".join(str(item) for item in container.items)
+
+    def test_getWorkItems_with_private_bugs(self):
+        # TODO: bugs the user is not allowed to see must not be included here.
+        pass
+
+    def test_getWorkItems_for_distroseriessourcepackage_bugtask(self):
+        team = self.factory.makeTeam()
+        today = datetime.today().date()
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        milestone = self.factory.makeMilestone(
+            distroseries=distroseries, dateexpected=today)
+        bug = self.factory.makeBug(
+            milestone=milestone, sourcepackagename=sourcepackagename)
+        self.assertEqual(1, len(bug.bugtasks))
+        task = bug.bugtasks[0]
+        removeSecurityProxy(task).assignee = team.teamowner
+
+        # XXX: Get rid of the removeSecurityProxy()
+        workitems = removeSecurityProxy(
+            team.getWorkItemsDueBefore(today + timedelta(days=1)))
+
+        # TODO: This line assumes too much; need to assert those assumptions
+        # as well.
+        self.assertEqual(task.title, workitems[today][0].items[0].title)
+
+    def test_getWorkItems_skips_conjoined_slaves(self):
+        team = self.factory.makeTeam()
+        today = datetime.today().date()
+        milestone = self.factory.makeMilestone(dateexpected=today)
+        removeSecurityProxy(milestone.product).development_focus = milestone.productseries
+        bug = self.factory.makeBug(
+            series=milestone.productseries, milestone=milestone)
+        self.assertEqual(2, len(bug.bugtasks))
+        task1, task2 = bug.bugtasks
+
+        # This will cause the assignee to propagate to the other bugtask as
+        # well since they're conjoined.
+        removeSecurityProxy(task1).assignee = team.teamowner
+        self.assertIsNot(task1.conjoined_master, None)
+
+        self.assertEqual(task1.milestone, task2.milestone)
+        self.assertEqual(task1.assignee, task2.assignee)
+
+        # XXX: Get rid of the removeSecurityProxy()
+        workitems = removeSecurityProxy(
+            team.getWorkItemsDueBefore(today + timedelta(days=1)))
+
+        # There's a single work item container returned and that container
+        # contains a single work item.
+        self.assertEqual([today], workitems.keys())
+        self.assertEqual(1, len(workitems[today]))
+        self.assertEqual(1, len(workitems[today][0].items))
+        # That work item represents task2. task1 is not included because
+        # it's the conjoined slave.
+        self.assertEqual(task2.title, workitems[today][0].items[0].title)

@@ -1760,7 +1760,7 @@ class Person(
             )
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
-        for bug, task, _, _, _, _, _, _, _ in bugtasks:
+        for bug, task, milestone, _, _, _, _, _, _ in bugtasks:
             container = bug_containers_by_date.get(milestone.dateexpected)
             if container is None:
                 container = WorkItemContainer(
@@ -1776,7 +1776,6 @@ class Person(
             container.append(GenericWorkItem.from_bugtask(task))
 
         return containers_by_date
-
 
     def getDirectAdministrators(self):
         """See `IPerson`."""

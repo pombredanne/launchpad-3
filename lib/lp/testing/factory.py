@@ -849,17 +849,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeMilestone(self, product=None, distribution=None,
                       productseries=None, name=None, active=True,
-                      dateexpected=None):
-        if product is None and distribution is None and productseries is None:
+                      dateexpected=None, distroseries=None):
+        if (product is None and distribution is None and productseries is None
+            and distroseries is None):
             product = self.makeProduct()
-        if distribution is None:
+        if distribution is None and distroseries is None:
             if productseries is not None:
                 product = productseries.product
             else:
                 productseries = self.makeProductSeries(product=product)
-            distroseries = None
-        else:
+        elif distroseries is None:
             distroseries = self.makeDistroSeries(distribution=distribution)
+        else:
+            distribution = distroseries.distribution
         if name is None:
             name = self.getUniqueString()
         return ProxyFactory(
