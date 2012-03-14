@@ -771,6 +771,9 @@
         <browser:navigation
             module="lp.registry.browser.team"
             classes="TeamNavigation"/>
+        <browser:navigation
+            module="lp.registry.browser.pillar"
+            classes="PillarNavigation"/>
         <browser:menus
             module="lp.registry.browser.person"
             classes="
@@ -1428,6 +1431,17 @@
         name="+sharing"
         class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        path_expression="string:+sharing/details/${person/name}"
+        rootsite="mainsite"
+        attribute_to_parent="pillar"/>
+    <browser:page
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        permission="launchpad.Driver"
+        name="+index"
+        class="lp.registry.browser.pillar.PillarPersonSharingView"
+        template="../templates/pillar-sharing-details.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"

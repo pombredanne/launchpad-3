@@ -48,16 +48,35 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
-from lp.services.webapp.menu import (
+from lp.services.webapp import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
-    NavigationMenu,
+    Navigation,
+    stepthrough,
     )
 from lp.services.webapp.publisher import (
     LaunchpadView,
     nearest,
     )
+
+
+class PillarNavigation(Navigation):
+
+    usedfor = IPillar
+
+    #XXX This may get changed to +sharingdetails
+    @stepthrough('+sharing')
+    def traverse_details(person_name):
+        """Traverse to the sharing details for a given person."""
+        from lp.registry.models.pillarperson import PillarPerson
+        person = getUtility(IPersonSet).getByName(name)
+        #XXX: this needs some fancy logic to check that there are policies in
+        #play
+        if person is None:
+            return None
+        return PillarPerson.create(self.context, person)
+        
 
 
 class IInvolved(Interface):
