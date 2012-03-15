@@ -1126,6 +1126,16 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
 
+    def test_BugsInformationTypeMigrator(self):
+        # A non-migrated bug will have information_type set correctly.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug(private=True)
+        # Since creating a bug will set information_type, unset it.
+        removeSecurityProxy(bug).information_type = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
