@@ -31,11 +31,9 @@
 	<div tal:repeat="container containers">
           <tr>
             <td><span tal:replace="container/label" /></td>
-            <td><span tal:replace="container/target" /></td>
-            <td><span tal:replace="container/priority" /></td>
-            <td><span tal:condition="container/assignee" tal:replace="container/assignee" /></td>
-	    <!-- XXX Check for the string 'N/A' since the Bugs container won't have this set.
-<!--            <td><span tal:condition="container/assignee" tal:replace="container/assignee/name" /></td> -->
+            <td><span tal:condition="container/target" tal:replace="container/target/name" /><span tal:condition="not:container/target" tal:replace="string: N/A" /></td>
+            <td><span tal:condition="container/priority" tal:replace="container/priority/name" /><span tal:condition="not:container/priority" tal:replace="string: N/A" /></td>
+            <td><span tal:condition="container/assignee" tal:replace="container/assignee/name" /><span tal:condition="not:container/assignee" tal:replace="string: N/A" /></td>
 	    <td><span tal:replace="container/percent_done" />% of 100%</td>
 	  </tr>
 	  <tr tal:repeat="workitem container/items">
