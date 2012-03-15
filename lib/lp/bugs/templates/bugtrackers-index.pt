@@ -75,8 +75,7 @@
                            trackers view/active_trackers">
           <metal:table use-macro="template/macros/tracker-table" />
         </tal:table>
-        <p style="margin-top: 1em"
-           tal:define="link context/menu:context/newbugtracker"
+        <p tal:define="link context/menu:context/newbugtracker"
            tal:content="structure link/render"
            tal:condition="link/enabled">
           Add a new bug tracker

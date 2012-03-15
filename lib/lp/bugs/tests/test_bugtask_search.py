@@ -14,6 +14,7 @@ from storm.expr import Join
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
@@ -450,8 +451,8 @@ class SearchTestBase:
             self.bugtasks[0].bug.date_last_updated - timedelta(days=1))
         two_days_ago = (
             self.bugtasks[0].bug.date_last_updated - timedelta(days=2))
-        with person_logged_in(self.owner):
-            self.bugtasks[0].bug.date_last_updated = two_days_ago
+        bug = self.bugtasks[0].bug
+        removeSecurityProxy(bug).date_last_updated = two_days_ago
         params = self.getBugTaskSearchParams(
             user=None, modified_since=one_day_ago)
         self.assertSearchFinds(params, self.bugtasks[1:])

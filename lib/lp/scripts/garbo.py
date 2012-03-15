@@ -63,7 +63,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import AccessPolicyType
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.model.accesspolicy import AccessPolicy
 from lp.registry.model.distribution import Distribution
@@ -1026,7 +1026,7 @@ class AccessPolicyDistributionAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findDistributions()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 
@@ -1054,7 +1054,7 @@ class AccessPolicyProductAddition(TunableLoop):
     def __call__(self, chunk_size):
         policies = itertools.product(
             self.findProducts()[:chunk_size],
-            (AccessPolicyType.USERDATA, AccessPolicyType.EMBARGOEDSECURITY))
+            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
         getUtility(IAccessPolicySource).create(policies)
         self.transaction.commit()
 
@@ -1075,6 +1075,31 @@ class SpecificationWorkitemMigrator(TunableLoop):
 
     maximum_chunk_size = 500
     offset = 0
+    projects_to_migrate = [
+        'linaro-graphics-misc', 'linaro-powerdebug', 'linaro-mm-sig',
+        'linaro-patchmetrics', 'linaro-android-mirror', 'u-boot-linaro',
+        'lava-dashboard-tool', 'lava-celery', 'smartt', 'linaro-power-kernel',
+        'linaro-django-xmlrpc', 'linaro-multimedia-testcontent',
+        'linaro-status-website', 'linaro-octo-armhf', 'svammel', 'libmatrix',
+        'glproxy', 'lava-test', 'cbuild', 'linaro-ci',
+        'linaro-multimedia-ucm', 'linaro-ubuntu',
+        'linaro-android-infrastructure', 'linaro-wordpress-registration-form',
+        'linux-linaro', 'lava-server', 'linaro-android-build-tools',
+        'linaro-graphics-dashboard', 'linaro-fetch-image', 'unity-gles',
+        'lava-kernel-ci-views', 'cortex-strings', 'glmark2-extra',
+        'lava-dashboard', 'linaro-multimedia-speex', 'glcompbench',
+        'igloocommunity', 'linaro-validation-misc', 'linaro-websites',
+        'linaro-graphics-tests', 'linaro-android',
+        'jenkins-plugin-shell-status', 'binutils-linaro',
+        'linaro-multimedia-project', 'lava-qatracker',
+        'linaro-toolchain-binaries', 'linaro-image-tools',
+        'linaro-toolchain-misc', 'qemu-linaro', 'linaro-toolchain-benchmarks',
+        'lava-dispatcher', 'gdb-linaro', 'lava-android-test', 'libjpeg-turbo',
+        'lava-scheduler-tool', 'glmark2', 'linaro-infrastructure-misc',
+        'lava-lab', 'linaro-android-frontend', 'linaro-powertop',
+        'linaro-license-protection', 'gcc-linaro', 'lava-scheduler',
+        'linaro-offspring', 'linaro-python-dashboard-bundle',
+        'linaro-power-qa', 'lava-tool', 'linaro']
 
     def __init__(self, log, abort_time=None):
         super(SpecificationWorkitemMigrator, self).__init__(
@@ -1090,9 +1115,11 @@ class SpecificationWorkitemMigrator(TunableLoop):
             self.total = 0
             return
 
+        query = ("product in (select id from product where name in %s)"
+            % ",".join(sqlvalues(self.projects_to_migrate)))
         # Get only the specs which contain "work items" in their whiteboard
         # and which don't have any SpecificationWorkItems.
-        query = "whiteboard ilike '%%' || %s || '%%'" % quote_like(
+        query += " and whiteboard ilike '%%' || %s || '%%'" % quote_like(
             'work items')
         query += (" and id not in (select distinct specification from "
                   "SpecificationWorkItem)")
@@ -1131,6 +1158,28 @@ class SpecificationWorkitemMigrator(TunableLoop):
                 self.log.info(
                     "No work items found on the whiteboard of %s" % spec)
         self.offset += chunk_size
+
+
+class BugsInformationTypeMigrator(TunableLoop):
+    """A `TunableLoop` to populate information_type for all bugs."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugsInformationTypeMigrator, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.store = IMasterStore(Bug)
+
+    def findBugs(self):
+        return self.store.find(Bug, Bug.information_type == None)
+
+    def isDone(self):
+        return self.findBugs().is_empty()
+
+    def __call__(self, chunk_size):
+        for bug in self.findBugs()[:chunk_size]:
+            bug._setInformationType()
+        self.transaction.commit()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -1386,6 +1435,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugHeatUpdater,
         AccessPolicyDistributionAddition,
         AccessPolicyProductAddition,
+        BugsInformationTypeMigrator,
         ]
     experimental_tunable_loops = []
 
