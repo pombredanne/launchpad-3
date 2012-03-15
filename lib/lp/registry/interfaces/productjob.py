@@ -1,7 +1,7 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Interface for the Jobs system to update product and send notifications."""
+"""Interfaces for the Jobs system to update products and send notifications."""
 
 __metaclass__ = type
 __all__ = [
@@ -40,7 +40,7 @@ class IProductJob(IRunnableJob):
         vocabulary='Product',
         required=True)
 
-    metadata = Attribute('A dict of configuration data for the job')
+    metadata = Attribute('A dict of data for the job')
 
 
 class IProductJobSource(IJobSource):
@@ -51,7 +51,7 @@ class IProductJobSource(IJobSource):
 
         :param product: An IProduct.
         :param metadata: a dict of configuration data for the job.
-            The data must be JSON serialisable keys and values.
+            The data must be JSON compatible keys and values.
         """
 
     def find(product=None, date_since=None, job_type=None):
