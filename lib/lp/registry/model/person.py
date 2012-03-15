@@ -1764,9 +1764,7 @@ class Person(
             container = bug_containers_by_date.get(milestone.dateexpected)
             if container is None:
                 container = WorkItemContainer(
-                    # XXX: Perhaps we can use None here, to have something
-                    # easier to check for in the template.
-                    'Aggregated bugs', 'N/A', 'N/A', 'N/A', [])
+                    'Aggregated bugs', None, None, None, [])
                 bug_containers_by_date[milestone.dateexpected] = container
                 # Also append our new container to the dictionary we're going
                 # to return.
