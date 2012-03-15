@@ -30,17 +30,18 @@
 	  </tr>
 	<div tal:repeat="container containers">
           <tr>
-            <td><span tal:replace="container/label" /></td>
+	    <!-- XXX: find out why is_foreign is not available on container -->
+            <td><span tal:condition="not: container" tal:replace="string: [FOREIGN] " /><span tal:replace="container/label" /></td>
             <td><span tal:condition="container/target" tal:replace="container/target/name" /><span tal:condition="not:container/target" tal:replace="string: N/A" /></td>
             <td><span tal:condition="container/priority" tal:replace="container/priority/name" /><span tal:condition="not:container/priority" tal:replace="string: N/A" /></td>
-            <td><span tal:condition="container/assignee" tal:replace="container/assignee/name" /><span tal:condition="not:container/assignee" tal:replace="string: N/A" /></td>
+            <td><a tal:condition="container/assignee" tal:content="container/assignee/name" tal:attributes="href container/assignee/name" /><span tal:condition="not:container/assignee" tal:replace="string: N/A" /></td>
 	    <td><span tal:replace="container/percent_done" />% of 100%</td>
 	  </tr>
 	  <tr tal:repeat="workitem container/items">
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/target/name" /></td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
-	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/assignee/name" /></td>
+            <td><a tal:condition="workitem/assignee" tal:content="workitem/assignee/name" tal:attributes="href workitem/assignee/name" /><span tal:condition="not:workitem/assignee" tal:replace="string: N/A" /></td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/status/name" /></td>
 	  </tr>
 	</div>
