@@ -38,6 +38,8 @@
                 assignee
                 priority
                 percent_done
+		is_future
+		is_foreign
                 items"/>
     </class>
     <class
