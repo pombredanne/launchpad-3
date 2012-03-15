@@ -74,11 +74,6 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         # Job IDs differ, detecting bug #919116.
         Job()
 
-    # XXX rvb: the query issued per build is the result of the call to
-    # build.buildqueue_record.  It was decided not to make it a cachedproperty
-    # because the code relies on the fact that this property always returns
-    # the current record.
-
     def test_builders_binary_package_build_query_count(self):
         def create_build():
             build = self.createBinaryPackageBuild()
