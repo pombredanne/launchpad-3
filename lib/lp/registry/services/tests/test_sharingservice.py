@@ -135,6 +135,27 @@ class TestSharingService(TestCaseWithFactory):
         login_person(driver)
         self._test_getPillarSharees(distro)
 
+    def test_getPillarSharees_filter_grantees(self):
+        # getPillarSharees only returns grantees in the specified list.
+        driver = self.factory.makePerson()
+        pillar = self.factory.makeProduct(driver=driver)
+        login_person(driver)
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=pillar,
+            type=InformationType.PROPRIETARY)
+        grantee_in_result = self.factory.makePerson()
+        grantee_not_in_result = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(access_policy, grantee_in_result)
+        self.factory.makeAccessPolicyGrant(
+            access_policy, grantee_not_in_result)
+
+        sharees = self.service.getPillarSharees(pillar, [grantee_in_result])
+        expected_sharees = [
+            self._makeShareeData(
+                grantee_in_result,
+                [(InformationType.PROPRIETARY, SharingPermission.ALL)])]
+        self.assertContentEqual(expected_sharees, sharees)
+
     def _test_getPillarShareesUnauthorized(self, pillar):
         # getPillarSharees raises an Unauthorized exception if the user is
         # not permitted to do so.
@@ -241,6 +262,21 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         self._test_sharePillarInformation(distro)
+
+    def test_updatePillarSharee_no_access_grants_remain(self):
+        # When a pillar sharee has it's only access policy permission changed
+        # to Some, test that None is returned.
+        owner = self.factory.makePerson()
+        pillar = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        sharee = self.factory.makePerson()
+        grant = self.factory.makeAccessPolicyGrant(grantee=sharee)
+
+        permissions = {
+            grant.policy.type: SharingPermission.SOME}
+        sharee_data = self.service.sharePillarInformation(
+            pillar, sharee, permissions, self.factory.makePerson())
+        self.assertIsNone(sharee_data)
 
     def _test_sharePillarInformationUnauthorized(self, pillar):
         # sharePillarInformation raises an Unauthorized exception if the user

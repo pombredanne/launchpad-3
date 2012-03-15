@@ -453,6 +453,24 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
             apgfs.findGranteesByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
 
+    def test_findGranteesByPolicy_filter_grantees(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts so long as the grantee is in
+        # the specified list of grantees.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        # People with grants on the policy show up.
+        policy = self.factory.makeAccessPolicy()
+        grantee_in_result = self.factory.makePerson()
+        grantee_not_in_result = self.factory.makePerson()
+        policy_grant = self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_in_result)
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_not_in_result)
+        self.assertContentEqual(
+            [(policy_grant.grantee, policy, 'ALL')],
+            apgfs.findGranteesByPolicy([policy], [grantee_in_result]))
+
     def test_findArtifactsByGrantee(self):
         # findArtifactsByGrantee() returns the artifacts for grantee for any of
         # the policies.
