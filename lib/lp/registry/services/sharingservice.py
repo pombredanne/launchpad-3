@@ -81,76 +81,93 @@ class SharingService:
     @available_with_permission('launchpad.Driver', 'pillar')
     def getPillarSharees(self, pillar):
         """See `ISharingService`."""
-
-        # Currently support querying for sharing_permission = ALL
-        # TODO - support querying for sharing_permission = SOME
-
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
-        policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        policy_grants = policy_grant_source.findByPolicy(policies)
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        grant_permissions = ap_grant_flat.findGranteesByPolicy(policies)
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
-        for policy_grant in policy_grants:
-            if not policy_grant.grantee.id in person_by_id:
-                resource = EntryResource(policy_grant.grantee, request)
+        for (grantee, policy, sharing_permission) in grant_permissions:
+            if not grantee.id in person_by_id:
+                resource = EntryResource(grantee, request)
                 person_data = resource.toDataForJSON()
                 person_data['permissions'] = {}
-                person_by_id[policy_grant.grantee.id] = person_data
+                person_by_id[grantee.id] = person_data
                 result.append(person_data)
-            person_data = person_by_id[policy_grant.grantee.id]
-            person_data['permissions'][policy_grant.policy.type.name] = (
-                SharingPermission.ALL.name)
+            person_data = person_by_id[grantee.id]
+            person_data['permissions'][policy.type.name] = sharing_permission
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def sharePillarInformation(self, pillar, sharee, information_types,
-                             user):
+    def sharePillarInformation(self, pillar, sharee, permissions, user):
         """See `ISharingService`."""
 
         # We do not support adding sharees to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
-        pillar_info_types = [
+        # Separate out the info types according to permission.
+        information_types = permissions.keys()
+        info_types_for_all = [
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.ALL]
+        info_types_for_some = [
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.SOME]
+        info_types_for_nothing = [
+            info_type for info_type in information_types
+            if permissions[info_type] == SharingPermission.NOTHING]
+
+        # The wanted policies are for the information_types in all.
+        required_pillar_info_types = [
             (pillar, information_type)
-            for information_type in information_types]
+            for information_type in information_types
+            if information_type in info_types_for_all]
         policy_source = getUtility(IAccessPolicySource)
-        pillar_policies = list(policy_source.find(pillar_info_types))
+        wanted_pillar_policies = policy_source.find(required_pillar_info_types)
 
-        # We have the policies, we need to figure out which grants we need to
-        # create. We also need to revoke any grants which are not required.
+        # We need to figure out which policy grants to create or delete.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        policy_grants = [(policy, sharee) for policy in pillar_policies]
-        existing_grants = [
+        wanted_policy_grants = [(policy, sharee)
+            for policy in wanted_pillar_policies
+            if policy.type in info_types_for_all]
+        existing_policy_grants = [
             (grant.policy, grant.grantee)
-            for grant in policy_grant_source.find(policy_grants)]
-        required_grants = set(policy_grants).difference(existing_grants)
+            for grant in policy_grant_source.find(wanted_policy_grants)]
+        # Create any newly required policy grants.
+        policy_grants_to_create = (
+            set(wanted_policy_grants).difference(existing_policy_grants))
+        if len(policy_grants_to_create) > 0:
+            policy_grant_source.grant(
+                [(policy, sharee, user)
+                for policy, sharee in policy_grants_to_create])
 
+        # Now revoke any existing policy grants for types with
+        # permission 'some'.
         all_pillar_policies = policy_source.findByPillar([pillar])
-        possible_policy_grants = [
-            (policy, sharee) for policy in all_pillar_policies]
-        possible_grants = [
-            (grant.policy, grant.grantee)
-            for grant in policy_grant_source.find(possible_policy_grants)]
+        policy_grants_to_revoke = [
+            (policy, sharee)
+            for policy in all_pillar_policies
+            if policy.type in info_types_for_some]
+        if len(policy_grants_to_revoke) > 0:
+            policy_grant_source.revoke(policy_grants_to_revoke)
 
-        grants_to_revoke = set(possible_grants).difference(policy_grants)
-        # Create any newly required grants.
-        if len(required_grants) > 0:
-            policy_grant_source.grant([(policy, sharee, user)
-                                    for policy, sharee in required_grants])
-        # Now revoke any existing grants no longer required.
-        if len(grants_to_revoke) > 0:
-            policy_grant_source.revoke(grants_to_revoke)
+        # For information types with permission 'nothing', we can simply
+        # call the deletePillarSharee method directly.
+        if len(info_types_for_nothing) > 0:
+            self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
         request = get_current_web_service_request()
         resource = EntryResource(sharee, request)
         person_data = resource.toDataForJSON()
-        permissions = {}
-        for information_type in information_types:
-            permissions[information_type.name] = SharingPermission.ALL.name
-        person_data['permissions'] = permissions
+        valid_info_types = (
+            set(information_types).difference(info_types_for_nothing))
+        permission_data = dict(
+            (information_type.name, permissions[information_type].name)
+            for information_type in valid_info_types
+        )
+        person_data['permissions'] = permission_data
         return person_data
 
     @available_with_permission('launchpad.Edit', 'pillar')
