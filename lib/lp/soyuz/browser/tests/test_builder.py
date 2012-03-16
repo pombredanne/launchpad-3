@@ -5,12 +5,13 @@
 
 __metaclass__ = type
 
-from testtools.matchers import LessThan
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.services.job.model.job import Job
 from lp.services.webapp import canonical_url
 from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
 from lp.testing import (
@@ -67,10 +68,11 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
     layer = LaunchpadFunctionalLayer
 
-    # XXX rvb: the query issued per build is the result of the call to
-    # build.buildqueue_record.  It was decided not to make it a cachedproperty
-    # because the code relies on the fact that this property always returns
-    # the current record.
+    def setUp(self):
+        super(TestBuildersHomepage, self).setUp()
+        # Create a non-buildfarm job to ensure that the BuildQueue and
+        # Job IDs differ, detecting bug #919116.
+        Job()
 
     def test_builders_binary_package_build_query_count(self):
         def create_build():
@@ -81,10 +83,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_builders_recipe_build_query_count(self):
         def create_build():
@@ -95,10 +94,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
@@ -106,16 +102,10 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
             branch = self.factory.makeBranch()
             specific_job = jobset.create(branch)
             queueset = getUtility(IBuildQueueSet)
-            # Using rSP is required to get the job id.
-            naked_job = removeSecurityProxy(specific_job.job)
-            job_id = naked_job.id
-            queue = queueset.get(job_id)
+            queue = queueset.getByJob(specific_job.job)
             queue.markAsBuilding(self.factory.makeBuilder())
 
         nb_objects = 2
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_build, nb_objects)
-
-        self.assertThat(
-            recorder2,
-            HasQueryCount(LessThan(recorder1.count + 1 * nb_objects + 1)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
