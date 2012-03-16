@@ -1,6 +1,5 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lp.services.features.testing import FeatureFixture
 
 __metaclass__ = type
 
@@ -21,6 +20,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.services.sharingservice import SharingService
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
