@@ -59,6 +59,7 @@ class TestSharingService(TestCaseWithFactory):
         request = get_current_web_service_request()
         sharee_data = {
             'name': sharee.name,
+            'meta': 'team' if sharee.is_team else 'person',
             'display_name': sharee.displayname,
             'self_link': absoluteURL(sharee, request),
             'permissions': {}}
