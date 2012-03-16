@@ -307,7 +307,7 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     def sharing(self):
         text = 'Sharing'
         enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
-        enabled_writable_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
         enabled = (getFeatureFlag(enabled_readonly_flag) is not None
             or getFeatureFlag(enabled_writable_flag) is not None)
         return Link('+sharing', text, icon='edit', enabled=enabled)
