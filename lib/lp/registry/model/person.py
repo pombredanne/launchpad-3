@@ -1683,9 +1683,6 @@ class Person(
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
-        # XXX: This is not running as a subquery as I was expecting, so
-        # it causes this method to execute 3 DB queries. This may or may not
-        # be ok; need to find out.
         participant_ids = list(store.find(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
         WorkItem = SpecificationWorkItem
@@ -1761,6 +1758,11 @@ class Person(
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
         for bug, task, milestone, _, _, _, _, _, _ in bugtasks:
+            if task.conjoined_master is not None:
+                # This is the slave of the relationship, so we skip it as
+                # it makes no sense to include both the master and the slave
+                # anywhere.
+                continue
             container = bug_containers_by_date.get(milestone.dateexpected)
             if container is None:
                 container = WorkItemContainer(
