@@ -294,9 +294,6 @@ class BugImporter:
             private=private or security_related,
             security_related=security_related,
             owner=owner))
-        # Security related bugs must be created private, so we set it
-        # correctly after creation.
-        bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
         self.logger.info('Creating Launchpad bug #%d', bug.id)
 
@@ -311,7 +308,10 @@ class BugImporter:
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 
-        bug.setPrivacyAndSecurityRelated(private, security_related, owner)
+        # Security bugs must be created private, so set it correctly.
+        if not self.product.private_bugs:
+            bug.setPrivacyAndSecurityRelated(
+                private, security_related, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:
