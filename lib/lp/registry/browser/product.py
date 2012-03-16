@@ -503,8 +503,10 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
         text = 'Sharing'
-        enabled = getFeatureFlag(
-            'disclosure.enhanced_sharing.enabled') is not None
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled = (getFeatureFlag(enabled_readonly_flag) is not None
+            or getFeatureFlag(enabled_writable_flag) is not None)
         return Link('+sharing', text, icon='edit', enabled=enabled)
 
 

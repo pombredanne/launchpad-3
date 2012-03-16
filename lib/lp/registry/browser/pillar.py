@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
+from lp.services.webapp.authorization import check_permission
 
 __metaclass__ = type
 
@@ -261,11 +262,23 @@ class PillarSharingView(LaunchpadView):
     def sharee_data(self):
         return self._getSharingService().getPillarSharees(self.context)
 
+    @property
+    def write_enabled(self):
+        flag = 'disclosure.enhanced_sharing_editing.enabled'
+        return (check_permission('launchpad.Edit', self.context)
+            and getFeatureFlag(flag) is not None)
+
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing_editing.enabled')
+        enabled = (getFeatureFlag(enabled_readonly_flag) is not None
+            or getFeatureFlag(enabled_writable_flag) is not None)
+        if not enabled:
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
+        cache.objects['sharing_write_enabled'] = self.write_enabled
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['sharee_data'] = self.sharee_data

@@ -13,6 +13,7 @@ from lazr.restful.utils import get_current_web_service_request
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from lp.registry.enums import (
     InformationType,
@@ -27,6 +28,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -43,6 +45,11 @@ class SharingService:
     def name(self):
         """See `IService`."""
         return 'sharing'
+
+    @property
+    def write_enabled(self):
+        return getFeatureFlag(
+            'disclosure.enhanced_sharing_editing.enabled') is not None
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
@@ -107,6 +114,9 @@ class SharingService:
         # We do not support adding sharees to project groups.
         assert not IProjectGroup.providedBy(pillar)
 
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
+
         # Separate out the info types according to permission.
         information_types = permissions.keys()
         info_types_for_all = [
@@ -168,6 +178,9 @@ class SharingService:
     def deletePillarSharee(self, pillar, sharee,
                              information_types=None):
         """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
 
         policy_source = getUtility(IAccessPolicySource)
         if information_types is None:
