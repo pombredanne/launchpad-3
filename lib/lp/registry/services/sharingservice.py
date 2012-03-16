@@ -94,6 +94,7 @@ class SharingService:
             if not grantee.id in person_by_id:
                 person_data = {
                     'name': grantee.name,
+                    'meta': 'team' if grantee.is_team else 'person',
                     'display_name': grantee.displayname,
                     'self_link': absoluteURL(grantee, request),
                     'permissions': {}}
