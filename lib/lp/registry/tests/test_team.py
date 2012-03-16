@@ -678,8 +678,7 @@ class TestTeamWorkItems(TestCaseWithFactory):
         dateexpected = self.current_milestone.dateexpected
         flush_database_caches()
         with StormStatementRecorder() as recorder:
-            containers = removeSecurityProxy(self.team).getWorkItemsDueBefore(
-                dateexpected)
+            containers = self.team.getWorkItemsDueBefore(dateexpected)
         # One query to get all team members;
         # One to get all SpecWorkItems;
         # One to get all BugTasks.
@@ -730,19 +729,18 @@ class TestTeamWorkItems(TestCaseWithFactory):
         task = bug.bugtasks[0]
         removeSecurityProxy(task).assignee = team.teamowner
 
-        # XXX: Get rid of the removeSecurityProxy()
-        workitems = removeSecurityProxy(
-            team.getWorkItemsDueBefore(today + timedelta(days=1)))
+        workitems = team.getWorkItemsDueBefore(today + timedelta(days=1))
 
-        # TODO: This line assumes too much; need to assert those assumptions
-        # as well.
+        self.assertEqual(1, len(workitems[today]))
+        self.assertEqual(1, len(workitems[today][0].items))
         self.assertEqual(task.title, workitems[today][0].items[0].title)
 
     def test_getWorkItems_skips_conjoined_slaves(self):
         team = self.factory.makeTeam()
         today = datetime.today().date()
         milestone = self.factory.makeMilestone(dateexpected=today)
-        removeSecurityProxy(milestone.product).development_focus = milestone.productseries
+        removeSecurityProxy(milestone.product).development_focus = (
+            milestone.productseries)
         bug = self.factory.makeBug(
             series=milestone.productseries, milestone=milestone)
         self.assertEqual(2, len(bug.bugtasks))
@@ -756,9 +754,7 @@ class TestTeamWorkItems(TestCaseWithFactory):
         self.assertEqual(task1.milestone, task2.milestone)
         self.assertEqual(task1.assignee, task2.assignee)
 
-        # XXX: Get rid of the removeSecurityProxy()
-        workitems = removeSecurityProxy(
-            team.getWorkItemsDueBefore(today + timedelta(days=1)))
+        workitems = team.getWorkItemsDueBefore(today + timedelta(days=1))
 
         # There's a single work item container returned and that container
         # contains a single work item.

@@ -4999,8 +4999,8 @@ class GenericWorkItem:
         self.title = title
 
         # XXX: We may not need these two here.
-        self.bugtask = bugtask
-        self.work_item = work_item
+        self._bugtask = bugtask
+        self._work_item = work_item
 
     @classmethod
     def from_bugtask(cls, bugtask):
