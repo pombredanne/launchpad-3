@@ -308,8 +308,8 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
         text = 'Sharing'
         enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
         enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
-        enabled = (getFeatureFlag(enabled_readonly_flag) is not None
-            or getFeatureFlag(enabled_writable_flag) is not None)
+        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
+            or bool(getFeatureFlag(enabled_writable_flag)))
         return Link('+sharing', text, icon='edit', enabled=enabled)
 
     @cachedproperty

@@ -266,14 +266,13 @@ class PillarSharingView(LaunchpadView):
         enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
         enabled_writable_flag = (
             'disclosure.enhanced_sharing.writable')
-        enabled = (getFeatureFlag(enabled_readonly_flag) is not None
-            or getFeatureFlag(enabled_writable_flag) is not None)
-        if not enabled:
+        enabled = bool(getFeatureFlag(enabled_readonly_flag))
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        if not enabled and not write_flag_enabled:
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        write_enabled = (check_permission('launchpad.Edit', self.context)
-            and getFeatureFlag(enabled_writable_flag) is not None)
-        cache.objects['sharing_write_enabled'] = write_enabled
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['sharee_data'] = self.sharee_data
