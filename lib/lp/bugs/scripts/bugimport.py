@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XML bug importer
@@ -278,6 +278,9 @@ class BugImporter:
 
         private = get_value(bugnode, 'private') == 'True'
         security_related = get_value(bugnode, 'security_related') == 'True'
+        # If the product has private_bugs, we force private to True.
+        if self.product.private_bugs:
+            private = True
 
         if owner is None:
             owner = self.bug_importer
@@ -308,9 +311,6 @@ class BugImporter:
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
 
-        # set up bug
-        private = get_value(bugnode, 'private') == 'True'
-        security_related = get_value(bugnode, 'security_related') == 'True'
         bug.setPrivacyAndSecurityRelated(private, security_related, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
