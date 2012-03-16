@@ -72,7 +72,7 @@ class PillarSharingViewTestMixin:
             picker_config = simplejson.loads(view.json_sharing_picker_config)
             self.assertTrue('vocabulary_filters' in picker_config)
             self.assertEqual(
-                'Grant access to %s' % self.pillar.displayname,
+                'Share with a user or team',
                 picker_config['header'])
             self.assertEqual(
                 'ValidPillarOwner', picker_config['vocabulary'])
@@ -90,10 +90,11 @@ class PillarSharingViewTestMixin:
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
-        login_person(self.owner)
-        view = create_initialized_view(self.pillar, name='+sharing')
-        cache = IJSONRequestCache(view.request)
-        self.assertFalse(cache.objects.get('sharing_write_enabled'))
+        with FeatureFixture(ENABLED_FLAG):
+            login_person(self.owner)
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertFalse(cache.objects.get('sharing_write_enabled'))
 
     def test_view_write_enabled_with_feature_flag(self):
         # Test that sharing_write_enabled is set when required.

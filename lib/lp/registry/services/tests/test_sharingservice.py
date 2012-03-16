@@ -500,6 +500,10 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         # Launchpadlib can't do relative url's
         self.service = self.launchpad.load(
             '%s/+services/sharing' % self.launchpad._root_uri)
+        flag = FeatureFixture(WRITE_FLAG)
+        flag.setUp()
+        self.addCleanup(flag.cleanUp)
+        transaction.commit()
         self._sharePillarInformation()
 
     def _getPillarSharees(self):
@@ -509,10 +513,8 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
     def _sharePillarInformation(self):
         ws_pillar = ws_object(self.launchpad, self.pillar)
         ws_grantee = ws_object(self.launchpad, self.grantee)
-        with FeatureFixture(WRITE_FLAG):
-            return self.service.sharePillarInformation(pillar=ws_pillar,
-                sharee=ws_grantee,
-                permissions={
-                    InformationType.USERDATA.title:
-                    SharingPermission.ALL.title}
-            )
+        return self.service.sharePillarInformation(pillar=ws_pillar,
+            sharee=ws_grantee,
+            permissions={
+                InformationType.USERDATA.title: SharingPermission.ALL.title}
+        )
