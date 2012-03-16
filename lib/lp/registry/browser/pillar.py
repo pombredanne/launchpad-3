@@ -250,8 +250,7 @@ class PillarSharingView(LaunchpadView):
         return dict(
             vocabulary='ValidPillarOwner',
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to %s'
-                % self.context.displayname)
+            header='Share with a user or team')
 
     @property
     def json_sharing_picker_config(self):
