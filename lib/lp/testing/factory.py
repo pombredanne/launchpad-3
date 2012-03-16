@@ -970,17 +970,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        product = getUtility(IProductSet).createProduct(
-            owner,
-            name,
-            displayname,
-            title,
-            summary,
-            self.getUniqueString('description'),
-            licenses=licenses,
-            project=project,
-            registrant=registrant,
-            icon=icon)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            product = getUtility(IProductSet).createProduct(
+                owner,
+                name,
+                displayname,
+                title,
+                summary,
+                self.getUniqueString('description'),
+                licenses=licenses,
+                project=project,
+                registrant=registrant,
+                icon=icon)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
