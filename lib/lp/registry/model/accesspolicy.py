@@ -32,6 +32,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
     )
 from lp.registry.model.person import Person
@@ -113,6 +114,7 @@ class AccessArtifact(StormBase):
             return
         ids = [abstract.id for abstract in abstracts]
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
