@@ -2,7 +2,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE productjob (
     id SERIAL PRIMARY KEY,
-    job integer NOT NULL,
+    job integer NOT NULL REFERENCES job,
     job_type integer NOT NULL,
     product integer NOT NULL REFERENCES product,
     json_data text
