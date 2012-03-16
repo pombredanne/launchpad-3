@@ -28,7 +28,7 @@ from lp.testing.views import (
 
 
 ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
-WRITE_FLAG = {'disclosure.enhanced_sharing_editing.enabled': 'true'}
+WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
 class PillarSharingViewTestMixin:
@@ -89,14 +89,14 @@ class PillarSharingViewTestMixin:
             self.assertEqual(observers, cache.objects.get('sharee_data'))
 
     def test_view_write_enabled_without_feature_flag(self):
-        # Test that write enabled flag is not set without the feature flag.
+        # Test that sharing_write_enabled is not set without the feature flag.
         login_person(self.owner)
         view = create_initialized_view(self.pillar, name='+sharing')
         cache = IJSONRequestCache(view.request)
         self.assertFalse(cache.objects.get('sharing_write_enabled'))
 
     def test_view_write_enabled_with_feature_flag(self):
-        # Test that write enabled flag is not set when required.
+        # Test that sharing_write_enabled is set when required.
         with FeatureFixture(WRITE_FLAG):
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)

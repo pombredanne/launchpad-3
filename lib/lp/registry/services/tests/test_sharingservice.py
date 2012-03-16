@@ -38,7 +38,7 @@ from lp.testing.layers import (
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
-WRITE_FLAG = {'disclosure.enhanced_sharing_editing.enabled': 'true'}
+WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
 class TestSharingService(TestCaseWithFactory):

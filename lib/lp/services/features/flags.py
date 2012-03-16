@@ -294,7 +294,7 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.enhanced_sharing_editing.enabled',
+    ('disclosure.enhanced_sharing.writable',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '
       'to edit the new disclosure data model.'),

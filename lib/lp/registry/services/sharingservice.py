@@ -49,7 +49,7 @@ class SharingService:
     @property
     def write_enabled(self):
         return getFeatureFlag(
-            'disclosure.enhanced_sharing_editing.enabled') is not None
+            'disclosure.enhanced_sharing.writable') is not None
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""

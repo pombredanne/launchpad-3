@@ -264,7 +264,7 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def write_enabled(self):
-        flag = 'disclosure.enhanced_sharing_editing.enabled'
+        flag = 'disclosure.enhanced_sharing.writable'
         return (check_permission('launchpad.Edit', self.context)
             and getFeatureFlag(flag) is not None)
 
@@ -272,7 +272,7 @@ class PillarSharingView(LaunchpadView):
         super(PillarSharingView, self).initialize()
         enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
         enabled_writable_flag = (
-            'disclosure.enhanced_sharing_editing.enabled')
+            'disclosure.enhanced_sharing.writable')
         enabled = (getFeatureFlag(enabled_readonly_flag) is not None
             or getFeatureFlag(enabled_writable_flag) is not None)
         if not enabled:
