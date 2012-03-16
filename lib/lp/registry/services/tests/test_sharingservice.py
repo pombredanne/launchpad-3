@@ -4,11 +4,13 @@
 __metaclass__ = type
 
 
-from lazr.restful import EntryResource
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
@@ -20,12 +22,14 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.services.sharingservice import SharingService
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login,
     login_person,
+    StormStatementRecorder,
     TestCaseWithFactory,
     WebServiceTestCase,
     ws_object,
@@ -34,7 +38,11 @@ from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
+
+
+WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
 class TestSharingService(TestCaseWithFactory):
@@ -49,8 +57,14 @@ class TestSharingService(TestCaseWithFactory):
     def _makeShareeData(self, sharee, policy_permissions):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
-        resource = EntryResource(sharee, request)
-        sharee_data = resource.toDataForJSON()
+        sharee_data = {
+            'name': sharee.name,
+            'meta': 'team' if sharee.is_team else 'person',
+            'display_name': sharee.displayname,
+            'self_link': absoluteURL(sharee, request),
+            'permissions': {}}
+        browser_request = IWebBrowserOriginatingRequest(request)
+        sharee_data['web_link'] = absoluteURL(sharee, browser_request)
         permissions = {}
         for (policy, permission) in policy_permissions:
             permissions[policy.name] = unicode(permission.name)
@@ -134,6 +148,41 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(driver=driver)
         login_person(driver)
         self._test_getPillarSharees(distro)
+
+    def test_getPillarShareesQueryCount(self):
+        # getPillarSharees only should use 2 queries regardless of how many
+        # sharees are returned.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        login_person(driver)
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=product,
+            type=InformationType.PROPRIETARY)
+
+        def makeGrants():
+            grantee = self.factory.makePerson()
+            # Make access policy grant so that 'All' is returned.
+            self.factory.makeAccessPolicyGrant(access_policy, grantee)
+            # Make access artifact grants so that 'Some' is returned.
+            artifact_grant = self.factory.makeAccessArtifactGrant()
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact_grant.abstract_artifact,
+                policy=access_policy)
+
+        # Make some grants and check the count.
+        for x in range(5):
+            makeGrants()
+        with StormStatementRecorder() as recorder:
+            sharees = self.service.getPillarSharees(product)
+        self.assertEqual(10, len(sharees))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        # Make some more grants and check again.
+        for x in range(5):
+            makeGrants()
+        with StormStatementRecorder() as recorder:
+            sharees = self.service.getPillarSharees(product)
+        self.assertEqual(20, len(sharees))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_getPillarSharees_filter_grantees(self):
         # getPillarSharees only returns grantees in the specified list.
@@ -221,8 +270,9 @@ class TestSharingService(TestCaseWithFactory):
             InformationType.EMBARGOEDSECURITY: SharingPermission.ALL,
             InformationType.USERDATA: SharingPermission.SOME,
             InformationType.PROPRIETARY: SharingPermission.NOTHING}
-        sharee_data = self.service.sharePillarInformation(
-            pillar, sharee, permissions, grantor)
+        with FeatureFixture(WRITE_FLAG):
+            sharee_data = self.service.sharePillarInformation(
+                pillar, sharee, permissions, grantor)
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
         [grant] = policy_grant_source.findByPolicy(policies)
@@ -274,31 +324,47 @@ class TestSharingService(TestCaseWithFactory):
 
         permissions = {
             grant.policy.type: SharingPermission.SOME}
-        sharee_data = self.service.sharePillarInformation(
-            pillar, sharee, permissions, self.factory.makePerson())
+        with FeatureFixture(WRITE_FLAG):
+            sharee_data = self.service.sharePillarInformation(
+                pillar, sharee, permissions, self.factory.makePerson())
         self.assertIsNone(sharee_data)
 
     def _test_sharePillarInformationUnauthorized(self, pillar):
         # sharePillarInformation raises an Unauthorized exception if the user
         # is not permitted to do so.
+        with FeatureFixture(WRITE_FLAG):
+            sharee = self.factory.makePerson()
+            user = self.factory.makePerson()
+            self.assertRaises(
+                Unauthorized, self.service.sharePillarInformation,
+                pillar, sharee,
+                {InformationType.USERDATA: SharingPermission.ALL}, user)
+
+    def test_sharePillarInformationAnonymous(self):
+        # Anonymous users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            product = self.factory.makeProduct()
+            login(ANONYMOUS)
+            self._test_sharePillarInformationUnauthorized(product)
+
+    def test_sharePillarInformationAnyone(self):
+        # Unauthorized users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            product = self.factory.makeProduct()
+            login_person(self.factory.makePerson())
+            self._test_sharePillarInformationUnauthorized(product)
+
+    def test_sharePillarInformation_without_flag(self):
+        # The feature flag needs to be enabled.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
         sharee = self.factory.makePerson()
         user = self.factory.makePerson()
         self.assertRaises(
             Unauthorized, self.service.sharePillarInformation,
-            pillar, sharee,
+            product, sharee,
             {InformationType.USERDATA: SharingPermission.ALL}, user)
-
-    def test_sharePillarInformationAnonymous(self):
-        # Anonymous users are not allowed.
-        product = self.factory.makeProduct()
-        login(ANONYMOUS)
-        self._test_sharePillarInformationUnauthorized(product)
-
-    def test_sharePillarInformationAnyone(self):
-        # Unauthorized users are not allowed.
-        product = self.factory.makeProduct()
-        login_person(self.factory.makePerson())
-        self._test_sharePillarInformationUnauthorized(product)
 
     def _test_deletePillarSharee(self, pillar, types_to_delete=None):
         access_policies = getUtility(IAccessPolicySource).findByPillar(
@@ -318,7 +384,8 @@ class TestSharingService(TestCaseWithFactory):
         another = self.factory.makePerson()
         self.factory.makeAccessPolicyGrant(access_policies[0], another)
         # Delete data for a specific information type.
-        self.service.deletePillarSharee(pillar, grantee, types_to_delete)
+        with FeatureFixture(WRITE_FLAG):
+            self.service.deletePillarSharee(pillar, grantee, types_to_delete)
         # Assemble the expected data for the remaining access grants for
         # grantee.
         expected_data = []
@@ -367,6 +434,37 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         self._test_deletePillarSharee(distro, [InformationType.USERDATA])
+
+    def _test_deletePillarShareeUnauthorized(self, pillar):
+        # deletePillarSharee raises an Unauthorized exception if the user
+        # is not permitted to do so.
+        with FeatureFixture(WRITE_FLAG):
+            self.assertRaises(
+                Unauthorized, self.service.deletePillarSharee,
+                pillar, [InformationType.USERDATA])
+
+    def test_deletePillarShareeAnonymous(self):
+        # Anonymous users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            product = self.factory.makeProduct()
+            login(ANONYMOUS)
+            self._test_deletePillarShareeUnauthorized(product)
+
+    def test_deletePillarShareeAnyone(self):
+        # Unauthorized users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            product = self.factory.makeProduct()
+            login_person(self.factory.makePerson())
+            self._test_deletePillarShareeUnauthorized(product)
+
+    def test_deletePillarSharee_without_flag(self):
+        # The feature flag needs to be enabled.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        self.assertRaises(
+            Unauthorized, self.service.deletePillarSharee,
+            product, [InformationType.USERDATA])
 
 
 class ApiTestMixin:
@@ -425,12 +523,14 @@ class TestWebService(ApiTestMixin, WebServiceTestCase):
 
     def _sharePillarInformation(self):
         pillar_uri = canonical_url(self.pillar, force_local_path=True)
-        return self._named_post(
-            'sharePillarInformation', pillar=pillar_uri,
-            sharee=self.grantee_uri,
-            permissions={
-                InformationType.USERDATA.title: SharingPermission.ALL.title},
-            user=self.grantor_uri)
+        with FeatureFixture(WRITE_FLAG):
+            return self._named_post(
+                'sharePillarInformation', pillar=pillar_uri,
+                sharee=self.grantee_uri,
+                permissions={
+                    InformationType.USERDATA.title:
+                    SharingPermission.ALL.title},
+                user=self.grantor_uri)
 
 
 class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
@@ -445,6 +545,10 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
         # Launchpadlib can't do relative url's
         self.service = self.launchpad.load(
             '%s/+services/sharing' % self.launchpad._root_uri)
+        flag = FeatureFixture(WRITE_FLAG)
+        flag.setUp()
+        self.addCleanup(flag.cleanUp)
+        transaction.commit()
         self._sharePillarInformation()
 
     def _getPillarSharees(self):

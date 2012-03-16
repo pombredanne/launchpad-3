@@ -47,6 +47,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -223,6 +224,11 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    related_features = (
+        'disclosure.enhanced_sharing.enabled',
+        'disclosure.enhanced_sharing.writable',
+        )
+
     def _getSharingService(self):
         return getUtility(IService, 'sharing')
 
@@ -262,9 +268,16 @@ class PillarSharingView(LaunchpadView):
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        enabled = bool(getFeatureFlag(enabled_readonly_flag))
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        if not enabled and not write_flag_enabled:
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
         cache.objects['sharee_data'] = self.sharee_data
