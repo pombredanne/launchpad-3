@@ -9,6 +9,7 @@ from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
+import transaction
 from zope.security.interfaces import Unauthorized
 
 from lp.app.validators import LaunchpadValidationError
@@ -18,6 +19,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.registry.model.milestone import Milestone
+from lp.services.mail import stub
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -146,6 +148,92 @@ class TestSpecificationValidation(TestCaseWithFactory):
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
+
+
+class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
+    """ Test the notification related to SpecificationWorkItems on
+    ISpecification."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_workitems_added_notification_message(self):
+
+        stub.test_emails = []
+        spec = self.factory.makeSpecification()
+        status = SpecificationWorkItemStatus.TODO
+        new_work_items = [
+            {'title': u'A work item',
+             'status': status,
+             'assignee': None,
+             'milestone': None,
+             'sequence': 0
+             }]
+        login_person(spec.owner)
+        spec.updateWorkItems(new_work_items)
+        # XXX: We shouldn't have to commit here?
+        transaction.commit()
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = ('Work items added:')
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
+
+    def test_workitems_deleted_notification_message(self):
+
+        stub.test_emails = []
+        wi = self.factory.makeSpecificationWorkItem()
+        login_person(wi.specification.owner)
+
+        wi.specification.updateWorkItems([])
+        # XXX: We shouldn't have to commit here?
+        transaction.commit()
+
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = (
+            'Work items deleted:')
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
+
+    def test_workitems_changed_notification_message(self):
+
+        spec = self.factory.makeSpecification()
+        original_status = SpecificationWorkItemStatus.TODO
+        new_status = SpecificationWorkItemStatus.DONE
+        original_work_items = [
+            {'title': u'The same work item',
+             'status': original_status,
+             'assignee': None,
+             'milestone': None,
+             'sequence': 0
+             }]
+        new_work_items = [
+            {'title': u'The same work item',
+             'status': new_status,
+             'assignee': None,
+             'milestone': None,
+             'sequence': 0
+             }]
+        login_person(spec.owner)
+        spec.updateWorkItems(original_work_items)
+        # XXX: We shouldn't have to commit here?
+        transaction.commit()
+
+        stub.test_emails = []
+
+        spec.updateWorkItems(new_work_items)
+        # XXX: We shouldn't have to commit here?
+        transaction.commit()
+
+
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = ('Work items changed:')
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
 
 
 class TestSpecificationWorkItems(TestCaseWithFactory):

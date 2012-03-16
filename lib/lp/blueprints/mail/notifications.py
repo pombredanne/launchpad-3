@@ -78,6 +78,18 @@ def notify_specification_modified(spec, event):
                 whiteboard_delta['old'], whiteboard_delta['new'], 72)
             info_lines.append('Whiteboard changed:')
             info_lines.append(whiteboard_diff)
+    if spec_delta.work_items_added is not None:
+        if info_lines:
+            info_lines.append('')
+        new_work_items = spec_delta.work_items_added
+        info_lines.append('Work items added:')
+        # XXX: add list of added work items
+    if spec_delta.work_items_deleted is not None:
+        if info_lines:
+            info_lines.append('')
+        deleted_work_items = spec_delta.work_items_deleted
+        info_lines.append('Work items deleted:')
+        # XXX add list of deleted work items
 
     if not info_lines:
         # The specification was modified, but we don't yet support

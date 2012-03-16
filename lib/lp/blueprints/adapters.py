@@ -19,13 +19,14 @@ class SpecificationDelta:
         distroseries=None, milestone=None, name=None, priority=None,
         definition_status=None, target=None, bugs_linked=None,
         bugs_unlinked=None, approver=None, assignee=None, drafter=None,
-        workitems_text=None):
+        work_items_added=None, work_items_deleted=None):
         self.specification = specification
         self.user = user
         self.title = title
         self.summary = summary
         self.whiteboard = whiteboard
-        self.workitems_text = workitems_text
+        self.work_items_added = work_items_added
+        self.work_items_deleted = work_items_deleted
         self.specurl = specurl
         self.productseries = productseries
         self.distroseries = distroseries

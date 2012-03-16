@@ -16,6 +16,7 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
     )
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.lifecycle.objectdelta import ObjectDelta
 from sqlobject import (
     BoolCol,
@@ -30,9 +31,13 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    providedBy,
+)
 
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
@@ -298,6 +303,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
+        old_spec = Snapshot(self, providing=providedBy(self))
         # First mark work items with titles that are no longer present as
         # deleted.
         self._deleteWorkItemsNotMatching(
@@ -334,10 +340,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
                         "%s does not belong to this spec's target (%s)" %
                             (milestone.displayname, self.target.name))
                 existing_wi.milestone = milestone
+                # TODO: We need to notify() that the work item properties may
+                #have changed.
 
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
                              item['assignee'], item['milestone'])
+        # It seems that we have to commit, otherwise there is no delta.
+        transaction.commit()
+        notify(ObjectModifiedEvent(self, old_spec,
+                                   edited_fields=['work_items']))
+
 
     def setTarget(self, target):
         """See ISpecification."""
@@ -608,11 +621,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard", "workitems_text"))
+                               "whiteboard"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
-
+        delta.recordListAddedAndRemoved("work_items",
+                                        "work_items_added",
+                                        "work_items_deleted")
         if delta.changes:
             changes = delta.changes
             changes["specification"] = self

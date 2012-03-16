@@ -712,7 +712,6 @@ class ISpecificationDelta(Interface):
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
     whiteboard = Attribute("The spec whiteboard or None.")
-    workitems_text = Attribute("The spec work items as text or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distroseries = Attribute("The series to which this is targeted.")
@@ -728,3 +727,7 @@ class ISpecificationDelta(Interface):
     approver = Attribute("Old and new approver, or None")
     assignee = Attribute("Old and new assignee, or None")
     drafter = Attribute("Old and new drafter, or None")
+
+    # items where we provide a list of added or removed items
+    work_items_added = Attribute("The added spec work items or None.")
+    work_items_deleted = Attribute("The deleted spec work items or None.")
