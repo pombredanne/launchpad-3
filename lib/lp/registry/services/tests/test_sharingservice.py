@@ -4,11 +4,13 @@
 __metaclass__ = type
 
 
-from lazr.restful import EntryResource
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import (
@@ -26,6 +28,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login,
     login_person,
+    StormStatementRecorder,
     TestCaseWithFactory,
     WebServiceTestCase,
     ws_object,
@@ -34,6 +37,7 @@ from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
@@ -49,8 +53,13 @@ class TestSharingService(TestCaseWithFactory):
     def _makeShareeData(self, sharee, policy_permissions):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
-        resource = EntryResource(sharee, request)
-        sharee_data = resource.toDataForJSON()
+        sharee_data = {
+            'name': sharee.name,
+            'display_name': sharee.displayname,
+            'self_link': absoluteURL(sharee, request),
+            'permissions': {}}
+        browser_request = IWebBrowserOriginatingRequest(request)
+        sharee_data['web_link'] = absoluteURL(sharee, browser_request)
         permissions = {}
         for (policy, permission) in policy_permissions:
             permissions[policy.name] = unicode(permission.name)
@@ -134,6 +143,41 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(driver=driver)
         login_person(driver)
         self._test_getPillarSharees(distro)
+
+    def test_getPillarShareesQueryCount(self):
+        # getPillarSharees only should use 2 queries regardless of how many
+        # sharees are returned.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        login_person(driver)
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=product,
+            type=InformationType.PROPRIETARY)
+
+        def makeGrants():
+            grantee = self.factory.makePerson()
+            # Make access policy grant so that 'All' is returned.
+            self.factory.makeAccessPolicyGrant(access_policy, grantee)
+            # Make access artifact grants so that 'Some' is returned.
+            artifact_grant = self.factory.makeAccessArtifactGrant()
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact_grant.abstract_artifact,
+                policy=access_policy)
+
+        # Make some grants and check the count.
+        for x in range(5):
+            makeGrants()
+        with StormStatementRecorder() as recorder:
+            sharees = self.service.getPillarSharees(product)
+        self.assertEqual(10, len(sharees))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        # Make some more grants and check again.
+        for x in range(5):
+            makeGrants()
+        with StormStatementRecorder() as recorder:
+            sharees = self.service.getPillarSharees(product)
+        self.assertEqual(20, len(sharees))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_getPillarSharees_filter_grantees(self):
         # getPillarSharees only returns grantees in the specified list.
