@@ -13,7 +13,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import itertools
 import logging
 import multiprocessing
 import os
@@ -27,12 +26,7 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import (
-    Exists,
-    In,
-    Not,
-    Select,
-    )
+from storm.expr import In
 from storm.locals import (
     Max,
     Min,
@@ -63,12 +57,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.model.accesspolicy import AccessPolicy
-from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.constants import UTC_NOW
@@ -92,6 +81,7 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -1001,64 +991,6 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-class AccessPolicyDistributionAddition(TunableLoop):
-    """A `TunableLoop` to add AccessPolicy for all distributions."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(AccessPolicyDistributionAddition, self).__init__(
-            log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Distribution)
-
-    def findDistributions(self):
-        return self.store.find(
-            Distribution,
-            Not(Exists(
-                Select(AccessPolicy.id,
-                tables=[AccessPolicy], where=[
-                    AccessPolicy.distribution_id == Distribution.id]))))
-
-    def isDone(self):
-        return self.findDistributions().is_empty()
-
-    def __call__(self, chunk_size):
-        policies = itertools.product(
-            self.findDistributions()[:chunk_size],
-            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
-        getUtility(IAccessPolicySource).create(policies)
-        self.transaction.commit()
-
-
-class AccessPolicyProductAddition(TunableLoop):
-    """A `TunableLoop` to add AccessPolicy for all products."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(AccessPolicyProductAddition, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Product)
-
-    def findProducts(self):
-        return self.store.find(
-            Product,
-            Not(Exists(
-                Select(AccessPolicy.id, tables=[AccessPolicy], where=[
-                    AccessPolicy.product_id == Product.id]))))
-
-    def isDone(self):
-        return self.findProducts().is_empty()
-
-    def __call__(self, chunk_size):
-        policies = itertools.product(
-            self.findProducts()[:chunk_size],
-            (InformationType.USERDATA, InformationType.EMBARGOEDSECURITY))
-        getUtility(IAccessPolicySource).create(policies)
-        self.transaction.commit()
-
-
 class SpecificationWorkitemMigrator(TunableLoop):
     """Migrate work-items from Specification.whiteboard to
     SpecificationWorkItem.
@@ -1158,6 +1090,62 @@ class SpecificationWorkitemMigrator(TunableLoop):
                 self.log.info(
                     "No work items found on the whiteboard of %s" % spec)
         self.offset += chunk_size
+
+
+class BugsInformationTypeMigrator(TunableLoop):
+    """A `TunableLoop` to populate information_type for all bugs."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugsInformationTypeMigrator, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.store = IMasterStore(Bug)
+
+    def findBugs(self):
+        return self.store.find(Bug, Bug.information_type == None)
+
+    def isDone(self):
+        return self.findBugs().is_empty()
+
+    def __call__(self, chunk_size):
+        for bug in self.findBugs()[:chunk_size]:
+            bug._setInformationType()
+        self.transaction.commit()
+
+
+class BugLegacyAccessMirrorer(TunableLoop):
+    """A `TunableLoop` to populate the access policy schema for all bugs."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugLegacyAccessMirrorer, self).__init__(log, abort_time)
+        watermark = getUtility(IMemcacheClient).get(
+            '%s:bug-legacy-access-mirrorer' % config.instance_name)
+        self.start_at = watermark or 0
+
+    def findBugIDs(self):
+        return IMasterStore(Bug).find(
+            (Bug.id,), Bug.id >= self.start_at).order_by(Bug.id)
+
+    def isDone(self):
+        return self.findBugIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        ids = [row[0] for row in self.findBugIDs()[:chunk_size]]
+        list(IMasterStore(Bug).using(Bug).find(
+            SQL('bug_mirror_legacy_access(Bug.id)'),
+            Bug.id.is_in(ids)))
+
+        self.start_at = ids[-1] + 1
+        result = getUtility(IMemcacheClient).set(
+            '%s:bug-legacy-access-mirrorer' % config.instance_name,
+            self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+
+        transaction.commit()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -1411,8 +1399,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        AccessPolicyDistributionAddition,
-        AccessPolicyProductAddition,
+        BugsInformationTypeMigrator,
+        BugLegacyAccessMirrorer,
         ]
     experimental_tunable_loops = []
 
