@@ -224,6 +224,11 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    related_features = (
+        'disclosure.enhanced_sharing.enabled',
+        'disclosure.enhanced_sharing.writable',
+        )
+
     def _getSharingService(self):
         return getUtility(IService, 'sharing')
 

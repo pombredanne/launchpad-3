@@ -1,9 +1,10 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
 import os
 import re
-import unittest
 
 import pytz
 from testtools.content import text_content
@@ -51,7 +52,7 @@ from lp.testing import (
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class UtilsTestCase(unittest.TestCase):
+class UtilsTestCase(TestCase):
     """Tests for the various utility functions used by the importer."""
 
     def test_parse_date(self):
@@ -297,7 +298,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
 
-class GetMilestoneTestCase(unittest.TestCase):
+class GetMilestoneTestCase(TestCase):
     """Tests for the BugImporter.getMilestone() method."""
     layer = LaunchpadZopelessLayer
 
@@ -452,14 +453,16 @@ public_security_bug = '''\
 </bug>'''
 
 
-class ImportBugTestCase(unittest.TestCase):
+class ImportBugTestCase(TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(ImportBugTestCase, self).setUp()
         login('bug-importer@launchpad.net')
 
     def tearDown(self):
+        super(ImportBugTestCase, self).tearDown()
         logout()
 
     def assertNoPendingNotifications(self, bug):
@@ -652,6 +655,19 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bug101, None)
         self.assertEqual(bug101.private, False)
         self.assertEqual(bug101.security_related, True)
+
+    def test_public_bug_product_private_bugs(self):
+        # Test that if we import a public bug into a product with 
+        # private_bugs, the bug is private.
+        product = getUtility(IProductSet).getByName('netapplet')
+        removeSecurityProxy(product).private_bugs = True
+        importer = bugimport.BugImporter(
+            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
+        bugnode = ET.fromstring(public_security_bug)
+        bug101 = importer.importBug(bugnode)
+        self.assertIsNot(None, bug101)
+        self.assertTrue(bug101.private)
+        self.assertTrue(bug101.security_related)
 
 
 class BugImportCacheTestCase(TestCase):
@@ -997,7 +1013,7 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
             unmodified_remote_ids, server_time, self.bugtracker)
 
 
-class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
+class CheckwatchesErrorRecoveryTestCase(TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """
