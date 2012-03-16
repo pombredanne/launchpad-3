@@ -8,12 +8,13 @@ __all__ = [
     'SharingService',
     ]
 
-from lazr.restful import EntryResource
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.registry.enums import (
     InformationType,
@@ -98,9 +99,14 @@ class SharingService:
         request = get_current_web_service_request()
         for (grantee, policy, sharing_permission) in grant_permissions:
             if not grantee.id in person_by_id:
-                resource = EntryResource(grantee, request)
-                person_data = resource.toDataForJSON()
-                person_data['permissions'] = {}
+                person_data = {
+                    'name': grantee.name,
+                    'meta': 'team' if grantee.is_team else 'person',
+                    'display_name': grantee.displayname,
+                    'self_link': absoluteURL(grantee, request),
+                    'permissions': {}}
+                browser_request = IWebBrowserOriginatingRequest(request)
+                person_data['web_link'] = absoluteURL(grantee, browser_request)
                 person_by_id[grantee.id] = person_data
                 result.append(person_data)
             person_data = person_by_id[grantee.id]
