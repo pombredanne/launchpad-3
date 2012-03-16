@@ -184,14 +184,20 @@ class BaseAccessArtifactTests:
         concretes = [self.getConcreteArtifact() for i in range(2)]
         abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
         grant = self.factory.makeAccessArtifactGrant(artifact=abstracts[0])
+        link = self.factory.makeAccessPolicyArtifact(artifact=abstracts[0])
+        self.assertContentEqual(
+            [link],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [abstracts[0]]))
 
-        # Make some other grants to ensure they're unaffected.
+        # Make some other grants and links to ensure they're unaffected.
         other_grants = [
             self.factory.makeAccessArtifactGrant(
                 artifact=self.factory.makeAccessArtifact()),
             self.factory.makeAccessPolicyGrant(
                 policy=self.factory.makeAccessPolicy()),
             ]
+        other_link = self.factory.makeAccessPolicyArtifact()
 
         getUtility(IAccessArtifactSource).delete(concretes)
         IStore(grant).invalidate()
@@ -201,6 +207,15 @@ class BaseAccessArtifactTests:
 
         for other_grant in other_grants:
             self.assertIsNot(None, other_grant.grantor)
+
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [abstracts[0]]))
+        self.assertContentEqual(
+            [other_link],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_link.abstract_artifact]))
 
     def test_delete_noop(self):
         # delete() works even if there's no abstract artifact.
