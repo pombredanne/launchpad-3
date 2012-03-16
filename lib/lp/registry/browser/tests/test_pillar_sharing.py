@@ -90,10 +90,11 @@ class PillarSharingViewTestMixin:
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.
-        login_person(self.owner)
-        view = create_initialized_view(self.pillar, name='+sharing')
-        cache = IJSONRequestCache(view.request)
-        self.assertFalse(cache.objects.get('sharing_write_enabled'))
+        with FeatureFixture(ENABLED_FLAG):
+            login_person(self.owner)
+            view = create_initialized_view(self.pillar, name='+sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertFalse(cache.objects.get('sharing_write_enabled'))
 
     def test_view_write_enabled_with_feature_flag(self):
         # Test that sharing_write_enabled is set when required.
