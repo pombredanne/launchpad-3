@@ -11,7 +11,7 @@ __all__ = [
 import logging
 
 from lazr.delegates import delegates
-from lazr.jobrunner.runjobs import SuspendJobException
+from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.locals import (
     And,
     Int,

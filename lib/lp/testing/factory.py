@@ -49,7 +49,7 @@ import warnings
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 from bzrlib.revision import Revision as BzrRevision
-from lazr.jobrunner.runjobs import SuspendJobException
+from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
 import simplejson

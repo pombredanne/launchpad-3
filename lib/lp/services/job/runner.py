@@ -38,7 +38,7 @@ from ampoule import (
     pool,
     )
 from lazr.delegates import delegates
-from lazr.jobrunner.runjobs import JobRunner as LazrJobRunner
+from lazr.jobrunner.jobrunner import JobRunner as LazrJobRunner
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -205,10 +205,6 @@ class BaseJobRunner(LazrJobRunner):
             self.incomplete_jobs.append(job)
             return False
         return True
-
-    @staticmethod
-    def job_str(job):
-        return LazrJobRunner.job_str(removeSecurityProxy(job))
 
     def runJob(self, job):
         super(BaseJobRunner, self).runJob(IRunnableJob(job))

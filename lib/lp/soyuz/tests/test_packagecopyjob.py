@@ -6,7 +6,7 @@
 import operator
 from textwrap import dedent
 
-from lazr.jobrunner.runjobs import SuspendJobException
+from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure

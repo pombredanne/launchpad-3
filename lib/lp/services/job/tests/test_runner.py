@@ -8,7 +8,7 @@ import sys
 from textwrap import dedent
 from time import sleep
 
-from lazr.jobrunner.runjobs import SuspendJobException
+from lazr.jobrunner.jobrunner import SuspendJobException
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
