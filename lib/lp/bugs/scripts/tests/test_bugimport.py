@@ -452,23 +452,6 @@ public_security_bug = '''\
   </comment>
 </bug>'''
 
-public_bug = '''\
-<bug xmlns="https://launchpad.net/xmlns/2006/bugs" id="101">
-  <private>False</private>
-  <security_related>False</security_related>
-  <datecreated>2004-10-12T12:00:00Z</datecreated>
-  <title>A non private security bug</title>
-  <description>Description</description>
-  <reporter name="foo" email="foo@example.com">Foo User</reporter>
-  <status>TRIAGED</status>
-  <importance>LOW</importance>
-  <comment>
-    <sender name="foo" email="foo@example.com">Foo User</sender>
-    <date>2004-10-12T12:00:00Z</date>
-    <text>Description</text>
-  </comment>
-</bug>'''
-
 
 class ImportBugTestCase(TestCase):
     """Test importing of a bug from XML"""
@@ -680,11 +663,11 @@ class ImportBugTestCase(TestCase):
         removeSecurityProxy(product).private_bugs = True
         importer = bugimport.BugImporter(
             product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        bugnode = ET.fromstring(public_bug)
+        bugnode = ET.fromstring(public_security_bug)
         bug101 = importer.importBug(bugnode)
         self.assertIsNot(None, bug101)
         self.assertTrue(bug101.private)
-        self.assertFalse(bug101.security_related)
+        self.assertTrue(bug101.security_related)
 
 
 class BugImportCacheTestCase(TestCase):
