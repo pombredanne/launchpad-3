@@ -224,6 +224,40 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
+    def workitems_text(self):
+        """See ISpecification."""
+        workitems_lines = []
+
+        def get_header_text(milestone):
+            if milestone is None:
+                return "Work items:"
+            else:
+                return "Work items for %s:" % milestone.name
+
+        if self.work_items.count() == 0:
+            return ''
+        milestone = self.work_items[0].milestone
+        # Start by appending a header for the milestone of the first work
+        # item. After this we're going to write a new header whenever we see a
+        # work item with a different milestone.
+        workitems_lines.append(get_header_text(milestone))
+        for work_item in self.work_items:
+            if work_item.milestone != milestone:
+                workitems_lines.append("")
+                milestone = work_item.milestone
+                workitems_lines.append(get_header_text(milestone))
+            assignee = work_item.assignee
+            if assignee is not None:
+                assignee_part = "[%s] " % assignee.name
+            else:
+                assignee_part = ""
+            # work_items are ordered by sequence
+            workitems_lines.append("%s%s: %s" % (assignee_part,
+                                                 work_item.title,
+                                                 work_item.status.name))
+        return "\n".join(workitems_lines)
+
+    @property
     def target(self):
         """See ISpecification."""
         if self.product:
@@ -248,6 +282,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return Store.of(self).find(
             SpecificationWorkItem, specification=self,
             deleted=False).order_by("sequence")
+
+    def setWorkItems(self, new_work_items):
+        field = ISpecification['workitems_text'].bind(self)
+        self.updateWorkItems(field.parseAndValidate(new_work_items))
 
     def _deleteWorkItemsNotMatching(self, titles):
         """Delete all work items whose title does not match the given ones.
@@ -570,7 +608,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard"))
+                               "whiteboard", "workitems_text"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -1035,7 +1073,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
+        drafter=None, whiteboard=None, workitems_text=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a

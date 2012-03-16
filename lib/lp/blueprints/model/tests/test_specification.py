@@ -17,6 +17,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
     SpecificationWorkItemStatus,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
+from lp.registry.model.milestone import Milestone
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -152,6 +153,31 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSpecificationWorkItems, self).setUp()
+        self.wi_header =  self.factory.makeMilestone(
+            name='none-milestone-as-header')
+
+    def assertWorkItemsTextContains(self, spec, items):
+        expected_lines = []
+        for item in items:
+            if isinstance(item, SpecificationWorkItem):
+                line = ''
+                if item.assignee is not None:
+                    line = "[%s] " % item.assignee.name
+                expected_lines.append(u"%s%s: %s" % (line, item.title,
+                                                    item.status.name))
+            else:
+                self.assertIsInstance(item, Milestone)
+                if expected_lines != []:
+                    expected_lines.append(u"")
+                if item == self.wi_header:
+                    expected_lines.append(u"Work items:")
+                else:
+                    expected_lines.append(u"Work items for %s:" % item.name)
+        expected = "\n".join(expected_lines)
+        self.assertEqual(expected, spec.workitems_text)
+
     def test_anonymous_newworkitem_not_allowed(self):
         spec = self.factory.makeSpecification()
         login(ANONYMOUS)
@@ -178,6 +204,97 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         self.assertEqual(status, work_item.status)
         self.assertEqual(title, work_item.title)
         self.assertEqual(milestone, work_item.milestone)
+
+    def test_workitems_text_no_workitems(self):
+        spec = self.factory.makeSpecification()
+        self.assertEqual('', spec.workitems_text)
+
+    def test_workitems_text_deleted_workitem(self):
+        work_item = self.factory.makeSpecificationWorkItem(deleted=True)
+        self.assertEqual('', work_item.specification.workitems_text)
+
+    def test_workitems_text_single_workitem(self):
+        work_item = self.factory.makeSpecificationWorkItem()
+        self.assertWorkItemsTextContains(work_item.specification,
+                                         [self.wi_header, work_item])
+
+    def test_workitems_text_multi_workitems_all_statuses(self):
+        spec = self.factory.makeSpecification()
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
+            status=SpecificationWorkItemStatus.TODO)
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
+            status=SpecificationWorkItemStatus.DONE)
+        work_item3 = self.factory.makeSpecificationWorkItem(specification=spec,
+            status=SpecificationWorkItemStatus.POSTPONED)
+        work_item4 = self.factory.makeSpecificationWorkItem(specification=spec,
+            status=SpecificationWorkItemStatus.INPROGRESS)
+        work_item5 = self.factory.makeSpecificationWorkItem(specification=spec,
+            status=SpecificationWorkItemStatus.BLOCKED)
+        work_items = [self.wi_header, work_item1, work_item2, work_item3,
+                      work_item4, work_item5]
+        self.assertWorkItemsTextContains(spec, work_items)
+
+    def test_workitems_text_with_milestone(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone(product=spec.product)
+        login_person(spec.owner)
+        work_item = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'new-work-item',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        items = [milestone, work_item]
+        self.assertWorkItemsTextContains(spec, items)
+
+    def test_workitems_text_with_implicit_and_explicit_milestone(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone(product=spec.product)
+        login_person(spec.owner)
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with default milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=None)
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with set milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        items = [self.wi_header, work_item1, milestone, work_item2]
+        self.assertWorkItemsTextContains(spec, items)
+
+    def test_workitems_text_with_implicit_and_explicit_milestone_reversed(self):
+        spec = self.factory.makeSpecification()
+        milestone = self.factory.makeMilestone(product=spec.product)
+        login_person(spec.owner)
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with set milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone)
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with default milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=None)
+        items = [milestone, work_item1, self.wi_header, work_item2]
+        self.assertWorkItemsTextContains(spec, items)
+
+    def test_workitems_text_with_different_milestones(self):
+        spec = self.factory.makeSpecification()
+        milestone1 = self.factory.makeMilestone(product=spec.product)
+        milestone2 = self.factory.makeMilestone(product=spec.product)
+        login_person(spec.owner)
+        work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with first milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone1)
+        work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
+            title=u'Work item with second milestone',
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone2)
+        items = [milestone1, work_item1, milestone2, work_item2]
+        self.assertWorkItemsTextContains(spec, items)
+
+    def test_workitems_text_with_assignee(self):
+        assignee = self.factory.makePerson()
+        work_item = self.factory.makeSpecificationWorkItem(assignee=assignee)
+        self.assertWorkItemsTextContains(work_item.specification, [self.wi_header, work_item])
 
     def test_work_items_property(self):
         spec = self.factory.makeSpecification()
