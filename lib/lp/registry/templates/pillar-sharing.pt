@@ -35,9 +35,10 @@
     </ul>
     <table id="sharee-table" class="disclosure listing">
         <thead>
-            <tr><th style="width: 33%" colspan="2">User or Team</th>
-                <th colspan="2">Sharing</th>
-                <th style="width: " colspan="1">Shared items</th>
+            <tr>
+                <th>User or Team</th>
+                <th>Sharing</th>
+                <th>Shared items</th>
             </tr>
         </thead>
         <tr><td style="padding-left: 0.25em">
