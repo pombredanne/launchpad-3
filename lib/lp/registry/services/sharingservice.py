@@ -92,7 +92,8 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = ap_grant_flat.findGranteesByPolicy(
-            policies, grantees)
+            policies, grantees).order_by(
+                "person_sort_key(Person.displayname, Person.name)")
 
         result = []
         person_by_id = {}
