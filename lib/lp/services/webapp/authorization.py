@@ -313,6 +313,8 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
 def precache_permission_for_objects(participation, permission_name, objects):
     """Precaches the permission for the objects into the policy cache."""
+    if participation is None:
+        participation = getInteraction().participations[0]
     permission_cache = participation.annotations.setdefault(
         LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
         weakref.WeakKeyDictionary())
