@@ -459,6 +459,9 @@ def expose_user_administered_teams_to_js(request, user, context,
             # filters can only be edited by the subscriber.
             # This can happen if the user is an owner but not a member.
             administers_and_in = membership.intersection(administrated_teams)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                [team.id for team in administers_and_in],
+                need_preferred_email=True))
             for team in administers_and_in:
                 if (bug_supervisor is not None and
                     not team.inTeam(bug_supervisor)):

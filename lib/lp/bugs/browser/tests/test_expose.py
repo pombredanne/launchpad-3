@@ -26,6 +26,8 @@ from lp.bugs.browser.structuralsubscription import (
     expose_user_subscriptions_to_js,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.model.person import Person
+from lp.services.database.lpstorm import IStore
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -36,7 +38,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import Contains
+from lp.testing.matchers import (
+    Contains,
+    HasQueryCount,
+    )
 
 
 class FakeRequest:
@@ -175,6 +180,29 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
             Equals(u'http://example.com/\u201cBugSupervisorSubTeam\u201dteam'))
+
+    def test_query_count(self):
+        # The function issues a constant number of queries regardless of
+        # team count.
+        context = self.factory.makeProduct(owner=self.user)
+        self._setup_teams(self.user)
+
+        IStore(Person).invalidate()
+        with StormStatementRecorder() as recorder:
+            expose_user_administered_teams_to_js(
+                self.request, self.user, context,
+                absoluteURL=fake_absoluteURL)
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
+
+        for i in range(3):
+            self.factory.makeTeam(owner=self.user)
+        IStore(Person).invalidate()
+        del IJSONRequestCache(self.request).objects['administratedTeams']
+        with StormStatementRecorder() as recorder:
+            expose_user_administered_teams_to_js(
+                self.request, self.user, context,
+                absoluteURL=fake_absoluteURL)
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
 
     def test_expose_user_administered_teams_to_js__uses_cached_teams(self):
         # The function expose_user_administered_teams_to_js uses a
