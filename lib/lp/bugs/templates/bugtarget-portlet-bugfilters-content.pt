@@ -6,6 +6,8 @@
     template can be rendered by a view that does not have count
     information available.
   </tal:comment>
+<table class="bug-links">
+<tbody>
   <tr tal:define="count view/new_bugs_count|nothing;
                   plural string: New bugs;
                   singular string: New bug;">
@@ -168,4 +170,6 @@
       </a>
     </td>
   </tr>
+</tbody>
+</table>
 </tal:portlet-bug-filters-content>
