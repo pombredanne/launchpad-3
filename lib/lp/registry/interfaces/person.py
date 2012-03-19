@@ -130,7 +130,6 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation,
-    ILocationRecord,
     IObjectWithLocation,
     ISetLocation,
     )
@@ -507,10 +506,9 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
-        having a PPA.
+        Only Launchpad admins and team members can view the team's data.
+        Other users may only know of the team if it is placed
+        in a public relationship such as subscribing to a bug.
         """)
 
 
@@ -523,9 +521,6 @@ class PersonNameField(BlacklistableContentNameField):
     teams.
     """
     errormessage = _("%s is already in use by another person or team.")
-
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -699,9 +694,9 @@ class IPersonPublic(IPrivacy):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  "
-                   "Private means the team is completely "
-                   "hidden."),
+                   "Anyone can see a public team's data. Only team members "
+                   "and Launchpad admins can see private team data. "
+                   "Private teams cannot become public."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC, readonly=True))
 
@@ -722,7 +717,7 @@ class IPersonPublic(IPrivacy):
     @operation_for_version("beta")
     def transitionVisibility(visibility, user):
         """Set visibility of IPerson.
-    
+
         :param visibility: The PersonVisibility to change to.
         :param user: The user requesting the change.
         :raises: `ImmutableVisibilityError` when the visibility can not
@@ -1614,31 +1609,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants_count = Attribute(
-        "The number of mapped participants")
-    unmapped_participants = doNotSnapshot(
-        CollectionField(
-            title=_("List of participants with no coordinates recorded."),
-            value_type=Reference(schema=Interface)))
-    unmapped_participants_count = Attribute(
-        "The number of unmapped participants")
-
-    def getMappedParticipants(limit=None):
-        """List of participants with coordinates.
-
-        :param limit: The optional maximum number of items to return.
-        :return: A list of `IPerson` objects
-        """
-
-    def getMappedParticipantsBounds():
-        """Return a dict of the bounding longitudes latitudes, and centers.
-
-        This method cannot be called if there are no mapped participants.
-
-        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
-            center_lat, and center_lng
-        """
-
     def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
@@ -1713,13 +1683,6 @@ class IPersonEditRestricted(Interface):
 
         :param team: The team to leave.
         """
-
-    @operation_parameters(
-        visible=copy_field(ILocationRecord['visible'], required=True))
-    @export_write_operation()
-    @operation_for_version("beta")
-    def setLocationVisibility(visible):
-        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
@@ -2588,7 +2551,6 @@ for name in [
     'invited_members',
     'deactivatedmembers',
     'expiredmembers',
-    'unmapped_participants',
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 

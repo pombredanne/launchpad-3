@@ -18,7 +18,9 @@ reported about that project will be private by default.
     >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
-
+    >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
+    >>> admin_browser.getControl(name="field.private_bugs").value
+    True
 
 Filing a new bug
 ----------------

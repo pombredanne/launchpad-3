@@ -597,6 +597,21 @@
             interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
     </securedutility>
 
+    <!-- PillarPerson-->
+
+    <class
+        class="lp.registry.model.pillar.PillarPerson">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPerson"/>
+    </class>
+
+    <securedutility
+        component="lp.registry.model.pillar.PillarPerson"
+        provides="lp.registry.interfaces.pillar.IPillarPersonFactory">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPersonFactory"/>
+    </securedutility>
+
     <!-- SourcePackageName -->
 
     <class
@@ -1056,7 +1071,7 @@
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
         <allow
@@ -1919,18 +1934,37 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
     </securedutility>
     <class
+        class="lp.registry.model.accesspolicy.AccessArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifact"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactSource"/>
+    </securedutility>
+    <class
         class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
-        <require
-            permission="zope.Public"
-            set_attributes="policy"/>
     </class>
     <securedutility
         component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
         provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessArtifactGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessArtifactGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource"/>
     </securedutility>
     <class
         class="lp.registry.model.accesspolicy.AccessPolicyGrant">
@@ -1942,5 +1976,11 @@
         provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrantFlat"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
     </securedutility>
 </configure>

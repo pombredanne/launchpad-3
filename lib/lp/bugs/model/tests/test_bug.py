@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.adapters.bugchange import BugTitleChange
-from lp.bugs.enum import (
+from lp.bugs.enums import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
@@ -29,6 +29,7 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
 from lp.bugs.scripts.bugnotification import get_email_notifications
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -613,7 +614,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bugtask_b = self.factory.makeBugTask(bug=bug, target=product_series_b)
         naked_bugtask_a = removeSecurityProxy(bugtask_a)
         naked_bugtask_b = removeSecurityProxy(bugtask_b)
-        naked_default_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_default_bugtask = removeSecurityProxy(bug).default_bugtask
         return (bug, bug_owner, naked_bugtask_a, naked_bugtask_b,
                 naked_default_bugtask)
 
@@ -748,7 +749,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=True, security_related=False, who=who)
             subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
@@ -763,7 +764,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-        naked_bugtask = removeSecurityProxy(bug.default_bugtask)
+        naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
             set((naked_bugtask.pillar.owner, bug_owner)),
             subscribers)
@@ -915,6 +916,59 @@ class TestBugPrivacy(TestCaseWithFactory):
         with FeatureFixture(feature_flag):
             bug.setPrivacyAndSecurityRelated(True, False, bug.owner)
             self.assertTrue(bug.private)
+
+    def test_bug_information_type(self):
+        # Bugs have the correct corresponding information type.
+        # Public security bugs are currently untested since it is impossible
+        # to create one at the moment.
+        bug = self.factory.makeBug()
+        private_bug = self.factory.makeBug(private=True)
+        private_sec_bug = self.factory.makeBug(
+            private=True, security_related=True)
+        mapping = (
+            (bug, InformationType.PUBLIC),
+            (private_bug, InformationType.USERDATA),
+            (private_sec_bug, InformationType.EMBARGOEDSECURITY),
+            )
+        [self.assertEqual(m[1], m[0].information_type) for m in mapping]
+
+    def test_private_to_public_information_type(self):
+        # A private bug transitioning to public has the correct information
+        # type.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(private=True, owner=owner)
+        with person_logged_in(owner):
+            bug.setPrivate(False, owner)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_private_sec_to_public_sec_information_type(self):
+        # A private security bug transitioning to public security has the
+        # correct information type.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            private=True, security_related=True, owner=owner)
+        with person_logged_in(owner):
+            bug.setPrivate(False, owner)
+        self.assertEqual(
+            InformationType.UNEMBARGOEDSECURITY, bug.information_type)
+
+    def test_private_sec_to_public_information_type(self):
+        # A private security bug transitioning to public has the correct
+        # information type.
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            private=True, security_related=True, owner=owner)
+        with person_logged_in(owner):
+            bug.setPrivacyAndSecurityRelated(False, False, owner)
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_public_to_private_information_type(self):
+        # A public bug transitioning to private has the correct information
+        # type.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(

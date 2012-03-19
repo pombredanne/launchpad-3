@@ -22,7 +22,10 @@ from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import (
@@ -32,6 +35,8 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.pillar import (
     IPillarName,
     IPillarNameSet,
+    IPillarPerson,
+    IPillarPersonFactory,
     )
 from lp.registry.interfaces.product import (
     IProduct,
@@ -41,7 +46,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.services.config import config
 from lp.services.database.sqlbase import (
-    cursor,
     SQLBase,
     sqlvalues,
     )
@@ -58,6 +62,7 @@ __all__ = [
     'HasAliasMixin',
     'PillarNameSet',
     'PillarName',
+    'PillarPerson',
     ]
 
 
@@ -116,19 +121,20 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-
         # Retrieve information out of the PillarName table.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+            WHERE (id = (SELECT alias_for FROM PillarName WHERE name=?)
                    OR name=?)
-                AND alias_for IS NULL
+                AND alias_for IS NULL%s
+            LIMIT 1
             """
         if ignore_inactive:
-            query += " AND active IS TRUE"
+            query %= " AND active IS TRUE"
+        else:
+            query %= ""
         name = ensure_unicode(name)
         result = store.execute(query, [name, name])
         row = result.get_one()
@@ -332,3 +338,18 @@ class HasAliasMixin:
             assert pillar_name.alias_for == self_pillar, (
                 "Can't remove an alias of another pillar.")
             store.remove(pillar_name)
+
+
+class PillarPerson:
+
+    implements(IPillarPerson)
+
+    classProvides(IPillarPersonFactory)
+
+    def __init__(self, pillar, person):
+        self.pillar = pillar
+        self.person = person
+
+    @staticmethod
+    def create(pillar, person):
+        return PillarPerson(pillar, person)

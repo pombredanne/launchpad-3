@@ -12,10 +12,7 @@
         .failed {color: red; font-weight: bold;}
         .non-failed {color: green; font-weight: bold;}
         .copy-job-message {
-          -moz-border-radius: 4px 4px 4px 4px;
-          -webkit-border-radius: 4px 4px 4px 4px;
-          -o-border-radius: 4px 4px 4px 4px;
-          border-radius: 4px 4px 4px 4px;
+          border-radius: 5px;
           background: url("/+icing/blue-fade-to-grey") repeat scroll 0 0 #D4E8FF;
           border-color: #666666;
           border-style: solid;
@@ -192,7 +189,7 @@ tr#package-counters p{
           <p>The following information is related to the total published
              packages in the repository (not on your system).</p>
           <div id="package-counters">
-            <p class="discreet">
+            <p>
               Package counters and estimated archive size temporarily
               unavailable.
             </p>

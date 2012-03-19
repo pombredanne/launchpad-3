@@ -2,9 +2,23 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
+
+-- AccessArtifact
+
+COMMENT ON TABLE AccessArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessArtifactGrant.';
+COMMENT ON COLUMN AccessArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessArtifact.branch IS 'The branch that this abstract artifact represents.';
+
+-- AccessArtifactGrant
+
+COMMENT ON TABLE AccessArtifactGrant IS 'A grant for a person to access an artifact.';
+COMMENT ON COLUMN AccessArtifactGrant.artifact IS 'The artifact on which access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantee IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessArtifactGrant.date_created IS 'The date the access was granted.';
 
 -- AccessPolicy
 
@@ -15,19 +29,24 @@ COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Priv
 
 -- AccessPolicyArtifact
 
-COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
-COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
+COMMENT ON TABLE AccessPolicyArtifact IS 'An association between an artifact and a policy. A grant for any related policy grants access to the artifact.';
+COMMENT ON COLUMN AccessPolicyArtifact.artifact IS 'The artifact associated with this policy.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'The policy associated with this artifact.';
+
+-- AccessPolicyGrantFlat
+
+COMMENT ON TABLE AccessPolicyGrantFlat IS 'A fact table for access queries. AccessPolicyGrants are included verbatim, but AccessArtifactGrants are included with their artifacts'' corresponding policies.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.artifact IS 'The artifact on which access is granted. If null, the grant is for the whole policy';
+COMMENT ON COLUMN AccessPolicyGrantFlat.grantee IS 'The person to whom access is granted.';
 
 -- AccessPolicyGrant
 
-COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy''s artifacts.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
 COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
-COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 
 -- Announcement
 
@@ -88,6 +107,7 @@ COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in th
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
 COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
+COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BranchMergeQueue
 COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
@@ -197,6 +217,7 @@ COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by t
 COMMENT ON COLUMN Bug.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 COMMENT ON COLUMN Bug.heat_last_updated IS 'The time this bug''s heat was last updated, or NULL if the heat has never yet been updated.';
 COMMENT ON COLUMN Bug.latest_patch_uploaded IS 'The time when the most recent patch has been attached to this bug or NULL if no patches are attached';
+COMMENT ON COLUMN Bug.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -205,12 +226,6 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
-
--- BugJob
-COMMENT ON TABLE BugJob IS 'Contains references to jobs to be run against Bugs.';
-COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
-COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
-COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- BugMute
 COMMENT ON TABLE BugMute IS 'Mutes for bug notifications.';
@@ -750,6 +765,13 @@ COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs fo
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+
+-- ProductJob
+COMMENT ON TABLE productjob IS 'Contains references to jobs for updating projects and sendd notifications.';
+COMMENT ON COLUMN productjob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN productjob.job_type IS 'The type of job, like 30-day-renewal.';
+COMMENT ON COLUMN productjob.product IS 'The product that is being updated or the maintainers needs notification.';
+COMMENT ON COLUMN productjob.json_data IS 'Data that is specific to the job type, such as text for notifications.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';

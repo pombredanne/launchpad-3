@@ -9,9 +9,11 @@ __all__ = [
     'ArgumentParser',
     'cd',
     'create_lxc',
+    'create_scripts',
     'file_append',
     'file_prepend',
     'get_container_path',
+    'get_user_home',
     'get_user_ids',
     'initialize_host',
     'initialize_lxc',
@@ -28,20 +30,29 @@ __all__ = [
 
 from collections import namedtuple, OrderedDict
 from contextlib import contextmanager
-from email.Utils import parseaddr
+from email.Utils import parseaddr, formataddr
 import argparse
 import os
 import platform
 import pwd
+import re
 import shutil
 import subprocess
 import sys
+import textwrap
 import time
 
-
+APT_REPOSITORIES = (
+    'deb http://archive.ubuntu.com/ubuntu {distro} multiverse',
+    'deb http://archive.ubuntu.com/ubuntu {distro}-updates multiverse',
+    'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
+    'ppa:launchpad/ppa',
+    'ppa:bzr/ppa',
+    )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'language-pack-en']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
+    'python-shell-toolbox']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -80,17 +91,8 @@ lxc.network.link = {interface}
 lxc.network.flags = up
 """
 LXC_PATH = '/var/lib/lxc/'
-LXC_REPOS = (
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid-updates main universe multiverse',
-    'deb http://archive.ubuntu.com/ubuntu '
-    'lucid-security main universe multiverse',
-    'deb http://ppa.launchpad.net/launchpad/ppa/ubuntu lucid main',
-    'deb http://ppa.launchpad.net/bzr/ppa/ubuntu lucid main',
-    )
 RESOLV_FILE = '/etc/resolv.conf'
+SSH_KEY_NAME = 'id_rsa'
 
 
 Env = namedtuple('Env', 'uid gid home')
@@ -139,23 +141,23 @@ def cd(directory):
 
 
 def file_append(filename, line):
-    """Append given `line`, if not present, at the end of `filename`.
+    r"""Append given `line`, if not present, at the end of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     Nothing happens if the file already contains the given `line`::
 
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
 
     A new line is automatically added before the given `line` if it is not
     present at the end of current file content::
@@ -164,9 +166,9 @@ def file_append(filename, line):
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
         >>> f.write('line1')
         >>> f.close()
-        >>> file_append(f.name, 'new line\\n')
+        >>> file_append(f.name, 'new line\n')
         >>> open(f.name).read()
-        'line1\\nnew line\\n'
+        'line1\nnew line\n'
     """
     with open(filename, 'a+') as f:
         content = f.read()
@@ -178,30 +180,30 @@ def file_append(filename, line):
 
 
 def file_prepend(filename, line):
-    """Insert given `line`, if not present, at the beginning of `filename`.
+    r"""Insert given `line`, if not present, at the beginning of `filename`.
 
     Usage example::
 
         >>> import tempfile
         >>> f = tempfile.NamedTemporaryFile('w', delete=False)
-        >>> f.write('line1\\n')
+        >>> f.write('line1\n')
         >>> f.close()
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file starts with the given `line`, nothing happens::
 
-        >>> file_prepend(f.name, 'line0\\n')
+        >>> file_prepend(f.name, 'line0\n')
         >>> open(f.name).read()
-        'line0\\nline1\\n'
+        'line0\nline1\n'
 
     If the file contains the given `line`, but not at the beginning,
     the line is moved on top::
 
-        >>> file_prepend(f.name, 'line1\\n')
+        >>> file_prepend(f.name, 'line1\n')
         >>> open(f.name).read()
-        'line1\\nline0\\n'
+        'line1\nline0\n'
     """
     with open(filename, 'r+') as f:
         lines = f.readlines()
@@ -211,6 +213,22 @@ def file_prepend(filename, line):
             lines.insert(0, line)
             f.seek(0)
             f.writelines(lines)
+
+
+def generate_ssh_keys(path):
+    """Generate ssh key pair, saving them inside the given `directory`.
+
+        >>> generate_ssh_keys('/tmp/id_rsa')
+        0
+        >>> open('/tmp/id_rsa').readlines()[0].strip()
+        '-----BEGIN RSA PRIVATE KEY-----'
+        >>> open('/tmp/id_rsa.pub').read().startswith('ssh-rsa')
+        True
+        >>> os.remove('/tmp/id_rsa')
+        >>> os.remove('/tmp/id_rsa.pub')
+    """
+    return subprocess.call([
+        'ssh-keygen', '-q', '-t', 'rsa', '-N', '', '-f', path])
 
 
 def get_container_path(lxcname, path='', base_path=LXC_PATH):
@@ -251,7 +269,16 @@ def get_user_ids(user):
     return userdata.pw_uid, userdata.pw_gid
 
 
-def ssh(location, user=None, caller=subprocess.call):
+def get_user_home(user):
+    """Return the home directory of the given `user`.
+
+        >>> get_user_home('root')
+        '/root'
+    """
+    return pwd.getpwnam(user).pw_dir
+
+
+def ssh(location, user=None, key=None, caller=subprocess.call):
     """Return a callable that can be used to run ssh shell commands.
 
     The ssh `location` and, optionally, `user` must be given.
@@ -260,13 +287,20 @@ def ssh(location, user=None, caller=subprocess.call):
     The callable internally uses the given `caller`::
 
         >>> def caller(cmd):
-        ...     print cmd
+        ...     print tuple(cmd)
         >>> sshcall = ssh('example.com', 'myuser', caller=caller)
         >>> root_sshcall = ssh('example.com', caller=caller)
         >>> sshcall('ls -l') # doctest: +ELLIPSIS
         ('ssh', '-t', ..., 'myuser@example.com', '--', 'ls -l')
         >>> root_sshcall('ls -l') # doctest: +ELLIPSIS
         ('ssh', '-t', ..., 'example.com', '--', 'ls -l')
+
+    The ssh key path can be optionally provided::
+
+        >>> root_sshcall = ssh('example.com', key='/tmp/foo', caller=caller)
+        >>> root_sshcall('ls -l') # doctest: +ELLIPSIS
+        ('ssh', '-t', ..., '-i', '/tmp/foo', 'example.com', '--', 'ls -l')
+
 
     If the ssh command exits with an error code, an `SSHError` is raised::
 
@@ -280,21 +314,23 @@ def ssh(location, user=None, caller=subprocess.call):
         >>> sshcall = ssh('loc', caller=lambda cmd: 1)
         >>> sshcall('ls -l', ignore_errors=True)
     """
+    sshcmd = [
+        'ssh',
+        '-t',
+        '-t',  # Yes, this second -t is deliberate. See `man ssh`.
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        ]
+    if key is not None:
+        sshcmd.extend(['-i', key])
     if user is not None:
         location = '{}@{}'.format(user, location)
+    sshcmd.extend([location, '--'])
 
     def _sshcall(cmd, ignore_errors=False):
-        sshcmd = (
-            'ssh',
-            '-t',
-            '-t', # Yes, this second -t is deliberate. See `man ssh`.
-            '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null',
-            location,
-            '--', cmd,
-            )
-        if caller(sshcmd) and not ignore_errors:
-            raise SSHError('Error running command: ' + ' '.join(sshcmd))
+        command = sshcmd + [cmd]
+        if caller(command) and not ignore_errors:
+            raise SSHError('Error running command: ' + ' '.join(command))
 
     return _sshcall
 
@@ -306,13 +342,15 @@ def su(user):
     os.setegid(gid)
     os.seteuid(uid)
     current_home = os.getenv('HOME')
-    home = os.path.join(os.path.sep, 'home', user)
+    home = get_user_home(user)
     os.environ['HOME'] = home
-    yield Env(uid, gid, home)
-    os.setegid(os.getgid())
-    os.seteuid(os.getuid())
-    if current_home is not None:
-        os.environ['HOME'] = current_home
+    try:
+        yield Env(uid, gid, home)
+    finally:
+        os.setegid(os.getgid())
+        os.seteuid(os.getuid())
+        if current_home is not None:
+            os.environ['HOME'] = current_home
 
 
 def user_exists(username):
@@ -361,8 +399,9 @@ class ArgumentParser(argparse.ArgumentParser):
                 if option_strings:
                     args.append(option_strings[0])
                 if isinstance(value, list):
-                    value = ','.join(value)
-                args.append(value)
+                    args.extend(value)
+                elif not isinstance(value, bool):
+                    args.append(value)
         return args
 
     def _validate(self, namespace):
@@ -404,17 +443,20 @@ def handle_users(namespace, euid=None):
 
     If lpuser is not provided by namespace, the user name is used::
 
-        >>> namespace = argparse.Namespace(user='myuser', lpuser=None)
+        >>> import getpass
+        >>> username = getpass.getuser()
+
+        >>> namespace = argparse.Namespace(user=username, lpuser=None)
         >>> handle_users(namespace)
-        >>> namespace.lpuser
-        'myuser'
+        >>> namespace.lpuser == username
+        True
 
     This validator populates namespace with `home_dir` and `run_as_root`
     names::
 
         >>> handle_users(namespace, euid=0)
-        >>> namespace.home_dir
-        '/home/myuser'
+        >>> namespace.home_dir == '/home/' + username
+        True
         >>> namespace.run_as_root
         True
 
@@ -434,7 +476,7 @@ def handle_users(namespace, euid=None):
         namespace.user = pwd.getpwuid(euid).pw_name
     if namespace.lpuser is None:
         namespace.lpuser = namespace.user
-    namespace.home_dir = os.path.join(os.path.sep, 'home', namespace.user)
+    namespace.home_dir = get_user_home(namespace.user)
     namespace.run_as_root = not euid
 
 
@@ -484,25 +526,32 @@ def handle_userdata(namespace, whois=bzr_whois):
 
 
 def handle_ssh_keys(namespace):
-    """Handle private and public ssh keys.
+    r"""Handle private and public ssh keys.
 
     Keys contained in the namespace are escaped::
 
-        >>> private = r'PRIVATE\\nKEY'
-        >>> public = r'PUBLIC\\nKEY'
+        >>> private = r'PRIVATE\nKEY'
+        >>> public = r'PUBLIC\nKEY'
         >>> namespace = argparse.Namespace(
-        ...     private_key=private, public_key=public)
+        ...     private_key=private, public_key=public,
+        ...     ssh_key_name='id_rsa', home_dir='/tmp/')
         >>> handle_ssh_keys(namespace)
         >>> namespace.private_key == private.decode('string-escape')
         True
         >>> namespace.public_key == public.decode('string-escape')
         True
 
+    After this handler is called, the ssh key path is present as an attribute
+    of the namespace::
+
+        >>> namespace.ssh_key_path
+        '/tmp/.ssh/id_rsa'
+
     Keys are None if they are not provided and can not be found in the
     current home directory::
 
         >>> namespace = argparse.Namespace(
-        ...     private_key=None, public_key=None,
+        ...     private_key=None, public_key=None, ssh_key_name='id_rsa',
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
         >>> print namespace.private_key
@@ -514,20 +563,21 @@ def handle_ssh_keys(namespace):
     ValidationError will be raised.
 
         >>> namespace = argparse.Namespace(
-        ...     private_key=private, public_key=None,
+        ...     private_key=private, public_key=None, ssh_key_name='id_rsa',
         ...     home_dir='/tmp/__does_not_exists__')
         >>> handle_ssh_keys(namespace) # doctest: +ELLIPSIS
         Traceback (most recent call last):
         ValidationError: arguments private-key...
     """
-    for attr, filename in (
-        ('private_key', 'id_rsa'),
-        ('public_key', 'id_rsa.pub')):
+    namespace.ssh_key_path = os.path.join(
+        namespace.home_dir, '.ssh', namespace.ssh_key_name)
+    for attr, path in (
+        ('private_key', namespace.ssh_key_path),
+        ('public_key', namespace.ssh_key_path + '.pub')):
         value = getattr(namespace, attr)
         if value:
             setattr(namespace, attr, value.decode('string-escape'))
         else:
-            path = os.path.join(namespace.home_dir, '.ssh', filename)
             try:
                 value = open(path).read()
             except IOError:
@@ -616,12 +666,17 @@ parser.add_argument(
          'rather than bzr+ssh.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
-    choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
+    choices=('initialize_host', 'create_scripts', 'create_lxc',
+             'initialize_lxc', 'stop_lxc'),
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
     '-n', '--lxc-name', default=LXC_NAME,
     metavar='LXC_NAME (default={})'.format(LXC_NAME),
     help='The LXC container name.')
+parser.add_argument(
+    '-s', '--ssh-key-name', default=SSH_KEY_NAME,
+    metavar='SSH_KEY_NAME (default={})'.format(SSH_KEY_NAME),
+    help='The ssh key name used to connect to the LXC container.')
 parser.add_argument(
     '-d', '--dependencies-dir', default=DEPENDENCIES_DIR,
     metavar='DEPENDENCIES_DIR (default={})'.format(DEPENDENCIES_DIR),
@@ -642,7 +697,7 @@ parser.validators = (
 
 
 def initialize_host(
-    user, fullname, email, lpuser, private_key, public_key,
+    user, fullname, email, lpuser, private_key, public_key, ssh_key_path,
     dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
@@ -651,11 +706,6 @@ def initialize_host(
     # Create the user (if he does not exist).
     if not user_exists(user):
         subprocess.call(['useradd', '-m', '-s', '/bin/bash', '-U', user])
-    # Generate root ssh keys if they do not exist.
-    if not os.path.exists('/root/.ssh/id_rsa.pub'):
-        subprocess.call([
-            'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
-            '-f', '/root/.ssh/id_rsa'])
     with su(user) as env:
         # Set up the user's ssh directory.  The ssh key must be associated
         # with the lpuser's Launchpad account.
@@ -664,32 +714,28 @@ def initialize_host(
             os.makedirs(ssh_dir)
         # Generate user ssh keys if none are supplied.
         valid_ssh_keys = True
+        pub_key_path = ssh_key_path + '.pub'
         if private_key is None:
-            subprocess.call([
-                'ssh-keygen', '-q', '-t', 'rsa', '-N', '',
-                '-f', os.path.join(ssh_dir, 'id_rsa')])
-            private_key = open(os.path.join(ssh_dir, 'id_rsa')).read()
-            public_key = open(os.path.join(ssh_dir, 'id_rsa.pub')).read()
+            generate_ssh_keys(ssh_key_path)
+            private_key = open(ssh_key_path).read()
+            public_key = open(pub_key_path).read()
             valid_ssh_keys = False
-        priv_file = os.path.join(ssh_dir, 'id_rsa')
-        pub_file = os.path.join(ssh_dir, 'id_rsa.pub')
         auth_file = os.path.join(ssh_dir, 'authorized_keys')
         known_hosts = os.path.join(ssh_dir, 'known_hosts')
         known_host_content = subprocess.check_output([
             'ssh-keyscan', '-t', 'rsa', 'bazaar.launchpad.net'])
         for filename, contents, mode in [
-            (priv_file, private_key, 'w'),
-            (pub_file, public_key, 'w'),
+            (ssh_key_path, private_key, 'w'),
+            (pub_key_path, public_key, 'w'),
             (auth_file, public_key, 'a'),
             (known_hosts, known_host_content, 'a'),
             ]:
             with open(filename, mode) as f:
                 f.write('{}\n'.format(contents))
             os.chmod(filename, 0644)
-        os.chmod(priv_file, 0600)
+        os.chmod(ssh_key_path, 0600)
         # Set up bzr and Launchpad authentication.
-        subprocess.call([
-            'bzr', 'whoami', '"{} <{}>"'.format(fullname, email)])
+        subprocess.call(['bzr', 'whoami', formataddr((fullname, email))])
         if valid_ssh_keys:
             subprocess.call(['bzr', 'lp-login', lpuser])
         # Set up the repository.
@@ -705,7 +751,9 @@ def initialize_host(
     with su(user) as env:
         # Set up source dependencies.
         for subdir in ('eggs', 'yui', 'sourcecode'):
-            os.makedirs(os.path.join(dependencies_dir, subdir))
+            path = os.path.join(dependencies_dir, subdir)
+            if not os.path.exists(path):
+                os.makedirs(path)
     with cd(dependencies_dir):
         with su(user) as env:
             subprocess.call([
@@ -713,7 +761,102 @@ def initialize_host(
                 LP_SOURCE_DEPS, 'download-cache'])
 
 
-def create_lxc(user, lxcname):
+def create_scripts(user, lxcname, ssh_key_path):
+    """Create scripts to update the Launchpad environment and run tests."""
+    # Leases path in lucid differs from the one in oneiric/precise.
+    mapping = {
+        'leases1': get_container_path(
+            lxcname, '/var/lib/dhcp3/dhclient.eth0.leases'),
+        'leases2': get_container_path(
+            lxcname, '/var/lib/dhcp/dhclient.eth0.leases'),
+        'lxcname': lxcname,
+        'pattern':
+            r's/.* ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*/\1/',
+        'ssh_key_path': ssh_key_path,
+        'user': user,
+        }
+    # We need a script that will run the LP build inside LXC.  It is run as
+    # root (see below) but drops root once inside the LXC container.
+    build_script_file = '/usr/local/bin/launchpad-lxc-build'
+    with open(build_script_file, 'w') as script:
+        script.write(textwrap.dedent("""\
+            #!/bin/sh
+            set -ux
+            truncate -c -s0 {leases1}
+            truncate -c -s0 {leases2}
+
+            lxc-start -n {lxcname} -d
+            lxc-wait -n {lxcname} -s RUNNING
+
+            delay=30
+            while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
+            do
+                delay=$(( $delay - 1 ))
+                sleep 1
+            done
+
+            [ -s {leases1} ] && LEASES={leases1} || LEASES={leases2}
+            IP_ADDRESS=`grep fixed-address $LEASES | \\
+                tail -n 1 | sed -r '{pattern}'`
+
+            if [ 0 -eq $? -a -n "$IP_ADDRESS" ]; then
+                for i in $(seq 1 30); do
+                    su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                        -i '{ssh_key_path}' $IP_ADDRESS make -C $PWD schema"
+                    if [ ! 255 -eq $? ]; then
+                        # If ssh returns 255 then its connection failed.
+                        # Anything else is either success (status 0) or a
+                        # failure from whatever we ran over the SSH connection.
+                        # In those cases we want to stop looping, so we break
+                        # here.
+                        break;
+                    fi
+                    sleep 1
+                done
+            else
+                echo "could not get IP address - aborting." >&2
+                echo "content of $LEASES:" >&2
+                cat $LEASES >&2
+            fi
+
+            lxc-stop -n {lxcname}
+            lxc-wait -n {lxcname} -s STOPPED
+            """.format(**mapping)))
+        os.chmod(build_script_file, 0555)
+    # We need a script to test launchpad using LXC ephemeral instances.
+    test_script_file = '/usr/local/bin/launchpad-lxc-test'
+    with open(test_script_file, 'w') as script:
+        # We intentionally generate a very long line for the
+        # lxc-start-ephemeral command below because ssh does not propagate
+        # quotes the way we want.  E.g.,
+        #     touch a; touch b; ssh localhost -- ls "a b"
+        # succeeds, when it should say that the file "a b" does not exist.
+        script.write(textwrap.dedent(re.sub(' {2,}', ' ', """\
+            #!/bin/sh
+            set -uex
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
+                "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
+                --server-args='-screen 0 1024x768x24' \
+                -a $PWD/bin/test --subunit $@"
+            """).format(**mapping)))
+        os.chmod(test_script_file, 0555)
+    # Add a file to sudoers.d that will let the buildbot user run the above.
+    sudoers_file = '/etc/sudoers.d/launchpad-' + user
+    with open(sudoers_file, 'w') as sudoers:
+        sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
+        sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
+        sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
+        # The sudoers must have this mode or it will be ignored.
+        os.chmod(sudoers_file, 0440)
+    # XXX 2012-03-13 frankban bug=944386:
+    #     Disable hardlink restriction. This workaround needs
+    #     to be removed once the kernel bug is resolved.
+    procfile = '/proc/sys/kernel/yama/protected_nonaccess_hardlinks'
+    with open(procfile, 'w') as f:
+        f.write('0\n')
+
+
+def create_lxc(user, lxcname, ssh_key_path):
     """Create the LXC container that will be used for ephemeral instances."""
     # XXX 2012-02-02 gmb bug=925024:
     #     These calls need to be removed once the lxc vs. apparmor bug
@@ -751,16 +894,14 @@ def create_lxc(user, lxcname):
         raise SetupLXCError('Unable to create the LXC container.')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
-    user_authorized_keys = os.path.join(
-        os.path.sep, 'home', user, '.ssh/authorized_keys')
-    with open(user_authorized_keys, 'a') as f:
-        f.write(open('/root/.ssh/id_rsa.pub').read())
+    user_authorized_keys = os.path.expanduser(
+        '~' + user + '/.ssh/authorized_keys')
     dst = get_container_path(lxcname, '/root/.ssh/')
     if not os.path.exists(dst):
         os.makedirs(dst)
     shutil.copy(user_authorized_keys, dst)
     # SSH into the container.
-    sshcall = ssh(lxcname, user)
+    sshcall = ssh(lxcname, user, key=ssh_key_path)
     trials = 60
     while True:
         trials -= 1
@@ -774,26 +915,33 @@ def create_lxc(user, lxcname):
             break
 
 
-def initialize_lxc(user, dependencies_dir, directory, lxcname):
+def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     """Set up the Launchpad development environment inside the LXC container.
     """
-    root_sshcall = ssh(lxcname)
-    sshcall = ssh(lxcname, user)
+    root_sshcall = ssh(lxcname, key=ssh_key_path)
+    sshcall = ssh(lxcname, user, key=ssh_key_path)
     # APT repository update.
-    sources = get_container_path(lxcname, '/etc/apt/sources.list')
-    with open(sources, 'w') as f:
-        f.write('\n'.join(LXC_REPOS))
+    for apt_repository in APT_REPOSITORIES:
+        repository = apt_repository.format(distro=LXC_GUEST_OS)
+        assume_yes = '' if LXC_GUEST_OS == 'lucid' else '-y'
+        root_sshcall('add-apt-repository {} "{}"'.format(
+            assume_yes, repository))
     # XXX frankban 2012-01-13 - Bug 892892: upgrading mountall in LXC
     # containers currently does not work.
     root_sshcall("echo 'mountall hold' | dpkg --set-selections")
     # Upgrading packages.
     root_sshcall(
-        'apt-get update && '
-        'DEBIAN_FRONTEND=noninteractive '
-        'apt-get -y --allow-unauthenticated install language-pack-en')
+        'apt-get update && DEBIAN_FRONTEND=noninteractive LANG=C apt-get -y '
+        'install {}'.format(LP_DEB_DEPENDENCIES))
+    # We install lxc in the guest so that lxc-execute will work on the
+    # container.  We use --no-install-recommends at the recommendation
+    # of the Canonical lxc maintainers because all we need is a file
+    # that the base lxc package installs, and so that packages we
+    # don't need and that might even cause problems inside the
+    # container are not around.
     root_sshcall(
         'DEBIAN_FRONTEND=noninteractive apt-get -y '
-        '--allow-unauthenticated install {}'.format(LP_DEB_DEPENDENCIES))
+        '--no-install-recommends install lxc')
     # User configuration.
     root_sshcall('adduser {} sudo'.format(user))
     pygetgid = 'import pwd; print pwd.getpwnam("{}").pw_gid'.format(user)
@@ -802,8 +950,8 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     # Set up Launchpad dependencies.
     checkout_dir = os.path.join(directory, LP_CHECKOUT)
     sshcall(
-        'cd {} && utilities/update-sourcecode --use-http "{}/sourcecode"'.format(
-        checkout_dir, dependencies_dir))
+        ('cd {} && utilities/update-sourcecode --use-http '
+         '"{}/sourcecode"').format(checkout_dir, dependencies_dir))
     sshcall(
         'cd {} && utilities/link-external-sourcecode "{}"'.format(
         checkout_dir, dependencies_dir))
@@ -825,9 +973,9 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname):
     root_sshcall('cd {} && make install'.format(checkout_dir))
 
 
-def stop_lxc(lxcname):
+def stop_lxc(lxcname, ssh_key_path):
     """Stop the lxc instance named `lxcname`."""
-    ssh(lxcname)('poweroff')
+    ssh(lxcname, key=ssh_key_path)('poweroff')
     timeout = 30
     while timeout:
         try:
@@ -846,13 +994,16 @@ def stop_lxc(lxcname):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    lxc_name, dependencies_dir, directory):
+    lxc_name, ssh_key_path, dependencies_dir, directory):
     function_args_map = OrderedDict((
-        ('initialize_host', (user, fullname, email, lpuser, private_key,
-                             public_key, dependencies_dir, directory)),
-        ('create_lxc', (user, lxc_name)),
-        ('initialize_lxc', (user, dependencies_dir, directory, lxc_name)),
-        ('stop_lxc', (lxc_name,)),
+        ('initialize_host', (
+            user, fullname, email, lpuser, private_key, public_key,
+            ssh_key_path, dependencies_dir, directory)),
+        ('create_scripts', (user, lxc_name, ssh_key_path)),
+        ('create_lxc', (user, lxc_name, ssh_key_path)),
+        ('initialize_lxc', (
+            user, dependencies_dir, directory, lxc_name, ssh_key_path)),
+        ('stop_lxc', (lxc_name, ssh_key_path)),
         ))
     if actions is None:
         actions = function_args_map.keys()
@@ -876,6 +1027,7 @@ if __name__ == '__main__':
             args.public_key,
             args.actions,
             args.lxc_name,
+            args.ssh_key_path,
             args.dependencies_dir,
             args.directory,
             )

@@ -28,6 +28,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    Insert,
     NamedFunc,
     Not,
     Or,
@@ -127,7 +128,6 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -181,8 +181,6 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
-    access_policy_id = Int(name="access_policy")
-    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):
@@ -886,13 +884,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
-        data = []
-        for revid, sequence in revision_id_sequence_pairs:
-            data.append('(%s, %s)' % sqlvalues(revid, sequence))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
-            % data)
+        store.execute(Insert(('revision_id', 'sequence'),
+            table=['RevidSequence'], expr=revision_id_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
@@ -975,12 +968,19 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
+        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
-            (BranchRevision.sequence, Revision.revision_id),
+            columns,
             Revision.id == BranchRevision.revision_id,
-            BranchRevision.branch_id == self.id,
-            BranchRevision.sequence != None)
-        return rows.order_by(Desc(BranchRevision.sequence))
+            BranchRevision.branch_id == self.id)
+        rows = rows.order_by(BranchRevision.sequence)
+        ancestry = set()
+        history = []
+        for sequence, revision_id in rows:
+            ancestry.add(revision_id)
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""
@@ -1122,7 +1122,6 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
-        getUtility(IAccessPolicyArtifactSource).delete(self)
 
         # Now destroy the branch.
         branch_id = self.id

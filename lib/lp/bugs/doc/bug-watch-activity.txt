@@ -114,7 +114,7 @@ Another entry will have been added to the watch's activity property.
     >>> print bug_watch.activity.count()
     3
 
-And this time its result field will record that the the remote bug was
+And this time its result field will record that the remote bug was
 not found.
 
     >>> most_recent_activity = bug_watch.activity.first()

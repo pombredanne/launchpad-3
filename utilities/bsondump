@@ -1,9 +1,0 @@
-#! /usr/bin/python
-
-from pprint import pprint
-import sys
-
-import bson
-
-
-pprint(bson.decode_all(file(sys.argv[1], 'rb').read()))

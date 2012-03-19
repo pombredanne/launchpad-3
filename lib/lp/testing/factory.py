@@ -48,6 +48,7 @@ import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
+from bzrlib.revision import Revision as BzrRevision
 import pytz
 from pytz import UTC
 import simplejson
@@ -73,6 +74,7 @@ from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -139,9 +141,11 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    InformationType,
     )
 from lp.registry.interfaces.accesspolicy import (
-    AccessPolicyType,
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -784,7 +788,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # removing the security proxy as we don't care here.
             naked_team.visibility = visibility
         if email is not None:
-            team.setContactAddress(
+            removeSecurityProxy(team).setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
         if icon is not None:
             naked_team.icon = icon
@@ -844,7 +848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None):
+                      productseries=None, name=None, active=True):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -860,7 +864,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name))
+                      name=name, active=active))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -963,17 +967,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if summary is None:
             summary = self.getUniqueString('summary')
-        product = getUtility(IProductSet).createProduct(
-            owner,
-            name,
-            displayname,
-            title,
-            summary,
-            self.getUniqueString('description'),
-            licenses=licenses,
-            project=project,
-            registrant=registrant,
-            icon=icon)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            product = getUtility(IProductSet).createProduct(
+                owner,
+                name,
+                displayname,
+                title,
+                summary,
+                self.getUniqueString('description'),
+                licenses=licenses,
+                project=project,
+                registrant=registrant,
+                icon=icon)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
@@ -1550,6 +1556,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
+    def makeBzrRevision(self, revision_id=None, parent_ids=None, **kwargs):
+        if revision_id is None:
+            revision_id = self.getUniqueString('revision-id')
+        if parent_ids is None:
+            parent_ids = []
+        return BzrRevision(
+            message=self.getUniqueString('message'),
+            revision_id=revision_id,
+            committer=self.getUniqueString('committer'),
+            parent_ids=parent_ids,
+            timestamp=0, timezone=0, properties=kwargs)
+
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
@@ -1684,7 +1702,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # fromText() creates a bug watch associated with the bug.
             with person_logged_in(owner):
                 getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
-        bugtask = bug.default_bugtask
+        bugtask = removeSecurityProxy(bug).default_bugtask
         if date_closed is not None:
             with person_logged_in(owner):
                 bugtask.transitionToStatus(
@@ -1721,7 +1739,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # Find and return the existing target if one exists.
         if bug is not None and target is not None:
-            existing_bugtask = bug.getBugTask(target)
+            existing_bugtask = removeSecurityProxy(bug).getBugTask(target)
             if existing_bugtask is not None:
                 return existing_bugtask
 
@@ -1760,7 +1778,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distroseries=target.distribution.currentseries,
                     sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
-            prerequisite = bug and bug.getBugTask(prerequisite_target)
+            prerequisite = bug and removeSecurityProxy(bug).getBugTask(
+                prerequisite_target)
             if prerequisite is None:
                 prerequisite = self.makeBugTask(
                     bug, prerequisite_target, publish=publish)
@@ -2103,6 +2122,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spec
 
     makeBlueprint = makeSpecification
+
+    def makeSpecificationWorkItem(self, title=None, specification=None,
+                                  assignee=None, milestone=None, deleted=False,
+                                  status=SpecificationWorkItemStatus.TODO,
+                                  sequence=None):
+        if title is None:
+            title = self.getUniqueString(u'title')
+        if specification is None:
+            specification = self.makeSpecification()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
+        work_item = removeSecurityProxy(specification).newWorkItem(
+            title=title, sequence=sequence, status=status, assignee=assignee,
+            milestone=milestone)
+        work_item.deleted = deleted
+        return work_item
 
     def makeQuestion(self, target=None, title=None,
                      owner=None, description=None, language=None):
@@ -2657,11 +2692,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if purpose == ArchivePurpose.PRIMARY:
             return distribution.main_archive
 
-        archive = getUtility(IArchiveSet).new(
-            owner=owner, purpose=purpose,
-            distribution=distribution, name=name, displayname=displayname,
-            enabled=enabled, require_virtualized=virtualized,
-            description=description)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            archive = getUtility(IArchiveSet).new(
+                owner=owner, purpose=purpose,
+                distribution=distribution, name=name, displayname=displayname,
+                enabled=enabled, require_virtualized=virtualized,
+                description=description)
 
         if private:
             naked_archive = removeSecurityProxy(archive)
@@ -3716,14 +3753,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
-        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
-            source_package_release=source_package_release,
-            processor=processor,
-            distro_arch_series=distroarchseries,
-            status=status,
-            archive=archive,
-            pocket=pocket,
-            date_created=date_created)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+                source_package_release=source_package_release,
+                processor=processor,
+                distro_arch_series=distroarchseries,
+                status=status,
+                archive=archive,
+                pocket=pocket,
+                date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         IStore(binary_package_build).flush()
@@ -3790,10 +3829,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive=archive, distroseries=distroseries,
                 date_uploaded=date_uploaded, **kwargs)
 
-        spph = getUtility(IPublishingSet).newSourcePublication(
-            archive, sourcepackagerelease, distroseries,
-            sourcepackagerelease.component, sourcepackagerelease.section,
-            pocket, ancestor)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        with person_logged_in(admins.teamowner):
+            spph = getUtility(IPublishingSet).newSourcePublication(
+                archive, sourcepackagerelease, distroseries,
+                sourcepackagerelease.component, sourcepackagerelease.section,
+                pocket, ancestor)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
@@ -4345,31 +4386,49 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries, target_pocket,
             package_version=package_version, requester=requester)
 
-    def makeAccessPolicy(self, pillar=None, type=AccessPolicyType.PRIVATE):
+    def makeAccessPolicy(self, pillar=None,
+                         type=InformationType.PROPRIETARY):
         if pillar is None:
             pillar = self.makeProduct()
-        policy = getUtility(IAccessPolicySource).create(pillar, type)
-        IStore(policy).flush()
-        return policy
+        policies = getUtility(IAccessPolicySource).create([(pillar, type)])
+        return policies[0]
 
-    def makeAccessPolicyArtifact(self, concrete=None, policy=None):
+    def makeAccessArtifact(self, concrete=None):
         if concrete is None:
             concrete = self.makeBranch()
-        artifact = getUtility(IAccessPolicyArtifactSource).ensure(concrete)
-        artifact.policy = policy
-        IStore(artifact).flush()
-        return artifact
+        artifacts = getUtility(IAccessArtifactSource).ensure([concrete])
+        return artifacts[0]
 
-    def makeAccessPolicyGrant(self, grantee=None, object=None, grantor=None):
+    def makeAccessPolicyArtifact(self, artifact=None, policy=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        [link] = getUtility(IAccessPolicyArtifactSource).create(
+            [(artifact, policy)])
+        return link
+
+    def makeAccessArtifactGrant(self, artifact=None, grantee=None,
+                                grantor=None):
+        if artifact is None:
+            artifact = self.makeAccessArtifact()
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:
             grantor = self.makePerson()
-        if object is None:
-            object = self.makeAccessPolicy()
-        grant = getUtility(IAccessPolicyGrantSource).grant(
-            grantee, grantor, object)
-        IStore(grant).flush()
+        [grant] = getUtility(IAccessArtifactGrantSource).grant(
+            [(artifact, grantee, grantor)])
+        return grant
+
+    def makeAccessPolicyGrant(self, policy=None, grantee=None, grantor=None):
+        if policy is None:
+            policy = self.makeAccessPolicy()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = self.makePerson()
+        [grant] = getUtility(IAccessPolicyGrantSource).grant(
+            [(policy, grantee, grantor)])
         return grant
 
     def makeFakeFileUpload(self, filename=None, content=None):

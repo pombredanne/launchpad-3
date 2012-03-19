@@ -27,7 +27,6 @@ from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Max,
     Or,
@@ -97,7 +96,9 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
+from lp.registry.enums import InformationType
 from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IBaseDistribution,
     IDerivativeDistribution,
@@ -1764,6 +1765,10 @@ class DistributionSet:
             icon=icon)
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
+        policies = itertools.product(
+            (distro,), (InformationType.USERDATA,
+                InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
         return distro
 
     def getCurrentSourceReleases(self, distro_source_packagenames):
