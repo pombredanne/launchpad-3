@@ -137,10 +137,10 @@ class ProductJobDerived(BaseRunnableJob):
             ]
         if date_since is not None:
             conditions.append(
-                Job.date_created <= date_since
-                )
+                Job.date_created <= date_since)
         if job_type is not None:
-            ProductJob.job_type == job_type,
+            conditions.append(
+                ProductJob.job_type == job_type)
         return DecoratedResultSet(
             IStore(ProductJob).find(
                 ProductJob, *conditions), cls)
