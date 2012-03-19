@@ -48,6 +48,10 @@ APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
     'ppa:launchpad/ppa',
     'ppa:bzr/ppa',
+    # XXX 2012-03-19 frankban bug=955006:
+    #     The yellow PPA contains an updated version of testrepository
+    #     that fixes the encoding issue.
+    'ppa:yellow/ppa',
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
