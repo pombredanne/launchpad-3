@@ -114,3 +114,14 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         jobs = list(FakeProductJob.iterReady())
         self.assertEqual(1, len(jobs))
         self.assertEqual(job_1, jobs[0])
+
+    def test_find_product(self):
+        # Find all the jobs for a product regardless of date or job type.
+        product = self.factory.makeProduct()
+        metadata = {'foo': 'bar'}
+        job_1 = FakeProductJob.create(product, metadata)
+        job_2 = OtherFakeProductJob.create(product, metadata)
+        job_3 = FakeProductJob.create(self.factory.makeProduct(), metadata)
+        jobs = list(ProductJobDerived.find(product=product))
+        self.assertEqual(2, len(jobs))
+        self.assertContentEqual([job_1.id, job_2.id], [job.id for job in jobs])
