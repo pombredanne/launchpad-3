@@ -65,6 +65,13 @@ class FakeProductJob(ProductJobDerived):
     classProvides(IProductNotificstionJobSource)
 
 
+class OtherFakeProductJob(ProductJobDerived):
+    """A class that reuses other interfaces and types for testing."""
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRED
+    implements(IProductNotificationJob)
+    classProvides(IProductNotificstionJobSource)
+
+
 class ProductJobDerivedTestCase(TestCaseWithFactory):
     """Test case for the ProductJobDerived class."""
 
@@ -80,7 +87,7 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
     def test_create_success(self):
         # Create an instance of ProductJobDerived that delegates to
         # ProductJob.
-        product = self.factory.makeProduct('fnord')
+        product = self.factory.makeProduct()
         metadata = {'foo': 'bar'}
         self.assertIs(True, IProductJobSource.providedBy(ProductJobDerived))
         job = FakeProductJob.create(product, metadata)
@@ -95,3 +102,15 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         metadata = {'foo': 'bar'}
         self.assertRaises(
             AttributeError, ProductJobDerived.create, product, metadata)
+
+    def test_iterReady(self):
+        # iterReady finds job in the READY status that are of the same type.
+        product = self.factory.makeProduct()
+        metadata = {'foo': 'bar'}
+        job_1 = FakeProductJob.create(product, metadata)
+        job_2 = FakeProductJob.create(product, metadata)
+        job_2.start()
+        job_3 = OtherFakeProductJob.create(product, metadata)
+        jobs = list(FakeProductJob.iterReady())
+        self.assertEqual(1, len(jobs))
+        self.assertEqual(job_1, jobs[0])
