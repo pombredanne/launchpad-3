@@ -67,8 +67,7 @@ class PillarNavigation(Navigation):
 
     usedfor = IPillar
 
-    #XXX This may get changed to +sharingdetails
-    @stepthrough('+sharing')
+    @stepthrough('+sharingdetails')
     def traverse_details(person_name):
         """Traverse to the sharing details for a given person."""
         from lp.registry.models.pillarperson import PillarPerson
