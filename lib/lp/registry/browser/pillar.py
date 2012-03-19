@@ -11,6 +11,7 @@ __all__ = [
     'PillarBugsMenu',
     'PillarSharingView',
     'PillarPersonSharingView',
+    'PillarNavigationMixin',
     ]
 
 
@@ -46,6 +47,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.pillar import PillarPerson
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import check_permission
@@ -63,17 +66,12 @@ from lp.services.webapp.publisher import (
     )
 
 
-class PillarNavigation(Navigation):
-
-    usedfor = IPillar
+class PillarNavigationMixin:
 
     @stepthrough('+sharingdetails')
-    def traverse_details(person_name):
+    def traverse_details(self, name):
         """Traverse to the sharing details for a given person."""
-        from lp.registry.models.pillarperson import PillarPerson
         person = getUtility(IPersonSet).getByName(name)
-        #XXX: this needs some fancy logic to check that there are policies in
-        #play
         if person is None:
             return None
         return PillarPerson.create(self.context, person)
