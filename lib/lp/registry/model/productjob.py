@@ -176,3 +176,54 @@ class ProductJobDerived(BaseRunnableJob):
             ('product', self.context.product.name),
             ])
         return vars
+
+
+class ProductNotificationJob(ProductJobDerived):
+    """A Job that send an email to the product maintainer."""
+
+    implements(IProductNotificationJob)
+    classProvides(IProductNotificstionJobSource)
+    class_job_type = ProductJobType.REVIEWER_NOTIFICATION
+
+    @classmethod
+    def create(cls, product, email_template_name, subject, reviewer):
+        """See `IProductNotificationJob`."""
+        metadata = {
+            'email_template_name': email_template_name,
+            'subject': subject,
+            'reviewer_id': reviewer.id
+            }
+        return super(ProductNotificationJob, cls).create(product, metadata)
+
+    @property
+    def subject(self):
+        return self.metadata['subject']
+
+    @property
+    def email_template_name(self):
+        return self.metadata['email_template_name']
+
+    @property
+    def reviewer(self):
+        return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
+
+    def getErrorRecipients(self):
+        """See `IPersonMergeJob`."""
+        if self.to_person.is_team:
+            return self.to_person.getTeamAdminsEmailAddresses()
+        else:
+            return [format_address_for_person(self.to_person)]
+
+    def run(self):
+        """Perform the merge."""
+        product_name = self.product.name
+        template_name = self.email_template_name
+        subject = self.subject
+        from_address = get_contact_email_addresses(self.reviewer)
+        log.debug(
+            "%s is sending a %s notification to the %s maintainers",
+            self.log_name, template_name, product_name)
+        self.sendEmailToMaintainer(template_name, subject, from_address)
+        log.debug(
+            "%s sent a %s notification to the %s maintainers",
+            self.log_name, template_name, product_name)
