@@ -262,8 +262,6 @@ Valid names work as expected.
     >>> print rebuild_archive.name
     there-we-go
 
-    >>> login(ANONYMOUS)
-
 Please note that copy archive displayname doesn't follow the name change.
 
     >>> rebuild_archive.displayname
@@ -1348,7 +1346,10 @@ distribution, person name and the PPA name. This method is used in
 Iteration over the own utility is performed against all archives,
 including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
-    >>> archive_purposes = [archive.purpose.name for archive in archive_set]
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     archive_purposes = [
+    ...         archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
     18
 
@@ -1631,9 +1632,11 @@ they exist should never leak. If we copy the package to Celso's private
 PPA the list is not updated.  The same happens for uploaded sources, since
 they are essentially another source publication in this context.
 
-    >>> copy = cprov_cdrkit.copyTo(
-    ...     ubuntu['hoary'], PackagePublishingPocket.RELEASE,
-    ...     cprov_private_ppa)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(cprov):
+    ...     copy = cprov_cdrkit.copyTo(
+    ...         ubuntu['hoary'], PackagePublishingPocket.RELEASE,
+    ...         cprov_private_ppa)
 
     >>> print_latest_uploads()
     cdrkit 1.0 in hoary PENDING mark

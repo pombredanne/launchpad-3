@@ -12,6 +12,7 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
+from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -29,12 +30,14 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -51,6 +54,9 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -72,6 +78,8 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features import getFeatureFlag
+from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
@@ -131,6 +139,7 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+        DatabaseLayer.force_dirty_database()
 
 
 class BulkFoo(Storm):
@@ -994,6 +1003,138 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(0, unreferenced_msgsets.count())
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
+
+    def test_BugHeatUpdater_sees_feature_flag(self):
+        # BugHeatUpdater can see its feature flag even though it's
+        # running in a thread. garbo sets up a feature controller for
+        # each worker.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug()
+        now = datetime.now(UTC)
+        cutoff = now - timedelta(days=1)
+        old_update = now - timedelta(days=2)
+        naked_bug = removeSecurityProxy(bug)
+        naked_bug.heat_last_updated = old_update
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'bugs.heat_updates.cutoff',
+            cutoff.isoformat().decode('ascii')))
+        transaction.commit()
+        self.assertEqual(old_update, naked_bug.heat_last_updated)
+        self.runHourly()
+        self.assertNotEqual(old_update, naked_bug.heat_last_updated)
+
+    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
+        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_SpecificationWorkitemMigrator(self):
+        # When the migration is successful we remove all work-items from the
+        # whiteboard.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct(name='linaro')
+        milestone = self.factory.makeMilestone(product=product)
+        person = self.factory.makePerson()
+        whiteboard = dedent("""
+            Work items for %s:
+            [%s] A single work item: TODO
+
+            Work items:
+            Another work item: DONE
+            """ % (milestone.name, person.name))
+        spec = self.factory.makeSpecification(
+            product=product, whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual('', spec.whiteboard.strip())
+        self.assertEqual(2, spec.work_items.count())
+        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
+            assignee=person, title="A single work item",
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone, specification=spec))
+        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
+            assignee=None, title="Another work item",
+            status=SpecificationWorkItemStatus.DONE,
+            milestone=None, specification=spec))
+
+    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
+        switch_dbuser('testadmin')
+        whiteboard = "Work items:\nA work item: TODO"
+        spec = self.factory.makeSpecification(
+            whiteboard=whiteboard,
+            distribution=getUtility(IDistributionSet)['ubuntu'])
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_SpecificationWorkitemMigrator_parse_error(self):
+        # When we fail to parse any work items in the whiteboard we leave it
+        # untouched and don't create any SpecificationWorkItem entries.
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A work item: TODO
+            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
+            """)
+        product = self.factory.makeProduct(name='linaro')
+        spec = self.factory.makeSpecification(
+            product=product, whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_BugsInformationTypeMigrator(self):
+        # A non-migrated bug will have information_type set correctly.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug(private=True)
+        # Since creating a bug will set information_type, unset it.
+        removeSecurityProxy(bug).information_type = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_BugLegacyAccessMirrorer(self):
+        # Private bugs without corresponding data in the access policy
+        # schema get mirrored.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug(private=True)
+        # Remove the existing mirrored data.
+        getUtility(IAccessArtifactSource).delete([bug])
+        transaction.commit()
+        self.runHourly()
+        # Check that there's an artifact again, and delete it.
+        switch_dbuser('testadmin')
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessArtifactSource).delete([bug])
+        transaction.commit()
+        self.runHourly()
+        # A watermark is kept in memcache, so a second run doesn't
+        # consider the same bug.
+        self.assertContentEqual(
+            [], getUtility(IAccessArtifactSource).find([bug]))
 
 
 class TestGarboTasks(TestCaseWithFactory):

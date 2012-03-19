@@ -26,9 +26,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import FileNavigationMixin
-from lp.services.propertycache import (
-    cachedproperty,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,

@@ -838,8 +838,8 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues',
+    links = ['registered', 'owned', 'subscribed',
+             'active_reviews', 'mergequeues', 'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
@@ -924,6 +924,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             '+activereviews',
             'Active reviews')
 
+    def source_package_recipes(self):
+        return Link(
+            '+recipes',
+            'Source package recipes',
+            enabled=IPerson.providedBy(self.context))
+
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by self.person."""
@@ -974,22 +980,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             'active reviews')
         return Link('+activereviews', text)
 
-    def addbranch(self):
-        if self.user is None:
-            enabled = False
-        else:
-            enabled = self.user.inTeam(self.context)
-        text = 'Register a branch'
-        summary = 'Register a new Bazaar branch'
-        return Link(
-            '+addbranch', text, summary, icon='add', enabled=enabled,
-            site='code')
-
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
 
@@ -1143,7 +1139,6 @@ class ProductBranchesMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'branches'
     links = [
-        'branch_add',
         'list_branches',
         'active_reviews',
         'code_import',
@@ -1152,11 +1147,6 @@ class ProductBranchesMenu(ApplicationMenu):
     extra_attributes = [
         'active_review_count',
         ]
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = 'Register a new Bazaar branch for this project'
-        return Link('+addbranch', text, summary, icon='add', site='code')
 
     def list_branches(self):
         text = 'List branches'

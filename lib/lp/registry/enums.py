@@ -1,19 +1,88 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enums for the Registry app."""
 
 __metaclass__ = type
 __all__ = [
-    'PersonTransferJobType',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
+    'InformationType',
+    'PersonTransferJobType',
+    'SharingPermission',
     ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+
+
+class InformationType(DBEnumeratedType):
+    """Information Type.
+
+    The types used to control which users and teams can see various
+    Launchpad artifacts, including bugs and branches.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can see this information.
+        """)
+
+    UNEMBARGOEDSECURITY = DBItem(2, """
+        Unembargoed Security
+
+        Everyone can see this information pertaining to a resolved security
+        related bug.
+        """)
+
+    EMBARGOEDSECURITY = DBItem(3, """
+        Embargoed Security
+
+        Only users with permission to see the project's security related
+        artifacts can see this information.
+        """)
+
+    USERDATA = DBItem(4, """
+        User Data
+
+        Only users with permission to see the project's artifacts containing
+        user data can see this information.
+        """)
+
+    PROPRIETARY = DBItem(5, """
+        Proprietary
+
+        Only users with permission to see the project's artifacts containing
+        proprietary data can see this information.
+        """)
+
+
+class SharingPermission(DBEnumeratedType):
+    """Sharing permission.
+
+    The level of access granted for a particular access policy.
+    """
+
+    NOTHING = DBItem(1, """
+        Nothing
+
+        Revoke all bug and branch subscriptions.
+        """)
+
+    ALL = DBItem(2, """
+        All
+
+        Share all bugs and branches.
+        """)
+
+    SOME = DBItem(3, """
+        Some
+
+        Share bug and branch subscriptions.
+        """)
 
 
 class DistroSeriesDifferenceStatus(DBEnumeratedType):

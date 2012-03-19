@@ -111,9 +111,11 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> time_delta = timedelta(days=60)
-    >>> bug_11.date_last_updated = bug_11.date_last_updated - time_delta
+    >>> nakedbug = removeSecurityProxy(bug_11)
+    >>> nakedbug.date_last_updated = nakedbug.date_last_updated - time_delta
     >>> flush_database_updates()
     >>> logout()
 

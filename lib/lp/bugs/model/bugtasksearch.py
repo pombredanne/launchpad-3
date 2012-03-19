@@ -59,14 +59,11 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.person import Person
-from lp.services import features
-from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     quote,
-    quote_like,
     sqlvalues,
     )
 from lp.services.propertycache import get_property_cache
@@ -456,7 +453,7 @@ def _build_query(params):
         extra_clauses.append(_build_search_text_clause(params))
 
     if params.fast_searchtext:
-        extra_clauses.append(_build_fast_search_text_clause(params))
+        extra_clauses.append(_build_search_text_clause(params, fast=True))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -819,13 +816,16 @@ def _require_params(params):
     return params
 
 
-def _build_search_text_clause(params):
+def _build_search_text_clause(params, fast=False):
     """Build the clause for searchtext."""
-    assert params.fast_searchtext is None, (
-        'Cannot use fast_searchtext at the same time as searchtext.')
-
-    searchtext_quoted = quote(params.searchtext)
-    searchtext_like_quoted = quote_like(params.searchtext)
+    if fast:
+        assert params.searchtext is None, (
+            'Cannot use searchtext at the same time as fast_searchtext.')
+        searchtext_quoted = quote(params.fast_searchtext)
+    else:
+        assert params.fast_searchtext is None, (
+            'Cannot use fast_searchtext at the same time as searchtext.')
+        searchtext_quoted = quote(params.searchtext)
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
@@ -834,44 +834,7 @@ def _build_search_text_clause(params):
             SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
             ]
 
-    comment_clause = """BugTask.id IN (
-        SELECT BugTask.id
-        FROM BugTask, BugMessage,Message, MessageChunk
-        WHERE BugMessage.bug = BugTask.bug
-            AND BugMessage.message = Message.id
-            AND Message.id = MessageChunk.message
-            AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-    text_search_clauses = [
-        "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-        ]
-    no_targetnamesearch = bool(features.getFeatureFlag(
-        'malone.disable_targetnamesearch'))
-    if not no_targetnamesearch:
-        text_search_clauses.append(
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-            searchtext_like_quoted))
-    # Due to performance problems, whether to search in comments is
-    # controlled by a config option.
-    if config.malone.search_comments:
-        text_search_clauses.append(comment_clause)
-    return "(%s)" % " OR ".join(text_search_clauses)
-
-
-def _build_fast_search_text_clause(params):
-    """Build the clause to use for the fast_searchtext criteria."""
-    assert params.searchtext is None, (
-        'Cannot use searchtext at the same time as fast_searchtext.')
-
-    fast_searchtext_quoted = quote(params.fast_searchtext)
-
-    if params.orderby is None:
-        # Unordered search results aren't useful, so sort by relevance
-        # instead.
-        params.orderby = [
-            SQLConstant("-rank(Bug.fti, ftq(%s))" %
-            fast_searchtext_quoted)]
-
-    return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
+    return "Bug.fti @@ ftq(%s)" % searchtext_quoted
 
 
 def _build_status_clause(status):
@@ -1464,118 +1427,23 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     # part of the WHERE condition (i.e. the bit below.) The
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
-    pillar_privacy_filters = ''
-    if features.getFeatureFlag(
-        'disclosure.private_bug_visibility_cte.enabled'):
-        if features.getFeatureFlag(
-            'disclosure.private_bug_visibility_rules.enabled'):
-            pillar_privacy_filters = """
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, Product
-                WHERE Product.owner IN (SELECT team FROM teams) AND
-                    BugTask.product = Product.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, ProductSeries
-                WHERE ProductSeries.owner IN (SELECT team FROM teams) AND
-                    BugTask.productseries = ProductSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, Distribution
-                WHERE Distribution.owner IN (SELECT team FROM teams) AND
-                    BugTask.distribution = Distribution.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, DistroSeries, Distribution
-                WHERE Distribution.owner IN (SELECT team FROM teams) AND
-                    DistroSeries.distribution = Distribution.id AND
-                    BugTask.distroseries = DistroSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-            """
-        query = """
-            (%(public_bug_filter)s EXISTS (
-                WITH teams AS (
-                    SELECT team from TeamParticipation
-                    WHERE person = %(personid)s
-                )
-                SELECT BugSubscription.bug
-                FROM BugSubscription
-                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
-                    BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask
-                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                    BugTask.bug = Bug.id
-                %(extra_filters)s
-                    ))
-            """ % dict(
-                    personid=quote(user.id),
-                    public_bug_filter=public_bug_filter,
-                    extra_filters=pillar_privacy_filters)
-    else:
-        if features.getFeatureFlag(
-            'disclosure.private_bug_visibility_rules.enabled'):
-            pillar_privacy_filters = """
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, Product
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Product.owner AND
-                    BugTask.product = Product.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, ProductSeries
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = ProductSeries.owner AND
-                    BugTask.productseries = ProductSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, Distribution
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Distribution.owner AND
-                    BugTask.distribution = Distribution.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation, DistroSeries, Distribution
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = Distribution.owner AND
-                    DistroSeries.distribution = Distribution.id AND
-                    BugTask.distroseries = DistroSeries.id AND
-                    BugTask.bug = Bug.id AND
-                    Bug.security_related IS False
-            """ % sqlvalues(personid=user.id)
-        query = """
-            (%(public_bug_filter)s EXISTS (
-                SELECT BugSubscription.bug
-                FROM BugSubscription, TeamParticipation
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = BugSubscription.person AND
-                    BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask, TeamParticipation
-                WHERE TeamParticipation.person = %(personid)s AND
-                    TeamParticipation.team = BugTask.assignee AND
-                    BugTask.bug = Bug.id
-                %(extra_filters)s
-                    ))
-            """ % dict(
-                    personid=quote(user.id),
-                    public_bug_filter=public_bug_filter,
-                    extra_filters=pillar_privacy_filters)
+    query = """
+        (%(public_bug_filter)s EXISTS (
+            WITH teams AS (
+                SELECT team from TeamParticipation
+                WHERE person = %(personid)s
+            )
+            SELECT BugSubscription.bug
+            FROM BugSubscription
+            WHERE BugSubscription.person IN (SELECT team FROM teams) AND
+                BugSubscription.bug = Bug.id
+            UNION ALL
+            SELECT BugTask.bug
+            FROM BugTask
+            WHERE BugTask.assignee IN (SELECT team FROM teams) AND
+                BugTask.bug = Bug.id
+                ))
+        """ % dict(
+                personid=quote(user.id),
+                public_bug_filter=public_bug_filter)
     return query, _make_cache_user_can_view_bug(user)

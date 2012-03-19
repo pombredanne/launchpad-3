@@ -253,8 +253,6 @@ class IBranchPublic(Interface):
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
 
-    access_policy = Attribute("Access policy")
-
 
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
@@ -889,14 +887,19 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def getScannerData():
-        """Retrieve the full history of a branch for the branch scanner.
+        """Retrieve the full ancestry of a branch for the branch scanner.
 
         The branch scanner script is the only place where we need to retrieve
-        all the BranchRevision rows for a branch. Since the history of some
+        all the BranchRevision rows for a branch. Since the ancestry of some
         branches is into the tens of thousands we don't want to materialise
         BranchRevision instances for each of these.
 
-        :return: Iterator over bzr revision-ids in history, newest first.
+        :return: tuple of three items.
+            1. Ancestry set of bzr revision-ids.
+            2. History list of bzr revision-ids. Similar to the result of
+               bzrlib.Branch.revision_history().
+            3. Dictionnary mapping bzr bzr revision-ids to the database ids of
+               the corresponding BranchRevision rows for this branch.
         """
 
     def getInternalBzrUrl():

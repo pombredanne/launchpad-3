@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -170,7 +170,7 @@ class ILinkData(Interface):
 
     hidden = Attribute(
         "Boolean to say whether this link is hidden.  This is separate from "
-        "being enabled and is used to support links which need to be be "
+        "being enabled and is used to support links which need to be "
         "enabled but not viewable in the rendered HTML.  The link may be "
         "changed to visible by JavaScript or some other means.")
 
@@ -233,6 +233,8 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+    detail = Attribute('Detailed text of this breadcrumb.')
 
 
 #

@@ -20,23 +20,16 @@
           </a>
         </li>
         <li>
-          <a href="/people/+me/+addbranch">
-            <img
-               alt="Register a branch"
-               src="/+icing/but-lrg-registerabranch.gif"
-               />
-          </a>
-        </li>
-        <li>
           <a href="/+code-imports/+new" id="new-code-import">
             <img alt="Import your project"
                  src="/+icing/but-lrg-importyourproject.gif"/>
           </a>
         </li>
       </ul>
-      <form class="central" action="/projects/" method="get">
-        <input id="text" type="text" name="text" size="50" />
-        <input type="submit" value="Find a Project" />
+      <form id="search-projects-form" class="central" method="get"
+        tal:attributes="action string:${rooturl}projects">
+        <input type="text" name="text" size="50" />
+        <input type="submit" name="search" value="Find a Project" />
       </form>
       <script type="text/javascript">
           LPJS.use('lp', function (Y) {

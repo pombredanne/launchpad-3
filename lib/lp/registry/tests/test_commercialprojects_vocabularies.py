@@ -1,14 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the commercial projects vocabularies."""
 
 __metaclass__ = type
 
-from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.registry.interfaces.product import (
-    License,
-    )
+from lp.registry.interfaces.product import License
 from lp.registry.vocabularies import CommercialProjectsVocabulary
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.testing import (
@@ -65,7 +62,7 @@ class TestCommProjVocabulary(TestCaseWithFactory):
                                                  len(results)))
 
     def test_searchForTerms_success(self):
-        # Search for for active maintained projects success.
+        # Search for active maintained projects success.
         results = self.vocab.searchForTerms('widget')
         self.assertEqual(
             self.num_commercial, len(results),
@@ -98,23 +95,12 @@ class TestCommProjVocabulary(TestCaseWithFactory):
         self.assertEqual(
             0, len(self.vocab.searchForTerms('norwegian-blue-widget')))
 
-    def test_toTerm_no_subscription(self):
+    def test_toTerm(self):
         # Commercial project terms contain subscription information.
         term = self.vocab.toTerm(self.maintained_project)
         self.assertEqual(self.maintained_project, term.value)
         self.assertEqual('open-widget', term.token)
-        self.assertEqual('Open-widget (no subscription)', term.title)
-
-    def test_toTerm_with_subscription(self):
-        # Commercial project terms contain subscription information.
-        self.factory.makeCommercialSubscription(self.maintained_project)
-        cs = self.maintained_project.commercial_subscription
-        expiration_date = DateTimeFormatterAPI(cs.date_expires).displaydate()
-        term = self.vocab.toTerm(self.maintained_project)
-        self.assertEqual(self.maintained_project, term.value)
-        self.assertEqual('open-widget', term.token)
-        self.assertEqual(
-            'Open-widget (expires %s)' % expiration_date, term.title)
+        self.assertEqual('Open-widget', term.title)
 
     def test_getTermByToken_user(self):
         # The term for a token in the vocabulary is returned for maintained

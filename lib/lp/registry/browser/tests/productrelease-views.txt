@@ -102,7 +102,7 @@ Creating a release for a series
 It is possible to create a release directly from a series, the release's
 milestone can be created via an AJAX command.
 
-The view collects the the required release fields, and adds fields to to
+The view collects the required release fields, and adds fields to to
 set the milestone.
 
     >>> view = create_initialized_view(series, '+addrelease', principal=owner)

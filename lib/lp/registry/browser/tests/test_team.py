@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import contextlib
+
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 import transaction
@@ -12,8 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.browser.team import (
     TeamIndexMenu,
-    TeamOverviewMenu,
     TeamMailingListArchiveView,
+    TeamOverviewMenu,
     )
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
@@ -465,7 +466,7 @@ class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
             ['name', 'displayname'], view.field_names)
 
     def test_init_registry_expert(self):
-        # Registry experts do not see the the displayname field.
+        # Registry experts do not see the displayname field.
         team = self.factory.makeTeam()
         login_celebrity('registry_experts')
         view = create_initialized_view(team, name=self.view_name)
@@ -535,7 +536,7 @@ class TestTeamAddView(TestCaseWithFactory):
             }
         with person_logged_in(team.teamowner):
             with FeatureFixture(self.feature_flag):
-                view = create_initialized_view(
+                create_initialized_view(
                     personset, name=self.view_name, principal=team.teamowner,
                     form=form)
             team = personset.getByName(team_name)
@@ -555,6 +556,22 @@ class TestTeamAddView(TestCaseWithFactory):
                 self.assertNotIn(
                     'visibility',
                     [field.__name__ for field in view.form_fields])
+
+    def test_visibility_is_correct_during_edit(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
+            visibility=PersonVisibility.PRIVATE, owner=owner)
+        product = self.factory.makeProduct(owner=owner)
+        self.factory.makeCommercialSubscription(product)
+        with person_logged_in(owner):
+            url = canonical_url(team)
+        with FeatureFixture(self.feature_flag):
+            browser = self.getUserBrowser(url, user=owner)
+            browser.getLink('Change details').click()
+            self.assertEqual(
+                ['PRIVATE'],
+                browser.getControl(name="field.visibility").value)
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -762,6 +779,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
             view.add_action.success(data={'newmember': member_team})
 
 
+class TeamMembershipViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        team = self.factory.makeTeam(name='pting')
+        view = create_initialized_view(team, name='+members')
+        self.assertEqual('Members', view.page_title)
+        self.assertEqual(u'Members of \u201cPting\u201d', view.label)
+
+
 class TestTeamIndexView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -784,7 +812,7 @@ class TestTeamIndexView(TestCaseWithFactory):
         view = create_initialized_view(self.team, name="+index")
         notifications = view.request.response.notifications
         message = (
-            'Test Team is queued to be be merged or deleted '
+            'Test Team is queued to be merged or deleted '
             'in a few minutes.')
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
