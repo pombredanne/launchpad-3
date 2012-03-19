@@ -157,83 +157,79 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_workitems_added_notification_message(self):
-
         stub.test_emails = []
         spec = self.factory.makeSpecification()
         status = SpecificationWorkItemStatus.TODO
-        new_work_items = [
-            {'title': u'A work item',
-             'status': status,
-             'assignee': None,
-             'milestone': None,
-             'sequence': 0
-             }]
+        new_work_item = {'title': u'A work item',
+                         'status': status,
+                         'assignee': None,
+                         'milestone': None,
+                         'sequence': 0
+                         }
         login_person(spec.owner)
-        spec.updateWorkItems(new_work_items)
+        spec.updateWorkItems([new_work_item])
         # XXX: We shouldn't have to commit here?
         transaction.commit()
+
         self.assertEqual(1, len(stub.test_emails))
-        rationale = ('Work items added:')
+        rationale = '+ %s: %s' % (new_work_item['title'],
+                                  new_work_item['status'].name)
         [email] = stub.test_emails
         # Actual message is part 2 of the e-mail.
         msg = email[2]
         self.assertIn(rationale, msg)
 
     def test_workitems_deleted_notification_message(self):
-
         stub.test_emails = []
         wi = self.factory.makeSpecificationWorkItem()
         login_person(wi.specification.owner)
-
         wi.specification.updateWorkItems([])
         # XXX: We shouldn't have to commit here?
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
-        rationale = (
-            'Work items deleted:')
+        rationale = '- %s: %s' % (wi.title, wi.status.name)
         [email] = stub.test_emails
         # Actual message is part 2 of the e-mail.
         msg = email[2]
         self.assertIn(rationale, msg)
 
     def test_workitems_changed_notification_message(self):
-
         spec = self.factory.makeSpecification()
         original_status = SpecificationWorkItemStatus.TODO
         new_status = SpecificationWorkItemStatus.DONE
-        original_work_items = [
-            {'title': u'The same work item',
-             'status': original_status,
-             'assignee': None,
-             'milestone': None,
-             'sequence': 0
-             }]
-        new_work_items = [
-            {'title': u'The same work item',
-             'status': new_status,
-             'assignee': None,
-             'milestone': None,
-             'sequence': 0
-             }]
+        original_work_item = {'title': u'The same work item',
+                               'status': original_status,
+                               'assignee': None,
+                               'milestone': None,
+                               'sequence': 0
+                               }
+        new_work_item = {'title': u'The same work item',
+                          'status': new_status,
+                          'assignee': None,
+                          'milestone': None,
+                          'sequence': 0
+                          }
         login_person(spec.owner)
-        spec.updateWorkItems(original_work_items)
+        spec.updateWorkItems([original_work_item])
         # XXX: We shouldn't have to commit here?
         transaction.commit()
 
         stub.test_emails = []
-
-        spec.updateWorkItems(new_work_items)
+        spec.updateWorkItems([new_work_item])
         # XXX: We shouldn't have to commit here?
         transaction.commit()
 
-
         self.assertEqual(1, len(stub.test_emails))
-        rationale = ('Work items changed:')
+        rationale_removed = '- %s: %s' % (original_work_item['title'],
+                                          original_work_item['status'].name)
+        rationale_added = '+ %s: %s' % (new_work_item['title'],
+                                        new_work_item['status'].name)
         [email] = stub.test_emails
         # Actual message is part 2 of the e-mail.
         msg = email[2]
-        self.assertIn(rationale, msg)
+        self.assertIn(rationale_removed, msg)
+        self.assertIn(rationale_added, msg)
 
 
 class TestSpecificationWorkItems(TestCaseWithFactory):

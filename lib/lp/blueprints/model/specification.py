@@ -349,7 +349,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # It seems that we have to commit, otherwise there is no delta.
         transaction.commit()
         notify(ObjectModifiedEvent(self, old_spec,
-                                   edited_fields=['work_items']))
+                                   edited_fields=['workitems_text']))
 
 
     def setTarget(self, target):
@@ -621,13 +621,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard"))
+                               "whiteboard", "workitems_text"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
-        delta.recordListAddedAndRemoved("work_items",
-                                        "work_items_added",
-                                        "work_items_deleted")
         if delta.changes:
             changes = delta.changes
             changes["specification"] = self
