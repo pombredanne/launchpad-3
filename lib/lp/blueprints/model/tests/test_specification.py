@@ -5,11 +5,15 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
 import transaction
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from lp.app.validators import LaunchpadValidationError
@@ -159,6 +163,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
     def test_workitems_added_notification_message(self):
         stub.test_emails = []
         spec = self.factory.makeSpecification()
+        old_spec = Snapshot(spec, providing=providedBy(spec))
         status = SpecificationWorkItemStatus.TODO
         new_work_item = {'title': u'A work item',
                          'status': status,
@@ -166,14 +171,17 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
                          'milestone': None,
                          'sequence': 0
                          }
+
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
-        # XXX: We shouldn't have to commit here?
+        notify(ObjectModifiedEvent(spec, old_spec,
+                                   edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
-        rationale = '+ %s: %s' % (new_work_item['title'],
-                                  new_work_item['status'].name)
+        rationale = 'Work items set to:\nWork items:\n%s: %s' % (
+            new_work_item['title'],
+            new_work_item['status'].name)
         [email] = stub.test_emails
         # Actual message is part 2 of the e-mail.
         msg = email[2]
@@ -182,9 +190,12 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
     def test_workitems_deleted_notification_message(self):
         stub.test_emails = []
         wi = self.factory.makeSpecificationWorkItem()
-        login_person(wi.specification.owner)
-        wi.specification.updateWorkItems([])
-        # XXX: We shouldn't have to commit here?
+        spec = wi.specification
+        old_spec = Snapshot(spec, providing=providedBy(spec))
+        login_person(spec.owner)
+        spec.updateWorkItems([])
+        notify(ObjectModifiedEvent(spec, old_spec,
+                                   edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
@@ -212,12 +223,12 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
                           }
         login_person(spec.owner)
         spec.updateWorkItems([original_work_item])
-        # XXX: We shouldn't have to commit here?
-        transaction.commit()
+        old_spec = Snapshot(spec, providing=providedBy(spec))
 
         stub.test_emails = []
         spec.updateWorkItems([new_work_item])
-        # XXX: We shouldn't have to commit here?
+        notify(ObjectModifiedEvent(spec, old_spec,
+                                   edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))

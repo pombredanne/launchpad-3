@@ -16,7 +16,6 @@ from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
     )
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.lifecycle.objectdelta import ObjectDelta
 from sqlobject import (
     BoolCol,
@@ -34,10 +33,7 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import (
-    implements,
-    providedBy,
-)
+from zope.interface import implements
 
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
@@ -303,7 +299,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def updateWorkItems(self, new_work_items):
         """See ISpecification."""
-        old_spec = Snapshot(self, providing=providedBy(self))
         # First mark work items with titles that are no longer present as
         # deleted.
         self._deleteWorkItemsNotMatching(
@@ -340,17 +335,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
                         "%s does not belong to this spec's target (%s)" %
                             (milestone.displayname, self.target.name))
                 existing_wi.milestone = milestone
-                # TODO: We need to notify() that the work item properties may
-                #have changed.
 
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
                              item['assignee'], item['milestone'])
-        # It seems that we have to commit, otherwise there is no delta.
+        # XXX: without this commit, we won't get notifications for just
+        # adding work items. In complicated edits such as reordering and
+        # switching entire work items blocks we get weird diffs.
         transaction.commit()
-        notify(ObjectModifiedEvent(self, old_spec,
-                                   edited_fields=['workitems_text']))
-
 
     def setTarget(self, target):
         """See ISpecification."""
