@@ -162,3 +162,10 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         jobs = list(ProductJobDerived.find(product, date_since=seven_days_ago))
         self.assertEqual(2, len(jobs))
         self.assertContentEqual([job_2.id, job_3.id], [job.id for job in jobs])
+
+    def test_log_name(self):
+        # The log_name is the name of the implementing class.
+        product = self.factory.makeProduct('fnord')
+        metadata = {'foo': 'bar'}
+        job = FakeProductJob.create(product, metadata)
+        self.assertEqual('FakeProductJob', job.log_name)
