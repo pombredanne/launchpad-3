@@ -60,7 +60,6 @@ from lp.services.webapp import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
-    Navigation,
     NavigationMenu,
     stepthrough,
     )
@@ -310,7 +309,7 @@ class PillarSharingView(LaunchpadView):
 
 
 class PillarPersonSharingView(LaunchpadView):
-    
+
     page_title = "Person or team"
     label = "Information shared with person or team"
 

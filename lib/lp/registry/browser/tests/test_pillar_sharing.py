@@ -45,10 +45,12 @@ class PillarSharingDetailsMixin:
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(product=self.pillar, private=True)
             elif self.pillar_type == 'distribution':
-                bug = self.factory.makeBug(distribution=self.pillar, private=True)
+                bug = self.factory.makeBug(
+                    distribution=self.pillar, private=True)
             artifact = self.factory.makeAccessArtifact(concrete=bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
-            self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=policy)
             self.factory.makeAccessArtifactGrant(
                 artifact=artifact, grantee=person, grantor=self.pillar.owner)
 
@@ -79,7 +81,7 @@ class PillarSharingDetailsMixin:
             self.assertRaises(NotFound, browser.open, url)
 
     def test_init_without_feature_flag(self):
-        # We need a feature flag to enable the view.  pillarperson = self.getPillarPerson()
+        # We need a feature flag to enable the view.
         pillarperson = self.getPillarPerson()
         self.assertRaises(
             Unauthorized, create_initialized_view, pillarperson, '+index')
@@ -104,7 +106,6 @@ class TestProductSharingDetailsView(
         self.pillar = self.factory.makeProduct(
             owner=self.owner, driver=self.driver)
         login_person(self.driver)
-
 
 
 class PillarSharingViewTestMixin:
