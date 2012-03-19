@@ -154,11 +154,11 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct()
         metadata = {'foo': 'bar'}
         job_1 = FakeProductJob.create(product, metadata)
-        removeSecurityProxy(job_1.context.job).date_created = thirty_days_ago
+        removeSecurityProxy(job_1.job).date_created = thirty_days_ago
         job_2 = FakeProductJob.create(product, metadata)
-        removeSecurityProxy(job_2.context.job).date_created = seven_days_ago
+        removeSecurityProxy(job_2.job).date_created = seven_days_ago
         job_3 = OtherFakeProductJob.create(product, metadata)
-        removeSecurityProxy(job_3.context.job).date_created = now
+        removeSecurityProxy(job_3.job).date_created = now
         jobs = list(ProductJobDerived.find(product, date_since=seven_days_ago))
         self.assertEqual(2, len(jobs))
         self.assertContentEqual([job_2.id, job_3.id], [job.id for job in jobs])
