@@ -159,18 +159,6 @@ class ProductJobDerived(BaseRunnableJob):
     def log_name(self):
         return self.__class__.__name__
 
-    def sendEmailToMaintainer(self, template_name, subject, from_address):
-        email_template = get_email_template(
-            "%s.txt" % template_name, app='registry')
-        if self.product.owner.is_team:
-            addresses = self.product.owner.getTeamAdminsEmailAddresses()
-        else:
-            addresses = get_contact_email_addresses(self.product.owner)
-        for address in addresses:
-            msg = MailWrapper().format(
-                email_template % self.metadata, force_wrap=True)
-            simple_sendmail(from_address, address, subject, msg)
-
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
@@ -215,6 +203,18 @@ class ProductNotificationJob(ProductJobDerived):
             return self.to_person.getTeamAdminsEmailAddresses()
         else:
             return [format_address_for_person(self.to_person)]
+
+    def sendEmailToMaintainer(self, template_name, subject, from_address):
+        email_template = get_email_template(
+            "%s.txt" % template_name, app='registry')
+        if self.product.owner.is_team:
+            addresses = self.product.owner.getTeamAdminsEmailAddresses()
+        else:
+            addresses = get_contact_email_addresses(self.product.owner)
+        for address in addresses:
+            msg = MailWrapper().format(
+                email_template % self.metadata, force_wrap=True)
+            simple_sendmail(from_address, address, subject, msg)
 
     def run(self):
         """Perform the merge."""
