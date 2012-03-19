@@ -31,6 +31,35 @@ ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
+class PillarSharingDetailsMixin:
+    """Test the pillar sharing details view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init_without_feature_flag(self):
+        # We need a feature flag to enable the view.
+        self.assertRaises(
+            Unauthorized, create_initialized_view, self.pillar, '+sharing')
+
+    def test_init_with_feature_flag(self):
+        # The view works with a feature flag.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_initialized_view(self.pillar, '+sharing')
+            self.assertEqual('Sharing', view.page_title)
+
+
+class TestProductSharingDetailsView(
+    TestCaseWithFactory, PillarSharingDetailsMixin):
+
+    def setUp(self):
+        super(TestProductSharingDetailsView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(
+            owner=self.owner, driver=self.driver)
+        login_person(self.driver)
+
+
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
