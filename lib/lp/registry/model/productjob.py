@@ -34,6 +34,8 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
+    IProductNotificationJob,
+    IProductNotificstionJobSource,
     )
 from lp.registry.model.product import Product
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -107,7 +109,7 @@ class ProductJobDerived(BaseRunnableJob):
 
     delegates(IProductJob)
     classProvides(IProductJobSource)
-    class_job_type = None
+    #class_job_type = None
 
     def __init__(self, job):
         self.context = job

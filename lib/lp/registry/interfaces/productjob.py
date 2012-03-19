@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IProductJob',
     'IProductJobSource',
+    'IProductNotificationJob',
+    'IProductNotificstionJobSource',
     ]
 
 from zope.interface import Attribute
@@ -16,6 +18,8 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.registry.interfaces.product import IProduct
+
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
@@ -37,7 +41,7 @@ class IProductJob(IRunnableJob):
 
     product = Object(
         title=_('The product the job is for'),
-        vocabulary='Product',
+        schema=IProduct,
         required=True)
 
     metadata = Attribute('A dict of data for the job')
@@ -63,3 +67,11 @@ class IProductJobSource(IJobSource):
             to be a class name.
         :return: A `ResultSet` yielding `IProductJob`.
         """
+
+
+class IProductNotificationJob(IProductJob):
+    """A job then sends a notification about a product."""
+
+
+class IProductNotificstionJobSource(IProductJobSource):
+    """An interface for creating and finding `IProductNotificationJob`s."""

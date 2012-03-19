@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifferenceType',
     'InformationType',
     'PersonTransferJobType',
+    'ProductJobType',
     'SharingPermission',
     ]
 
