@@ -169,3 +169,12 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         metadata = {'foo': 'bar'}
         job = FakeProductJob.create(product, metadata)
         self.assertEqual('FakeProductJob', job.log_name)
+
+    def test_getOopsVars(self):
+        # The project name is added to the oops vars.
+        product = self.factory.makeProduct('fnord')
+        metadata = {'foo': 'bar'}
+        job = FakeProductJob.create(product, metadata)
+        oops_vars = job.getOopsVars()
+        self.assertIs(True, len(oops_vars) > 1)
+        self.assertIn(('product', product.name), oops_vars)
