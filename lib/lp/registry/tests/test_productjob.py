@@ -22,8 +22,6 @@ from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
-    IProductNotificationJob,
-    IProductNotificstionJobSource,
     )
 from lp.registry.model.productjob import (
     ProductJob,
@@ -66,18 +64,26 @@ class ProductJobTestCase(TestCaseWithFactory):
         self.assertEqual(metadata, product_job.metadata)
 
 
+class IProductThingJob(IProductJob):
+    """An interface for testing derived job classes."""
+
+
+class IProductThingJobSource(IProductJobSource):
+    """An interface for testing derived job source classes."""
+
+
 class FakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
-    implements(IProductNotificationJob)
-    classProvides(IProductNotificstionJobSource)
+    implements(IProductThingJob)
+    classProvides(IProductThingJobSource)
 
 
 class OtherFakeProductJob(ProductJobDerived):
     """A class that reuses other interfaces and types for testing."""
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
-    implements(IProductNotificationJob)
-    classProvides(IProductNotificstionJobSource)
+    implements(IProductThingJob)
+    classProvides(IProductThingJobSource)
 
 
 class ProductJobDerivedTestCase(TestCaseWithFactory):
@@ -118,7 +124,7 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         job_1 = FakeProductJob.create(product, metadata)
         job_2 = FakeProductJob.create(product, metadata)
         job_2.start()
-        job_3 = OtherFakeProductJob.create(product, metadata)
+        OtherFakeProductJob.create(product, metadata)
         jobs = list(FakeProductJob.iterReady())
         self.assertEqual(1, len(jobs))
         self.assertEqual(job_1, jobs[0])
@@ -129,7 +135,7 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         metadata = {'foo': 'bar'}
         job_1 = FakeProductJob.create(product, metadata)
         job_2 = OtherFakeProductJob.create(product, metadata)
-        job_3 = FakeProductJob.create(self.factory.makeProduct(), metadata)
+        FakeProductJob.create(self.factory.makeProduct(), metadata)
         jobs = list(ProductJobDerived.find(product=product))
         self.assertEqual(2, len(jobs))
         self.assertContentEqual([job_1.id, job_2.id], [job.id for job in jobs])
@@ -140,7 +146,7 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         metadata = {'foo': 'bar'}
         job_1 = FakeProductJob.create(product, metadata)
         job_2 = FakeProductJob.create(product, metadata)
-        job_3 = OtherFakeProductJob.create(product, metadata)
+        OtherFakeProductJob.create(product, metadata)
         jobs = list(ProductJobDerived.find(
             product, job_type=ProductJobType.REVIEWER_NOTIFICATION))
         self.assertEqual(2, len(jobs))

@@ -109,7 +109,6 @@ class ProductJobDerived(BaseRunnableJob):
 
     delegates(IProductJob)
     classProvides(IProductJobSource)
-    #class_job_type = None
 
     def __init__(self, job):
         self.context = job
