@@ -12,7 +12,9 @@ from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.services import IService
+from lp.registry.model.pillar import PillarPerson
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -36,20 +38,45 @@ class PillarSharingDetailsMixin:
 
     layer = DatabaseFunctionalLayer
 
+    def getPillarPerson(self, person=None, with_sharing=True):
+        if person is None:
+            person = self.factory.makePerson()
+        if with_sharing:
+            if self.pillar_type == 'product':
+                bug = self.factory.makeBug(product=self.pillar, private=True)
+            elif self.pillar_type == 'distribution':
+                bug = self.factory.makeBug(distribution=self.pillar, private=True)
+            artifact = self.factory.makeAccessArtifact(concrete=bug)
+            policy = self.factory.makeAccessPolicy(pillar=self.pillar)
+            self.factory.makeAccessPolicyArtifact(artifact=artifact, policy=policy)
+            self.factory.makeAccessArtifactGrant(
+                artifact=artifact, grantee=person, grantor=self.pillar.owner)
+
+        return PillarPerson(self.pillar, person)
+
+    def test_not_found_without_policy_link(self):
+        # If you attempt to find a PillarPerson's sharing details where no
+        # sharing exists, you get notfound.
+        pass
+
     def test_init_without_feature_flag(self):
         # We need a feature flag to enable the view.
+        pillarperson = self.getPillarPerson()
         self.assertRaises(
-            Unauthorized, create_initialized_view, self.pillar, '+sharing')
+            Unauthorized, create_initialized_view, pillarperson, '+index')
 
     def test_init_with_feature_flag(self):
         # The view works with a feature flag.
         with FeatureFixture(ENABLED_FLAG):
-            view = create_initialized_view(self.pillar, '+sharing')
-            self.assertEqual('Sharing', view.page_title)
+            pillarperson = self.getPillarPerson()
+            view = create_initialized_view(pillarperson, '+index')
+            self.assertEqual(pillarperson.person.displayname, view.page_title)
 
 
 class TestProductSharingDetailsView(
     TestCaseWithFactory, PillarSharingDetailsMixin):
+
+    pillar_type = 'product'
 
     def setUp(self):
         super(TestProductSharingDetailsView, self).setUp()
@@ -58,6 +85,7 @@ class TestProductSharingDetailsView(
         self.pillar = self.factory.makeProduct(
             owner=self.owner, driver=self.driver)
         login_person(self.driver)
+
 
 
 class PillarSharingViewTestMixin:
