@@ -108,6 +108,19 @@ class TestProductSharingDetailsView(
         login_person(self.driver)
 
 
+class TestDistributionSharingDetailsView(
+    TestCaseWithFactory, PillarSharingDetailsMixin):
+
+    pillar_type = 'distribution'
+
+    def setUp(self):
+        super(TestDistributionSharingDetailsView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(
+            owner=self.owner, driver=self.driver)
+        login_person(self.driver)
+
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
