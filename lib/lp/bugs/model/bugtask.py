@@ -1403,24 +1403,11 @@ class BugTaskSet:
     def getBugTaskPeople(self, bugtasks):
         """See `IBugTaskSet`"""
         # Import locally to avoid circular imports.
-        from lp.registry.model.person import Person
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugtask import BugTask
-        bugtask_ids = set(bugtask.id for bugtask in bugtasks)
-        people_ids = Union(
-            Select(
-                Person.id,
-                And(Bug.owner == Person.id,
-                BugTask.bug == Bug.id,
-                BugTask.id.is_in(bugtask_ids))),
-            Select(
-                Person.id,
-                And(BugTask.assignee == Person.id,
-                BugTask.id.is_in(bugtask_ids))),
-            distinct=True)
-        people = IStore(Person).find(
-            Person,
-            Person.id.is_in(people_ids))
+        from lp.registry.interfaces.person import IPersonSet
+        people_ids = set(
+            [bugtask.assigneeID for bugtask in bugtasks] +
+            [bugtask.bug.ownerID for bugtask in bugtasks])
+        people = getUtility(IPersonSet).getPrecachedPersonsFromIDs(people_ids)
         return dict(
             (person.id, person) for person in people)
 
