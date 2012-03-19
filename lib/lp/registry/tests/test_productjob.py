@@ -5,10 +5,18 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+import pytz
+
 from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
@@ -137,3 +145,20 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
             product, job_type=ProductJobType.REVIEWER_NOTIFICATION))
         self.assertEqual(2, len(jobs))
         self.assertContentEqual([job_1.id, job_2.id], [job.id for job in jobs])
+
+    def test_find_date_since(self):
+        # Find all the jobs for a product since a date regardless of job_type.
+        now = datetime.now(pytz.utc)
+        seven_days_ago = now - timedelta(7)
+        thirty_days_ago = now - timedelta(30)
+        product = self.factory.makeProduct()
+        metadata = {'foo': 'bar'}
+        job_1 = FakeProductJob.create(product, metadata)
+        removeSecurityProxy(job_1.context.job).date_created = thirty_days_ago
+        job_2 = FakeProductJob.create(product, metadata)
+        removeSecurityProxy(job_2.context.job).date_created = seven_days_ago
+        job_3 = OtherFakeProductJob.create(product, metadata)
+        removeSecurityProxy(job_3.context.job).date_created = now
+        jobs = list(ProductJobDerived.find(product, date_since=seven_days_ago))
+        self.assertEqual(2, len(jobs))
+        self.assertContentEqual([job_2.id, job_3.id], [job.id for job in jobs])

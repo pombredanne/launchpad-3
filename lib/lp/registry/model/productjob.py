@@ -137,7 +137,7 @@ class ProductJobDerived(BaseRunnableJob):
             ]
         if date_since is not None:
             conditions.append(
-                Job.date_created <= date_since)
+                Job.date_created >= date_since)
         if job_type is not None:
             conditions.append(
                 ProductJob.job_type == job_type)
