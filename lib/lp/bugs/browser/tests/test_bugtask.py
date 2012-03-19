@@ -1802,6 +1802,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
             bugtask = bug.default_bugtask
     else:
         owner = bugtask.bug.owner
+    bugtask = removeSecurityProxy(bugtask)
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
