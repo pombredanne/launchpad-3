@@ -107,6 +107,7 @@ COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in th
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
 COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
+COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BranchMergeQueue
 COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
@@ -216,6 +217,7 @@ COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by t
 COMMENT ON COLUMN Bug.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 COMMENT ON COLUMN Bug.heat_last_updated IS 'The time this bug''s heat was last updated, or NULL if the heat has never yet been updated.';
 COMMENT ON COLUMN Bug.latest_patch_uploaded IS 'The time when the most recent patch has been attached to this bug or NULL if no patches are attached';
+COMMENT ON COLUMN Bug.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -763,6 +765,13 @@ COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs fo
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+
+-- ProductJob
+COMMENT ON TABLE productjob IS 'Contains references to jobs for updating projects and sendd notifications.';
+COMMENT ON COLUMN productjob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN productjob.job_type IS 'The type of job, like 30-day-renewal.';
+COMMENT ON COLUMN productjob.product IS 'The product that is being updated or the maintainers needs notification.';
+COMMENT ON COLUMN productjob.json_data IS 'Data that is specific to the job type, such as text for notifications.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';

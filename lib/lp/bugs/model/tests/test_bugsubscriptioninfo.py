@@ -13,7 +13,7 @@ from zope.component import queryAdapter
 from zope.security.checker import getChecker
 
 from lp.app.interfaces.security import IAuthorization
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.model.bug import (
     BugSubscriberSet,
     BugSubscriptionInfo,

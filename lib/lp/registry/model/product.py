@@ -15,6 +15,7 @@ __all__ = [
 import calendar
 import datetime
 import httplib
+import itertools
 import operator
 
 from lazr.delegates import delegates
@@ -114,7 +115,9 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.enums import InformationType
 from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -771,6 +774,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
+        if (License.OTHER_PROPRIETARY in licenses
+            and self.commercial_subscription is None):
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            now = datetime.datetime.now(pytz.UTC)
+            date_expires = now + datetime.timedelta(days=30)
+            sales_system_id = 'complimentary-30-day-%s' % now
+            whiteboard = (
+                "Complimentary 30 day subscription. -- Launchpad %s" %
+                now.date().isoformat())
+            subscription = CommercialSubscription(
+                product=self, date_starts=now, date_expires=date_expires,
+                registrant=lp_janitor, purchaser=lp_janitor,
+                sales_system_id=sales_system_id, whiteboard=whiteboard)
+            get_property_cache(self).commercial_subscription = subscription
+        # Do not use a snapshot because the past is unintersting.
+        notify(ObjectModifiedEvent(self, self, edited_fields=['licenses']))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -1485,6 +1504,12 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
+
+        # Add default AccessPolicies.
+        policies = itertools.product(
+            (product,), (InformationType.USERDATA,
+                InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
 
         return product
 
