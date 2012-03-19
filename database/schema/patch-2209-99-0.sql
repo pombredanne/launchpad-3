@@ -1,1 +1,0 @@
-ALTER TABLE BugTag ADD CONSTRAINT bugtag__bug__fk FOREIGN KEY (bug) REFERENCES Bug;
