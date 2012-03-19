@@ -124,7 +124,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonVisibility,
     )
-from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarPerson,
+    )
 from lp.registry.interfaces.poll import (
     IPoll,
     IPollOption,
@@ -335,6 +338,17 @@ class ViewPillar(AuthorizationBase):
             return (user.in_commercial_admin or
                     user.in_admin or
                     user.in_registry_experts)
+
+
+class PillarPersonSharingDriver(AuthorizationBase):
+    usedfor = IPillarPerson
+    permission = 'launchpad.Driver'
+
+    def checkAuthenticated(self, user):
+        """The Admins & Commercial Admins can see inactive pillars."""
+        return (user.in_admin or
+                user.isOwner(self.obj.target) or
+                user.isOneOfDrivers(self.obj.target))
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):

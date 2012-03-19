@@ -1434,7 +1434,7 @@
         attribute_to_parent="pillar"/>
     <browser:page
         for="lp.registry.interfaces.pillar.IPillarPerson"
-        permission="zope.Public"
+        permission="launchpad.Driver"
         name="+index"
         class="lp.registry.browser.pillar.PillarPersonSharingView"
         template="../templates/pillar-sharing-details.pt"/>
