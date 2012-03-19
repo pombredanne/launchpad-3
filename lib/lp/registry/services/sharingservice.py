@@ -92,11 +92,13 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = ap_grant_flat.findGranteesByPolicy(
-            policies, grantees)
+            policies, grantees).order_by(
+                "person_sort_key(Person.displayname, Person.name)")
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
+        browser_request = IWebBrowserOriginatingRequest(request)
         for (grantee, policy, sharing_permission) in grant_permissions:
             if not grantee.id in person_by_id:
                 person_data = {
@@ -105,7 +107,6 @@ class SharingService:
                     'display_name': grantee.displayname,
                     'self_link': absoluteURL(grantee, request),
                     'permissions': {}}
-                browser_request = IWebBrowserOriginatingRequest(request)
                 person_data['web_link'] = absoluteURL(grantee, browser_request)
                 person_by_id[grantee.id] = person_data
                 result.append(person_data)
