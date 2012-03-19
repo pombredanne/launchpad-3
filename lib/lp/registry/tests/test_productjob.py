@@ -5,13 +5,25 @@
 
 __metaclass__ = type
 
+from zope.interface import (
+    classProvides,
+    implements,
+    )
+
 from lp.registry.enums import ProductJobType
+from lp.registry.interfaces.productjob import (
+    IProductNotificationJob,
+    IProductNotificstionJobSource,
+    )
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class ProductJobTestCase(TestCaseWithFactory):
@@ -44,15 +56,29 @@ class ProductJobTestCase(TestCaseWithFactory):
         self.assertEqual(metadata, product_job.metadata)
 
 
+class FakeProductJob(ProductJobDerived):
+    """A class that reuses other interfaces and types for testing."""
+    class_job_type = ProductJobType.REVIEWER_NOTIFICATION
+    implements(IProductNotificationJob)
+    classProvides(IProductNotificstionJobSource)
+
+
 class ProductJobDerivedTestCase(TestCaseWithFactory):
     """Test case for the ProductJobDerived class."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def test_create_explodes(self):
-        # ProductJobDerived.create() will blow up because it
+    def test_create_raises_error(self):
+        # ProductJobDerived.create() raises an error because it
         # needs to be subclassed to work properly.
         product = self.factory.makeProduct()
         metadata = {'foo': 'bar'}
         self.assertRaises(
             AttributeError, ProductJobDerived.create, product, metadata)
+
+    def test_repr(self):
+        product = self.factory.makeProduct('fnord')
+        metadata = {'foo': 'bar'}
+        job = FakeProductJob.create(product, metadata)
+        self.assertEqual(
+            '<FakeProductJob for fnord status=Waiting>', repr(job))
