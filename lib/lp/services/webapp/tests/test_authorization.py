@@ -461,6 +461,16 @@ class TestPrecachePermissionForObjects(TestCase):
         self.assertTrue(check_permission('launchpad.View', objects[0]))
         self.assertTrue(check_permission('launchpad.View', objects[1]))
 
+    def test_default_request(self):
+        # If no request is provided, the current interaction is used.
+        class Boring(object):
+            """A boring, but weakref-able object."""
+        obj = Boring()
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        precache_permission_for_objects(None, 'launchpad.View', [obj])
+        self.assertTrue(check_permission('launchpad.View', obj))
+
 
 class TestIterAuthorization(TestCase):
     """Tests for `iter_authorization`.
