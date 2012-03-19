@@ -49,11 +49,12 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.menu import (
+from lp.services.webapp import (
     ApplicationMenu,
     enabled_with_permission,
     Link,
     Navigation,
+    NavigationMenu,
     stepthrough,
     )
 from lp.services.webapp.publisher import (
