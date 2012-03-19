@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifferenceType',
     'InformationType',
     'PersonTransferJobType',
+    'ProductJobType',
     'SharingPermission',
     ]
 
@@ -154,4 +155,35 @@ class PersonTransferJobType(DBEnumeratedType):
         Person merge
 
         Merge one person or team into another person or team.
+        """)
+
+
+class ProductJobType(DBEnumeratedType):
+    """Values that IProductJob.job_type can take."""
+
+    REVIEWER_NOTIFICATION = DBItem(0, """
+        Reviewer notification
+
+        A notification sent by a project reviewer to the project maintainers.
+        """)
+
+    COMMERCIAL_EXPIRATION_30_DAYS = DBItem(1, """
+        Commercial subscription expires in 30 days.
+
+        A notification stating that the project's commercial subscription
+        expires in 30 days.
+        """)
+
+    COMMERCIAL_EXPIRATION_7_DAYS = DBItem(2, """
+        Commercial subscription expires in 7 days.
+
+        A notification stating that the project's commercial subscription
+        expires in 7 days.
+        """)
+
+    COMMERCIAL_EXPIRED = DBItem(3, """
+        Commercial subscription expired.
+
+        A notification stating that the project's commercial subscription
+        expired.
         """)
