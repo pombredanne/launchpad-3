@@ -10,9 +10,9 @@ import simplejson
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.services import IService
 from lp.registry.model.pillar import PillarPerson
 from lp.services.features.testing import FeatureFixture
@@ -54,13 +54,32 @@ class PillarSharingDetailsMixin:
 
         return PillarPerson(self.pillar, person)
 
-    def test_not_found_without_policy_link(self):
-        # If you attempt to find a PillarPerson's sharing details where no
-        # sharing exists, you get notfound.
-        pass
+    def test_view_traverses_plus_sharingdetails(self):
+        # The traversed url in the app is pillar/+sharingdetails/person
+        with FeatureFixture(ENABLED_FLAG):
+            # We have to do some fun url hacking to force the traversal a user
+            # encounters.
+            pillarperson = self.getPillarPerson()
+            expected = pillarperson.person.displayname
+            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.driver, url=url)
+            self.assertEqual(expected, browser.title)
+
+    def test_not_found_without_sharing(self):
+        # If there is no sharing between pillar and person, NotFound is the
+        # result.
+        with FeatureFixture(ENABLED_FLAG):
+            # We have to do some fun url hacking to force the traversal a user
+            # encounters.
+            pillarperson = self.getPillarPerson(with_sharing=False)
+            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.driver)
+            self.assertRaises(NotFound, browser.open, url)
 
     def test_init_without_feature_flag(self):
-        # We need a feature flag to enable the view.
+        # We need a feature flag to enable the view.  pillarperson = self.getPillarPerson()
         pillarperson = self.getPillarPerson()
         self.assertRaises(
             Unauthorized, create_initialized_view, pillarperson, '+index')

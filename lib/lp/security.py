@@ -347,8 +347,8 @@ class PillarPersonSharingDriver(AuthorizationBase):
     def checkAuthenticated(self, user):
         """The Admins & Commercial Admins can see inactive pillars."""
         return (user.in_admin or
-                user.isOwner(self.obj.target) or
-                user.isOneOfDrivers(self.obj.target))
+                user.isOwner(self.obj.pillar) or
+                user.isOneOfDrivers(self.obj.pillar))
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
