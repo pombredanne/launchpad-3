@@ -12,6 +12,8 @@ from zope.interface import (
 
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
+    IProductJob,
+    IProductJobSource,
     IProductNotificationJob,
     IProductNotificstionJobSource,
     )
@@ -68,6 +70,24 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_repr(self):
+        product = self.factory.makeProduct('fnord')
+        metadata = {'foo': 'bar'}
+        job = FakeProductJob.create(product, metadata)
+        self.assertEqual(
+            '<FakeProductJob for fnord status=Waiting>', repr(job))
+
+    def test_create_success(self):
+        # Create an instance of ProductJobDerived that delegates to
+        # ProductJob.
+        product = self.factory.makeProduct('fnord')
+        metadata = {'foo': 'bar'}
+        self.assertIs(True, IProductJobSource.providedBy(ProductJobDerived))
+        job = FakeProductJob.create(product, metadata)
+        self.assertIsInstance(job, ProductJobDerived)
+        self.assertIs(True, IProductJob.providedBy(job))
+        self.assertIs(True, IProductJob.providedBy(job.context))
+
     def test_create_raises_error(self):
         # ProductJobDerived.create() raises an error because it
         # needs to be subclassed to work properly.
@@ -75,10 +95,3 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         metadata = {'foo': 'bar'}
         self.assertRaises(
             AttributeError, ProductJobDerived.create, product, metadata)
-
-    def test_repr(self):
-        product = self.factory.makeProduct('fnord')
-        metadata = {'foo': 'bar'}
-        job = FakeProductJob.create(product, metadata)
-        self.assertEqual(
-            '<FakeProductJob for fnord status=Waiting>', repr(job))
