@@ -60,7 +60,7 @@
         <img
             tal:attributes="alt string:${registration/done}% registration complete;
                             title string:${registration/done}% registration complete;
-                            style string:display: block;; width:${registration/done}%"
+                            style string:display: block;; width: ${registration/done}%"
             src="/@@/green-bar"
             height="10"/>
       </div>
