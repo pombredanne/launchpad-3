@@ -15,7 +15,7 @@
             <th>Shared items</th>
         </tr>
     </thead>
-    <tr id='sharee-table-loading'><td style="padding-left: 0.25em">
+    <tr id='sharee-table-loading'><td colspan='3' style="padding-left: 0.25em">
         <img class="spinner" src="/@@/spinner" alt="Loading..." />
         Loading...
     </td></tr>
