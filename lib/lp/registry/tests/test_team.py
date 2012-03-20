@@ -601,6 +601,13 @@ class TestTeamWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestTeamWorkItems, self).setUp()
+        # We remove the security proxy from our team because we'll be testing
+        # some internal methods.
+        self.team = removeSecurityProxy(self.factory.makeTeam())
+        self.today = datetime.today().date()
+
     def _createWorkItems(self):
         next_date = datetime(2050, 1, 1)
         current_milestone = self.factory.makeMilestone(
@@ -712,55 +719,79 @@ class TestTeamWorkItems(TestCaseWithFactory):
                 print "\tWork items from %s:" % container.label
                 print "\t\t%s" % ", ".join(str(item) for item in container.items)
 
-    def test_getWorkItems_with_private_bugs(self):
+    def test_getBugTasksDueBefore(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        # This bug is assigned to a team member and targeted to a milestone,
+        # so it is included in the return of _getBugTasksDueBefore().
+        milestoned_bug = self.factory.makeBug(milestone=milestone)
+        removeSecurityProxy(
+            milestoned_bug.bugtasks[0]).assignee = self.team.teamowner
+        # This one is assigned to a team member but not milestoned, so it is
+        # not included in the return of _getBugTasksDueBefore().
+        non_milestoned_bug = self.factory.makeBug()
+        removeSecurityProxy(
+            non_milestoned_bug.bugtasks[0]).assignee = self.team.teamowner
+        # This one is milestoned but not assigned to a team member, so it is
+        # not included in the return of _getBugTasksDueBefore() either.
+        non_assigned_bug = self.factory.makeBug()
+        removeSecurityProxy(
+            non_assigned_bug.bugtasks[0]).assignee = self.factory.makePerson()
+
+        bugtasks = self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1))
+
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(milestoned_bug.bugtasks[0], bugtasks[0])
+
+    def test_getBugTasksDueBefore_skips_tasks_targeted_to_old_milestones(self):
+        pass
+
+    def test_getBugTasksDueBefore_with_private_bugs(self):
         # TODO: bugs the user is not allowed to see must not be included here.
         pass
 
-    def test_getWorkItems_for_distroseriessourcepackage_bugtask(self):
-        team = self.factory.makeTeam()
-        today = datetime.today().date()
+    def test_getBugTasksDueBefore_skips_distroseries_conjoined_master(self):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         milestone = self.factory.makeMilestone(
-            distroseries=distroseries, dateexpected=today)
+            distroseries=distroseries, dateexpected=self.today)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
         bug = self.factory.makeBug(
-            milestone=milestone, sourcepackagename=sourcepackagename)
-        self.assertEqual(1, len(bug.bugtasks))
-        task = bug.bugtasks[0]
-        removeSecurityProxy(task).assignee = team.teamowner
+            milestone=milestone, sourcepackagename=sourcepackagename,
+            distribution=distroseries.distribution)
+        package = distroseries.getSourcePackage(sourcepackagename.name)
+        removeSecurityProxy(bug).addTask(bug.owner, package)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+        removeSecurityProxy(master).assignee = self.team.teamowner
+        self.assertEqual(None, master.conjoined_master)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
 
-        workitems = team.getWorkItemsDueBefore(today + timedelta(days=1))
+        bugtasks = self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1))
 
-        self.assertEqual(1, len(workitems[today]))
-        self.assertEqual(1, len(workitems[today][0].items))
-        self.assertEqual(task.title, workitems[today][0].items[0].title)
+        self.assertEqual([slave], bugtasks)
 
-    def test_getWorkItems_skips_conjoined_slaves(self):
-        team = self.factory.makeTeam()
-        today = datetime.today().date()
-        milestone = self.factory.makeMilestone(dateexpected=today)
+    def test_getBugTasksDueBefore_skips_productseries_conjoined_master(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
         removeSecurityProxy(milestone.product).development_focus = (
             milestone.productseries)
         bug = self.factory.makeBug(
             series=milestone.productseries, milestone=milestone)
         self.assertEqual(2, len(bug.bugtasks))
-        task1, task2 = bug.bugtasks
+        slave, master = bug.bugtasks
 
         # This will cause the assignee to propagate to the other bugtask as
         # well since they're conjoined.
-        removeSecurityProxy(task1).assignee = team.teamowner
-        self.assertIsNot(task1.conjoined_master, None)
+        removeSecurityProxy(slave).assignee = self.team.teamowner
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
 
-        self.assertEqual(task1.milestone, task2.milestone)
-        self.assertEqual(task1.assignee, task2.assignee)
+        bugtasks = self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1))
 
-        workitems = team.getWorkItemsDueBefore(today + timedelta(days=1))
-
-        # There's a single work item container returned and that container
-        # contains a single work item.
-        self.assertEqual([today], workitems.keys())
-        self.assertEqual(1, len(workitems[today]))
-        self.assertEqual(1, len(workitems[today][0].items))
-        # That work item represents task2. task1 is not included because
-        # it's the conjoined slave.
-        self.assertEqual(task2.title, workitems[today][0].items[0].title)
+        self.assertEqual([slave], bugtasks)

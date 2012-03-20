@@ -1663,7 +1663,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             or distribution parameters, or the those parameters must be None.
         :param series: If set, the series.product must match the product
             parameter, or the series.distribution must match the distribution
-            parameter, or the those parameters must be None.
+            parameter, or those parameters must be None.
         :param tags: If set, the tags to be added with the bug.
         :param distribution: If set, the sourcepackagename is used as the
             default bug target.
