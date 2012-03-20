@@ -40,6 +40,7 @@ def product_licenses_modified(product, event):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
         notification.send()
+        notification.display()
 
 
 class LicenseNotification:
