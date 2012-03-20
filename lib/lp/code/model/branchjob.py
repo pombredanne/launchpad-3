@@ -345,63 +345,64 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_rw_server()
-        server.start_server()
         yield
-        server.stop_server()
 
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
-        upgrade_branch_path = tempfile.mkdtemp()
-        try:
-            upgrade_transport = get_transport(upgrade_branch_path)
-            upgrade_transport.mkdir('.bzr')
-            source_branch_transport = get_transport(
-                self.branch.getInternalBzrUrl())
-            source_branch_transport.clone('.bzr').copy_tree_to_transport(
-                upgrade_transport.clone('.bzr'))
-            transaction.commit()
-            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
-
-            # No transactions are open so the DB connection won't be killed.
-            with TransactionFreeOperation():
-                # Perform the upgrade.
-                upgrade(upgrade_branch.base)
-
-            # Re-open the branch, since its format has changed.
-            upgrade_branch = BzrBranch.open_from_transport(
-                upgrade_transport)
-            source_branch = BzrBranch.open_from_transport(
-                source_branch_transport)
-
-            source_branch.lock_write()
-            upgrade_branch.pull(source_branch)
-            upgrade_branch.fetch(source_branch)
-            source_branch.unlock()
-
-            # Move the branch in the old format to backup.bzr
+        server = get_rw_server()
+        with maybe_server(server):
+            upgrade_branch_path = tempfile.mkdtemp()
             try:
-                source_branch_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            source_branch_transport.rename('.bzr', 'backup.bzr')
-            source_branch_transport.mkdir('.bzr')
-            upgrade_transport.clone('.bzr').copy_tree_to_transport(
-                source_branch_transport.clone('.bzr'))
+                upgrade_transport = get_transport(upgrade_branch_path)
+                upgrade_transport.mkdir('.bzr')
+                source_branch_transport = get_transport(
+                    self.branch.getInternalBzrUrl())
+                source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                    upgrade_transport.clone('.bzr'))
+                transaction.commit()
+                upgrade_branch = BzrBranch.open_from_transport(
+                    upgrade_transport)
 
-            # Re-open the source branch again.
-            source_branch = BzrBranch.open_from_transport(
-                source_branch_transport)
+                # No transactions are open so the DB connection won't be
+                # killed.
+                with TransactionFreeOperation():
+                    # Perform the upgrade.
+                    upgrade(upgrade_branch.base)
 
-            formats = get_branch_formats(source_branch)
+                # Re-open the branch, since its format has changed.
+                upgrade_branch = BzrBranch.open_from_transport(
+                    upgrade_transport)
+                source_branch = BzrBranch.open_from_transport(
+                    source_branch_transport)
 
-            self.branch.branchChanged(
-                self.branch.stacked_on,
-                self.branch.last_scanned_id,
-                *formats)
-        finally:
-            shutil.rmtree(upgrade_branch_path)
+                source_branch.lock_write()
+                upgrade_branch.pull(source_branch)
+                upgrade_branch.fetch(source_branch)
+                source_branch.unlock()
+
+                # Move the branch in the old format to backup.bzr
+                try:
+                    source_branch_transport.delete_tree('backup.bzr')
+                except NoSuchFile:
+                    pass
+                source_branch_transport.rename('.bzr', 'backup.bzr')
+                source_branch_transport.mkdir('.bzr')
+                upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                    source_branch_transport.clone('.bzr'))
+
+                # Re-open the source branch again.
+                source_branch = BzrBranch.open_from_transport(
+                    source_branch_transport)
+
+                formats = get_branch_formats(source_branch)
+
+                self.branch.branchChanged(
+                    self.branch.stacked_on,
+                    self.branch.last_scanned_id,
+                    *formats)
+            finally:
+                shutil.rmtree(upgrade_branch_path)
 
 
 class RevisionMailJob(BranchJobDerived):
