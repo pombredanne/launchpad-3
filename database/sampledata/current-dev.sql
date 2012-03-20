@@ -1,6 +1,6 @@
 -- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.10
+-- Created using pg_dump (PostgreSQL) 8.4.11
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -1703,16 +1703,16 @@ ALTER TABLE bug DISABLE TRIGGER ALL;
 
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (1, '2004-01-01 20:58:04.553583', NULL, 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.
 
-The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.344941', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, NULL, false, false, '2006-07-14 08:47:36.124403', NULL, NULL, NULL, 0, 3, 0, 0, 0, NULL, NULL, NULL);
+The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.344941', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (2, '2004-01-02 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, NULL, false, false, '2006-07-14 08:47:36.124403', NULL, NULL, NULL, 0, 3, 0, 0, 0, NULL, NULL, 1);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (3, '2004-01-03 00:00:00', NULL, 'Bug Title Test', 'Shirtpkdf user@domain.org lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
-Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, NULL, false, false, '2006-07-14 08:48:52.922462', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, NULL, false, false, '2006-07-14 08:49:17.124885', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, NULL, false, false, '2006-07-14 08:49:40.553212', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, NULL, false, false, '2006-07-14 08:48:52.922462', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (4, '2004-01-04 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, NULL, false, false, '2006-07-14 08:49:17.124885', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (5, '2004-01-05 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, NULL, false, false, '2006-07-14 08:49:40.553212', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (6, '2004-01-06 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:
 Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
 
@@ -1732,11 +1732,11 @@ Actual Results:
 Crash!
 
 Expected Results:
-Not crashed.', 12, 5, NULL, false, false, '2006-05-19 06:37:40.389193', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, NULL, false, false, '2006-05-19 06:37:40.391822', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.393303', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, NULL, false, false, '2006-07-14 08:45:10.600579', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, NULL, false, false, '2006-07-14 08:54:19.453881', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, NULL);
+Not crashed.', 12, 5, NULL, false, false, '2006-05-19 06:37:40.389193', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (7, '2004-01-07 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, NULL, false, false, '2006-05-19 06:37:40.391822', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.393303', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, NULL, false, false, '2006-07-14 08:45:10.600579', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, NULL, false, false, '2006-07-14 08:54:19.453881', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, 1);
 INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (11, '2007-03-15 20:33:56.67893', NULL, 'Make Jokosher use autoaudiosink', 'I''ve had problems when switching from Jokosher to Totem to play an Ogg.
 
 Totem appears to be playing normally but does not produce any sound.
@@ -1763,11 +1763,11 @@ I had to restart!
 Is there some way to reset alsa or the device driver - with out having
 to restart?
 
-Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false, '2007-03-15 20:37:51.603369', NULL, NULL, NULL, 0, 7, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153', NULL, NULL, NULL, 0, 5, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, NULL);
-INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (15, '2007-12-18 16:30:19.103679', NULL, 'Nonsensical bugs are useless', 'Like this one, natch.', 16, NULL, NULL, false, false, '2007-12-18 16:31:34.972893', NULL, NULL, '2007-12-18 16:31:34.790641', 0, 7, 0, 0, 0, NULL, NULL, NULL);
+Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false, '2007-03-15 20:37:51.603369', NULL, NULL, NULL, 0, 7, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153', NULL, NULL, NULL, 0, 5, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL, NULL, 0, 2, 0, 0, 0, NULL, NULL, 1);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL, NULL, 0, 1, 0, 0, 0, NULL, NULL, 3);
+INSERT INTO bug (id, datecreated, name, title, description, owner, duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates, message_count, users_affected_count, users_unaffected_count, heat, heat_last_updated, latest_patch_uploaded, information_type) VALUES (15, '2007-12-18 16:30:19.103679', NULL, 'Nonsensical bugs are useless', 'Like this one, natch.', 16, NULL, NULL, false, false, '2007-12-18 16:31:34.972893', NULL, NULL, '2007-12-18 16:31:34.790641', 0, 7, 0, 0, 0, NULL, NULL, 1);
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -1775,6 +1775,7 @@ ALTER TABLE bug ENABLE TRIGGER ALL;
 
 ALTER TABLE accessartifact DISABLE TRIGGER ALL;
 
+INSERT INTO accessartifact (id, bug, branch) VALUES (1, 14, NULL);
 
 
 ALTER TABLE accessartifact ENABLE TRIGGER ALL;
@@ -1782,6 +1783,8 @@ ALTER TABLE accessartifact ENABLE TRIGGER ALL;
 
 ALTER TABLE accessartifactgrant DISABLE TRIGGER ALL;
 
+INSERT INTO accessartifactgrant (artifact, grantee, grantor, date_created) VALUES (1, 14, 65, '2007-08-09 11:39:16.836856');
+INSERT INTO accessartifactgrant (artifact, grantee, grantor, date_created) VALUES (1, 63, 65, '2007-08-09 11:39:16.836856');
 
 
 ALTER TABLE accessartifactgrant ENABLE TRIGGER ALL;
@@ -1965,6 +1968,72 @@ ALTER TABLE product ENABLE TRIGGER ALL;
 
 ALTER TABLE accesspolicy DISABLE TRIGGER ALL;
 
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (1, 19, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (2, 20, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (3, 21, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (4, 23, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (5, 24, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (6, 26, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (7, 9, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (8, 10, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (9, 11, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (10, 12, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (11, 13, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (12, 14, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (13, 15, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (14, 1, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (15, 2, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (16, 3, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (17, 4, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (18, 5, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (19, 6, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (20, 7, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (21, 8, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (22, 22, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (23, 16, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (24, 17, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (25, 18, NULL, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (26, 19, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (27, 20, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (28, 21, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (29, 23, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (30, 24, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (31, 26, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (32, 9, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (33, 10, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (34, 11, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (35, 12, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (36, 13, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (37, 14, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (38, 15, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (39, 1, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (40, 2, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (41, 3, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (42, 4, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (43, 5, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (44, 6, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (45, 7, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (46, 8, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (47, 22, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (48, 16, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (49, 17, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (50, 18, NULL, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (51, NULL, 1, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (52, NULL, 2, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (53, NULL, 3, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (54, NULL, 4, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (55, NULL, 5, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (56, NULL, 7, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (57, NULL, 8, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (58, NULL, 9, 3);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (59, NULL, 1, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (60, NULL, 2, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (61, NULL, 3, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (62, NULL, 4, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (63, NULL, 5, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (64, NULL, 7, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (65, NULL, 8, 4);
+INSERT INTO accesspolicy (id, product, distribution, type) VALUES (66, NULL, 9, 4);
 
 
 ALTER TABLE accesspolicy ENABLE TRIGGER ALL;
@@ -1972,6 +2041,7 @@ ALTER TABLE accesspolicy ENABLE TRIGGER ALL;
 
 ALTER TABLE accesspolicyartifact DISABLE TRIGGER ALL;
 
+INSERT INTO accesspolicyartifact (artifact, policy) VALUES (1, 2);
 
 
 ALTER TABLE accesspolicyartifact ENABLE TRIGGER ALL;
@@ -1986,6 +2056,8 @@ ALTER TABLE accesspolicygrant ENABLE TRIGGER ALL;
 
 ALTER TABLE accesspolicygrantflat DISABLE TRIGGER ALL;
 
+INSERT INTO accesspolicygrantflat (id, policy, artifact, grantee) VALUES (1, 2, 1, 14);
+INSERT INTO accesspolicygrantflat (id, policy, artifact, grantee) VALUES (2, 2, 1, 63);
 
 
 ALTER TABLE accesspolicygrantflat ENABLE TRIGGER ALL;

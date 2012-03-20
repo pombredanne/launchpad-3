@@ -69,7 +69,11 @@
        YUI.GlobalConfig = {
            debug: ${yui_console_debug},
            fetchCSS: false,
-           timeout: 50
+           timeout: 50,
+           ignore: [
+               'yui2-yahoo', 'yui2-event', 'yui2-dom',
+               'yui2-calendar','yui2-dom-event'
+           ]
         }
        ">
     </script>
