@@ -287,7 +287,6 @@ class BranchScanJob(BranchJobDerived):
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
-    server = None
 
     @classmethod
     def create(cls, branch):
@@ -298,18 +297,20 @@ class BranchScanJob(BranchJobDerived):
     def run(self):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
-        bzrsync = BzrSync(self.branch, log)
-        bzrsync.syncBranchAndClose()
+        server = get_ro_server()
+        server.start_server()
+        try:
+            bzrsync = BzrSync(self.branch, log)
+            bzrsync.syncBranchAndClose()
+        finally:
+            server.stop_server()
 
     @classmethod
     @contextlib.contextmanager
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_ro_server()
-        cls.server.start_server()
         yield
-        cls.server.stop_server()
 
 
 class BranchUpgradeJob(BranchJobDerived):
