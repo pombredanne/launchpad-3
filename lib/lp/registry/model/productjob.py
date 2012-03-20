@@ -45,6 +45,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
+from lp.services.propertycache import cachedproperty
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.helpers import (
@@ -192,16 +193,13 @@ class ProductNotificationJob(ProductJobDerived):
     def email_template_name(self):
         return self.metadata['email_template_name']
 
-    @property
+    @cachedproperty
     def reviewer(self):
         return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
 
     def getErrorRecipients(self):
         """See `IPersonMergeJob`."""
-        if self.to_person.is_team:
-            return self.to_person.getTeamAdminsEmailAddresses()
-        else:
-            return [format_address_for_person(self.to_person)]
+        return [format_address_for_person(self.reviewer)]
 
     def sendEmailToMaintainer(self, template_name, subject, from_address):
         email_template = get_email_template(
