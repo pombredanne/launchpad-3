@@ -194,15 +194,19 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_create(self):
-        # Create an instance of ProductJobDerived that delegates to
-        # ProductJob.
+        # Create an instance of ProductNotificationJob that stores
+        # the notification information.
         product = self.factory.makeProduct()
         reviewer = self.factory.makePerson()
         subject = "subject"
-        email_template_name = ''
+        email_template_name = 'product-license-dont-know'
         self.assertIs(
             True,
             IProductNotificationJobSource.providedBy(ProductNotificationJob))
         job = ProductNotificationJob.create(
             product, email_template_name, subject, reviewer)
         self.assertIsInstance(job, ProductNotificationJob)
+        self.assertEqual(product, job.product)
+        self.assertEqual(email_template_name, job.email_template_name)
+        self.assertEqual(subject, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
