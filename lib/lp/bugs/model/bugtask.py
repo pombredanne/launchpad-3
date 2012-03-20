@@ -98,7 +98,6 @@ from lp.registry.interfaces.milestone import IMilestoneSet
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -1403,6 +1402,8 @@ class BugTaskSet:
 
     def getBugTaskPeople(self, bugtasks):
         """See `IBugTaskSet`"""
+        # Avoid circular imports.
+        from lp.registry.interfaces.person import IPersonSet
         people_ids = set(
             [bugtask.assigneeID for bugtask in bugtasks] +
             [bugtask.bug.ownerID for bugtask in bugtasks])
