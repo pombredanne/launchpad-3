@@ -136,14 +136,6 @@ class CreateBugParams:
         self.milestone = milestone
         self.assignee = assignee
         self.cve = cve
-        if private and security_related:
-            self.information_type = InformationType.EMBARGOEDSECURITY
-        elif security_related:
-            self.information_type = InformationType.UNEMBARGOEDSECURITY
-        elif private:
-            self.information_type = InformationType.USERDATA
-        else:
-            self.information_type = InformationType.PUBLIC
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):

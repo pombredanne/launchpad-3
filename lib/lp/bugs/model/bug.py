@@ -232,8 +232,8 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "private", "security_related",
-            "information_type", "distribution", "sourcepackagename",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
             "milestone", "assignee", "cve"])
@@ -1715,11 +1715,11 @@ class Bug(SQLBase):
         return bugtask
 
     def _setInformationType(self):
-        if self.private and self.security_related:
+        if self._private and self._security_related:
             self.information_type = InformationType.EMBARGOEDSECURITY
-        elif self.private:
+        elif self._private:
             self.information_type = InformationType.USERDATA
-        elif self.security_related:
+        elif self._security_related:
             self.information_type = InformationType.UNEMBARGOEDSECURITY
         else:
             self.information_type = InformationType.PUBLIC
@@ -1774,14 +1774,7 @@ class Bug(SQLBase):
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
 
-        if private and security_related:
-            self.information_type = InformationType.EMBARGOEDSECURITY
-        elif private:
-            self.information_type = InformationType.USERDATA
-        elif security_related:
-            self.information_type = InformationType.UNEMBARGOEDSECURITY
-        else:
-            self.information_type = InformationType.PUBLIC
+        self._setInformationType()
 
         if private_changed or security_related_changed:
             changed_fields = []
@@ -2830,7 +2823,9 @@ class BugSet:
 
         bug, event = self.createBugWithoutTarget(params)
 
-        if params.information_type in SECURITY_BUG_TYPES:
+        if params.security_related:
+            assert params.private, (
+                "A security related bug should always be private by default.")
             if params.product:
                 context = params.product
             else:
@@ -2851,9 +2846,6 @@ class BugSet:
                 bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
-        else:
-            # nothing to do
-            pass
 
         # Create the task on a product if one was passed.
         if params.product:
@@ -2879,6 +2871,8 @@ class BugSet:
         # Tell everyone.
         if notify_event:
             notify(event)
+
+        bug._setInformationType()
 
         # Calculate the bug's initial heat.
         bug.updateHeat()
@@ -2928,10 +2922,9 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            owner=params.owner, datecreated=params.datecreated,
-            _private=params.private,
+            _private=params.private, owner=params.owner,
+            datecreated=params.datecreated,
             _security_related=params.security_related,
-            information_type=params.information_type,
             **extra_params)
 
         if params.subscribe_owner:
