@@ -93,7 +93,10 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
@@ -212,8 +215,13 @@ class BranchJob(SQLBase):
         SQLBase.destroySelf(self)
         self.job.destroySelf()
 
+    def makeDerived(self):
+        return BranchJobDerived.makeSubclass(self)
+
 
 class BranchJobDerived(BaseRunnableJob):
+
+    __metaclass__ = EnumeratedSubclass
 
     delegates(IBranchJob)
 

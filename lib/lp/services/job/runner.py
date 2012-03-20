@@ -350,11 +350,10 @@ class CeleryJobSource:
             dbuser='branchscanner', isolation_level='read_committed')
         from lp.code.model.branchjob import (
             BranchJob,
-            BranchScanJob,
             )
         store = IStore(BranchJob)
         branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        return BranchScanJob(branch_job)
+        return branch_job.makeDerived()
 
 
 class CeleryRunJob(RunJob):

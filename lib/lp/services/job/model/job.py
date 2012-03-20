@@ -4,7 +4,7 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['InvalidTransition', 'Job', 'JobStatus']
+__all__ = ['EnumeratedSubclass', 'InvalidTransition', 'Job', 'JobStatus']
 
 
 from calendar import timegm
@@ -199,6 +199,29 @@ class Job(SQLBase):
             raise InvalidTransition(self._status, JobStatus.WAITING)
         self._set_status(JobStatus.WAITING)
         self.lease_expires = None
+
+
+class EnumeratedSubclass(type):
+    """Metaclass for when subclasses are assigned enums."""
+
+    def __init__(cls, name, bases, dict_):
+        if getattr(cls, '_subclass', None) is None:
+            cls._subclass = {}
+        job_type = dict_.get('class_job_type')
+        if job_type is not None:
+            value = cls._subclass.setdefault(job_type, cls)
+            assert value is cls, (
+                '%s already registered to %s.' % (
+                    job_type.name, value.__name__))
+        # Perform any additional set-up requested by class.
+        cls._register_subclass(cls)
+
+    @staticmethod
+    def _register_subclass(cls):
+        pass
+
+    def makeSubclass(cls, job):
+        return cls._subclass[job.job_type](job)
 
 
 Job.ready_jobs = Select(
