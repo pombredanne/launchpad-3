@@ -690,6 +690,115 @@ class Test_getSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             [(workitem, self.current_milestone)], list(workitems))
 
 
+class Test_getBugTasksDueBefore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(Test_getBugTasksDueBefore, self).setUp()
+        # We remove the security proxy from our team because we'll be testing
+        # some internal methods.
+        self.team = removeSecurityProxy(self.factory.makeTeam())
+        self.today = datetime.today().date()
+
+    def _assignBugTaskToTeamOwner(self, bugtask):
+        removeSecurityProxy(bugtask).assignee = self.team.teamowner
+
+    def test_basic(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        # This bug is assigned to a team member and targeted to a milestone
+        # whose due date is before the cutoff date we pass in, so it will be
+        # included in the return of _getBugTasksDueBefore().
+        milestoned_bug = self.factory.makeBug(milestone=milestone)
+        self._assignBugTaskToTeamOwner(milestoned_bug.bugtasks[0])
+        # This one is assigned to a team member but not milestoned, so it is
+        # not included in the return of _getBugTasksDueBefore().
+        non_milestoned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_milestoned_bug.bugtasks[0])
+        # This one is milestoned but not assigned to a team member, so it is
+        # not included in the return of _getBugTasksDueBefore() either.
+        non_assigned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_assigned_bug.bugtasks[0])
+
+        bugtasks = list(self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(milestoned_bug.bugtasks[0], bugtasks[0])
+
+    def test_skips_tasks_targeted_to_old_milestones(self):
+        past_milestone = self.factory.makeMilestone(
+            dateexpected=self.today - timedelta(days=1))
+        bug = self.factory.makeBug(milestone=past_milestone)
+        self._assignBugTaskToTeamOwner(bug.bugtasks[0])
+
+        bugtasks = list(self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(0, len(bugtasks))
+
+    def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        private_bug = removeSecurityProxy(
+            self.factory.makeBug(milestone=milestone, private=True))
+        self._assignBugTaskToTeamOwner(private_bug.bugtasks[0])
+        private_bug2 = removeSecurityProxy(
+            self.factory.makeBug(milestone=milestone, private=True))
+        self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
+
+        bugtasks = list(self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1),
+            removeSecurityProxy(private_bug2).owner))
+
+        self.assertEqual(private_bug2.bugtasks, bugtasks)
+
+    def test_skips_distroseries_task_that_is_a_conjoined_master(self):
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        milestone = self.factory.makeMilestone(
+            distroseries=distroseries, dateexpected=self.today)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        bug = self.factory.makeBug(
+            milestone=milestone, sourcepackagename=sourcepackagename,
+            distribution=distroseries.distribution)
+        package = distroseries.getSourcePackage(sourcepackagename.name)
+        removeSecurityProxy(bug).addTask(bug.owner, package)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+        self._assignBugTaskToTeamOwner(master)
+        self.assertEqual(None, master.conjoined_master)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
+
+    def test_skips_productseries_task_that_is_a_conjoined_master(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        removeSecurityProxy(milestone.product).development_focus = (
+            milestone.productseries)
+        bug = self.factory.makeBug(
+            series=milestone.productseries, milestone=milestone)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+
+        # This will cause the assignee to propagate to the other bugtask as
+        # well since they're conjoined.
+        self._assignBugTaskToTeamOwner(slave)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team._getBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
+
+
 class TestTeamWorkItems(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -811,92 +920,3 @@ class TestTeamWorkItems(TestCaseWithFactory):
             for container in containers:
                 print "\tWork items from %s:" % container.label
                 print "\t\t%s" % ", ".join(str(item) for item in container.items)
-
-    def test_getBugTasksDueBefore(self):
-        milestone = self.factory.makeMilestone(dateexpected=self.today)
-        # This bug is assigned to a team member and targeted to a milestone,
-        # so it is included in the return of _getBugTasksDueBefore().
-        milestoned_bug = self.factory.makeBug(milestone=milestone)
-        removeSecurityProxy(
-            milestoned_bug.bugtasks[0]).assignee = self.team.teamowner
-        # This one is assigned to a team member but not milestoned, so it is
-        # not included in the return of _getBugTasksDueBefore().
-        non_milestoned_bug = self.factory.makeBug()
-        removeSecurityProxy(
-            non_milestoned_bug.bugtasks[0]).assignee = self.team.teamowner
-        # This one is milestoned but not assigned to a team member, so it is
-        # not included in the return of _getBugTasksDueBefore() either.
-        non_assigned_bug = self.factory.makeBug()
-        removeSecurityProxy(
-            non_assigned_bug.bugtasks[0]).assignee = self.factory.makePerson()
-
-        bugtasks = list(self.team._getBugTasksDueBefore(
-            self.today + timedelta(days=1), user=None))
-
-        self.assertEqual(1, len(bugtasks))
-        self.assertEqual(milestoned_bug.bugtasks[0], bugtasks[0])
-
-    def test_getBugTasksDueBefore_skips_tasks_targeted_to_old_milestones(self):
-        pass
-
-    def test_getBugTasksDueBefore_with_private_bugs(self):
-        assignee = self.team.teamowner
-        milestone = self.factory.makeMilestone(dateexpected=self.today)
-        private_bug = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
-        private_bug.bugtasks[0].assignee = assignee
-        private_bug2 = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
-        private_bug2.bugtasks[0].assignee = assignee
-
-        bugtasks = list(self.team._getBugTasksDueBefore(
-            self.today + timedelta(days=1),
-            removeSecurityProxy(private_bug2).owner))
-
-        self.assertEqual(private_bug2.bugtasks, bugtasks)
-
-    def test_getBugTasksDueBefore_skips_distroseries_conjoined_master(self):
-        distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        milestone = self.factory.makeMilestone(
-            distroseries=distroseries, dateexpected=self.today)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
-        bug = self.factory.makeBug(
-            milestone=milestone, sourcepackagename=sourcepackagename,
-            distribution=distroseries.distribution)
-        package = distroseries.getSourcePackage(sourcepackagename.name)
-        removeSecurityProxy(bug).addTask(bug.owner, package)
-        self.assertEqual(2, len(bug.bugtasks))
-        slave, master = bug.bugtasks
-        removeSecurityProxy(master).assignee = self.team.teamowner
-        self.assertEqual(None, master.conjoined_master)
-        self.assertEqual(master, slave.conjoined_master)
-        self.assertEqual(slave.milestone, master.milestone)
-        self.assertEqual(slave.assignee, master.assignee)
-
-        bugtasks = list(self.team._getBugTasksDueBefore(
-            self.today + timedelta(days=1), user=None))
-
-        self.assertEqual([slave], bugtasks)
-
-    def test_getBugTasksDueBefore_skips_productseries_conjoined_master(self):
-        milestone = self.factory.makeMilestone(dateexpected=self.today)
-        removeSecurityProxy(milestone.product).development_focus = (
-            milestone.productseries)
-        bug = self.factory.makeBug(
-            series=milestone.productseries, milestone=milestone)
-        self.assertEqual(2, len(bug.bugtasks))
-        slave, master = bug.bugtasks
-
-        # This will cause the assignee to propagate to the other bugtask as
-        # well since they're conjoined.
-        removeSecurityProxy(slave).assignee = self.team.teamowner
-        self.assertEqual(master, slave.conjoined_master)
-        self.assertEqual(slave.milestone, master.milestone)
-        self.assertEqual(slave.assignee, master.assignee)
-
-        bugtasks = list(self.team._getBugTasksDueBefore(
-            self.today + timedelta(days=1), user=None))
-
-        self.assertEqual([slave], bugtasks)

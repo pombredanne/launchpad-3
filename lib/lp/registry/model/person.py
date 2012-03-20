@@ -1733,11 +1733,13 @@ class Person(
             Join(Milestone, BugTask.milestoneID == Milestone.id),
             Join(Person, BugTask.assigneeID == Person.id),
             ]
+        today = datetime.today().date()
         privacy_filter = get_bug_privacy_filter(user)
         results = store.using(*origin).find(
             (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
              DistroSeries, SourcePackageName, Person),
             AND(Milestone.dateexpected <= date,
+                Milestone.dateexpected >= today,
                 BugTask.assigneeID.is_in(self._participant_ids)),
             privacy_filter
             )
