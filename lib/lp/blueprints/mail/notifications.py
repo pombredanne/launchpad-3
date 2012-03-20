@@ -22,7 +22,6 @@ def specification_notification_subject(spec):
     return '[Blueprint %s] %s' % (spec.name, spec.title)
 
 
-@block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     user = IPerson(event.user)
