@@ -22,10 +22,12 @@ from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
+    IProductNotificationJobSource,
     )
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
+    ProductNotificationJob,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
@@ -184,3 +186,23 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         oops_vars = job.getOopsVars()
         self.assertIs(True, len(oops_vars) > 1)
         self.assertIn(('product', product.name), oops_vars)
+
+
+class ProductNotificationJobTestCase(TestCaseWithFactory):
+    """Test case for the ProductNotificationJob class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create(self):
+        # Create an instance of ProductJobDerived that delegates to
+        # ProductJob.
+        product = self.factory.makeProduct()
+        reviewer = self.factory.makePerson()
+        subject = "subject"
+        email_template_name = ''
+        self.assertIs(
+            True,
+            IProductNotificationJobSource.providedBy(ProductNotificationJob))
+        job = ProductNotificationJob.create(
+            product, email_template_name, subject, reviewer)
+        self.assertIsInstance(job, ProductNotificationJob)

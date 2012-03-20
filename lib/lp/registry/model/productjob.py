@@ -35,7 +35,7 @@ from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
     IProductNotificationJob,
-    IProductNotificstionJobSource,
+    IProductNotificationJobSource,
     )
 from lp.registry.model.product import Product
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -171,7 +171,7 @@ class ProductNotificationJob(ProductJobDerived):
     """A Job that send an email to the product maintainer."""
 
     implements(IProductNotificationJob)
-    classProvides(IProductNotificstionJobSource)
+    classProvides(IProductNotificationJobSource)
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
 
     @classmethod

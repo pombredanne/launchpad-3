@@ -8,7 +8,7 @@ __all__ = [
     'IProductJob',
     'IProductJobSource',
     'IProductNotificationJob',
-    'IProductNotificstionJobSource',
+    'IProductNotificationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -73,5 +73,5 @@ class IProductNotificationJob(IProductJob):
     """A job then sends a notification about a product."""
 
 
-class IProductNotificstionJobSource(IProductJobSource):
+class IProductNotificationJobSource(IProductJobSource):
     """An interface for creating and finding `IProductNotificationJob`s."""
