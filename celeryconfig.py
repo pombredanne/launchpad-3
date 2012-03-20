@@ -1,0 +1,2 @@
+BROKER_VHOST = "/"
+CELERY_RESULT_BACKEND = "amqp"

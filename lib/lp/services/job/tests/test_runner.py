@@ -9,12 +9,14 @@ from textwrap import dedent
 from time import sleep
 
 from lazr.jobrunner.jobrunner import SuspendJobException
+from lazr.jobrunner.tests.test_jobrunner import running
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
+from lp.code.model.branchjob import BranchScanJob
 from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -24,6 +26,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob,
+    CeleryRunJob,
     JobCronScript,
     JobRunner,
     TwistedJobRunner,
@@ -38,7 +41,10 @@ from lp.testing import (
     ZopeTestInSubProcess,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -703,3 +709,22 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
         """No --log-twisted sets JobCronScript.log_twisted False."""
         jcs = JobCronScript(TwistedJobRunner, test_args=[])
         self.assertFalse(jcs.log_twisted)
+
+
+class TestCelery(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    def test_run_scan_job(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        cmd_args = ('--config', 'lp.services.job.tests.config1')
+        with running('bin/celeryd', cmd_args) as proc:
+            self.useBzrBranches()
+            db_branch, bzr_tree = self.create_branch_and_tree()
+            bzr_tree.commit('First commit', rev_id='rev1')
+            job = BranchScanJob.create(db_branch)
+            transaction.commit()
+            CeleryRunJob.delay(job.job_id).wait()
+        self.assertIn(
+            'Updating branch scanner status: 1 revs', proc.stderr.read())
+        self.assertEqual(db_branch.revision_count, 1)
