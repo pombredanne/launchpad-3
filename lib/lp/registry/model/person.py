@@ -1702,10 +1702,12 @@ class Person(
                  Coalesce(WorkItem.assignee_id,
                           Specification.assigneeID) == Person.id),
             ]
+        today = datetime.today().date()
         results = store.using(*origin).find(
             (WorkItem, Milestone, Specification, Person, Product,
              Distribution),
             AND(Milestone.dateexpected <= date,
+                Milestone.dateexpected >= today,
                 Person.id.is_in(self._participant_ids))
             )
         for result in results:

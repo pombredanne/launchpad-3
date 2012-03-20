@@ -643,6 +643,20 @@ class Test_getSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(
             [(workitem, self.current_milestone)], list(workitems))
 
+    def test_skips_workitems_with_milestone_in_the_past(self):
+        today = datetime.today().date()
+        milestone = self.factory.makeMilestone(
+            dateexpected=today - timedelta(days=1))
+        spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=milestone,
+            product=milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+
+        workitems = self.team._getSpecificationWorkItemsDueBefore(today)
+
+        self.assertEqual([], list(workitems))
+
     def test_includes_workitems_from_future_spec(self):
         assigned_spec = self.factory.makeSpecification(
             assignee=self.team.teamowner, milestone=self.future_milestone,
