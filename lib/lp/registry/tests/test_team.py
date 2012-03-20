@@ -34,7 +34,13 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    )
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.persontransferjob import PersonTransferJob
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
@@ -813,88 +819,21 @@ class Test_getBugTasksDueBefore(TestCaseWithFactory):
         self.assertEqual([slave], bugtasks)
 
 
-class TestTeamWorkItems(TestCaseWithFactory):
+class Test_getWorkItemsDueBefore(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestTeamWorkItems, self).setUp()
+        super(Test_getWorkItemsDueBefore, self).setUp()
         # We remove the security proxy from our team because we'll be testing
         # some internal methods.
         self.team = removeSecurityProxy(self.factory.makeTeam())
         self.today = datetime.today().date()
 
-    def _createWorkItems(self):
-        next_date = datetime(2050, 1, 1)
-        current_milestone = self.factory.makeMilestone(
-            dateexpected=next_date)
-        self.current_milestone = current_milestone
-        future_milestone = self.factory.makeMilestone(
-            product=current_milestone.product,
-            dateexpected=datetime(2060, 1, 1))
-        self.team = team = self.factory.makeTeam()
-        assigned_spec = self.factory.makeSpecification(
-            assignee=team.teamowner, milestone=current_milestone,
-            product=current_milestone.product)
-        workitem_from_assigned_spec = self.factory.makeSpecificationWorkItem(
-            title=u'workitem_from_assigned_spec', specification=assigned_spec)
-        second_workitem_from_assigned_spec = (
-            self.factory.makeSpecificationWorkItem(
-                title=u'second workitem_from_assigned_spec',
-                specification=assigned_spec))
-        future_spec = self.factory.makeSpecification(
-            milestone=future_milestone, product=future_milestone.product,
-            priority=SpecificationPriority.HIGH)
-        workitem_from_future_spec = self.factory.makeSpecificationWorkItem(
-            title=u'workitem_from_future_spec not assigned to team member',
-            specification=future_spec, milestone=current_milestone)
-        assigned_workitem_from_future_spec = (
-            self.factory.makeSpecificationWorkItem(
-                title=u'workitem_from_future_spec assigned to team member',
-                specification=future_spec, milestone=current_milestone,
-                assignee=team.teamowner))
-        foreign_spec = self.factory.makeSpecification(
-            milestone=current_milestone, product=current_milestone.product)
-        workitem_from_foreign_spec = self.factory.makeSpecificationWorkItem(
-            title=u'workitem_from_foreign_spec not assigned to team member',
-            specification=foreign_spec)
-        assigned_workitem_from_foreign_spec = (
-            self.factory.makeSpecificationWorkItem(
-                title=u'workitem_from_foreign_spec assigned to team member',
-                specification=foreign_spec, assignee=team.teamowner))
-
-        bug = self.factory.makeBug(milestone=current_milestone)
-        removeSecurityProxy(bug.bugtasks[0]).assignee = team.teamowner
-
-        # Create a BugTask whose target is a ProductSeries
-        bug2 = self.factory.makeBug(series=current_milestone.productseries)
-        # The call above created 2 BugTasks (one for the product and one for
-        # the productseries), but we only care about the second one (for the
-        # PS) so we'll set the milestone/assignee just for it.
-        removeSecurityProxy(bug2.bugtasks[1]).assignee = team.teamowner
-        removeSecurityProxy(bug2.bugtasks[1]).milestone = current_milestone
-
-        # Create a BugTask whose target is a DistroSeries
-        current_distro_milestone = self.factory.makeMilestone(
-            distribution=self.factory.makeDistribution(),
-            dateexpected=next_date)
-        bug3 = self.factory.makeBug(
-            series=current_distro_milestone.distroseries)
-        # The call above created 2 BugTasks (one for the distro and one for
-        # the distroseries), but we only care about the second one (for the
-        # DS) so we'll set the milestone/assignee just for it.
-        removeSecurityProxy(bug3.bugtasks[1]).assignee = team.teamowner
-        removeSecurityProxy(bug3.bugtasks[1]).milestone = current_distro_milestone
-
-        # Create a BugTask whose target is a DistributionSourcePackage
-        sourcepackage = self.factory.makeSourcePackage(
-            distroseries=current_distro_milestone.distroseries)
-        bug4 = self.factory.makeBug()
-        nomination = self.factory.makeBugNomination(bug4, sourcepackage)
-        removeSecurityProxy(nomination).approve(
-            current_distro_milestone.distribution.owner)
-        removeSecurityProxy(bug4.bugtasks[1]).assignee = team.teamowner
-        removeSecurityProxy(bug4.bugtasks[1]).milestone = current_distro_milestone
+    def test_basic(self):
+        # TODO: just create a bugtask and a WI to check the return value of
+        # the method.
+        pass
 
     def test_query_counts(self):
         self._createWorkItems()
@@ -905,7 +844,14 @@ class TestTeamWorkItems(TestCaseWithFactory):
         # One query to get all team members;
         # One to get all SpecWorkItems;
         # One to get all BugTasks.
-        self.assertThat(recorder, HasQueryCount(LessThan(4)))
+        # And one to get the current series of a distribution
+        # (Distribution.currentseries) to decide whether or not
+        # the bug is part of a conjoined relationship. The code that executes
+        # this query runs for every distroseriespackage bugtask but since
+        # .currentseries is a cached property and there's a single
+        # distribution with bugs in production, this will not cause an extra
+        # DB query every time it runs.
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
         with StormStatementRecorder() as recorder:
             for date, containers in containers.items():
@@ -918,19 +864,91 @@ class TestTeamWorkItems(TestCaseWithFactory):
                         canonical_url(item.target)
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
-    # XXX: This test should die and be replaced with more specific tests that
-    # just assert that some specific bug/wi is returned, like the ones below.
-    def test_getWorkItems(self):
-        self._createWorkItems()
+    def _createWorkItems(self):
+        """Create a bunch of SpecificationWorkItems and BugTasks.
 
-        work_items = removeSecurityProxy(self.team).getWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+        BE CAREFUL! Using this will make your tests hard to follow because it
+        creates a lot of objects and it is not trivial to check that they're
+        all returned by getWorkItemsDueBefore() because the objects created
+        here are burried two levels deep on the hierarchy returned there.
 
-        # Instead of seeing meaningless failures while we experiment I thought
-        # it'd be better to just print a reasonable representation of the
-        # return value of the method.
-        for date, containers in work_items.items():
-            print date
-            for container in containers:
-                print "\tWork items from %s:" % container.label
-                print "\t\t%s" % ", ".join(str(item) for item in container.items)
+        This is meant to be used in a test that checks the number of DB
+        queries issued by getWorkItemsDueBefore() does not grow according to
+        the number of returned objects.
+        """
+        today = datetime.today().date()
+        current_milestone = self.factory.makeMilestone(
+            dateexpected=today)
+        self.current_milestone = current_milestone
+        future_milestone = self.factory.makeMilestone(
+            product=current_milestone.product,
+            dateexpected=datetime(2060, 1, 1))
+        self.team = team = self.factory.makeTeam()
+
+        # Create a spec assigned to a member of our team and targeted to the
+        # current milestone. Also creates a workitem with no explicit
+        # assignee/milestone.
+        assigned_spec = self.factory.makeSpecification(
+            assignee=team.teamowner, milestone=current_milestone,
+            product=current_milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem_from_assigned_spec', specification=assigned_spec)
+
+        # Create a spec assigned to a member of our team but targeted to a
+        # future milestone, together with a workitem targeted to the current
+        # milestone.
+        future_spec = self.factory.makeSpecification(
+            milestone=future_milestone, product=future_milestone.product,
+            priority=SpecificationPriority.HIGH, assignee=team.teamowner)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem_from_future_spec assigned to team member',
+            specification=future_spec, milestone=current_milestone)
+
+        # Create a spec assigned to nobody and targeted to the current
+        # milestone, together with a workitem explicitly assigned to a member
+        # of our team.
+        foreign_spec = self.factory.makeSpecification(
+            milestone=current_milestone, product=current_milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem_from_foreign_spec assigned to team member',
+            specification=foreign_spec, assignee=team.teamowner)
+
+        # Create a bug targeted to the current milestone and assign it to a
+        # member of our team.
+        bugtask = self.factory.makeBug(
+            milestone=current_milestone).bugtasks[0]
+        removeSecurityProxy(bugtask).assignee = team.teamowner
+
+        # Create a BugTask whose target is a ProductSeries
+        bugtask2 = self.factory.makeBug(
+            series=current_milestone.productseries).bugtasks[1]
+        self.assertIsInstance(bugtask2.target, ProductSeries)
+        removeSecurityProxy(bugtask2).assignee = team.teamowner
+        removeSecurityProxy(bugtask2).milestone = current_milestone
+
+        # Create a BugTask whose target is a DistroSeries
+        current_distro_milestone = self.factory.makeMilestone(
+            distribution=self.factory.makeDistribution(),
+            dateexpected=today)
+        bugtask3 = self.factory.makeBug(
+            series=current_distro_milestone.distroseries).bugtasks[1]
+        self.assertIsInstance(bugtask3.target, DistroSeries)
+        removeSecurityProxy(bugtask3).assignee = team.teamowner
+        removeSecurityProxy(bugtask3).milestone = current_distro_milestone
+
+        # Create a bug with two conjoined BugTasks whose target is a SourcePackage
+        distroseries = current_distro_milestone.distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        bug = self.factory.makeBug(
+            milestone=current_distro_milestone,
+            sourcepackagename=sourcepackagename,
+            distribution=distroseries.distribution)
+        slave_task = bug.bugtasks[0]
+        package = distroseries.getSourcePackage(sourcepackagename.name)
+        master_task = removeSecurityProxy(bug).addTask(bug.owner, package)
+        self.assertIsInstance(master_task.target, SourcePackage)
+        self.assertIsInstance(slave_task.target, DistributionSourcePackage)
+        removeSecurityProxy(master_task).assignee = team.teamowner
+        removeSecurityProxy(master_task).milestone = current_distro_milestone

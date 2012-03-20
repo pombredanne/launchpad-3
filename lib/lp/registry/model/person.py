@@ -4976,6 +4976,7 @@ def _get_recipients_for_team(team):
         need_preferred_email=True)
 
 
+# TODO: Need tests for the two classes below.
 class WorkItemContainer:
     """A container of work items.
 
