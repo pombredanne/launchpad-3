@@ -343,9 +343,14 @@ class CeleryJobSource:
 
     memory_limit = 2 * (1024 ** 3)
 
-    @staticmethod
-    def get(job_id):
-        scripts.execute_zcml_for_scripts(use_web_security=False)
+    needs_init = True
+
+    @classmethod
+    def get(cls, job_id):
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+
         dbconfig.override(
             dbuser='branchscanner', isolation_level='read_committed')
         from lp.code.model.branchjob import (

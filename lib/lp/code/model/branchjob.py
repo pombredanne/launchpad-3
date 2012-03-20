@@ -98,7 +98,10 @@ from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    CeleryRunJob,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
@@ -301,7 +304,9 @@ class BranchScanJob(BranchJobDerived):
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
         branch_job = BranchJob(branch, cls.class_job_type, {})
-        return cls(branch_job)
+        derived_job = cls(branch_job)
+        CeleryRunJob.delay(derived_job.job_id)
+        return derived_job
 
     def run(self):
         """See `IBranchScanJob`."""
