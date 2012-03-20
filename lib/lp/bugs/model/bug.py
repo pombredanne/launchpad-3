@@ -111,8 +111,8 @@ from lp.bugs.interfaces.bug import (
     IBugMute,
     IBugSet,
     IFileBugData,
-    PRIVATE_BUG_TYPES,
-    SECURITY_BUG_TYPES,
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -395,14 +395,14 @@ class Bug(SQLBase):
     @property
     def private(self):
         if self.information_type:
-            return self.information_type in PRIVATE_BUG_TYPES
+            return self.information_type in PRIVATE_INFORMATION_TYPES
         else:
             return self._private
 
     @property
     def security_related(self):
         if self.information_type:
-            return self.information_type in SECURITY_BUG_TYPES
+            return self.information_type in SECURITY_INFORMATION_TYPES
         else:
             return self._security_related
 
