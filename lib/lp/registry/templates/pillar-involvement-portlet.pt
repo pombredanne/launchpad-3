@@ -72,13 +72,10 @@
         </table>
       </div>
 
-      <div id="show-hide-configs"
-           class="collapsible">
-        <legend>
-          <div class="config-options" style="margin-bottom: 0.5em;">
-            Configuration options
-          </div>
-        </legend>
+      <div id="show-hide-configs" class="collapsible">
+        <div class="config-options">
+          Configuration options
+        </div>
         <div
           tal:attributes="class
             python: 'expanded'
