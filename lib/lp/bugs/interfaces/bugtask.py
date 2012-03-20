@@ -1481,6 +1481,12 @@ class IBugTaskSet(Interface):
         Return a dict mapping from bugtask to tag.
         """
 
+    def getBugTaskPeople(bugtasks):
+        """Return a set of people related to bugtasks.
+
+        Return a dict mapping from Person.id to Person.
+        """
+
     def getBugTaskBadgeProperties(bugtasks):
         """Return whether the bugtasks should have badges.
 
