@@ -11,6 +11,8 @@ __all__ = [
     'CLOSED_TEAM_POLICY',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'IHasStanding',
     'IObjectReassignment',
     'IPerson',
@@ -18,11 +20,11 @@ __all__ = [
     'IPersonPublic',
     'IPersonSet',
     'IPersonSettings',
-    'ISoftwareCenterAgentAPI',
-    'ISoftwareCenterAgentApplication',
     'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -44,6 +46,8 @@ __all__ = [
     'validate_subscription_policy',
     ]
 
+import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -54,6 +58,7 @@ from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
@@ -61,6 +66,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -124,7 +130,6 @@ from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
     IHasLocation,
-    ILocationRecord,
     IObjectWithLocation,
     ISetLocation,
     )
@@ -501,10 +506,9 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
-        having a PPA.
+        Only Launchpad admins and team members can view the team's data.
+        Other users may only know of the team if it is placed
+        in a public relationship such as subscribing to a bug.
         """)
 
 
@@ -517,9 +521,6 @@ class PersonNameField(BlacklistableContentNameField):
     teams.
     """
     errormessage = _("%s is already in use by another person or team.")
-
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -690,9 +691,39 @@ class IPersonPublic(IPrivacy):
     account_status_comment = Text(
         title=_("Why are you deactivating your account?"), required=False,
         readonly=True)
+    visibility = exported(
+        Choice(title=_("Visibility"),
+               description=_(
+                   "Anyone can see a public team's data. Only team members "
+                   "and Launchpad admins can see private team data. "
+                   "Private teams cannot become public."),
+               required=True, vocabulary=PersonVisibility,
+               default=PersonVisibility.PUBLIC, readonly=True))
 
     def anyone_can_join():
         """Quick check as to whether a team allows anyone to join."""
+
+    def checkAllowVisibility():
+        """Is the user allowed to see the visibility field.
+
+        :param: The user.
+        :return: True if they can, otherwise False.
+        """
+
+    @mutator_for(visibility)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(visibility=copy_field(visibility))
+    @export_write_operation()
+    @operation_for_version("beta")
+    def transitionVisibility(visibility, user):
+        """Set visibility of IPerson.
+
+        :param visibility: The PersonVisibility to change to.
+        :param user: The user requesting the change.
+        :raises: `ImmutableVisibilityError` when the visibility can not
+            be changed.
+        :return: None.
+        """
 
 
 class IPersonLimitedView(IHasIcon, IHasLogo):
@@ -987,8 +1018,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
             readonly=True, required=False,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
-
-    entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
@@ -1580,31 +1609,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants_count = Attribute(
-        "The number of mapped participants")
-    unmapped_participants = doNotSnapshot(
-        CollectionField(
-            title=_("List of participants with no coordinates recorded."),
-            value_type=Reference(schema=Interface)))
-    unmapped_participants_count = Attribute(
-        "The number of unmapped participants")
-
-    def getMappedParticipants(limit=None):
-        """List of participants with coordinates.
-
-        :param limit: The optional maximum number of items to return.
-        :return: A list of `IPerson` objects
-        """
-
-    def getMappedParticipantsBounds():
-        """Return a dict of the bounding longitudes latitudes, and centers.
-
-        This method cannot be called if there are no mapped participants.
-
-        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
-            center_lat, and center_lng
-        """
-
     def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
@@ -1679,13 +1683,6 @@ class IPersonEditRestricted(Interface):
 
         :param team: The team to leave.
         """
-
-    @operation_parameters(
-        visible=copy_field(ILocationRecord['visible'], required=True))
-    @export_write_operation()
-    @operation_for_version("beta")
-    def setLocationVisibility(visible):
-        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
@@ -1801,19 +1798,6 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonCommAdminWriteRestricted(Interface):
-    """IPerson attributes that require launchpad.Admin permission to set."""
-
-    visibility = exported(
-        Choice(title=_("Visibility"),
-               description=_(
-                   "Public visibility is standard.  "
-                   "Private means the team is completely "
-                   "hidden."),
-               required=True, vocabulary=PersonVisibility,
-               default=PersonVisibility.PUBLIC))
-
-
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
@@ -1873,9 +1857,8 @@ class IPersonSpecialRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonCommAdminWriteRestricted,
-              IPersonSpecialRestricted, IHasStanding, ISetLocation,
-              IRootContext):
+              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
+              ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2305,9 +2288,6 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
-
     def mergeAsync(from_person, to_person, reviewer=None, delete=False):
         """Merge a person/team into another asynchronously.
 
@@ -2532,10 +2512,22 @@ class ISoftwareCenterAgentAPI(Interface):
         """
 
 
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
+
+
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
+@error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
 
@@ -2559,7 +2551,6 @@ for name in [
     'invited_members',
     'deactivatedmembers',
     'expiredmembers',
-    'unmapped_participants',
     ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 

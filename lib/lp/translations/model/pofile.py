@@ -102,7 +102,6 @@ from lp.translations.model.potmsgset import (
     credits_message_str,
     POTMsgSet,
     )
-from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment,
@@ -328,10 +327,6 @@ class POFileMixIn(RosettaStats):
     def getFullLanguageName(self):
         """See `IPOFile`."""
         return self.language.englishname
-
-    def makeTranslatableMessage(self, potmsgset):
-        """See `IPOFile`."""
-        return TranslatableMessage(potmsgset, self)
 
     def markChanged(self, translator=None, timestamp=None):
         """See `IPOFile`."""

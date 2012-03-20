@@ -71,6 +71,14 @@
         permission="zope.Public"
         />
 
+    <browser:page
+        for="Exception"
+        name="+hierarchy"
+        class="lp.app.browser.launchpad.ExceptionHierarchy"
+        template="../templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
+
     <!-- batching -->
     <browser:page
         for="lp.services.webapp.interfaces.IBatchNavigator"

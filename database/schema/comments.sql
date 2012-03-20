@@ -2,9 +2,23 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
+
+-- AccessArtifact
+
+COMMENT ON TABLE AccessArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessArtifactGrant.';
+COMMENT ON COLUMN AccessArtifact.bug IS 'The bug that this abstract artifact represents.';
+COMMENT ON COLUMN AccessArtifact.branch IS 'The branch that this abstract artifact represents.';
+
+-- AccessArtifactGrant
+
+COMMENT ON TABLE AccessArtifactGrant IS 'A grant for a person to access an artifact.';
+COMMENT ON COLUMN AccessArtifactGrant.artifact IS 'The artifact on which access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantee IS 'The person to whom access is granted.';
+COMMENT ON COLUMN AccessArtifactGrant.grantor IS 'The person who granted the access.';
+COMMENT ON COLUMN AccessArtifactGrant.date_created IS 'The date the access was granted.';
 
 -- AccessPolicy
 
@@ -15,19 +29,24 @@ COMMENT ON COLUMN AccessPolicy.type IS 'The type of policy (an enum value). Priv
 
 -- AccessPolicyArtifact
 
-COMMENT ON TABLE AccessPolicyArtifact IS 'An artifact that an access grant can apply to. Additional private artifacts should be handled by adding new columns here, rather than new tables or columns on AccessPolicyGrant.';
-COMMENT ON COLUMN AccessPolicyArtifact.bug IS 'The bug that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.branch IS 'The branch that this abstract artifact represents.';
-COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'An optional policy that controls access to this artifact. Otherwise the artifact is public.';
+COMMENT ON TABLE AccessPolicyArtifact IS 'An association between an artifact and a policy. A grant for any related policy grants access to the artifact.';
+COMMENT ON COLUMN AccessPolicyArtifact.artifact IS 'The artifact associated with this policy.';
+COMMENT ON COLUMN AccessPolicyArtifact.policy IS 'The policy associated with this artifact.';
+
+-- AccessPolicyGrantFlat
+
+COMMENT ON TABLE AccessPolicyGrantFlat IS 'A fact table for access queries. AccessPolicyGrants are included verbatim, but AccessArtifactGrants are included with their artifacts'' corresponding policies.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.policy IS 'The policy on which access is granted.';
+COMMENT ON COLUMN AccessPolicyGrantFlat.artifact IS 'The artifact on which access is granted. If null, the grant is for the whole policy';
+COMMENT ON COLUMN AccessPolicyGrantFlat.grantee IS 'The person to whom access is granted.';
 
 -- AccessPolicyGrant
 
-COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a specific artifact or all artifacts controlled by a particular policy.';
+COMMENT ON TABLE AccessPolicyGrant IS 'A grant for a person to access a policy''s artifacts.';
+COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantee IS 'The person to whom access is granted.';
 COMMENT ON COLUMN AccessPolicyGrant.grantor IS 'The person who granted the access.';
 COMMENT ON COLUMN AccessPolicyGrant.date_created IS 'The date the access was granted.';
-COMMENT ON COLUMN AccessPolicyGrant.policy IS 'The policy on which access is granted.';
-COMMENT ON COLUMN AccessPolicyGrant.artifact IS 'The artifact on which access is granted.';
 
 -- Announcement
 
@@ -88,6 +107,7 @@ COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in th
 COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
 COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
 COMMENT ON COLUMN Branch.transitively_private IS 'A branch is transitively private if it is explicitly private or is stacked on a transitively private branch.';
+COMMENT ON COLUMN Branch.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BranchMergeQueue
 COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
@@ -197,6 +217,7 @@ COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by t
 COMMENT ON COLUMN Bug.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 COMMENT ON COLUMN Bug.heat_last_updated IS 'The time this bug''s heat was last updated, or NULL if the heat has never yet been updated.';
 COMMENT ON COLUMN Bug.latest_patch_uploaded IS 'The time when the most recent patch has been attached to this bug or NULL if no patches are attached';
+COMMENT ON COLUMN Bug.information_type IS 'Enum describing what type of information is stored, such as type of private or security related data, and used to determine how to apply an access policy.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -205,12 +226,6 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
-
--- BugJob
-COMMENT ON TABLE BugJob IS 'Contains references to jobs to be run against Bugs.';
-COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
-COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
-COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
 -- BugMute
 COMMENT ON TABLE BugMute IS 'Mutes for bug notifications.';
@@ -898,6 +913,36 @@ COMMENT ON COLUMN RevisionCache.product IS 'The product that the revision is fou
 COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a source package branch contains the revision.';
 COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
 COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
+
+-- specificationworkitem
+COMMENT ON TABLE specificationworkitem IS 'A work item which is a piece of work relating to a blueprint.';
+COMMENT ON COLUMN specificationworkitem.id IS 'The id of the work item.';
+COMMENT ON COLUMN specificationworkitem.title IS 'The title of the work item.';
+COMMENT ON COLUMN specificationworkitem.specification IS 'The blueprint that this work item is a part of.';
+COMMENT ON COLUMN specificationworkitem.assignee IS 'The person who is assigned to complete the work item.';
+COMMENT ON COLUMN specificationworkitem.milestone IS 'The milestone this work item is targetted to.';
+COMMENT ON COLUMN specificationworkitem.date_created IS 'The date on which the work item was created.';
+COMMENT ON COLUMN specificationworkitem.sequence IS 'The sequence number specifies the order of work items in the UI.';
+COMMENT ON COLUMN specificationworkitem.deleted IS 'Marks if the work item has been deleted. To be able to keep history we do not want to actually delete them from the database.';
+
+-- specificationworkitemchange
+COMMENT ON TABLE specificationworkitemchange IS 'A property change on a work item.';
+COMMENT ON COLUMN specificationworkitemchange.id IS 'Id of the change.';
+COMMENT ON COLUMN specificationworkitemchange.work_item IS 'The work item for which a propery has changed.';
+COMMENT ON COLUMN specificationworkitemchange.new_status IS 'The new status for the work item.';
+COMMENT ON COLUMN specificationworkitemchange.new_milestone IS 'The new milestone the work item has been targetted to.';
+COMMENT ON COLUMN specificationworkitemchange.new_assignee IS 'The person which the work item has be assigned to.';
+COMMENT ON COLUMN specificationworkitemchange.date_created IS 'The time of the change.';
+
+-- specificationworkitemstats
+COMMENT ON TABLE specificationworkitemstats IS 'Stats for work items that are collected by a scheduled script.';
+COMMENT ON COLUMN specificationworkitemstats.id IS 'The id for this stats collection.';
+COMMENT ON COLUMN specificationworkitemstats.specification IS 'The related blueprint.';
+COMMENT ON COLUMN specificationworkitemstats.day IS 'Day when the stats where collected.';
+COMMENT ON COLUMN specificationworkitemstats.status IS 'The work item status that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.assignee IS 'The assignee that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.milestone IS 'The milestone that work items are counted for.';
+COMMENT ON COLUMN specificationworkitemstats.count IS 'The number of work items for the blueprint with the particular status, assignee and milestone.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -2131,25 +2176,6 @@ COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that 
 COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
 COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
 COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
-
--- Entitlement
-COMMENT ON TABLE Entitlement IS 'Entitlements and usage of privileged features.';
-COMMENT ON COLUMN Entitlement.person IS 'The person to which the entitlements apply.';
-COMMENT ON COLUMN Entitlement.registrant IS 'The person (admin) who registered this entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.approved_by IS 'The person who approved this entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.date_approved IS 'Approval date of entitlement.  It is NULL if imported directly from an external sales system.';
-COMMENT ON COLUMN Entitlement.date_created IS 'Creation date of entitlement.';
-COMMENT ON COLUMN Entitlement.date_starts IS 'When this entitlement becomes active.';
-COMMENT ON COLUMN Entitlement.date_expires IS 'When this entitlement expires.';
-COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement (e.g. private bug).';
-COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
-COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
-COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
-COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
-COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
-COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
-COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
-COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';

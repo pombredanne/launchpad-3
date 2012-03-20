@@ -515,11 +515,6 @@
             permission="launchpad.Admin"
             set_attributes="commenttext sourcecomment filereferences flagscomment"/>
     </class>
-    <class
-        class="lp.translations.model.translatablemessage.TranslatableMessage">
-        <allow
-            interface="lp.translations.interfaces.translatablemessage.ITranslatableMessage"/>
-    </class>
 
         <!-- LanguagePack -->
 

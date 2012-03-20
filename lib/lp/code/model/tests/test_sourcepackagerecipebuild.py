@@ -21,6 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
@@ -608,7 +609,7 @@ class TestBuildNotifications(TrialTestCase):
                 result=True)
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        queue_record.builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         return build
 
     def assertDeferredNotifyCount(self, status, build, expected_count):

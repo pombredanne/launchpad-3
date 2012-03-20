@@ -14,30 +14,19 @@
         </li>
 
         <li>
-          <p>
+          <p id="ssh-key-directions">
             Otherwise, if the code is in a Bazaar branch not yet on Launchpad
-            you can either:
-          </p>
-
-          <ul class="bulleted" style="margin-bottom: 0;">
-            <li>
-              Have the branch mirrored from a remote location by
-               <a tal:attributes="href context/product/menu:overview/branch_add/fmt:url">
-              registering a mirrored branch</a>
-            </li>
-            <li id="ssh-key-directions">
-              Push the branch directly to Launchpad, e.g. with:<br />
-              <tt><strong>
+            you can push the branch directly to Launchpad, e.g. with:<br />
+              <tt class="command">
                 bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/<tal:series replace="context/name"/>
-              </strong></tt>
+              </tt>
               <tal:no-keys condition="not:view/user/sshkeys">
                 <br/>To authenticate with the Launchpad branch upload service,
                 you need to
                 <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
                   register a SSH key</a>.
               </tal:no-keys>
-            </li>
-          </ul>
+          </p>
         </li>
 
         <li id="external-code">

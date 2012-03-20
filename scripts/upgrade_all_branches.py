@@ -3,8 +3,9 @@
 __metaclass__ = type
 
 import _pythonpath
+#quiet pyflakes
+_pythonpath
 
-import sys
 from lp.codehosting.upgrade import Upgrader
 from lp.codehosting.bzrutils import server
 from lp.codehosting.vfs.branchfs import get_rw_server

@@ -107,6 +107,7 @@ from testtools.matchers import (
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from zope.component import (
+    ComponentLookupError,
     getMultiAdapter,
     getSiteManager,
     getUtility,
@@ -1384,9 +1385,9 @@ class NestedTempfile(fixtures.Fixture):
 
 
 @contextmanager
-def temp_dir():
+def temp_dir(dir=None):
     """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp()
+    tempdir = tempfile.mkdtemp(dir=dir)
     yield tempdir
     shutil.rmtree(tempdir, ignore_errors=True)
 
@@ -1519,3 +1520,18 @@ class FakeAdapterMixin:
 
     def getAdapter(self, for_interfaces, provided_interface, name=None):
         return getMultiAdapter(for_interfaces, provided_interface, name=name)
+
+    def registerUtility(self, component, for_interface, name=''):
+        try:
+            current_commponent = getUtility(for_interface, name=name)
+        except ComponentLookupError:
+            current_commponent = None
+        site_manager = getSiteManager()
+        site_manager.registerUtility(component, for_interface, name)
+        self.addCleanup(
+            site_manager.unregisterUtility, component, for_interface, name)
+        if current_commponent is not None:
+            # Restore the default utility.
+            self.addCleanup(
+                site_manager.registerUtility, current_commponent,
+                for_interface, name)

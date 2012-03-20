@@ -125,7 +125,7 @@ series, we can create structural bug subscriptions.
     http://launchpad.dev/ubuntu/warty/+subscribe
 
     >>> print admin_browser.title
-    Subscribe to Bugs in The Warty Warthog Release
+    Subscribe : Warty (4.10) : Ubuntu
 
 
 Upstream packaging portlet

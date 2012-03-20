@@ -19,7 +19,7 @@ The test browser does not support javascript
 We're now redirected to the newly created bugtask page.
 
     >>> user_browser.title
-    'Bug #1 in The Foo Project...'
+    'Bug #1 ... : Bugs : The Foo Project'
 
 When creating a new upstream through this page we'll check if there's any
 upstream already registered in Launchpad which uses the same bugtracker as
@@ -61,7 +61,7 @@ First, let's use the existing project.
 
     >>> user_browser.getControl('Use Existing Project').click()
     >>> user_browser.title
-    'Bug #2 in The Foo Project...'
+    'Bug #2 (blackhole) ... : Bugs : The Foo Project'
 
     >>> from lp.bugs.tests.bug import print_remote_bugtasks
     >>> print_remote_bugtasks(user_browser.contents)
@@ -86,7 +86,7 @@ the bug as affecting another (unregistered) upstream.
     ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=123')
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.title
-    'Bug #2 in The Bar Project:...
+    'Bug #2 (blackhole) ... : Bugs : The Bar Project'
     >>> print_remote_bugtasks(user_browser.contents)
     The Bar Project ...   auto-bugs.foo.org #123
     The Bar Project ...   auto-bugs.foo.org #421

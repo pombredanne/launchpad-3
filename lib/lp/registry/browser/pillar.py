@@ -9,22 +9,33 @@ __all__ = [
     'InvolvedMenu',
     'PillarView',
     'PillarBugsMenu',
+    'PillarSharingView',
     ]
 
 
 from operator import attrgetter
+import simplejson
 
+from lazr.restful import ResourceJSONEncoder
+from lazr.restful.interfaces._rest import IJSONRequestCache
+
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.schema.interfaces import IVocabulary
+from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
@@ -35,6 +46,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -55,8 +67,7 @@ class InvolvedMenu(NavigationMenu):
     """The get involved menu."""
     usedfor = IInvolved
     links = [
-        'report_bug', 'ask_question', 'help_translate', 'submit_code',
-        'register_blueprint']
+        'report_bug', 'ask_question', 'help_translate', 'register_blueprint']
 
     @property
     def pillar(self):
@@ -76,18 +87,6 @@ class InvolvedMenu(NavigationMenu):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
             enabled=service_uses_launchpad(self.pillar.translations_usage))
-
-    def submit_code(self):
-        if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD,
-                ServiceUsage.EXTERNAL,
-                ]:
-            enabled = True
-        else:
-            enabled = False
-        return Link(
-            '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
@@ -217,3 +216,56 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+
+class PillarSharingView(LaunchpadView):
+
+    page_title = "Sharing"
+    label = "Sharing information"
+
+    def _getSharingService(self):
+        return getUtility(IService, 'sharing')
+
+    @property
+    def information_types(self):
+        return self._getSharingService().getInformationTypes(self.context)
+
+    @property
+    def sharing_permissions(self):
+        return self._getSharingService().getSharingPermissions()
+
+    @cachedproperty
+    def sharing_vocabulary(self):
+        registry = getVocabularyRegistry()
+        return registry.get(
+            IVocabulary, 'ValidPillarOwner')
+
+    @cachedproperty
+    def sharing_vocabulary_filters(self):
+        return vocabulary_filters(self.sharing_vocabulary)
+
+    @property
+    def sharing_picker_config(self):
+        return dict(
+            vocabulary='ValidPillarOwner',
+            vocabulary_filters=self.sharing_vocabulary_filters,
+            header='Grant access to %s'
+                % self.context.displayname)
+
+    @property
+    def json_sharing_picker_config(self):
+        return simplejson.dumps(
+            self.sharing_picker_config, cls=ResourceJSONEncoder)
+
+    @property
+    def sharee_data(self):
+        return self._getSharingService().getPillarSharees(self.context)
+
+    def initialize(self):
+        super(PillarSharingView, self).initialize()
+        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+            raise Unauthorized("This feature is not yet available.")
+        cache = IJSONRequestCache(self.request)
+        cache.objects['information_types'] = self.information_types
+        cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['sharee_data'] = self.sharee_data

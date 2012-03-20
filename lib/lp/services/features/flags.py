@@ -31,7 +31,9 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -79,6 +81,20 @@ flag_info = sorted([
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
+    ('bugs.statistics_portlet.hide_fixed_elsewhere_count',
+     'boolean',
+     ('Hides the "Bugs fixed elsewhere" count in the bug target statistics '
+      'portlet.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -124,12 +140,6 @@ flag_info = sorted([
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
-     '',
-     '',
-     ''),
-    ('malone.disable_targetnamesearch',
-     'boolean',
-     'If true, disables consultation of target names during bug text search.',
      '',
      '',
      ''),
@@ -200,13 +210,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
     ('disclosure.enhanced_private_bug_subscriptions.enabled',
      'boolean',
      ('Enables the auto subscribing and unsubscribing of users as a bug '
@@ -274,6 +277,27 @@ flag_info = sorted([
      'boolean',
      ('If true, will show the visibility field for IPersonSet:+newteam if '
       'the user has a current commercial subscription.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_choice_popup.enabled',
+     'boolean',
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.enabled',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'to maintain the new disclosure data model.'),
+     '',
+     '',
+     ''),
+    ('garbo.workitem_migrator.enabled',
+     'boolean',
+     ('If true, garbo will try to migrate work items from the whiteboard of '
+      'specifications.'),
      '',
      '',
      ''),
