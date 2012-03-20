@@ -2118,7 +2118,7 @@ class Bug(SQLBase):
         """A set of known persons able to view this bug.
 
         This method must return an empty set or bug searches will trigger late
-        evaluation. Any 'should be set on load' propertis must be done by the
+        evaluation. Any 'should be set on load' properties must be done by the
         bug search.
 
         If you are tempted to change this method, don't. Instead see

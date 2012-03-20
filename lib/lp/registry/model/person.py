@@ -1684,11 +1684,37 @@ class Person(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
 
     def _getSpecificationWorkItemsDueBefore(self, date):
-        pass
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+        WorkItem = SpecificationWorkItem
+        origin = [
+            WorkItem,
+            Join(Specification, WorkItem.specification == Specification.id),
+            LeftJoin(Product, Specification.product == Product.id),
+            LeftJoin(Distribution,
+                     Specification.distribution == Distribution.id),
+            Join(Milestone,
+                 Coalesce(WorkItem.milestone_id,
+                          Specification.milestoneID) == Milestone.id),
+            Join(Person,
+                 Coalesce(WorkItem.assignee_id,
+                          Specification.assigneeID) == Person.id),
+            ]
+        results = store.using(*origin).find(
+            (WorkItem, Milestone, Specification, Person, Product,
+             Distribution),
+            AND(Milestone.dateexpected <= date,
+                Person.id.is_in(self._participant_ids))
+            )
+        for result in results:
+            yield result[0], result[1]
 
-    def _getBugTasksDueBefore(self, date):
+    def _getBugTasksDueBefore(self, date, user):
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.productseries import ProductSeries
         from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1707,13 +1733,14 @@ class Person(
             Join(Milestone, BugTask.milestoneID == Milestone.id),
             Join(Person, BugTask.assigneeID == Person.id),
             ]
+        privacy_filter = get_bug_privacy_filter(user)
         results = store.using(*origin).find(
             (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
              DistroSeries, SourcePackageName, Person),
             AND(Milestone.dateexpected <= date,
-                BugTask.assigneeID.is_in(self._participant_ids))
+                BugTask.assigneeID.is_in(self._participant_ids)),
+            privacy_filter
             )
-        bugtasks = []
         for (bug, task, milestone, product, distro, productseries,
              distroseries, sourcepackagename, assignee) in results:
             # We skip masters (instead of slaves) from conjoined relationships
@@ -1734,47 +1761,18 @@ class Person(
                 # it here.
                 if distroseries.distribution.currentseries == distroseries:
                     continue
-            bugtasks.append(task)
-        return bugtasks
+            yield task
 
     def getWorkItemsDueBefore(self, date):
-        from lp.registry.model.person import Person
-        from lp.registry.model.product import Product
-        from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
-        WorkItem = SpecificationWorkItem
-        origin = [
-            WorkItem,
-            Join(Specification, WorkItem.specification == Specification.id),
-            LeftJoin(Product, Specification.product == Product.id),
-            LeftJoin(Distribution,
-                     Specification.distribution == Distribution.id),
-            Join(Milestone,
-                 Coalesce(WorkItem.milestone_id,
-                          Specification.milestoneID) == Milestone.id),
-            Join(Person,
-                 Coalesce(WorkItem.assignee_id,
-                          Specification.assigneeID) == Person.id),
-            ]
-        # First we select all SpecificationWorkItem objects we want to
-        # display. Notice that we can't assume we want to display all
-        # work-items of a given Specification because work items may, for
-        # instance, be assigned to somebody who's not a member of this team.
-        workitems = store.using(*origin).find(
-            (Specification, WorkItem, Milestone, Person, Product,
-             Distribution),
-            AND(Milestone.dateexpected <= date,
-                OR(Specification.assigneeID.is_in(self._participant_ids),
-                   WorkItem.assignee_id.is_in(self._participant_ids))
-                ))
-
+        workitems = self._getSpecificationWorkItemsDueBefore(date)
         # Now we need to regroup our work items by specification and by date
         # because that's how they'll end up being displayed. While we do this
         # we store all the data we need into WorkItemContainer objects because
         # that's what we want to return.
         containers_by_date = {}
         containers_by_spec = {}
-        for spec, wi, milestone, person, product, distro in workitems:
+        for workitem, milestone in workitems:
+            spec = workitem.specification
             if milestone.dateexpected not in containers_by_date:
                 containers_by_date[milestone.dateexpected] = []
             container = containers_by_spec.get(spec)
@@ -1783,13 +1781,14 @@ class Person(
                     spec.name, spec.target, spec.assignee, spec.priority, [])
                 containers_by_spec[spec] = container
                 containers_by_date[milestone.dateexpected].append(container)
-            container.append(GenericWorkItem.from_workitem(wi))
+            container.append(GenericWorkItem.from_workitem(workitem))
 
+        # Sort our containers by priority.
         for date in containers_by_date:
             containers_by_date[date].sort(
                 key=attrgetter('priority'), reverse=True)
 
-        bugtasks = self._getBugTasksDueBefore(date)
+        bugtasks = self._getBugTasksDueBefore(date, user=None)
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
         for task in bugtasks:
