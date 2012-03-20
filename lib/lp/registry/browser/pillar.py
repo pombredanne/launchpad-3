@@ -2,12 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
-import urlparse
-from lp.app.browser.launchpad import iter_view_registrations
-from lp.services.config import config
-from lp.services.webapp.batching import TableBatchNavigator
-from lp.services.webapp.interfaces import ILaunchBag
-from z3c.ptcompat import ViewPageTemplateFile
+
 __metaclass__ = type
 
 __all__ = [
@@ -22,7 +17,7 @@ from operator import attrgetter
 import simplejson
 
 from lazr.restful import ResourceJSONEncoder
-from lazr.restful.interfaces._rest import IJSONRequestCache
+from lazr.restful.interfaces import IJSONRequestCache
 
 from zope.component import getUtility
 from zope.interface import (
@@ -33,6 +28,7 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
 
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -50,9 +46,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -324,4 +322,3 @@ class PillarSharingView(LaunchpadView):
         last_batch = batch_navigator.batch.lastBatch()
         cache.objects['last_start'] = last_batch.startNumber() - 1
         cache.objects.update(_getBatchInfo(batch_navigator.batch))
-
