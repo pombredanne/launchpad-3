@@ -22,6 +22,8 @@ __all__ = [
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
+    'PRIVATE_BUG_TYPES',
+    'SECURITY_BUG_TYPES',
     ]
 
 from lazr.enum import DBEnumeratedType
@@ -97,6 +99,15 @@ from lp.services.fields import (
 from lp.services.messages.interfaces.message import IMessage
 
 
+PRIVATE_BUG_TYPES = (
+    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+    InformationType.PROPRIETARY)
+
+
+SECURITY_BUG_TYPES = (
+    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
+
+
 class CreateBugParams:
     """The parameters used to create a bug."""
 
@@ -125,6 +136,14 @@ class CreateBugParams:
         self.milestone = milestone
         self.assignee = assignee
         self.cve = cve
+        if private and security_related:
+            self.information_type = InformationType.EMBARGOEDSECURITY
+        elif security_related:
+            self.information_type = InformationType.UNEMBARGOEDSECURITY
+        elif private:
+            self.information_type = InformationType.USERDATA
+        else:
+            self.information_type = InformationType.PUBLIC
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):

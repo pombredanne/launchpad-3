@@ -111,6 +111,8 @@ from lp.bugs.interfaces.bug import (
     IBugMute,
     IBugSet,
     IFileBugData,
+    PRIVATE_BUG_TYPES,
+    SECURITY_BUG_TYPES,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -230,8 +232,8 @@ def snapshot_bug_params(bug_params):
     return Snapshot(
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename",
+            "datecreated", "private", "security_related",
+            "information_type", "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
             "milestone", "assignee", "cve"])
@@ -347,12 +349,13 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    private = BoolCol(notNull=True, default=False)
+    _private = BoolCol(dbName='private', notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    security_related = BoolCol(notNull=True, default=False)
+    _security_related = BoolCol(
+        dbName='security_related', notNull=True, default=False)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
 
@@ -388,6 +391,20 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @property
+    def private(self):
+        if self.information_type:
+            return self.information_type in PRIVATE_BUG_TYPES
+        else:
+            return self._private
+
+    @property
+    def security_related(self):
+        if self.information_type:
+            return self.information_type in SECURITY_BUG_TYPES
+        else:
+            return self._security_related
 
     @cachedproperty
     def _subscriber_cache(self):
@@ -1734,7 +1751,7 @@ class Bug(SQLBase):
                     raise BugCannotBePrivate(
                         "Multi-pillar bugs cannot be private.")
             private_changed = True
-            self.private = private
+            self._private = private
 
             if private:
                 self.who_made_private = who
@@ -1750,14 +1767,21 @@ class Bug(SQLBase):
 
         if self.security_related != security_related:
             security_related_changed = True
-            self.security_related = security_related
+            self._security_related = security_related
 
         if private_changed or security_related_changed:
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
 
-        self._setInformationType()
+        if private and security_related:
+            self.information_type = InformationType.EMBARGOEDSECURITY
+        elif private:
+            self.information_type = InformationType.USERDATA
+        elif security_related:
+            self.information_type = InformationType.UNEMBARGOEDSECURITY
+        else:
+            self.information_type = InformationType.PUBLIC
 
         if private_changed or security_related_changed:
             changed_fields = []
@@ -2806,9 +2830,7 @@ class BugSet:
 
         bug, event = self.createBugWithoutTarget(params)
 
-        if params.security_related:
-            assert params.private, (
-                "A security related bug should always be private by default.")
+        if params.information_type in SECURITY_BUG_TYPES:
             if params.product:
                 context = params.product
             else:
@@ -2858,8 +2880,6 @@ class BugSet:
         if notify_event:
             notify(event)
 
-        bug._setInformationType()
-
         # Calculate the bug's initial heat.
         bug.updateHeat()
 
@@ -2908,9 +2928,10 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            private=params.private, owner=params.owner,
-            datecreated=params.datecreated,
-            security_related=params.security_related,
+            owner=params.owner, datecreated=params.datecreated,
+            _private=params.private,
+            _security_related=params.security_related,
+            information_type=params.information_type,
             **extra_params)
 
         if params.subscribe_owner:
