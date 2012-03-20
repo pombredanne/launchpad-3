@@ -19,6 +19,7 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'maybe_server',
     'read_locked',
     'remove_exception_logging_hook',
     ]
@@ -33,6 +34,7 @@ from bzrlib import (
     )
 from bzrlib.errors import (
     NotStacked,
+    UnsupportedProtocol,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
     )
@@ -42,6 +44,7 @@ from bzrlib.remote import (
     RemoteRepository,
     )
 from bzrlib.transport import (
+    get_transport,
     register_transport,
     unregister_transport,
     )
@@ -338,3 +341,21 @@ def server(server):
         yield server
     finally:
         server.stop_server()
+
+
+@contextmanager
+def maybe_server(server):
+    """Use the server if no server is already registered for its url."""
+    try:
+        get_transport(server.get_url())
+    except UnsupportedProtocol:
+        existing_server = False
+    else:
+        existing_server = True
+    if not existing_server:
+        server.start_server()
+    try:
+        yield
+    finally:
+        if not existing_server:
+            server.stop_server()

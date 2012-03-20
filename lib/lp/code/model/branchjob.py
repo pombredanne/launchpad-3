@@ -80,6 +80,7 @@ from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.bzrutils import maybe_server
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
     branch_id_to_path,
@@ -299,19 +300,16 @@ class BranchScanJob(BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
-        branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
+        branch_job = BranchJob(branch, cls.class_job_type, {})
         return cls(branch_job)
 
     def run(self):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
         server = get_ro_server()
-        server.start_server()
-        try:
+        with maybe_server(server):
             bzrsync = BzrSync(self.branch, log)
             bzrsync.syncBranchAndClose()
-        finally:
-            server.stop_server()
 
     @classmethod
     @contextlib.contextmanager
@@ -339,7 +337,7 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         branch.checkUpgrade()
         branch_job = BranchJob(
-            branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
+            branch, cls.class_job_type, {}, requester=requester)
         return cls(branch_job)
 
     @staticmethod
@@ -424,7 +422,7 @@ class RevisionMailJob(BranchJobDerived):
             'body': body,
             'subject': subject,
         }
-        branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
+        branch_job = BranchJob(branch, cls.class_job_type, metadata)
         return cls(branch_job)
 
     @property
