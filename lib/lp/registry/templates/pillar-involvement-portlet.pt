@@ -56,7 +56,7 @@
 
     <tal:show-registration condition="registration">
       <h2>Configuration Progress</h2>
-      <div id="progressbar" style="border: 1px solid gray; margin-bottom: 5px">
+      <div id="progressbar" style="border: 1px solid gray; margin-bottom: 10px">
         <img
             tal:attributes="alt string:${registration/done}% registration complete;
                             title string:${registration/done}% registration complete;
