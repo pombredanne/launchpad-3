@@ -766,6 +766,13 @@ COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpa
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they''ve reported a new bug.';
 COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
+-- ProductJob
+COMMENT ON TABLE productjob IS 'Contains references to jobs for updating projects and sendd notifications.';
+COMMENT ON COLUMN productjob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN productjob.job_type IS 'The type of job, like 30-day-renewal.';
+COMMENT ON COLUMN productjob.product IS 'The product that is being updated or the maintainers needs notification.';
+COMMENT ON COLUMN productjob.json_data IS 'Data that is specific to the job type, such as text for notifications.';
+
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
 COMMENT ON COLUMN ProductLicense.product IS 'Foreign key to the product that has licenses associated with it.';

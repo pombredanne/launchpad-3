@@ -244,6 +244,42 @@ class TestWorkItemsText(TestCase):
             LaunchpadValidationError, self.field.parseLine,
             '[test-person] :TODO')
 
+    def test_assignee_and_bracket(self):
+        title = "Work item with one ] bracket"
+        work_items_text = ("Work items:\n"
+                           "[person] %s: TODO" % title)
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title,
+                      'status': 'TODO',
+                      'assignee': 'person',
+                      'milestone': None,
+                      'sequence': 0}])
+
+    def test_assignee_and_brackets(self):
+        title = "Work item with two [2] brackets"
+        work_items_text = ("Work items:\n"
+                           "[person] %s: TODO" % title)
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title,
+                      'status': 'TODO',
+                      'assignee': 'person',
+                      'milestone': None,
+                      'sequence': 0}])
+
+    def test_no_assignee_and_brackets(self):
+        title = "Work item with [] brackets"
+        work_items_text = ("Work items:\n"
+                           "%s: TODO" % title)
+        parsed = self.field.parse(work_items_text)
+        self.assertEqual(
+            parsed, [{'title': title,
+                      'status': 'TODO',
+                      'assignee': None,
+                      'milestone': None,
+                      'sequence': 0}])
+
     def test_multi_line_parsing(self):
         title_1 = 'Work item 1'
         title_2 = 'Work item 2'
