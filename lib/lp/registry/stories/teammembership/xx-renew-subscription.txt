@@ -20,7 +20,7 @@ is approved because he is in the active members table.
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
-    Members of \u201cUbuntu Gnome Team\u201d...
+    Members : \u201cUbuntu Gnome Team\u201d team
     >>> content = find_tag_by_id(browser.contents, 'activemembers')
     >>> print extract_text(content)
     Name               Member since  Expires  Status

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -118,7 +118,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         self.new_names = NewSpecificationDefinitionStatus.items.mapping.keys()
 
     def test_new_with_open_definition_status_creates_specification(self):
-        # Calling new() with an open definition status will will create
+        # Calling new() with an open definition status will create
         # a specification.
         self.assertTrue(
             SpecificationDefinitionStatus.NEW.name in self.new_names)

@@ -108,12 +108,6 @@ class TestP3APackages(TestCaseWithFactory):
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
 
-    def test_packages_link_unauthorized(self):
-        login_person(self.fred)
-        view = create_initialized_view(self.private_ppa, "+index")
-        menu = ArchiveNavigationMenu(view)
-        self.assertFalse(menu.packages().enabled)
-
     def test_packages_link_subscriber(self):
         login_person(self.joe)
         view = create_initialized_view(self.private_ppa, "+index")

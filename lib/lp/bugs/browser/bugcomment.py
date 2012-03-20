@@ -46,6 +46,7 @@ from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.messages.interfaces.message import IMessage
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -54,7 +55,6 @@ from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from lp.services.messages.interfaces.message import IMessage
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
 

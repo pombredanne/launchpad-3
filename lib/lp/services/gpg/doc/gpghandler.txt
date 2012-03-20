@@ -303,7 +303,7 @@ the local keyring.
     >>> len(list(gpghandler.localKeys()))
     0
 
-When we we need the public key again we use retrieveKey(), which will
+When we need the public key again we use retrieveKey(), which will
 hit the keyserver and import it automatically.
 
     >>> retrieved_key = gpghandler.retrieveKey(new_key.fingerprint)

@@ -1,10 +1,10 @@
+from lp.services.comments.browser.comment import CommentBodyDownloadView
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
-)
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.services.comments.browser.comment import CommentBodyDownloadView
-from lp.services.webapp.servers import LaunchpadTestRequest
 
 
 class FakeComment:

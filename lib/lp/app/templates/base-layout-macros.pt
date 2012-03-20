@@ -37,6 +37,7 @@
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
+      combo_url view/combo_url;
       devmode modules/lp.services.config/config/devmode;
       yui_version view/yui_version;
       yui_console_debug view/yui_console_debug;"
@@ -78,20 +79,20 @@
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
 
   <tal:js-loader condition="request/features/js.combo_loader.enabled">
-   <script
-   src="/+combo/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+   <script type="text/javascript"
+        tal:attributes="src string:${combo_url}/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         YUI.GlobalConfig = {
             combine: true,
-            comboBase: '/+combo/?',
+            comboBase: '${combo_url}/?',
             root: 'yui/',
             debug: ${yui_console_debug},
             fetchCSS: false,
             groups: {
                 lp: {
                     combine: true,
-                    base: '/+combo/?lp/',
-                    comboBase: '/+combo/?',
+                    base: '${combo_url}/?lp/',
+                    comboBase: '${combo_url}/?',
                     root: 'lp/',
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
@@ -99,8 +100,8 @@
                 },
                 yui2: {
                     combine: true,
-                    base: '/+combo/?yui2/',
-                    comboBase: '/+combo/?',
+                    base: '${combo_url}/?yui2/',
+                    comboBase: '${combo_url}/?',
                     root: 'yui2/',
                     fetchCSS: false,
                     modules: {
@@ -125,13 +126,14 @@
         }">
    </script>
 
-   <script type="text/javascript">
-       // we need this to create a single YUI instance all events and code
-       // talks across. All instances of YUI().use should be based off of
-       // LPJS instead.
-       LPJS = new YUI();
-   </script>
   </tal:js-loader>
+  <script type="text/javascript">
+      // we need this to create a single YUI instance all events and code
+      // talks across. All instances of YUI().use should be based off of
+      // LPJS instead.
+      LPJS = new YUI();
+  </script>
+
 </metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
@@ -472,25 +474,24 @@
 
 
 <metal:debug-timeline define-macro="debug-timeline">
-  <a name="debug_timeline"
-    id="debug_timeline"
-    class="hidden"
-    >
-    <table
-      tal:condition="request/features/visible_render_time"
-      tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
-      class="debug-timeline listing"
-      >
+  <a tal:condition="request/features/visible_render_time"
+     tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
+     id="debug_timeline" class="hidden">
+    <table class="debug-timeline listing">
       <thead>
-	<th>Duration</th>
-	<th>Action</th>
+        <tr>
+          <th>Duration</th>
+          <th>Action</th>
+        </tr>
       </thead>
-      <tr tal:repeat="action timeline_actions">
-	<td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
-	<td style="font-family: monospace; text-align: left;">
-          <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
-	</td>
-      </tr>
+      <tbody>
+        <tr tal:repeat="action timeline_actions">
+          <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
+          <td style="font-family: monospace; text-align: left;">
+            <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
+          </td>
+        </tr>
+      </tbody>
     </table>
   </a>
 </metal:debug-timeline>

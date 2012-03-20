@@ -1,6 +1,7 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 __metaclass__ = type
 
 from cStringIO import StringIO
@@ -9,6 +10,8 @@ import datetime
 import pytz
 from testtools.matchers import MatchesAll
 import transaction
+from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -22,7 +25,12 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.registry.errors import OpenTeamLinkageError
+from lp.registry.enums import InformationType
+from lp.registry.errors import (
+    CommercialSubscribersOnly,
+    OpenTeamLinkageError,
+    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -33,7 +41,6 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.product import (
     Product,
     UnDeactivateable,
@@ -43,6 +50,7 @@ from lp.testing import (
     celebrity_logged_in,
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -258,6 +266,94 @@ class TestProduct(TestCaseWithFactory):
             closed_team = self.factory.makeTeam(subscription_policy=policy)
             self.factory.makeProduct(security_contact=closed_team)
 
+    def test_private_bugs_on_not_allowed_for_anonymous(self):
+        # Anonymous cannot turn on private bugs.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.checkPrivateBugsTransitionAllowed, True, None)
+
+    def test_private_bugs_off_not_allowed_for_anonymous(self):
+        # Anonymous cannot turn private bugs off.
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Unauthorized,
+            product.checkPrivateBugsTransitionAllowed, False, None)
+
+    def test_private_bugs_on_not_allowed_for_unauthorised(self):
+        # Unauthorised users cannot turn on private bugs.
+        product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.checkPrivateBugsTransitionAllowed, True, someone)
+
+    def test_private_bugs_off_not_allowed_for_unauthorised(self):
+        # Unauthorised users cannot turn private bugs off.
+        product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized,
+            product.checkPrivateBugsTransitionAllowed, False, someone)
+
+    def test_private_bugs_on_allowed_for_moderators(self):
+        # Moderators can turn on private bugs.
+        product = self.factory.makeProduct()
+        registry_expert = self.factory.makeRegistryExpert()
+        product.checkPrivateBugsTransitionAllowed(True, registry_expert)
+
+    def test_private_bugs_off_allowed_for_moderators(self):
+        # Moderators can turn private bugs off.
+        product = self.factory.makeProduct()
+        registry_expert = self.factory.makeRegistryExpert()
+        product.checkPrivateBugsTransitionAllowed(False, registry_expert)
+
+    def test_private_bugs_on_allowed_for_commercial_subscribers(self):
+        # Commercial subscribers can turn on private bugs.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        self.factory.makeCommercialSubscription(product)
+        product.checkPrivateBugsTransitionAllowed(True, bug_supervisor)
+
+    def test_private_bugs_on_not_allowed_for_expired_subscribers(self):
+        # Expired Commercial subscribers cannot turn on private bugs.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        self.factory.makeCommercialSubscription(product, expired=True)
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.setPrivateBugs, True, bug_supervisor)
+
+    def test_private_bugs_off_allowed_for_bug_supervisors(self):
+        # Bug supervisors can turn private bugs off.
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        product.checkPrivateBugsTransitionAllowed(False, bug_supervisor)
+
+    def test_unauthorised_set_private_bugs_raises(self):
+        # Test Product.setPrivateBugs raises an error if user unauthorised.
+        product = self.factory.makeProduct()
+        someone = self.factory.makePerson()
+        self.assertRaises(
+            CommercialSubscribersOnly,
+            product.setPrivateBugs, True, someone)
+
+    def test_set_private_bugs(self):
+        # Test Product.setPrivateBugs()
+        bug_supervisor = self.factory.makePerson()
+        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
+        self.factory.makeCommercialSubscription(product)
+        product.setPrivateBugs(True, bug_supervisor)
+        self.assertTrue(product.private_bugs)
+
+    def test_product_creation_creates_accesspolicies(self):
+        # Creating a new product also creates AccessPolicies for it.
+        product = self.factory.makeProduct()
+        ap = getUtility(IAccessPolicySource).findByPillar((product,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
+
 
 class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
@@ -266,9 +362,6 @@ class TestProductFiles(TestCase):
 
     def test_adddownloadfile_nonascii_filename(self):
         """Test uploading a file with a non-ascii char in the filename."""
-        # XXX EdwinGrubbs 2008-03-06 bug=69988
-        # Doctests are difficult to use with non-ascii characters, so
-        # I have used a unittest.
         firefox_owner = setupBrowser(auth='Basic mark@example.com:test')
         filename = u'foo\xa5.txt'.encode('utf-8')
         firefox_owner.open(
@@ -313,7 +406,7 @@ class TestProductFiles(TestCase):
         self.assertEqual(a_element.contents[0].strip(), u'sig')
 
 
-class ProductAttributeCacheTestCase(TestCase):
+class ProductAttributeCacheTestCase(TestCaseWithFactory):
     """Cached attributes must be cleared at the end of a transaction."""
 
     layer = DatabaseFunctionalLayer
@@ -343,38 +436,83 @@ class ProductAttributeCacheTestCase(TestCase):
     def testCommercialSubscriptionCache(self):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
-        now = datetime.datetime.now(pytz.UTC)
-        CommercialSubscription(
-            product=self.product,
-            date_starts=now,
-            date_expires=now,
-            registrant=self.product.owner,
-            purchaser=self.product.owner,
-            sales_system_id='foo',
-            whiteboard='bar')
+        self.factory.makeCommercialSubscription(self.product)
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
-        self.assertEqual(self.product.commercial_subscription.sales_system_id,
-                         'hello')
+        self.assertEqual(
+            'hello', self.product.commercial_subscription.sales_system_id)
         transaction.abort()
         # Cache is cleared.
-        self.assertEqual(self.product.commercial_subscription, None)
+        self.assertIs(None, self.product.commercial_subscription)
 
         # Cache is cleared again.
         transaction.abort()
-        CommercialSubscription(
-            product=self.product,
-            date_starts=now,
-            date_expires=now,
-            registrant=self.product.owner,
-            purchaser=self.product.owner,
-            sales_system_id='new',
-            whiteboard='')
+        self.factory.makeCommercialSubscription(self.product)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
-        self.assertEqual(self.product.commercial_subscription.sales_system_id,
-                         'new')
+        self.assertEqual(
+            'new', self.product.commercial_subscription.sales_system_id)
+
+
+class ProductLicensingTestCase(TestCaseWithFactory):
+    """Test the rules of licenses and commercial subscriptions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getLicenses(self):
+        # License are assigned a list, but return a tuple.
+        product = self.factory.makeProduct(
+            licenses=[License.GNU_GPL_V2, License.MIT])
+        self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
+
+    def test_setLicense_handles_no_change(self):
+        # The project_reviewed property is not reset, if the new licenses
+        # are identical to the current licenses.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.MIT]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(True, product.project_reviewed)
+
+    def test_setLicense_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if the licenses
+        # change.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.licenses = [License.GNU_GPL_V2]
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_license_info_also_sets_reviewed(self):
+        # The project_reviewed attribute it set to False if license_info
+        # changes.
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_OPEN_SOURCE])
+        with celebrity_logged_in('registry_experts'):
+            product.project_reviewed = True
+        with person_logged_in(product.owner):
+            product.license_info = 'zlib'
+        with celebrity_logged_in('registry_experts'):
+            self.assertIs(False, product.project_reviewed)
+
+    def test_setLicense_without_empty_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', [])
+
+    def test_setLicense_without_non_licenses_error(self):
+        # A project must have at least one license.
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            self.assertRaises(
+                ValueError, setattr, product, 'licenses', ['bogus'])
 
 
 class ProductSnapshotTestCase(TestCaseWithFactory):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone views."""
@@ -254,11 +254,13 @@ class MilestoneViewMixin(object):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self._bug_badge_properties[bugtask]
+        tags = ()
         return BugTaskListingItem(
             bugtask,
             badge_property['has_branch'],
             badge_property['has_specification'],
-            badge_property['has_patch'])
+            badge_property['has_patch'],
+            tags)
 
     @cachedproperty
     def bugtasks(self):
@@ -496,7 +498,7 @@ class MilestoneEditView(LaunchpadEditFormView):
     def _field_names(self):
         """See `LaunchpadFormView`.
 
-        There are two series fields, one for for product milestones and the
+        There are two series fields, one for product milestones and the
         other for distribution milestones. The product milestone may change
         its productseries. The distribution milestone may change its
         distroseries.

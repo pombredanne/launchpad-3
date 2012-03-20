@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -38,7 +38,7 @@
         </p>
       </tal:referred>
       <p tal:condition="not:view/referrer">
-      Check that you are logged in with the correct acount, or that you
+      Check that you are logged in with the correct account, or that you
       entered the address correctly, or search for it:
       </p>
       <form

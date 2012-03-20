@@ -19,7 +19,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,

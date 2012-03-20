@@ -627,6 +627,11 @@ otherwise permission to complete the operation will be denied.)
 
     >>> subscription = bug_four.subscribe(bug_four.owner, bug_four.owner)
 
+We will also add an attachment to the bug.
+
+    >>> bug_attachment = bug_four.addAttachment(
+    ...     bug_four.owner, 'Attachment', 'No comment', 'test.txt')
+
     >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private
     True
@@ -642,11 +647,15 @@ A timestamp and the user that sets the bug private is also recorded:
     datetime.datetime(...)
     >>> bug_four.who_made_private.name
     u'name12'
+    >>> bug_attachment.libraryfile.restricted
+    True
 
 The bug report can also be made public:
 
     >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
+    False
+    >>> bug_attachment.libraryfile.restricted
     False
 
 The timestamp and user are cleared:

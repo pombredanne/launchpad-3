@@ -366,7 +366,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
     """A virtual milestone implementation for project.
 
     The current database schema has no formal concept of milestones related to
-    projects. A milestone named `milestone` is considererd to belong to
+    projects. A milestone named `milestone` is considered to belong to
     a project if the project contains at least one product with a milestone
     of the same name. A project milestone is considered to be active if at
     least one product milestone with the same name is active.  The

@@ -26,7 +26,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.app.browser.launchpadform import LaunchpadFormView
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -41,11 +44,11 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
+from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
-from lp.services.comments.browser.messagecomment import MessageComment
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     LaunchpadView,
@@ -53,7 +56,6 @@ from lp.services.webapp import (
     stepthrough,
     )
 from lp.services.webapp.authorization import check_permission
-from lp.app.browser.launchpadform import custom_widget
 
 
 class DistroSeriesDifferenceNavigation(Navigation):

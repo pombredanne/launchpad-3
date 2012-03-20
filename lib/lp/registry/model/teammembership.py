@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -531,7 +531,7 @@ def _cleanTeamParticipation(child, parent):
     """
     # Delete participation entries for the child and the child's
     # direct/indirect members in other ancestor teams, unless those
-    # ancestor teams have another path the the child besides the
+    # ancestor teams have another path the child besides the
     # membership that has just been deactivated.
     store = Store.of(parent)
     store.execute("""

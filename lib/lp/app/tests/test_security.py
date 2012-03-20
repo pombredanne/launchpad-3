@@ -17,7 +17,16 @@ from lp.app.security import (
     AuthorizationBase,
     DelegatedAuthorization,
     )
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.security import PublicOrPrivateTeamsExistence
 from lp.testing import (
     person_logged_in,
     TestCase,
@@ -28,13 +37,6 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
-from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet,
-    TeamMembershipStatus,
-    )
-from lp.security import PublicOrPrivateTeamsExistence
 
 
 def registerFakeSecurityAdapter(interface, permission, adapter=None):

@@ -14,7 +14,6 @@ TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=utilities/shhh.py
-HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
@@ -42,7 +41,7 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
-CONVOY_ROOT=/var/tmp/convoy
+CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
 BZR_VERSION_INFO = bzr-version-info.py
 
@@ -61,10 +60,11 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache
+    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
+    bin/watch_jsbuild
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -135,13 +135,16 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build logs clean_logs
+inplace: build combobuild logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+	if [ -d /srv/launchpad.dev ]; then \
+		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
+	fi
 
 build: compile apidoc jsbuild css_combine sprite_image
 
@@ -166,9 +169,9 @@ ${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
 		${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
-sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
+sprite_image: ${ICING}/icon-sprites.png ${ICING}/icon-sprites.positioning
 
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites.png: bin/sprite-util \
 		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
@@ -177,23 +180,26 @@ jsbuild_widget_css: bin/jsbuild
 	    --srcdir lib/lp/app/javascript \
 	    --builddir $(LP_BUILT_JS_ROOT)
 
+jsbuild_watch:
+	$(PY) bin/watch_jsbuild
+
 $(JS_LP): jsbuild_widget_css
+$(JS_YUI):
+	cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build build/js/yui2
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+	cat $^ | bin/lpjsmin > $@
 else
 	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
-combobuild: jsbuild
-	mkdir -p $(CONVOY_ROOT)
-	bin/combo-rootdir $(CONVOY_ROOT)
-	rm -f $(ICING)/yui
-	ln -sf $(CONVOY_ROOT)/yui $(ICING)/yui
+combobuild:
+	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o build/js/lp/meta.js >/dev/null
+	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
-	ln -sf ../../../../build/js/yui/yui-3.3.0 $(ICING)/yui
+	bin/combo-rootdir build/js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -249,6 +255,7 @@ compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	ln -sf ../../../../build/js/yui-3.3.0 $(ICING)/yui
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -361,14 +368,13 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean_combo: clean_js
-	$(RM) -r $(CONVOY_ROOT)
-
 clean_js:
 	$(RM) $(JS_OUT)
 	$(RM) -r $(ICING)/yui
 
 clean_buildout:
+	$(RM) -r build
+	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
 	$(RM) -r parts
 	$(RM) -r develop-eggs
@@ -461,7 +467,11 @@ copy-apache-config:
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev
+	if [ ! -d /srv/launchpad.dev ]; then \
+		mkdir /srv/launchpad.dev; \
+		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
+	fi	
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad

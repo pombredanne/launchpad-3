@@ -83,7 +83,7 @@ counts (because they are costly to retrieve).
     Mozilla Firefox 1.0                             trunk  A date
                                                               not yet released
 
-When the project is a member of a project group, the the user can see a
+When the project is a member of a project group, the user can see a
 link to the project groups's milestone's page.
 
     >>> anon_browser.getLink(
@@ -191,14 +191,11 @@ distribution:
     Main heading: Debian 3.1
 
 
-Duplicate bugs
-..............
 
-Milestone bug listings do not show bugs that are marked as duplicates of
-other bugs.
+Bugs targeted to multiple series
+................................
 
-To demonstrate this, we'll begin by filing a couple of bugs for the
-Mozilla Firefox product:
+Setup this embarrasing story.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
@@ -247,81 +244,6 @@ Next, we'll target each bug to the 1.0 milestone:
     >>> browser.getControl('Milestone').value = [milestone_id]
     >>> browser.getControl('Save Changes').click()
 
-Observe that both bugs are listed in the 1.0 milestone listing:
-
-    >>> browser.open('http://launchpad.dev/firefox/trunk')
-    >>> browser.getLink('View milestones').click()
-    >>> browser.getLink("Mozilla Firefox 1.0", index=1).click()
-    >>> print browser.title
-    1.0 : Mozilla Firefox
-
-    >>> milestone_url = browser.url
-
-    >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == bug_1_url
-    True
-
-    >>> browser.open(milestone_url)
-    >>> browser.getLink('Test Bug 2').click()
-    >>> browser.url == bug_2_url
-    True
-
-Now we'll mark the second bug as a duplicate of the first:
-
-    >>> browser.open(bug_2_url)
-    >>> browser.getLink('Mark as duplicate').click()
-    >>> browser.getControl('Duplicate').value = bug_1_id
-    >>> browser.getControl('Change').click()
-    >>> print extract_text(browser.contents)
-    Bug #20 in Mozilla Firefox...
-    Duplicate of bug #19...
-
-Since duplicate bugs are not listed in milestone listings, only our
-first bug is listed in the 1.0 milestone listing:
-
-    >>> from lp.testing.layers import MemcachedLayer
-
-    >>> MemcachedLayer.purge()
-
-    >>> browser.open(milestone_url)
-    >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == bug_1_url
-    True
-
-    >>> browser.open(milestone_url)
-    >>> print browser.getLink('Test Bug 2')
-    Traceback (most recent call last):
-        ...
-    LinkNotFoundError
-
-However, it's also possible to clear the duplicate status of our second
-bug:
-
-    >>> browser.open(bug_2_url)
-    >>> browser.getLink(id='change_duplicate_bug').click()
-    >>> browser.getControl('Duplicate').value = ''
-    >>> browser.getControl('Change').click()
-    >>> 'This report is a duplicate' in find_main_content(browser.contents)
-    False
-
-Now both bugs are listed in the 1.0 milestone listing once again:
-
-    >>> MemcachedLayer.purge()
-
-    >>> browser.open(milestone_url)
-    >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == bug_1_url
-    True
-
-    >>> browser.open(milestone_url)
-    >>> browser.getLink('Test Bug 2').click()
-    >>> browser.url == bug_2_url
-    True
-
-
-Bugs targeted to multiple series
-................................
-
 Bugs targeted to the same milestone across more than one series will
 result in duplicate entries in the milestone listing (one for each
 series target).
@@ -357,6 +279,7 @@ We'll also create a new test milestone within the "trunk" series:
     >>> print browser.title
     Series trunk : Mozilla Firefox
 
+    >>> from lp.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge()
     >>> browser.open('http://launchpad.dev/firefox/trunk')
 
@@ -377,11 +300,11 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> from lp.services.helpers import backslashreplace
     >>> browser.open(bug_1_url)
     >>> print backslashreplace(browser.title)
-    Bug...in Mozilla Firefox...
+    Bug #...Test Bug 1... : Bugs : Mozilla Firefox
 
     >>> browser.getLink('Target to series').click()
     >>> print browser.title
-    Target bug #19 to series...
+    Target bug #... to series...
 
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True
