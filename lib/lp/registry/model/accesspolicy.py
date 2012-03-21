@@ -340,7 +340,14 @@ class AccessPolicyGrantFlat(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
 
     @classmethod
-    def findGranteesByPolicy(cls, policies, grantees=None):
+    def findGranteesByPolicy(cls, policies):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        return IStore(cls).find(
+            Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+
+    @classmethod
+    def findGranteePermissionsByPolicy(cls, policies, grantees=None):
         """See `IAccessPolicyGrantFlatSource`."""
         ids = [policy.id for policy in policies]
         sharing_permission_term = SQL("""
