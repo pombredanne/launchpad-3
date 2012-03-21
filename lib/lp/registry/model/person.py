@@ -1689,15 +1689,25 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
+        SpecMilestone = ClassAlias(Milestone)
         origin = [
             WorkItem,
             Join(Specification, WorkItem.specification == Specification.id),
             LeftJoin(Product, Specification.product == Product.id),
             LeftJoin(Distribution,
                      Specification.distribution == Distribution.id),
+            # WorkItems may not have a milestone and in that case they inherit
+            # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
+            # The milestone above is the one our work item is targeted to, but
+            # we also use the spec's milestone (which may be different) in
+            # getWorkItemsDueBefore() so we fetch it here as well.
+            LeftJoin(SpecMilestone,
+                     Specification.milestoneID == SpecMilestone.id),
+            # WorkItems may not have an assignee and in that case they inherit
+            # the one from the spec.
             Join(Person,
                  Coalesce(WorkItem.assignee_id,
                           Specification.assigneeID) == Person.id),
@@ -1705,7 +1715,7 @@ class Person(
         today = datetime.today().date()
         results = store.using(*origin).find(
             (WorkItem, Milestone, Specification, Person, Product,
-             Distribution),
+             Distribution, SpecMilestone),
             AND(Milestone.dateexpected <= date,
                 Milestone.dateexpected >= today,
                 Person.id.is_in(self._participant_ids))
@@ -1781,8 +1791,12 @@ class Person(
                 containers_by_date[milestone.dateexpected] = []
             container = containers_by_spec.get(spec)
             if container is None:
+                is_future = False
+                if spec.milestone != milestone:
+                    is_future = True
                 container = WorkItemContainer(
-                    spec.name, spec.target, spec.assignee, spec.priority, [])
+                    spec.name, spec.target, spec.assignee, spec.priority,
+                    is_future=is_future)
                 containers_by_spec[spec] = container
                 containers_by_date[milestone.dateexpected].append(container)
             container.append(GenericWorkItem.from_workitem(workitem))
@@ -1800,7 +1814,7 @@ class Person(
             container = bug_containers_by_date.get(dateexpected)
             if container is None:
                 container = WorkItemContainer(
-                    'Aggregated bugs', None, None, None, [])
+                    'Aggregated bugs', None, None, None, False)
                 bug_containers_by_date[dateexpected] = container
                 # Also append our new container to the dictionary we're going
                 # to return.
@@ -4978,38 +4992,39 @@ def _get_recipients_for_team(team):
 
 # TODO: Need tests for the two classes below.
 class WorkItemContainer:
-    """A container of work items.
+    """A container of work items whose milestone is due on a certain date.
 
     This might represent a Specification with its SpecificationWorkItems or
-    just a collection of bug tasks.
+    just a collection of BugTasks.
+
+    In the case of SpecificationWorkItems, their milestones should have the
+    same due date but they should also come from the same Specification.
+
+    In the case of BugTasks, the only thing they will have in common is the
+    due date of their milestones.
+
+    It is the responsibility of callsites to group the BugTasks and
+    SpecificationWorkItems appropriately in as many WorkItemContainer objects
+    are necessary.
     """
 
-    def __init__(self, label, target, assignee, priority, items):
-        self._items = items
+    def __init__(self, label, target, assignee, priority, is_future):
         self.label = label
         self.target = target
         self.assignee = assignee
         self.priority = priority
+        self._items = []
 
         # Is this container targeted to a milestone that is farther into the
         # future than the milestone to which .items are targeted to?
-        self.is_future = False
+        self.is_future = is_future
 
         # Is this container assigned to a person which is not a member of the
         # team we're dealing with here?
         self.is_foreign = False
 
-        # In case this is a Blueprint, we may not have all work items included
-        # here (because they're targeted to a different milestone or targeted
-        # to somebody who's not a member of this team), so here we'd store the
-        # total count of work items on this BP.
-        # XXX: This may not be needed, after all.
-        self.total_workitems = int()
-
     @property
     def items(self):
-        # If we have a reference to the spec that this was generated from we
-        # could get the list of work items by doing something like
         # TODO: sort the items
         return self._items
 

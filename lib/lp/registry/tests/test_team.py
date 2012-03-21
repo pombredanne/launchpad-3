@@ -10,7 +10,10 @@ from datetime import (
     timedelta,
     )
 
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    LessThan,
+    MatchesStructure,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -38,6 +41,7 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import GenericWorkItem
 from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackage import SourcePackage
@@ -825,15 +829,47 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
 
     def setUp(self):
         super(Test_getWorkItemsDueBefore, self).setUp()
-        # We remove the security proxy from our team because we'll be testing
-        # some internal methods.
-        self.team = removeSecurityProxy(self.factory.makeTeam())
         self.today = datetime.today().date()
+        current_milestone = self.factory.makeMilestone(
+            dateexpected=self.today)
+        self.current_milestone = current_milestone
+        self.future_milestone = self.factory.makeMilestone(
+            product=current_milestone.product,
+            dateexpected=datetime(2060, 1, 1))
+        self.team = self.factory.makeTeam()
 
     def test_basic(self):
         # TODO: just create a bugtask and a WI to check the return value of
         # the method.
         pass
+
+    def test_foreign_container(self):
+        pass
+
+    def test_future_container(self):
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            assignee=self.team.teamowner)
+        # This workitem is targeted to a future milestone so it won't be in
+        # our results below.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec,
+            milestone=self.future_milestone)
+        current_wi = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=spec,
+            milestone=self.current_milestone)
+
+        workitems = self.team.getWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual(
+            [self.current_milestone.dateexpected], workitems.keys())
+        containers = workitems[self.current_milestone.dateexpected]
+        self.assertEqual(1, len(containers))
+        [container] = containers
+        self.assertEqual(1, len(container.items))
+        self.assertEqual(current_wi.title, container.items[0].title)
+        self.assertTrue(container.is_future)
 
     def test_query_counts(self):
         self._createWorkItems()
@@ -876,14 +912,9 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         queries issued by getWorkItemsDueBefore() does not grow according to
         the number of returned objects.
         """
-        today = datetime.today().date()
-        current_milestone = self.factory.makeMilestone(
-            dateexpected=today)
-        self.current_milestone = current_milestone
-        future_milestone = self.factory.makeMilestone(
-            product=current_milestone.product,
-            dateexpected=datetime(2060, 1, 1))
-        self.team = team = self.factory.makeTeam()
+        team = self.team
+        current_milestone = self.current_milestone
+        future_milestone = self.future_milestone
 
         # Create a spec assigned to a member of our team and targeted to the
         # current milestone. Also creates a workitem with no explicit
@@ -929,7 +960,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         # Create a BugTask whose target is a DistroSeries
         current_distro_milestone = self.factory.makeMilestone(
             distribution=self.factory.makeDistribution(),
-            dateexpected=today)
+            dateexpected=self.today)
         bugtask3 = self.factory.makeBug(
             series=current_distro_milestone.distroseries).bugtasks[1]
         self.assertIsInstance(bugtask3.target, DistroSeries)

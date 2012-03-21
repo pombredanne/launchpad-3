@@ -710,8 +710,16 @@ class IPersonPublic(IPrivacy):
         :return: True if they can, otherwise False.
         """
 
-    def getWorkItemsDueBefore(self, date):
-        """ XXX """
+    def getWorkItemsDueBefore(date):
+        """Return a dict mapping dates to lists of WorkItemContainers.
+
+        This is a grouping, by milestone due date, of all work items
+        (SpecificationWorkItems/BugTasks) assigned to any member of this
+        team.
+
+        Only work items whose milestone have a due date before the given date
+        are included here.
+        """
 
     @mutator_for(visibility)
     @call_with(user=REQUEST_USER)
