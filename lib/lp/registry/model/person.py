@@ -1678,16 +1678,19 @@ class Person(
         return admin_of_teams.union(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
-    def getWorkItemsDueBefore(self, date):
+    @cachedproperty
+    def _participant_ids(self):
+        return list(Store.of(self).find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id))
+
+    def _getSpecificationWorkItemsDueBefore(self, date):
+        """Get all SpecificationWorkItems assigned to members of this team and
+        whose milestone is due between today and the given date.
+        """
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
-        # XXX: This is not running as a subquery as I was expecting, so
-        # it causes this method to execute 3 DB queries. This may or may not
-        # be ok; need to find out.
-        participant_ids = list(store.find(
-            TeamParticipation.personID, TeamParticipation.teamID == self.id))
         WorkItem = SpecificationWorkItem
         origin = [
             WorkItem,
@@ -1695,51 +1698,41 @@ class Person(
             LeftJoin(Product, Specification.product == Product.id),
             LeftJoin(Distribution,
                      Specification.distribution == Distribution.id),
+            # WorkItems may not have a milestone and in that case they inherit
+            # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
+            # WorkItems may not have an assignee and in that case they inherit
+            # the one from the spec.
             Join(Person,
                  Coalesce(WorkItem.assignee_id,
                           Specification.assigneeID) == Person.id),
             ]
-        # First we select all SpecificationWorkItem objects we want to
-        # display. Notice that we can't assume we want to display all
-        # work-items of a given Specification because work items may, for
-        # instance, be assigned to somebody who's not a member of this team.
-        workitems = store.using(*origin).find(
-            (Specification, WorkItem, Milestone, Person, Product,
+        today = datetime.today().date()
+        results = store.using(*origin).find(
+            (WorkItem, Milestone, Specification, Person, Product,
              Distribution),
             AND(Milestone.dateexpected <= date,
-                OR(Specification.assigneeID.is_in(participant_ids),
-                   WorkItem.assignee_id.is_in(participant_ids))
-                ))
+                Milestone.dateexpected >= today,
+                Person.id.is_in(self._participant_ids))
+            )
+        for result in results:
+            yield result[0]
 
-        # Now we need to regroup our work items by specification and by date
-        # because that's how they'll end up being displayed. While we do this
-        # we store all the data we need into WorkItemContainer objects because
-        # that's what we want to return.
-        containers_by_date = {}
-        containers_by_spec = {}
-        for spec, wi, milestone, person, product, distro in workitems:
-            if milestone.dateexpected not in containers_by_date:
-                containers_by_date[milestone.dateexpected] = []
-            container = containers_by_spec.get(spec)
-            if container is None:
-                container = WorkItemContainer(
-                    spec.name, spec.target, spec.assignee, spec.priority, [])
-                containers_by_spec[spec] = container
-                containers_by_date[milestone.dateexpected].append(container)
-            container.append(GenericWorkItem.from_workitem(wi))
-
-        for date in containers_by_date:
-            containers_by_date[date].sort(
-                key=attrgetter('priority'), reverse=True)
-
+    def _getBugTasksDueBefore(self, date, user):
+        """Get all BugTasks assigned to members of this team and whose
+        milestone is due between today and the given date.
+        """
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.productseries import ProductSeries
         from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
         origin = [
             BugTask,
             Join(Bug, BugTask.bug == Bug.id),
@@ -1752,25 +1745,89 @@ class Person(
             Join(Milestone, BugTask.milestoneID == Milestone.id),
             Join(Person, BugTask.assigneeID == Person.id),
             ]
-        bugtasks = store.using(*origin).find(
+        today = datetime.today().date()
+        privacy_filter = get_bug_privacy_filter(user)
+        results = store.using(*origin).find(
             (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
              DistroSeries, SourcePackageName, Person),
             AND(Milestone.dateexpected <= date,
-                BugTask.assigneeID.is_in(participant_ids))
+                Milestone.dateexpected >= today,
+                BugTask.assigneeID.is_in(self._participant_ids)),
+            privacy_filter
             )
+        for (bug, task, milestone, product, distro, productseries,
+             distroseries, sourcepackagename, assignee) in results:
+            # We skip masters (instead of slaves) from conjoined relationships
+            # because we can do that without hittind the DB, which would not
+            # be possible if we wanted to skip the slaves. The simple (but
+            # expensive) way to skip the slaves would be to skip any tasks
+            # that have a non-None .conjoined_master.
+            if productseries is not None and product is None:
+                dev_focus_id = productseries.product.development_focusID
+                if (productseries.id == dev_focus_id and
+                    task.status not in BugTask._NON_CONJOINED_STATUSES):
+                    continue
+            elif distroseries is not None and sourcepackagename is not None:
+                # Distribution.currentseries is expensive to run for every
+                # bugtask (as it goes through every series of that
+                # distribution), but it's a cached property and there's only
+                # one distribution with bugs in LP, so we can afford to do
+                # it here.
+                if distroseries.distribution.currentseries == distroseries:
+                    continue
+            yield task
+
+    def getWorkItemsDueBefore(self, date, user):
+        """See `IPerson`."""
+        workitems = self._getSpecificationWorkItemsDueBefore(date)
+        # Now we need to regroup our work items by specification and by date
+        # because that's how they'll end up being displayed. While we do this
+        # we store all the data we need into WorkItemContainer objects because
+        # that's what we want to return.
+        containers_by_date = {}
+        containers_by_spec = {}
+        for workitem in workitems:
+            spec = workitem.specification
+            milestone = workitem.milestone
+            if milestone is None:
+                milestone = spec.milestone
+            if milestone.dateexpected not in containers_by_date:
+                containers_by_date[milestone.dateexpected] = []
+            container = containers_by_spec.get(spec)
+            if container is None:
+                is_future = False
+                if spec.milestoneID != milestone.id:
+                    is_future = True
+                is_foreign = False
+                if spec.assigneeID not in self._participant_ids:
+                    is_foreign = True
+                container = WorkItemContainer(
+                    spec.name, spec.target, spec.assignee, spec.priority,
+                    is_future=is_future, is_foreign=is_foreign)
+                containers_by_spec[spec] = container
+                containers_by_date[milestone.dateexpected].append(container)
+            container.append(GenericWorkItem.from_workitem(workitem))
+
+        # Sort our containers by priority.
+        for date in containers_by_date:
+            containers_by_date[date].sort(
+                key=attrgetter('priority'), reverse=True)
+
+        bugtasks = self._getBugTasksDueBefore(date, user)
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
-        for bug, task, milestone, _, _, _, _, _, _ in bugtasks:
-            container = bug_containers_by_date.get(milestone.dateexpected)
+        for task in bugtasks:
+            dateexpected = task.milestone.dateexpected
+            container = bug_containers_by_date.get(dateexpected)
             if container is None:
                 container = WorkItemContainer(
-                    'Aggregated bugs', None, None, None, [])
-                bug_containers_by_date[milestone.dateexpected] = container
+                    'Aggregated bugs', None, None, None)
+                bug_containers_by_date[dateexpected] = container
                 # Also append our new container to the dictionary we're going
                 # to return.
-                if milestone.dateexpected not in containers_by_date:
-                    containers_by_date[milestone.dateexpected] = []
-                containers_by_date[milestone.dateexpected].append(container)
+                if dateexpected not in containers_by_date:
+                    containers_by_date[dateexpected] = []
+                containers_by_date[dateexpected].append(container)
             container.append(GenericWorkItem.from_bugtask(task))
 
         return containers_by_date
@@ -1844,14 +1901,14 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug.private == True,
+                    Bug._private == True,
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.private == True, BugTask.assignee == self.id)),
+                where=And(Bug._private == True, BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(
@@ -4941,44 +4998,47 @@ def _get_recipients_for_team(team):
 
 
 class WorkItemContainer:
-    """A container of work items.
+    """A container of work items, assigned to members of a team, whose
+    milestone is due on a certain date.
 
     This might represent a Specification with its SpecificationWorkItems or
-    just a collection of bug tasks.
+    just a collection of BugTasks.
+
+    In the case of SpecificationWorkItems, their milestones should have the
+    same due date but they should also come from the same Specification.
+
+    In the case of BugTasks, the only thing they will have in common is the
+    due date of their milestones.
+
+    It is the responsibility of callsites to group the BugTasks and
+    SpecificationWorkItems appropriately in as many WorkItemContainer objects
+    are necessary.
     """
 
-    def __init__(self, label, target, assignee, priority, items):
-        self._items = items
+    def __init__(self, label, target, assignee, priority, is_future=False,
+                 is_foreign=False):
         self.label = label
         self.target = target
         self.assignee = assignee
         self.priority = priority
+        self._items = []
 
         # Is this container targeted to a milestone that is farther into the
         # future than the milestone to which .items are targeted to?
-        self.is_future = False
+        self.is_future = is_future
 
         # Is this container assigned to a person which is not a member of the
         # team we're dealing with here?
-        self.is_foreign = False
-
-        # In case this is a Blueprint, we may not have all work items included
-        # here (because they're targeted to a different milestone or targeted
-        # to somebody who's not a member of this team), so here we'd store the
-        # total count of work items on this BP.
-        # XXX: This may not be needed, after all.
-        self.total_workitems = int()
+        self.is_foreign = is_foreign
 
     @property
     def items(self):
-        # If we have a reference to the spec that this was generated from we
-        # could get the list of work items by doing something like
-        # TODO: sort the items
+        # TODO: Sort the items by priority.
         return self._items
 
     @property
     def percent_done(self):
-        # TODO:
+        # TODO: Implement this.
         return 0
 
     def append(self, item):
@@ -4986,24 +5046,24 @@ class WorkItemContainer:
 
 
 class GenericWorkItem:
+    """A generic piece of work.
 
-    def __init__(self, assignee, status, priority, target, title, bugtask=None,
-                 work_item=None):
+    This can be either a BugTask or a SpecificationWorkItem.
+    """
+
+    def __init__(self, assignee, status, priority, target, title,
+                 bugtask=None, work_item=None):
         self.assignee = assignee
         self.status = status
-        # XXX: For bugtasks this is actually called 'importance'
         self.priority = priority
         self.target = target
         self.title = title
 
-        # XXX: We may not need these two here.
-        self.bugtask = bugtask
-        self.work_item = work_item
+        self._bugtask = bugtask
+        self._work_item = work_item
 
     @classmethod
     def from_bugtask(cls, bugtask):
-        # TODO: IBugTask.target can be IProductSeries, IDistroSeries, etc, so
-        # our code will have to deal with that.
         return cls(
             bugtask.assignee, bugtask.status, bugtask.importance,
             bugtask.target, bugtask.title, bugtask=bugtask)
@@ -5019,6 +5079,12 @@ class GenericWorkItem:
             work_item=work_item)
 
     @property
+    def actual_workitem(self):
+        if self._work_item is not None:
+            return self._work_item
+        else:
+            return self._bugtask
+
+    @property
     def is_done(self):
-        # TODO:
-        return False
+        return self.actual_workitem.is_complete

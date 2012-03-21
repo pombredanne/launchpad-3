@@ -45,6 +45,7 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import DEFAULT
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
@@ -157,12 +158,13 @@ class BuildQueue(SQLBase):
         for job_type, grouped_queues in groupby(queues, key=key):
             specific_class = specific_job_classes()[job_type]
             queue_subset = list(grouped_queues)
+            job_subset = load_related(Job, queue_subset, ['jobID'])
             # We need to preload the build farm jobs early to avoid
             # the call to _set_build_farm_job to look up BuildFarmBuildJobs
             # one by one.
-            specific_class.preloadBuildFarmJobs(queue_subset)
-            specific_jobs = specific_class.getByJobs(queue_subset)
-            if len(list(specific_jobs)) == 0:
+            specific_class.preloadBuildFarmJobs(job_subset)
+            specific_jobs = list(specific_class.getByJobs(job_subset))
+            if len(specific_jobs) == 0:
                 continue
             specific_class.preloadJobsData(specific_jobs)
             specific_jobs_dict = dict(

@@ -290,9 +290,16 @@ flag_info = sorted([
     ('disclosure.enhanced_sharing.enabled',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '
-      'to maintain the new disclosure data model.'),
+      'for the new disclosure data model to view but not write data.'),
      '',
+     'Sharing overview',
+     ''),
+    ('disclosure.enhanced_sharing.writable',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'to edit the new disclosure data model.'),
      '',
+     'Sharing management',
      ''),
     ('garbo.workitem_migrator.enabled',
      'boolean',
