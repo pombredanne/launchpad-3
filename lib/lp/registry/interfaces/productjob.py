@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IProductJob',
     'IProductJobSource',
+    'IProductNotificationJob',
+    'IProductNotificationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -65,3 +67,11 @@ class IProductJobSource(IJobSource):
             to be a class name.
         :return: A `ResultSet` yielding `IProductJob`.
         """
+
+
+class IProductNotificationJob(IProductJob):
+    """A job then sends a notification about a product."""
+
+
+class IProductNotificationJobSource(IProductJobSource):
+    """An interface for creating and finding `IProductNotificationJob`s."""

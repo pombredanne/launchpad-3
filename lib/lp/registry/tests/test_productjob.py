@@ -22,10 +22,12 @@ from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
+    IProductNotificationJobSource,
     )
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
+    ProductNotificationJob,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
@@ -184,3 +186,39 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         oops_vars = job.getOopsVars()
         self.assertIs(True, len(oops_vars) > 1)
         self.assertIn(('product', product.name), oops_vars)
+
+
+class ProductNotificationJobTestCase(TestCaseWithFactory):
+    """Test case for the ProductNotificationJob class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def make_notification_data(self):
+        product = self.factory.makeProduct()
+        reviewer = self.factory.makePerson('reviewer@eg.com', name='reviewer')
+        subject = "test subject"
+        email_template_name = 'product-license-dont-know'
+        return product, email_template_name, subject, reviewer
+
+    def test_create(self):
+        # Create an instance of ProductNotificationJob that stores
+        # the notification information.
+        data = self.make_notification_data()
+        product, email_template_name, subject, reviewer = data
+        self.assertIs(
+            True,
+            IProductNotificationJobSource.providedBy(ProductNotificationJob))
+        job = ProductNotificationJob.create(
+            product, email_template_name, subject, reviewer)
+        self.assertIsInstance(job, ProductNotificationJob)
+        self.assertEqual(product, job.product)
+        self.assertEqual(email_template_name, job.email_template_name)
+        self.assertEqual(subject, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
+
+    def test_getErrorRecipients(self):
+        # The reviewer is the error recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        self.assertEqual(
+            ['Reviewer <reviewer@eg.com>'], job.getErrorRecipients())
