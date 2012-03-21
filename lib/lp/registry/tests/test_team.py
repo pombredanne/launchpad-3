@@ -839,9 +839,35 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.team = self.factory.makeTeam()
 
     def test_basic(self):
-        # TODO: just create a bugtask and a WI to check the return value of
-        # the method.
-        pass
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            assignee=self.team.teamowner, milestone=self.current_milestone)
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+        bugtask = self.factory.makeBug(
+            milestone=self.current_milestone).bugtasks[0]
+        removeSecurityProxy(bugtask).assignee = self.team.teamowner
+
+        workitems = self.team.getWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual(
+            [self.current_milestone.dateexpected], workitems.keys())
+        containers = workitems[self.current_milestone.dateexpected]
+        # We have one container for the work item from the spec and another
+        # one for the bugtask.
+        self.assertEqual(2, len(containers))
+        [workitem_container, bugtask_container] = containers
+
+        self.assertEqual(1, len(bugtask_container.items))
+        self.assertEqual(bugtask.title, bugtask_container.items[0].title)
+        self.assertFalse(bugtask_container.is_foreign)
+        self.assertFalse(bugtask_container.is_future)
+
+        self.assertEqual(1, len(workitem_container.items))
+        self.assertEqual(workitem.title, workitem_container.items[0].title)
+        self.assertFalse(workitem_container.is_foreign)
+        self.assertFalse(workitem_container.is_future)
 
     def test_foreign_container(self):
         # This spec is targeted to a person who's not a member of our team, so

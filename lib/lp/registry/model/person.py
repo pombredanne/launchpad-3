@@ -1684,12 +1684,14 @@ class Person(
             TeamParticipation.personID, TeamParticipation.teamID == self.id))
 
     def _getSpecificationWorkItemsDueBefore(self, date):
+        """Get all SpecificationWorkItems assigned to members of this team and
+        whose milestone is due between today and the given date.
+        """
         from lp.registry.model.person import Person
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        SpecMilestone = ClassAlias(Milestone)
         origin = [
             WorkItem,
             Join(Specification, WorkItem.specification == Specification.id),
@@ -1701,11 +1703,6 @@ class Person(
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            # The milestone above is the one our work item is targeted to, but
-            # we also use the spec's milestone (which may be different) in
-            # getWorkItemsDueBefore() so we fetch it here as well.
-            LeftJoin(SpecMilestone,
-                     Specification.milestoneID == SpecMilestone.id),
             # WorkItems may not have an assignee and in that case they inherit
             # the one from the spec.
             Join(Person,
@@ -1715,15 +1712,18 @@ class Person(
         today = datetime.today().date()
         results = store.using(*origin).find(
             (WorkItem, Milestone, Specification, Person, Product,
-             Distribution, SpecMilestone),
+             Distribution),
             AND(Milestone.dateexpected <= date,
                 Milestone.dateexpected >= today,
                 Person.id.is_in(self._participant_ids))
             )
         for result in results:
-            yield result[0], result[1]
+            yield result[0]
 
     def _getBugTasksDueBefore(self, date, user):
+        """Get all BugTasks assigned to members of this team and whose
+        milestone is due between today and the given date.
+        """
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
@@ -1778,6 +1778,7 @@ class Person(
             yield task
 
     def getWorkItemsDueBefore(self, date):
+        """See `IPerson`."""
         workitems = self._getSpecificationWorkItemsDueBefore(date)
         # Now we need to regroup our work items by specification and by date
         # because that's how they'll end up being displayed. While we do this
@@ -1785,14 +1786,17 @@ class Person(
         # that's what we want to return.
         containers_by_date = {}
         containers_by_spec = {}
-        for workitem, milestone in workitems:
+        for workitem in workitems:
             spec = workitem.specification
+            milestone = workitem.milestone
+            if milestone is None:
+                milestone = spec.milestone
             if milestone.dateexpected not in containers_by_date:
                 containers_by_date[milestone.dateexpected] = []
             container = containers_by_spec.get(spec)
             if container is None:
                 is_future = False
-                if spec.milestone != milestone:
+                if spec.milestoneID != milestone.id:
                     is_future = True
                 is_foreign = False
                 if spec.assigneeID not in self._participant_ids:
@@ -4993,7 +4997,6 @@ def _get_recipients_for_team(team):
         need_preferred_email=True)
 
 
-# TODO: Need tests for the two classes below.
 class WorkItemContainer:
     """A container of work items, assigned to members of a team, whose
     milestone is due on a certain date.
@@ -5030,12 +5033,12 @@ class WorkItemContainer:
 
     @property
     def items(self):
-        # TODO: sort the items
+        # TODO: Sort the items by priority.
         return self._items
 
     @property
     def percent_done(self):
-        # TODO:
+        # TODO: Implement this.
         return 0
 
     def append(self, item):
@@ -5043,24 +5046,24 @@ class WorkItemContainer:
 
 
 class GenericWorkItem:
+    """A generic piece of work.
 
-    def __init__(self, assignee, status, priority, target, title, bugtask=None,
-                 work_item=None):
+    This can be either a BugTask or a SpecificationWorkItem.
+    """
+
+    def __init__(self, assignee, status, priority, target, title,
+                 bugtask=None, work_item=None):
         self.assignee = assignee
         self.status = status
-        # XXX: For bugtasks this is actually called 'importance'
         self.priority = priority
         self.target = target
         self.title = title
 
-        # XXX: We may not need these two here.
         self._bugtask = bugtask
         self._work_item = work_item
 
     @classmethod
     def from_bugtask(cls, bugtask):
-        # TODO: IBugTask.target can be IProductSeries, IDistroSeries, etc, so
-        # our code will have to deal with that.
         return cls(
             bugtask.assignee, bugtask.status, bugtask.importance,
             bugtask.target, bugtask.title, bugtask=bugtask)
@@ -5076,6 +5079,12 @@ class GenericWorkItem:
             work_item=work_item)
 
     @property
+    def actual_workitem(self):
+        if self._work_item is not None:
+            return self._work_item
+        else:
+            return self._bugtask
+
+    @property
     def is_done(self):
-        # TODO:
-        return False
+        return self.actual_workitem.is_complete
