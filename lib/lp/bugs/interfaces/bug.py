@@ -22,8 +22,6 @@ __all__ = [
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
-    'PRIVATE_INFORMATION_TYPES',
-    'SECURITY_INFORMATION_TYPES',
     ]
 
 from lazr.enum import DBEnumeratedType
@@ -97,15 +95,6 @@ from lp.services.fields import (
     Title,
     )
 from lp.services.messages.interfaces.message import IMessage
-
-
-PRIVATE_INFORMATION_TYPES = (
-    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
-    InformationType.PROPRIETARY)
-
-
-SECURITY_INFORMATION_TYPES = (
-    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
 
 
 class CreateBugParams:
