@@ -339,10 +339,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
                              item['assignee'], item['milestone'])
-        # XXX: without this commit, we won't get notifications for just
-        # adding work items. In complicated edits such as reordering and
-        # switching entire work items blocks we get weird diffs.
-        transaction.commit()
 
     def setTarget(self, target):
         """See ISpecification."""
