@@ -1092,28 +1092,6 @@ class SpecificationWorkitemMigrator(TunableLoop):
         self.offset += chunk_size
 
 
-class BugsInformationTypeMigrator(TunableLoop):
-    """A `TunableLoop` to populate information_type for all bugs."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BugsInformationTypeMigrator, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Bug)
-
-    def findBugs(self):
-        return self.store.find(Bug, Bug.information_type == None)
-
-    def isDone(self):
-        return self.findBugs().is_empty()
-
-    def __call__(self, chunk_size):
-        for bug in self.findBugs()[:chunk_size]:
-            bug._setInformationType()
-        self.transaction.commit()
-
-
 class BugLegacyAccessMirrorer(TunableLoop):
     """A `TunableLoop` to populate the access policy schema for all bugs."""
 
@@ -1399,7 +1377,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugsInformationTypeMigrator,
         BugLegacyAccessMirrorer,
         ]
     experimental_tunable_loops = []
