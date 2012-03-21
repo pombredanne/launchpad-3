@@ -61,8 +61,11 @@ class ISharingService(IService):
         pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
     def getPillarShareeData(pillar, grantees=None):
-        """Return people/teams who can see pillar artifacts and what
-        permissions they have for each information type.
+        """Return people/teams who can see pillar artifacts.
+
+        The result records are json data which includes:
+            - person name
+            - permissions they have for each information type.
         """
 
     @export_write_operation()
