@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -28,59 +28,17 @@
       Proprietary, embargoed security, or user-data information is
       shared with these users and teams.
     </p>
-    <div style="padding-bottom: 0.5em">
-      <a id='add-sharee-link' class='sprite add js-action' href="#">Share with someone</a>
+    <ul class="horizontal">
+      <li><a id='add-sharee-link' class='sprite add js-action' href="#">Share
+        with someone</a></li>
+      <li><a id="audit-link" class="sprite info" href='#'>Audit sharing</a></li>
+    </ul>
+
+    <div tal:define="batch_navigator view/shareeData">
+      <tal:shareelisting content="structure batch_navigator/@@+sharee-table-view" />
     </div>
-    <table id="sharee-table" class="disclosure listing">
-    </table>
+
   </div>
 
-  <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
-    <tal:comment replace="nothing">
-    XXX j.c.sackett 2012-02-16 The data in this portlet is static right now,
-    as policy architecture (which determines the numbers to display) are in
-    flux. Once they settle down, the view needs to populate some methods to
-    set the numbers in this portlet.
-    </tal:comment>
-    <div id="portlet-disclosure-summary" class="portlet">
-      <p>
-        Permavirgin is shared with <a href="#">0</a> users:
-      </p>
-
-      <table>
-        <thead>
-          <tr>
-            <td colspan="2"><strong>Embargoed Security:</strong></td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="code-links">
-            <td>Sharing everything with <a href="#">0</a> users</td>
-          </tr>
-          <tr class="code-links">
-            <td>Sharing some things with <a href="#">0</a> users</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <p></p>
-
-      <table>
-        <thead>
-          <tr>
-            <td colspan="2"><strong>User Data:</strong></td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="code-links">
-            <td>Sharing everything with <a href="#">0</a> users</td>
-          </tr>
-          <tr class="code-links">
-            <td>Sharing some things with <a href="#">0</a> users</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 </body>
 </html>

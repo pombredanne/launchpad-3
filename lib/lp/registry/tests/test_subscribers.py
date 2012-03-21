@@ -51,24 +51,32 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_proprietary(self):
         product, event = self.make_product_event([License.OTHER_PROPRIETARY])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(1, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_open_source(self):
         product, event = self.make_product_event([License.OTHER_OPEN_SOURCE])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
     def test_product_licenses_modified_licenses_other_dont_know(self):
         product, event = self.make_product_event([License.DONT_KNOW])
         product_licenses_modified(product, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        request = get_current_browser_request()
+        self.assertEqual(0, len(request.response.notifications))
 
 
 class LicenseNotificationTestCase(TestCaseWithFactory):

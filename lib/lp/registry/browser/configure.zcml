@@ -44,6 +44,12 @@
 
 <facet facet="overview">
     <browser:page
+        for="lp.services.webapp.interfaces.ITableBatchNavigator"
+        name="+sharee-table-view"
+        template="../templates/pillar-sharing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
         name="rdf"

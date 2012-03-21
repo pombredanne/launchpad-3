@@ -251,16 +251,27 @@ class MilestoneViewMixin(object):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self._bugtasks)
 
+    @cachedproperty
+    def _bug_task_tags(self):
+        return getUtility(IBugTaskSet).getBugTaskTags(self._bugtasks)
+
+    @cachedproperty
+    def _bug_task_people(self):
+        """The people associated with a set of bug tasks."""
+        return getUtility(IBugTaskSet).getBugTaskPeople(self._bugtasks)
+
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self._bug_badge_properties[bugtask]
-        tags = ()
+        tags = self._bug_task_tags.get(bugtask.id, ())
+        people = self._bug_task_people
         return BugTaskListingItem(
             bugtask,
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],
-            tags)
+            tags,
+            people)
 
     @cachedproperty
     def bugtasks(self):

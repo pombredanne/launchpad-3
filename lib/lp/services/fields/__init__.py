@@ -114,7 +114,7 @@ KEEP_SAME_IMAGE = object()
 MILESTONE_RE = re.compile('^work items(.*)\s*:\s*$', re.I)
 # Regexp for work items.
 WORKITEM_RE = re.compile(
-    '^(\[(?P<assignee>.*)\])?\s*(?P<title>.*)\s*:\s*(?P<status>.*)\s*$', re.I)
+    '^(\[(?P<assignee>.*?)\])?\s*(?P<title>.*)\s*:\s*(?P<status>.*)\s*$', re.I)
 
 
 # Field Interfaces
