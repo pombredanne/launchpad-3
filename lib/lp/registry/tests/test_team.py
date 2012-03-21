@@ -10,10 +10,7 @@ from datetime import (
     timedelta,
     )
 
-from testtools.matchers import (
-    LessThan,
-    MatchesStructure,
-    )
+from testtools.matchers import LessThan
 
 import transaction
 from zope.component import getUtility
@@ -41,7 +38,6 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import GenericWorkItem
 from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackage import SourcePackage
