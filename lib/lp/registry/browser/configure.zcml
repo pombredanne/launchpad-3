@@ -1387,8 +1387,7 @@
         name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.product"
-        classes="
-            ProductNavigation"/>
+        classes="ProductNavigation"/>
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
@@ -1434,6 +1433,20 @@
         name="+sharing"
         class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        path_expression="string:+sharingdetails/${person/name}"
+        rootsite="mainsite"
+        attribute_to_parent="pillar"/>
+    <browser:page
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        permission="launchpad.Driver"
+        name="+index"
+        class="lp.registry.browser.pillar.PillarPersonSharingView"
+        template="../templates/pillar-sharing-details.pt"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        name="+index"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
