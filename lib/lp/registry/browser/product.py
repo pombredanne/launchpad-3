@@ -149,6 +149,7 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarNavigationMixin,
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
@@ -211,7 +212,8 @@ SPACE = ' '
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
-    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IProduct
 

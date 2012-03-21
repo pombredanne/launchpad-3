@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'InvolvedMenu',
-    'PillarView',
     'PillarBugsMenu',
+    'PillarView',
+    'PillarNavigationMixin',
+    'PillarPersonSharingView',
     'PillarSharingView',
     ]
 
@@ -40,12 +42,18 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantFlatSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
@@ -60,7 +68,24 @@ from lp.services.webapp.menu import (
 from lp.services.webapp.publisher import (
     LaunchpadView,
     nearest,
+    stepthrough,
     )
+
+
+class PillarNavigationMixin:
+
+    @stepthrough('+sharingdetails')
+    def traverse_details(self, name):
+        """Traverse to the sharing details for a given person."""
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        policies = getUtility(IAccessPolicySource).findByPillar([self.context])
+        source = getUtility(IAccessPolicyGrantFlatSource)
+        artifacts = source.findArtifactsByGrantee(person, policies)
+        if artifacts.is_empty():
+            return None
+        return PillarPerson.create(self.context, person)
 
 
 class IInvolved(Interface):
@@ -322,3 +347,21 @@ class PillarSharingView(LaunchpadView):
         last_batch = batch_navigator.batch.lastBatch()
         cache.objects['last_start'] = last_batch.startNumber() - 1
         cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+
+class PillarPersonSharingView(LaunchpadView):
+
+    page_title = "Person or team"
+    label = "Information shared with person or team"
+
+    def initialize(self):
+        enabled_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled = bool(getFeatureFlag(enabled_flag))
+        if not enabled:
+            raise Unauthorized("This feature is not yet available.")
+
+        self.pillar = self.context.pillar
+        self.person = self.context.person
+
+        self.label = "Information shared with %s" % self.person.displayname
+        self.page_title = "%s" % self.person.displayname

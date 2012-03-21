@@ -10,9 +10,11 @@ import simplejson
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.services import IService
+from lp.registry.model.pillar import PillarPerson
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -30,6 +32,94 @@ from lp.testing.views import (
 ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
+
+class PillarSharingDetailsMixin:
+    """Test the pillar sharing details view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def getPillarPerson(self, person=None, with_sharing=True):
+        if person is None:
+            person = self.factory.makePerson()
+        if with_sharing:
+            if self.pillar_type == 'product':
+                bug = self.factory.makeBug(product=self.pillar, private=True)
+            elif self.pillar_type == 'distribution':
+                bug = self.factory.makeBug(
+                    distribution=self.pillar, private=True)
+            artifact = self.factory.makeAccessArtifact(concrete=bug)
+            policy = self.factory.makeAccessPolicy(pillar=self.pillar)
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=policy)
+            self.factory.makeAccessArtifactGrant(
+                artifact=artifact, grantee=person, grantor=self.pillar.owner)
+
+        return PillarPerson(self.pillar, person)
+
+    def test_view_traverses_plus_sharingdetails(self):
+        # The traversed url in the app is pillar/+sharingdetails/person
+        with FeatureFixture(ENABLED_FLAG):
+            # We have to do some fun url hacking to force the traversal a user
+            # encounters.
+            pillarperson = self.getPillarPerson()
+            expected = pillarperson.person.displayname
+            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.driver, url=url)
+            self.assertEqual(expected, browser.title)
+
+    def test_not_found_without_sharing(self):
+        # If there is no sharing between pillar and person, NotFound is the
+        # result.
+        with FeatureFixture(ENABLED_FLAG):
+            # We have to do some fun url hacking to force the traversal a user
+            # encounters.
+            pillarperson = self.getPillarPerson(with_sharing=False)
+            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.driver)
+            self.assertRaises(NotFound, browser.open, url)
+
+    def test_init_without_feature_flag(self):
+        # We need a feature flag to enable the view.
+        pillarperson = self.getPillarPerson()
+        self.assertRaises(
+            Unauthorized, create_initialized_view, pillarperson, '+index')
+
+    def test_init_with_feature_flag(self):
+        # The view works with a feature flag.
+        with FeatureFixture(ENABLED_FLAG):
+            pillarperson = self.getPillarPerson()
+            view = create_initialized_view(pillarperson, '+index')
+            self.assertEqual(pillarperson.person.displayname, view.page_title)
+
+
+class TestProductSharingDetailsView(
+    TestCaseWithFactory, PillarSharingDetailsMixin):
+
+    pillar_type = 'product'
+
+    def setUp(self):
+        super(TestProductSharingDetailsView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(
+            owner=self.owner, driver=self.driver)
+        login_person(self.driver)
+
+
+class TestDistributionSharingDetailsView(
+    TestCaseWithFactory, PillarSharingDetailsMixin):
+
+    pillar_type = 'distribution'
+
+    def setUp(self):
+        super(TestDistributionSharingDetailsView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(
+            owner=self.owner, driver=self.driver)
+        login_person(self.driver)
 
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
