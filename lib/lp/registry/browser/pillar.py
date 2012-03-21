@@ -274,6 +274,7 @@ class PillarSharingView(LaunchpadView):
         """Return the batch navigator to be used to batch the sharees."""
         return BatchNavigator(
             sharees, self.request,
+            hide_counts=True,
             size=config.launchpad.default_batch_size,
             range_factory=StormRangeFactory(sharees))
 
