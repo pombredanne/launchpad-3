@@ -67,8 +67,8 @@
                 <div tal:attributes="id release/version/fmt:css-id/release-information-"
                      tal:condition="python: release.release_notes or release.changelog">
 
-                  <fieldset class="collapsible" style="padding: 0px;">
-                    <legend>Release information</legend>
+                  <div class="collapsible">
+                    <div>Release information</div>
                     <div class="unseen">
                     <div tal:condition="release/release_notes">
                       <strong>Release notes:</strong>
@@ -87,9 +87,9 @@
                            tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
                         ProductRelease.changelog.
                       </div>
+                    </div>
                   </div>
                   </div>
-                  </fieldset>
                 </div>
                 <div>
                   <table class="listing" style="margin-top: 1em;">

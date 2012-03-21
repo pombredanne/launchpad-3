@@ -55,7 +55,8 @@ from lp.code.model.branchjob import (
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1012,34 +1013,15 @@ class TestGarbo(TestCaseWithFactory):
         now = datetime.now(UTC)
         cutoff = now - timedelta(days=1)
         old_update = now - timedelta(days=2)
-        bug.heat_last_updated = old_update
+        naked_bug = removeSecurityProxy(bug)
+        naked_bug.heat_last_updated = old_update
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'bugs.heat_updates.cutoff',
             cutoff.isoformat().decode('ascii')))
         transaction.commit()
-        self.assertEqual(old_update, bug.heat_last_updated)
+        self.assertEqual(old_update, naked_bug.heat_last_updated)
         self.runHourly()
-        self.assertNotEqual(old_update, bug.heat_last_updated)
-
-    def test_AccessPolicyDistributionAddition(self):
-        switch_dbuser('testadmin')
-        distribution = self.factory.makeDistribution()
-        transaction.commit()
-        self.runHourly()
-        ap = getUtility(IAccessPolicySource).findByPillar((distribution,))
-        expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
-        self.assertContentEqual(expected, [policy.type for policy in ap])
-
-    def test_AccessPolicyProductAddition(self):
-        switch_dbuser('testadmin')
-        product = self.factory.makeProduct()
-        transaction.commit()
-        self.runHourly()
-        ap = getUtility(IAccessPolicySource).findByPillar((product,))
-        expected = [
-            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
-        self.assertContentEqual(expected, [policy.type for policy in ap])
+        self.assertNotEqual(old_update, naked_bug.heat_last_updated)
 
     def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
         self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
@@ -1060,7 +1042,8 @@ class TestGarbo(TestCaseWithFactory):
         # When the migration is successful we remove all work-items from the
         # whiteboard.
         switch_dbuser('testadmin')
-        milestone = self.factory.makeMilestone()
+        product = self.factory.makeProduct(name='linaro')
+        milestone = self.factory.makeMilestone(product=product)
         person = self.factory.makePerson()
         whiteboard = dedent("""
             Work items for %s:
@@ -1070,7 +1053,7 @@ class TestGarbo(TestCaseWithFactory):
             Another work item: DONE
             """ % (milestone.name, person.name))
         spec = self.factory.makeSpecification(
-            product=milestone.product, whiteboard=whiteboard)
+            product=product, whiteboard=whiteboard)
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
@@ -1088,6 +1071,20 @@ class TestGarbo(TestCaseWithFactory):
             status=SpecificationWorkItemStatus.DONE,
             milestone=None, specification=spec))
 
+    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
+        switch_dbuser('testadmin')
+        whiteboard = "Work items:\nA work item: TODO"
+        spec = self.factory.makeSpecification(
+            whiteboard=whiteboard,
+            distribution=getUtility(IDistributionSet)['ubuntu'])
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
     def test_SpecificationWorkitemMigrator_parse_error(self):
         # When we fail to parse any work items in the whiteboard we leave it
         # untouched and don't create any SpecificationWorkItem entries.
@@ -1097,7 +1094,9 @@ class TestGarbo(TestCaseWithFactory):
             A work item: TODO
             Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
             """)
-        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        product = self.factory.makeProduct(name='linaro')
+        spec = self.factory.makeSpecification(
+            product=product, whiteboard=whiteboard)
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
@@ -1106,6 +1105,36 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
+
+    def test_BugsInformationTypeMigrator(self):
+        # A non-migrated bug will have information_type set correctly.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug(private=True)
+        # Since creating a bug will set information_type, unset it.
+        removeSecurityProxy(bug).information_type = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_BugLegacyAccessMirrorer(self):
+        # Private bugs without corresponding data in the access policy
+        # schema get mirrored.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug(private=True)
+        # Remove the existing mirrored data.
+        getUtility(IAccessArtifactSource).delete([bug])
+        transaction.commit()
+        self.runHourly()
+        # Check that there's an artifact again, and delete it.
+        switch_dbuser('testadmin')
+        [artifact] = getUtility(IAccessArtifactSource).find([bug])
+        getUtility(IAccessArtifactSource).delete([bug])
+        transaction.commit()
+        self.runHourly()
+        # A watermark is kept in memcache, so a second run doesn't
+        # consider the same bug.
+        self.assertContentEqual(
+            [], getUtility(IAccessArtifactSource).find([bug]))
 
 
 class TestGarboTasks(TestCaseWithFactory):

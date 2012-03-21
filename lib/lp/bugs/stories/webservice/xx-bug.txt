@@ -33,6 +33,7 @@ At the top level we provide a collection of bugs.
     duplicates_collection_link: u'http://.../bugs/11/duplicates'
     heat: 0
     id: 11
+    information_type: u'Public'
     latest_patch_uploaded: None
     linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
     message_count: 7

@@ -169,9 +169,9 @@ ${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
 		${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
-sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
+sprite_image: ${ICING}/icon-sprites.png ${ICING}/icon-sprites.positioning
 
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites.png: bin/sprite-util \
 		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 

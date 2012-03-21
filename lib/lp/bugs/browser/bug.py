@@ -71,7 +71,7 @@ from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,

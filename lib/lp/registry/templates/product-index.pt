@@ -14,18 +14,6 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <style type="text/css">
-      div.collapsible {
-        border:medium none;
-        margin:0;
-        padding:16px 0 0;
-      }
-
-      div.collapsed {
-        display: None
-      }
-    </style>
-
     <noscript>
       <style type="text/css">
         div.collapsible, div.collapsed {display: block;}

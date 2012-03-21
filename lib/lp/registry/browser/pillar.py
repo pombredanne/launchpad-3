@@ -47,6 +47,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -67,8 +68,7 @@ class InvolvedMenu(NavigationMenu):
     """The get involved menu."""
     usedfor = IInvolved
     links = [
-        'report_bug', 'ask_question', 'help_translate', 'submit_code',
-        'register_blueprint']
+        'report_bug', 'ask_question', 'help_translate', 'register_blueprint']
 
     @property
     def pillar(self):
@@ -88,18 +88,6 @@ class InvolvedMenu(NavigationMenu):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
             enabled=service_uses_launchpad(self.pillar.translations_usage))
-
-    def submit_code(self):
-        if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD,
-                ServiceUsage.EXTERNAL,
-                ]:
-            enabled = True
-        else:
-            enabled = False
-        return Link(
-            '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
@@ -236,16 +224,21 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
-    def _getAccessPolicyService(self):
-        return getUtility(IService, 'accesspolicy')
+    related_features = (
+        'disclosure.enhanced_sharing.enabled',
+        'disclosure.enhanced_sharing.writable',
+        )
+
+    def _getSharingService(self):
+        return getUtility(IService, 'sharing')
 
     @property
-    def access_policies(self):
-        return self._getAccessPolicyService().getAccessPolicies(self.context)
+    def information_types(self):
+        return self._getSharingService().getInformationTypes(self.context)
 
     @property
     def sharing_permissions(self):
-        return self._getAccessPolicyService().getSharingPermissions()
+        return self._getSharingService().getSharingPermissions()
 
     @cachedproperty
     def sharing_vocabulary(self):
@@ -262,8 +255,7 @@ class PillarSharingView(LaunchpadView):
         return dict(
             vocabulary='ValidPillarOwner',
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to %s'
-                % self.context.displayname)
+            header='Share with a user or team')
 
     @property
     def json_sharing_picker_config(self):
@@ -271,14 +263,21 @@ class PillarSharingView(LaunchpadView):
             self.sharing_picker_config, cls=ResourceJSONEncoder)
 
     @property
-    def observer_data(self):
-        return self._getAccessPolicyService().getPillarObservers(self.context)
+    def sharee_data(self):
+        return self._getSharingService().getPillarSharees(self.context)
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        enabled = bool(getFeatureFlag(enabled_readonly_flag))
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        if not enabled and not write_flag_enabled:
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
-        cache.objects['access_policies'] = self.access_policies
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.context))
+        cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
-        cache.objects['observer_data'] = self.observer_data
+        cache.objects['sharee_data'] = self.sharee_data

@@ -9,6 +9,7 @@ __all__ = [
     'ArgumentParser',
     'cd',
     'create_lxc',
+    'create_scripts',
     'file_append',
     'file_prepend',
     'get_container_path',
@@ -34,11 +35,12 @@ import argparse
 import os
 import platform
 import pwd
+import re
 import shutil
 import subprocess
 import sys
-import time
 import textwrap
+import time
 
 APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro} multiverse',
@@ -46,10 +48,15 @@ APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
     'ppa:launchpad/ppa',
     'ppa:bzr/ppa',
+    # XXX 2012-03-19 frankban bug=955006:
+    #     The yellow PPA contains an updated version of testrepository
+    #     that fixes the encoding issue.
+    'ppa:yellow/ppa',
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository']
+HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
+    'python-shell-toolbox']
 HOSTS_FILE = '/etc/hosts'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
@@ -663,7 +670,8 @@ parser.add_argument(
          'rather than bzr+ssh.')
 parser.add_argument(
     '-a', '--actions', nargs='+',
-    choices=('initialize_host', 'create_lxc', 'initialize_lxc', 'stop_lxc'),
+    choices=('initialize_host', 'create_scripts', 'create_lxc',
+             'initialize_lxc', 'stop_lxc'),
     help='Only for debugging. Call one or more internal functions.')
 parser.add_argument(
     '-n', '--lxc-name', default=LXC_NAME,
@@ -750,46 +758,106 @@ def initialize_host(
             path = os.path.join(dependencies_dir, subdir)
             if not os.path.exists(path):
                 os.makedirs(path)
+    with cd(dependencies_dir):
+        with su(user) as env:
+            subprocess.call([
+                'bzr', 'co', '--lightweight',
+                LP_SOURCE_DEPS, 'download-cache'])
+
+
+def create_scripts(user, lxcname, ssh_key_path):
+    """Create scripts to update the Launchpad environment and run tests."""
+    # Leases path in lucid differs from the one in oneiric/precise.
+    mapping = {
+        'leases1': get_container_path(
+            lxcname, '/var/lib/dhcp3/dhclient.eth0.leases'),
+        'leases2': get_container_path(
+            lxcname, '/var/lib/dhcp/dhclient.eth0.leases'),
+        'lxcname': lxcname,
+        'pattern':
+            r's/.* ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*/\1/',
+        'ssh_key_path': ssh_key_path,
+        'user': user,
+        }
     # We need a script that will run the LP build inside LXC.  It is run as
     # root (see below) but drops root once inside the LXC container.
     build_script_file = '/usr/local/bin/launchpad-lxc-build'
     with open(build_script_file, 'w') as script:
         script.write(textwrap.dedent("""\
             #!/bin/sh
-            set -uex
-            lxc-start -n lptests -d
-            lxc-wait -n lptests -s RUNNING
-            sleep 30 # aparently RUNNING isn't quite enough
-            su buildbot -c "/usr/bin/ssh -o StrictHostKeyChecking=no lptests \\
-                make -C /var/lib/buildbot/lp schema"
-            lxc-stop -n lptests
-            lxc-wait -n lptests -s STOPPED
-            """))
+            set -ux
+            truncate -c -s0 {leases1}
+            truncate -c -s0 {leases2}
+
+            lxc-start -n {lxcname} -d
+            lxc-wait -n {lxcname} -s RUNNING
+
+            delay=30
+            while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
+            do
+                delay=$(( $delay - 1 ))
+                sleep 1
+            done
+
+            [ -s {leases1} ] && LEASES={leases1} || LEASES={leases2}
+            IP_ADDRESS=`grep fixed-address $LEASES | \\
+                tail -n 1 | sed -r '{pattern}'`
+
+            if [ 0 -eq $? -a -n "$IP_ADDRESS" ]; then
+                for i in $(seq 1 30); do
+                    su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                        -i '{ssh_key_path}' $IP_ADDRESS make -C $PWD schema"
+                    if [ ! 255 -eq $? ]; then
+                        # If ssh returns 255 then its connection failed.
+                        # Anything else is either success (status 0) or a
+                        # failure from whatever we ran over the SSH connection.
+                        # In those cases we want to stop looping, so we break
+                        # here.
+                        break;
+                    fi
+                    sleep 1
+                done
+            else
+                echo "could not get IP address - aborting." >&2
+                echo "content of $LEASES:" >&2
+                cat $LEASES >&2
+            fi
+
+            lxc-stop -n {lxcname}
+            lxc-wait -n {lxcname} -s STOPPED
+            """.format(**mapping)))
         os.chmod(build_script_file, 0555)
+    # We need a script to test launchpad using LXC ephemeral instances.
     test_script_file = '/usr/local/bin/launchpad-lxc-test'
     with open(test_script_file, 'w') as script:
-        script.write(textwrap.dedent("""
+        # We intentionally generate a very long line for the
+        # lxc-start-ephemeral command below because ssh does not propagate
+        # quotes the way we want.  E.g.,
+        #     touch a; touch b; ssh localhost -- ls "a b"
+        # succeeds, when it should say that the file "a b" does not exist.
+        script.write(textwrap.dedent(re.sub(' {2,}', ' ', """\
             #!/bin/sh
             set -uex
-            lxc-start-ephemeral -o lptests -b $PWD -- xvfb-run \\
-                --error-file=/var/tmp/xvfb-errors.log \\
-                --server-args='-screen 0 1024x768x24' \\
-                -a $PWD/bin/test --subunit $@
-            """))
+            lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
+                "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
+                --server-args='-screen 0 1024x768x24' \
+                -a $PWD/bin/test --subunit $@"
+            """).format(**mapping)))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
-    sudoers_file = '/etc/sudoers.d/launchpad-buildbot'
+    sudoers_file = '/etc/sudoers.d/launchpad-' + user
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
         sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
         sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
         # The sudoers must have this mode or it will be ignored.
         os.chmod(sudoers_file, 0440)
-    with cd(dependencies_dir):
-        with su(user) as env:
-            subprocess.call([
-                'bzr', 'co', '--lightweight',
-                LP_SOURCE_DEPS, 'download-cache'])
+    # XXX 2012-03-13 frankban bug=944386:
+    #     Disable hardlink restriction. This workaround needs
+    #     to be removed once the kernel bug is resolved.
+    procfile = '/proc/sys/kernel/yama/protected_nonaccess_hardlinks'
+    with open(procfile, 'w') as f:
+        f.write('0\n')
 
 
 def create_lxc(user, lxcname, ssh_key_path):
@@ -907,6 +975,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
     root_sshcall('cd {} && make install'.format(checkout_dir))
+    # XXX benji 2012-03-19 bug=959352: this is so graphviz will work in an
+    # ephemeral container
+    root_sshcall('mkdir -p /rootfs/usr/lib')
+    root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
 
 
 def stop_lxc(lxcname, ssh_key_path):
@@ -935,6 +1007,7 @@ def main(
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
             ssh_key_path, dependencies_dir, directory)),
+        ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
             user, dependencies_dir, directory, lxc_name, ssh_key_path)),

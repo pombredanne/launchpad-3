@@ -20,14 +20,6 @@
           </a>
         </li>
         <li>
-          <a href="/people/+me/+addbranch">
-            <img
-               alt="Register a branch"
-               src="/+icing/but-lrg-registerabranch.gif"
-               />
-          </a>
-        </li>
-        <li>
           <a href="/+code-imports/+new" id="new-code-import">
             <img alt="Import your project"
                  src="/+icing/but-lrg-importyourproject.gif"/>

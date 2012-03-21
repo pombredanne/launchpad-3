@@ -15,6 +15,7 @@ import pytz
 from storm.expr import (
     And,
     Or,
+    SQL,
     )
 from storm.properties import (
     DateTime,
@@ -31,6 +32,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
     )
 from lp.registry.model.person import Person
@@ -112,6 +114,7 @@ class AccessArtifact(StormBase):
             return
         ids = [abstract.id for abstract in abstracts]
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
@@ -176,6 +179,13 @@ class AccessPolicy(StormBase):
 
     @classmethod
     def findByPillar(cls, pillars):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
+
+    @classmethod
+    def findByPillarAndGrantee(cls, pillars):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
@@ -330,8 +340,33 @@ class AccessPolicyGrantFlat(StormBase):
     grantee = Reference(grantee_id, 'Person.id')
 
     @classmethod
-    def findGranteesByPolicy(cls, policies):
+    def findGranteesByPolicy(cls, policies, grantees=None):
+        """See `IAccessPolicyGrantFlatSource`."""
+        ids = [policy.id for policy in policies]
+        sharing_permission_term = SQL("""
+            CASE(
+                MIN(COALESCE(artifact, 0)))
+            WHEN 0 THEN 'ALL'
+            ELSE 'SOME'
+            END
+        """)
+        constraints = [
+            Person.id == cls.grantee_id,
+            AccessPolicy.id == cls.policy_id,
+            cls.policy_id.is_in(ids)]
+        if grantees:
+            grantee_ids = [grantee.id for grantee in grantees]
+            constraints.append(cls.grantee_id.is_in(grantee_ids))
+        return IStore(cls).find(
+            (Person, AccessPolicy, sharing_permission_term),
+            *constraints).group_by(Person, AccessPolicy)
+
+    @classmethod
+    def findArtifactsByGrantee(cls, grantee, policies):
         """See `IAccessPolicyGrantFlatSource`."""
         ids = [policy.id for policy in policies]
         return IStore(cls).find(
-            Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+            AccessArtifact,
+            AccessArtifact.id == cls.abstract_artifact_id,
+            cls.grantee_id == grantee.id,
+            cls.policy_id.is_in(ids))

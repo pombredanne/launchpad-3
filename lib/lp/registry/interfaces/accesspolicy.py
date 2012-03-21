@@ -214,10 +214,24 @@ class IAccessPolicyGrantSource(Interface):
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
 
-    def findGranteesByPolicy(policies):
-        """Find the `IPerson`s with access grants for the policies.
+    def findGranteesByPolicy(policies, grantees=None):
+        """Find teams or users with access grants for the policies.
 
         This includes grants for artifacts in the policies.
 
+        :param policies: a collection of `IAccesPolicy`s.
+        :param grantees: if not None, the result only includes people in the
+            specified list of grantees.
+        :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
+            where permission is a SharingPermission value.
+            'ALL' means the person has an access policy grant and can see all
+            artifacts for the associated pillar.
+            'SOME' means the person only has specified access artifact grants.
+        """
+
+    def findArtifactsByGrantee(grantee, policies):
+        """Find the `IAccessArtifact`s for grantee and policies.
+
+        :param grantee: the access artifact grantee.
         :param policies: a collection of `IAccesPolicy`s.
         """
