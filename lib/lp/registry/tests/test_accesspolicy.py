@@ -184,14 +184,20 @@ class BaseAccessArtifactTests:
         concretes = [self.getConcreteArtifact() for i in range(2)]
         abstracts = getUtility(IAccessArtifactSource).ensure(concretes)
         grant = self.factory.makeAccessArtifactGrant(artifact=abstracts[0])
+        link = self.factory.makeAccessPolicyArtifact(artifact=abstracts[0])
+        self.assertContentEqual(
+            [link],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [abstracts[0]]))
 
-        # Make some other grants to ensure they're unaffected.
+        # Make some other grants and links to ensure they're unaffected.
         other_grants = [
             self.factory.makeAccessArtifactGrant(
                 artifact=self.factory.makeAccessArtifact()),
             self.factory.makeAccessPolicyGrant(
                 policy=self.factory.makeAccessPolicy()),
             ]
+        other_link = self.factory.makeAccessPolicyArtifact()
 
         getUtility(IAccessArtifactSource).delete(concretes)
         IStore(grant).invalidate()
@@ -201,6 +207,15 @@ class BaseAccessArtifactTests:
 
         for other_grant in other_grants:
             self.assertIsNot(None, other_grant.grantor)
+
+        self.assertContentEqual(
+            [],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [abstracts[0]]))
+        self.assertContentEqual(
+            [other_link],
+            getUtility(IAccessPolicyArtifactSource).findByArtifact(
+                [other_link.abstract_artifact]))
 
     def test_delete_noop(self):
         # delete() works even if there's no abstract artifact.
@@ -452,6 +467,24 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
             (artifact_grant.grantee, another_policy, 'SOME')],
             apgfs.findGranteesByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
+
+    def test_findGranteesByPolicy_filter_grantees(self):
+        # findGranteesByPolicy() returns anyone with a grant for any of
+        # the policies or the policies' artifacts so long as the grantee is in
+        # the specified list of grantees.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        # People with grants on the policy show up.
+        policy = self.factory.makeAccessPolicy()
+        grantee_in_result = self.factory.makePerson()
+        grantee_not_in_result = self.factory.makePerson()
+        policy_grant = self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_in_result)
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=grantee_not_in_result)
+        self.assertContentEqual(
+            [(policy_grant.grantee, policy, 'ALL')],
+            apgfs.findGranteesByPolicy([policy], [grantee_in_result]))
 
     def test_findArtifactsByGrantee(self):
         # findArtifactsByGrantee() returns the artifacts for grantee for any of

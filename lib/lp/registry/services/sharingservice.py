@@ -8,11 +8,13 @@ __all__ = [
     'SharingService',
     ]
 
-from lazr.restful import EntryResource
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.registry.enums import (
     InformationType,
@@ -27,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -43,6 +46,11 @@ class SharingService:
     def name(self):
         """See `IService`."""
         return 'sharing'
+
+    @property
+    def write_enabled(self):
+        return bool(getFeatureFlag(
+            'disclosure.enhanced_sharing.writable'))
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
@@ -79,20 +87,27 @@ class SharingService:
         return sharing_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarSharees(self, pillar):
+    def getPillarSharees(self, pillar, grantees=None):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        grant_permissions = ap_grant_flat.findGranteesByPolicy(policies)
+        grant_permissions = ap_grant_flat.findGranteesByPolicy(
+            policies, grantees).order_by(
+                "person_sort_key(Person.displayname, Person.name)")
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
+        browser_request = IWebBrowserOriginatingRequest(request)
         for (grantee, policy, sharing_permission) in grant_permissions:
             if not grantee.id in person_by_id:
-                resource = EntryResource(grantee, request)
-                person_data = resource.toDataForJSON()
-                person_data['permissions'] = {}
+                person_data = {
+                    'name': grantee.name,
+                    'meta': 'team' if grantee.is_team else 'person',
+                    'display_name': grantee.displayname,
+                    'self_link': absoluteURL(grantee, request),
+                    'permissions': {}}
+                person_data['web_link'] = absoluteURL(grantee, browser_request)
                 person_by_id[grantee.id] = person_data
                 result.append(person_data)
             person_data = person_by_id[grantee.id]
@@ -105,6 +120,9 @@ class SharingService:
 
         # We do not support adding sharees to project groups.
         assert not IProjectGroup.providedBy(pillar)
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
 
         # Separate out the info types according to permission.
         information_types = permissions.keys()
@@ -124,23 +142,23 @@ class SharingService:
             for information_type in information_types
             if information_type in info_types_for_all]
         policy_source = getUtility(IAccessPolicySource)
-        wanted_pillar_policies = policy_source.find(required_pillar_info_types)
-
-        # We need to figure out which policy grants to create or delete.
         policy_grant_source = getUtility(IAccessPolicyGrantSource)
-        wanted_policy_grants = [(policy, sharee)
-            for policy in wanted_pillar_policies
-            if policy.type in info_types_for_all]
-        existing_policy_grants = [
-            (grant.policy, grant.grantee)
-            for grant in policy_grant_source.find(wanted_policy_grants)]
-        # Create any newly required policy grants.
-        policy_grants_to_create = (
-            set(wanted_policy_grants).difference(existing_policy_grants))
-        if len(policy_grants_to_create) > 0:
-            policy_grant_source.grant(
-                [(policy, sharee, user)
-                for policy, sharee in policy_grants_to_create])
+        if len(required_pillar_info_types) > 0:
+            wanted_pillar_policies = policy_source.find(
+                required_pillar_info_types)
+            # We need to figure out which policy grants to create or delete.
+            wanted_policy_grants = [(policy, sharee)
+                for policy in wanted_pillar_policies]
+            existing_policy_grants = [
+                (grant.policy, grant.grantee)
+                for grant in policy_grant_source.find(wanted_policy_grants)]
+            # Create any newly required policy grants.
+            policy_grants_to_create = (
+                set(wanted_policy_grants).difference(existing_policy_grants))
+            if len(policy_grants_to_create) > 0:
+                policy_grant_source.grant(
+                    [(policy, sharee, user)
+                    for policy, sharee in policy_grants_to_create])
 
         # Now revoke any existing policy grants for types with
         # permission 'some'.
@@ -158,22 +176,18 @@ class SharingService:
             self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
-        request = get_current_web_service_request()
-        resource = EntryResource(sharee, request)
-        person_data = resource.toDataForJSON()
-        valid_info_types = (
-            set(information_types).difference(info_types_for_nothing))
-        permission_data = dict(
-            (information_type.name, permissions[information_type].name)
-            for information_type in valid_info_types
-        )
-        person_data['permissions'] = permission_data
-        return person_data
+        sharees = self.getPillarSharees(pillar, [sharee])
+        if not sharees:
+            return None
+        return sharees[0]
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarSharee(self, pillar, sharee,
                              information_types=None):
         """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
 
         policy_source = getUtility(IAccessPolicySource)
         if information_types is None:
@@ -192,11 +206,14 @@ class SharingService:
         grants = [
             (grant.policy, grant.grantee)
             for grant in policy_grant_source.find(policy_grants)]
-        policy_grant_source.revoke(grants)
+        if len(grants) > 0:
+            policy_grant_source.revoke(grants)
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         to_delete = ap_grant_flat.findArtifactsByGrantee(
             sharee, pillar_policies)
-        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
-        accessartifact_grant_source.revokeByArtifact(to_delete)
+        if to_delete.count() > 0:
+            accessartifact_grant_source = getUtility(
+                IAccessArtifactGrantSource)
+            accessartifact_grant_source.revokeByArtifact(to_delete)
