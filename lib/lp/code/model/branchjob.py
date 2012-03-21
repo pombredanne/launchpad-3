@@ -98,10 +98,7 @@ from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import (
-    BaseRunnableJob,
-    CeleryRunJob,
-    )
+from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
@@ -303,6 +300,8 @@ class BranchScanJob(BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
+        # lp.services.job.celery is imported only where needed.
+        from lp.services.job.celery import CeleryRunJob
         branch_job = BranchJob(branch, cls.class_job_type, {})
         derived_job = cls(branch_job)
         CeleryRunJob.delay(derived_job.job_id)

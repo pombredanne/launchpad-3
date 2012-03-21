@@ -4,7 +4,13 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['EnumeratedSubclass', 'InvalidTransition', 'Job', 'JobStatus']
+__all__ = [
+    'EnumeratedSubclass',
+    'InvalidTransition',
+    'Job',
+    'JobStatus',
+    'UniversalJobSource',
+    ]
 
 
 from calendar import timegm
@@ -30,15 +36,18 @@ from storm.locals import (
 import transaction
 from zope.interface import implements
 
+from lp.services.config import dbconfig
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.services import scripts
 
 
 UTC = pytz.timezone('UTC')
@@ -232,3 +241,29 @@ Job.ready_jobs = Select(
         Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW),
         Or(Job.scheduled_start == None, Job.scheduled_start <= UTC_NOW),
         ))
+
+
+class UniversalJobSource:
+    """Returns the RunnableJob associated with a Job.id.
+
+    Only BranchJobs are supported at present.
+    """
+
+    memory_limit = 2 * (1024 ** 3)
+
+    needs_init = True
+
+    @classmethod
+    def get(cls, job_id):
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+
+        dbconfig.override(
+            dbuser='branchscanner', isolation_level='read_committed')
+        from lp.code.model.branchjob import (
+            BranchJob,
+            )
+        store = IStore(BranchJob)
+        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
+        return branch_job.makeDerived()

@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseJobRunner',
     'BaseRunnableJob',
     'BaseRunnableJobSource',
-    'CeleryRunJob',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -42,7 +42,6 @@ from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
     LeaseHeld,
-    RunJob,
     )
 import transaction
 from twisted.internet import reactor
@@ -63,7 +62,6 @@ from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
@@ -337,39 +335,6 @@ class JobRunnerProcess(child.AMPChild):
         else:
             oops_id = oops['id']
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
-
-
-class CeleryJobSource:
-    """For CeleryRunJob.  Returns the RunnableJob associated with a Job.id"""
-
-    memory_limit = 2 * (1024 ** 3)
-
-    needs_init = True
-
-    @classmethod
-    def get(cls, job_id):
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-
-        dbconfig.override(
-            dbuser='branchscanner', isolation_level='read_committed')
-        from lp.code.model.branchjob import (
-            BranchJob,
-            )
-        store = IStore(BranchJob)
-        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        return branch_job.makeDerived()
-
-
-class CeleryRunJob(RunJob):
-    """The Celery Task that runs a job."""
-
-    job_source = CeleryJobSource
-
-    def getJobRunner(self):
-        """Return a BaseJobRunner, to support customization."""
-        return BaseJobRunner()
 
 
 class TwistedJobRunner(BaseJobRunner):
