@@ -844,7 +844,30 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         pass
 
     def test_foreign_container(self):
-        pass
+        # This spec is targeted to a person who's not a member of our team, so
+        # only those workitems that are explicitly assigned to a member of our
+        # team will be returned.
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            milestone=self.current_milestone,
+            assignee=self.factory.makePerson())
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=spec,
+            assignee=self.team.teamowner)
+
+        workitems = self.team.getWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual(
+            [self.current_milestone.dateexpected], workitems.keys())
+        containers = workitems[self.current_milestone.dateexpected]
+        self.assertEqual(1, len(containers))
+        [container] = containers
+        self.assertEqual(1, len(container.items))
+        self.assertEqual(workitem.title, container.items[0].title)
+        self.assertTrue(container.is_foreign)
 
     def test_future_container(self):
         spec = self.factory.makeSpecification(

@@ -1794,9 +1794,12 @@ class Person(
                 is_future = False
                 if spec.milestone != milestone:
                     is_future = True
+                is_foreign = False
+                if spec.assigneeID not in self._participant_ids:
+                    is_foreign = True
                 container = WorkItemContainer(
                     spec.name, spec.target, spec.assignee, spec.priority,
-                    is_future=is_future)
+                    is_future=is_future, is_foreign=is_foreign)
                 containers_by_spec[spec] = container
                 containers_by_date[milestone.dateexpected].append(container)
             container.append(GenericWorkItem.from_workitem(workitem))
@@ -1814,7 +1817,7 @@ class Person(
             container = bug_containers_by_date.get(dateexpected)
             if container is None:
                 container = WorkItemContainer(
-                    'Aggregated bugs', None, None, None, False)
+                    'Aggregated bugs', None, None, None)
                 bug_containers_by_date[dateexpected] = container
                 # Also append our new container to the dictionary we're going
                 # to return.
@@ -4992,7 +4995,8 @@ def _get_recipients_for_team(team):
 
 # TODO: Need tests for the two classes below.
 class WorkItemContainer:
-    """A container of work items whose milestone is due on a certain date.
+    """A container of work items, assigned to members of a team, whose
+    milestone is due on a certain date.
 
     This might represent a Specification with its SpecificationWorkItems or
     just a collection of BugTasks.
@@ -5008,7 +5012,8 @@ class WorkItemContainer:
     are necessary.
     """
 
-    def __init__(self, label, target, assignee, priority, is_future):
+    def __init__(self, label, target, assignee, priority, is_future=False,
+                 is_foreign=False):
         self.label = label
         self.target = target
         self.assignee = assignee
@@ -5021,7 +5026,7 @@ class WorkItemContainer:
 
         # Is this container assigned to a person which is not a member of the
         # team we're dealing with here?
-        self.is_foreign = False
+        self.is_foreign = is_foreign
 
     @property
     def items(self):
