@@ -8,6 +8,9 @@ __metaclass__ = type
 __all__ = [
     'TeamFutureWorkView',
     ]
+
+from operator import itemgetter
+
 from lp.services.webapp import (
     LaunchpadView,
     )
@@ -51,6 +54,6 @@ class TeamFutureWorkView(LaunchpadView):
 
     @property
     def work_item_containers(self):
-        #        return {}
-        result = self.context.getWorkItemsDueBefore(datetime(2050, 1, 1))
-        return result.items()
+        result = self.context.getWorkItemsDueBefore(
+            datetime(2050, 1, 1), self.user)
+        return sorted(result.items(), key=itemgetter(0))

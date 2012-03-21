@@ -18,8 +18,7 @@
   <div tal:repeat="pair view/work_item_containers">
     <!-- XXX: We shouldn't call python to do this, but we might not get dicts in here later -->
     <div tal:define="date python: pair[0]; containers python: pair[1]">
-      <!-- XXX We have to sort the dates. -->
-      <h3 tal:content="date" />
+      <h3 tal:content="date/fmt:date" />
       <table border=1>
 	  <tr>
 	    <th>Blueprint</th>
@@ -30,18 +29,31 @@
 	  </tr>
 	<div tal:repeat="container containers">
           <tr>
-	    <!-- XXX: find out why is_foreign is not available on container -->
-            <td><span tal:condition="not: container" tal:replace="string: [FOREIGN] " /><span tal:replace="container/label" /></td>
-            <td><span tal:condition="container/target" tal:replace="container/target/name" /><span tal:condition="not:container/target" tal:replace="string: N/A" /></td>
-            <td><span tal:condition="container/priority" tal:replace="container/priority/name" /><span tal:condition="not:container/priority" tal:replace="string: N/A" /></td>
-            <td><a tal:condition="container/assignee" tal:content="container/assignee/name" tal:attributes="href container/assignee/name" /><span tal:condition="not:container/assignee" tal:replace="string: N/A" /></td>
+            <td><span tal:condition="container/is_foreign">[FOREIGN]</span>
+                <span tal:condition="container/is_future">[FUTURE]</span>
+                <span tal:replace="container/label" />
+            </td>
+            <td><a tal:condition="container/target" tal:replace="structure container/target/fmt:link" />
+                <span tal:condition="not:container/target" tal:replace="string: N/A" />
+            </td>
+            <td><span tal:condition="container/priority" tal:replace="container/priority/title" />
+                <span tal:condition="not:container/priority" tal:replace="string: N/A" />
+            </td>
+            <!-- XXX: A container with no assignee could be either a Spec with
+            no assignee or the container we use to group all bugtasks. We need
+            to find a way to distinguish between the two because N/A should be
+            displayed only for the latter. -->
+            <td><a tal:condition="container/assignee" tal:replace="structure container/assignee/fmt:link" />
+                <span tal:condition="not:container/assignee" tal:replace="string: N/A" />
+            </td>
 	    <td><span tal:replace="container/percent_done" />% of 100%</td>
 	  </tr>
 	  <tr tal:repeat="workitem container/items">
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/target/name" /></td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
-            <td><a tal:condition="workitem/assignee" tal:content="workitem/assignee/name" tal:attributes="href workitem/assignee/name" /><span tal:condition="not:workitem/assignee" tal:replace="string: N/A" /></td>
+      <td><a tal:condition="workitem/assignee" tal:replace="structure workitem/assignee/fmt:link" />
+      </td>
 	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/status/name" /></td>
 	  </tr>
 	</div>
