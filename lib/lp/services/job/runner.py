@@ -188,10 +188,12 @@ class BaseJobRunner(LazrJobRunner):
     def __init__(self, logger=None, error_utility=None):
         self.oops_ids = []
         if error_utility is None:
-            error_utility = errorlog.globalErrorUtility
+            self.error_utility = errorlog.globalErrorUtility
+        else:
+            self.error_utility = errorlog.globalErrorUtility
         super(BaseJobRunner, self).__init__(
-            logger, oops_config=error_utility._oops_config,
-            oopsMessage=error_utility.oopsMessage)
+            logger, oops_config=self.error_utility._oops_config,
+            oopsMessage=self.error_utility.oopsMessage)
 
     def acquireLease(self, job):
         self.logger.debug(
@@ -208,6 +210,18 @@ class BaseJobRunner(LazrJobRunner):
 
     def runJob(self, job):
         super(BaseJobRunner, self).runJob(IRunnableJob(job))
+
+    def _doOops(self, job, info):
+        """Report an OOPS for the provided job and info.
+
+        :param job: The IRunnableJob whose run failed.
+        :param info: The standard sys.exc_info() value.
+        :return: the Oops that was reported.
+        """
+        oops = self.error_utility.raising(info)
+        job.notifyOops(oops)
+        self._logOopsId(oops['id'])
+        return oops
 
     def _logOopsId(self, oops_id):
         """Report oopses by id to the log."""
@@ -247,9 +261,7 @@ class JobRunner(BaseJobRunner):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
-            oops = self.runJobHandleError(job)
-            if oops is not None:
-                self._logOopsId(oops['id'])
+            self.runJobHandleError(job)
 
 
 class RunJobCommand(amp.Command):
