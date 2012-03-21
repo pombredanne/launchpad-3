@@ -30,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -613,6 +612,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
+
         if delta.changes:
             changes = delta.changes
             changes["specification"] = self
