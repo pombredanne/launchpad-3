@@ -9,6 +9,18 @@
 
 <body>
   <div metal:fill-slot="main">
+    <div id="observer-summary">
+      <p>
+      <tal:bugs>1</tal:bugs> bugs and <tal:branches>1</tal:branches> branches
+      shared with <tal:name replace="view/person/displayname">
+      sharee</tal:name>.<br />
+
+      <tal:is-team condition="view/person/is_team">
+        <tal:members>3</tal:members> team members can view these bugs and
+        branches. 
+      </tal:is-team>
+      <p>
+    </div>
   </div>
 </body>
 </html>
