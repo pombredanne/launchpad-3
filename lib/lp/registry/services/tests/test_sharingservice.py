@@ -71,6 +71,17 @@ class TestSharingService(TestCaseWithFactory):
         sharee_data['permissions'] = permissions
         return sharee_data
 
+    def test_getSharingPermissions(self):
+        # test_getSharingPermissions returns permissions in the right order.
+        permissions = self.service.getSharingPermissions()
+        expected_permissions = [
+            SharingPermission.ALL,
+            SharingPermission.SOME,
+            SharingPermission.NOTHING
+        ]
+        for x, permission in enumerate(expected_permissions):
+            self.assertEqual(permissions[x]['value'], permission.name)
+
     def _test_getInformationTypes(self, pillar, expected_policies):
         policy_data = self.service.getInformationTypes(pillar)
         expected_data = []

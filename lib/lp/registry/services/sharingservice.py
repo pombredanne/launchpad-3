@@ -77,12 +77,19 @@ class SharingService:
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
+        # We want the permissions displayed in the following order.
+        ordered_permissions = [
+            SharingPermission.ALL,
+            SharingPermission.SOME,
+            SharingPermission.NOTHING
+        ]
         sharing_permissions = []
-        for permission in SharingPermission:
+        for x, permission in enumerate(ordered_permissions):
             item = dict(
-                value=permission.token,
+                index=x,
+                value=permission.name,
                 title=permission.title,
-                description=permission.value.description
+                description=permission.description
             )
             sharing_permissions.append(item)
         return sharing_permissions
