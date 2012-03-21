@@ -41,6 +41,7 @@ from ampoule import (
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import (
     JobRunner as LazrJobRunner,
+    LeaseHeld,
     RunJob,
     )
 import transaction
@@ -66,7 +67,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
-    LeaseHeld,
     )
 from lp.services.mail.sendmail import (
     MailController,

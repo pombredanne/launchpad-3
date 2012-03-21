@@ -11,6 +11,8 @@ from calendar import timegm
 import datetime
 import time
 
+from lazr.jobrunner.jobrunner import LeaseHeld
+
 import pytz
 from sqlobject import (
     IntCol,
@@ -36,7 +38,6 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
-    LeaseHeld,
     )
 
 
