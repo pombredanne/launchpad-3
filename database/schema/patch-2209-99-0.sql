@@ -10,8 +10,7 @@ CREATE TABLE BugTaskFlat (
     duplicateof integer,
     bug_owner integer NOT NULL,
     fti ts2.tsvector,
-    private boolean NOT NULL,
-    security_related boolean NOT NULL,
+    information_type integer NOT NULL,
     date_last_updated timestamp without time zone NOT NULL,
     heat integer NOT NULL,
     product integer,
@@ -262,22 +261,24 @@ BEGIN
     END IF;
 
     -- If the bug is private, grab the access control information.
-    IF bug_row.private THEN
+    -- If the bug is public, access_policies and access_grants are NULL.
+    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    IF bug_row.information_type IN (3, 4, 5) THEN
         SELECT id INTO _access_artifact
             FROM accessartifact
             WHERE bug = bug_row.id;
-        SELECT array_agg(policy) INTO _access_policies
+        SELECT COALESCE(array_agg(policy), ARRAY[]::integer[]) INTO _access_policies
             FROM accesspolicyartifact
             WHERE artifact = _access_artifact;
-        SELECT array_agg(grantee) INTO _access_grants
+        SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[]) INTO _access_grants
             FROM accessartifactgrant
             WHERE artifact = _access_artifact;
     END IF;
 
     -- Compile the new flat row.
     SELECT task_row.id, bug_row.id, task_row.datecreated,
-           bug_row.duplicateof, bug_row.owner, bug_row.fti, bug_row.private,
-           bug_row.security_related, bug_row.date_last_updated,
+           bug_row.duplicateof, bug_row.owner, bug_row.fti,
+           bug_row.information_type, bug_row.date_last_updated,
            bug_row.heat, task_row.product, task_row.productseries,
            task_row.distribution, task_row.distroseries,
            task_row.sourcepackagename, task_row.status,
@@ -302,8 +303,7 @@ BEGIN
                 duplicateof = new_flat_row.duplicateof,
                 bug_owner = new_flat_row.bug_owner,
                 fti = new_flat_row.fti,
-                private = new_flat_row.private,
-                security_related = new_flat_row.security_related,
+                information_type = new_flat_row.information_type,
                 date_last_updated = new_flat_row.date_last_updated,
                 heat = new_flat_row.heat,
                 product = new_flat_row.product,
@@ -334,6 +334,45 @@ COMMENT ON FUNCTION bugtask_flatten(task_id integer, check_only boolean) IS
     'brought up to date.';
 
 
+CREATE OR REPLACE FUNCTION bug_flatten_access(bug_id integer)
+    RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+    AS $$
+DECLARE
+    artifact_id integer;
+    _information_type integer;
+BEGIN
+    SELECT information_type FROM bug INTO _information_type WHERE id = bug_id;
+    SELECT id INTO artifact_id FROM accessartifact WHERE bug = bug_id;
+    -- If the bug is private, grab the access control information.
+    -- If the bug is public, access_policies and access_grants are NULL.
+    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    IF _information_type IN (3, 4, 5) THEN
+        UPDATE bugtaskflat
+            SET
+                access_policies = (
+                    SELECT COALESCE(array_agg(policy), ARRAY[]::integer[]) FROM accesspolicyartifact
+                    WHERE artifact = artifact_id),
+                access_grants = (
+                    SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[]) FROM accessartifactgrant
+                    WHERE artifact = artifact_id)
+            WHERE bug = bug_id;
+    ELSE
+        UPDATE bugtaskflat
+            SET
+                access_policies = NULL,
+                access_grants = NULL
+            WHERE bug = bug_id;
+    END IF;
+    RETURN;
+END;
+$$;
+
+COMMENT ON FUNCTION bug_flatten_access(bug_id integer) IS
+    'Recalculate the access cache on a bug''s flattened tasks.';
+
+
+
 CREATE OR REPLACE FUNCTION accessartifact_flatten_bug(artifact_id integer)
     RETURNS void
     LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -343,15 +382,7 @@ DECLARE
 BEGIN
     SELECT bug INTO bug_id FROM accessartifact WHERE id = artifact_id;
     IF bug_id IS NOT NULL THEN
-        UPDATE bugtaskflat
-            SET
-                access_policies = (
-                    SELECT array_agg(policy) FROM accesspolicyartifact
-                    WHERE artifact = artifact_id),
-                access_grants = (
-                    SELECT array_agg(grantee) FROM accessartifactgrant
-                    WHERE artifact = artifact_id)
-            WHERE bug = bug_id;
+        PERFORM bug_flatten_access(bug_id);
     END IF;
     RETURN;
 END;
@@ -432,8 +463,7 @@ BEGIN
         NEW.duplicateof IS DISTINCT FROM OLD.duplicateof
         OR NEW.owner IS DISTINCT FROM OLD.owner
         OR NEW.fti IS DISTINCT FROM OLD.fti
-        OR NEW.private IS DISTINCT FROM OLD.private
-        OR NEW.security_related IS DISTINCT FROM OLD.security_related
+        OR NEW.information_type IS DISTINCT FROM OLD.information_type
         OR NEW.date_last_updated IS DISTINCT FROM OLD.date_last_updated
         OR NEW.heat IS DISTINCT FROM OLD.heat) THEN
         UPDATE bugtaskflat
@@ -441,11 +471,14 @@ BEGIN
                 duplicateof = NEW.duplicateof,
                 bug_owner = NEW.owner,
                 fti = NEW.fti,
-                private = NEW.private,
-                security_related = NEW.security_related,
+                information_type = NEW.information_type,
                 date_last_updated = NEW.date_last_updated,
                 heat = NEW.heat
             WHERE bug = OLD.id;
+    END IF;
+
+    IF NEW.information_type IS DISTINCT FROM OLD.information_type THEN
+        PERFORM bug_flatten_access(OLD.id);
     END IF;
     RETURN NULL;
 END;

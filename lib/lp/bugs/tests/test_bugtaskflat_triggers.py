@@ -7,9 +7,11 @@ from collections import namedtuple
 from contextlib import contextmanager
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessArtifactGrantSource,
@@ -31,8 +33,7 @@ BUGTASKFLAT_COLUMNS = (
     'duplicateof',
     'bug_owner',
     'fti',
-    'private',
-    'security_related',
+    'information_type',
     'date_last_updated',
     'heat',
     'product',
@@ -154,11 +155,11 @@ class TestBugTaskFlatten(BugTaskFlatTestMixin):
         with dbuser('testadmin'):
             IStore(Bug).execute(
                 "INSERT INTO bugtaskflat "
-                "(bug, bugtask, bug_owner, private, security_related, "
+                "(bug, bugtask, bug_owner, information_type, "
                 " date_last_updated, heat, status, importance, owner, "
                 " active) "
                 "VALUES "
-                "(1, 200, 1, false, false, "
+                "(1, 200, 1, 1, "
                 " current_timestamp at time zone 'UTC', 999, 1, 1, 1, true);")
         self.assertFlattens(200)
 
@@ -201,14 +202,33 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
     def test_bug_change(self):
         # Triggers maintain BugTaskFlat when a bug is changed
         task = self.makeLoggedInTask()
-        with self.bugtaskflat_is_updated(task, ['security_related']):
-            task.bug.security_related = True
+        with self.bugtaskflat_is_updated(task, ['information_type']):
+            removeSecurityProxy(task.bug).information_type = (
+                InformationType.UNEMBARGOEDSECURITY)
+
+    def test_bug_make_private(self):
+        # Triggers maintain BugTaskFlat when a bug is made private.
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_updated(
+            task, [
+                'information_type', 'date_last_updated', 'heat',
+                'access_policies', 'access_grants']):
+            task.bug.setPrivate(True, task.owner)
+
+    def test_bug_make_public(self):
+        # Triggers maintain BugTaskFlat when a bug is made public.
+        task = self.makeLoggedInTask(private=True)
+        with self.bugtaskflat_is_updated(
+            task, [
+                'information_type', 'date_last_updated', 'heat',
+                'access_policies', 'access_grants']):
+            task.bug.setPrivate(False, task.owner)
 
     def test_bug_change_unflattened(self):
         # Some fields on Bug aren't mirrored, so don't trigger updates.
         task = self.makeLoggedInTask()
         with self.bugtaskflat_is_identical(task):
-            task.bug.who_made_private = task.owner
+            removeSecurityProxy(task.bug).who_made_private = task.owner
 
     def test_accessartifactgrant_create(self):
         # Creating an AccessArtifactGrant updates the relevant bugs.
