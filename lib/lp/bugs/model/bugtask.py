@@ -43,8 +43,10 @@ from storm.expr import (
     And,
     Join,
     Or,
+    Select,
     SQL,
     Sum,
+    Union,
     )
 from storm.store import (
     EmptyResultSet,
@@ -1397,6 +1399,17 @@ class BugTaskSet:
         for tag_name, bugtask_id in tags:
             tags_by_bugtask[bugtask_id].append(tag_name)
         return dict(tags_by_bugtask)
+
+    def getBugTaskPeople(self, bugtasks):
+        """See `IBugTaskSet`"""
+        # Avoid circular imports.
+        from lp.registry.interfaces.person import IPersonSet
+        people_ids = set(
+            [bugtask.assigneeID for bugtask in bugtasks] +
+            [bugtask.bug.ownerID for bugtask in bugtasks])
+        people = getUtility(IPersonSet).getPrecachedPersonsFromIDs(people_ids)
+        return dict(
+            (person.id, person) for person in people)
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
