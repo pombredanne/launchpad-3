@@ -198,7 +198,7 @@ class ProductNotificationJob(ProductJobDerived):
         return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
 
     def getErrorRecipients(self):
-        """See `IPersonMergeJob`."""
+        """See `IProductNotificationJob`."""
         return [format_address_for_person(self.reviewer)]
 
     def sendEmailToMaintainer(self, template_name, subject, from_address):
