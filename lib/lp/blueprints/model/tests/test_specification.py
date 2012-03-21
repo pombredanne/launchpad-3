@@ -171,14 +171,14 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
             'assignee': None,
             'milestone': None,
             'sequence': 0
-            }
+        }
 
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
         # In production this notification is fired by lazr.restful, but we
         # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(
-                spec, old_spec, edited_fields=['workitems_text']))
+            spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
@@ -200,7 +200,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         # In production this notification is fired by lazr.restful, but we
         # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(
-                spec, old_spec, edited_fields=['workitems_text']))
+            spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
@@ -220,14 +220,14 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
             'assignee': None,
             'milestone': None,
             'sequence': 0
-            }
+        }
         new_work_item = {
             'title': u'The same work item',
             'status': new_status,
             'assignee': None,
             'milestone': None,
             'sequence': 0
-            }
+        }
         login_person(spec.owner)
         spec.updateWorkItems([original_work_item])
         old_spec = Snapshot(spec, providing=providedBy(spec))
@@ -237,7 +237,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         # In production this notification is fired by lazr.restful, but we
         # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(
-                spec, old_spec, edited_fields=['workitems_text']))
+            spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
