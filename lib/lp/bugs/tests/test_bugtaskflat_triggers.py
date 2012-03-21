@@ -211,9 +211,9 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         task = self.makeLoggedInTask()
         with self.bugtaskflat_is_updated(
             task, [
-                'information_type', 'date_last_updated', 'heat',
-                'access_policies', 'access_grants']):
-            task.bug.setPrivate(True, task.owner)
+                'information_type', 'access_policies', 'access_grants']):
+            removeSecurityProxy(task.bug).information_type = (
+                InformationType.USERDATA)
 
     def test_bug_make_public(self):
         # Triggers maintain BugTaskFlat when a bug is made public.
