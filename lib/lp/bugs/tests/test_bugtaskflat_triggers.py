@@ -16,6 +16,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactSource,
     IAccessArtifactGrantSource,
     IAccessPolicyArtifactSource,
+    IAccessPolicySource,
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
@@ -91,6 +92,12 @@ class BugTaskFlatTestMixin(TestCaseWithFactory):
             result = BugTaskFlat(*result)
         return result
 
+    def makeLoggedInTask(self, private=False):
+        owner = self.factory.makePerson()
+        login_person(owner)
+        bug = self.factory.makeBug(private=private, owner=owner)
+        return bug.default_bugtask
+
     @contextmanager
     def bugtaskflat_is_deleted(self, bugtask):
         old_row = self.getBugTaskFlat(bugtask)
@@ -163,16 +170,29 @@ class TestBugTaskFlatten(BugTaskFlatTestMixin):
                 " current_timestamp at time zone 'UTC', 999, 1, 1, 1, true);")
         self.assertFlattens(200)
 
+    def test_public_access_cache_is_null(self):
+        # access_policies and access_grants for a public bug are NULL.
+        bugtask = self.makeLoggedInTask()
+        flat = self.getBugTaskFlat(bugtask.id)
+        self.assertIs(None, flat.access_policies)
+        self.assertIs(None, flat.access_grants)
+
+    def test_private_access_cache_is_set(self):
+        # access_policies and access_grants for a private bug are
+        # mirrored appropriately.
+        bugtask = self.makeLoggedInTask(private=True)
+        flat = self.getBugTaskFlat(bugtask.id)
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(bugtask.pillar, InformationType.USERDATA)])
+        self.assertContentEqual([policy.id], flat.access_policies)
+        self.assertContentEqual(
+            [p.id for p in bugtask.bug.getDirectSubscribers()],
+            flat.access_grants)
+
 
 class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
 
     layer = DatabaseFunctionalLayer
-
-    def makeLoggedInTask(self, private=False):
-        owner = self.factory.makePerson()
-        login_person(owner)
-        bug = self.factory.makeBug(private=private, owner=owner)
-        return bug.default_bugtask
 
     def test_bugtask_create(self):
         # Triggers maintain BugTaskFlat when a task is created.
@@ -260,3 +280,17 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         with self.bugtaskflat_is_updated(task, ['access_policies']):
             getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
                 [artifact])
+
+    def test_accessartifact_delete(self):
+        # Deleting an AccessArtifact removes the corresponding
+        # AccessArtifactGrant and AccessPolicyArtifact rows. Even though
+        # it's hopefully impossible for a private bug to not have an
+        # AccessArtifact, access_policies and access_grants are empty
+        # lists, not NULL.
+        task = self.makeLoggedInTask(private=True)
+        with self.bugtaskflat_is_updated(
+            task, ['access_policies', 'access_grants']):
+            getUtility(IAccessArtifactSource).delete([task.bug])
+        flat = self.getBugTaskFlat(task.id)
+        self.assertEqual([], flat.access_policies)
+        self.assertEqual([], flat.access_grants)
