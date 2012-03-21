@@ -696,10 +696,10 @@ class SpecificationEditSchema(ISpecification):
             "implementation or delivery of this feature."))
 
     workitems_text = WorkItemsText(
-            title=_('Work Items'), required=True,
-            description=_(
-                "Work items for this specification input in a text format. "
-                "Your changes will override the current work items."))
+        title=_('Work Items'), required=True,
+        description=_(
+            "Work items for this specification input in a text format. "
+            "Your changes will override the current work items."))
 
 
 class SpecificationEditView(LaunchpadEditFormView):
@@ -744,8 +744,8 @@ class SpecificationEditWorkItemsView(SpecificationEditView):
     def change_action(self, action, data):
         old_spec = Snapshot(self.context, providing=providedBy(self.context))
         self.context.setWorkItems(data['workitems_text'])
-        notify(ObjectModifiedEvent(self.context, old_spec,
-                                   edited_fields=['workitems_text']))
+        notify(ObjectModifiedEvent(
+                self.context, old_spec, edited_fields=['workitems_text']))
         self.next_url = canonical_url(self.context)
 
 
