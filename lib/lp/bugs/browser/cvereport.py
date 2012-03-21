@@ -78,8 +78,9 @@ class CVEReportView(LaunchpadView):
             self.resolved_cve_bugtasks = []
             return
 
-        badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
-            bugtasks)
+        bugtask_set = getUtility(IBugTaskSet)
+        badge_properties = bugtask_set.getBugTaskBadgeProperties(bugtasks)
+        people = bugtask_set.getBugTaskPeople(bugtasks)
 
         open_bugtaskcves = {}
         resolved_bugtaskcves = {}
@@ -92,7 +93,8 @@ class CVEReportView(LaunchpadView):
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
                 has_patch=badges['has_patch'],
-                tags=())
+                tags=(),
+                people=people)
             if bugtask.status in RESOLVED_BUGTASK_STATUSES:
                 current_bugtaskcves = resolved_bugtaskcves
             else:

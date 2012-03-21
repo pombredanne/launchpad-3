@@ -48,6 +48,10 @@ APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
     'ppa:launchpad/ppa',
     'ppa:bzr/ppa',
+    # XXX 2012-03-19 frankban bug=955006:
+    #     The yellow PPA contains an updated version of testrepository
+    #     that fixes the encoding issue.
+    'ppa:yellow/ppa',
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
@@ -971,6 +975,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
     root_sshcall('cd {} && make install'.format(checkout_dir))
+    # XXX benji 2012-03-19 bug=959352: this is so graphviz will work in an
+    # ephemeral container
+    root_sshcall('mkdir -p /rootfs/usr/lib')
+    root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
 
 
 def stop_lxc(lxcname, ssh_key_path):

@@ -8,11 +8,13 @@ __all__ = [
     'SharingService',
     ]
 
-from lazr.restful import EntryResource
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.registry.enums import (
     InformationType,
@@ -27,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -43,6 +46,11 @@ class SharingService:
     def name(self):
         """See `IService`."""
         return 'sharing'
+
+    @property
+    def write_enabled(self):
+        return bool(getFeatureFlag(
+            'disclosure.enhanced_sharing.writable'))
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
@@ -84,16 +92,22 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grant_permissions = ap_grant_flat.findGranteesByPolicy(
-            policies, grantees)
+            policies, grantees).order_by(
+                "person_sort_key(Person.displayname, Person.name)")
 
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
+        browser_request = IWebBrowserOriginatingRequest(request)
         for (grantee, policy, sharing_permission) in grant_permissions:
             if not grantee.id in person_by_id:
-                resource = EntryResource(grantee, request)
-                person_data = resource.toDataForJSON()
-                person_data['permissions'] = {}
+                person_data = {
+                    'name': grantee.name,
+                    'meta': 'team' if grantee.is_team else 'person',
+                    'display_name': grantee.displayname,
+                    'self_link': absoluteURL(grantee, request),
+                    'permissions': {}}
+                person_data['web_link'] = absoluteURL(grantee, browser_request)
                 person_by_id[grantee.id] = person_data
                 result.append(person_data)
             person_data = person_by_id[grantee.id]
@@ -106,6 +120,9 @@ class SharingService:
 
         # We do not support adding sharees to project groups.
         assert not IProjectGroup.providedBy(pillar)
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
 
         # Separate out the info types according to permission.
         information_types = permissions.keys()
@@ -168,6 +185,9 @@ class SharingService:
     def deletePillarSharee(self, pillar, sharee,
                              information_types=None):
         """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
 
         policy_source = getUtility(IAccessPolicySource)
         if information_types is None:
