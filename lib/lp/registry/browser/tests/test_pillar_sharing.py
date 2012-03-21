@@ -10,7 +10,6 @@ import simplejson
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 from testtools.matchers import (
-    Equals,
     LessThan,
     MatchesException,
     Not,
@@ -27,8 +26,9 @@ from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
+    StormStatementRecorder,
     TestCaseWithFactory,
-    StormStatementRecorder)
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import setupBrowserForUser

@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact sharing service."""
-from lp.registry.model.person import Person
 
 __metaclass__ = type
 __all__ = [
@@ -30,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
