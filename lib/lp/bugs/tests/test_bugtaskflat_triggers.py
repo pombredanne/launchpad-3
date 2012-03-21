@@ -210,8 +210,7 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         # Triggers maintain BugTaskFlat when a bug is made private.
         task = self.makeLoggedInTask()
         with self.bugtaskflat_is_updated(
-            task, [
-                'information_type', 'access_policies', 'access_grants']):
+            task, ['information_type', 'access_policies', 'access_grants']):
             removeSecurityProxy(task.bug).information_type = (
                 InformationType.USERDATA)
 
