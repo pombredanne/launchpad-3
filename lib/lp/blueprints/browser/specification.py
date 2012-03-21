@@ -45,6 +45,8 @@ from subprocess import (
     Popen,
     )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -58,11 +60,13 @@ from zope.app.form.browser import (
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import (
     implementer,
     Interface,
+    providedBy,
     )
 from zope.schema import (
     Bool,
@@ -738,7 +742,10 @@ class SpecificationEditWorkItemsView(SpecificationEditView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        old_spec = Snapshot(self.context, providing=providedBy(self.context))
         self.context.setWorkItems(data['workitems_text'])
+        notify(ObjectModifiedEvent(self.context, old_spec,
+                                   edited_fields=['workitems_text']))
         self.next_url = canonical_url(self.context)
 
 
