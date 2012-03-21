@@ -52,6 +52,12 @@ class SharingService:
         return bool(getFeatureFlag(
             'disclosure.enhanced_sharing.writable'))
 
+    def getSharedArtifacts(self, pillar, person):
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        flat_source = getUtility(IAccessPolicyGrantFlatSource)
+        return [a for a in
+            flat_source.findArtifactsByGrantee(person, policies)]
+    
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [

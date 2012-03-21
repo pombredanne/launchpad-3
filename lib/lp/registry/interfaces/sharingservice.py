@@ -43,6 +43,9 @@ class ISharingService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
+    def getSharedArtifacts(pillar, person):
+        """Return the artifacts shared between the pillar and person."""
+
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""
 

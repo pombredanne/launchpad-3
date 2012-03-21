@@ -365,3 +365,24 @@ class PillarPersonSharingView(LaunchpadView):
 
         self.label = "Information shared with %s" % self.person.displayname
         self.page_title = "%s" % self.person.displayname
+        self.sharing_service = getUtility(IService, 'sharing')
+
+    def _getSharedArtifacts(self):
+        return self.sharing_service.getSharedArtifacts(
+            self.pillar, self.person)
+
+    @cachedproperty
+    def shared_bugs(self):
+        return [b for b in self._getSharedArtifacts()]
+
+    @cachedproperty
+    def shared_bugs_count(self):
+        return len(self.shared_bugs) 
+
+    @cachedproperty
+    def shared_branches(self):
+        return [b for b in self._getSharedArtifacts()]
+
+    @cachedproperty
+    def shared_branches_count(self):
+        return len(self.shared_branches)

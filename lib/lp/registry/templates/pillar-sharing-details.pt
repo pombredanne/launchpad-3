@@ -11,8 +11,9 @@
   <div metal:fill-slot="main">
     <div id="observer-summary">
       <p>
-      <tal:bugs>1</tal:bugs> bugs and <tal:branches>1</tal:branches> branches
-      shared with <tal:name replace="view/person/displayname">
+      <tal:bugs replace="view/shared_bugs_count">0</tal:bugs> bugs and
+      <tal:branches replace="view/shared_branches_count">0</tal:branches>
+      branches shared with <tal:name replace="view/person/displayname">
       sharee</tal:name>.<br />
 
       <tal:is-team condition="view/person/is_team">
