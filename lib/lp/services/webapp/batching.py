@@ -107,7 +107,7 @@ class LowerBatchNavigationView(UpperBatchNavigationView):
 
 class BatchNavigator(lazr.batchnavigator.BatchNavigator):
 
-    def __init__(self, results, request, start=0, size=20, callback=None,
+    def __init__(self, results, request, start=0, size=None, callback=None,
                  transient_parameters=None, force_start=False,
                  range_factory=None, hide_counts=False):
         super(BatchNavigator, self).__init__(results, request,
