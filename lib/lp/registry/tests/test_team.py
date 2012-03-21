@@ -849,7 +849,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         removeSecurityProxy(bugtask).assignee = self.team.teamowner
 
         workitems = self.team.getWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, user=None)
 
         self.assertEqual(
             [self.current_milestone.dateexpected], workitems.keys())
@@ -869,6 +869,29 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertFalse(workitem_container.is_foreign)
         self.assertFalse(workitem_container.is_future)
 
+    def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
+        private_bug = removeSecurityProxy(
+            self.factory.makeBug(
+                milestone=self.current_milestone, private=True))
+        private_bug.bugtasks[0].assignee = self.team.teamowner
+        private_bug2 = removeSecurityProxy(
+            self.factory.makeBug(
+                milestone=self.current_milestone, private=True))
+        private_bug2.bugtasks[0].assignee = self.team.teamowner
+
+        # Now we do a search as the owner of private_bug2 and since the owner
+        # of that bug has no rights to see private_bug, the return value
+        # contains only private_bug2.
+        workitems = self.team.getWorkItemsDueBefore(
+            self.today + timedelta(days=1), user=private_bug2.owner)
+
+        items = []
+        for containers in workitems.values():
+            for container in containers:
+                items.extend([item for item in container.items])
+        self.assertEqual(1, len(items))
+        self.assertEqual(private_bug2.bugtasks[0].title, items[0].title)
+
     def test_foreign_container(self):
         # This spec is targeted to a person who's not a member of our team, so
         # only those workitems that are explicitly assigned to a member of our
@@ -884,7 +907,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
             assignee=self.team.teamowner)
 
         workitems = self.team.getWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, user=None)
 
         self.assertEqual(
             [self.current_milestone.dateexpected], workitems.keys())
@@ -909,7 +932,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.current_milestone)
 
         workitems = self.team.getWorkItemsDueBefore(
-            self.current_milestone.dateexpected)
+            self.current_milestone.dateexpected, user=None)
 
         self.assertEqual(
             [self.current_milestone.dateexpected], workitems.keys())
@@ -925,17 +948,18 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         dateexpected = self.current_milestone.dateexpected
         flush_database_caches()
         with StormStatementRecorder() as recorder:
-            containers = self.team.getWorkItemsDueBefore(dateexpected)
-        # One query to get all team members;
-        # One to get all SpecWorkItems;
-        # One to get all BugTasks.
-        # And one to get the current series of a distribution
-        # (Distribution.currentseries) to decide whether or not
-        # the bug is part of a conjoined relationship. The code that executes
-        # this query runs for every distroseriespackage bugtask but since
-        # .currentseries is a cached property and there's a single
-        # distribution with bugs in production, this will not cause an extra
-        # DB query every time it runs.
+            containers = self.team.getWorkItemsDueBefore(
+                dateexpected, user=None)
+        # 1. One query to get all team members;
+        # 2. One to get all SpecWorkItems;
+        # 3. One to get all BugTasks.
+        # 4. And one to get the current series of a distribution
+        #    (Distribution.currentseries) to decide whether or not the bug is
+        #    part of a conjoined relationship. The code that executes this
+        #    query runs for every distroseriespackage bugtask but since
+        #    .currentseries is a cached property and there's a single
+        #    distribution with bugs in production, this will not cause an
+        #    extra DB query every time it runs.
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
         with StormStatementRecorder() as recorder:

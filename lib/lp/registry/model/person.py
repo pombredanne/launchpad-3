@@ -1777,7 +1777,7 @@ class Person(
                     continue
             yield task
 
-    def getWorkItemsDueBefore(self, date):
+    def getWorkItemsDueBefore(self, date, user):
         """See `IPerson`."""
         workitems = self._getSpecificationWorkItemsDueBefore(date)
         # Now we need to regroup our work items by specification and by date
@@ -1813,7 +1813,7 @@ class Person(
             containers_by_date[date].sort(
                 key=attrgetter('priority'), reverse=True)
 
-        bugtasks = self._getBugTasksDueBefore(date, user=None)
+        bugtasks = self._getBugTasksDueBefore(date, user)
         bug_containers_by_date = {}
         # Group all bug tasks by their milestone.dateexpected.
         for task in bugtasks:

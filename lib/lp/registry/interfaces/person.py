@@ -710,7 +710,7 @@ class IPersonPublic(IPrivacy):
         :return: True if they can, otherwise False.
         """
 
-    def getWorkItemsDueBefore(date):
+    def getWorkItemsDueBefore(date, user):
         """Return a dict mapping dates to lists of WorkItemContainers.
 
         This is a grouping, by milestone due date, of all work items
