@@ -9,7 +9,9 @@ __all__ = [
     'DistroSeriesDifferenceType',
     'InformationType',
     'PersonTransferJobType',
+    'PRIVATE_INFORMATION_TYPES',
     'ProductJobType',
+    'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
     ]
 
@@ -59,6 +61,15 @@ class InformationType(DBEnumeratedType):
         Only users with permission to see the project's artifacts containing
         proprietary data can see this information.
         """)
+
+
+PRIVATE_INFORMATION_TYPES = (
+    InformationType.EMBARGOEDSECURITY, InformationType.USERDATA,
+    InformationType.PROPRIETARY)
+
+
+SECURITY_INFORMATION_TYPES = (
+    InformationType.UNEMBARGOEDSECURITY, InformationType.EMBARGOEDSECURITY)
 
 
 class SharingPermission(DBEnumeratedType):
