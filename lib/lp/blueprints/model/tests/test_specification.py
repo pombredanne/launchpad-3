@@ -174,6 +174,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
 
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
+        # In production this notification is fired by lazr.restful, but we
+        # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(spec, old_spec,
                                    edited_fields=['workitems_text']))
         transaction.commit()
@@ -194,6 +196,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         old_spec = Snapshot(spec, providing=providedBy(spec))
         login_person(spec.owner)
         spec.updateWorkItems([])
+        # In production this notification is fired by lazr.restful, but we
+        # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(spec, old_spec,
                                    edited_fields=['workitems_text']))
         transaction.commit()
@@ -227,6 +231,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
 
         stub.test_emails = []
         spec.updateWorkItems([new_work_item])
+        # In production this notification is fired by lazr.restful, but we
+        # need to do it ourselves in this test.
         notify(ObjectModifiedEvent(spec, old_spec,
                                    edited_fields=['workitems_text']))
         transaction.commit()
