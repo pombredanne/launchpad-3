@@ -745,7 +745,7 @@ class SpecificationEditWorkItemsView(SpecificationEditView):
         old_spec = Snapshot(self.context, providing=providedBy(self.context))
         self.context.setWorkItems(data['workitems_text'])
         notify(ObjectModifiedEvent(
-                self.context, old_spec, edited_fields=['workitems_text']))
+            self.context, old_spec, edited_fields=['workitems_text']))
         self.next_url = canonical_url(self.context)
 
 

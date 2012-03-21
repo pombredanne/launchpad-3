@@ -161,6 +161,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_workitems_added_notification_message(self):
+        """ Test that we get a notification for setting work items on a new
+        specification."""
         stub.test_emails = []
         spec = self.factory.makeSpecification()
         old_spec = Snapshot(spec, providing=providedBy(spec))
@@ -175,8 +177,10 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
 
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
-        # In production this notification is fired by lazr.restful, but we
-        # need to do it ourselves in this test.
+        # In production this notification is fired by lazr.restful for changes
+        # in the specification form and notify(ObjectModifiedEvent(...)) for
+        # changes in the +workitems form. We need to do it ourselves in this
+        # test.
         notify(ObjectModifiedEvent(
             spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()
@@ -191,6 +195,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         self.assertIn(rationale, msg)
 
     def test_workitems_deleted_notification_message(self):
+        """ Test that we get a notification for deleting a work item."""
         stub.test_emails = []
         wi = self.factory.makeSpecificationWorkItem()
         spec = wi.specification
@@ -211,6 +216,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         self.assertIn(rationale, msg)
 
     def test_workitems_changed_notification_message(self):
+        """ Test that we get a notification about a work item status change.
+        This will be in the form of a line added and one deleted."""
         spec = self.factory.makeSpecification()
         original_status = SpecificationWorkItemStatus.TODO
         new_status = SpecificationWorkItemStatus.DONE
