@@ -164,13 +164,22 @@ class YUITestFixtureControllerView(LaunchpadView):
     INDEX = 'INDEX'
 
     page_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
           <title>Test</title>
           <script type="text/javascript"
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
+          <script type="text/javascript">
+              YUI.GlobalConfig = {
+                  fetchCSS: false,
+                  timeout: 50,
+                  ignore: [
+                      'yui2-yahoo', 'yui2-event', 'yui2-dom',
+                      'yui2-calendar','yui2-dom-event'
+                  ]
+              }
+          </script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
@@ -213,8 +222,7 @@ class YUITestFixtureControllerView(LaunchpadView):
         """)
 
     index_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
           <title>YUI XHR Tests</title>
