@@ -256,6 +256,15 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         with self.bugtaskflat_is_updated(task, ['access_grants']):
             self.factory.makeAccessArtifactGrant(artifact=artifact)
 
+    def test_accessartifactgrant_update(self):
+        # Updating an AccessArtifactGrant updates the relevant bugs.
+        # Person merge is the main use case here.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        grant = self.factory.makeAccessArtifactGrant(artifact=artifact)
+        with self.bugtaskflat_is_updated(task, ['access_grants']):
+            removeSecurityProxy(grant).grantee = self.factory.makePerson()
+
     def test_accessartifactgrant_delete(self):
         # Deleting an AccessArtifactGrant updates the relevant bugs.
         task = self.makeLoggedInTask(private=True)
@@ -271,6 +280,15 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
         with self.bugtaskflat_is_updated(task, ['access_policies']):
             self.factory.makeAccessPolicyArtifact(artifact=artifact)
+
+    def test_accesspolicyartifact_update(self):
+        # Updating an AccessPolicyArtifact updates the relevant bugs.
+        # There are currently no users of this, but it still works.
+        task = self.makeLoggedInTask(private=True)
+        [artifact] = getUtility(IAccessArtifactSource).find([task.bug])
+        link = self.factory.makeAccessPolicyArtifact(artifact=artifact)
+        with self.bugtaskflat_is_updated(task, ['access_policies']):
+            removeSecurityProxy(link).policy = self.factory.makeAccessPolicy()
 
     def test_accesspolicyartifact_delete(self):
         # Deleting an AccessPolicyArtifact updates the relevant bugtasks.
