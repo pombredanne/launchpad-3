@@ -156,7 +156,15 @@ class GenericWorkItem:
 
 
 def getWorkItemsDueBefore(team, date, user):
-    """See `IPerson`."""
+    """Return a dict mapping dates to lists of WorkItemContainers.
+
+    This is a grouping, by milestone due date, of all work items
+    (SpecificationWorkItems/BugTasks) assigned to any member of this
+    team.
+
+    Only work items whose milestone have a due date before the given date
+    are included here.
+    """
     workitems = team.getAssignedSpecificationWorkItemsDueBefore(date)
     # Now we need to regroup our work items by specification and by date
     # because that's how they'll end up being displayed. While we do this
