@@ -200,22 +200,20 @@ class ProductNotificationJob(ProductJobDerived):
     @cachedproperty
     def recipients(self):
         """See `IProductNotificationJob`."""
-        notification_set = NotificationRecipientSet()
         maintainer = self.product.owner
-        header = 'Maintainer'
-        if self.product.owner.is_team:
-            reason = (
-                "You received this notification because you are "
-                "an admin of %s which is the maintainer of %s.\n%s" %
-                (maintainer.displayname, self.product.displayname,
-                 canonical_url(self.product)))
-            notification_set.add(maintainer.adminmembers, reason, header)
+        if maintainer.is_team:
+            team_name = maintainer.displayname
+            role = "an admin of %s which is the maintainer" % team_name
+            users = maintainer.adminmembers
         else:
-            reason = (
-                "You received this notification because you are "
-                "the maintainer of %s.\n%s" %
-                (self.product.displayname, canonical_url(self.product)))
-            notification_set.add(maintainer, reason, header)
+            role = "the maintainer"
+            users = maintainer
+        reason = (
+            "You received this notification because you are %s of %s.\n%s" %
+            (role, self.product.displayname, canonical_url(self.product)))
+        header = 'Maintainer'
+        notification_set = NotificationRecipientSet()
+        notification_set.add(users, reason, header)
         return notification_set
 
     @cachedproperty
