@@ -163,47 +163,108 @@ class YUITestFixtureControllerView(LaunchpadView):
     TEARDOWN = 'TEARDOWN'
     INDEX = 'INDEX'
 
+    yui_block_no_combo = dedent("""\
+        <script type="text/javascript"
+            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
+
+        <script type="text/javascript">
+            YUI.GlobalConfig = {
+                fetchCSS: false,
+                timeout: 50,
+                ignore: [
+                    'yui2-yahoo', 'yui2-event', 'yui2-dom',
+                    'yui2-calendar','yui2-dom-event'
+                ]
+            }
+       </script>
+    """)
+
+    yui_block_combo = dedent("""\
+       <script type="text/javascript"
+            src="%(combo_url)s/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+
+       <script type="text/javascript">
+            YUI.GlobalConfig = {
+                combine: true,
+                comboBase: '%(combo_url)s/?',
+                root: 'yui/',
+                debug: true
+                fetchCSS: false,
+                groups: {
+                    lp: {
+                        combine: true,
+                        base: '%(combo_url)s/?lp/',
+                        comboBase: '%(combo_url)s/?',
+                        root: 'lp/',
+                        // comes from including lp/meta.js
+                        modules: LP_MODULES,
+                        fetchCSS: false
+                    },
+                    yui2: {
+                        combine: true,
+                        base: '%(combo_url)s/?yui2/',
+                        comboBase: '%(combo_url)s/?',
+                        root: 'yui2/',
+                        fetchCSS: false,
+                        modules: {
+                            'yui2-yahoo': {
+                                path: 'yahoo/yahoo.js'
+                            },
+                            'yui2-event': {
+                                path: 'event/event.js'
+                            },
+                            'yui2-dom': {
+                                path: 'dom/dom.js'
+                            },
+                            'yui2-calendar': {
+                                path: 'calendar/calendar.js'
+                            },
+                            'yui2-dom-event': {
+                                path: 'yahoo-dom-event/yahoo-dom-event.js'
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    """)
+
     page_template = dedent("""\
         <!DOCTYPE html>
         <html>
           <head>
-          <title>Test</title>
-          <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-          <script type="text/javascript">
-              YUI.GlobalConfig = {
-                  fetchCSS: false,
-                  timeout: 50,
-                  ignore: [
-                      'yui2-yahoo', 'yui2-event', 'yui2-dom',
-                      'yui2-calendar','yui2-dom-event'
-                  ]
+            <title>Test</title>
+            %(javascript_block)s
+            <script type="text/javascript">
+                // we need this to create a single YUI instance all events and code
+                // talks across. All instances of YUI().use should be based off of
+                // LPJS instead.
+                LPJS = new YUI();
+            </script>
+            <link rel="stylesheet"
+              href="/+icing/yui/assets/skins/sam/skin.css"/>
+            <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
+            <style>
+              /* Taken and customized from testlogger.css */
+              .yui-console-entry-src { display:none; }
+              .yui-console-entry.yui-console-entry-pass .yui-console-entry-cat {
+                background-color: green;
+                font-weight: bold;
+                color: white;
               }
-          </script>
-          <link rel="stylesheet"
-            href="/+icing/yui/assets/skins/sam/skin.css"/>
-          <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
-          <style>
-          /* Taken and customized from testlogger.css */
-          .yui-console-entry-src { display:none; }
-          .yui-console-entry.yui-console-entry-pass .yui-console-entry-cat {
-            background-color: green;
-            font-weight: bold;
-            color: white;
-          }
-          .yui-console-entry.yui-console-entry-fail .yui-console-entry-cat {
-            background-color: red;
-            font-weight: bold;
-            color: white;
-          }
-          .yui-console-entry.yui-console-entry-ignore .yui-console-entry-cat {
-            background-color: #666;
-            font-weight: bold;
-            color: white;
-          }
-          </style>
-          <script type="text/javascript" src="%(test_module)s"></script>
-        </head>
+              .yui-console-entry.yui-console-entry-fail .yui-console-entry-cat {
+                background-color: red;
+                font-weight: bold;
+                color: white;
+              }
+              .yui-console-entry.yui-console-entry-ignore .yui-console-entry-cat {
+                background-color: #666;
+                font-weight: bold;
+                color: white;
+              }
+            </style>
+            <script type="text/javascript" src="%(test_module)s"></script>
+          </head>
         <body class="yui3-skin-sam">
           <div id="log"></div>
           <p>Want to re-run your test?</p>
@@ -369,7 +430,8 @@ class YUITestFixtureControllerView(LaunchpadView):
                 reload(module)
         return self.page_template % dict(
             test_module='/+yuitest/%s.js' % self.traversed_path,
-            revno=revno)
+            revno=revno,
+            javascript_block=self.renderYUI())
 
     def renderSETUP(self):
         data = {}
@@ -414,6 +476,20 @@ class YUITestFixtureControllerView(LaunchpadView):
             self.request.response.setHeader('Content-Length', 1)
             result = CloseDbResult()
         return result
+
+    def renderYUI(self):
+        """Render out which YUI block we need based on the combo loader
+
+        If the combo loader is enabled, we need that setup and config and not
+        to load launchpad.js, else we need launchpad.js for things to run.
+
+        """
+        if self.request.features.getFlag('js.combo_loader.enabled'):
+            return self.yui_block_combo % dict(
+                revno=revno,
+                combo_url=self.combo_url)
+        else:
+            return self.yui_block_no_combo % dict(revno=revno)
 
     def render(self):
         return getattr(self, 'render' + self.action)()
