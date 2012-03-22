@@ -80,7 +80,7 @@ from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.bzrutils import maybe_server
+from lp.codehosting.bzrutils import server
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
     branch_id_to_path,
@@ -310,8 +310,7 @@ class BranchScanJob(BranchJobDerived):
     def run(self):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
-        server = get_ro_server()
-        with maybe_server(server):
+        with server(get_ro_server(), no_replace=True):
             bzrsync = BzrSync(self.branch, log)
             bzrsync.syncBranchAndClose()
 
@@ -354,8 +353,7 @@ class BranchUpgradeJob(BranchJobDerived):
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
-        server = get_rw_server()
-        with maybe_server(server):
+        with server(get_rw_server(), no_replace=True):
             upgrade_branch_path = tempfile.mkdtemp()
             try:
                 upgrade_transport = get_transport(upgrade_branch_path)

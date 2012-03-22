@@ -19,7 +19,7 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
-    'maybe_server',
+    'server',
     'read_locked',
     'remove_exception_logging_hook',
     ]
@@ -335,27 +335,19 @@ def write_locked(branch):
 
 
 @contextmanager
-def server(server):
-    server.start_server()
+def server(server, no_replace=False):
+    run_server = True
+    if no_replace:
+        try:
+            get_transport(server.get_url())
+        except UnsupportedProtocol:
+            pass
+        else:
+            run_server = False
+    if run_server:
+        server.start_server()
     try:
         yield server
     finally:
-        server.stop_server()
-
-
-@contextmanager
-def maybe_server(server):
-    """Use the server if no server is already registered for its url."""
-    try:
-        get_transport(server.get_url())
-    except UnsupportedProtocol:
-        existing_server = False
-    else:
-        existing_server = True
-    if not existing_server:
-        server.start_server()
-    try:
-        yield
-    finally:
-        if not existing_server:
+        if run_server:
             server.stop_server()
