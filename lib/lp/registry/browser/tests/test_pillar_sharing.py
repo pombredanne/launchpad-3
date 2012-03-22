@@ -21,6 +21,7 @@ from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -132,6 +133,7 @@ class TestDistributionSharingDetailsView(
             owner=self.owner, driver=self.driver)
         login_person(self.driver)
 
+
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
@@ -139,7 +141,7 @@ class PillarSharingViewTestMixin:
 
     def createSharees(self):
         login_person(self.owner)
-        access_policy = self.factory.makeAccessPolicy(
+        self.access_policy = self.factory.makeAccessPolicy(
             pillar=self.pillar,
             type=InformationType.PROPRIETARY)
         self.grantees = []
@@ -148,12 +150,12 @@ class PillarSharingViewTestMixin:
             grantee = self.factory.makePerson(name=name)
             self.grantees.append(grantee)
             # Make access policy grant so that 'All' is returned.
-            self.factory.makeAccessPolicyGrant(access_policy, grantee)
+            self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
             # Make access artifact grants so that 'Some' is returned.
             artifact_grant = self.factory.makeAccessArtifactGrant()
             self.factory.makeAccessPolicyArtifact(
                 artifact=artifact_grant.abstract_artifact,
-                policy=access_policy)
+                policy=self.access_policy)
         # Make grants for grantees in ascending order so we can slice off the
         # first elements in the pillar observer results to check batching.
         for x in range(10):
@@ -207,12 +209,14 @@ class PillarSharingViewTestMixin:
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
-            aps = getUtility(IService, 'sharing')
             batch_size = config.launchpad.default_batch_size
-            observers = aps.getPillarShareeData(
-                self.pillar, grantees=self.grantees[:batch_size])
+            apgfs = getUtility(IAccessPolicyGrantFlatSource)
+            sharees = apgfs.findGranteePermissionsByPolicy(
+                [self.access_policy], self.grantees[:batch_size])
+            sharing_service = getUtility(IService, 'sharing')
+            sharee_data = sharing_service.jsonShareeData(sharees)
             self.assertContentEqual(
-                observers, cache.objects.get('sharee_data'))
+                sharee_data, cache.objects.get('sharee_data'))
 
     def test_view_batch_data(self):
         # Test the expected batching data is in the json request cache.
@@ -220,7 +224,7 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             # Test one expected data value (there are many).
-            next_batch = view.shareeData().batch.nextBatch()
+            next_batch = view.sharees().batch.nextBatch()
             self.assertContentEqual(
                 next_batch.range_memo, cache.objects.get('next')['memo'])
 
@@ -228,7 +232,7 @@ class PillarSharingViewTestMixin:
         # Test the view range factory is properly configured.
         with FeatureFixture(ENABLED_FLAG):
             view = create_initialized_view(self.pillar, name='+sharing')
-            range_factory = view.shareeData().batch.range_factory
+            range_factory = view.sharees().batch.range_factory
 
             def test_range_factory():
                 row = range_factory.resultset.get_plain_result_set()[0]

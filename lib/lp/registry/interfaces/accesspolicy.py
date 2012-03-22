@@ -232,10 +232,10 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param grantees: if not None, the result only includes people in the
             specified list of grantees.
         :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
-            where permission is a SharingPermission value.
-            'ALL' means the person has an access policy grant and can see all
+            where permission is a SharingPermission enum value.
+            ALL means the person has an access policy grant and can see all
             artifacts for the associated pillar.
-            'SOME' means the person only has specified access artifact grants.
+            SOME means the person only has specified access artifact grants.
         """
 
     def findArtifactsByGrantee(grantee, policies):

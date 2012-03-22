@@ -25,7 +25,10 @@ from storm.references import Reference
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
@@ -37,6 +40,7 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.model.person import Person
 from lp.services.database.bulk import create
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
@@ -350,13 +354,39 @@ class AccessPolicyGrantFlat(StormBase):
     def findGranteePermissionsByPolicy(cls, policies, grantees=None):
         """See `IAccessPolicyGrantFlatSource`."""
         ids = [policy.id for policy in policies]
-        sharing_permission_term = SQL("""
-            CASE(
-                MIN(COALESCE(artifact, 0)))
-            WHEN 0 THEN 'ALL'
-            ELSE 'SOME'
-            END
-        """)
+
+        # A cache for the sharing permissions, keyed on (grantee.id, policy.id)
+        permissions_cache = {}
+
+        def set_permission(row):
+            # row contains (grantee.id, policy.id, permission_placeholder)
+            # Lookup the permission from the previously loaded cache.
+            return (
+                row[0], row[1], permissions_cache.get((row[0].id, row[1].id)))
+
+        def load_permissions(rows):
+            # We now have the grantees and policies we want in the result so
+            # load any corresponding permissions and cache them.
+            person_ids = set(row[0].id for row in rows)
+            policy_ids = set(row[1].id for row in rows)
+            sharing_permission_term = SQL("""
+                CASE(
+                    MIN(COALESCE(artifact, 0)))
+                WHEN 0 THEN '%s'
+                ELSE '%s'
+                END
+            """% (SharingPermission.ALL.name, SharingPermission.SOME.name))
+            constraints = [
+                cls.grantee_id.is_in(person_ids),
+                cls.policy_id.is_in(policy_ids)]
+            result_set = IStore(cls).find(
+                (cls.grantee_id, cls.policy_id, sharing_permission_term),
+                *constraints).group_by(cls.grantee_id, cls.policy_id)
+            for (person_id, policy_id, permission) in result_set:
+                permissions_cache[(person_id, policy_id)] = (
+                    SharingPermission.items[permission])
+
+        # The main result set has a placeholder for permission.
         constraints = [
             Person.id == cls.grantee_id,
             AccessPolicy.id == cls.policy_id,
@@ -364,9 +394,13 @@ class AccessPolicyGrantFlat(StormBase):
         if grantees:
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
-        return IStore(cls).find(
-            (Person, AccessPolicy, sharing_permission_term),
-            *constraints).group_by(Person, AccessPolicy)
+        result_set = IStore(cls).find(
+            (Person, AccessPolicy,
+             SQL("'%s' as permission" % SharingPermission.NOTHING.name)),
+            *constraints).config(distinct=True)
+        return DecoratedResultSet(
+            result_set,
+            result_decorator=set_permission, pre_iter_hook=load_permissions)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):
