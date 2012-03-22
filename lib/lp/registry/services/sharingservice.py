@@ -100,7 +100,7 @@ class SharingService:
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         grantees = ap_grant_flat.findGranteesByPolicy(
-            policies).order_by(Person.displayname)
+            policies).order_by(Person.displayname, Person.name)
         return grantees
 
     @available_with_permission('launchpad.Driver', 'pillar')
