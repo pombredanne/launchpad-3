@@ -214,7 +214,16 @@ class IAccessPolicyGrantSource(Interface):
 class IAccessPolicyGrantFlatSource(Interface):
     """Experimental query utility to search through the flattened schema."""
 
-    def findGranteesByPolicy(policies, grantees=None):
+    def findGranteesByPolicy(policies):
+        """Find teams or users with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        :return: a collection of `IPerson`.
+        """
+
+    def findGranteePermissionsByPolicy(policies, grantees=None):
         """Find teams or users with access grants for the policies.
 
         This includes grants for artifacts in the policies.

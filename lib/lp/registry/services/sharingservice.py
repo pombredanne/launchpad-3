@@ -29,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
@@ -94,11 +95,20 @@ class SharingService:
         return sharing_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarSharees(self, pillar, grantees=None):
+    def getPillarSharees(self, pillar):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        grant_permissions = ap_grant_flat.findGranteesByPolicy(
+        grantees = ap_grant_flat.findGranteesByPolicy(
+            policies).order_by(Person.displayname, Person.name)
+        return grantees
+
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getPillarShareeData(self, pillar, grantees=None):
+        """See `ISharingService`."""
+        policies = getUtility(IAccessPolicySource).findByPillar([pillar])
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
             policies, grantees).order_by(
                 "person_sort_key(Person.displayname, Person.name)")
 
@@ -183,7 +193,7 @@ class SharingService:
             self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
-        sharees = self.getPillarSharees(pillar, [sharee])
+        sharees = self.getPillarShareeData(pillar, [sharee])
         if not sharees:
             return None
         return sharees[0]
