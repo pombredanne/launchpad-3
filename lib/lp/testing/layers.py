@@ -1660,7 +1660,7 @@ class LayerProcessController:
     @classmethod
     def setUp(cls):
         cls.setConfig()
-#        cls.startSMTPServer()
+        cls.startSMTPServer()
         cls.startAppServer()
 
     @classmethod
