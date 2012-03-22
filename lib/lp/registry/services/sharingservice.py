@@ -10,7 +10,6 @@ __all__ = [
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -22,13 +21,13 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
-    IAccessPolicySource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
-from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission

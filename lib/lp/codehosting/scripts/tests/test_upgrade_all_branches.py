@@ -4,15 +4,15 @@
 __metaclass__ = type
 
 
-import os.path
 import logging
+import os.path
 
 from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 import transaction
 
 from lp.code.bzr import branch_changed
-from lp.codehosting.upgrade import Upgrader
 from lp.codehosting.tests.test_upgrade import upgrade_target
+from lp.codehosting.upgrade import Upgrader
 from lp.testing import (
     person_logged_in,
     run_script,

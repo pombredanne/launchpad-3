@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.enums import SpecificationWorkItemStatus
-
 from lp.registry.interfaces.person import IPersonSet
 
 

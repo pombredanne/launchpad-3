@@ -5,10 +5,9 @@
 
 __metaclass__ = type
 
-import simplejson
-
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
+import simplejson
 from testtools.matchers import (
     LessThan,
     MatchesException,
