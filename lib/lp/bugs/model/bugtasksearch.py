@@ -659,6 +659,18 @@ def _build_query(params):
         extra_clauses.append(nominated_for_clause)
         clauseTables.append(BugNomination)
 
+    dateexpected_before = params.milestone_dateexpected_before
+    dateexpected_after = params.milestone_dateexpected_after
+    if dateexpected_after or dateexpected_before:
+        clauseTables.append(Milestone)
+        extra_clauses.append("BugTask.milestone = Milestone.id")
+        if dateexpected_after:
+            extra_clauses.append("Milestone.dateexpected >= %s"
+                                 % sqlvalues(dateexpected_after))
+        if dateexpected_before:
+            extra_clauses.append("Milestone.dateexpected <= %s"
+                                 % sqlvalues(dateexpected_before))
+
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
         extra_clauses.append(clause)
