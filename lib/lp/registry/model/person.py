@@ -1471,6 +1471,162 @@ class Person(
         """See `IPerson`."""
         self._inTeam_cache = {}
 
+    @cachedproperty
+    def participant_ids(self):
+        """See `IPerson`."""
+        return list(Store.of(self).find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id))
+
+    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+        """See `IPerson`."""
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+        WorkItem = SpecificationWorkItem
+        origin = [
+            WorkItem,
+            Join(Specification, WorkItem.specification == Specification.id),
+            LeftJoin(Product, Specification.product == Product.id),
+            LeftJoin(Distribution,
+                     Specification.distribution == Distribution.id),
+            # WorkItems may not have a milestone and in that case they inherit
+            # the one from the spec.
+            Join(Milestone,
+                 Coalesce(WorkItem.milestone_id,
+                          Specification.milestoneID) == Milestone.id),
+            # WorkItems may not have an assignee and in that case they inherit
+            # the one from the spec.
+            Join(Person,
+                 Coalesce(WorkItem.assignee_id,
+                          Specification.assigneeID) == Person.id),
+            ]
+        today = datetime.today().date()
+        results = store.using(*origin).find(
+            (WorkItem, Milestone, Specification, Person, Product,
+             Distribution),
+            AND(Milestone.dateexpected <= date,
+                Milestone.dateexpected >= today,
+                Person.id.is_in(self.participant_ids))
+            )
+        for result in results:
+            yield result[0]
+
+    def getAssignedBugTasksDueBefore(self, date, user):
+        """See `IPerson`."""
+        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugtask import BugTask
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+        origin = [
+            BugTask,
+            Join(Bug, BugTask.bug == Bug.id),
+            LeftJoin(Product, BugTask.product == Product.id),
+            LeftJoin(Distribution, BugTask.distribution == Distribution.id),
+            LeftJoin(DistroSeries, BugTask.distroseries == DistroSeries.id),
+            LeftJoin(ProductSeries, BugTask.productseries == ProductSeries.id),
+            LeftJoin(SourcePackageName,
+                     BugTask.sourcepackagename == SourcePackageName.id),
+            Join(Milestone, BugTask.milestoneID == Milestone.id),
+            Join(Person, BugTask.assigneeID == Person.id),
+            ]
+        today = datetime.today().date()
+        filters = [
+            Milestone.dateexpected <= date,
+            Milestone.dateexpected >= today,
+            BugTask.assigneeID.is_in(self.participant_ids)]
+        privacy_filter = get_bug_privacy_filter(user)
+        # get_bug_privacy_filter() will return an empty string if the user is
+        # an admin.
+        if privacy_filter != '':
+            filters.append(privacy_filter)
+        results = store.using(*origin).find(
+            (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
+             DistroSeries, SourcePackageName, Person),
+            AND(*filters)
+            )
+        for (bug, task, milestone, product, distro, productseries,
+             distroseries, sourcepackagename, assignee) in results:
+            # We skip masters (instead of slaves) from conjoined relationships
+            # because we can do that without hittind the DB, which would not
+            # be possible if we wanted to skip the slaves. The simple (but
+            # expensive) way to skip the slaves would be to skip any tasks
+            # that have a non-None .conjoined_master.
+            if productseries is not None and product is None:
+                dev_focus_id = productseries.product.development_focusID
+                if (productseries.id == dev_focus_id and
+                    task.status not in BugTask._NON_CONJOINED_STATUSES):
+                    continue
+            elif distroseries is not None and sourcepackagename is not None:
+                # Distribution.currentseries is expensive to run for every
+                # bugtask (as it goes through every series of that
+                # distribution), but it's a cached property and there's only
+                # one distribution with bugs in LP, so we can afford to do
+                # it here.
+                if distroseries.distribution.currentseries == distroseries:
+                    continue
+            yield task
+
+    def getWorkItemsDueBefore(self, date, user):
+        """See `IPerson`."""
+        workitems = self.getAssignedSpecificationWorkItemsDueBefore(date)
+        # Now we need to regroup our work items by specification and by date
+        # because that's how they'll end up being displayed. While we do this
+        # we store all the data we need into WorkItemContainer objects because
+        # that's what we want to return.
+        containers_by_date = {}
+        containers_by_spec = {}
+        for workitem in workitems:
+            spec = workitem.specification
+            milestone = workitem.milestone
+            if milestone is None:
+                milestone = spec.milestone
+            if milestone.dateexpected not in containers_by_date:
+                containers_by_date[milestone.dateexpected] = []
+            container = containers_by_spec.get(spec)
+            if container is None:
+                is_future = False
+                if spec.milestoneID != milestone.id:
+                    is_future = True
+                is_foreign = False
+                if spec.assigneeID not in self.participant_ids:
+                    is_foreign = True
+                container = WorkItemContainer(
+                    spec.name, spec.target, spec.assignee, spec.priority,
+                    is_future=is_future, is_foreign=is_foreign)
+                containers_by_spec[spec] = container
+                containers_by_date[milestone.dateexpected].append(container)
+            container.append(GenericWorkItem.from_workitem(workitem))
+
+        # Sort our containers by priority.
+        for date in containers_by_date:
+            containers_by_date[date].sort(
+                key=attrgetter('priority'), reverse=True)
+
+        bugtasks = self.getAssignedBugTasksDueBefore(date, user)
+        bug_containers_by_date = {}
+        # Group all bug tasks by their milestone.dateexpected.
+        for task in bugtasks:
+            dateexpected = task.milestone.dateexpected
+            container = bug_containers_by_date.get(dateexpected)
+            if container is None:
+                container = WorkItemContainer(
+                    'Aggregated bugs', None, None, None)
+                bug_containers_by_date[dateexpected] = container
+                # Also append our new container to the dictionary we're going
+                # to return.
+                if dateexpected not in containers_by_date:
+                    containers_by_date[dateexpected] = []
+                containers_by_date[dateexpected].append(container)
+            container.append(GenericWorkItem.from_bugtask(task))
+
+        return containers_by_date
+
     #
     # ITeam methods
     #
@@ -1677,165 +1833,6 @@ class Person(
             clauseTables=['TeamParticipation', 'TeamMembership'])
         return admin_of_teams.union(
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
-
-    @cachedproperty
-    def _participant_ids(self):
-        return list(Store.of(self).find(
-            TeamParticipation.personID, TeamParticipation.teamID == self.id))
-
-    def _getSpecificationWorkItemsDueBefore(self, date):
-        """Get all SpecificationWorkItems assigned to members of this team and
-        whose milestone is due between today and the given date.
-        """
-        from lp.registry.model.person import Person
-        from lp.registry.model.product import Product
-        from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
-        WorkItem = SpecificationWorkItem
-        origin = [
-            WorkItem,
-            Join(Specification, WorkItem.specification == Specification.id),
-            LeftJoin(Product, Specification.product == Product.id),
-            LeftJoin(Distribution,
-                     Specification.distribution == Distribution.id),
-            # WorkItems may not have a milestone and in that case they inherit
-            # the one from the spec.
-            Join(Milestone,
-                 Coalesce(WorkItem.milestone_id,
-                          Specification.milestoneID) == Milestone.id),
-            # WorkItems may not have an assignee and in that case they inherit
-            # the one from the spec.
-            Join(Person,
-                 Coalesce(WorkItem.assignee_id,
-                          Specification.assigneeID) == Person.id),
-            ]
-        today = datetime.today().date()
-        results = store.using(*origin).find(
-            (WorkItem, Milestone, Specification, Person, Product,
-             Distribution),
-            AND(Milestone.dateexpected <= date,
-                Milestone.dateexpected >= today,
-                Person.id.is_in(self._participant_ids))
-            )
-        for result in results:
-            yield result[0]
-
-    def _getBugTasksDueBefore(self, date, user):
-        """Get all BugTasks assigned to members of this team and whose
-        milestone is due between today and the given date.
-        """
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugtask import BugTask
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.productseries import ProductSeries
-        from lp.registry.model.sourcepackagename import SourcePackageName
-        from lp.registry.model.product import Product
-        from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
-        origin = [
-            BugTask,
-            Join(Bug, BugTask.bug == Bug.id),
-            LeftJoin(Product, BugTask.product == Product.id),
-            LeftJoin(Distribution, BugTask.distribution == Distribution.id),
-            LeftJoin(DistroSeries, BugTask.distroseries == DistroSeries.id),
-            LeftJoin(ProductSeries, BugTask.productseries == ProductSeries.id),
-            LeftJoin(SourcePackageName,
-                     BugTask.sourcepackagename == SourcePackageName.id),
-            Join(Milestone, BugTask.milestoneID == Milestone.id),
-            Join(Person, BugTask.assigneeID == Person.id),
-            ]
-        today = datetime.today().date()
-        filters = [
-            Milestone.dateexpected <= date,
-            Milestone.dateexpected >= today,
-            BugTask.assigneeID.is_in(self._participant_ids)]
-        privacy_filter = get_bug_privacy_filter(user)
-        # get_bug_privacy_filter() will return an empty string if the user is
-        # an admin.
-        if privacy_filter != '':
-            filters.append(privacy_filter)
-        results = store.using(*origin).find(
-            (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
-             DistroSeries, SourcePackageName, Person),
-            AND(*filters)
-            )
-        for (bug, task, milestone, product, distro, productseries,
-             distroseries, sourcepackagename, assignee) in results:
-            # We skip masters (instead of slaves) from conjoined relationships
-            # because we can do that without hittind the DB, which would not
-            # be possible if we wanted to skip the slaves. The simple (but
-            # expensive) way to skip the slaves would be to skip any tasks
-            # that have a non-None .conjoined_master.
-            if productseries is not None and product is None:
-                dev_focus_id = productseries.product.development_focusID
-                if (productseries.id == dev_focus_id and
-                    task.status not in BugTask._NON_CONJOINED_STATUSES):
-                    continue
-            elif distroseries is not None and sourcepackagename is not None:
-                # Distribution.currentseries is expensive to run for every
-                # bugtask (as it goes through every series of that
-                # distribution), but it's a cached property and there's only
-                # one distribution with bugs in LP, so we can afford to do
-                # it here.
-                if distroseries.distribution.currentseries == distroseries:
-                    continue
-            yield task
-
-    def getWorkItemsDueBefore(self, date, user):
-        """See `IPerson`."""
-        workitems = self._getSpecificationWorkItemsDueBefore(date)
-        # Now we need to regroup our work items by specification and by date
-        # because that's how they'll end up being displayed. While we do this
-        # we store all the data we need into WorkItemContainer objects because
-        # that's what we want to return.
-        containers_by_date = {}
-        containers_by_spec = {}
-        for workitem in workitems:
-            spec = workitem.specification
-            milestone = workitem.milestone
-            if milestone is None:
-                milestone = spec.milestone
-            if milestone.dateexpected not in containers_by_date:
-                containers_by_date[milestone.dateexpected] = []
-            container = containers_by_spec.get(spec)
-            if container is None:
-                is_future = False
-                if spec.milestoneID != milestone.id:
-                    is_future = True
-                is_foreign = False
-                if spec.assigneeID not in self._participant_ids:
-                    is_foreign = True
-                container = WorkItemContainer(
-                    spec.name, spec.target, spec.assignee, spec.priority,
-                    is_future=is_future, is_foreign=is_foreign)
-                containers_by_spec[spec] = container
-                containers_by_date[milestone.dateexpected].append(container)
-            container.append(GenericWorkItem.from_workitem(workitem))
-
-        # Sort our containers by priority.
-        for date in containers_by_date:
-            containers_by_date[date].sort(
-                key=attrgetter('priority'), reverse=True)
-
-        bugtasks = self._getBugTasksDueBefore(date, user)
-        bug_containers_by_date = {}
-        # Group all bug tasks by their milestone.dateexpected.
-        for task in bugtasks:
-            dateexpected = task.milestone.dateexpected
-            container = bug_containers_by_date.get(dateexpected)
-            if container is None:
-                container = WorkItemContainer(
-                    'Aggregated bugs', None, None, None)
-                bug_containers_by_date[dateexpected] = container
-                # Also append our new container to the dictionary we're going
-                # to return.
-                if dateexpected not in containers_by_date:
-                    containers_by_date[dateexpected] = []
-                containers_by_date[dateexpected].append(container)
-            container.append(GenericWorkItem.from_bugtask(task))
-
-        return containers_by_date
 
     def getDirectAdministrators(self):
         """See `IPerson`."""

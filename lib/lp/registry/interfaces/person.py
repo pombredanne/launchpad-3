@@ -710,17 +710,6 @@ class IPersonPublic(IPrivacy):
         :return: True if they can, otherwise False.
         """
 
-    def getWorkItemsDueBefore(date, user):
-        """Return a dict mapping dates to lists of WorkItemContainers.
-
-        This is a grouping, by milestone due date, of all work items
-        (SpecificationWorkItems/BugTasks) assigned to any member of this
-        team.
-
-        Only work items whose milestone have a due date before the given date
-        are included here.
-        """
-
     @mutator_for(visibility)
     @call_with(user=REQUEST_USER)
     @operation_parameters(visibility=copy_field(visibility))
@@ -1529,6 +1518,30 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :return: a boolean.
         """
 
+    def getAssignedSpecificationWorkItemsDueBefore(date):
+        """Return SpecificationWorkItems assigned to this person (or members
+        of this team) and whose milestone is due between today and the given
+        date.
+        """
+
+    def getAssignedBugTasksDueBefore(date, user):
+        """Get all BugTasks assigned to this person (or members of this team)
+        and whose milestone is due between today and the given date.
+        """
+
+    def getWorkItemsDueBefore(date, user):
+        """Return a dict mapping dates to lists of WorkItemContainers.
+
+        This is a grouping, by milestone due date, of all work items
+        (SpecificationWorkItems/BugTasks) assigned to any member of this
+        team.
+
+        Only work items whose milestone have a due date before the given date
+        are included here.
+        """
+
+    participant_ids = List(
+        title=_("The DB IDs of this team's participants"), value_type=Int())
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
