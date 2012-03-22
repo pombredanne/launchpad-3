@@ -34,7 +34,7 @@
       <li><a id="audit-link" class="sprite info" href='#'>Audit sharing</a></li>
     </ul>
 
-    <div tal:define="batch_navigator view/shareeData">
+    <div tal:define="batch_navigator view/sharees">
       <tal:shareelisting content="structure batch_navigator/@@+sharee-table-view" />
     </div>
 
