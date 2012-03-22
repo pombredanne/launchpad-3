@@ -1529,17 +1529,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         and whose milestone is due between today and the given date.
         """
 
-    def getWorkItemsDueBefore(date, user):
-        """Return a dict mapping dates to lists of WorkItemContainers.
-
-        This is a grouping, by milestone due date, of all work items
-        (SpecificationWorkItems/BugTasks) assigned to any member of this
-        team.
-
-        Only work items whose milestone have a due date before the given date
-        are included here.
-        """
-
     participant_ids = List(
         title=_("The DB IDs of this team's participants"), value_type=Int())
     active_member_count = Attribute(
