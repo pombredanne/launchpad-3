@@ -395,7 +395,8 @@ class AccessPolicyGrantFlat(StormBase):
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
         result_set = IStore(cls).find(
-            (Person, AccessPolicy, SQL("'NOTHING' as permission")),
+            (Person, AccessPolicy,
+             SQL("'%s' as permission" % SharingPermission.NOTHING.name)),
             *constraints).config(distinct=True)
         return DecoratedResultSet(
             result_set,
