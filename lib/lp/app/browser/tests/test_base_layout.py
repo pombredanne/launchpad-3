@@ -63,7 +63,7 @@ class TestBaseLayout(TestCaseWithFactory):
         # Verify that the document is a html DOCTYPE.
         view = self.makeTemplateView('main_side')
         markup = view()
-        self.assertTrue(markup.startswith('<!DOCTYPE html'))
+        self.assertTrue(markup.startswith('<!DOCTYPE html>'))
 
     def verify_base_layout_html_element(self, content):
         # The html element states the namespace and language information.

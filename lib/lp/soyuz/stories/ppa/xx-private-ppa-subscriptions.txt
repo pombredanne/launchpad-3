@@ -54,7 +54,6 @@ picker:
     >>> print extract_all_script_and_style_links(cprov_browser.contents)
     /...
     ...
-    http://launchpad.dev/+icing/.../build/calendar/calendar.js
     http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
 
 Initially there are no subscriptions for a newly privatized PPA (although,

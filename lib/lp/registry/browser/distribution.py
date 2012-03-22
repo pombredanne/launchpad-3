@@ -87,7 +87,10 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
-from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarNavigationMixin,
+    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -135,7 +138,8 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IDistribution
 
@@ -306,8 +310,10 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     @enabled_with_permission('launchpad.Driver')
     def sharing(self):
         text = 'Sharing'
-        enabled = getFeatureFlag(
-            'disclosure.enhanced_sharing.enabled') is not None
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
+        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
+            or bool(getFeatureFlag(enabled_writable_flag)))
         return Link('+sharing', text, icon='edit', enabled=enabled)
 
     @cachedproperty

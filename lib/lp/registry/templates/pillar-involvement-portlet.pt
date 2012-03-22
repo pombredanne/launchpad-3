@@ -56,29 +56,19 @@
 
     <tal:show-registration condition="registration">
       <h2>Configuration Progress</h2>
-      <div class="centered" id="progressbar">
-        <table width="80%" border="1">
-          <tr>
-            <td>
-              <img
-                 tal:attributes="alt string:${registration/done}% registration complete;
-                                 title string:${registration/done}% registration complete;
-                                 width registration/done;
-                                 style string:width: ${registration/done}%;"
-                 src="/@@/green-bar"
-                 height="10"/>
-            </td>
-          </tr>
-        </table>
+      <div id="progressbar" style="border: 1px solid gray; margin-bottom: 10px">
+        <img
+            tal:attributes="alt string:${registration/done}% registration complete;
+                            title string:${registration/done}% registration complete;
+                            style string:display: block;; width: ${registration/done}%"
+            src="/@@/green-bar"
+            height="10"/>
       </div>
 
-      <div id="show-hide-configs"
-           class="collapsible">
-        <legend>
-          <div class="config-options" style="margin-bottom: 0.5em;">
-            Configuration options
-          </div>
-        </legend>
+      <div id="show-hide-configs" class="collapsible">
+        <div class="config-options">
+          Configuration options
+        </div>
         <div
           tal:attributes="class
             python: 'expanded'
