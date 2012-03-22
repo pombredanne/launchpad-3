@@ -267,6 +267,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             "this feature. Selecting '(no value)' will clear the goal."))
 
     # milestone
+    milestoneID = Attribute('The id of the milestone.')
     milestone = exported(
         ReferenceChoice(
             title=_('Milestone'), required=False, vocabulary='Milestone',
