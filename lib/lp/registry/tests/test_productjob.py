@@ -265,3 +265,20 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             'you are an admin of %s which is the maintainer of %s' %
             (team.displayname, product.displayname),
             reason)
+
+    def test_geBodyAndHeaders(self):
+        # The body and headers contain reasons and rationales.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        email_template = '%(reason)s'
+        body, headers = job.geBodyAndHeaders(email_template, address)
+        self.assertIn(canonical_url(product), body)
+        self.assertIn(
+            'you are the maintainer of\n%s' % product.displayname, body)
+        expected_headers = [
+            ('X-Launchpad-Project', product.name),
+            ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ]
+        self.assertContentEqual(expected_headers, headers.items())

@@ -225,20 +225,26 @@ class ProductNotificationJob(ProductJobDerived):
         """See `IProductNotificationJob`."""
         return [format_address_for_person(self.reviewer)]
 
+    def geBodyAndHeaders(self, email_template, address):
+        """See `IProductNotificationJob`."""
+        reason, rationale = self.recipients.getReason(address)
+        message_data = dict(self.metadata)
+        message_data['reason'] = reason
+        body = MailWrapper().format(
+            email_template % message_data, force_wrap=True)
+        headers = {
+            'X-Launchpad-Project': self.product.name,
+            'X-Launchpad-Message-Rationale': rationale,
+            }
+        return body, headers
+
     def sendEmailToMaintainer(self, template_name, subject, from_address):
         """See `IProductNotificationJob`."""
-        #headers['X-Launchpad-Message-Rationale'] = header
-        #headers['X-Launchpad-Project'] = self.product.name
         email_template = get_email_template(
             "%s.txt" % template_name, app='registry')
-        if self.product.owner.is_team:
-            addresses = self.product.owner.getTeamAdminsEmailAddresses()
-        else:
-            addresses = get_contact_email_addresses(self.product.owner)
-        for address in addresses:
-            msg = MailWrapper().format(
-                email_template % self.metadata, force_wrap=True)
-            simple_sendmail(from_address, address, subject, msg)
+        for address in self.recipients.getEmails():
+            body, headers = self.geBodyAndHeaders(email_template, address)
+            simple_sendmail(from_address, address, subject, body, headers)
 
     def run(self):
         """See `BaseRunnableJob`."""
