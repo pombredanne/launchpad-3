@@ -303,15 +303,13 @@ class PillarSharingView(LaunchpadView):
             size=config.launchpad.default_batch_size,
             range_factory=StormRangeFactory(sharees))
 
-    @property
     def sharees(self):
         """An `IBatchNavigator` for sharees."""
         if self._batch_navigator is None:
-            unbatchedSharees = self.unbatched_sharees
+            unbatchedSharees = self.unbatched_sharees()
             self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
         return self._batch_navigator
 
-    @property
     def unbatched_sharees(self):
         """All the sharees for a pillar."""
         return self._getSharingService().getPillarSharees(self.context)
@@ -336,7 +334,7 @@ class PillarSharingView(LaunchpadView):
         if len(view_names) != 1:
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()
-        batch_navigator = self.sharees
+        batch_navigator = self.sharees()
         cache.objects['sharee_data'] = (
             self._getSharingService().jsonShareeData(batch_navigator.batch))
 

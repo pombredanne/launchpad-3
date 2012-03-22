@@ -224,7 +224,7 @@ class PillarSharingViewTestMixin:
             view = create_initialized_view(self.pillar, name='+sharing')
             cache = IJSONRequestCache(view.request)
             # Test one expected data value (there are many).
-            next_batch = view.sharees.batch.nextBatch()
+            next_batch = view.sharees().batch.nextBatch()
             self.assertContentEqual(
                 next_batch.range_memo, cache.objects.get('next')['memo'])
 
@@ -232,7 +232,7 @@ class PillarSharingViewTestMixin:
         # Test the view range factory is properly configured.
         with FeatureFixture(ENABLED_FLAG):
             view = create_initialized_view(self.pillar, name='+sharing')
-            range_factory = view.sharees.batch.range_factory
+            range_factory = view.sharees().batch.range_factory
 
             def test_range_factory():
                 row = range_factory.resultset.get_plain_result_set()[0]
