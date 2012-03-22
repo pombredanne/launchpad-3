@@ -48,6 +48,10 @@ APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
     'ppa:launchpad/ppa',
     'ppa:bzr/ppa',
+    # XXX 2012-03-19 frankban bug=955006:
+    #     The yellow PPA contains an updated version of testrepository
+    #     that fixes the encoding issue.
+    'ppa:yellow/ppa',
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
@@ -763,8 +767,15 @@ def initialize_host(
 
 def create_scripts(user, lxcname, ssh_key_path):
     """Create scripts to update the Launchpad environment and run tests."""
+    # Leases path in lucid differs from the one in oneiric/precise.
     mapping = {
+        'leases1': get_container_path(
+            lxcname, '/var/lib/dhcp3/dhclient.eth0.leases'),
+        'leases2': get_container_path(
+            lxcname, '/var/lib/dhcp/dhclient.eth0.leases'),
         'lxcname': lxcname,
+        'pattern':
+            r's/.* ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*/\1/',
         'ssh_key_path': ssh_key_path,
         'user': user,
         }
@@ -775,21 +786,43 @@ def create_scripts(user, lxcname, ssh_key_path):
         script.write(textwrap.dedent("""\
             #!/bin/sh
             set -ux
+            truncate -c -s0 {leases1}
+            truncate -c -s0 {leases2}
+
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
-            for i in $(seq 1 30); do
-                su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
-                    -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
-                if [ ! 255 -eq $? ]; then
-                    # If ssh returns 255 then its connection failed.
-                    # Anything else is either success (status 0) or a
-                    # failure from whatever we ran over the SSH connection.
-                    # In those cases we want to stop looping, so we break
-                    # here.
-                    break;
-                fi
+
+            delay=30
+            while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
+            do
+                delay=$(( $delay - 1 ))
                 sleep 1
             done
+
+            [ -s {leases1} ] && LEASES={leases1} || LEASES={leases2}
+            IP_ADDRESS=`grep fixed-address $LEASES | \\
+                tail -n 1 | sed -r '{pattern}'`
+
+            if [ 0 -eq $? -a -n "$IP_ADDRESS" ]; then
+                for i in $(seq 1 30); do
+                    su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                        -i '{ssh_key_path}' $IP_ADDRESS make -C $PWD schema"
+                    if [ ! 255 -eq $? ]; then
+                        # If ssh returns 255 then its connection failed.
+                        # Anything else is either success (status 0) or a
+                        # failure from whatever we ran over the SSH connection.
+                        # In those cases we want to stop looping, so we break
+                        # here.
+                        break;
+                    fi
+                    sleep 1
+                done
+            else
+                echo "could not get IP address - aborting." >&2
+                echo "content of $LEASES:" >&2
+                cat $LEASES >&2
+            fi
+
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
             """.format(**mapping)))
@@ -942,6 +975,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
     root_sshcall('cd {} && make install'.format(checkout_dir))
+    # XXX benji 2012-03-19 bug=959352: this is so graphviz will work in an
+    # ephemeral container
+    root_sshcall('mkdir -p /rootfs/usr/lib')
+    root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
 
 
 def stop_lxc(lxcname, ssh_key_path):

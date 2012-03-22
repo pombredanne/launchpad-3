@@ -99,8 +99,6 @@ link to review nominations.
     Bugs fixed elsewhere
     Bugs with patches
     Open CVE bugs - CVE reports
-    Review nominations
-      --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     2 New bugs
@@ -130,8 +128,6 @@ reported bugs.
     Bugs fixed elsewhere
     Bugs with patches
     Open CVE bugs - CVE reports
-    Review nominations
-      --> http://bugs.launchpad.dev/debian/woody/+nominations
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
     2 New bugs
@@ -343,10 +339,6 @@ and reported bugs.
     Bugs fixed elsewhere
     Bugs with patches
     Open CVE bugs
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/mozilla/+subscribe
-    Edit bug mail
-      --> http://bugs.launchpad.dev/mozilla/+subscriptions
 
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
@@ -419,10 +411,6 @@ bugs is also shown.
     Bugs fixed elsewhere
     Bugs with patches
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/firefox/+subscribe
-    Edit bug mail
-      --> http://bugs.launchpad.dev/firefox/+subscriptions
 
 
     >>> print_bugfilters_portlet_filled(user_browser, path)

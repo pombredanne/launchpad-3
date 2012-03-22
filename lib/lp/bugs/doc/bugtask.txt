@@ -1165,7 +1165,7 @@ that can calculate the tags in one query.
     >>> tags_by_task = getUtility(IBugTaskSet).getBugTaskTags([
     ...     some_bugtask, another_bugtask])
     >>> print tags_by_task
-    {3: [u'foo', u'bar'], 6: [u'bop', u'baz']}
+    {3: [u'bar', u'foo'], 6: [u'baz', u'bop']}
 
 
 Similar bugs

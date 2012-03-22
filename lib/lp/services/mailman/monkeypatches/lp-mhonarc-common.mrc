@@ -65,8 +65,7 @@ TEAM-LINK
 
 <DefineVar>
 PAGE-TOP-START
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE html>
 <html>
 <head>
 <title>
@@ -128,7 +127,7 @@ ul ul {
   </div>
   <h1>$ML-NAME$ team mailing list archive</h1>
   <div id="watermark" class="watermark-apps-portlet">
-    <div class="flowed-block wide">
+    <div class="wide">
 </DefineVar>
 
 <DefineVar>
