@@ -52,12 +52,14 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
     format_address_for_person,
     simple_sendmail,
     )
 from lp.services.scripts import log
+from lp.services.webapp.publisher import canonical_url
 
 
 class ProductJob(StormBase):
@@ -187,14 +189,33 @@ class ProductNotificationJob(ProductJobDerived):
 
     @property
     def subject(self):
+        """See `IProductNotificationJob`."""
         return self.metadata['subject']
 
     @property
     def email_template_name(self):
+        """See `IProductNotificationJob`."""
         return self.metadata['email_template_name']
 
     @cachedproperty
+    def recipients(self):
+        """See `IProductNotificationJob`."""
+        notification_set = NotificationRecipientSet()
+        maintainer = self.product.owner
+        if self.product.owner.is_team:
+            pass
+        else:
+            reason = (
+                "You received this notification because you are "
+                "the maintainer of %s.\n%s" %
+                (self.product.displayname, canonical_url(self.product)))
+            header = 'Maintainer'
+            notification_set.add(maintainer, reason, header)
+        return notification_set
+
+    @cachedproperty
     def reviewer(self):
+        """See `IProductNotificationJob`."""
         return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
 
     def getErrorRecipients(self):
@@ -202,6 +223,9 @@ class ProductNotificationJob(ProductJobDerived):
         return [format_address_for_person(self.reviewer)]
 
     def sendEmailToMaintainer(self, template_name, subject, from_address):
+        """See `IProductNotificationJob`."""
+        #headers['X-Launchpad-Message-Rationale'] = header
+        #headers['X-Launchpad-Project'] = self.product.name
         email_template = get_email_template(
             "%s.txt" % template_name, app='registry')
         if self.product.owner.is_team:
@@ -214,7 +238,7 @@ class ProductNotificationJob(ProductJobDerived):
             simple_sendmail(from_address, address, subject, msg)
 
     def run(self):
-        """Perform the merge."""
+        """See `BaseRunnableJob`."""
         product_name = self.product.name
         template_name = self.email_template_name
         subject = self.subject

@@ -34,6 +34,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.services.webapp.publisher import canonical_url
 
 
 class ProductJobTestCase(TestCaseWithFactory):
@@ -222,3 +223,16 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         job = ProductNotificationJob.create(*data)
         self.assertEqual(
             ['Reviewer <reviewer@eg.com>'], job.getErrorRecipients())
+
+    def test_recipients_user(self):
+        # The product maintainer is the recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        recipients = job.recipients
+        self.assertEqual([product.owner], recipients.getRecipients())
+        reason, header = recipients.getReason(product.owner)
+        self.assertEqual('Maintainer', header)
+        self.assertIn(canonical_url(product), reason)
+        self.assertIn(
+            'you are the maintainer of %s' % product.displayname, reason)
