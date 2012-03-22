@@ -58,7 +58,10 @@ from lp.services.config import config
 from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -294,9 +297,11 @@ class PillarSharingView(LaunchpadView):
 
     def _getBatchNavigator(self, sharees):
         """Return the batch navigator to be used to batch the sharees."""
-        return TableBatchNavigator(
+        return BatchNavigator(
             sharees, self.request,
-            size=config.launchpad.default_batch_size)
+            hide_counts=True,
+            size=config.launchpad.default_batch_size,
+            range_factory=StormRangeFactory(sharees))
 
     def shareeData(self):
         """Return an `ITableBatchNavigator` for sharees."""
@@ -330,7 +335,9 @@ class PillarSharingView(LaunchpadView):
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()
         batch_navigator = self.shareeData()
-        cache.objects['sharee_data'] = list(batch_navigator.batch)
+        cache.objects['sharee_data'] = (
+            self._getSharingService().getPillarShareeData(
+                self.context, batch_navigator.batch))
 
         def _getBatchInfo(batch):
             if batch is None:
