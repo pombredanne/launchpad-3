@@ -85,32 +85,6 @@
                 __call__"/>
     </class>
 
-    <!-- These things are here because they're currently only used here. It
-         might make sense to move them somewhere else. -->
-    <class
-        class="lp.registry.model.person.WorkItemContainer">
-        <allow
-            attributes="
-                label
-                target
-                assignee
-                priority
-                percent_done
-                is_future
-                is_foreign
-                items"/>
-    </class>
-    <class
-        class="lp.registry.model.person.GenericWorkItem">
-        <allow
-            attributes="
-                title
-                target
-                assignee
-                priority
-                status"/>
-    </class>
-
     <!-- IPersonTransferJob -->
     <securedutility
         component=".model.persontransferjob.MembershipNotificationJob"
