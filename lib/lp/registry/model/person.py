@@ -293,6 +293,7 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.searchbuilder import any
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
@@ -1514,55 +1515,29 @@ class Person(
 
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
-        from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.productseries import ProductSeries
-        from lp.registry.model.sourcepackagename import SourcePackageName
-        from lp.registry.model.product import Product
-        from lp.registry.model.distribution import Distribution
-        store = Store.of(self)
-        origin = [
-            BugTask,
-            Join(Bug, BugTask.bug == Bug.id),
-            LeftJoin(Product, BugTask.product == Product.id),
-            LeftJoin(Distribution, BugTask.distribution == Distribution.id),
-            LeftJoin(DistroSeries, BugTask.distroseries == DistroSeries.id),
-            LeftJoin(ProductSeries, BugTask.productseries == ProductSeries.id),
-            LeftJoin(SourcePackageName,
-                     BugTask.sourcepackagename == SourcePackageName.id),
-            Join(Milestone, BugTask.milestoneID == Milestone.id),
-            Join(Person, BugTask.assigneeID == Person.id),
-            ]
         today = datetime.today().date()
-        filters = [
-            Milestone.dateexpected <= date,
-            Milestone.dateexpected >= today,
-            BugTask.assigneeID.is_in(self.participant_ids)]
-        privacy_filter = get_bug_privacy_filter(user)
-        # get_bug_privacy_filter() will return an empty string if the user is
-        # an admin.
-        if privacy_filter != '':
-            filters.append(privacy_filter)
-        results = store.using(*origin).find(
-            (Bug, BugTask, Milestone, Product, Distribution, ProductSeries,
-             DistroSeries, SourcePackageName, Person),
-            AND(*filters)
-            )
-        for (bug, task, milestone, product, distro, productseries,
-             distroseries, sourcepackagename, assignee) in results:
+        params = BugTaskSearchParams(
+            user, assignee=any(*self.participant_ids),
+            milestone_dateexpected_before=date,
+            milestone_dateexpected_after=today)
+        results = getUtility(IBugTaskSet).search(params)
+
+        for task in results:
             # We skip masters (instead of slaves) from conjoined relationships
             # because we can do that without hittind the DB, which would not
             # be possible if we wanted to skip the slaves. The simple (but
             # expensive) way to skip the slaves would be to skip any tasks
             # that have a non-None .conjoined_master.
-            if productseries is not None and product is None:
+            productseries = task.productseries
+            distroseries = task.distroseries
+            if productseries is not None and task.product is None:
                 dev_focus_id = productseries.product.development_focusID
                 if (productseries.id == dev_focus_id and
                     task.status not in BugTask._NON_CONJOINED_STATUSES):
                     continue
-            elif distroseries is not None and sourcepackagename is not None:
+            elif (distroseries is not None
+                  and task.sourcepackagename is not None):
                 # Distribution.currentseries is expensive to run for every
                 # bugtask (as it goes through every series of that
                 # distribution), but it's a cached property and there's only

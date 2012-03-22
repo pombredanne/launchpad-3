@@ -1274,11 +1274,12 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
             self.factory.makeBug(milestone=milestone, private=True))
         self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
 
-        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
-            self.today + timedelta(days=1),
-            removeSecurityProxy(private_bug2).owner))
+        with person_logged_in(private_bug2.owner):
+            bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+                self.today + timedelta(days=1),
+                removeSecurityProxy(private_bug2).owner))
 
-        self.assertEqual(private_bug2.bugtasks, bugtasks)
+            self.assertEqual(private_bug2.bugtasks, bugtasks)
 
     def test_skips_distroseries_task_that_is_a_conjoined_master(self):
         distroseries = self.factory.makeDistroSeries()
