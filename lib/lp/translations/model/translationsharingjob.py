@@ -124,12 +124,6 @@ class TranslationSharingJobDerived:
     def sourcepackage(self):
         return self.distroseries.getSourcePackage(self.sourcepackagename)
 
-    def __init__(self, job):
-        assert job.job_type == self.class_job_type, (
-            "Attempting to create a %s using a %s TranslationSharingJob" %
-            (self.__class__.__name__, job.job_type))
-        self.job = job
-
     @staticmethod
     def _register_subclass(cls):
         """Register this class with its enumeration."""
@@ -140,6 +134,12 @@ class TranslationSharingJobDerived:
         event_type = getattr(cls, 'create_on_event', None)
         if event_type is not None:
             cls._event_types.setdefault(event_type, []).append(cls)
+
+    def __init__(self, job):
+        assert job.job_type == self.class_job_type, (
+            "Attempting to create a %s using a %s TranslationSharingJob" %
+            (self.__class__.__name__, job.job_type))
+        self.job = job
 
     @classmethod
     def create(cls, productseries=None, distroseries=None,

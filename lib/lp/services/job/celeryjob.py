@@ -28,5 +28,3 @@ class CeleryRunJob(RunJob):
     def getJobRunner(self):
         """Return a BaseJobRunner, to support customization."""
         return BaseJobRunner()
-
-

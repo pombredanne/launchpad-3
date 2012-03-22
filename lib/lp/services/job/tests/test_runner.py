@@ -40,9 +40,7 @@ from lp.testing import (
     ZopeTestInSubProcess,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
