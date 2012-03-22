@@ -1516,12 +1516,31 @@ class Person(
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
         from lp.bugs.model.bugtask import BugTask
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
         today = datetime.today().date()
-        params = BugTaskSearchParams(
+        search_params = BugTaskSearchParams(
             user, assignee=any(*self.participant_ids),
             milestone_dateexpected_before=date,
             milestone_dateexpected_after=today)
-        results = getUtility(IBugTaskSet).search(params)
+        # BugTaskSet.search() performs eager loading for
+        # Product/SourcePackageName, but we want that for the ones below as
+        # well, so we do it with prejoins.
+        prejoins = [
+            (ProductSeries, LeftJoin(
+                ProductSeries, BugTask.productseries == ProductSeries.id)),
+            (DistroSeries, LeftJoin(
+                DistroSeries, BugTask.distroseries == DistroSeries.id)),
+            (Distribution, LeftJoin(
+                Distribution, BugTask.distribution == Distribution.id)),
+            (Milestone, LeftJoin(
+                Milestone, BugTask.milestone == Milestone.id)),
+            (Person, LeftJoin(
+                Person, BugTask.assignee == Person.id)),
+            ]
+        results = getUtility(IBugTaskSet).search(
+            search_params, prejoins=prejoins)
 
         for task in results:
             # We skip masters (instead of slaves) from conjoined relationships
