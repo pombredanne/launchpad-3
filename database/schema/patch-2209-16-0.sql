@@ -520,4 +520,4 @@ CREATE TRIGGER accessartifactgrant_maintain_bugtaskflat_trigger
     AFTER INSERT OR UPDATE OR DELETE ON accessartifactgrant
     FOR EACH ROW EXECUTE PROCEDURE accessartifact_maintain_bugtaskflat_trig();
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 16, 0);
