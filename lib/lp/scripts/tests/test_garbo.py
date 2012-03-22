@@ -54,7 +54,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -1105,16 +1104,6 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
-
-    def test_BugsInformationTypeMigrator(self):
-        # A non-migrated bug will have information_type set correctly.
-        switch_dbuser('testadmin')
-        bug = self.factory.makeBug(private=True)
-        # Since creating a bug will set information_type, unset it.
-        removeSecurityProxy(bug).information_type = None
-        transaction.commit()
-        self.runHourly()
-        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_BugLegacyAccessMirrorer(self):
         # Private bugs without corresponding data in the access policy

@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
 <!--
 Copyright 2012 Canonical Ltd.  This software is licensed under the
 GNU Affero General Public License version 3 (see the file LICENSE).
@@ -6,7 +7,7 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
 <html>
   <head>
-      <title>test picker</title>
+      <title>Sharee Listing Navigator Tests</title>
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
@@ -26,35 +27,36 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- Dependencies -->
       <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/mustache.js"></script>
+      <script type="text/javascript"
+          src="../../../../../../build/js/lp/app/indicator/indicator.js"></script>
+      <script type="text/javascript"
           src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/picker/picker.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/expander.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/anim/anim.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/effects/effects.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
-      <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/extras/extras.js"></script>
-
+          src="../../../../../../build/js/lp/app/listing_navigator.js"></script>
 
       <!-- The module under test. -->
-      <script type="text/javascript" src="../picker.js"></script>
+      <script type="text/javascript" src="../shareelisting_navigator.js"></script>
 
-      <!-- Placeholder for any css asset for this module. -->
-      <!-- <link rel="stylesheet" href="../assets/picker-core.css" /> -->
-
-      <!-- The test suite. -->
-      <script type="text/javascript" src="test_picker.js"></script>
+      <!-- The test suite -->
+      <script type="text/javascript" src="test_shareelisting_navigator.js"></script>
 
     </head>
     <body class="yui3-skin-sam">
         <ul id="suites">
-            <!-- <li>lp.large_indicator.test</li> -->
-            <li>lp.picker.test</li>
+            <li>lp.registry.sharing.shareelisting_navigator.test</li>
         </ul>
+        <div id="fixture"></div>
+        <script type="text/x-template" id="sharee-table-template">
+            <table id='sharee-table'>
+                <tr id='sharee-table-loading'><td>
+                    Loading...
+                </td></tr>
+            </table>
+        </script>
     </body>
 </html>
