@@ -190,7 +190,7 @@ class BaseJobRunner(LazrJobRunner):
         if error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
         else:
-            self.error_utility = errorlog.globalErrorUtility
+            self.error_utility = error_utility
         super(BaseJobRunner, self).__init__(
             logger, oops_config=self.error_utility._oops_config,
             oopsMessage=self.error_utility.oopsMessage)
