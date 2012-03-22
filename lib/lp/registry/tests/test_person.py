@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import smartquote
@@ -1113,3 +1116,212 @@ class TestGetRecipients(TestCaseWithFactory):
         self.assertContentEqual(
             [team2.teamowner],
             get_recipients(team2))
+
+
+class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(Test_getAssignedSpecificationWorkItemsDueBefore, self).setUp()
+        self.team = self.factory.makeTeam()
+        today = datetime.today().date()
+        next_month = today + timedelta(days=30)
+        next_year = today + timedelta(days=366)
+        self.current_milestone = self.factory.makeMilestone(
+            dateexpected=next_month)
+        self.product = self.current_milestone.product
+        self.future_milestone = self.factory.makeMilestone(
+            dateexpected=next_year, product=self.product)
+
+    def test_basic(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.current_milestone,
+            product=self.product)
+        # Create a workitem with no explicit assignee/milestone. This way it
+        # will inherit the ones from the spec it belongs to.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+
+        # Create a workitem with somebody who's not a member of our team as
+        # the assignee. This workitem must not be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            assignee=self.factory.makePerson())
+
+        # Create a workitem targeted to a milestone too far in the future.
+        # This workitem must not be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 3', specification=assigned_spec,
+            milestone=self.future_milestone)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual([workitem], list(workitems))
+
+    def test_skips_workitems_with_milestone_in_the_past(self):
+        today = datetime.today().date()
+        milestone = self.factory.makeMilestone(
+            dateexpected=today - timedelta(days=1))
+        spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=milestone,
+            product=milestone.product)
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(today)
+
+        self.assertEqual([], list(workitems))
+
+    def test_includes_workitems_from_future_spec(self):
+        assigned_spec = self.factory.makeSpecification(
+            assignee=self.team.teamowner, milestone=self.future_milestone,
+            product=self.product)
+        # This workitem inherits the spec's milestone and that's too far in
+        # the future so it won't be in the returned list.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+        # This one, on the other hand, is explicitly targeted to the current
+        # milestone, so it is included in the returned list even though its
+        # spec is targeted to the future milestone.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            milestone=self.current_milestone)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual([workitem], list(workitems))
+
+    def test_includes_workitems_from_foreign_spec(self):
+        # This spec is assigned to a person who's not a member of our team, so
+        # only the workitems that are explicitly assigned to a member of our
+        # team will be in the returned list.
+        foreign_spec = self.factory.makeSpecification(
+            assignee=self.factory.makePerson(),
+            milestone=self.current_milestone, product=self.product)
+        # This one is not explicitly assigned to anyone, so it inherits the
+        # assignee of its spec and hence is not in the returned list.
+        self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=foreign_spec)
+
+        # This one, on the other hand, is explicitly assigned to the a member
+        # of our team, so it is included in the returned list even though its
+        # spec is not assigned to a member of our team.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=foreign_spec,
+            assignee=self.team.teamowner)
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertEqual([workitem], list(workitems))
+
+
+class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(Test_getAssignedBugTasksDueBefore, self).setUp()
+        self.team = self.factory.makeTeam()
+        self.today = datetime.today().date()
+
+    def _assignBugTaskToTeamOwner(self, bugtask):
+        removeSecurityProxy(bugtask).assignee = self.team.teamowner
+
+    def test_basic(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        # This bug is assigned to a team member and targeted to a milestone
+        # whose due date is before the cutoff date we pass in, so it will be
+        # included in the return of getAssignedBugTasksDueBefore().
+        milestoned_bug = self.factory.makeBug(milestone=milestone)
+        self._assignBugTaskToTeamOwner(milestoned_bug.bugtasks[0])
+        # This one is assigned to a team member but not milestoned, so it is
+        # not included in the return of getAssignedBugTasksDueBefore().
+        non_milestoned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_milestoned_bug.bugtasks[0])
+        # This one is milestoned but not assigned to a team member, so it is
+        # not included in the return of getAssignedBugTasksDueBefore() either.
+        non_assigned_bug = self.factory.makeBug()
+        self._assignBugTaskToTeamOwner(non_assigned_bug.bugtasks[0])
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(1, len(bugtasks))
+        self.assertEqual(milestoned_bug.bugtasks[0], bugtasks[0])
+
+    def test_skips_tasks_targeted_to_old_milestones(self):
+        past_milestone = self.factory.makeMilestone(
+            dateexpected=self.today - timedelta(days=1))
+        bug = self.factory.makeBug(milestone=past_milestone)
+        self._assignBugTaskToTeamOwner(bug.bugtasks[0])
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual(0, len(bugtasks))
+
+    def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        private_bug = removeSecurityProxy(
+            self.factory.makeBug(milestone=milestone, private=True))
+        self._assignBugTaskToTeamOwner(private_bug.bugtasks[0])
+        private_bug2 = removeSecurityProxy(
+            self.factory.makeBug(milestone=milestone, private=True))
+        self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1),
+            removeSecurityProxy(private_bug2).owner))
+
+        self.assertEqual(private_bug2.bugtasks, bugtasks)
+
+    def test_skips_distroseries_task_that_is_a_conjoined_master(self):
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        milestone = self.factory.makeMilestone(
+            distroseries=distroseries, dateexpected=self.today)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        bug = self.factory.makeBug(
+            milestone=milestone, sourcepackagename=sourcepackagename,
+            distribution=distroseries.distribution)
+        package = distroseries.getSourcePackage(sourcepackagename.name)
+        removeSecurityProxy(bug).addTask(bug.owner, package)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+        self._assignBugTaskToTeamOwner(master)
+        self.assertEqual(None, master.conjoined_master)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
+
+    def test_skips_productseries_task_that_is_a_conjoined_master(self):
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        removeSecurityProxy(milestone.product).development_focus = (
+            milestone.productseries)
+        bug = self.factory.makeBug(
+            series=milestone.productseries, milestone=milestone)
+        self.assertEqual(2, len(bug.bugtasks))
+        slave, master = bug.bugtasks
+
+        # This will cause the assignee to propagate to the other bugtask as
+        # well since they're conjoined.
+        self._assignBugTaskToTeamOwner(slave)
+        self.assertEqual(master, slave.conjoined_master)
+        self.assertEqual(slave.milestone, master.milestone)
+        self.assertEqual(slave.assignee, master.assignee)
+
+        bugtasks = list(self.team.getAssignedBugTasksDueBefore(
+            self.today + timedelta(days=1), user=None))
+
+        self.assertEqual([slave], bugtasks)
