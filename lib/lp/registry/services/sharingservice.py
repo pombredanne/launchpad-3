@@ -99,6 +99,9 @@ class SharingService:
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        # XXX 2012-03-22 wallyworld bug 961836
+        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # StormRangeFactory doesn't support that yet.
         grantees = ap_grant_flat.findGranteesByPolicy(
             policies).order_by(Person.displayname, Person.name)
         return grantees
@@ -108,9 +111,11 @@ class SharingService:
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        # XXX 2012-03-22 wallyworld bug 961836
+        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # StormRangeFactory doesn't support that yet.
         grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
-            policies, grantees).order_by(
-                "person_sort_key(Person.displayname, Person.name)")
+            policies, grantees).order_by(Person.displayname, Person.name)
 
         result = []
         person_by_id = {}
