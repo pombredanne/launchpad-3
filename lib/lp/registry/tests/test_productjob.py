@@ -24,12 +24,17 @@ from lp.registry.interfaces.productjob import (
     IProductJobSource,
     IProductNotificationJobSource,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
     ProductNotificationJob,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -236,3 +241,27 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertIn(canonical_url(product), reason)
         self.assertIn(
             'you are the maintainer of %s' % product.displayname, reason)
+
+    def test_recipients_team(self):
+        # The product maintainer team admins are the recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        team = self.factory.makeTeam(
+            owner=product.owner,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                team_admin, team.teamowner, status=TeamMembershipStatus.ADMIN)
+            product.owner = team
+        recipients = job.recipients
+        self.assertContentEqual(
+            [team.teamowner, team_admin], recipients.getRecipients())
+        reason, header = recipients.getReason(team.teamowner)
+        self.assertEqual('Maintainer', header)
+        self.assertIn(canonical_url(product), reason)
+        self.assertIn(
+            'you are an admin of %s which is the maintainer of %s' %
+            (team.displayname, product.displayname),
+            reason)

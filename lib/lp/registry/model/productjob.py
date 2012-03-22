@@ -202,14 +202,19 @@ class ProductNotificationJob(ProductJobDerived):
         """See `IProductNotificationJob`."""
         notification_set = NotificationRecipientSet()
         maintainer = self.product.owner
+        header = 'Maintainer'
         if self.product.owner.is_team:
-            pass
+            reason = (
+                "You received this notification because you are "
+                "an admin of %s which is the maintainer of %s.\n%s" %
+                (maintainer.displayname, self.product.displayname,
+                 canonical_url(self.product)))
+            notification_set.add(maintainer.adminmembers, reason, header)
         else:
             reason = (
                 "You received this notification because you are "
                 "the maintainer of %s.\n%s" %
                 (self.product.displayname, canonical_url(self.product)))
-            header = 'Maintainer'
             notification_set.add(maintainer, reason, header)
         return notification_set
 
