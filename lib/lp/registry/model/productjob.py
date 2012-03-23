@@ -10,9 +10,7 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import (
-    And,
-    )
+from storm.expr import And
 from storm.locals import (
     Int,
     Reference,
@@ -24,9 +22,7 @@ from zope.interface import (
     )
 
 from lp.registry.enums import ProductJobType
-from lp.registry.interfaces.product import (
-    IProduct,
-    )
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
