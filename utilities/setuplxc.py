@@ -688,6 +688,9 @@ parser.add_argument(
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
 parser.add_argument(
+    '-U', '--use-urandom', action='store_true',
+    help='Use /dev/urandom to feed /dev/random and avoid entropy exhaustion.')
+parser.add_argument(
     'directory',
     help='The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
