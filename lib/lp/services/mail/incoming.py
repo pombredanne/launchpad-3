@@ -103,8 +103,8 @@ def _isDkimDomainTrusted(domain):
     return domain in _trusted_dkim_domains
 
 
-def _authenticateDkim(signed_message):
-    """Attempt DKIM authentication of email.
+def _verifyDkimOrigin(signed_message):
+    """Find a From or Sender address for which there's a DKIM signature, if any.
 
     :returns: A string email address for the trusted sender, if there is one,
     otherwise None.
@@ -190,6 +190,34 @@ def _authenticateDkim(signed_message):
         return None
 
 
+def _getPrincipalByDkim(mail):
+    """Determine the security principal from DKIM, if possible.
+
+    To qualify:
+        * there must be a dkim signature from a trusted domain
+        * the From or Sender must be in that domain
+        * the address in this header must be verified for a person
+
+    :returns: (None, None), or (principal, trusted_addr).
+    """
+    log = logging.getLogger('mail-authenticate-dkim')
+    authutil = getUtility(IPlacelessAuthUtility)
+
+    dkim_trusted_address = _verifyDkimOrigin(mail)
+    if dkim_trusted_address is None:
+        return None, None
+
+    log.debug('authenticated DKIM mail origin %s' % dkim_trusted_address)
+    dkim_principal = authutil.getPrincipalByLogin(dkim_trusted_address)
+    if dkim_principal is None:
+        log.debug("valid dkim signature, but not from a known email address, "
+            "therefore disregarding it")
+        return None, None
+    else:
+        return (dkim_principal, dkim_trusted_address)
+
+
+
 def authenticateEmail(mail,
     signature_timestamp_checker=None):
     """Authenticates an email by verifying the PGP signature.
@@ -207,20 +235,13 @@ def authenticateEmail(mail,
     """
 
     log = logging.getLogger('process-mail')
-
-    dkim_trusted_addr = _authenticateDkim(mail)
-    if dkim_trusted_addr is not None:
-        # The Sender field, if signed by a trusted domain, is the strong
-        # authenticator for this mail.
-        log.debug('trusted DKIM mail from %s' % dkim_trusted_addr)
-        email_addr = dkim_trusted_addr
-    else:
-        email_addr = parseaddr(mail['From'])[1]
-
     authutil = getUtility(IPlacelessAuthUtility)
-    principal = authutil.getPrincipalByLogin(email_addr)
 
-    # Check that sender is registered in Launchpad and the email is signed.
+    principal, dkim_trusted_address = _getPrincipalByDkim(mail)
+    if dkim_trusted_address is None:
+        from_addr = parseaddr(mail['From'])[1]
+        principal = authutil.getPrincipalByLogin(from_addr)
+
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
         return None
@@ -230,9 +251,9 @@ def authenticateEmail(mail,
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
 
-    if dkim_trusted_addr is not None:
+    if dkim_trusted_address:
         log.debug('accepting dkim strongly authenticated mail')
-        setupInteraction(principal, dkim_trusted_addr)
+        setupInteraction(principal, dkim_trusted_address)
         return principal
     else:
         log.debug("attempt gpg authentication for %r" % person)

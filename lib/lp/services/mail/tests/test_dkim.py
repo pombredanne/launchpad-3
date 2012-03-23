@@ -300,3 +300,27 @@ class TestDKIM(TestCaseWithFactory):
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
+
+    def test_dkim_signed_but_from_unknown_address(self):
+        """Sent from trusted dkim address, but only the From address is known.
+        
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        person = self.factory.makePerson(
+            email='dkimtest@example.com',
+            name='dkimtest',
+            displayname='DKIM Test')
+        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
+        tweaked_message = (
+            "Sender: dkimtest@canonical.com\n" 
+            + plain_content.replace(
+                "From: Foo Bar <foo.bar@canonical.com>",
+                "From: DKIM Test <dkimtest@example.com>"))
+        signed_message = self.fake_signing(tweaked_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertEqual(principal.person.preferredemail.email,
+            'dkimtest@example.com')
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertDkimLogContains(
+            'valid dkim signature, but not from a known email address')
