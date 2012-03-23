@@ -276,6 +276,9 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             product.displayname, job.message_data['product_displayname'])
         self.assertEqual(
             canonical_url(product), job.message_data['product_url'])
+        self.assertEqual(reviewer.name, job.message_data['reviewer_name'])
+        self.assertEqual(
+            reviewer.displayname, job.message_data['reviewer_displayname'])
 
     def test_geBodyAndHeaders(self):
         # The body and headers contain reasons and rationales.

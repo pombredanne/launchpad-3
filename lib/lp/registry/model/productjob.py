@@ -226,7 +226,9 @@ class ProductNotificationJob(ProductJobDerived):
         return {
             'product_name': self.product.name,
             'product_displayname': self.product.displayname,
-            'product_url': canonical_url(self.product)
+            'product_url': canonical_url(self.product),
+            'reviewer_name': self.reviewer.name,
+            'reviewer_displayname': self.reviewer.displayname,
             }
 
     def getErrorRecipients(self):
