@@ -233,11 +233,19 @@ class ProductNotificationJob(ProductJobDerived):
             'reviewer_displayname': self.reviewer.displayname,
             }
 
+    @cachedproperty
+    def reply_to(self):
+        """See `IProductNotificationJob`."""
+        if 'commercial' in self.email_template_name:
+            return format_address(
+                'Commercial', 'commercial@launchpad.net')
+        return None
+
     def getErrorRecipients(self):
         """See `IProductNotificationJob`."""
         return [format_address_for_person(self.reviewer)]
 
-    def geBodyAndHeaders(self, email_template, address, reply_to):
+    def geBodyAndHeaders(self, email_template, address, reply_to=None):
         """See `IProductNotificationJob`."""
         reason, rationale = self.recipients.getReason(address)
         maintainer = self.recipients._emailToPerson[address]
@@ -251,35 +259,33 @@ class ProductNotificationJob(ProductJobDerived):
             'X-Launchpad-Project':
                 '%(product_displayname)s (%(product_name)s)' % message_data,
             'X-Launchpad-Message-Rationale': rationale,
-            'Reply-To': reply_to,
             }
+        if reply_to is not None:
+            headers['Reply-To'] = reply_to
         return body, headers
 
-    def sendEmailToMaintainer(self, template_name, subject,
-                              from_address, reply_to):
+    def sendEmailToMaintainer(self, template_name, subject, from_address):
         """See `IProductNotificationJob`."""
         email_template = get_email_template(
             "%s.txt" % template_name, app='registry')
         for address in self.recipients.getEmails():
             body, headers = self.geBodyAndHeaders(
-                email_template, address, reply_to)
+                email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
 
     def run(self):
         """See `BaseRunnableJob`.
 
-        Sub classes that are updating products may want to make changes to
+        Subclasses that are updating products can want to make changes to
         the product before or after upcalling this classes' run() method.
         """
         from_address = format_address(
             'Launchpad', config.canonical.noreply_from_address)
-        reply_to = format_address(
-            'Commercial', 'commercial@launchpad.net')
         log.debug(
             "%s is sending a %s notification to the %s maintainers",
             self.log_name, self.email_template_name, self.product_name)
         self.sendEmailToMaintainer(
-            self.email_template_name, self.subject, from_address, reply_to)
+            self.email_template_name, self.subject, from_address)
         log.debug(
             "%s sent a %s notification to the %s maintainers",
             self.log_name, self.email_template_name, self.product_name)

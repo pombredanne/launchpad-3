@@ -229,6 +229,20 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             ['Reviewer <reviewer@eg.com>'], job.getErrorRecipients())
 
+    def test_reply_to_commercial(self):
+        # Commercial emails have the commercial@launchpad.net reply-to.
+        data = list(self.make_notification_data())
+        data[1] = 'product-commercial-expires-7-days'
+        job = ProductNotificationJob.create(*data)
+        self.assertEqual('Commercial <commercial@launchpad.net>', job.reply_to)
+
+    def test_reply_to_non_commercial(self):
+        # Non-commercial emails do not have a reply-to.
+        data = list(self.make_notification_data())
+        data[1] = 'product-license-dont-know'
+        job = ProductNotificationJob.create(*data)
+        self.assertIs(None, job.reply_to)
+
     def test_recipients_user(self):
         # The product maintainer is the recipient.
         data = self.make_notification_data()
@@ -280,7 +294,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             reviewer.displayname, job.message_data['reviewer_displayname'])
 
-    def test_geBodyAndHeaders(self):
+    def test_geBodyAndHeaders_with_reply_to(self):
         # The body and headers contain reasons and rationales.
         data = self.make_notification_data()
         job = ProductNotificationJob.create(*data)
@@ -299,5 +313,20 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
             ('Reply-To', reply_to),
+            ]
+        self.assertContentEqual(expected_headers, headers.items())
+
+    def test_geBodyAndHeaders_without_reply_to(self):
+        # The reply-to is an optional argument.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        email_template = 'hello'
+        body, headers = job.geBodyAndHeaders(email_template, address)
+        expected_headers = [
+            ('X-Launchpad-Project', '%s (%s)' %
+              (product.displayname, product.name)),
+            ('X-Launchpad-Message-Rationale', 'Maintainer'),
             ]
         self.assertContentEqual(expected_headers, headers.items())
