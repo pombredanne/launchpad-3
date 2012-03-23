@@ -288,7 +288,8 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         [address] = job.recipients.getEmails()
         email_template = (
             'hello %(maintainer_name)s %(product_name)s %(reviewer_name)s')
-        body, headers = job.geBodyAndHeaders(email_template, address)
+        reply_to = 'me@eg.dom'
+        body, headers = job.geBodyAndHeaders(email_template, address, reply_to)
         self.assertIn(reviewer.name, body)
         self.assertIn(product.name, body)
         self.assertIn(product.owner.name, body)
@@ -297,5 +298,6 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             ('X-Launchpad-Project', '%s (%s)' %
               (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('Reply-To', reply_to),
             ]
         self.assertContentEqual(expected_headers, headers.items())

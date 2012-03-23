@@ -237,7 +237,7 @@ class ProductNotificationJob(ProductJobDerived):
         """See `IProductNotificationJob`."""
         return [format_address_for_person(self.reviewer)]
 
-    def geBodyAndHeaders(self, email_template, address):
+    def geBodyAndHeaders(self, email_template, address, reply_to):
         """See `IProductNotificationJob`."""
         reason, rationale = self.recipients.getReason(address)
         maintainer = self.recipients._emailToPerson[address]
@@ -251,15 +251,18 @@ class ProductNotificationJob(ProductJobDerived):
             'X-Launchpad-Project':
                 '%(product_displayname)s (%(product_name)s)' % message_data,
             'X-Launchpad-Message-Rationale': rationale,
+            'Reply-To': reply_to,
             }
         return body, headers
 
-    def sendEmailToMaintainer(self, template_name, subject, from_address):
+    def sendEmailToMaintainer(self, template_name, subject,
+                              from_address, reply_to):
         """See `IProductNotificationJob`."""
         email_template = get_email_template(
             "%s.txt" % template_name, app='registry')
         for address in self.recipients.getEmails():
-            body, headers = self.geBodyAndHeaders(email_template, address)
+            body, headers = self.geBodyAndHeaders(
+                email_template, address, reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
 
     def run(self):
@@ -270,11 +273,13 @@ class ProductNotificationJob(ProductJobDerived):
         """
         from_address = format_address(
             'Launchpad', config.canonical.noreply_from_address)
+        reply_to = format_address(
+            'Commercial', 'commercial@launchpad.net')
         log.debug(
             "%s is sending a %s notification to the %s maintainers",
             self.log_name, self.email_template_name, self.product_name)
         self.sendEmailToMaintainer(
-            self.email_template_name, self.subject, from_address)
+            self.email_template_name, self.subject, from_address, reply_to)
         log.debug(
             "%s sent a %s notification to the %s maintainers",
             self.log_name, self.email_template_name, self.product_name)
