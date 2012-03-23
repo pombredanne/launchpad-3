@@ -73,7 +73,8 @@ class IProductNotificationJob(IProductJob):
     """A job then sends a notification about a product."""
 
     subject = Attribute('The subject line of the notification.')
-    email_template_name = Attribute('The name of the email template.')
+    email_template_name = Attribute(
+        'The name of the email template to create the message body from.')
     reviewer = Attribute('The user or agent sending the email.')
     recipients = Attribute('An `INotificationRecipientSet`.')
     message_data = Attribute(
@@ -89,7 +90,7 @@ class IProductNotificationJob(IProductJob):
         :param email_template: A string that will be interpolated
             with message_data.
         :param address: The email address of the user the message is to.
-        :reply_to: An optinal email address to set as the Reply-To header.
+        :reply_to: An optional email address to set as the Reply-To header.
         :return a tuple (string, dict):
         """
 
@@ -105,7 +106,7 @@ class IProductNotificationJob(IProductJob):
 
 
 class IProductNotificationJobSource(IProductJobSource):
-    """An interface for creating and finding `IProductNotificationJob`s."""
+    """An interface for creating `IProductNotificationJob`s."""
 
     def create(product, email_template_name, subject, reviewer):
         """Create a new `IProductNotificationJob`.

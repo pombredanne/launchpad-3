@@ -207,6 +207,17 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         email_template_name = 'product-license-dont-know'
         return product, email_template_name, subject, reviewer
 
+    def make_maintainer_team(self, product):
+        team = self.factory.makeTeam(
+            owner=product.owner,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                team_admin, team.teamowner, status=TeamMembershipStatus.ADMIN)
+            product.owner = team
+        return team, team_admin
+
     def test_create(self):
         # Create an instance of ProductNotificationJob that stores
         # the notification information.
@@ -256,17 +267,6 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertIn(canonical_url(product), reason)
         self.assertIn(
             'you are the maintainer of %s' % product.displayname, reason)
-
-    def make_maintainer_team(self, product):
-        team = self.factory.makeTeam(
-            owner=product.owner,
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        team_admin = self.factory.makePerson()
-        with person_logged_in(team.teamowner):
-            team.addMember(
-                team_admin, team.teamowner, status=TeamMembershipStatus.ADMIN)
-            product.owner = team
-        return team, team_admin
 
     def test_recipients_team(self):
         # The product maintainer team admins are the recipient.

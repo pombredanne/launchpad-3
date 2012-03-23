@@ -106,7 +106,7 @@ class ProductJobDerived(BaseRunnableJob):
     Storm classes can't simply be subclassed or you can end up with
     multiple objects referencing the same row in the db. This class uses
     lazr.delegates, which is a little bit simpler than storm's
-    infoheritance solution to the problem. Subclasses need to override
+    inheritance solution to the problem. Subclasses need to override
     the run() method.
     """
 
