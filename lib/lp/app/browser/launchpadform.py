@@ -352,6 +352,7 @@ class LaunchpadFormView(LaunchpadView):
         to render any errors. We simply convert the errors to json and return
         that data to the caller so the errors can be rendered.
         """
+
         if not self.request.is_ajax:
             return
         self.request.response.setStatus(400, "Validation")
