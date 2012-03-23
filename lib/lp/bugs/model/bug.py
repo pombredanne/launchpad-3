@@ -1709,9 +1709,8 @@ class Bug(SQLBase):
 
     def setPrivacyAndSecurityRelated(self, private, security_related, who):
         """ See `IBug`."""
-        ret = self.transitionToInformationType(
+        return self.transitionToInformationType(
             convert_to_information_type(private, security_related), who)
-        return (ret, ret)
 
     def setPrivate(self, private, who):
         """See `IBug`.
@@ -1720,12 +1719,12 @@ class Bug(SQLBase):
         place.
         """
         return self.setPrivacyAndSecurityRelated(
-            private, self.security_related, who)[0]
+            private, self.security_related, who)
 
     def setSecurityRelated(self, security_related, who):
         """Setter for the `security_related` property."""
         return self.setPrivacyAndSecurityRelated(
-            self.private, security_related, who)[1]
+            self.private, security_related, who)
 
     def transitionToInformationType(self, information_type, who):
         """See `IBug`."""

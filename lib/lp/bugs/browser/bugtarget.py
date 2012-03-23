@@ -582,7 +582,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        # Security bugs are always private when filed, but can be disclosed
+        # Security bugs are always embargoed when filed, but can be disclosed
         # after they've been reported.
         # This will change when the UI does.
         if security_related:
