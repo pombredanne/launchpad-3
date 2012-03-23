@@ -766,6 +766,12 @@ def initialize_host(
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
+    # rng-tools is used to set /dev/urandom as random data source, avoiding
+    # entropy exhaustion during automated parallel tests.
+    if use_urandom:
+        subprocess.call(['apt-get', '-y', 'install', 'rng-tools'])
+        file_append('/etc/default/rng-tools', 'HRNGDEVICE=/dev/urandom')
+        subprocess.call(['/etc/init.d/rng-tools', 'start'])
 
 
 def create_scripts(user, lxcname, ssh_key_path):
