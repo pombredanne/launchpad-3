@@ -125,3 +125,6 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             view(), parseOnlyThese=SoupStrainer(id='document'))
         self.assertIs(False, view.has_watermark)
         self.assertIs(None, markup.find(True, id='watermark'))
+        logo = markup.find(True, id='launchpad-logo-and-name')
+        self.assertIsNot(None, logo)
+        self.assertEqual('/@@/launchpad-logo-and-name.png', logo['src'])
