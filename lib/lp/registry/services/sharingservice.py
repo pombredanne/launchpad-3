@@ -116,23 +116,18 @@ class SharingService:
     def jsonShareeData(self, grant_permissions):
         """See `ISharingService`."""
         result = []
-        person_by_id = {}
         request = get_current_web_service_request()
         browser_request = IWebBrowserOriginatingRequest(request)
-        for (grantee, policy, sharing_permission) in grant_permissions:
-            if not grantee.id in person_by_id:
-                person_data = {
-                    'name': grantee.name,
-                    'meta': 'team' if grantee.is_team else 'person',
-                    'display_name': grantee.displayname,
-                    'self_link': absoluteURL(grantee, request),
-                    'permissions': {}}
-                person_data['web_link'] = absoluteURL(grantee, browser_request)
-                person_by_id[grantee.id] = person_data
-                result.append(person_data)
-            person_data = person_by_id[grantee.id]
-            person_data['permissions'][policy.type.name] = (
-                sharing_permission.name)
+        for (grantee, permissions) in grant_permissions:
+            result.append({
+                'name': grantee.name,
+                'meta': 'team' if grantee.is_team else 'person',
+                'display_name': grantee.displayname,
+                'self_link': absoluteURL(grantee, request),
+                'web_link': absoluteURL(grantee, browser_request),
+                'permissions': dict(
+                    (policy.type.name, permission.name)
+                    for (policy, permission) in permissions.iteritems())})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
