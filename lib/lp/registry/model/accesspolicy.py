@@ -383,16 +383,16 @@ class AccessPolicyGrantFlat(StormBase):
                 permissions_cache[(person_id, policy_id)] = (
                     SharingPermission.items[str(permission)])
 
-        # The main result set has a placeholder for permission.
-        constraints = [
-            Person.id == cls.grantee_id,
-            cls.policy_id.is_in(policies_by_id.keys())]
+        constraints = []
         if grantees:
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
         result_set = IStore(cls).find(
             (Person, cls.policy_id),
-            *constraints).config(distinct=True)
+            Person.id == cls.grantee_id,
+            cls.policy_id.is_in(policies_by_id.keys()),
+            *constraints
+            ).config(distinct=True)
         return DecoratedResultSet(
             result_set,
             result_decorator=set_permission, pre_iter_hook=load_permissions)
