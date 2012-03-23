@@ -221,6 +221,14 @@ class ProductNotificationJob(ProductJobDerived):
         """See `IProductNotificationJob`."""
         return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
 
+    @cachedproperty
+    def message_data(self):
+        return {
+            'product_name': self.product.name,
+            'product_displayname': self.product.displayname,
+            'product_url': canonical_url(self.product)
+            }
+
     def getErrorRecipients(self):
         """See `IProductNotificationJob`."""
         return [format_address_for_person(self.reviewer)]

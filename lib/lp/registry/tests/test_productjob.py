@@ -266,6 +266,17 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             (team.displayname, product.displayname),
             reason)
 
+    def test_message_data(self):
+        # The message_data is a dict of interpolatable strings.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        self.assertEqual(product.name, job.message_data['product_name'])
+        self.assertEqual(
+            product.displayname, job.message_data['product_displayname'])
+        self.assertEqual(
+            canonical_url(product), job.message_data['product_url'])
+
     def test_geBodyAndHeaders(self):
         # The body and headers contain reasons and rationales.
         data = self.make_notification_data()
