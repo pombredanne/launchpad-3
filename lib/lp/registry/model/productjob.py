@@ -250,8 +250,8 @@ class ProductNotificationJob(ProductJobDerived):
         reason, rationale = self.recipients.getReason(address)
         maintainer = self.recipients._emailToPerson[address]
         message_data = dict(self.message_data)
-        message_data['maintainer_name'] = maintainer.name
-        message_data['maintainer_displayname'] = maintainer.displayname
+        message_data['user_name'] = maintainer.name
+        message_data['user_displayname'] = maintainer.displayname
         raw_body = email_template % message_data
         raw_body += '\n\n-- \n%s' % reason
         body = MailWrapper().format(raw_body, force_wrap=True)
@@ -283,7 +283,7 @@ class ProductNotificationJob(ProductJobDerived):
             'Launchpad', config.canonical.noreply_from_address)
         log.debug(
             "%s is sending a %s notification to the %s maintainers",
-            self.log_name, self.email_template_name, self.product_name)
+            self.log_name, self.email_template_name, self.product.name)
         self.sendEmailToMaintainer(
             self.email_template_name, self.subject, from_address)
         log.debug(
