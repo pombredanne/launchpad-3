@@ -16,11 +16,10 @@ __all__ = [
 
 
 from operator import attrgetter
-import simplejson
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interfaces import IJSONRequestCache
-
+import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implements,
@@ -32,11 +31,11 @@ from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
@@ -50,13 +49,13 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,

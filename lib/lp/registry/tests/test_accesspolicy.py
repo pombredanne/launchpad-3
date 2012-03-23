@@ -24,6 +24,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.model.person import Person
 from lp.services.database.lpstorm import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -480,14 +481,18 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         policy = self.factory.makeAccessPolicy()
         policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
         self.assertContentEqual(
-            [(policy_grant.grantee, policy, SharingPermission.ALL)],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
             apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
         # But not people with grants on artifacts.
-        artifact_grant = self.factory.makeAccessArtifactGrant()
+        artifact = self.factory.makeAccessArtifact()
+        artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=policy_grant.grantee)
+        other_artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact)
         self.assertContentEqual(
-            [(policy_grant.grantee, policy, SharingPermission.ALL)],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
             apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
@@ -496,10 +501,22 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=another_policy)
         self.assertContentEqual(
-            [(policy_grant.grantee, policy, SharingPermission.ALL),
-            (artifact_grant.grantee, another_policy, SharingPermission.SOME)],
+            [(policy_grant.grantee, {
+                policy: SharingPermission.ALL,
+                another_policy: SharingPermission.SOME}),
+             (other_artifact_grant.grantee, {
+                 another_policy: SharingPermission.SOME})],
             apgfs.findGranteePermissionsByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
+
+        # Slicing works by person, not by (person, policy).
+        self.assertContentEqual(
+            [(policy_grant.grantee, {
+                policy: SharingPermission.ALL,
+                another_policy: SharingPermission.SOME})],
+            apgfs.findGranteePermissionsByPolicy([
+                policy, another_policy, policy_with_no_grantees]).order_by(
+                    Person.id)[:1])
 
     def test_findGranteePermissionsByPolicy_filter_grantees(self):
         # findGranteePermissionsByPolicy() returns anyone with a grant for any
@@ -516,7 +533,7 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(
             policy=policy, grantee=grantee_not_in_result)
         self.assertContentEqual(
-            [(policy_grant.grantee, policy, SharingPermission.ALL)],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
             apgfs.findGranteePermissionsByPolicy(
                 [policy], [grantee_in_result]))
 

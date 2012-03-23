@@ -6,8 +6,8 @@ from testtools.matchers import Contains
 
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.session import (
-    LaunchpadCookieClientIdManager,
     get_cookie_domain,
+    LaunchpadCookieClientIdManager,
     )
 
 
