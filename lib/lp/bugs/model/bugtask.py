@@ -1698,7 +1698,8 @@ class BugTaskSet:
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
         if user is None:
-            bug_privacy_filter = 'AND Bug.private IS FALSE'
+            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY.
+            bug_privacy_filter = 'AND Bug.information_type IN (1, 2)'
         else:
             # Since the count won't reveal sensitive information, and
             # since the get_bug_privacy_filter() check for non-admins is

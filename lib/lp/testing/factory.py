@@ -78,6 +78,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -1689,9 +1690,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
+        # Factory changes delayed for a seperate branch.
+        information_type = convert_to_information_type(
+            private, security_related)
         create_bug_params = CreateBugParams(
-            owner, title, comment=comment, private=private,
-            security_related=security_related,
+            owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(

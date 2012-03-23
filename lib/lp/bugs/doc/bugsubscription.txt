@@ -48,6 +48,7 @@ subscriptions work.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
@@ -717,7 +718,7 @@ there is no security contact:
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = ubuntu.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -805,7 +806,7 @@ bugs, because upstream has no security contact, in this case.
 
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = firefox.createBug(params)
 
     >>> getSubscribers(new_bug)
@@ -871,7 +872,7 @@ security bug filed on a package, because Ubuntu has no security contact:
     >>> params = CreateBugParams(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
-    ...     owner=foobar, security_related=True, private=True)
+    ...     owner=foobar, information_type=InformationType.EMBARGOEDSECURITY)
     >>> new_bug = evolution.createBug(params)
 
     >>> getSubscribers(new_bug)

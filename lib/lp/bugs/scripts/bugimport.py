@@ -40,6 +40,7 @@ from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -281,6 +282,8 @@ class BugImporter:
         # If the product has private_bugs, we force private to True.
         if self.product.private_bugs:
             private = True
+        information_type = convert_to_information_type(
+            private, security_related)
 
         if owner is None:
             owner = self.bug_importer
@@ -288,12 +291,8 @@ class BugImporter:
         msg = self.createMessage(commentnode, defaulttitle=title)
 
         bug = self.product.createBug(CreateBugParams(
-            msg=msg,
-            datecreated=datecreated,
-            title=title,
-            private=private or security_related,
-            security_related=security_related,
-            owner=owner))
+            msg=msg, datecreated=datecreated, title=title,
+            information_type=information_type, owner=owner))
         bugtask = bug.bugtasks[0]
         self.logger.info('Creating Launchpad bug #%d', bug.id)
 

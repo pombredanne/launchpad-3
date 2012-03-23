@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lazr.lifecycle.interfaces import (
@@ -19,6 +19,7 @@ from lp.bugs.mail.commands import (
     TagEmailCommand,
     UnsubscribeEmailCommand,
     )
+from lp.registry.enums import InformationType
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -364,7 +365,8 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.USERDATA, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
     def test_execute_bug_params_with_security(self):
@@ -372,12 +374,14 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         user = self.factory.makePerson()
         login_person(user)
         bug_params = CreateBugParams(
-            title='bug title', owner=user, security_related='yes')
+            title='bug title', owner=user,
+            information_type=InformationType.EMBARGOEDSECURITY)
         command = PrivateEmailCommand('private', ['no'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 

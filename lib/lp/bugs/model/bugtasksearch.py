@@ -1413,14 +1413,15 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
         returns BugTask objects.
     """
     if user is None:
-        return "Bug.private IS FALSE", _nocache_bug_decorator
+        return "Bug.information_type IN (1, 2)", _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
     public_bug_filter = ''
     if not private_only:
-        public_bug_filter = 'Bug.private IS FALSE OR'
+        # 1 == PUBLIC, 2 == UNEMBARGOEDSECURITY
+        public_bug_filter = 'Bug.information_type IN (1, 2) OR'
 
     # A subselect is used here because joining through
     # TeamParticipation is only relevant to the "user-aware"
