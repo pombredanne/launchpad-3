@@ -38,6 +38,7 @@ from lp.registry.interfaces.productjob import (
     IProductNotificationJobSource,
     )
 from lp.registry.model.product import Product
+from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
@@ -49,12 +50,12 @@ from lp.services.propertycache import cachedproperty
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.helpers import (
-    get_contact_email_addresses,
     get_email_template,
     )
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (
+    format_address,
     format_address_for_person,
     simple_sendmail,
     )
@@ -223,6 +224,7 @@ class ProductNotificationJob(ProductJobDerived):
 
     @cachedproperty
     def message_data(self):
+        """See `IProductNotificationJob`."""
         return {
             'product_name': self.product.name,
             'product_displayname': self.product.displayname,
@@ -246,7 +248,8 @@ class ProductNotificationJob(ProductJobDerived):
         raw_body += '\n\n-- \n%s' % reason
         body = MailWrapper().format(raw_body, force_wrap=True)
         headers = {
-            'X-Launchpad-Project': self.product.name,
+            'X-Launchpad-Project':
+                '%(product_displayname)s (%(product_name)s)' % message_data,
             'X-Launchpad-Message-Rationale': rationale,
             }
         return body, headers
@@ -260,15 +263,18 @@ class ProductNotificationJob(ProductJobDerived):
             simple_sendmail(from_address, address, subject, body, headers)
 
     def run(self):
-        """See `BaseRunnableJob`."""
-        product_name = self.product.name
-        template_name = self.email_template_name
-        subject = self.subject
-        from_address = get_contact_email_addresses(self.reviewer)
+        """See `BaseRunnableJob`.
+
+        Sub classes that are updating products may want to make changes to
+        the product before or after upcalling this classes' run() method.
+        """
+        from_address = format_address(
+            'Launchpad', config.canonical.noreply_from_address)
         log.debug(
             "%s is sending a %s notification to the %s maintainers",
-            self.log_name, template_name, product_name)
-        self.sendEmailToMaintainer(template_name, subject, from_address)
+            self.log_name, self.email_template_name, self.product_name)
+        self.sendEmailToMaintainer(
+            self.email_template_name, self.subject, from_address)
         log.debug(
             "%s sent a %s notification to the %s maintainers",
-            self.log_name, template_name, product_name)
+            self.log_name, self.email_template_name, self.product_name)

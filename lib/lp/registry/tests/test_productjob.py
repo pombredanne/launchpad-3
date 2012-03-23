@@ -294,7 +294,8 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertIn(product.owner.name, body)
         self.assertIn('\n\n--\nYou received', body)
         expected_headers = [
-            ('X-Launchpad-Project', product.name),
+            ('X-Launchpad-Project', '%s (%s)' %
+              (product.displayname, product.name)),
             ('X-Launchpad-Message-Rationale', 'Maintainer'),
             ]
         self.assertContentEqual(expected_headers, headers.items())
