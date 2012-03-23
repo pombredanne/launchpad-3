@@ -187,7 +187,6 @@ class YUITestFixtureControllerView(LaunchpadView):
            src="/+yuitest/build/js/yui/loader/loader-min.js"></script>
        <script type="text/javascript"
            src="/+yuitest/build/js/lp/meta.js"></script>
-
        <script type="text/javascript">
             YUI.GlobalConfig = {
                 combine: false,
@@ -245,7 +244,11 @@ class YUITestFixtureControllerView(LaunchpadView):
                 LPJS = new YUI();
             </script>
             <link rel="stylesheet"
-              href="/+icing/yui/assets/skins/sam/skin.css"/>
+                href="/+yuitest/build/js/yui/console/assets/console-core.css" />
+            <link rel="stylesheet"
+                href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css" />
+            <link rel="stylesheet"
+                href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css" />
             <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
             <style>
               /* Taken and customized from testlogger.css */
@@ -332,7 +335,6 @@ class YUITestFixtureControllerView(LaunchpadView):
         # we need to route requests with build/js in them to the combo loader
         # js files so we can load those to bootstap
         if path.startswith('build/js'):
-            full_path = os.path.join(config.root, path)
             self.action = self.COMBOFILE
         else:
             full_path = os.path.join(config.root, 'lib', path)
@@ -426,8 +428,12 @@ class YUITestFixtureControllerView(LaunchpadView):
 
     def renderCOMBOFILE(self):
         """We need to serve the combo files out of the build directory."""
-        self.request.response.setHeader('Content-Type', 'text/javascript')
-        self.request.response.setHeader('Cache-Control', 'no-cache')
+        if self.traversed_path.endswith('js'):
+            self.request.response.setHeader('Content-Type', 'text/javascript')
+            self.request.response.setHeader('Cache-Control', 'no-cache')
+        elif self.traversed_path.endswith('css'):
+            self.request.response.setHeader('Content-Type', 'text/css')
+            self.request.response.setHeader('Cache-Control', 'no-cache')
         return open(
             os.path.join(config.root, self.traversed_path))
 
