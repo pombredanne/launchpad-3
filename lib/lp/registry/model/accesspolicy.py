@@ -353,7 +353,7 @@ class AccessPolicyGrantFlat(StormBase):
     @classmethod
     def findGranteePermissionsByPolicy(cls, policies, grantees=None):
         """See `IAccessPolicyGrantFlatSource`."""
-        ids = [policy.id for policy in policies]
+        policies_by_id = dict((policy.id, policy) for policy in policies)
 
         # A cache for the sharing permissions, keyed on (grantee.id, policy.id)
         permissions_cache = {}
@@ -362,13 +362,14 @@ class AccessPolicyGrantFlat(StormBase):
             # row contains (grantee.id, policy.id, permission_placeholder)
             # Lookup the permission from the previously loaded cache.
             return (
-                row[0], row[1], permissions_cache.get((row[0].id, row[1].id)))
+                row[0], policies_by_id[row[1]],
+                permissions_cache.get((row[0].id, row[1])))
 
         def load_permissions(rows):
             # We now have the grantees and policies we want in the result so
             # load any corresponding permissions and cache them.
             person_ids = set(row[0].id for row in rows)
-            policy_ids = set(row[1].id for row in rows)
+            policy_ids = set(row[1] for row in rows)
             sharing_permission_term = SQL("""
                 CASE MIN(COALESCE(artifact, 0))
                 WHEN 0 THEN ?
@@ -389,14 +390,12 @@ class AccessPolicyGrantFlat(StormBase):
         # The main result set has a placeholder for permission.
         constraints = [
             Person.id == cls.grantee_id,
-            AccessPolicy.id == cls.policy_id,
-            cls.policy_id.is_in(ids)]
+            cls.policy_id.is_in(policies_by_id.keys())]
         if grantees:
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
         result_set = IStore(cls).find(
-            (Person, AccessPolicy,
-             SQL("? as permission", (SharingPermission.NOTHING.name,))),
+            (Person, cls.policy_id),
             *constraints).config(distinct=True)
         return DecoratedResultSet(
             result_set,
