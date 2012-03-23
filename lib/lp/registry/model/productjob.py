@@ -210,7 +210,7 @@ class ProductNotificationJob(ProductJobDerived):
             users = maintainer
         reason = (
             "You received this notification because you are %s of %s.\n%s" %
-            (role, self.product.displayname, canonical_url(self.product)))
+            (role, self.product.displayname, self.message_data['product_url']))
         header = 'Maintainer'
         notification_set = NotificationRecipientSet()
         notification_set.add(users, reason, header)
