@@ -59,7 +59,6 @@ from lp.services.mail.sendmail import (
     format_address_for_person,
     simple_sendmail,
     )
-from lp.services.scripts import log
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -199,6 +198,11 @@ class ProductNotificationJob(ProductJobDerived):
         return self.metadata['email_template_name']
 
     @cachedproperty
+    def reviewer(self):
+        """See `IProductNotificationJob`."""
+        return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
+
+    @cachedproperty
     def recipients(self):
         """See `IProductNotificationJob`."""
         maintainer = self.product.owner
@@ -216,11 +220,6 @@ class ProductNotificationJob(ProductJobDerived):
         notification_set = NotificationRecipientSet()
         notification_set.add(users, reason, header)
         return notification_set
-
-    @cachedproperty
-    def reviewer(self):
-        """See `IProductNotificationJob`."""
-        return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
 
     @cachedproperty
     def message_data(self):
@@ -242,7 +241,7 @@ class ProductNotificationJob(ProductJobDerived):
         return None
 
     def getErrorRecipients(self):
-        """See `IProductNotificationJob`."""
+        """See `BaseRunnableJob`."""
         return [format_address_for_person(self.reviewer)]
 
     def geBodyAndHeaders(self, email_template, address, reply_to=None):
@@ -281,11 +280,5 @@ class ProductNotificationJob(ProductJobDerived):
         """
         from_address = format_address(
             'Launchpad', config.canonical.noreply_from_address)
-        log.debug(
-            "%s is sending a %s notification to the %s maintainers",
-            self.log_name, self.email_template_name, self.product.name)
         self.sendEmailToMaintainer(
             self.email_template_name, self.subject, from_address)
-        log.debug(
-            "%s sent a %s notification to the %s maintainers",
-            self.log_name, self.email_template_name, self.product_name)

@@ -349,7 +349,20 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertEqual(2, len(notifications))
         self.assertEqual(addresses[0], notifications[0]['To'])
         self.assertEqual(addresses[1], notifications[1]['To'])
-        self.assertEqual(
-            'Maintainer', notifications[1]['X-Launchpad-Message-Rationale'])
         self.assertEqual('me@eg.dom', notifications[1]['From'])
         self.assertEqual('frog', notifications[1]['Subject'])
+
+    def test_run(self):
+        # sendEmailToMaintainer() sends an email to the maintainers.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(address, notifications[0]['To'])
+        self.assertEqual(subject, notifications[0]['Subject'])
+        self.assertIn(
+            'Launchpad <noreply@launchpad.net>', notifications[0]['From'])

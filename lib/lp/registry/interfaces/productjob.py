@@ -72,6 +72,46 @@ class IProductJobSource(IJobSource):
 class IProductNotificationJob(IProductJob):
     """A job then sends a notification about a product."""
 
+    subject = Attribute('The subject line of the notification.')
+    email_template_name = Attribute('The name of the email template.')
+    reviewer = Attribute('The user or agent sending the email.')
+    recipients = Attribute('An `INotificationRecipientSet`.')
+    message_data = Attribute(
+        'A dict that is interpolated with the email template.')
+    reply_to = Attribute('The optional address to set as the Reply-To.')
+
+    def geBodyAndHeaders(email_template, address, reply_to=None):
+        """Return a tuple of email message body and headers.
+
+        The body is constructed from the email template and messages_data.
+        The headers are a dict that includes the X-Launchpad-Rationale.
+
+        :param email_template: A string that will be interpolated
+            with message_data.
+        :param address: The email address of the user the message is to.
+        :reply_to: An optinal email address to set as the Reply-To header.
+        :return a tuple (string, dict):
+        """
+
+    def sendEmailToMaintainer(template_name, subject, from_address):
+        """Sent an email to the product maintainer.
+
+        :param email_template_name: The name of the email template to
+            use as the email body.
+        :param subject: The subject line of the notification.
+        :param from_address: The email address sending the email.
+
+        """
+
 
 class IProductNotificationJobSource(IProductJobSource):
     """An interface for creating and finding `IProductNotificationJob`s."""
+
+    def create(product, email_template_name, subject, reviewer):
+        """Create a new `IProductNotificationJob`.
+
+        :param product: An IProduct.
+        :param email_template_name: The name of the email template without
+            the extension.
+        :param reviewer: The user or agent sending the email.
+        """
