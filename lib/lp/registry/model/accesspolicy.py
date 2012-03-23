@@ -16,7 +16,9 @@ from collections import defaultdict
 import pytz
 from storm.expr import (
     And,
+    In,
     Or,
+    Select,
     SQL,
     )
 from storm.properties import (
@@ -384,16 +386,19 @@ class AccessPolicyGrantFlat(StormBase):
                 permissions_cache[person][policy] = (
                     SharingPermission.items[str(permission)])
 
-        constraints = []
+        constraints = [cls.policy_id.is_in(policies_by_id.keys())]
         if grantees:
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
+        # Since the sort time dominates this query, we do the DISTINCT
+        # in a subquery to ensure it's performed first.
         result_set = IStore(cls).find(
             (Person,),
-            Person.id == cls.grantee_id,
-            cls.policy_id.is_in(policies_by_id.keys()),
-            *constraints
-            ).config(distinct=True)
+            In(
+                Person.id,
+                Select(
+                    (cls.grantee_id,), where=And(*constraints),
+                    distinct=True)))
         return DecoratedResultSet(
             result_set,
             result_decorator=set_permission, pre_iter_hook=load_permissions)
