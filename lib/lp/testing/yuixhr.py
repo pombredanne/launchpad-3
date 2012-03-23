@@ -311,8 +311,8 @@ class YUITestFixtureControllerView(LaunchpadView):
             self.action = self.INDEX
             return
         path, ext = os.path.splitext(self.traversed_path)
-        # we need to route requests with build/js in them to the combo loader
-        # js files so we can load those to bootstap
+        # We need to route requests with build/js in them to the combo loader
+        # js files so we can load those to bootstap.
         if path.startswith('build/js'):
             self.action = self.COMBOFILE
         else:
