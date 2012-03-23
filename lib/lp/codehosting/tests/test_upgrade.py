@@ -8,23 +8,26 @@ import logging
 from os.path import dirname
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.repofmt.groupcompress_repo import (
-    RepositoryFormat2a, RepositoryFormat2aSubtree)
+    RepositoryFormat2a,
+    RepositoryFormat2aSubtree,
+    )
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 
 from lp.code.bzr import (
-    BranchFormat,
     branch_changed,
+    BranchFormat,
     get_branch_formats,
     RepositoryFormat,
     )
 from lp.codehosting.bzrutils import read_locked
-from lp.codehosting.upgrade import (
-    Upgrader,
-    )
+from lp.codehosting.upgrade import Upgrader
 from lp.services.config import config
 from lp.testing import (
     temp_dir,

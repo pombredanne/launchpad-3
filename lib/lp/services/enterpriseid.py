@@ -14,6 +14,7 @@ import os
 from lp.registry.model.person import Person
 from lp.services.config import config
 
+
 known_types = {
     'Person': Person,
     }

@@ -19,7 +19,6 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.product import IProduct
-
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,

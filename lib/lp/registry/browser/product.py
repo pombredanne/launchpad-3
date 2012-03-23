@@ -149,6 +149,7 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarNavigationMixin,
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
@@ -193,9 +194,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import (
-    UnsafeFormGetSubmissionError,
-    )
+from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -211,7 +210,8 @@ SPACE = ' '
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
-    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IProduct
 

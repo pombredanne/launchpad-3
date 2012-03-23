@@ -22,7 +22,6 @@ def specification_notification_subject(spec):
     return '[Blueprint %s] %s' % (spec.name, spec.title)
 
 
-@block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     user = IPerson(event.user)
@@ -78,6 +77,18 @@ def notify_specification_modified(spec, event):
                 whiteboard_delta['old'], whiteboard_delta['new'], 72)
             info_lines.append('Whiteboard changed:')
             info_lines.append(whiteboard_diff)
+    if spec_delta.workitems_text is not None:
+        if info_lines:
+            info_lines.append('')
+        workitems_delta = spec_delta.workitems_text
+        if workitems_delta['old'] is '':
+            info_lines.append('Work items set to:')
+            info_lines.append(mail_wrapper.format(workitems_delta['new']))
+        else:
+            workitems_diff = get_unified_diff(
+                workitems_delta['old'], workitems_delta['new'], 72)
+            info_lines.append('Work items changed:')
+            info_lines.append(workitems_diff)
 
     if not info_lines:
         # The specification was modified, but we don't yet support

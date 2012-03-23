@@ -4,7 +4,10 @@
 # Twisted Application Configuration file.
 # Use with "twistd -y <file.tac>", e.g. "twistd -noy server.tac"
 
-from twisted.application import service, strports
+from twisted.application import (
+    service,
+    strports,
+    )
 from twisted.web import server
 
 from lp.services.config import config
