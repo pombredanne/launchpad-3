@@ -705,7 +705,7 @@ parser.validators = (
 
 def initialize_host(
     user, fullname, email, lpuser, private_key, public_key, ssh_key_path,
-    dependencies_dir, directory):
+    use_urandom, dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
     subprocess.call(['apt-get', 'update'])
@@ -1005,11 +1005,11 @@ def stop_lxc(lxcname, ssh_key_path):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    lxc_name, ssh_key_path, dependencies_dir, directory):
+    lxc_name, ssh_key_path, use_urandom, dependencies_dir, directory):
     function_args_map = OrderedDict((
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
-            ssh_key_path, dependencies_dir, directory)),
+            ssh_key_path, use_urandom, dependencies_dir, directory)),
         ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
@@ -1039,6 +1039,7 @@ if __name__ == '__main__':
             args.actions,
             args.lxc_name,
             args.ssh_key_path,
+            args.use_urandom,
             args.dependencies_dir,
             args.directory,
             )
