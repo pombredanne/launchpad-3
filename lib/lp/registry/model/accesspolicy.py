@@ -370,12 +370,8 @@ class AccessPolicyGrantFlat(StormBase):
             # load any corresponding permissions and cache them.
             person_ids = set(row[0].id for row in rows)
             policy_ids = set(row[1] for row in rows)
-            sharing_permission_term = SQL("""
-                CASE MIN(COALESCE(artifact, 0))
-                WHEN 0 THEN ?
-                ELSE ?
-                END
-                """,
+            sharing_permission_term = SQL(
+                "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
                 (SharingPermission.ALL.name, SharingPermission.SOME.name))
             constraints = [
                 cls.grantee_id.is_in(person_ids),
