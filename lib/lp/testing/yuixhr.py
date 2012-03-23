@@ -238,17 +238,17 @@ class YUITestFixtureControllerView(LaunchpadView):
             <title>Test</title>
             %(javascript_block)s
             <script type="text/javascript">
-                // we need this to create a single YUI instance all events and code
-                // talks across. All instances of YUI().use should be based off of
-                // LPJS instead.
-                LPJS = new YUI();
+              // we need this to create a single YUI instance all events and
+              // code talks across. All instances of YUI().use should be
+              // based off of LPJS instead.
+              LPJS = new YUI();
             </script>
             <link rel="stylesheet"
-                href="/+yuitest/build/js/yui/console/assets/console-core.css" />
+              href="/+yuitest/build/js/yui/console/assets/console-core.css"/>
             <link rel="stylesheet"
-                href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css" />
+              href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css"/>
             <link rel="stylesheet"
-                href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css" />
+              href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css"/>
             <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
             <script type="text/javascript" src="%(test_module)s"></script>
           </head>
