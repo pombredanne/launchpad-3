@@ -29,7 +29,8 @@ class TestCelery(TestCaseWithFactory):
         with running('bin/celeryd', cmd_args, env=env) as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
-            bzr_tree.commit('First commit', rev_id='rev1')
+            bzr_tree.commit(
+                'First commit', rev_id='rev1', committer='me@example.org')
             job = BranchScanJob.create(db_branch)
             transaction.commit()
             try:
