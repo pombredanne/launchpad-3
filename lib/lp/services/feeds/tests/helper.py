@@ -26,7 +26,11 @@ if socket.getdefaulttimeout() != original_timeout:
 from cStringIO import StringIO
 from textwrap import wrap
 
-from zope.interface import implements, Interface, Attribute
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
 from BeautifulSoup import BeautifulStoneSoup as BSS
 from BeautifulSoup import SoupStrainer
 

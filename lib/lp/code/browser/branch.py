@@ -121,9 +121,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder

@@ -10,7 +10,6 @@ __all__ = [
 
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -22,13 +21,14 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
-    IAccessPolicySource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
+    IAccessPolicySource,
     )
-from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sharingservice import ISharingService
+from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.webapp.authorization import available_with_permission
 
@@ -76,25 +76,45 @@ class SharingService:
 
     def getSharingPermissions(self):
         """See `ISharingService`."""
+        # We want the permissions displayed in the following order.
+        ordered_permissions = [
+            SharingPermission.ALL,
+            SharingPermission.SOME,
+            SharingPermission.NOTHING
+        ]
         sharing_permissions = []
-        for permission in SharingPermission:
+        for x, permission in enumerate(ordered_permissions):
             item = dict(
-                value=permission.token,
+                index=x,
+                value=permission.name,
                 title=permission.title,
-                description=permission.value.description
+                description=permission.description
             )
             sharing_permissions.append(item)
         return sharing_permissions
 
     @available_with_permission('launchpad.Driver', 'pillar')
-    def getPillarSharees(self, pillar, grantees=None):
+    def getPillarSharees(self, pillar):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        grant_permissions = ap_grant_flat.findGranteesByPolicy(
-            policies, grantees).order_by(
-                "person_sort_key(Person.displayname, Person.name)")
+        # XXX 2012-03-22 wallyworld bug 961836
+        # We want to use person_sort_key(Person.displayname, Person.name) but
+        # StormRangeFactory doesn't support that yet.
+        grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
+            policies).order_by(Person.displayname, Person.name)
+        return grant_permissions
 
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getPillarShareeData(self, pillar):
+        """See `ISharingService`."""
+        grant_permissions = list(self.getPillarSharees(pillar))
+        if not grant_permissions:
+            return None
+        return self.jsonShareeData(grant_permissions)
+
+    def jsonShareeData(self, grant_permissions):
+        """See `ISharingService`."""
         result = []
         person_by_id = {}
         request = get_current_web_service_request()
@@ -111,7 +131,8 @@ class SharingService:
                 person_by_id[grantee.id] = person_data
                 result.append(person_data)
             person_data = person_by_id[grantee.id]
-            person_data['permissions'][policy.type.name] = sharing_permission
+            person_data['permissions'][policy.type.name] = (
+                sharing_permission.name)
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -176,10 +197,13 @@ class SharingService:
             self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
-        sharees = self.getPillarSharees(pillar, [sharee])
-        if not sharees:
+        ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
+        grant_permissions = list(ap_grant_flat.findGranteePermissionsByPolicy(
+            all_pillar_policies, [sharee]))
+        if not grant_permissions:
             return None
-        return sharees[0]
+        [sharee] = self.jsonShareeData(grant_permissions)
+        return sharee
 
     @available_with_permission('launchpad.Edit', 'pillar')
     def deletePillarSharee(self, pillar, sharee,
@@ -211,9 +235,9 @@ class SharingService:
 
         # Second delete any access artifact grants.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
-        to_delete = ap_grant_flat.findArtifactsByGrantee(
-            sharee, pillar_policies)
-        if to_delete.count() > 0:
+        to_delete = list(ap_grant_flat.findArtifactsByGrantee(
+            sharee, pillar_policies))
+        if len(to_delete) > 0:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
             accessartifact_grant_source.revokeByArtifact(to_delete)

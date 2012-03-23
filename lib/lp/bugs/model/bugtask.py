@@ -1394,7 +1394,7 @@ class BugTaskSet:
             BugTask.bug == Bug.id,
             BugTag.bug == Bug.id,
             BugTag.bugID.is_in(bug_ids),
-            BugTask.id.is_in(bugtask_ids))
+            BugTask.id.is_in(bugtask_ids)).order_by(BugTag.tag)
         tags_by_bugtask = defaultdict(list)
         for tag_name, bugtask_id in tags:
             tags_by_bugtask[bugtask_id].append(tag_name)

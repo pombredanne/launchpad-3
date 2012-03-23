@@ -7,10 +7,9 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import pytz
-
-from zope.security.proxy import removeSecurityProxy
 from lazr.lifecycle.event import ObjectModifiedEvent
+import pytz
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.product import License
 from lp.registry.subscribers import (
