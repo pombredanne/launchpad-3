@@ -889,23 +889,6 @@ class IBugEdit(Interface):
         Return True if a change is made, False otherwise.
         """
 
-    @operation_parameters(
-        private=copy_field(IBugPublic['private']),
-        security_related=copy_field(IBugView['security_related']),
-        )
-    @call_with(who=REQUEST_USER)
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setPrivacyAndSecurityRelated(private, security_related, who):
-        """Set bug privacy and security .
-
-            :private: True/False.
-            :security_related: True/False.
-            :who: The IPerson who is making the change.
-
-        Return (private_changed, security_related_changed) tuple.
-        """
-
     def transitionToInformationType(information_type, who):
         """Set the information type for this bug.
 

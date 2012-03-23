@@ -323,8 +323,9 @@ class BugImporter:
 
         # Security bugs must be created private, so set it correctly.
         if not self.product.private_bugs:
-            bug.setPrivacyAndSecurityRelated(
-                private, security_related, owner)
+            information_type = convert_to_information_type(
+                private, security_related)
+            bug.transitionToInformationType(information_type, owner)
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
         if description:

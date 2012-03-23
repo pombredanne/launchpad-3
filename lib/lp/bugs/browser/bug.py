@@ -874,7 +874,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
         # We handle privacy changes by hand instead of leaving it to
         # the usual machinery because we must use
-        # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
+        # bug.transitionToInformationType() to ensure auditing information is
         # recorded.
         bug = self.context.bug
         private = data.pop('private', bug.private)
@@ -882,9 +882,11 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
         user = getUtility(ILaunchBag).user
-        (private_changed, security_related_changed) = (
-            bug.setPrivacyAndSecurityRelated(private, security_related, user))
-        if private_changed:
+        # This will change when the UI does.
+        information_type = convert_to_information_type(
+            private, security_related)
+        changed = bug.transitionToInformationType(information_type, user)
+        if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
         if self.request.is_ajax:
             if private_changed or security_related_changed:

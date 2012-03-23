@@ -1707,24 +1707,19 @@ class Bug(SQLBase):
 
         return bugtask
 
-    def setPrivacyAndSecurityRelated(self, private, security_related, who):
-        """ See `IBug`."""
-        return self.transitionToInformationType(
-            convert_to_information_type(private, security_related), who)
-
     def setPrivate(self, private, who):
         """See `IBug`.
 
         We also record who made the change and when the change took
         place.
         """
-        return self.setPrivacyAndSecurityRelated(
-            private, self.security_related, who)
+        return self.transitionToInformationType(
+            convert_to_information_type(private, self.security_related), who)
 
     def setSecurityRelated(self, security_related, who):
         """Setter for the `security_related` property."""
-        return self.setPrivacyAndSecurityRelated(
-            self.private, security_related, who)
+        return self.transitionToInformationType(
+            convert_to_information_type(self.private, security_related), who)
 
     def transitionToInformationType(self, information_type, who):
         """See `IBug`."""
