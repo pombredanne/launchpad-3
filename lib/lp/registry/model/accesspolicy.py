@@ -11,6 +11,8 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
+from collections import defaultdict
+
 import pytz
 from storm.expr import (
     And,
@@ -355,32 +357,31 @@ class AccessPolicyGrantFlat(StormBase):
         """See `IAccessPolicyGrantFlatSource`."""
         policies_by_id = dict((policy.id, policy) for policy in policies)
 
-        # A cache for the sharing permissions, keyed on (grantee.id, policy.id)
-        permissions_cache = {}
+        # A cache for the sharing permissions, keyed on grantee
+        permissions_cache = defaultdict(dict)
 
-        def set_permission(row):
-            # row contains (grantee.id, policy.id, permission_placeholder)
-            # Lookup the permission from the previously loaded cache.
-            return (
-                row[0], policies_by_id[row[1]],
-                permissions_cache.get((row[0].id, row[1])))
+        def set_permission(person):
+            # Lookup the permissions from the previously loaded cache.
+            return (person[0], permissions_cache[person[0]])
 
-        def load_permissions(rows):
+        def load_permissions(people):
             # We now have the grantees and policies we want in the result so
             # load any corresponding permissions and cache them.
-            person_ids = set(row[0].id for row in rows)
-            policy_ids = set(row[1] for row in rows)
+            people_by_id = dict(
+                (person[0].id, person[0]) for person in people)
             sharing_permission_term = SQL(
                 "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
                 (SharingPermission.ALL.name, SharingPermission.SOME.name))
             constraints = [
-                cls.grantee_id.is_in(person_ids),
-                cls.policy_id.is_in(policy_ids)]
+                cls.grantee_id.is_in(people_by_id.keys()),
+                cls.policy_id.is_in(policies_by_id.keys())]
             result_set = IStore(cls).find(
                 (cls.grantee_id, cls.policy_id, sharing_permission_term),
                 *constraints).group_by(cls.grantee_id, cls.policy_id)
             for (person_id, policy_id, permission) in result_set:
-                permissions_cache[(person_id, policy_id)] = (
+                person = people_by_id[person_id]
+                policy = policies_by_id[policy_id]
+                permissions_cache[person][policy] = (
                     SharingPermission.items[str(permission)])
 
         constraints = []
@@ -388,7 +389,7 @@ class AccessPolicyGrantFlat(StormBase):
             grantee_ids = [grantee.id for grantee in grantees]
             constraints.append(cls.grantee_id.is_in(grantee_ids))
         result_set = IStore(cls).find(
-            (Person, cls.policy_id),
+            (Person,),
             Person.id == cls.grantee_id,
             cls.policy_id.is_in(policies_by_id.keys()),
             *constraints
