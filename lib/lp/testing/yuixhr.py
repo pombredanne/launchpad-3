@@ -157,6 +157,7 @@ class YUITestFixtureControllerView(LaunchpadView):
     """Dynamically loads YUI test along their fixtures run over an app server.
     """
 
+    COMBOFILE = 'COMBOFILE'
     JAVASCRIPT = 'JAVASCRIPT'
     HTML = 'HTML'
     SETUP = 'SETUP'
@@ -181,30 +182,32 @@ class YUITestFixtureControllerView(LaunchpadView):
 
     yui_block_combo = dedent("""\
        <script type="text/javascript"
-            src="%(combo_url)s/?yui/yui/yui-min.js&lp/meta.js&yui/loader/loader-min.js"></script>
+           src="/+yuitest/build/js/yui/yui/yui-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/yui/loader/loader-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/lp/meta.js"></script>
 
        <script type="text/javascript">
             YUI.GlobalConfig = {
-                combine: true,
-                comboBase: '%(combo_url)s/?',
-                root: 'yui/',
-                debug: true
+                combine: false,
+                base: '/+yuitest/build/js/yui/',
+                debug: true,
                 fetchCSS: false,
                 groups: {
                     lp: {
-                        combine: true,
-                        base: '%(combo_url)s/?lp/',
-                        comboBase: '%(combo_url)s/?',
+                        combine: false,
+                        base: '/+yuitest/build/js/lp/',
                         root: 'lp/',
+                        debug: true,
+                        filter: 'raw',
                         // comes from including lp/meta.js
                         modules: LP_MODULES,
                         fetchCSS: false
                     },
                     yui2: {
                         combine: true,
-                        base: '%(combo_url)s/?yui2/',
-                        comboBase: '%(combo_url)s/?',
-                        root: 'yui2/',
+                        base: '/+yuitest/build/js/yui2/',
                         fetchCSS: false,
                         modules: {
                             'yui2-yahoo': {
@@ -324,23 +327,32 @@ class YUITestFixtureControllerView(LaunchpadView):
             self.action = self.INDEX
             return
         path, ext = os.path.splitext(self.traversed_path)
-        full_path = os.path.join(config.root, 'lib', path)
-        if not os.path.exists(full_path + '.py'):
-            raise NotFound(self, full_path + '.py', self.request)
-        if not os.path.exists(full_path + '.js'):
-            raise NotFound(self, full_path + '.js', self.request)
 
-        if ext == '.js':
-            self.action = self.JAVASCRIPT
+
+        # we need to route requests with build/js in them to the combo loader
+        # js files so we can load those to bootstap
+        if path.startswith('build/js'):
+            full_path = os.path.join(config.root, path)
+            self.action = self.COMBOFILE
         else:
-            if self.request.method == 'GET':
-                self.action = self.HTML
+            full_path = os.path.join(config.root, 'lib', path)
+
+            if not os.path.exists(full_path + '.py'):
+                raise NotFound(self, full_path + '.py', self.request)
+            if not os.path.exists(full_path + '.js'):
+                raise NotFound(self, full_path + '.js', self.request)
+
+            if ext == '.js':
+                self.action = self.JAVASCRIPT
             else:
-                self.fixtures = self.request.form['fixtures'].split(',')
-                if self.request.form['action'] == 'setup':
-                    self.action = self.SETUP
+                if self.request.method == 'GET':
+                    self.action = self.HTML
                 else:
-                    self.action = self.TEARDOWN
+                    self.fixtures = self.request.form['fixtures'].split(',')
+                    if self.request.form['action'] == 'setup':
+                        self.action = self.SETUP
+                    else:
+                        self.action = self.TEARDOWN
 
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
@@ -411,6 +423,13 @@ class YUITestFixtureControllerView(LaunchpadView):
         return self.index_template % {
             'revno': revno,
             'tests': '\n'.join(test_lines)}
+
+    def renderCOMBOFILE(self):
+        """We need to serve the combo files out of the build directory."""
+        self.request.response.setHeader('Content-Type', 'text/javascript')
+        self.request.response.setHeader('Cache-Control', 'no-cache')
+        return open(
+            os.path.join(config.root, self.traversed_path))
 
     def renderJAVASCRIPT(self):
         self.request.response.setHeader('Content-Type', 'text/javascript')
