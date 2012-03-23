@@ -238,7 +238,11 @@ class ProductNotificationJob(ProductJobDerived):
     def geBodyAndHeaders(self, email_template, address):
         """See `IProductNotificationJob`."""
         reason, rationale = self.recipients.getReason(address)
-        raw_body = email_template % self.metadata
+        maintainer = self.recipients._emailToPerson[address]
+        message_data = dict(self.message_data)
+        message_data['maintainer_name'] = maintainer.name
+        message_data['maintainer_displayname'] = maintainer.displayname
+        raw_body = email_template % message_data
         raw_body += '\n\n-- \n%s' % reason
         body = MailWrapper().format(raw_body, force_wrap=True)
         headers = {

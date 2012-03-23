@@ -286,9 +286,12 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         job = ProductNotificationJob.create(*data)
         product, email_template_name, subject, reviewer = data
         [address] = job.recipients.getEmails()
-        email_template = 'hello'
+        email_template = (
+            'hello %(maintainer_name)s %(product_name)s %(reviewer_name)s')
         body, headers = job.geBodyAndHeaders(email_template, address)
-        self.assertIn(canonical_url(product), body)
+        self.assertIn(reviewer.name, body)
+        self.assertIn(product.name, body)
+        self.assertIn(product.owner.name, body)
         self.assertIn('\n\n--\nYou received', body)
         expected_headers = [
             ('X-Launchpad-Project', product.name),
