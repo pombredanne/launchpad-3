@@ -370,12 +370,12 @@ class AccessPolicyGrantFlat(StormBase):
             person_ids = set(row[0].id for row in rows)
             policy_ids = set(row[1].id for row in rows)
             sharing_permission_term = SQL("""
-                CASE(
-                    MIN(COALESCE(artifact, 0)))
-                WHEN 0 THEN '%s'
-                ELSE '%s'
+                CASE MIN(COALESCE(artifact, 0))
+                WHEN 0 THEN ?
+                ELSE ?
                 END
-            """% (SharingPermission.ALL.name, SharingPermission.SOME.name))
+                """,
+                (SharingPermission.ALL.name, SharingPermission.SOME.name))
             constraints = [
                 cls.grantee_id.is_in(person_ids),
                 cls.policy_id.is_in(policy_ids)]
@@ -384,7 +384,7 @@ class AccessPolicyGrantFlat(StormBase):
                 *constraints).group_by(cls.grantee_id, cls.policy_id)
             for (person_id, policy_id, permission) in result_set:
                 permissions_cache[(person_id, policy_id)] = (
-                    SharingPermission.items[permission])
+                    SharingPermission.items[str(permission)])
 
         # The main result set has a placeholder for permission.
         constraints = [
@@ -396,7 +396,7 @@ class AccessPolicyGrantFlat(StormBase):
             constraints.append(cls.grantee_id.is_in(grantee_ids))
         result_set = IStore(cls).find(
             (Person, AccessPolicy,
-             SQL("'%s' as permission" % SharingPermission.NOTHING.name)),
+             SQL("? as permission", (SharingPermission.NOTHING.name,))),
             *constraints).config(distinct=True)
         return DecoratedResultSet(
             result_set,
