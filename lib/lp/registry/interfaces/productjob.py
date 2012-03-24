@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IProductJob',
     'IProductJobSource',
+    'IProductNotificationJob',
+    'IProductNotificationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -63,4 +65,57 @@ class IProductJobSource(IJobSource):
         :param job_type: Match jobs of a specific type. Type is expected
             to be a class name.
         :return: A `ResultSet` yielding `IProductJob`.
+        """
+
+
+class IProductNotificationJob(IProductJob):
+    """A job that sends a notification about a product."""
+
+    subject = Attribute('The subject line of the notification.')
+    email_template_name = Attribute(
+        'The name of the email template to create the message body from.')
+    reviewer = Attribute('The user or agent sending the email.')
+    recipients = Attribute('An `INotificationRecipientSet`.')
+    message_data = Attribute(
+        'A dict that is interpolated with the email template.')
+    reply_to = Attribute('The optional address to set as the Reply-To.')
+
+    def getBodyAndHeaders(email_template, address, reply_to=None):
+        """Return a tuple of email message body and headers.
+
+        The body is constructed from the email template and message_data.
+        The headers are a dict that includes the X-Launchpad-Rationale.
+
+        :param email_template: A string that will be interpolated
+            with message_data.
+        :param address: The email address of the user the message is to.
+        :reply_to: An optional email address to set as the Reply-To header.
+        :return a tuple (string, dict):
+        """
+
+    def sendEmailToMaintainer(template_name, subject, from_address):
+        """Send an email to the product maintainer.
+
+        :param email_template_name: The name of the email template to
+            use as the email body.
+        :param subject: The subject line of the notification.
+        :param from_address: The email address sending the email.
+
+        """
+
+
+class IProductNotificationJobSource(IProductJobSource):
+    """An interface for creating `IProductNotificationJob`s."""
+
+    def create(product, email_template_name, subject,
+               reviewer, reply_to_commercial=False):
+        """Create a new `IProductNotificationJob`.
+
+        :param product: An IProduct.
+        :param email_template_name: The name of the email template without
+            the extension.
+        :param subject: The subject line of the notification.
+        :param reviewer: The user or agent sending the email.
+        :param reply_to_commercial: Set the reply_to property to the
+            commercial email address.
         """
