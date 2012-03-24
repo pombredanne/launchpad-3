@@ -226,12 +226,14 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             True,
             IProductNotificationJobSource.providedBy(ProductNotificationJob))
         job = ProductNotificationJob.create(
-            product, email_template_name, subject, reviewer)
+            product, email_template_name, subject, reviewer,
+            reply_to_commercial=False)
         self.assertIsInstance(job, ProductNotificationJob)
         self.assertEqual(product, job.product)
         self.assertEqual(email_template_name, job.email_template_name)
         self.assertEqual(subject, job.subject)
         self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(False, job.reply_to_commercial)
 
     def test_getErrorRecipients(self):
         # The reviewer is the error recipient.

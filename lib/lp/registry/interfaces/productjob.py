@@ -107,7 +107,8 @@ class IProductNotificationJob(IProductJob):
 class IProductNotificationJobSource(IProductJobSource):
     """An interface for creating `IProductNotificationJob`s."""
 
-    def create(product, email_template_name, subject, reviewer):
+    def create(product, email_template_name, subject,
+               reviewer, reply_to_commercial=False):
         """Create a new `IProductNotificationJob`.
 
         :param product: An IProduct.
@@ -115,4 +116,6 @@ class IProductNotificationJobSource(IProductJobSource):
             the extension.
         :param subject: The subject line of the notification.
         :param reviewer: The user or agent sending the email.
+        :param reply_to_commercial: Set the reply_to property to the
+            commercial email address.
         """
