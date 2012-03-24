@@ -172,12 +172,14 @@ class ProductNotificationJob(ProductJobDerived):
     class_job_type = ProductJobType.REVIEWER_NOTIFICATION
 
     @classmethod
-    def create(cls, product, email_template_name, subject, reviewer):
+    def create(cls, product, email_template_name,
+               subject, reviewer, reply_to_commercial=False):
         """See `IProductNotificationJob`."""
         metadata = {
             'email_template_name': email_template_name,
             'subject': subject,
-            'reviewer_id': reviewer.id
+            'reviewer_id': reviewer.id,
+            'reply_to_commercial': reply_to_commercial,
             }
         return super(ProductNotificationJob, cls).create(product, metadata)
 
@@ -195,6 +197,18 @@ class ProductNotificationJob(ProductJobDerived):
     def reviewer(self):
         """See `IProductNotificationJob`."""
         return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
+
+    @property
+    def reply_to_commercial(self):
+        """See `IProductNotificationJob`."""
+        return self.metadata['reply_to_commercial']
+
+    @cachedproperty
+    def reply_to(self):
+        """See `IProductNotificationJob`."""
+        if self.reply_to_commercial:
+            return 'Commercial <commercial@launchpad.net>'
+        return None
 
     @cachedproperty
     def recipients(self):
@@ -226,19 +240,11 @@ class ProductNotificationJob(ProductJobDerived):
             'reviewer_displayname': self.reviewer.displayname,
             }
 
-    @cachedproperty
-    def reply_to(self):
-        """See `IProductNotificationJob`."""
-        if 'commercial' in self.email_template_name:
-            return format_address(
-                'Commercial', 'commercial@launchpad.net')
-        return None
-
     def getErrorRecipients(self):
         """See `BaseRunnableJob`."""
         return [format_address_for_person(self.reviewer)]
 
-    def geBodyAndHeaders(self, email_template, address, reply_to=None):
+    def getBodyAndHeaders(self, email_template, address, reply_to=None):
         """See `IProductNotificationJob`."""
         reason, rationale = self.recipients.getReason(address)
         maintainer = self.recipients._emailToPerson[address]
@@ -262,15 +268,15 @@ class ProductNotificationJob(ProductJobDerived):
         email_template = get_email_template(
             "%s.txt" % template_name, app='registry')
         for address in self.recipients.getEmails():
-            body, headers = self.geBodyAndHeaders(
+            body, headers = self.getBodyAndHeaders(
                 email_template, address, self.reply_to)
             simple_sendmail(from_address, address, subject, body, headers)
 
     def run(self):
         """See `BaseRunnableJob`.
 
-        Subclasses that are updating products can want to make changes to
-        the product before or after upcalling this classes' run() method.
+         Subclasses that are updating products may make changes to the product
+         before or after calling this class' run() method.
         """
         from_address = format_address(
             'Launchpad', config.canonical.noreply_from_address)
