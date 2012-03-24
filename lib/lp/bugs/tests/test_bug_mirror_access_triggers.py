@@ -136,7 +136,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=True)
         self.assertIsNot(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        removeSecurityProxy(bug).setPrivate(False, bug.owner)
+        bug.private = False
         self.assertIs(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
 
@@ -144,7 +144,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=False)
         self.assertIs(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        removeSecurityProxy(bug).setPrivate(True, bug.owner)
+        bug.private = True
         self.assertIsNot(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
         self.assertEqual((1, 1), self.assertMirrored(bug))
@@ -158,7 +158,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.USERDATA],
             self.getPolicyTypesForArtifact(artifact))
-        removeSecurityProxy(bug).setSecurityRelated(True, bug.owner)
+        bug.security_related = True
         self.assertEqual((1, 1), self.assertMirrored(bug))
         self.assertContentEqual(
             [InformationType.EMBARGOEDSECURITY],

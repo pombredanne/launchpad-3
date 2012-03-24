@@ -157,11 +157,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from lp.registry.enums import (
-    InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    SECURITY_INFORMATION_TYPES,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -351,13 +347,12 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    _private = BoolCol(dbName='private', notNull=True, default=False)
+    private = BoolCol(notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    _security_related = BoolCol(
-        dbName='security_related', notNull=True, default=False)
+    security_related = BoolCol(notNull=True, default=False)
     information_type = EnumCol(
         enum=InformationType, default=InformationType.PUBLIC)
 
@@ -393,20 +388,6 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
-
-    @property
-    def private(self):
-        if self.information_type:
-            return self.information_type in PRIVATE_INFORMATION_TYPES
-        else:
-            return self._private
-
-    @property
-    def security_related(self):
-        if self.information_type:
-            return self.information_type in SECURITY_INFORMATION_TYPES
-        else:
-            return self._security_related
 
     @cachedproperty
     def _subscriber_cache(self):
@@ -1717,11 +1698,11 @@ class Bug(SQLBase):
         return bugtask
 
     def _setInformationType(self):
-        if self._private and self._security_related:
+        if self.private and self.security_related:
             self.information_type = InformationType.EMBARGOEDSECURITY
-        elif self._private:
+        elif self.private:
             self.information_type = InformationType.USERDATA
-        elif self._security_related:
+        elif self.security_related:
             self.information_type = InformationType.UNEMBARGOEDSECURITY
         else:
             self.information_type = InformationType.PUBLIC
@@ -1753,7 +1734,7 @@ class Bug(SQLBase):
                     raise BugCannotBePrivate(
                         "Multi-pillar bugs cannot be private.")
             private_changed = True
-            self._private = private
+            self.private = private
 
             if private:
                 self.who_made_private = who
@@ -1769,7 +1750,7 @@ class Bug(SQLBase):
 
         if self.security_related != security_related:
             security_related_changed = True
-            self._security_related = security_related
+            self.security_related = security_related
 
         if private_changed or security_related_changed:
             # Correct the heat for the bug immediately, so that we don't have
@@ -2848,6 +2829,9 @@ class BugSet:
                 bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
+        else:
+            # nothing to do
+            pass
 
         # Create the task on a product if one was passed.
         if params.product:
@@ -2924,9 +2908,9 @@ class BugSet:
 
         bug = Bug(
             title=params.title, description=params.description,
-            _private=params.private, owner=params.owner,
+            private=params.private, owner=params.owner,
             datecreated=params.datecreated,
-            _security_related=params.security_related,
+            security_related=params.security_related,
             **extra_params)
 
         if params.subscribe_owner:

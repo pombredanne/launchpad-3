@@ -287,7 +287,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('unsecure code', bug.title)
-        self.assertTrue(bug.security_related)
+        self.assertEqual(True, bug.security_related)
         self.assertEqual(['ajax'], bug.tags)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
@@ -310,7 +310,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('security issue', bug.title)
-        self.assertTrue(bug.security_related)
+        self.assertEqual(True, bug.security_related)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
         recipients = set()
