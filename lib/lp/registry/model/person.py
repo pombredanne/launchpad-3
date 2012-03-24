@@ -1744,14 +1744,14 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug._private == True,
+                    Bug.private == True,
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug._private == True, BugTask.assignee == self.id)),
+                where=And(Bug.private == True, BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(
