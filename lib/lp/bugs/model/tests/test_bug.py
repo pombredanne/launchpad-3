@@ -9,6 +9,7 @@ from datetime import (
     )
 
 from pytz import UTC
+from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
@@ -969,6 +970,22 @@ class TestBugPrivacy(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_information_type_does_not_leak(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.addSubscription(product.owner, product.owner)
+        reporter = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            private=True, product=product, owner=reporter)
+        recipients = Store.of(bug).using(
+            BugNotificationRecipient,
+            Join(BugNotification, BugNotification.bugID == bug.id)).find(
+            BugNotificationRecipient,
+            BugNotificationRecipient.bug_notificationID ==
+                BugNotification.id)
+        self.assertEqual(
+            [reporter], [recipient.person for recipient in recipients])
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
