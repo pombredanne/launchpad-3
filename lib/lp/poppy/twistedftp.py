@@ -28,7 +28,6 @@ from twisted.cred.portal import (
 from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.python import filepath
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.poppy import get_poppy_root

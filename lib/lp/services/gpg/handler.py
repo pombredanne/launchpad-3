@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 import atexit
-import errno
 import httplib
 import os
 import shutil
