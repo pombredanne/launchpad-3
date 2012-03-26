@@ -39,7 +39,7 @@ class DecoratedResultSet(object):
     delegates(IResultSet, context='result_set')
 
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
-                 slice_info=False):
+                 slice_info=False, return_both=False):
         """
         Wrap `result_set` in a decorator.
 
@@ -55,23 +55,30 @@ class DecoratedResultSet(object):
         :param slice_info: If True pass information about the slice parameters
             to the result_decorator and pre_iter_hook. any() and similar
             methods will cause None to be supplied.
+        :param return_both: If True return both the plain and decorated
+            values as a tuple.
         """
         self.result_set = result_set
         self.result_decorator = result_decorator
         self.pre_iter_hook = pre_iter_hook
         self.slice_info = slice_info
+        self.return_both = return_both
 
     def decorate_or_none(self, result, row_index=None):
         """Decorate a result or return None if the result is itself None"""
         if result is None:
-            return None
+            decorated = None
         else:
             if self.result_decorator is None:
-                return result
+                decorated = result
             elif self.slice_info:
-                return self.result_decorator(result, row_index)
+                decorated = self.result_decorator(result, row_index)
             else:
-                return self.result_decorator(result)
+                decorated = self.result_decorator(result)
+        if self.return_both:
+            return (result, decorated)
+        else:
+            return decorated
 
     def copy(self, *args, **kwargs):
         """See `IResultSet`.
@@ -81,13 +88,17 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.copy(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)
 
     def config(self, *args, **kwargs):
         """See `IResultSet`.
 
         :return: The decorated result set.after updating the config.
         """
+        return_both = kwargs.pop('return_both', None)
+        if return_both is not None:
+            self.return_both = return_both
+
         self.result_set.config(*args, **kwargs)
         return self
 
@@ -173,7 +184,7 @@ class DecoratedResultSet(object):
         new_result_set = self.result_set.order_by(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)
 
     def get_plain_result_set(self):
         """Return the plain Storm result set."""
@@ -195,4 +206,4 @@ class DecoratedResultSet(object):
             new_result_set = self.result_set.find(*args, **kwargs)
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
-            self.slice_info)
+            self.slice_info, self.return_both)
