@@ -1,22 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from calendar import timegm
-from datetime import (
-    datetime,
-    timedelta,
-    )
-from math import floor
-import os
-from time import time
-
-from pytz import UTC
-from testtools.matchers import (
-    LessThan,
-    Not,
-    )
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
