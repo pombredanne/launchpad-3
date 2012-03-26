@@ -1522,32 +1522,34 @@ class Person(
 
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
+        from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
+        from lp.bugs.model.bugtasksearch import search_bugs
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         today = datetime.today().date()
         search_params = BugTaskSearchParams(
             user, assignee=any(*self.participant_ids),
             milestone_dateexpected_before=date,
             milestone_dateexpected_after=today)
-        # BugTaskSet.search() performs eager loading for
-        # Product/SourcePackageName, but we want that for the ones below as
-        # well, so we do it with prejoins.
-        prejoins = [
-            (ProductSeries, LeftJoin(
-                ProductSeries, BugTask.productseries == ProductSeries.id)),
-            (DistroSeries, LeftJoin(
-                DistroSeries, BugTask.distroseries == DistroSeries.id)),
-            (Distribution, LeftJoin(
-                Distribution, BugTask.distribution == Distribution.id)),
-            (Milestone, LeftJoin(
-                Milestone, BugTask.milestone == Milestone.id)),
-            (Person, LeftJoin(
-                Person, BugTask.assignee == Person.id)),
-            ]
-        results = getUtility(IBugTaskSet).search(
-            search_params, prejoins=prejoins)
+        def eager_load(tasks):
+            bulk.load_related(Bug, tasks, ['bugID'])
+            bulk.load_related(Product, tasks, ['productID'])
+            bulk.load_related(ProductSeries, tasks, ['productseriesID'])
+            bulk.load_related(Distribution, tasks, ['distributionID'])
+            bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
+            bulk.load_related(
+                SourcePackageName, tasks, ['sourcepackagenameID'])
+            bulk.load_related(Person, tasks, ['assigneeID'])
+            bulk.load_related(Milestone, tasks, ['milestoneID'])
+
+        # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
+        # twice when we do nested iterations on this.
+        results = list(search_bugs(
+            BugTask, prejoins=[], pre_iter_hook=eager_load,
+            alternatives=[search_params]))
 
         for task in results:
             # We skip masters (instead of slaves) from conjoined relationships
@@ -1562,14 +1564,19 @@ class Person(
                 if (productseries.id == dev_focus_id and
                     task.status not in BugTask._NON_CONJOINED_STATUSES):
                     continue
-            elif (distroseries is not None
-                  and task.sourcepackagename is not None):
+            elif distroseries is not None:
+                candidate = None
+                for possible_slave in results:
+                    sourcepackagename_id = possible_slave.sourcepackagenameID
+                    if sourcepackagename_id == task.sourcepackagenameID:
+                        candidate = possible_slave
                 # Distribution.currentseries is expensive to run for every
                 # bugtask (as it goes through every series of that
                 # distribution), but it's a cached property and there's only
                 # one distribution with bugs in LP, so we can afford to do
                 # it here.
-                if distroseries.distribution.currentseries == distroseries:
+                if (candidate is not None and
+                    distroseries.distribution.currentseries == distroseries):
                     continue
             yield task
 

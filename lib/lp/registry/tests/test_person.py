@@ -1280,11 +1280,10 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         # 5. One to get all SpecWorkItem/Specification milestones;
         # 6. One to get all Specification products;
         # 7. One to get all Specification distributions;
-        self.assertThat(recorder, HasQueryCount(LessThan(8)))
+        self.assertThat(recorder, HasQueryCount(Equals(7)))
 
 
 class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
-
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -1389,3 +1388,71 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
             self.today + timedelta(days=1), user=None))
 
         self.assertEqual([slave], bugtasks)
+
+    def _assignBugTaskToTeamOwnerAndSetMilestone(self, task, milestone):
+        self._assignBugTaskToTeamOwner(task)
+        removeSecurityProxy(task).milestone = milestone
+
+    def test_query_count(self):
+        # Create one Product bugtask;
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        product_bug = self.factory.makeBug(product=milestone.product)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            product_bug.bugtasks[0], milestone)
+
+        # One ProductSeries bugtask;
+        productseries_bug = self.factory.makeBug(
+            series=milestone.productseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            productseries_bug.bugtasks[1], milestone)
+
+        # One DistroSeries bugtask;
+        distro = self.factory.makeDistribution()
+        distro_milestone = self.factory.makeMilestone(
+            distribution=distro, dateexpected=self.today)
+        distroseries_bug = self.factory.makeBug(
+            series=distro_milestone.distroseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distroseries_bug.bugtasks[1], distro_milestone)
+
+        # One Distribution bugtask;
+        distro_bug = self.factory.makeBug(
+            distribution=distro_milestone.distribution)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distro_bug.bugtasks[0], distro_milestone)
+
+        # One SourcePackage bugtask;
+        distroseries = distro_milestone.distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        sourcepackage_bug = self.factory.makeBug(
+            sourcepackagename=sourcepackagename, distribution=distro)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            sourcepackage_bug.bugtasks[0], distro_milestone)
+
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            tasks = list(self.team.getAssignedBugTasksDueBefore(
+                self.today + timedelta(days=1), user=None))
+            for task in tasks:
+                task.bug
+                task.target
+                task.milestone
+                task.assignee
+        self.assertEqual(5, len(tasks))
+        # 1. One query to get all team members;
+        # 2. One to get all BugTasks;
+        # 3. One to get all Bugs;
+        # 4. One to get all assignees;
+        # 5. One to get all milestones;
+        # 6. One to get all products;
+        # 7. One to get all productseries;
+        # 8. One to get all distributions;
+        # 9. One to get all distroseries;
+        # 10. One to get all sourcepackagenames;
+        # 11. One to get all distroseries of a bug's distro. (See comment on
+        # getAssignedBugTasksDueBefore() to understand why it's needed)
+        self.assertThat(recorder, HasQueryCount(Equals(11)))
