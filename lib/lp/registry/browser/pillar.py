@@ -10,8 +10,7 @@ __all__ = [
     'PillarBugsMenu',
     'PillarView',
     'PillarNavigationMixin',
-    'PillarPersonSharingView',
-    'PillarSharingView',
+    'PillarPersonSharingView', 'PillarSharingView',
     ]
 
 
@@ -70,6 +69,7 @@ from lp.services.webapp.menu import (
     NavigationMenu,
     )
 from lp.services.webapp.publisher import (
+    canonical_url,
     LaunchpadView,
     nearest,
     stepthrough,
@@ -388,7 +388,7 @@ class PillarPersonSharingView(LaunchpadView):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
                 bugs.append(artifact)
-            elif IBranche.providedBy(concrete):
+            elif IBranch.providedBy(concrete):
                 branches.append(artifact)
 
         self.bugs = bugs

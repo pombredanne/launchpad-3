@@ -7,6 +7,21 @@
   i18n:domain="launchpad"
 >
 
+<head>
+    <metal:block fill-slot="head_epilogue">
+    <script>
+            LPJS.use('base', 'node', 'event', 'lp.registry.sharing.details',
+                function(Y) {
+            Y.on('domready', function() {
+                var config = {branches: LP.cache.branches};
+                var details_widget = new Y.lp.registry.sharing.details.SharingDetailsTable(config);
+                details_widget.render();
+            });
+          });
+    </script>
+    </metal:block>
+</head>
+
 <body>
   <div metal:fill-slot="main">
     <div id="observer-summary">
@@ -18,9 +33,9 @@
 
       <tal:is-team condition="view/person/is_team">
         <tal:members>3</tal:members> team members can view these bugs and
-        branches. 
+        branches.
       </tal:is-team>
-      <p>
+      </p>
     </div>
 
     <table id="shared-table" class="listing sortable">
@@ -37,6 +52,7 @@
           <th colspan="2" width="">
             <a href="#" class="sortheader">Via</a>
           </th>
+        </tr>
       </thead>
       <tbody id="sharing-table-body"></tbody>
     </table>
