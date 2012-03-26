@@ -312,8 +312,9 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
         """Changing a template makes the translations split and then
         re-merged in the new target sharing set."""
         potemplate = self.factory.makePOTemplate(name='template')
-        other_ps = self.factory.makeProductSeries(
-            product=potemplate.productseries.product)
+        product = potemplate.productseries.product
+        other_ps = self.factory.makeProductSeries(product=product)
+        product.development_focus = other_ps
         old_shared = self.factory.makePOTemplate(name='template',
                                                  productseries=other_ps)
         new_shared = self.factory.makePOTemplate(name='renamed',

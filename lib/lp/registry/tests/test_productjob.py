@@ -11,7 +11,6 @@ from datetime import (
     )
 
 import pytz
-
 from zope.interface import (
     classProvides,
     implements,
@@ -22,16 +21,25 @@ from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
+    IProductNotificationJobSource,
     )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
+    ProductNotificationJob,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.mail_helpers import pop_notifications
+from lp.services.webapp.publisher import canonical_url
 
 
 class ProductJobTestCase(TestCaseWithFactory):
@@ -184,3 +192,180 @@ class ProductJobDerivedTestCase(TestCaseWithFactory):
         oops_vars = job.getOopsVars()
         self.assertIs(True, len(oops_vars) > 1)
         self.assertIn(('product', product.name), oops_vars)
+
+
+class ProductNotificationJobTestCase(TestCaseWithFactory):
+    """Test case for the ProductNotificationJob class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def make_notification_data(self):
+        product = self.factory.makeProduct()
+        reviewer = self.factory.makePerson('reviewer@eg.com', name='reviewer')
+        subject = "test subject"
+        email_template_name = 'product-license-dont-know'
+        return product, email_template_name, subject, reviewer
+
+    def make_maintainer_team(self, product):
+        team = self.factory.makeTeam(
+            owner=product.owner,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        team_admin = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                team_admin, team.teamowner, status=TeamMembershipStatus.ADMIN)
+            product.owner = team
+        return team, team_admin
+
+    def test_create(self):
+        # Create an instance of ProductNotificationJob that stores
+        # the notification information.
+        data = self.make_notification_data()
+        product, email_template_name, subject, reviewer = data
+        self.assertIs(
+            True,
+            IProductNotificationJobSource.providedBy(ProductNotificationJob))
+        job = ProductNotificationJob.create(
+            product, email_template_name, subject, reviewer,
+            reply_to_commercial=False)
+        self.assertIsInstance(job, ProductNotificationJob)
+        self.assertEqual(product, job.product)
+        self.assertEqual(email_template_name, job.email_template_name)
+        self.assertEqual(subject, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(False, job.reply_to_commercial)
+
+    def test_getErrorRecipients(self):
+        # The reviewer is the error recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        self.assertEqual(
+            ['Reviewer <reviewer@eg.com>'], job.getErrorRecipients())
+
+    def test_reply_to_commercial(self):
+        # Commercial emails have the commercial@launchpad.net reply-to
+        # by setting the reply_to_commercial arg to True.
+        data = list(self.make_notification_data())
+        data.append(True)
+        job = ProductNotificationJob.create(*data)
+        self.assertEqual('Commercial <commercial@launchpad.net>', job.reply_to)
+
+    def test_reply_to_non_commercial(self):
+        # Non-commercial emails do not have a reply-to.
+        data = list(self.make_notification_data())
+        data.append(False)
+        job = ProductNotificationJob.create(*data)
+        self.assertIs(None, job.reply_to)
+
+    def test_recipients_user(self):
+        # The product maintainer is the recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        recipients = job.recipients
+        self.assertEqual([product.owner], recipients.getRecipients())
+        reason, header = recipients.getReason(product.owner)
+        self.assertEqual('Maintainer', header)
+        self.assertIn(canonical_url(product), reason)
+        self.assertIn(
+            'you are the maintainer of %s' % product.displayname, reason)
+
+    def test_recipients_team(self):
+        # The product maintainer team admins are the recipient.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        team, team_admin = self.make_maintainer_team(product)
+        recipients = job.recipients
+        self.assertContentEqual(
+            [team.teamowner, team_admin], recipients.getRecipients())
+        reason, header = recipients.getReason(team.teamowner)
+        self.assertEqual('Maintainer', header)
+        self.assertIn(canonical_url(product), reason)
+        self.assertIn(
+            'you are an admin of %s which is the maintainer of %s' %
+            (team.displayname, product.displayname),
+            reason)
+
+    def test_message_data(self):
+        # The message_data is a dict of interpolatable strings.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        self.assertEqual(product.name, job.message_data['product_name'])
+        self.assertEqual(
+            product.displayname, job.message_data['product_displayname'])
+        self.assertEqual(
+            canonical_url(product), job.message_data['product_url'])
+        self.assertEqual(reviewer.name, job.message_data['reviewer_name'])
+        self.assertEqual(
+            reviewer.displayname, job.message_data['reviewer_displayname'])
+
+    def test_getBodyAndHeaders_with_reply_to(self):
+        # The body and headers contain reasons and rationales.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        email_template = (
+            'hello %(user_name)s %(product_name)s %(reviewer_name)s')
+        reply_to = 'me@eg.dom'
+        body, headers = job.getBodyAndHeaders(
+            email_template, address, reply_to)
+        self.assertIn(reviewer.name, body)
+        self.assertIn(product.name, body)
+        self.assertIn(product.owner.name, body)
+        self.assertIn('\n\n--\nYou received', body)
+        expected_headers = [
+            ('X-Launchpad-Project', '%s (%s)' %
+              (product.displayname, product.name)),
+            ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ('Reply-To', reply_to),
+            ]
+        self.assertContentEqual(expected_headers, headers.items())
+
+    def test_getBodyAndHeaders_without_reply_to(self):
+        # The reply-to is an optional argument.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        email_template = 'hello'
+        body, headers = job.getBodyAndHeaders(email_template, address)
+        expected_headers = [
+            ('X-Launchpad-Project', '%s (%s)' %
+              (product.displayname, product.name)),
+            ('X-Launchpad-Message-Rationale', 'Maintainer'),
+            ]
+        self.assertContentEqual(expected_headers, headers.items())
+
+    def test_sendEmailToMaintainer(self):
+        # sendEmailToMaintainer() sends an email to the maintainers.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        team, team_admin = self.make_maintainer_team(product)
+        addresses = job.recipients.getEmails()
+        pop_notifications()
+        job.sendEmailToMaintainer(email_template_name, 'frog', 'me@eg.dom')
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        self.assertEqual(addresses[0], notifications[0]['To'])
+        self.assertEqual(addresses[1], notifications[1]['To'])
+        self.assertEqual('me@eg.dom', notifications[1]['From'])
+        self.assertEqual('frog', notifications[1]['Subject'])
+
+    def test_run(self):
+        # sendEmailToMaintainer() sends an email to the maintainers.
+        data = self.make_notification_data()
+        job = ProductNotificationJob.create(*data)
+        product, email_template_name, subject, reviewer = data
+        [address] = job.recipients.getEmails()
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(address, notifications[0]['To'])
+        self.assertEqual(subject, notifications[0]['Subject'])
+        self.assertIn(
+            'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
