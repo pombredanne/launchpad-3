@@ -363,7 +363,7 @@ class PillarPersonSharingView(LaunchpadView):
     label = "Information shared with person or team"
 
     def initialize(self):
-        enabled_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
         enabled = bool(getFeatureFlag(enabled_flag))
         if not enabled:
             raise Unauthorized("This feature is not yet available.")
