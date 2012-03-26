@@ -11,7 +11,7 @@ from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 import transaction
 
 from lp.code.bzr import branch_changed
-from lp.codehosting.tests.test_upgrade import upgrade_target
+from lp.codehosting.tests.test_upgrade import UpgradeTempDir
 from lp.codehosting.upgrade import Upgrader
 from lp.testing import (
     person_logged_in,
@@ -47,7 +47,7 @@ class TestUpgradeAllBranchesScript(TestCaseWithFactory):
         tree.commit('foo', committer='jrandom@example.org')
         with person_logged_in(branch.owner):
             branch_changed(branch, tree.branch)
-        target = self.useContext(upgrade_target())
+        target = self.useFixture(UpgradeTempDir()).path
         upgrader = Upgrader(branch, target, logging.getLogger(), tree.branch)
         return upgrader
 
