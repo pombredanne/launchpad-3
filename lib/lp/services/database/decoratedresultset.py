@@ -62,10 +62,18 @@ class DecoratedResultSet(object):
         self.result_decorator = result_decorator
         self.pre_iter_hook = pre_iter_hook
         self.slice_info = slice_info
-        self.return_both = return_both
+        self.config(return_both=return_both)
 
     def decorate_or_none(self, result, row_index=None):
         """Decorate a result or return None if the result is itself None"""
+        # If we have a nested DecoratedResultSet we need to propogate
+        # the plain result.
+        if zope_isinstance(self.result_set, DecoratedResultSet):
+            assert self.result_set.return_both == self.return_both
+            plain, result = result
+        else:
+            plain = result
+
         if result is None:
             decorated = None
         else:
@@ -76,7 +84,7 @@ class DecoratedResultSet(object):
             else:
                 decorated = self.result_decorator(result)
         if self.return_both:
-            return (result, decorated)
+            return (plain, decorated)
         else:
             return decorated
 
@@ -98,6 +106,8 @@ class DecoratedResultSet(object):
         return_both = kwargs.pop('return_both', None)
         if return_both is not None:
             self.return_both = return_both
+            if zope_isinstance(self.result_set, DecoratedResultSet):
+                self.result_set.config(return_both=return_both)
 
         self.result_set.config(*args, **kwargs)
         return self

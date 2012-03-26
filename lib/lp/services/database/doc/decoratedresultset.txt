@@ -76,6 +76,17 @@ decorated results:
     >>> decorated_result_set.first()
     (<Distribution 'Debian' (debian)>, u'Dist name is: debian')
 
+This works even if there are multiple levels:
+
+    >>> drs_squared = DecoratedResultSet(
+    ...     decorated_result_set, lambda x: len(x)).config(return_both=True)
+    >>> for dist in drs_squared:
+    ...     print dist
+    (<Distribution 'Debian' (debian)>, 20)
+    (<Distribution 'Gentoo' (gentoo)>, 20)
+    ...
+    (<Distribution 'ubuntutest' (ubuntutest)>, 24)
+
 Some methods of the DecoratedResultSet are not actually decorated and
 just work like normally:
 
