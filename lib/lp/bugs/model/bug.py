@@ -1707,7 +1707,7 @@ class Bug(SQLBase):
 
         return bugtask
 
-    def setPrivate(self, private, who):
+   def setPrivate(self, private, who):
         """See `IBug`.
 
         We also record who made the change and when the change took
