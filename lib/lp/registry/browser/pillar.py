@@ -375,8 +375,10 @@ class PillarPersonSharingView(LaunchpadView):
         self.sharing_service = getUtility(IService, 'sharing')
 
         self._loadSharedArtifacts()
-        #cache = IJSONRequestCache(self.request)
-        #cache.objects['branches']
+
+        cache = IJSONRequestCache(self.request)
+        branch_data = self._build_branch_template_data(self.branches)
+        cache.objects['branches'] = branch_data 
 
     def _loadSharedArtifacts(self):
         bugs = []
@@ -393,3 +395,13 @@ class PillarPersonSharingView(LaunchpadView):
         self.branches = branches
         self.shared_bugs_count = len(bugs)
         self.shared_branches_count = len(branches)
+
+    def _build_branch_template_data(self, branches):
+        branch_data = []
+        for branch in branches:
+            branch_data.append(dict(
+                branch_link=canonical_url(branch),
+                branch_name=branch.unique_name,
+                branch_id=branch.id))
+        return branch_data
+
