@@ -379,7 +379,7 @@ class PillarPersonSharingView(LaunchpadView):
 
         cache = IJSONRequestCache(self.request)
         branch_data = self._build_branch_template_data(self.branches)
-        cache.objects['branches'] = branch_data 
+        cache.objects['branches'] = branch_data
 
     def _loadSharedArtifacts(self):
         bugs = []
@@ -405,4 +405,3 @@ class PillarPersonSharingView(LaunchpadView):
                 branch_name=branch.unique_name,
                 branch_id=branch.id))
         return branch_data
-

@@ -57,7 +57,7 @@ class SharingService:
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
         return [a for a in
             flat_source.findArtifactsByGrantee(person, policies)]
-    
+
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
         allowed_types = [
