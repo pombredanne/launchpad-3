@@ -10,7 +10,8 @@ __all__ = [
     'PillarBugsMenu',
     'PillarView',
     'PillarNavigationMixin',
-    'PillarPersonSharingView', 'PillarSharingView',
+    'PillarPersonSharingView',
+    'PillarSharingView',
     ]
 
 
