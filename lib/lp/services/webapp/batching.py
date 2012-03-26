@@ -552,6 +552,17 @@ class StormRangeFactory:
         result = ProxyFactory(naked_result)
         return result.config(limit=size)
 
+    def _get_shadowed_list(self, result):
+        if zope_isinstance(result, DecoratedResultSet):
+            items = list(result.copy().config(return_both=True))
+            if items:
+                shadow_result, real_result = map(list, zip(*items))
+            else:
+                shadow_result = real_result = []
+        else:
+            shadow_result = real_result = list(result)
+        return ShadowedList(real_result, shadow_result)
+
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
         if self.empty_resultset:
@@ -568,21 +579,12 @@ class StormRangeFactory:
             result = self.resultset.config(limit=size)
         else:
             result = self.getSliceFromMemo(size, parsed_memo)
-        real_result = list(result)
-        if zope_isinstance(result, DecoratedResultSet):
-            shadow_result = list(result.get_plain_result_set())
-        else:
-            shadow_result = real_result
-        return ShadowedList(real_result, shadow_result)
+        return self._get_shadowed_list(result)
 
     def getSliceByIndex(self, start, end):
         """See `IRangeFactory."""
         sliced = self.resultset[start:end]
-        if zope_isinstance(sliced, DecoratedResultSet):
-            return ShadowedList(
-                list(sliced), list(sliced.get_plain_result_set()))
-        sliced = list(sliced)
-        return ShadowedList(sliced, sliced)
+        return self._get_shadowed_list(sliced)
 
     @cachedproperty
     def rough_length(self):
