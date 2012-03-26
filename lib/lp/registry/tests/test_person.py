@@ -45,6 +45,10 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    flush_database_updates,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -1218,6 +1222,65 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             self.current_milestone.dateexpected)
 
         self.assertEqual([workitem], list(workitems))
+
+    def _makeProductSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected)
+        spec = self.factory.makeSpecification(
+            product=milestone.product, milestone=milestone, assignee=assignee)
+        return spec
+
+    def _makeDistroSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        distro = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected, distribution=distro)
+        spec = self.factory.makeSpecification(
+            distribution=distro, milestone=milestone, assignee=assignee)
+        return spec
+
+    def test_query_count(self):
+        dateexpected = self.current_milestone.dateexpected
+        # Create 10 SpecificationWorkItems, each of them with a different
+        # specification, milestone and assignee. Also, half of the
+        # specifications will have a Product as a target and the other half
+        # will have a Distribution.
+        for i in range(5):
+            spec = self._makeProductSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'product work item %d' % i, assignee=spec.assignee,
+                milestone=spec.milestone, specification=spec)
+            spec2 = self._makeDistroSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'distro work item %d' % i, assignee=spec2.assignee,
+                milestone=spec2.milestone, specification=spec2)
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            workitems = list(
+                self.team.getAssignedSpecificationWorkItemsDueBefore(
+                    dateexpected))
+            for workitem in workitems:
+                workitem.assignee
+                workitem.milestone
+                workitem.specification
+                workitem.specification.assignee
+                workitem.specification.milestone
+                workitem.specification.target
+        self.assertEqual(10, len(workitems))
+        # 1. One query to get all team members;
+        # 2. One to get all SpecWorkItems;
+        # 3. One to get all Specifications;
+        # 4. One to get all SpecWorkItem/Specification assignees;
+        # 5. One to get all SpecWorkItem/Specification milestones;
+        # 6. One to get all Specification products;
+        # 7. One to get all Specification distributions;
+        self.assertThat(recorder, HasQueryCount(LessThan(8)))
 
 
 class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):

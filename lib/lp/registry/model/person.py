@@ -233,7 +233,10 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.services.config import config
-from lp.services.database import postgresql
+from lp.services.database import (
+    bulk,
+    postgresql,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -1488,30 +1491,34 @@ class Person(
         origin = [
             WorkItem,
             Join(Specification, WorkItem.specification == Specification.id),
-            LeftJoin(Product, Specification.product == Product.id),
-            LeftJoin(Distribution,
-                     Specification.distribution == Distribution.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            # WorkItems may not have an assignee and in that case they inherit
-            # the one from the spec.
-            Join(Person,
-                 Coalesce(WorkItem.assignee_id,
-                          Specification.assigneeID) == Person.id),
             ]
         today = datetime.today().date()
-        results = store.using(*origin).find(
-            (WorkItem, Milestone, Specification, Person, Product,
-             Distribution),
-            AND(Milestone.dateexpected <= date,
-                Milestone.dateexpected >= today,
-                Person.id.is_in(self.participant_ids))
-            )
-        for result in results:
-            yield result[0]
+        query = AND(
+            Milestone.dateexpected <= date, Milestone.dateexpected >= today,
+            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+               Specification.assigneeID.is_in(self.participant_ids)))
+        result = store.using(*origin).find(WorkItem, query)
+        def eager_load(workitems):
+            specs = bulk.load_related(
+                Specification, workitems, ['specification_id'])
+            bulk.load_related(Product, specs, ['productID'])
+            bulk.load_related(Distribution, specs, ['distributionID'])
+            assignee_ids = set(
+                [workitem.assignee_id for workitem in workitems]
+                + [spec.assigneeID for spec in specs])
+            assignee_ids.discard(None)
+            bulk.load(Person, assignee_ids, store)
+            milestone_ids = set(
+                [workitem.milestone_id for workitem in workitems]
+                + [spec.milestoneID for spec in specs])
+            milestone_ids.discard(None)
+            bulk.load(Milestone, milestone_ids, store)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
