@@ -36,7 +36,6 @@ from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
-from lp.services.database import read_transaction
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
@@ -164,7 +163,6 @@ class PoppyFileWriter(ftp._FileWriter):
                 return defer.fail(ftp.PermissionDeniedError(error))
         return defer.succeed(None)
 
-    @read_transaction
     def validateGPG(self, signed_file):
         """Check the GPG signature in the file referenced by signed_file.
 
