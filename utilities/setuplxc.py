@@ -850,7 +850,7 @@ def create_scripts(user, lxcname, ssh_key_path):
             lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
                 "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
                 --server-args='-screen 0 1024x768x24' \
-                -a $PWD/bin/test --subunit $@"
+                -a $PWD/bin/test --shuffle --subunit $@"
             """).format(**mapping)))
         os.chmod(test_script_file, 0555)
     # Add a file to sudoers.d that will let the buildbot user run the above.
