@@ -21,7 +21,6 @@ __all__ = [
     'remove_security_proxy_and_shout_at_engineer',
     ]
 
-from contextlib import nested
 from datetime import (
     datetime,
     timedelta,
@@ -69,7 +68,6 @@ from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
-from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -237,7 +235,6 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
     Message,
