@@ -308,7 +308,6 @@ from lp.testing import (
     login_person,
     person_logged_in,
     run_with_login,
-    temp_dir,
     time_counter,
     with_celebrity_logged_in,
     )
