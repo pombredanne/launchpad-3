@@ -26,7 +26,6 @@ from lp.services.daemons import readyservice
 from lp.services.scripts import execute_zcml_for_scripts
 
 from lp.poppy import get_poppy_root
-from lp.poppy.twistedconfigreset import GPGHandlerConfigResetJob
 from lp.poppy.twistedftp import (
     FTPServiceFactory,
     )
@@ -126,9 +125,6 @@ svc.setServiceParent(application)
 
 # We need Zope for looking up the GPG utilities.
 execute_zcml_for_scripts()
-
-# Set up the GPGHandler job
-GPGHandlerConfigResetJob().setServiceParent(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)
