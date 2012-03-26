@@ -241,6 +241,17 @@ class TestAjaxValidator(TestCase):
                  "form_wide_errors": ["A form error"]},
             simplejson.loads(view.form_result))
 
+    def test_non_ajax_failure_handler(self):
+        # The ajax error handler is not run if the request is not ajax.
+        request = LaunchpadTestRequest(
+            method='POST',
+            form={
+                'field.actions.test': 'Test',
+                'field.single_line': 'error'})
+        view = TestFormView({}, request)
+        view.initialize()
+        self.assertIsNone(view.form_result)
+
     def test_ajax_action_success(self):
         # When there are no errors, form_result is None.
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
