@@ -1445,14 +1445,13 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
         self.assertEqual(5, len(tasks))
         # 1. One query to get all team members;
         # 2. One to get all BugTasks;
-        # 3. One to get all Bugs;
-        # 4. One to get all assignees;
-        # 5. One to get all milestones;
-        # 6. One to get all products;
-        # 7. One to get all productseries;
-        # 8. One to get all distributions;
-        # 9. One to get all distroseries;
-        # 10. One to get all sourcepackagenames;
-        # 11. One to get all distroseries of a bug's distro. (See comment on
+        # 3. One to get all assignees;
+        # 4. One to get all milestones;
+        # 5. One to get all products;
+        # 6. One to get all productseries;
+        # 7. One to get all distributions;
+        # 8. One to get all distroseries;
+        # 9. One to get all sourcepackagenames;
+        # 10. One to get all distroseries of a bug's distro. (See comment on
         # getAssignedBugTasksDueBefore() to understand why it's needed)
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(10)))

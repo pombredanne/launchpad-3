@@ -1522,36 +1522,28 @@ class Person(
 
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
-        from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtask import BugTask
-        from lp.bugs.model.bugtasksearch import search_bugs
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         today = datetime.today().date()
         search_params = BugTaskSearchParams(
             user, assignee=any(*self.participant_ids),
             milestone_dateexpected_before=date,
             milestone_dateexpected_after=today)
-        def eager_load(tasks):
-            bulk.load_related(Bug, tasks, ['bugID'])
-            bulk.load_related(Product, tasks, ['productID'])
-            bulk.load_related(ProductSeries, tasks, ['productseriesID'])
-            bulk.load_related(Distribution, tasks, ['distributionID'])
-            bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
-            bulk.load_related(
-                SourcePackageName, tasks, ['sourcepackagenameID'])
-            bulk.load_related(Person, tasks, ['assigneeID'])
-            bulk.load_related(Milestone, tasks, ['milestoneID'])
 
         # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
-        # twice when we do nested iterations on this.
-        results = list(search_bugs(
-            BugTask, prejoins=[], pre_iter_hook=eager_load,
-            alternatives=[search_params]))
+        # multiple times when load_related() iterates over through the tasks.
+        tasks = list(getUtility(IBugTaskSet).search(search_params))
+        # Eager load the things we need that are not already eager loaded by
+        # BugTaskSet.search().
+        bulk.load_related(ProductSeries, tasks, ['productseriesID'])
+        bulk.load_related(Distribution, tasks, ['distributionID'])
+        bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
+        bulk.load_related(Person, tasks, ['assigneeID'])
+        bulk.load_related(Milestone, tasks, ['milestoneID'])
 
-        for task in results:
+        for task in tasks:
             # We skip masters (instead of slaves) from conjoined relationships
             # because we can do that without hittind the DB, which would not
             # be possible if we wanted to skip the slaves. The simple (but
@@ -1566,7 +1558,7 @@ class Person(
                     continue
             elif distroseries is not None:
                 candidate = None
-                for possible_slave in results:
+                for possible_slave in tasks:
                     sourcepackagename_id = possible_slave.sourcepackagenameID
                     if sourcepackagename_id == task.sourcepackagenameID:
                         candidate = possible_slave
