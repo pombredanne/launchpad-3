@@ -733,7 +733,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                 bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson()
             expected_direct_subscribers = set(bug.getDirectSubscribers())
-            bug.transitionToInformationType(information_type.PUBLIC, who)
+            bug.transitionToInformationType(InformationType.PUBLIC, who)
         subscribers = set(bug.getDirectSubscribers())
         expected_direct_subscribers.difference_update(
             (default_bugtask.pillar.security_contact,
@@ -748,7 +748,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug = self.factory.makeBug(owner=bug_owner)
         with person_logged_in(bug_owner):
             who = self.factory.makePerson()
-            bug.transitionToInformationType(information_type.USERDATA, who)
+            bug.transitionToInformationType(InformationType.USERDATA, who)
             subscribers = bug.getDirectSubscribers()
         naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(

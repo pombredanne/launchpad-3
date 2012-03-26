@@ -145,6 +145,7 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
@@ -1744,14 +1745,15 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug._private == True,
+                    Bug.information_type in PRIVATE_INFORMATION_TYPES,
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug._private == True, BugTask.assignee == self.id)),
+                where=And(Bug.information_type in PRIVATE_INFORMATION_TYPES,
+                    BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(

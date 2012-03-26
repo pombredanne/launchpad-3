@@ -406,8 +406,8 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.security_related)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 

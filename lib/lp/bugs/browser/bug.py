@@ -69,6 +69,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enums import BugNotificationLevel
@@ -889,7 +890,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
         if self.request.is_ajax:
-            if private_changed or security_related_changed:
+            if changed:
                 return self._getSubscriptionDetails()
             else:
                 return ''
