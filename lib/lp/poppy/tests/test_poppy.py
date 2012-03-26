@@ -373,9 +373,7 @@ class TestPoppy(TestCaseWithFactory):
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
 
-    # XXX: deryck, 2012-01-26, Bug 798957
-    # PoppyFileWriter.close has been disabled, so disable test, too.
-    def disabled_test_bad_gpg_on_changesfile(self):
+    def test_bad_gpg_on_changesfile(self):
         """Check that we get a rejection error when uploading .changes files
         with invalid GPG signatures.
         """

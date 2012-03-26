@@ -76,9 +76,7 @@ class TestPoppyFileWriter(TestCaseWithFactory):
             d.addBoth(callback)
             return d
 
-    # XXX: deryck, 2012-01-26, Bug 798957
-    # Disable as we search for a better fix to bug.
-    def disabled_test_changes_file_with_invalid_GPG(self):
+    def test_changes_file_with_invalid_GPG(self):
         invalid_changes_file = os.path.join(
             self.test_files_dir, "broken_source.changes")
 
