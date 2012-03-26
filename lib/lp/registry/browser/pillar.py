@@ -41,6 +41,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.bugs.interfaces.bug import IBug
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantFlatSource,
     IAccessPolicySource,
@@ -372,22 +374,22 @@ class PillarPersonSharingView(LaunchpadView):
         self.page_title = "%s" % self.person.displayname
         self.sharing_service = getUtility(IService, 'sharing')
 
-    def _getSharedArtifacts(self):
-        return self.sharing_service.getSharedArtifacts(
-            self.pillar, self.person)
+        self._loadSharedArtifacts()
+        #cache = IJSONRequestCache(self.request)
+        #cache.objects['branches']
 
-    @cachedproperty
-    def shared_bugs(self):
-        return [b for b in self._getSharedArtifacts()]
+    def _loadSharedArtifacts(self):
+        bugs = []
+        branches = []
+        for artifact in self.sharing_service.getSharedArtifacts(
+                            self.pillar, self.person):
+            concrete = artifact.concrete_artifact
+            if IBug.providedBy(concrete):
+                bugs.append(artifact)
+            elif IBranche.providedBy(concrete):
+                branches.append(artifact)
 
-    @cachedproperty
-    def shared_bugs_count(self):
-        return len(self.shared_bugs) 
-
-    @cachedproperty
-    def shared_branches(self):
-        return [b for b in self._getSharedArtifacts()]
-
-    @cachedproperty
-    def shared_branches_count(self):
-        return len(self.shared_branches)
+        self.bugs = bugs
+        self.branches = branches
+        self.shared_bugs_count = len(bugs)
+        self.shared_branches_count = len(branches)
