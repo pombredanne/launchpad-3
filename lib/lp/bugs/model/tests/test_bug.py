@@ -972,6 +972,8 @@ class TestBugPrivacy(TestCaseWithFactory):
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
     def test_information_type_does_not_leak(self):
+        # Make sure that bug notifications for private bugs do not leak to
+        # people with a subscription on the product.
         product = self.factory.makeProduct()
         with person_logged_in(product.owner):
             product.addSubscription(product.owner, product.owner)
