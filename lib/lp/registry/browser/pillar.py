@@ -405,3 +405,14 @@ class PillarPersonSharingView(LaunchpadView):
                 branch_name=branch.unique_name,
                 branch_id=branch.id))
         return branch_data
+
+    def _build_bug_template_data(self, bugs):
+        bug_data = []
+        for bug in bugs:
+            importance = bug.default_bugtask.importance.title.lower()
+            bug_data.append(dict(
+                bug_link=canonical_url(bug),
+                bug_summary=bug.title,
+                bug_id=bug.id,
+                bug_importance=importance))
+        return bug_data
