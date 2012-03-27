@@ -1059,11 +1059,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
+            job_id = BranchScanJob.create(self).job_id
             if celery_scan:
                 # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
                 current = transaction.get()
-                job_id = BranchScanJob.create(self).job_id
                 def runHook(succeeded):
                     if succeeded:
                         CeleryRunJob.delay(job_id)
