@@ -29,7 +29,7 @@ from lp.testing import (
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
+    DatabaseFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
 
@@ -166,7 +166,7 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
     Most tests are in lib/lp/registry/doc/vocabularies.txt.
     """
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPersonOrTeam'
 
     def test_team_filter(self):
@@ -218,7 +218,7 @@ class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
                                             TestCaseWithFactory):
     """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPillarOwner'
 
     def test_team_filter(self):
@@ -341,7 +341,7 @@ class TestValidPersonVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidPersonVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPerson'
 
     def test_supported_filters(self):
@@ -353,7 +353,7 @@ class TestValidTeamVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidTeamVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidTeam'
 
     def test_supported_filters(self):
@@ -365,7 +365,7 @@ class TestNewPillarShareeVocabulary(VocabularyTestBase,
                                         TestCaseWithFactory):
     """Test that the NewPillarShareeVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'NewPillarSharee'
 
     def test_existing_grantees_excluded(self):
