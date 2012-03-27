@@ -1050,6 +1050,9 @@ class NewPillarShareeVocabulary(TeamVocabularyMixin,
     existing sharee for the pillar.
     """
 
+    displayname = 'Share with a user or team'
+    step_title = 'Search for user or exclusive team with whom to share'
+
     def __init__(self, context):
         assert IPillar.providedBy(context)
         super(ValidPersonOrTeamVocabulary, self).__init__(context)
