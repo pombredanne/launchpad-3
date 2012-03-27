@@ -294,7 +294,9 @@ to the host. You use the IRestrictedLibrarianClient to access this
 librarian.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from lp.services.librarian.interfaces.client import IRestrictedLibrarianClient
+    >>> from lp.services.librarian.interfaces.client import (
+    ...     IRestrictedLibrarianClient,
+    ...     )
     >>> restricted_client = getUtility(IRestrictedLibrarianClient)
     >>> verifyObject(IRestrictedLibrarianClient, restricted_client)
     True

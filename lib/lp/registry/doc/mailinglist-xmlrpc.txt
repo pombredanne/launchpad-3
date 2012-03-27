@@ -7,8 +7,8 @@ an external system running GNU Mailman.  The communication pattern is
 initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
-    >>> # Note that this test is run multiple times, with the harness
-    >>> # providing `mailinglist_api` and `commit` for impedance matching.
+Note that this test is run multiple times, with the harness providing
+`mailinglist_api` and `commit` for impedance matching.
 
 
 Constructing the mailing lists

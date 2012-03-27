@@ -1,4 +1,5 @@
-= The BugTrackerPerson interface =
+The BugTrackerPerson interface
+==============================
 
 The IBugTrackerPerson interfaces allows Launchpad to link Persons to
 bugtrackers. BugTrackerPersons are created using the
@@ -59,7 +60,8 @@ be retrieved by calling BugTracker.getLinkedPersonByName().
     name12
 
 
-== ensurePersonForSelf() ==
+ensurePersonForSelf()
+---------------------
 
 IBugTracker has a method, ensurePersonForSelf(), which is
 responsible for returning the correct BugTrackerPerson for a given

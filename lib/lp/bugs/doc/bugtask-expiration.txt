@@ -486,7 +486,8 @@ There are no Expired Bugtasks in sampledata, from the tests above.
     >>> BugTask.selectBy(status=BugTaskStatus.EXPIRED).count()
     0
 
-    >>> # We want to check the hoary bugtask messages later.
+We want to check the hoary bugtask messages later.
+
     >>> starting_bug_messages_count = (hoary_bugtask.bug.messages.count())
 
 The script 'expire-bugtasks.py' writes its report to stdout. It makes
