@@ -285,7 +285,7 @@ class PillarSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            vocabulary='ValidPillarOwner',
+            vocabulary='NewPillarSharee',
             vocabulary_filters=self.sharing_vocabulary_filters,
             header='Share with a user or team')
 

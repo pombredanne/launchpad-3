@@ -20,6 +20,7 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 
 __metaclass__ = type
 
@@ -1038,6 +1039,31 @@ class PersonActiveMembershipVocabulary:
     def __contains__(self, obj):
         """See `IVocabularyTokenized`."""
         return obj in self._get_teams()
+
+
+class NewPillarSharee(TeamVocabularyMixin,
+                                ValidPersonOrTeamVocabulary):
+    """The set of people and teams with whom to share information.
+
+    A person or team is eligible for sharing with if they are not already an
+    existing sharee for the pillar.
+    """
+
+    def __init__(self, context):
+        super(ValidPersonOrTeamVocabulary, self).__init__(context)
+        aps = getUtility(IAccessPolicySource)
+        access_policies = aps.findByPillar([self.context])
+        self.policy_ids = [policy.id for policy in access_policies]
+
+    @property
+    def extra_clause(self):
+        clause = SQL("""
+            Person.id NOT IN (
+                SELECT grantee FROM AccessPolicyGrantFlat
+                WHERE policy in %s
+                )
+            """ % sqlvalues(self.policy_ids))
+        return clause
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):

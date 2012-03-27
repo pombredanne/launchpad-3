@@ -199,7 +199,7 @@ class PillarSharingViewTestMixin:
                 'Share with a user or team',
                 picker_config['header'])
             self.assertEqual(
-                'ValidPillarOwner', picker_config['vocabulary'])
+                'NewPillarSharee', picker_config['vocabulary'])
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.

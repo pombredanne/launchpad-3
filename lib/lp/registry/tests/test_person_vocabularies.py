@@ -359,3 +359,21 @@ class TestValidTeamVocabulary(VocabularyTestBase,
     def test_supported_filters(self):
         # The vocab shouldn't support person or team filters.
         self.assertEqual([], self.getVocabulary(None).supportedFilters())
+
+
+class TestNewPillarShareeVocabulary(VocabularyTestBase,
+                                        TestCaseWithFactory):
+    """Test that the NewPillarShareeVocabulary behaves as expected."""
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'NewPillarSharee'
+
+    def test_existing_grantees_excluded(self):
+        # Existing grantees should be excluded from the results.
+        product = self.factory.makeProduct()
+        person1 = self.factory.makePerson(name='sharee1')
+        person2 = self.factory.makePerson(name='sharee2')
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
+        [newsharee] = self.searchVocabulary(product, 'sharee')
+        self.assertEqual(newsharee, person2)
