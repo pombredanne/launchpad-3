@@ -1407,7 +1407,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We just remove the security proxies to be able to change the objects
         # here.
         removeSecurityProxy(branch).branchChanged(
-            '', 'rev1', None, None, None, skip_celery=True)
+            '', 'rev1', None, None, None, celery_scan=False)
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
         return branch

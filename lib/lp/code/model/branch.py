@@ -1034,7 +1034,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def branchChanged(self, stacked_on_url, last_revision_id,
                       control_format, branch_format, repository_format,
-                      skip_celery=False):
+                      celery_scan=True):
         """See `IBranch`."""
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
@@ -1059,7 +1059,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            if not skip_celery:
+            if celery_scan:
                 # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
                 current = transaction.get()
