@@ -1050,6 +1050,7 @@ class NewPillarSharee(TeamVocabularyMixin,
     """
 
     def __init__(self, context):
+        assert IPillar.providedBy(context)
         super(ValidPersonOrTeamVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
