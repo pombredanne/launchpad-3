@@ -2,11 +2,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
-import os
-
 import transaction
 
 from lp.code.model.branchjob import BranchScanJob
+from lp.services.job.tests import celeryd
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessAppServerLayer
 
@@ -22,11 +21,7 @@ class TestCelery(TestCaseWithFactory):
         # lp.services.job.celeryconfig is loaded.
         from lp.services.job.celeryjob import CeleryRunJob
         from celery.exceptions import TimeoutError
-        from lazr.jobrunner.tests.test_celerytask import running
-        cmd_args = ('--config', 'lp.services.job.tests.celeryconfig')
-        env = dict(os.environ)
-        env['BROKER_URL'] = CeleryRunJob.app.conf['BROKER_URL']
-        with running('bin/celeryd', cmd_args, env=env) as proc:
+        with celeryd() as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
             bzr_tree.commit(
