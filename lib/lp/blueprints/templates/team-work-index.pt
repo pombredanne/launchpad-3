@@ -3,10 +3,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
-  <body>
-
+<body>
 
 <div metal:fill-slot="main">
   <h2>Upcoming work for <span tal:replace="structure context/displayname"
@@ -16,51 +15,38 @@
     Blueprints with a total of <span tal:replace="view/upcoming_wi_count" /> work items.
 
   <div tal:repeat="pair view/work_item_containers">
-    <!-- XXX: We shouldn't call python to do this, but we might not get dicts in here later -->
-    <div tal:define="date python: pair[0]; containers python: pair[1]">
-      <h3 tal:content="date/fmt:date" />
-      <table border=1>
-	  <tr>
-	    <th>Blueprint</th>
-	    <th>Component</th>
-	    <th>Priority</th>
-	    <th>Assignee</th>
-	    <th>Progress</th>
-	  </tr>
-	<div tal:repeat="container containers">
-          <tr>
-            <td><span tal:condition="container/is_foreign">[FOREIGN]</span>
-                <span tal:condition="container/is_future">[FUTURE]</span>
-                <span tal:replace="container/label" />
-            </td>
-            <td><a tal:condition="container/target" tal:replace="structure container/target/fmt:link" />
-                <span tal:condition="not:container/target" tal:replace="string: N/A" />
-            </td>
-            <td><span tal:condition="container/priority" tal:replace="container/priority/title" />
-                <span tal:condition="not:container/priority" tal:replace="string: N/A" />
-            </td>
-            <!-- XXX: A container with no assignee could be either a Spec with
-            no assignee or the container we use to group all bugtasks. We need
-            to find a way to distinguish between the two because N/A should be
-            displayed only for the latter. -->
-            <td><a tal:condition="container/assignee" tal:replace="structure container/assignee/fmt:link" />
-                <span tal:condition="not:container/assignee" tal:replace="string: N/A" />
-            </td>
-	    <td><span tal:replace="container/percent_done" />% of 100%</td>
-	  </tr>
-	  <tr tal:repeat="workitem container/items">
-	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
-	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/target/name" /></td>
-	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
-      <td><a tal:condition="workitem/assignee" tal:replace="structure workitem/assignee/fmt:link" />
-      </td>
-	    <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/status/name" /></td>
-	  </tr>
-	</div>
-      </table>
-    </div>
+  <div tal:define="date python: pair[0]; containers python: pair[1]">
+    <h3 tal:content="date/fmt:date" />
+    <table class="listing">
+      <thead>
+      <tr>
+        <th>Blueprint</th>
+        <th>Target</th>
+        <th>Priority</th>
+        <th>Assignee</th>
+      </tr>
+      </thead>
+      <div tal:repeat="container containers">
+        <tbody>
+        <tr>
+          <td tal:content="structure container/html_link" />
+          <td tal:content="structure container/target_link" />
+          <td tal:content="container/priority_title" />
+          <td tal:content="structure container/assignee_link" />
+        </tr>
+        <tr tal:repeat="workitem container/items">
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="structure workitem/target/fmt:link" /></td>
+          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
+          <td><a tal:replace="structure workitem/assignee/fmt:link" />
+          </td>
+        </tr>
+        </tbody>
+      </div>
+    </table>
+  </div>
   </div>
 </div>
 
-  </body>
+</body>
 </html>

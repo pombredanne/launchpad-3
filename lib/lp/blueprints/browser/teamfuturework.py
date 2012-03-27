@@ -14,7 +14,9 @@ from operator import (
     itemgetter,
     )
 
+from lp.app.browser.tales import format_link
 from lp.services.webapp import (
+    canonical_url,
     LaunchpadView,
     )
 
@@ -80,8 +82,9 @@ class WorkItemContainer:
     are necessary.
     """
 
-    def __init__(self, label, target, assignee, priority, is_future=False,
-                 is_foreign=False):
+    def __init__(self, spec, label, target, assignee, priority,
+                 is_future=False, is_foreign=False):
+        self.spec = spec
         self.label = label
         self.target = target
         self.assignee = assignee
@@ -97,6 +100,34 @@ class WorkItemContainer:
         self.is_foreign = is_foreign
 
     @property
+    def display_label(self):
+        label = self.label
+        if self.is_foreign:
+            label += ' [FOREIGN] '
+        if self.is_future:
+            label += ' [FUTURE] '
+        return label
+
+    @property
+    def html_link(self):
+        return '<a href="%s">%s</a>' % (
+            canonical_url(self.spec), self.display_label)
+
+    @property
+    def assignee_link(self):
+        if self.assignee is None:
+            return 'Nobody'
+        return format_link(self.assignee)
+
+    @property
+    def target_link(self):
+        return format_link(self.target)
+
+    @property
+    def priority_title(self):
+        return self.priority.title
+
+    @property
     def items(self):
         # TODO: Sort the items by priority.
         return self._items
@@ -108,6 +139,29 @@ class WorkItemContainer:
 
     def append(self, item):
         self._items.append(item)
+
+
+class AggregatedBugsContainer(WorkItemContainer):
+
+    def __init__(self):
+        super(AggregatedBugsContainer, self).__init__(
+            spec=None, label=None, target=None, assignee=None, priority=None)
+
+    @property
+    def html_link(self):
+        return 'Aggregated bugs'
+
+    @property
+    def assignee_link(self):
+        return 'N/A'
+
+    @property
+    def target_link(self):
+        return 'N/A'
+
+    @property
+    def priority_title(self):
+        return 'N/A'
 
 
 class GenericWorkItem:
@@ -188,7 +242,7 @@ def getWorkItemsDueBefore(team, date, user):
             if spec.assigneeID not in team.participant_ids:
                 is_foreign = True
             container = WorkItemContainer(
-                spec.name, spec.target, spec.assignee, spec.priority,
+                spec, spec.name, spec.target, spec.assignee, spec.priority,
                 is_future=is_future, is_foreign=is_foreign)
             containers_by_spec[spec] = container
             containers_by_date[milestone.dateexpected].append(container)
@@ -206,8 +260,7 @@ def getWorkItemsDueBefore(team, date, user):
         dateexpected = task.milestone.dateexpected
         container = bug_containers_by_date.get(dateexpected)
         if container is None:
-            container = WorkItemContainer(
-                'Aggregated bugs', None, None, None)
+            container = AggregatedBugsContainer()
             bug_containers_by_date[dateexpected] = container
             # Also append our new container to the dictionary we're going
             # to return.
