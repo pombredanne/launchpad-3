@@ -212,6 +212,27 @@ class TestFTPArchive(TestCaseWithFactory):
         self._verifyFile("override.hoary-test.main.src", self._overdir)
         self._verifyFile("override.hoary-test.extra.main", self._overdir)
 
+    def test_publishOverrides_more_extra_components(self):
+        # more-extra.override.%s.main is used regardless of component.
+        fa = self._setUpFTPArchiveHandler()
+
+        sentinel = ("hello/i386", "Task", "minimal")
+        extra_overrides = os.path.join(
+            self._confdir, "more-extra.override.hoary-test.main")
+        with open(extra_overrides, "w") as extra_override_file:
+            print >>extra_override_file, "  ".join(sentinel)
+        source_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'universe', 'misc')])
+        binary_overrides = FakeSelectResult(
+            [('foo', 'hoary-test', 'universe', 'misc', 'extra')])
+        fa.publishOverrides(source_overrides, binary_overrides)
+
+        result_path = os.path.join(
+            self._overdir, "override.hoary-test.extra.universe")
+        with open(result_path) as result_file:
+            result_text = result_file.read()
+        self.assertIn("\t".join(sentinel), result_text.splitlines())
+
     def test_getSourceFiles(self):
         # getSourceFiles returns a list of tuples containing:
         # (sourcename, suite, filename, component)
