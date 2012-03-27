@@ -22,12 +22,16 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 from zope.schema import (
     Choice,
+    Dict,
     List,
     )
 
 from lp import _
 from lp.app.interfaces.services import IService
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pillar import IPillar
 
@@ -52,15 +56,50 @@ class ISharingService(IService):
     def getPillarSharees(pillar):
         """Return people/teams who can see pillar artifacts."""
 
+    @export_read_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True))
+    @operation_for_version('devel')
+    def getPillarShareeData(pillar):
+        """Return people/teams who can see pillar artifacts.
+
+        The result records are json data which includes:
+            - person name
+            - permissions they have for each information type.
+        """
+
+    def jsonShareeData(grant_permissions):
+        """Return people/teams who can see pillar artifacts.
+
+        :param grant_permissions: a list of (grantee, accesspolicy, permission)
+            tuples.
+
+        The result records are json data which includes:
+            - person name
+            - permissions they have for each information type.
+        """
+
     @export_write_operation()
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         sharee=Reference(IPerson, title=_('Sharee'), required=True),
-        information_types=List(Choice(vocabulary=InformationType)))
+        permissions=Dict(
+            key_type=Choice(vocabulary=InformationType),
+            value_type=Choice(vocabulary=SharingPermission)))
     @operation_for_version('devel')
-    def sharePillarInformation(pillar, sharee, information_types, user):
-        """Ensure sharee has the grants for information types on a pillar."""
+    def sharePillarInformation(pillar, sharee, permissions, user):
+        """Ensure sharee has the grants for information types on a pillar.
+
+        :param pillar: the pillar for which to grant access
+        :param sharee: the person or team to grant
+        :param permissions: a dict of {InformationType: SharingPermission}
+            if SharingPermission is ALL, then create an access policy grant
+            if SharingPermission is SOME, then remove any access policy grants
+            if SharingPermission is NONE, then remove all grants for the access
+            policy
+        :param user: the user making the request
+        """
 
     @export_write_operation()
     @operation_parameters(

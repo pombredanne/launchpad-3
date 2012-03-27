@@ -5,10 +5,15 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
+import transaction
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
 from lp.app.validators import LaunchpadValidationError
@@ -18,6 +23,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.registry.model.milestone import Milestone
+from lp.services.mail import stub
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -148,6 +154,111 @@ class TestSpecificationValidation(TestCaseWithFactory):
             % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
 
 
+class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
+    """ Test the notification related to SpecificationWorkItems on
+    ISpecification."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_workitems_added_notification_message(self):
+        """ Test that we get a notification for setting work items on a new
+        specification."""
+        stub.test_emails = []
+        spec = self.factory.makeSpecification()
+        old_spec = Snapshot(spec, providing=providedBy(spec))
+        status = SpecificationWorkItemStatus.TODO
+        new_work_item = {
+            'title': u'A work item',
+            'status': status,
+            'assignee': None,
+            'milestone': None,
+            'sequence': 0
+        }
+
+        login_person(spec.owner)
+        spec.updateWorkItems([new_work_item])
+        # In production this notification is fired by lazr.restful for changes
+        # in the specification form and notify(ObjectModifiedEvent(...)) for
+        # changes in the +workitems form. We need to do it ourselves in this
+        # test.
+        notify(ObjectModifiedEvent(
+            spec, old_spec, edited_fields=['workitems_text']))
+        transaction.commit()
+
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = 'Work items set to:\nWork items:\n%s: %s' % (
+            new_work_item['title'],
+            new_work_item['status'].name)
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
+
+    def test_workitems_deleted_notification_message(self):
+        """ Test that we get a notification for deleting a work item."""
+        stub.test_emails = []
+        wi = self.factory.makeSpecificationWorkItem()
+        spec = wi.specification
+        old_spec = Snapshot(spec, providing=providedBy(spec))
+        login_person(spec.owner)
+        spec.updateWorkItems([])
+        # In production this notification is fired by lazr.restful, but we
+        # need to do it ourselves in this test.
+        notify(ObjectModifiedEvent(
+            spec, old_spec, edited_fields=['workitems_text']))
+        transaction.commit()
+
+        self.assertEqual(1, len(stub.test_emails))
+        rationale = '- %s: %s' % (wi.title, wi.status.name)
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale, msg)
+
+    def test_workitems_changed_notification_message(self):
+        """ Test that we get a notification about a work item status change.
+        This will be in the form of a line added and one deleted."""
+        spec = self.factory.makeSpecification()
+        original_status = SpecificationWorkItemStatus.TODO
+        new_status = SpecificationWorkItemStatus.DONE
+        original_work_item = {
+            'title': u'The same work item',
+            'status': original_status,
+            'assignee': None,
+            'milestone': None,
+            'sequence': 0
+        }
+        new_work_item = {
+            'title': u'The same work item',
+            'status': new_status,
+            'assignee': None,
+            'milestone': None,
+            'sequence': 0
+        }
+        login_person(spec.owner)
+        spec.updateWorkItems([original_work_item])
+        old_spec = Snapshot(spec, providing=providedBy(spec))
+
+        stub.test_emails = []
+        spec.updateWorkItems([new_work_item])
+        # In production this notification is fired by lazr.restful, but we
+        # need to do it ourselves in this test.
+        notify(ObjectModifiedEvent(
+            spec, old_spec, edited_fields=['workitems_text']))
+        transaction.commit()
+
+        self.assertEqual(1, len(stub.test_emails))
+        rationale_removed = '- %s: %s' % (
+            original_work_item['title'], original_work_item['status'].name)
+        rationale_added = '+ %s: %s' % (
+            new_work_item['title'], new_work_item['status'].name)
+        [email] = stub.test_emails
+        # Actual message is part 2 of the e-mail.
+        msg = email[2]
+        self.assertIn(rationale_removed, msg)
+        self.assertIn(rationale_added, msg)
+
+
 class TestSpecificationWorkItems(TestCaseWithFactory):
     """Test the Workitem-related methods of ISpecification."""
 
@@ -155,7 +266,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSpecificationWorkItems, self).setUp()
-        self.wi_header =  self.factory.makeMilestone(
+        self.wi_header = self.factory.makeMilestone(
             name='none-milestone-as-header')
 
     def assertWorkItemsTextContains(self, spec, items):
@@ -260,7 +371,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         items = [self.wi_header, work_item1, milestone, work_item2]
         self.assertWorkItemsTextContains(spec, items)
 
-    def test_workitems_text_with_implicit_and_explicit_milestone_reversed(self):
+    def test_workitems_text_with_implicit_and_explicit_milestone_reverse(self):
         spec = self.factory.makeSpecification()
         milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
@@ -294,7 +405,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_workitems_text_with_assignee(self):
         assignee = self.factory.makePerson()
         work_item = self.factory.makeSpecificationWorkItem(assignee=assignee)
-        self.assertWorkItemsTextContains(work_item.specification, [self.wi_header, work_item])
+        self.assertWorkItemsTextContains(
+            work_item.specification, [self.wi_header, work_item])
 
     def test_work_items_property(self):
         spec = self.factory.makeSpecification()

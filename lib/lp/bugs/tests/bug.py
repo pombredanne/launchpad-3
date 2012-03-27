@@ -297,12 +297,8 @@ def print_bugfilters_portlet_unfilled(browser, target):
     browser.open(
         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
     table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    tbody_info, tbody_links = table('tbody')
+    [tbody_info] = table('tbody')
     print_table(tbody_info)
-    for link in tbody_links('a'):
-        text = extract_text(link)
-        if len(text) > 0:
-            print "%s\n  --> %s" % (text, link['href'])
 
 
 def print_bugfilters_portlet_filled(browser, target):

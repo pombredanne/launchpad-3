@@ -884,8 +884,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
+        # Force to Unicode or we will end up with bad quoting under
+        # PostgreSQL 9.1.
+        unicode_revid_sequence_pairs = [
+            (a and unicode(a) or None, b and unicode(b) or None)
+                for a, b in revision_id_sequence_pairs]
         store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], expr=revision_id_sequence_pairs))
+            table=['RevidSequence'], expr=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)

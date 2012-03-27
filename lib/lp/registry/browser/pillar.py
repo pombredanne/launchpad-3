@@ -7,18 +7,19 @@ __metaclass__ = type
 
 __all__ = [
     'InvolvedMenu',
-    'PillarView',
     'PillarBugsMenu',
+    'PillarView',
+    'PillarNavigationMixin',
+    'PillarPersonSharingView',
     'PillarSharingView',
     ]
 
 
 from operator import attrgetter
-import simplejson
 
 from lazr.restful import ResourceJSONEncoder
-from lazr.restful.interfaces._rest import IJSONRequestCache
-
+from lazr.restful.interfaces import IJSONRequestCache
+import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implements,
@@ -28,25 +29,38 @@ from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
 
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantFlatSource,
+    IAccessPolicySource,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.propertycache import cachedproperty
+from lp.registry.model.pillar import PillarPerson
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -56,7 +70,24 @@ from lp.services.webapp.menu import (
 from lp.services.webapp.publisher import (
     LaunchpadView,
     nearest,
+    stepthrough,
     )
+
+
+class PillarNavigationMixin:
+
+    @stepthrough('+sharingdetails')
+    def traverse_details(self, name):
+        """Traverse to the sharing details for a given person."""
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        policies = getUtility(IAccessPolicySource).findByPillar([self.context])
+        source = getUtility(IAccessPolicyGrantFlatSource)
+        artifacts = source.findArtifactsByGrantee(person, policies)
+        if artifacts.is_empty():
+            return None
+        return PillarPerson.create(self.context, person)
 
 
 class IInvolved(Interface):
@@ -223,6 +254,13 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    related_features = (
+        'disclosure.enhanced_sharing.enabled',
+        'disclosure.enhanced_sharing.writable',
+        )
+
+    _batch_navigator = None
+
     def _getSharingService(self):
         return getUtility(IService, 'sharing')
 
@@ -249,23 +287,86 @@ class PillarSharingView(LaunchpadView):
         return dict(
             vocabulary='ValidPillarOwner',
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Grant access to %s'
-                % self.context.displayname)
+            header='Share with a user or team')
 
     @property
     def json_sharing_picker_config(self):
         return simplejson.dumps(
             self.sharing_picker_config, cls=ResourceJSONEncoder)
 
-    @property
-    def sharee_data(self):
+    def _getBatchNavigator(self, sharees):
+        """Return the batch navigator to be used to batch the sharees."""
+        return BatchNavigator(
+            sharees, self.request,
+            hide_counts=True,
+            size=config.launchpad.default_batch_size,
+            range_factory=StormRangeFactory(sharees))
+
+    def sharees(self):
+        """An `IBatchNavigator` for sharees."""
+        if self._batch_navigator is None:
+            unbatchedSharees = self.unbatched_sharees()
+            self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
+        return self._batch_navigator
+
+    def unbatched_sharees(self):
+        """All the sharees for a pillar."""
         return self._getSharingService().getPillarSharees(self.context)
 
     def initialize(self):
         super(PillarSharingView, self).initialize()
-        if not getFeatureFlag('disclosure.enhanced_sharing.enabled'):
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        enabled = bool(getFeatureFlag(enabled_readonly_flag))
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        if not enabled and not write_flag_enabled:
             raise Unauthorized("This feature is not yet available.")
         cache = IJSONRequestCache(self.request)
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
-        cache.objects['sharee_data'] = self.sharee_data
+
+        view_names = set(reg.name for reg
+            in iter_view_registrations(self.__class__))
+        if len(view_names) != 1:
+            raise AssertionError("Ambiguous view name.")
+        cache.objects['view_name'] = view_names.pop()
+        batch_navigator = self.sharees()
+        cache.objects['sharee_data'] = (
+            self._getSharingService().jsonShareeData(batch_navigator.batch))
+
+        def _getBatchInfo(batch):
+            if batch is None:
+                return None
+            return {'memo': batch.range_memo,
+                    'start': batch.startNumber() - 1}
+
+        next_batch = batch_navigator.batch.nextBatch()
+        cache.objects['next'] = _getBatchInfo(next_batch)
+        prev_batch = batch_navigator.batch.prevBatch()
+        cache.objects['prev'] = _getBatchInfo(prev_batch)
+        cache.objects['total'] = batch_navigator.batch.total()
+        cache.objects['forwards'] = batch_navigator.batch.range_forwards
+        last_batch = batch_navigator.batch.lastBatch()
+        cache.objects['last_start'] = last_batch.startNumber() - 1
+        cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+
+class PillarPersonSharingView(LaunchpadView):
+
+    page_title = "Person or team"
+    label = "Information shared with person or team"
+
+    def initialize(self):
+        enabled_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled = bool(getFeatureFlag(enabled_flag))
+        if not enabled:
+            raise Unauthorized("This feature is not yet available.")
+
+        self.pillar = self.context.pillar
+        self.person = self.context.person
+
+        self.label = "Information shared with %s" % self.person.displayname
+        self.page_title = "%s" % self.person.displayname
