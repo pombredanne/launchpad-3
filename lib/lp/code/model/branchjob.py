@@ -301,8 +301,7 @@ class BranchScanJob(BranchJobDerived):
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
         branch_job = BranchJob(branch, cls.class_job_type, {})
-        derived_job = cls(branch_job)
-        return derived_job
+        return cls(branch_job)
 
     def run(self):
         """See `IBranchScanJob`."""

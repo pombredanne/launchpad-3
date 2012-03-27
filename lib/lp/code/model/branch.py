@@ -1035,7 +1035,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                       control_format, branch_format, repository_format,
                       skip_celery=False):
         """See `IBranch`."""
-        # lp.services.job.celery is imported only where needed.
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
             stacked_on_branch = None
@@ -1060,6 +1059,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             if not skip_celery:
+                # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
                 CeleryRunJob.delay(BranchScanJob.create(self).job_id)
         self.control_format = control_format
