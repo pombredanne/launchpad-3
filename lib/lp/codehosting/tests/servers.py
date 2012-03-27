@@ -19,6 +19,7 @@ from bzrlib.transport import (
     get_transport,
     Server,
     )
+import transaction
 from twisted.python.util import sibpath
 from zope.component import getUtility
 
@@ -29,7 +30,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.config import config
 from lp.services.daemons.tachandler import TacTestSetup
-from lp.services.database.sqlbase import commit
 
 
 def set_up_test_user(test_user, test_team):
@@ -53,7 +53,7 @@ def set_up_test_user(test_user, test_team):
         'Z5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93J'
         'hnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00Usn'
         'UXh3GE3Rgw== testuser')
-    commit()
+    transaction.commit()
 
 
 class CodeHostingTac(TacTestSetup):

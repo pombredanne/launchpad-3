@@ -589,8 +589,7 @@ We need some files to test different ways of accessing them.
 
 Commit the just-created files.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
     >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
     >>> print deleted_file.deleted

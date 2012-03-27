@@ -9,8 +9,9 @@ import logging
 import os
 import unittest
 
+import transaction
+
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.testing import logout
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
@@ -48,7 +49,7 @@ def lobotomize_stevea():
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW
-    commit()
+    transaction.commit()
 
 
 def uploaderSetUp(test):

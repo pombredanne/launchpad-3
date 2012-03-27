@@ -11,7 +11,6 @@ import unittest
 
 from lp.code.tests.test_doc import branchscannerSetUp
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
@@ -104,7 +103,6 @@ def noPrivSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['commit'] = commit
     login('test@canonical.com')
 
 

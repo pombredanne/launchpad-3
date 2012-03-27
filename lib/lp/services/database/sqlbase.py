@@ -49,7 +49,6 @@ from storm.locals import (
     Storm,
     )
 from storm.zope.interfaces import IZStorm
-import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.interface import implements
@@ -556,11 +555,6 @@ def reset_store(func):
         finally:
             _get_sqlobject_store().reset()
     return mergeFunctionMetadata(func, reset_store_decorator)
-
-
-# DEPRECATED -- use transaction.commit() directly.
-def commit():
-    transaction.commit()
 
 
 def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
