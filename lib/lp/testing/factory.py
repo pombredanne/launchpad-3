@@ -21,7 +21,6 @@ __all__ = [
     'remove_security_proxy_and_shout_at_engineer',
     ]
 
-from contextlib import nested
 from datetime import (
     datetime,
     timedelta,
@@ -69,7 +68,6 @@ from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
-from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -237,7 +235,6 @@ from lp.services.identity.interfaces.emailaddress import (
 from lp.services.identity.model.account import Account
 from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
     Message,
@@ -308,7 +305,6 @@ from lp.testing import (
     login_person,
     person_logged_in,
     run_with_login,
-    temp_dir,
     time_counter,
     with_celebrity_logged_in,
     )
@@ -2980,48 +2976,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         _sort_records(all_records)
         _sort_records(records_inside_epoch)
         return all_records, records_inside_epoch
-
-    def makeDscFile(self, tempdir_path=None):
-        """Make a DscFile.
-
-        :param tempdir_path: Path to a temporary directory to use.  If not
-            supplied, a temp directory will be created.
-        """
-        filename = 'ed_0.2-20.dsc'
-        contexts = []
-        if tempdir_path is None:
-            contexts.append(temp_dir())
-        # Use nested so temp_dir is an optional context.
-        with nested(*contexts) as result:
-            if tempdir_path is None:
-                tempdir_path = result[0]
-            fullpath = os.path.join(tempdir_path, filename)
-            with open(fullpath, 'w') as dsc_file:
-                dsc_file.write(dedent("""\
-                Format: 1.0
-                Source: ed
-                Version: 0.2-20
-                Binary: ed
-                Maintainer: James Troup <james@nocrew.org>
-                Architecture: any
-                Standards-Version: 3.5.8.0
-                Build-Depends: dpatch
-                Files:
-                 ddd57463774cae9b50e70cd51221281b 185913 ed_0.2.orig.tar.gz
-                 f9e1e5f13725f581919e9bfd62272a05 8506 ed_0.2-20.diff.gz
-                """))
-
-            class Changes:
-                architectures = ['source']
-            logger = BufferLogger()
-            policy = BuildDaemonUploadPolicy()
-            policy.distroseries = self.makeDistroSeries()
-            policy.archive = self.makeArchive()
-            policy.distro = policy.distroseries.distribution
-            dsc_file = DSCFile(fullpath, 'digest', 0, 'main/editors',
-                'priority', 'package', 'version', Changes, policy, logger)
-            list(dsc_file.verify())
-        return dsc_file
 
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.

@@ -16,6 +16,7 @@ from bzrlib.revision import (
     )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.uncommit import uncommit
+from fixtures import TempDir
 import pytz
 from storm.locals import Store
 from twisted.python.util import mergeFunctionMetadata
@@ -45,10 +46,7 @@ from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.osutils import override_environ
-from lp.testing import (
-    temp_dir,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
     dbuser,
     lp_dbuser,
@@ -421,7 +419,7 @@ class TestBzrSync(BzrSyncTestCase):
             graph = bzr_branch.repository.get_graph()
             revno = graph.find_distance_to_null(bzr_rev, [])
             if clean_repository:
-                tempdir = self.useContext(temp_dir())
+                tempdir = self.useFixture(TempDir()).path
                 delta_branch = self.createBranchAtURL(tempdir)
                 self.useContext(write_locked(delta_branch))
                 delta_branch.pull(bzr_branch, stop_revision=bzr_rev)
