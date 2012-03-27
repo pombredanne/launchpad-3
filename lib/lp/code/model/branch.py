@@ -1032,8 +1032,10 @@ class Branch(SQLBase, BzrIdentityMixin):
             return getUtility(IBranchLookup).getByUniqueName(location)
 
     def branchChanged(self, stacked_on_url, last_revision_id,
-                      control_format, branch_format, repository_format):
+                      control_format, branch_format, repository_format,
+                      skip_celery=False):
         """See `IBranch`."""
+        # lp.services.job.celery is imported only where needed.
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
             stacked_on_branch = None
@@ -1057,7 +1059,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            BranchScanJob.create(self)
+            if not skip_celery:
+                from lp.services.job.celeryjob import CeleryRunJob
+                CeleryRunJob.delay(BranchScanJob.create(self).job_id)
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
