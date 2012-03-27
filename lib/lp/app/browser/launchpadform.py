@@ -345,6 +345,29 @@ class LaunchpadFormView(LaunchpadView):
         else:
             return 'There are %d errors.' % count
 
+    def ajax_failure_handler(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+        For ajax requests the standard Launchpad form template is not available
+        to render any errors. We simply convert the errors to json and return
+        that data to the caller so the errors can be rendered.
+        """
+
+        if not self.request.is_ajax:
+            return
+        self.request.response.setStatus(400, "Validation")
+        self.request.response.setHeader('Content-type', 'application/json')
+        errors = {}
+        for widget in self.widgets:
+            widget_error = self.getFieldError(widget.context.getName())
+            if widget_error:
+                errors[widget.name] = widget_error
+        return_data = dict(
+            form_wide_errors=self.form_wide_errors,
+            errors=errors,
+            error_summary=self.error_count)
+        return simplejson.dumps(return_data)
+
     def validate(self, data):
         """Validate the form.
 
