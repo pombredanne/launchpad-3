@@ -40,15 +40,29 @@ from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.bugs.interfaces.bugwatch import IBugWatchSet, NoBugTrackerFound
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    )
 from lp.bugs.interfaces.cve import ICveSet
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.bugs.scripts.bugexport import BUGS_XMLNS
 
 

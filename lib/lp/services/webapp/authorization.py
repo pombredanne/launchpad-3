@@ -20,7 +20,10 @@ from zope.interface import classProvides
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.checker import CheckerPublic
-from zope.security.interfaces import ISecurityPolicy, Unauthorized
+from zope.security.interfaces import (
+    ISecurityPolicy,
+    Unauthorized,
+    )
 from zope.security.management import (
     checkPermission as zcheckPermission,
     getInteraction,

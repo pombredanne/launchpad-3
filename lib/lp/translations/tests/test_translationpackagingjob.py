@@ -339,7 +339,9 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
         # New POTMsgSet is now different from the old one (it's been split),
         # but matches the target potmsgset (it's been merged into it).
         new_potmsgset = potemplate.getPOTMsgSets()[0]
-        self.assertNotEqual(potmsgset, new_potmsgset)
+        old_potmsgset = old_shared.getPOTMsgSets()[0]
+        target_potmsgset = new_shared.getPOTMsgSets()[0]
+        self.assertNotEqual(old_potmsgset, new_potmsgset)
         self.assertEqual(target_potmsgset, new_potmsgset)
 
         # Translations have been merged as well.
