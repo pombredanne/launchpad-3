@@ -40,6 +40,7 @@ from storm.locals import (
     Reference,
     )
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -1061,7 +1062,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not skip_celery:
                 # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
-                CeleryRunJob.delay(BranchScanJob.create(self).job_id)
+                current = transaction.get()
+                job_id = BranchScanJob.create(self).job_id
+                def runHook(succeeded):
+                    if succeeded:
+                        CeleryRunJob.delay(job_id)
+                current.addAfterCommitHook(runHook)
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
