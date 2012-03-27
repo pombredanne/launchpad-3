@@ -40,6 +40,7 @@ from storm.locals import (
     Reference,
     )
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -1033,7 +1034,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def branchChanged(self, stacked_on_url, last_revision_id,
                       control_format, branch_format, repository_format,
-                      skip_celery=False):
+                      celery_scan=True):
         """See `IBranch`."""
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
@@ -1058,10 +1059,15 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            if not skip_celery:
+            if celery_scan:
                 # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
-                CeleryRunJob.delay(BranchScanJob.create(self).job_id)
+                current = transaction.get()
+                job_id = BranchScanJob.create(self).job_id
+                def runHook(succeeded):
+                    if succeeded:
+                        CeleryRunJob.delay(job_id)
+                current.addAfterCommitHook(runHook)
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
