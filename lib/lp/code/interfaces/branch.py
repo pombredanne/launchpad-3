@@ -1078,7 +1078,7 @@ class IBranchEdit(Interface):
         """Create an IBranchUpgradeJob to upgrade this branch."""
 
     def branchChanged(stacked_on_url, last_revision_id, control_format,
-                      branch_format, repository_format, skip_celery=False):
+                      branch_format, repository_format, celery_scan=True):
         """Record that a branch has been changed.
 
         This method records the stacked on branch tip revision id and format
