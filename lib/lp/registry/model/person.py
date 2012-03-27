@@ -233,7 +233,10 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.services.config import config
-from lp.services.database import postgresql
+from lp.services.database import (
+    bulk,
+    postgresql,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -1488,30 +1491,34 @@ class Person(
         origin = [
             WorkItem,
             Join(Specification, WorkItem.specification == Specification.id),
-            LeftJoin(Product, Specification.product == Product.id),
-            LeftJoin(Distribution,
-                     Specification.distribution == Distribution.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id),
-            # WorkItems may not have an assignee and in that case they inherit
-            # the one from the spec.
-            Join(Person,
-                 Coalesce(WorkItem.assignee_id,
-                          Specification.assigneeID) == Person.id),
             ]
         today = datetime.today().date()
-        results = store.using(*origin).find(
-            (WorkItem, Milestone, Specification, Person, Product,
-             Distribution),
-            AND(Milestone.dateexpected <= date,
-                Milestone.dateexpected >= today,
-                Person.id.is_in(self.participant_ids))
-            )
-        for result in results:
-            yield result[0]
+        query = AND(
+            Milestone.dateexpected <= date, Milestone.dateexpected >= today,
+            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+               Specification.assigneeID.is_in(self.participant_ids)))
+        result = store.using(*origin).find(WorkItem, query)
+        def eager_load(workitems):
+            specs = bulk.load_related(
+                Specification, workitems, ['specification_id'])
+            bulk.load_related(Product, specs, ['productID'])
+            bulk.load_related(Distribution, specs, ['distributionID'])
+            assignee_ids = set(
+                [workitem.assignee_id for workitem in workitems]
+                + [spec.assigneeID for spec in specs])
+            assignee_ids.discard(None)
+            bulk.load(Person, assignee_ids, store)
+            milestone_ids = set(
+                [workitem.milestone_id for workitem in workitems]
+                + [spec.milestoneID for spec in specs])
+            milestone_ids.discard(None)
+            bulk.load(Milestone, milestone_ids, store)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
@@ -1524,25 +1531,19 @@ class Person(
             user, assignee=any(*self.participant_ids),
             milestone_dateexpected_before=date,
             milestone_dateexpected_after=today)
-        # BugTaskSet.search() performs eager loading for
-        # Product/SourcePackageName, but we want that for the ones below as
-        # well, so we do it with prejoins.
-        prejoins = [
-            (ProductSeries, LeftJoin(
-                ProductSeries, BugTask.productseries == ProductSeries.id)),
-            (DistroSeries, LeftJoin(
-                DistroSeries, BugTask.distroseries == DistroSeries.id)),
-            (Distribution, LeftJoin(
-                Distribution, BugTask.distribution == Distribution.id)),
-            (Milestone, LeftJoin(
-                Milestone, BugTask.milestone == Milestone.id)),
-            (Person, LeftJoin(
-                Person, BugTask.assignee == Person.id)),
-            ]
-        results = getUtility(IBugTaskSet).search(
-            search_params, prejoins=prejoins)
 
-        for task in results:
+        # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
+        # multiple times when load_related() iterates over through the tasks.
+        tasks = list(getUtility(IBugTaskSet).search(search_params))
+        # Eager load the things we need that are not already eager loaded by
+        # BugTaskSet.search().
+        bulk.load_related(ProductSeries, tasks, ['productseriesID'])
+        bulk.load_related(Distribution, tasks, ['distributionID'])
+        bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
+        bulk.load_related(Person, tasks, ['assigneeID'])
+        bulk.load_related(Milestone, tasks, ['milestoneID'])
+
+        for task in tasks:
             # We skip masters (instead of slaves) from conjoined relationships
             # because we can do that without hittind the DB, which would not
             # be possible if we wanted to skip the slaves. The simple (but
@@ -1555,14 +1556,19 @@ class Person(
                 if (productseries.id == dev_focus_id and
                     task.status not in BugTask._NON_CONJOINED_STATUSES):
                     continue
-            elif (distroseries is not None
-                  and task.sourcepackagename is not None):
+            elif distroseries is not None:
+                candidate = None
+                for possible_slave in tasks:
+                    sourcepackagename_id = possible_slave.sourcepackagenameID
+                    if sourcepackagename_id == task.sourcepackagenameID:
+                        candidate = possible_slave
                 # Distribution.currentseries is expensive to run for every
                 # bugtask (as it goes through every series of that
                 # distribution), but it's a cached property and there's only
                 # one distribution with bugs in LP, so we can afford to do
                 # it here.
-                if distroseries.distribution.currentseries == distroseries:
+                if (candidate is not None and
+                    distroseries.distribution.currentseries == distroseries):
                     continue
             yield task
 

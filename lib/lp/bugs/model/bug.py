@@ -89,6 +89,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -1716,16 +1717,6 @@ class Bug(SQLBase):
 
         return bugtask
 
-    def _setInformationType(self):
-        if self._private and self._security_related:
-            self.information_type = InformationType.EMBARGOEDSECURITY
-        elif self._private:
-            self.information_type = InformationType.USERDATA
-        elif self._security_related:
-            self.information_type = InformationType.UNEMBARGOEDSECURITY
-        else:
-            self.information_type = InformationType.PUBLIC
-
     def setPrivacyAndSecurityRelated(self, private, security_related, who):
         """ See `IBug`."""
         private_changed = False
@@ -1776,7 +1767,8 @@ class Bug(SQLBase):
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
 
-        self._setInformationType()
+        self.information_type = convert_to_information_type(
+            self._private, self._security_related)
 
         if private_changed or security_related_changed:
             changed_fields = []
@@ -2874,8 +2866,6 @@ class BugSet:
         if notify_event:
             notify(event)
 
-        bug._setInformationType()
-
         # Calculate the bug's initial heat.
         bug.updateHeat()
 
@@ -2922,11 +2912,14 @@ class BugSet:
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
+        information_type = convert_to_information_type(
+            params.private, params.security_related)
         bug = Bug(
             title=params.title, description=params.description,
             _private=params.private, owner=params.owner,
             datecreated=params.datecreated,
             _security_related=params.security_related,
+            information_type=information_type,
             **extra_params)
 
         if params.subscribe_owner:

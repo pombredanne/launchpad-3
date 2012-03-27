@@ -45,6 +45,10 @@ from lp.registry.model.person import (
     get_recipients,
     Person,
     )
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    flush_database_updates,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -1219,9 +1223,67 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
 
         self.assertEqual([workitem], list(workitems))
 
+    def _makeProductSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected)
+        spec = self.factory.makeSpecification(
+            product=milestone.product, milestone=milestone, assignee=assignee)
+        return spec
+
+    def _makeDistroSpec(self, milestone_dateexpected):
+        assignee = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(assignee, reviewer=self.team.teamowner)
+        distro = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(
+            dateexpected=milestone_dateexpected, distribution=distro)
+        spec = self.factory.makeSpecification(
+            distribution=distro, milestone=milestone, assignee=assignee)
+        return spec
+
+    def test_query_count(self):
+        dateexpected = self.current_milestone.dateexpected
+        # Create 10 SpecificationWorkItems, each of them with a different
+        # specification, milestone and assignee. Also, half of the
+        # specifications will have a Product as a target and the other half
+        # will have a Distribution.
+        for i in range(5):
+            spec = self._makeProductSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'product work item %d' % i, assignee=spec.assignee,
+                milestone=spec.milestone, specification=spec)
+            spec2 = self._makeDistroSpec(dateexpected)
+            self.factory.makeSpecificationWorkItem(
+                title=u'distro work item %d' % i, assignee=spec2.assignee,
+                milestone=spec2.milestone, specification=spec2)
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            workitems = list(
+                self.team.getAssignedSpecificationWorkItemsDueBefore(
+                    dateexpected))
+            for workitem in workitems:
+                workitem.assignee
+                workitem.milestone
+                workitem.specification
+                workitem.specification.assignee
+                workitem.specification.milestone
+                workitem.specification.target
+        self.assertEqual(10, len(workitems))
+        # 1. One query to get all team members;
+        # 2. One to get all SpecWorkItems;
+        # 3. One to get all Specifications;
+        # 4. One to get all SpecWorkItem/Specification assignees;
+        # 5. One to get all SpecWorkItem/Specification milestones;
+        # 6. One to get all Specification products;
+        # 7. One to get all Specification distributions;
+        self.assertThat(recorder, HasQueryCount(Equals(7)))
+
 
 class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
-
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -1326,3 +1388,70 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
             self.today + timedelta(days=1), user=None))
 
         self.assertEqual([slave], bugtasks)
+
+    def _assignBugTaskToTeamOwnerAndSetMilestone(self, task, milestone):
+        self._assignBugTaskToTeamOwner(task)
+        removeSecurityProxy(task).milestone = milestone
+
+    def test_query_count(self):
+        # Create one Product bugtask;
+        milestone = self.factory.makeMilestone(dateexpected=self.today)
+        product_bug = self.factory.makeBug(product=milestone.product)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            product_bug.bugtasks[0], milestone)
+
+        # One ProductSeries bugtask;
+        productseries_bug = self.factory.makeBug(
+            series=milestone.productseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            productseries_bug.bugtasks[1], milestone)
+
+        # One DistroSeries bugtask;
+        distro = self.factory.makeDistribution()
+        distro_milestone = self.factory.makeMilestone(
+            distribution=distro, dateexpected=self.today)
+        distroseries_bug = self.factory.makeBug(
+            series=distro_milestone.distroseries)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distroseries_bug.bugtasks[1], distro_milestone)
+
+        # One Distribution bugtask;
+        distro_bug = self.factory.makeBug(
+            distribution=distro_milestone.distribution)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            distro_bug.bugtasks[0], distro_milestone)
+
+        # One SourcePackage bugtask;
+        distroseries = distro_milestone.distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        sourcepackage_bug = self.factory.makeBug(
+            sourcepackagename=sourcepackagename, distribution=distro)
+        self._assignBugTaskToTeamOwnerAndSetMilestone(
+            sourcepackage_bug.bugtasks[0], distro_milestone)
+
+        flush_database_updates()
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            tasks = list(self.team.getAssignedBugTasksDueBefore(
+                self.today + timedelta(days=1), user=None))
+            for task in tasks:
+                task.bug
+                task.target
+                task.milestone
+                task.assignee
+        self.assertEqual(5, len(tasks))
+        # 1. One query to get all team members;
+        # 2. One to get all BugTasks;
+        # 3. One to get all assignees;
+        # 4. One to get all milestones;
+        # 5. One to get all products;
+        # 6. One to get all productseries;
+        # 7. One to get all distributions;
+        # 8. One to get all distroseries;
+        # 9. One to get all sourcepackagenames;
+        # 10. One to get all distroseries of a bug's distro. (See comment on
+        # getAssignedBugTasksDueBefore() to understand why it's needed)
+        self.assertThat(recorder, HasQueryCount(Equals(10)))

@@ -1521,12 +1521,13 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     def getAssignedSpecificationWorkItemsDueBefore(date):
         """Return SpecificationWorkItems assigned to this person (or members
         of this team) and whose milestone is due between today and the given
-        date.
+        date (inclusive).
         """
 
     def getAssignedBugTasksDueBefore(date, user):
         """Get all BugTasks assigned to this person (or members of this team)
-        and whose milestone is due between today and the given date.
+        and whose milestone is due between today and the given date
+        (inclusive).
         """
 
     participant_ids = List(

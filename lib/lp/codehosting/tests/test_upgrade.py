@@ -1,42 +1,50 @@
 __metaclass__ = type
 
 
-__all__ = ['upgrade_target']
+__all__ = ['UpgradeTempDir']
 
 
 import logging
 from os.path import dirname
+import shutil
+import tempfile
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.plugins.loom.branch import loomify
 from bzrlib.repofmt.groupcompress_repo import (
-    RepositoryFormat2a, RepositoryFormat2aSubtree)
+    RepositoryFormat2a,
+    RepositoryFormat2aSubtree,
+    )
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
+from fixtures import Fixture
 
 from lp.code.bzr import (
-    BranchFormat,
     branch_changed,
+    BranchFormat,
     get_branch_formats,
     RepositoryFormat,
     )
 from lp.codehosting.bzrutils import read_locked
-from lp.codehosting.upgrade import (
-    Upgrader,
-    )
+from lp.codehosting.upgrade import Upgrader
 from lp.services.config import config
-from lp.testing import (
-    temp_dir,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
-def upgrade_target():
-    branch_root_parent = dirname(
-        config.codehosting.mirrored_branches_root)
-    return(temp_dir(dir=branch_root_parent))
+class UpgradeTempDir(Fixture):
+    """Create a temporary directory inside the branch root."""
+
+    def setUp(self):
+        Fixture.setUp(self)
+        branch_root_parent = dirname(
+            config.codehosting.mirrored_branches_root)
+        self.path = tempfile.mkdtemp(dir=branch_root_parent)
+        self.addCleanup(shutil.rmtree, self.path, ignore_errors=True)
 
 
 class TestUpgrader(TestCaseWithFactory):
@@ -66,7 +74,7 @@ class TestUpgrader(TestCaseWithFactory):
         :param bzr_branch: the bzr branch to use.
         :param branch: The DB branch to use.
         """
-        target_dir = self.useContext(upgrade_target())
+        target_dir = self.useFixture(UpgradeTempDir()).path
         return Upgrader(
             branch, target_dir, logging.getLogger(), bzr_branch)
 

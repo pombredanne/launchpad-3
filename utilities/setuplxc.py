@@ -688,6 +688,9 @@ parser.add_argument(
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
 parser.add_argument(
+    '-U', '--use-urandom', action='store_true',
+    help='Use /dev/urandom to feed /dev/random and avoid entropy exhaustion.')
+parser.add_argument(
     'directory',
     help='The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
@@ -702,7 +705,7 @@ parser.validators = (
 
 def initialize_host(
     user, fullname, email, lpuser, private_key, public_key, ssh_key_path,
-    dependencies_dir, directory):
+    use_urandom, dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
     subprocess.call(['apt-get', 'update'])
@@ -763,6 +766,12 @@ def initialize_host(
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
+    # rng-tools is used to set /dev/urandom as random data source, avoiding
+    # entropy exhaustion during automated parallel tests.
+    if use_urandom:
+        subprocess.call(['apt-get', '-y', 'install', 'rng-tools'])
+        file_append('/etc/default/rng-tools', 'HRNGDEVICE=/dev/urandom')
+        subprocess.call(['/etc/init.d/rng-tools', 'start'])
 
 
 def create_scripts(user, lxcname, ssh_key_path):
@@ -1002,11 +1011,11 @@ def stop_lxc(lxcname, ssh_key_path):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    lxc_name, ssh_key_path, dependencies_dir, directory):
+    lxc_name, ssh_key_path, use_urandom, dependencies_dir, directory):
     function_args_map = OrderedDict((
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
-            ssh_key_path, dependencies_dir, directory)),
+            ssh_key_path, use_urandom, dependencies_dir, directory)),
         ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
@@ -1036,6 +1045,7 @@ if __name__ == '__main__':
             args.actions,
             args.lxc_name,
             args.ssh_key_path,
+            args.use_urandom,
             args.dependencies_dir,
             args.directory,
             )

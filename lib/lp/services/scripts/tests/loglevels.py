@@ -20,7 +20,10 @@ time.gmtime = fake_gmtime
 
 from optparse import OptionParser
 
-from lp.services.scripts.logger import logger, logger_options
+from lp.services.scripts.logger import (
+    logger,
+    logger_options,
+    )
 
 parser = OptionParser()
 logger_options(parser)

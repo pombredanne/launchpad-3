@@ -87,7 +87,10 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
-from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarNavigationMixin,
+    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -135,7 +138,8 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IDistribution
 
