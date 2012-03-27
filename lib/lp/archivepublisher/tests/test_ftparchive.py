@@ -205,7 +205,7 @@ class TestFTPArchive(TestCaseWithFactory):
         fa = self._setUpFTPArchiveHandler()
 
         breezy_autotest = self._distribution.getSeries('breezy-autotest')
-        self.assertEquals([], list(breezy_autotest.architectures))
+        self.assertEqual([], list(breezy_autotest.architectures))
 
         published_binaries = fa.getBinariesForOverrides(
             breezy_autotest, PackagePublishingPocket.RELEASE)
