@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -17,7 +17,7 @@
                     branches: LP.cache.branches,
                     bugs: LP.cache.bugs
                 };
-                var detail_module  = Y.lp.registry.sharing.details;
+                var details_module  = Y.lp.registry.sharing.details;
                 var details_widget = new details_module.SharingDetailsTable(
                                                           config);
                 details_widget.render();

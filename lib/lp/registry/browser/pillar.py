@@ -390,9 +390,9 @@ class PillarPersonSharingView(LaunchpadView):
                             self.pillar, self.person):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
-                bugs.append(artifact)
+                bugs.append(concrete)
             elif IBranch.providedBy(concrete):
-                branches.append(artifact)
+                branches.append(concrete)
 
         self.bugs = bugs
         self.branches = branches
