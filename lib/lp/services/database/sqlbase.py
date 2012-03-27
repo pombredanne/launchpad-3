@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'block_implicit_flushes',
     'clear_current_connection_cache',
-    'commit',
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
