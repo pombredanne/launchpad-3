@@ -64,15 +64,27 @@ class DecoratedResultSet(object):
         self.slice_info = slice_info
         self.config(return_both=return_both)
 
+    def _extract_plain_and_result(self, results):
+        """Extract the plain and normal results from a sub-result.
+
+        This gets slightly complicated when there are nested
+        DecoratedResultSets, as we have to propogate the plain result
+        all the way up.
+        """
+        if not results:
+            return [], []
+        elif (zope_isinstance(self.result_set, DecoratedResultSet)
+              and self.return_both):
+            assert self.result_set.return_both == self.return_both
+            return zip(*results)
+        else:
+            return results, results
+
     def decorate_or_none(self, result, row_index=None):
         """Decorate a result or return None if the result is itself None"""
         # If we have a nested DecoratedResultSet we need to propogate
         # the plain result.
-        if zope_isinstance(self.result_set, DecoratedResultSet):
-            assert self.result_set.return_both == self.return_both
-            plain, result = result
-        else:
-            plain = result
+        ([plain], [result]) = self._extract_plain_and_result([result])
 
         if result is None:
             decorated = None
@@ -127,10 +139,11 @@ class DecoratedResultSet(object):
             stop = start + len(results)
             result_slice = slice(start, stop)
         if self.pre_iter_hook is not None:
+            pre_iter_rows = self._extract_plain_and_result(results)[1]
             if self.slice_info:
-                self.pre_iter_hook(results, result_slice)
+                self.pre_iter_hook(pre_iter_rows, result_slice)
             else:
-                self.pre_iter_hook(results)
+                self.pre_iter_hook(pre_iter_rows)
         if self.slice_info:
             start = result_slice.start
             for offset, value in enumerate(results):
