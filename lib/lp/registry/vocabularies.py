@@ -20,7 +20,6 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 """
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 
 __metaclass__ = type
 
@@ -42,6 +41,7 @@ __all__ = [
     'FilteredProductSeriesVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
+    'NewPillarShareeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -102,6 +102,7 @@ from zope.security.proxy import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1041,8 +1042,8 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarSharee(TeamVocabularyMixin,
-                                ValidPersonOrTeamVocabulary):
+class NewPillarShareeVocabulary(TeamVocabularyMixin,
+                                    ValidPersonOrTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an

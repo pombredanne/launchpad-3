@@ -432,13 +432,13 @@
 
   <securedutility
     name="NewPillarSharee"
-    component="lp.registry.vocabularies.NewPillarSharee"
+    component="lp.registry.vocabularies.NewPillarShareeVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="lp.registry.vocabularies.NewPillarSharee">
+  <class class="lp.registry.vocabularies.NewPillarShareeVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
