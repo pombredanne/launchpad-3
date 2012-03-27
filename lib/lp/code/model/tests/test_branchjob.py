@@ -70,6 +70,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import celeryd
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
@@ -80,6 +81,7 @@ from lp.testing.dbuser import (
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.testing.librarianhelpers import get_newest_librarian_file
 from lp.testing.mail_helpers import pop_notifications
@@ -165,6 +167,13 @@ class TestBranchScanJob(TestCaseWithFactory):
         self.assertEqual(db_branch.revision_count, 5)
 
 
+def create_knit(test_case):
+    db_branch, tree = test_case.create_branch_and_tree(format='knit')
+    db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+    db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+    return db_branch, tree
+
+
 class TestBranchUpgradeJob(TestCaseWithFactory):
     """Tests for `BranchUpgradeJob`."""
 
@@ -193,7 +202,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
@@ -222,17 +231,11 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             AlreadyLatestFormat, BranchUpgradeJob.create, branch,
             self.factory.makePerson())
 
-    def create_knit(self):
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-        return db_branch, tree
-
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getInternalBzrUrl())
@@ -278,6 +281,29 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             'Launchpad error while upgrading a branch', mail['subject'])
         self.assertIn('Not a branch', mail.get_payload(decode=True))
+
+
+class TestBranchUpgradeViaCelery(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    def test_runViaCelery(self):
+        """Upgrades via celeryd work correctly."""
+        with celeryd():
+            self.useBzrBranches()
+            db_branch, tree = create_knit(self)
+            self.assertEqual(
+                tree.branch.repository._format.get_format_string(),
+                'Bazaar-NG Knit Repository Format 1')
+
+            job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
+            transaction.commit()
+            job.runViaCelery().wait(30)
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+        self.assertFalse(db_branch.needs_upgrading)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
