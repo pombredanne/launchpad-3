@@ -123,6 +123,31 @@ class PageMacroDispatcherTestCase(TestPageMacroDispatcherMixin, TestCase):
             KeyError, "'fnord'",
             self._call_test_tales, 'view/macro:pagehas/fnord')
 
+    def test_has_watermark_default(self):
+        # All pages have a watermark if the view does not provide the attr.
+        has_watermark = test_tales('view/macro:has-watermark', view=self.view)
+        self.assertIs(True, has_watermark)
+
+    def test_has_watermark_false(self):
+        # A view cand define has_watermark as False.
+        class NoWatermarkView(TestView):
+            has_watermark = False
+
+        self.registerBrowserViewAdapter(NoWatermarkView, ITest, '+test')
+        view = create_view(TestObject(), name='+test')
+        has_watermark = test_tales('view/macro:has-watermark', view=view)
+        self.assertIs(False, has_watermark)
+
+    def test_has_watermark_true(self):
+        # A view cand define has_watermark as True.
+        class NoWatermarkView(TestView):
+            has_watermark = True
+
+        self.registerBrowserViewAdapter(NoWatermarkView, ITest, '+test')
+        view = create_view(TestObject(), name='+test')
+        has_watermark = test_tales('view/macro:has-watermark', view=view)
+        self.assertIs(True, has_watermark)
+
 
 class PageMacroDispatcherInteractionTestCase(TestPageMacroDispatcherMixin,
                                              TestCaseWithFactory):
