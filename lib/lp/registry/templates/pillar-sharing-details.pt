@@ -13,8 +13,13 @@
             LPJS.use('base', 'node', 'event', 'lp.registry.sharing.details',
                 function(Y) {
             Y.on('domready', function() {
-                var config = {branches: LP.cache.branches};
-                var details_widget = new Y.lp.registry.sharing.details.SharingDetailsTable(config);
+                var config = {
+                    branches: LP.cache.branches,
+                    bugs: LP.cache.bugs
+                };
+                var detail_module  = Y.lp.registry.sharing.details;
+                var details_widget = new details_module.SharingDetailsTable(
+                                                          config);
                 details_widget.render();
             });
           });

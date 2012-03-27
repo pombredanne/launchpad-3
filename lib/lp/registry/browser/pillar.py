@@ -379,6 +379,8 @@ class PillarPersonSharingView(LaunchpadView):
 
         cache = IJSONRequestCache(self.request)
         branch_data = self._build_branch_template_data(self.branches)
+        bug_data = self._build_bug_template_data(self.bugs)
+        cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
 
     def _loadSharedArtifacts(self):
