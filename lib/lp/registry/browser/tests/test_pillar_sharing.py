@@ -231,8 +231,8 @@ class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
             view = create_initialized_view(self.pillar, '+sharing')
             self.assertEqual('Sharing Information', view.page_title)
             self.assertEqual('Sharing information', view.label)
-            self.assertTrue(view.show_sharing_information_link)
-            self.assertFalse(view.show_audit_sharing_link)
+            self.assertFalse(view.show_sharing_information_link)
+            self.assertTrue(view.show_audit_sharing_link)
 
     def test_sharing_menu_without_feature_flag(self):
         url = canonical_url(self.pillar)
@@ -251,6 +251,16 @@ class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
             sharing_url = canonical_url(self.pillar, view_name='+sharing')
             sharing_menu = soup.find('a', {'href': sharing_url})
             self.assertIsNotNone(sharing_menu)
+
+    def test_audit_sharing_link(self):
+        # The +audit-sharing link is rendered.
+        with FeatureFixture(ENABLED_FLAG):
+            url = canonical_url(self.pillar, view_name='+sharing')
+            browser = setupBrowserForUser(user=self.driver)
+            browser.open(url)
+            soup = BeautifulSoup(browser.contents)
+            audit_sharing_link = soup.find('a', {'href': '+audit-sharing'})
+            self.assertIsNotNone(audit_sharing_link)
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.
@@ -318,8 +328,18 @@ class PillarAuditSharingViewTestMixin(BasePillarSharingViewTestMixin):
             view = create_initialized_view(self.pillar, '+audit-sharing')
             self.assertEqual('Audit Sharing', view.page_title)
             self.assertEqual('Audit sharing', view.label)
-            self.assertFalse(view.show_sharing_information_link)
-            self.assertTrue(view.show_audit_sharing_link)
+            self.assertTrue(view.show_sharing_information_link)
+            self.assertFalse(view.show_audit_sharing_link)
+
+    def test_sharing_information_link(self):
+        # The +sharing link is rendered.
+        with FeatureFixture(ENABLED_FLAG):
+            url = canonical_url(self.pillar, view_name='+audit-sharing')
+            browser = setupBrowserForUser(user=self.driver)
+            browser.open(url)
+            soup = BeautifulSoup(browser.contents)
+            sharing_info_link = soup.find('a', {'href': '+sharing'})
+            self.assertIsNotNone(sharing_info_link)
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.

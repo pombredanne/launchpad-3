@@ -364,7 +364,7 @@ class PillarSharingInformationView(BasePillarSharingView):
     label = "Sharing information"
 
     @property
-    def show_sharing_information_link(self):
+    def show_audit_sharing_link(self):
         return True
 
     def unbatched_sharees(self):
@@ -378,7 +378,7 @@ class PillarAuditSharingView(BasePillarSharingView):
     label = "Audit sharing"
 
     @property
-    def show_audit_sharing_link(self):
+    def show_sharing_information_link(self):
         return True
 
     def unbatched_sharees(self):
