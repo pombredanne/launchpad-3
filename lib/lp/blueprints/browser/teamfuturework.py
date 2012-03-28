@@ -134,8 +134,19 @@ class WorkItemContainer:
 
     @property
     def percent_done(self):
-        # TODO: Implement this.
-        return 0
+        done_items = [w for w in self._items if w.is_done]
+        return 100.0 * len(done_items)/len(self._items)
+
+    @property
+    def progress_bar(self):
+        # XXX: move css to stylesheet
+        # TODO: round the float in the mouse over text
+        return """
+            <div style="background-color: #bdbdbd;" title="%s %% complete">
+              <div style="width:%s%%">
+                <div style="background-color: green">&nbsp;</div>
+              </div>
+            </div>""" % (self.percent_done, self.percent_done)
 
     def append(self, item):
         self._items.append(item)

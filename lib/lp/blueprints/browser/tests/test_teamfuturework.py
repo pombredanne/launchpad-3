@@ -7,9 +7,15 @@ from datetime import datetime
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.blueprints.browser.teamfuturework import getWorkItemsDueBefore
+from lp.blueprints.browser.teamfuturework import (
+    getWorkItemsDueBefore,
+    WorkItemContainer,
+    )
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -111,3 +117,33 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(1, len(container.items))
         self.assertEqual(current_wi.title, container.items[0].title)
         self.assertTrue(container.is_future)
+
+class TestWorkItemContainer(TestCase):
+
+    class MockWorkItem:
+
+        def __init__(self, is_done=False):
+            self._is_done = is_done
+
+        @property
+        def is_done(self):
+            return self._is_done
+
+    def test_progress_bar(self):
+        container = WorkItemContainer(None, None, None, None, None)
+        container.append(self.MockWorkItem(True))
+        container.append(self.MockWorkItem(False))
+        container.append(self.MockWorkItem(True))
+        container.append(self.MockWorkItem(True))
+        self.assertIn('width:75.0%', container.progress_bar)
+
+    def test_percent_done(self):
+        container = WorkItemContainer(None, None, None, None, None)
+        container.append(self.MockWorkItem(True))
+        container.append(self.MockWorkItem(False))
+        container.append(self.MockWorkItem(True))
+        self.assertEqual(container.percent_done, 100.0*2/3)
+        container.append(self.MockWorkItem(True))
+        self.assertEqual(container.percent_done, 100.0*3/4)
+        container.append(self.MockWorkItem(False))
+        self.assertEqual(container.percent_done, 100.0*3/5)
