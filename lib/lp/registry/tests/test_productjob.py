@@ -11,17 +11,21 @@ from datetime import (
     )
 
 import pytz
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
     IProductNotificationJobSource,
+    ISevenDayCommercialExpirationJob,
+    ISevenDayCommercialExpirationJobSource,
     )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -29,6 +33,7 @@ from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
     ProductNotificationJob,
+    SevenDayCommercialExpirationJob,
     )
 from lp.testing import (
     person_logged_in,
@@ -369,3 +374,35 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertEqual(subject, notifications[0]['Subject'])
         self.assertIn(
             'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
+
+
+class SevenDayCommercialExpirationJobTestCase(TestCaseWithFactory):
+    """Test case for the SevenDayCommercialExpirationJob class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def make_notification_data(self):
+        product = self.factory.makeProduct()
+        reviewer = self.factory.makePerson('reviewer@eg.com', name='reviewer')
+        subject = "test subject"
+        email_template_name = 'product-license-dont-know'
+        return product, email_template_name, subject, reviewer
+
+    def test_create(self):
+        # Create an instance of SevenDayCommercialExpirationJo that stores
+        # the notification information.
+        product = self.factory.makeProduct()
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        self.assertIs(
+            True,
+            ISevenDayCommercialExpirationJobSource.providedBy(
+                SevenDayCommercialExpirationJob))
+        job = SevenDayCommercialExpirationJob.create(product, reviewer)
+        self.assertIsInstance(job, SevenDayCommercialExpirationJob)
+        self.assertIs(
+            True, ISevenDayCommercialExpirationJob.providedBy(job))
+        self.assertEqual(product, job.product)
+        self.assertEqual(job.email_template_name, job._email_template_name)
+        self.assertEqual(job._subject_template % product.name, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(True, job.reply_to_commercial)

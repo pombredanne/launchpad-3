@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'ProductJob',
+    'SevenDayCommercialExpirationJob',
     ]
 
 from lazr.delegates import delegates
@@ -30,6 +31,8 @@ from lp.registry.interfaces.productjob import (
     IProductJobSource,
     IProductNotificationJob,
     IProductNotificationJobSource,
+    ISevenDayCommercialExpirationJob,
+    ISevenDayCommercialExpirationJobSource,
     )
 from lp.registry.model.product import Product
 from lp.services.config import config
@@ -282,3 +285,22 @@ class ProductNotificationJob(ProductJobDerived):
             'Launchpad', config.canonical.noreply_from_address)
         self.sendEmailToMaintainer(
             self.email_template_name, self.subject, from_address)
+
+
+class SevenDayCommercialExpirationJob(ProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+    implements(ISevenDayCommercialExpirationJob)
+    classProvides(ISevenDayCommercialExpirationJobSource)
+    class_job_type = ProductJobType.REVIEWER_NOTIFICATION
+
+    _email_template_name = 'product-commercial-subscription-expiration'
+    _subject_template = (
+        'The commercial-use subscription for %s in Launchpad is expiring')
+
+    @classmethod
+    def create(cls, product, reviewer):
+        """See `ISevenDayCommercialExpirationJobSource`."""
+        subject = cls._subject_template % product.name
+        return super(SevenDayCommercialExpirationJob, cls).create(
+            product, cls._email_template_name, subject, reviewer, True)

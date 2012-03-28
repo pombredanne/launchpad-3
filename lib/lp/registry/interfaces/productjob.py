@@ -9,6 +9,8 @@ __all__ = [
     'IProductJobSource',
     'IProductNotificationJob',
     'IProductNotificationJobSource',
+    'ISevenDayCommercialExpirationJob',
+    'ISevenDayCommercialExpirationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -128,8 +130,9 @@ class ISevenDayCommercialExpirationJob(IProductNotificationJob):
 class ISevenDayCommercialExpirationJobSource(IProductNotificationJobSource):
     """An interface for creating `ISevenDayCommercialExpirationJob`s."""
 
-    def create(product):
+    def create(product, reviewer):
         """Create a new `ISevenDayCommercialExpirationJob`.
 
         :param product: An IProduct.
+        :param reviewer: The user or agent sending the email.
         """
