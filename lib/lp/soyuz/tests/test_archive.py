@@ -497,8 +497,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         archive = self.factory.makeArchive(owner=owner)
         self.assertTrue(archive.checkArchivePermission(owner))
         someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
-        self.assertEqual(
-            False, archive.checkArchivePermission(someone_unrelated))
+        self.assertFalse(archive.checkArchivePermission(someone_unrelated))
 
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
@@ -823,8 +822,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA, owner=person)
         suitesourcepackage = self.factory.makeSuiteSourcePackage(
             pocket=PackagePublishingPocket.PROPOSED)
-        self.assertEqual(
-            False,
+        self.assertFalse(
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
     def test_canUploadSuiteSourcePackage_no_permission(self):
@@ -834,8 +832,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         suitesourcepackage = self.factory.makeSuiteSourcePackage(
             pocket=PackagePublishingPocket.RELEASE)
         person = self.factory.makePerson()
-        self.assertEqual(
-            False,
+        self.assertFalse(
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
     def test_canUploadSuiteSourcePackage_package_permission(self):
@@ -846,8 +843,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         person = self.factory.makePerson()
         removeSecurityProxy(archive).newPackageUploader(
             person, suitesourcepackage.sourcepackagename)
-        self.assertEqual(
-            True,
+        self.assertTrue(
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
     def test_canUploadSuiteSourcePackage_component_permission(self):
@@ -857,8 +853,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         suitesourcepackage = self.makePackageToUpload(distroseries)
         person = self.factory.makePerson()
         removeSecurityProxy(archive).newComponentUploader(person, "universe")
-        self.assertEqual(
-            True,
+        self.assertTrue(
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
     def test_canUploadSuiteSourcePackage_strict_component(self):
@@ -878,8 +873,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # This time the user can't upload as there has been a
         # publication and they don't have permission for the component
         # the package is published in.
-        self.assertEqual(
-            False,
+        self.assertFalse(
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
     def test_hasAnyPermission(self):
