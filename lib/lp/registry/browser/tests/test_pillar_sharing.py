@@ -134,10 +134,74 @@ class TestDistributionSharingDetailsView(
         login_person(self.driver)
 
 
-class PillarSharingViewTestMixin:
-    """Test the PillarSharingView."""
+class BasePillarSharingViewTestMixin:
+    """Common pillar sharing view tests."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_init_without_feature_flag(self):
+        # We need a feature flag to enable the view.
+        self.assertRaises(
+            Unauthorized, create_initialized_view, self.pillar, self.view_name)
+
+    def test_picker_config(self):
+        # Test the config passed to the disclosure sharing picker.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_view(self.pillar, name=self.view_name)
+            picker_config = simplejson.loads(view.json_sharing_picker_config)
+            self.assertTrue('vocabulary_filters' in picker_config)
+            self.assertEqual(
+                'Share with a user or team',
+                picker_config['header'])
+            self.assertEqual(
+                'NewPillarSharee', picker_config['vocabulary'])
+
+    def test_view_range_factory(self):
+        # Test the view range factory is properly configured.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_initialized_view(self.pillar, name=self.view_name)
+            range_factory = view.sharees().batch.range_factory
+
+            def test_range_factory():
+                row = range_factory.resultset.get_plain_result_set()[0]
+                range_factory.getOrderValuesFor(row)
+
+            self.assertThat(
+                test_range_factory,
+                Not(Raises(MatchesException(StormRangeFactoryError))))
+
+    def test_view_query_count(self):
+        # Test the query count is within expected limit.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_view(self.pillar, name=self.view_name)
+            with StormStatementRecorder() as recorder:
+                view.initialize()
+            self.assertThat(recorder, HasQueryCount(LessThan(6)))
+
+    def test_view_write_enabled_without_feature_flag(self):
+        # Test that sharing_write_enabled is not set without the feature flag.
+        with FeatureFixture(ENABLED_FLAG):
+            login_person(self.owner)
+            view = create_initialized_view(self.pillar, name=self.view_name)
+            cache = IJSONRequestCache(view.request)
+            self.assertFalse(cache.objects.get('sharing_write_enabled'))
+
+    def test_view_write_enabled_with_feature_flag(self):
+        # Test that sharing_write_enabled is set when required.
+        with FeatureFixture(WRITE_FLAG):
+            view = create_initialized_view(self.pillar, name=self.view_name)
+            cache = IJSONRequestCache(view.request)
+            self.assertFalse(cache.objects.get('sharing_write_enabled'))
+            login_person(self.owner)
+            view = create_initialized_view(self.pillar, name=self.view_name)
+            cache = IJSONRequestCache(view.request)
+            self.assertTrue(cache.objects.get('sharing_write_enabled'))
+
+
+class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
+    """Test the PillarSharingInformationView."""
+
+    view_name = '+sharing'
 
     def createSharees(self):
         login_person(self.owner)
@@ -161,16 +225,14 @@ class PillarSharingViewTestMixin:
         for x in range(10):
             makeGrants('name%s' % x)
 
-    def test_init_without_feature_flag(self):
-        # We need a feature flag to enable the view.
-        self.assertRaises(
-            Unauthorized, create_initialized_view, self.pillar, '+sharing')
-
     def test_init_with_feature_flag(self):
         # The view works with a feature flag.
         with FeatureFixture(ENABLED_FLAG):
             view = create_initialized_view(self.pillar, '+sharing')
-            self.assertEqual('Sharing', view.page_title)
+            self.assertEqual('Sharing Information', view.page_title)
+            self.assertEqual('Sharing information', view.label)
+            self.assertTrue(view.show_sharing_information_link)
+            self.assertFalse(view.show_audit_sharing_link)
 
     def test_sharing_menu_without_feature_flag(self):
         url = canonical_url(self.pillar)
@@ -189,18 +251,6 @@ class PillarSharingViewTestMixin:
             sharing_url = canonical_url(self.pillar, view_name='+sharing')
             sharing_menu = soup.find('a', {'href': sharing_url})
             self.assertIsNotNone(sharing_menu)
-
-    def test_picker_config(self):
-        # Test the config passed to the disclosure sharing picker.
-        with FeatureFixture(ENABLED_FLAG):
-            view = create_view(self.pillar, name='+sharing')
-            picker_config = simplejson.loads(view.json_sharing_picker_config)
-            self.assertTrue('vocabulary_filters' in picker_config)
-            self.assertEqual(
-                'Share with a user or team',
-                picker_config['header'])
-            self.assertEqual(
-                'NewPillarSharee', picker_config['vocabulary'])
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.
@@ -228,54 +278,13 @@ class PillarSharingViewTestMixin:
             self.assertContentEqual(
                 next_batch.range_memo, cache.objects.get('next')['memo'])
 
-    def test_view_range_factory(self):
-        # Test the view range factory is properly configured.
-        with FeatureFixture(ENABLED_FLAG):
-            view = create_initialized_view(self.pillar, name='+sharing')
-            range_factory = view.sharees().batch.range_factory
 
-            def test_range_factory():
-                row = range_factory.resultset.get_plain_result_set()[0]
-                range_factory.getOrderValuesFor(row)
-
-            self.assertThat(
-                test_range_factory,
-                Not(Raises(MatchesException(StormRangeFactoryError))))
-
-    def test_view_query_count(self):
-        # Test the query count is within expected limit.
-        with FeatureFixture(ENABLED_FLAG):
-            view = create_view(self.pillar, name='+sharing')
-            with StormStatementRecorder() as recorder:
-                view.initialize()
-            self.assertThat(recorder, HasQueryCount(LessThan(6)))
-
-    def test_view_write_enabled_without_feature_flag(self):
-        # Test that sharing_write_enabled is not set without the feature flag.
-        with FeatureFixture(ENABLED_FLAG):
-            login_person(self.owner)
-            view = create_initialized_view(self.pillar, name='+sharing')
-            cache = IJSONRequestCache(view.request)
-            self.assertFalse(cache.objects.get('sharing_write_enabled'))
-
-    def test_view_write_enabled_with_feature_flag(self):
-        # Test that sharing_write_enabled is set when required.
-        with FeatureFixture(WRITE_FLAG):
-            view = create_initialized_view(self.pillar, name='+sharing')
-            cache = IJSONRequestCache(view.request)
-            self.assertFalse(cache.objects.get('sharing_write_enabled'))
-            login_person(self.owner)
-            view = create_initialized_view(self.pillar, name='+sharing')
-            cache = IJSONRequestCache(view.request)
-            self.assertTrue(cache.objects.get('sharing_write_enabled'))
-
-
-class TestProductSharingView(PillarSharingViewTestMixin,
-                                 TestCaseWithFactory):
-    """Test the PillarSharingView with products."""
+class TestProductSharingInformationView(
+                PillarSharingInformationViewTestMixin, TestCaseWithFactory):
+    """Test the PillarSharingInformationView with products."""
 
     def setUp(self):
-        super(TestProductSharingView, self).setUp()
+        super(TestProductSharingInformationView, self).setUp()
         self.driver = self.factory.makePerson()
         self.owner = self.factory.makePerson()
         self.pillar = self.factory.makeProduct(
@@ -284,15 +293,64 @@ class TestProductSharingView(PillarSharingViewTestMixin,
         login_person(self.driver)
 
 
-class TestDistributionSharingView(PillarSharingViewTestMixin,
-                                      TestCaseWithFactory):
-    """Test the PillarSharingView with distributions."""
+class TestDistributionSharingInformationView(
+                PillarSharingInformationViewTestMixin, TestCaseWithFactory):
+    """Test the PillarSharingInformationView with distributions."""
 
     def setUp(self):
-        super(TestDistributionSharingView, self).setUp()
+        super(TestDistributionSharingInformationView, self).setUp()
         self.driver = self.factory.makePerson()
         self.owner = self.factory.makePerson()
         self.pillar = self.factory.makeDistribution(
             owner=self.owner, driver=self.driver)
         self.createSharees()
+        login_person(self.driver)
+
+
+class PillarAuditSharingViewTestMixin(BasePillarSharingViewTestMixin):
+    """Test the PillarAuditSharingView."""
+
+    view_name = '+audit-sharing'
+
+    def test_init_with_feature_flag(self):
+        # The view works with a feature flag.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_initialized_view(self.pillar, '+audit-sharing')
+            self.assertEqual('Audit Sharing', view.page_title)
+            self.assertEqual('Audit sharing', view.label)
+            self.assertFalse(view.show_sharing_information_link)
+            self.assertTrue(view.show_audit_sharing_link)
+
+    def test_view_data_model(self):
+        # Test that the json request cache contains the view data model.
+        with FeatureFixture(ENABLED_FLAG):
+            view = create_initialized_view(self.pillar, name='+audit-sharing')
+            cache = IJSONRequestCache(view.request)
+            self.assertIsNotNone(cache.objects.get('information_types'))
+            self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+
+
+class TestProductAuditSharingView(
+                PillarAuditSharingViewTestMixin, TestCaseWithFactory):
+    """Test the PillarSharingInformationView with products."""
+
+    def setUp(self):
+        super(TestProductAuditSharingView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeProduct(
+            owner=self.owner, driver=self.driver)
+        login_person(self.driver)
+
+
+class TestDistributionAuditSharingView(
+                PillarAuditSharingViewTestMixin, TestCaseWithFactory):
+    """Test the PillarSharingInformationView with distributions."""
+
+    def setUp(self):
+        super(TestDistributionAuditSharingView, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.pillar = self.factory.makeDistribution(
+            owner=self.owner, driver=self.driver)
         login_person(self.driver)
