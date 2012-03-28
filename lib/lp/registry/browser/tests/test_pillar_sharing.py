@@ -40,6 +40,7 @@ from lp.testing.views import (
     )
 
 
+DETAILS_ENABLED_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
@@ -69,7 +70,7 @@ class PillarSharingDetailsMixin:
 
     def test_view_traverses_plus_sharingdetails(self):
         # The traversed url in the app is pillar/+sharingdetails/person
-        with FeatureFixture(ENABLED_FLAG):
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson()
@@ -82,7 +83,7 @@ class PillarSharingDetailsMixin:
     def test_not_found_without_sharing(self):
         # If there is no sharing between pillar and person, NotFound is the
         # result.
-        with FeatureFixture(ENABLED_FLAG):
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson(with_sharing=False)
@@ -99,7 +100,7 @@ class PillarSharingDetailsMixin:
 
     def test_init_with_feature_flag(self):
         # The view works with a feature flag.
-        with FeatureFixture(ENABLED_FLAG):
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
             self.assertEqual(pillarperson.person.displayname, view.page_title)
