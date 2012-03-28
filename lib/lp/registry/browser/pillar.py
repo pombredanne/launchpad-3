@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'InvolvedMenu',
+    'PillarAuditSharingView',
     'PillarBugsMenu',
     'PillarView',
     'PillarNavigationMixin',
