@@ -2275,6 +2275,9 @@ class WorkItemContainer:
 
     @property
     def display_label(self):
+        # XXX: Appending FOREIGN/FUTURE to the Blueprint's title looks really
+        # ugly.  Should probably get rid of it for now.
+        return self.label
         label = self.label
         if self.is_foreign:
             label += ' [FOREIGN] '
@@ -2311,6 +2314,7 @@ class WorkItemContainer:
         done_items = [w for w in self._items if w.is_done]
         return 100.0 * len(done_items)/len(self._items)
 
+    # I think it might be better to save the progress bars for later.
     @property
     def progress_bar(self):
         # XXX: move css to stylesheet
@@ -2370,7 +2374,7 @@ class GenericWorkItem:
     def from_bugtask(cls, bugtask):
         return cls(
             bugtask.assignee, bugtask.status, bugtask.importance,
-            bugtask.target, bugtask.title, bugtask=bugtask)
+            bugtask.target, bugtask.bug.description, bugtask=bugtask)
 
     @classmethod
     def from_workitem(cls, work_item):

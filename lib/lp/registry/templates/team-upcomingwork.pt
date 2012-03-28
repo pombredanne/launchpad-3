@@ -21,10 +21,61 @@
       of this team.
     </p>
 
+    <ul>
+      <li tal:repeat="container containers" style="margin-left: 1em" >
+        <tal:bp_workitems condition="container/spec">
+          <h3>Work items from Blueprint
+            <a tal:replace="structure container/html_link" /> of 
+            <a tal:replace="structure container/target/fmt:link" />
+            <!-- TODO: include the priority/assignee here as well -->
+          </h3>
+          <table class="listing" style="margin-left: 3em">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Assignee</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="item container/items">
+                <td tal:content="item/title" />
+                <td tal:content="structure item/assignee/fmt:link" />
+                <td tal:content="item/status/name" />
+              </tr>
+            </tbody>
+          </table>
+        </tal:bp_workitems>
+
+        <tal:bugtasks condition="not: container/spec">
+          <h3 tal:content="container/html_link" />
+          <table class="listing" width="70%" style="margin-left: 3em">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Target</th>
+                <th>Priority</th>
+                <th>Assignee</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="item container/items">
+                <td tal:content="item/title" />
+                <td tal:content="structure item/target/fmt:link" />
+                <td tal:content="item/priority/name" />
+                <td tal:content="structure item/assignee/fmt:link" />
+                <td tal:content="item/status/name" />
+              </tr>
+            </tbody>
+          </table>
+        </tal:bugtasks>
+      </li>
+    </ul>
+    <!--
     <table class="listing">
       <thead>
       <tr>
-      <!-- XXX: Do something else to keep the columns equally wide between tables. -->
         <th width="15%">Blueprint</th>
         <th width="10%">Target</th>
         <th width="5%">Priority</th>
@@ -52,6 +103,7 @@
         </div>
       </tbody>
     </table>
+    -->
   </div>
   </div>
 </div>
