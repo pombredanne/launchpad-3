@@ -221,6 +221,9 @@ class BugTargetBugsFeed(BugsFeedBase):
         if 'bugtargetdisplayname' in self.show_column:
             del self.show_column['bugtargetdisplayname']
 
+    def _createView(self):
+        return BugTargetView(self.context, self.request)
+
     @property
     def title(self):
         """See `IFeed`."""
@@ -245,7 +248,7 @@ class BugTargetBugsFeed(BugsFeedBase):
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
-        delegate_view = BugTargetView(self.context, self.request)
+        delegate_view = self._createView()
         # XXX: BradCrittenden 2008-03-25 bug=206811:
         # The feed should have `self.quantity` entries, each representing a
         # bug.  Our query returns bugtasks, not bugs.  We then work backward
