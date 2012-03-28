@@ -60,6 +60,7 @@ from lp.code.model.branchjob import (
     RosettaUploadJob,
     )
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.tests.test_branch import create_knit
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
@@ -165,13 +166,6 @@ class TestBranchScanJob(TestCaseWithFactory):
             job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
-
-
-def create_knit(test_case):
-    db_branch, tree = test_case.create_branch_and_tree(format='knit')
-    db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-    db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-    return db_branch, tree
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):
@@ -281,29 +275,6 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             'Launchpad error while upgrading a branch', mail['subject'])
         self.assertIn('Not a branch', mail.get_payload(decode=True))
-
-
-class TestBranchUpgradeViaCelery(TestCaseWithFactory):
-
-    layer = ZopelessAppServerLayer
-
-    def test_runViaCelery(self):
-        """Upgrades via celeryd work correctly."""
-        with celeryd():
-            self.useBzrBranches()
-            db_branch, tree = create_knit(self)
-            self.assertEqual(
-                tree.branch.repository._format.get_format_string(),
-                'Bazaar-NG Knit Repository Format 1')
-
-            job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
-            transaction.commit()
-            job.runViaCelery().wait(30)
-        new_branch = Branch.open(tree.branch.base)
-        self.assertEqual(
-            new_branch.repository._format.get_format_string(),
-            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
-        self.assertFalse(db_branch.needs_upgrading)
 
 
 class TestRevisionMailJob(TestCaseWithFactory):

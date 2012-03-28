@@ -13,6 +13,7 @@ from datetime import (
     timedelta,
     )
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
@@ -109,6 +110,8 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.tests import celeryd
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -132,10 +135,18 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
+
+
+def create_knit(test_case):
+    db_branch, tree = test_case.create_branch_and_tree(format='knit')
+    db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+    db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+    return db_branch, tree
 
 
 class TestCodeImport(TestCase):
@@ -585,7 +596,7 @@ class TestBranch(TestCaseWithFactory):
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessAppServerLayer
 
     def test_needsUpgrading_empty_formats(self):
         branch = self.factory.makePersonalBranch()
@@ -736,6 +747,23 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertEqual(
             jobs,
             [job, ])
+
+    def test_requestUpgradeUsesCelery(self):
+        with celeryd():
+            self.useBzrBranches()
+            db_branch, tree = create_knit(self)
+            self.assertEqual(
+                tree.branch.repository._format.get_format_string(),
+                'Bazaar-NG Knit Repository Format 1')
+
+            db_branch.requestUpgrade(db_branch.owner)
+            transaction.commit()
+            BaseRunnableJob.last_celery_response.wait(30)
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+        self.assertFalse(db_branch.needs_upgrading)
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an

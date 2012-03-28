@@ -40,7 +40,6 @@ from storm.locals import (
     Reference,
     )
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -1190,7 +1189,9 @@ class Branch(SQLBase, BzrIdentityMixin):
     def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job = getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job.celeryRunOnCommit()
+        return job
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.

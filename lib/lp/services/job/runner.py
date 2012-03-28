@@ -101,6 +101,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     retry_error_types = ()
 
+    last_celery_response = None
+
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
@@ -189,7 +191,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
-        return CeleryRunJob.delay(self.job_id)
+        response = CeleryRunJob.delay(self.job_id)
+        BaseRunnableJob.last_celery_response = response
+        return response
 
     def celeryCommitHook(self, succeeded):
         """Hook function to call when a commit completes."""
