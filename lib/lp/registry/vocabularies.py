@@ -41,6 +41,7 @@ __all__ = [
     'FilteredProductSeriesVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
+    'NewPillarShareeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -101,6 +102,7 @@ from zope.security.proxy import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1038,6 +1040,35 @@ class PersonActiveMembershipVocabulary:
     def __contains__(self, obj):
         """See `IVocabularyTokenized`."""
         return obj in self._get_teams()
+
+
+class NewPillarShareeVocabulary(TeamVocabularyMixin,
+                                    ValidPersonOrTeamVocabulary):
+    """The set of people and teams with whom to share information.
+
+    A person or team is eligible for sharing with if they are not already an
+    existing sharee for the pillar.
+    """
+
+    displayname = 'Share with a user or team'
+    step_title = 'Search for user or exclusive team with whom to share'
+
+    def __init__(self, context):
+        assert IPillar.providedBy(context)
+        super(ValidPersonOrTeamVocabulary, self).__init__(context)
+        aps = getUtility(IAccessPolicySource)
+        access_policies = aps.findByPillar([self.context])
+        self.policy_ids = [policy.id for policy in access_policies]
+
+    @property
+    def extra_clause(self):
+        clause = SQL("""
+            Person.id NOT IN (
+                SELECT grantee FROM AccessPolicyGrantFlat
+                WHERE policy in %s
+                )
+            """ % sqlvalues(self.policy_ids))
+        return clause
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
