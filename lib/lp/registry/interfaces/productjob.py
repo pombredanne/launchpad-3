@@ -119,3 +119,17 @@ class IProductNotificationJobSource(IProductJobSource):
         :param reply_to_commercial: Set the reply_to property to the
             commercial email address.
         """
+
+
+class ISevenDayCommercialExpirationJob(IProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+
+class ISevenDayCommercialExpirationJobSource(IProductNotificationJobSource):
+    """An interface for creating `ISevenDayCommercialExpirationJob`s."""
+
+    def create(product):
+        """Create a new `ISevenDayCommercialExpirationJob`.
+
+        :param product: An IProduct.
+        """
