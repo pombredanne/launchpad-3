@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,6 +6,7 @@ __metaclass__ = type
 from textwrap import dedent
 import unittest
 
+import transaction
 from zope.component import (
     getAdapter,
     getUtility,
@@ -15,7 +16,6 @@ from zope.interface.verify import verifyObject
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.database.sqlbase import commit
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -91,7 +91,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
                         getUtility(ILaunchpadCelebrities).rosetta_experts)
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
-        commit()
+        transaction.commit()
 
         # Prepare the import queue to handle a new .xpi import.
         (subject, body) = self.firefox_template.importFromQueue(entry)

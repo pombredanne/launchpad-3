@@ -16,11 +16,10 @@ __all__ = [
 
 
 from operator import attrgetter
-import simplejson
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interfaces import IJSONRequestCache
-
+import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implements,
@@ -32,16 +31,18 @@ from zope.security.interfaces import Unauthorized
 
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
-from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.bugs.interfaces.bug import IBug
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantFlatSource,
     IAccessPolicySource,
@@ -50,13 +51,13 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.propertycache import cachedproperty
 from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
@@ -69,6 +70,7 @@ from lp.services.webapp.menu import (
     NavigationMenu,
     )
 from lp.services.webapp.publisher import (
+    canonical_url,
     LaunchpadView,
     nearest,
     stepthrough,
@@ -286,7 +288,7 @@ class PillarSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            vocabulary='ValidPillarOwner',
+            vocabulary='NewPillarSharee',
             vocabulary_filters=self.sharing_vocabulary_filters,
             header='Share with a user or team')
 
@@ -303,15 +305,15 @@ class PillarSharingView(LaunchpadView):
             size=config.launchpad.default_batch_size,
             range_factory=StormRangeFactory(sharees))
 
-    def shareeData(self):
-        """Return an `ITableBatchNavigator` for sharees."""
+    def sharees(self):
+        """An `IBatchNavigator` for sharees."""
         if self._batch_navigator is None:
-            unbatchedSharees = self.unbatchedShareeData()
+            unbatchedSharees = self.unbatched_sharees()
             self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
         return self._batch_navigator
 
-    def unbatchedShareeData(self):
-        """Return all the sharees for a pillar."""
+    def unbatched_sharees(self):
+        """All the sharees for a pillar."""
         return self._getSharingService().getPillarSharees(self.context)
 
     def initialize(self):
@@ -334,10 +336,9 @@ class PillarSharingView(LaunchpadView):
         if len(view_names) != 1:
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()
-        batch_navigator = self.shareeData()
+        batch_navigator = self.sharees()
         cache.objects['sharee_data'] = (
-            self._getSharingService().getPillarShareeData(
-                self.context, batch_navigator.batch))
+            self._getSharingService().jsonShareeData(batch_navigator.batch))
 
         def _getBatchInfo(batch):
             if batch is None:
@@ -362,7 +363,7 @@ class PillarPersonSharingView(LaunchpadView):
     label = "Information shared with person or team"
 
     def initialize(self):
-        enabled_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
         enabled = bool(getFeatureFlag(enabled_flag))
         if not enabled:
             raise Unauthorized("This feature is not yet available.")
@@ -372,3 +373,35 @@ class PillarPersonSharingView(LaunchpadView):
 
         self.label = "Information shared with %s" % self.person.displayname
         self.page_title = "%s" % self.person.displayname
+        self.sharing_service = getUtility(IService, 'sharing')
+
+        self._loadSharedArtifacts()
+
+        cache = IJSONRequestCache(self.request)
+        branch_data = self._build_branch_template_data(self.branches)
+        cache.objects['branches'] = branch_data
+
+    def _loadSharedArtifacts(self):
+        bugs = []
+        branches = []
+        for artifact in self.sharing_service.getSharedArtifacts(
+                            self.pillar, self.person):
+            concrete = artifact.concrete_artifact
+            if IBug.providedBy(concrete):
+                bugs.append(artifact)
+            elif IBranch.providedBy(concrete):
+                branches.append(artifact)
+
+        self.bugs = bugs
+        self.branches = branches
+        self.shared_bugs_count = len(bugs)
+        self.shared_branches_count = len(branches)
+
+    def _build_branch_template_data(self, branches):
+        branch_data = []
+        for branch in branches:
+            branch_data.append(dict(
+                branch_link=canonical_url(branch),
+                branch_name=branch.unique_name,
+                branch_id=branch.id))
+        return branch_data

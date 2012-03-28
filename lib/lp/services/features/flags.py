@@ -294,6 +294,13 @@ flag_info = sorted([
      '',
      'Sharing overview',
      ''),
+    ('disclosure.enhanced_sharing_details.enabled',
+     'boolean',
+     ('If true, enables the details page for viewing the `Some` things that'
+      'shared with a user or team.'),
+     '',
+     '',
+     ''),
     ('disclosure.enhanced_sharing.writable',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '

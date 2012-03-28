@@ -445,7 +445,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
-        return self.useContext(temp_dir())
+        return self.useFixture(fixtures.TempDir()).path
 
     def installKarmaRecorder(self, *args, **kwargs):
         """Set up and return a `KarmaRecorder`.
@@ -1382,14 +1382,6 @@ class NestedTempfile(fixtures.Fixture):
         self.useFixture(tempdir)
         patch = fixtures.MonkeyPatch("tempfile.tempdir", tempdir.path)
         self.useFixture(patch)
-
-
-@contextmanager
-def temp_dir(dir=None):
-    """Provide a temporary directory as a ContextManager."""
-    tempdir = tempfile.mkdtemp(dir=dir)
-    yield tempdir
-    shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @contextmanager

@@ -1572,6 +1572,36 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
+class TestMilestoneDueDateFiltering(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_milestone_date_filters(self):
+        today = datetime.today().date()
+        ten_days_ago = today - timedelta(days=10)
+        ten_days_from_now = today + timedelta(days=10)
+        current_milestone = self.factory.makeMilestone(dateexpected=today)
+        old_milestone = self.factory.makeMilestone(
+            dateexpected=ten_days_ago)
+        future_milestone = self.factory.makeMilestone(
+            dateexpected=ten_days_from_now)
+        current_milestone_bug = self.factory.makeBug(
+            milestone=current_milestone)
+        old_milestone_bug = self.factory.makeBug(milestone=old_milestone)
+        future_milestone_bug = self.factory.makeBug(
+            milestone=future_milestone)
+        # Search for bugs whose milestone.dateexpected is between yesterday
+        # and tomorrow.  This will return only the one task targeted to
+        # current_milestone.
+        params = BugTaskSearchParams(
+            user=None,
+            milestone_dateexpected_after=today - timedelta(days=1),
+            milestone_dateexpected_before=today + timedelta(days=1))
+        result = getUtility(IBugTaskSet).search(params)
+        self.assertEqual(
+            current_milestone_bug.bugtasks, list(result))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
