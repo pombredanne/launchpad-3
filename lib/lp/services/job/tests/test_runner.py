@@ -413,8 +413,8 @@ class StuckJob(StaticJobSource):
         self.job = Job()
 
     def __repr__(self):
-        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
-            self.id, self.lease_length, self.delay)
+        return '<%s(%r, lease_length=%s, delay=%s)>' % (
+            self.__class__.__name__, self.id, self.lease_length, self.delay)
 
     def acquireLease(self):
         return self.job.acquireLease(self.lease_length)
@@ -557,11 +557,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
                 INFO Running through Twisted.
-                INFO Running StuckJob \(ID .*\).
-                INFO Running StuckJob \(ID .*\).
-                ERROR OOPS while executing job \d+: \['OOPS-.*\] %s\('%s',\)
+                INFO Running <StuckJob.*?> \(ID .*?\).
+                INFO Running <StuckJob.*?> \(ID .*?\).
                 INFO Job resulted in OOPS: .*
-            """ % (expected_exception))))
+            """)))
 
     def test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
@@ -584,11 +583,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             logger.getLogBuffer(), MatchesRegex(
                 dedent("""\
                 INFO Running through Twisted.
-                INFO Running ShorterStuckJob \(ID .*\).
-                INFO Running ShorterStuckJob \(ID .*\).
-                ERROR OOPS while executing job \d+: \['OOPS-.*\] %s\('%s',\)
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
                 INFO Job resulted in OOPS: %s
-                """) % ('TimeoutError', 'Job ran too long.', oops['id'])))
+                """) % oops['id']))
         self.assertEqual(('TimeoutError', 'Job ran too long.'),
                          (oops['type'], oops['value']))
 
