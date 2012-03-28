@@ -844,23 +844,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
-                      productseries=None, name=None, active=True):
-        if product is None and distribution is None and productseries is None:
+                      productseries=None, name=None, active=True,
+                      dateexpected=None, distroseries=None):
+        if (product is None and distribution is None and productseries is None
+            and distroseries is None):
             product = self.makeProduct()
-        if distribution is None:
+        if distribution is None and distroseries is None:
             if productseries is not None:
                 product = productseries.product
             else:
                 productseries = self.makeProductSeries(product=product)
-            distroseries = None
-        else:
+        elif distroseries is None:
             distroseries = self.makeDistroSeries(distribution=distribution)
+        else:
+            distribution = distroseries.distribution
         if name is None:
             name = self.getUniqueString()
         return ProxyFactory(
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
-                      name=name, active=active))
+                      name=name, active=active, dateexpected=dateexpected))
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -1656,7 +1659,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             or distribution parameters, or the those parameters must be None.
         :param series: If set, the series.product must match the product
             parameter, or the series.distribution must match the distribution
-            parameter, or the those parameters must be None.
+            parameter, or those parameters must be None.
         :param tags: If set, the tags to be added with the bug.
         :param distribution: If set, the sourcepackagename is used as the
             default bug target.
