@@ -98,6 +98,12 @@ by the insecure policy:
   >>> insecure_policy.autoApprove(FakeUpload(ppa=True))
   True
 
+So are uploads to the PROPOSED pocket:
+
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary-proposed')
+  >>> insecure_policy.autoApprove(FakeUpload())
+  True
+
 When the distroseries is FROZEN the uploads should wait in UNAPPROVED queue:
 
   >>> login('foo.bar@canonical.com')
@@ -129,3 +135,17 @@ uploads to post-release pockets would also be auto-approved:
 
   >>> insecure_policy.autoApprove(FakeUpload(ppa=True))
   True
+
+Uploads to the PROPOSED pocket are also not auto-approved by the insecure
+policy:
+
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary-proposed')
+  >>> insecure_policy.autoApprove(FakeUpload())
+  False
+
+PROPOSED pocket uploads are not auto-approved post-release either:
+
+  >>> hoary.status = SeriesStatus.CURRENT
+  >>> flush_database_updates()
+  >>> insecure_policy.autoApprove(FakeUpload())
+  False

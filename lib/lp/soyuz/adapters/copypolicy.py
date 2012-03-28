@@ -42,12 +42,17 @@ class BasicCopyPolicy:
         if archive.is_ppa:
             return True
 
-        # If the pocket is RELEASE and we're not frozen then you can
-        # upload to it.  Any other states mean the upload is unapproved.
+        # If the pocket is RELEASE or PROPOSED and we're not frozen then you
+        # can upload to it.  Any other states mean the upload is unapproved.
         #
         # This check is orthogonal to the
         # IDistroSeries.canUploadToPocket check.
-        if (pocket == PackagePublishingPocket.RELEASE and
+        auto_approve_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if (pocket in auto_approve_pockets and
+            distroseries.isUnstable() and
             distroseries.status != SeriesStatus.FROZEN):
             return True
 

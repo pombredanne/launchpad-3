@@ -610,6 +610,20 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertCannotUpload(
             CannotUploadToPocket, archive,
             self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.UPDATES,
+            distroseries=distroseries)
+
+    def test_checkUpload_primary_proposed_development(self):
+        # It should be possible to upload to the PROPOSED pocket while the
+        # distroseries is in the DEVELOPMENT status.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, sourcepackagename)
+        self.assertCanUpload(
+            archive, person, sourcepackagename,
             pocket=PackagePublishingPocket.PROPOSED,
             distroseries=distroseries)
 

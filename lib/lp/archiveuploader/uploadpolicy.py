@@ -259,19 +259,26 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                     "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
-        """The insecure policy only auto-approves RELEASE pocket stuff.
+        """The insecure policy auto-approves RELEASE/PROPOSED pocket stuff.
 
         PPA uploads are always auto-approved.
-        Other uploads (to main archives) are only auto-approved if the
-        distroseries is not FROZEN (note that we already performed the
-        IDistroSeries.canUploadToPocket check in the checkUpload base method).
+        RELEASE and PROPOSED pocket uploads (to main archives) are only
+        auto-approved if the distroseries is in a non-FROZEN state
+        pre-release.  (We already performed the
+        IDistroSeries.canUploadToPocket check in the checkUpload base
+        method, which will deny RELEASE uploads post-release, but it doesn't
+        hurt to repeat this for that case.)
         """
         if upload.is_ppa:
             return True
 
-        if self.pocket == PackagePublishingPocket.RELEASE:
-            if (self.distroseries.status !=
-                SeriesStatus.FROZEN):
+        auto_approve_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if self.pocket in auto_approve_pockets:
+            if (self.distroseries.isUnstable() and
+                self.distroseries.status != SeriesStatus.FROZEN):
                 return True
         return False
 

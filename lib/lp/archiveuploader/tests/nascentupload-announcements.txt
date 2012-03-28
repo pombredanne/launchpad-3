@@ -4,16 +4,16 @@ NascentUpload Announcements
 NascentUpload announces uploads according its final status (NEW,
 AUTO-APPROVED, UNAPPROVED) and its destination pocket:
 
- * NEW to RELEASE (via insecure): submitter set (changes signer,
+ * NEW to RELEASE/PROPOSED (via insecure): submitter set (changes signer,
    Changed-by and maintainer) receives an 'new' warning message.
 
  * UNAPPROVED to frozen-RELEASE/UPDATES/BACKPORTS/PROPOSED (via insecure):
    submitter set receives an 'unapproved' warning (announcement is
    sent after the upload gets reviewed by archive-admin at queue time).
 
- * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
-   'acceptance' warning and the target distroseries changeslist
-   address receives an 'announcement' message.
+ * AUTO-APPROVED to RELEASE/PROPOSED (via insecure): submitter set receives
+   an 'acceptance' warning and the target distroseries changeslist address
+   receives an 'announcement' message.
 
  * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
    'acceptance' warning ('announcement' is skipped).

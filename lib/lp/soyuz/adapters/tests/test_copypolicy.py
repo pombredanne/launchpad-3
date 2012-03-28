@@ -73,6 +73,32 @@ class TestCopyPolicy(TestCaseWithFactory):
         approve = cp.autoApprove(archive, distroseries, pocket)
         self.assertFalse(approve)
 
+    def test_insecure_approves_copy_to_proposed_in_unfrozen_series(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.PROPOSED
+        cp = InsecureCopyPolicy()
+        approve = cp.autoApprove(archive, distroseries, pocket)
+        self.assertTrue(approve)
+
+    def test_insecure_holds_copy_to_proposed_in_frozen_series(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.PROPOSED
+        distroseries.status = SeriesStatus.FROZEN
+        cp = InsecureCopyPolicy()
+        approve = cp.autoApprove(archive, distroseries, pocket)
+        self.assertFalse(approve)
+
+    def test_insecure_holds_copy_to_proposed_in_current_series(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.PROPOSED
+        distroseries.status = SeriesStatus.CURRENT
+        cp = InsecureCopyPolicy()
+        approve = cp.autoApprove(archive, distroseries, pocket)
+        self.assertFalse(approve)
+
     def test_insecure_approves_existing_ppa_package(self):
         cp = InsecureCopyPolicy()
         self.assertApproved(ArchivePurpose.PPA, cp.autoApprove)

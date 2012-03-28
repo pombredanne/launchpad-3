@@ -204,6 +204,16 @@ the upload will have to wait for manual approval anyway:
     >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
     True
 
+The PROPOSED pocket is also special.  Pre-release, it may be used for
+staging uploads on their way into the RELEASE pocket; post-release, it may
+be used for staging uploads on their way into the UPDATES pocket.
+
+    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
+    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
 
 Package searching
 -----------------
