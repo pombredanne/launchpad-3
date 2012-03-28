@@ -222,6 +222,7 @@ class BugTargetBugsFeed(BugsFeedBase):
             del self.show_column['bugtargetdisplayname']
 
     def _createView(self):
+        """Create the delegate view used by this feed."""
         return BugTargetView(self.context, self.request)
 
     @property
@@ -274,6 +275,7 @@ class PersonBugsFeed(BugsFeedBase):
         return "Bugs for %s" % self.context.displayname
 
     def _createView(self):
+        """Create the delegate view used by this feed."""
         return PersonRelatedBugTaskSearchListingView(
             self.context, self.request)
 

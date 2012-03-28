@@ -53,7 +53,10 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
-from lp.layers import setFirstLayer, FeedsLayer
+from lp.layers import (
+    FeedsLayer,
+    setFirstLayer,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -1410,8 +1413,10 @@ class TestBugTaskEditView(TestCaseWithFactory):
 
 
 class BugsFeedsTestMixin:
+    """Mixin class to provide helper method for bugs feeds tests."""
 
     def getFeedViewCache(self, feed_cls):
+        """Return JSON cache for a feed's delegate view."""
         with dynamic_listings():
             request = LaunchpadTestRequest(
                 SERVER_URL='http://feeds.example.com/latest-bugs.atom')
@@ -1443,8 +1448,8 @@ class TestPersonBugs(TestCaseWithFactory, BugsFeedsTestMixin):
             'Project, distribution, package, or series subscriber',
             view.structural_subscriber_label)
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(PersonBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1470,8 +1475,8 @@ class TestDistributionBugs(TestCaseWithFactory, BugsFeedsTestMixin):
         self.assertEqual(
             'Package or series subscriber', view.structural_subscriber_label)
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1496,8 +1501,8 @@ class TestDistroSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
         self.assertEqual(
             'Package subscriber', view.structural_subscriber_label)
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1517,8 +1522,8 @@ class TestDistributionSourcePackageBugs(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1538,8 +1543,8 @@ class TestDistroSeriesSourcePackageBugs(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1564,8 +1569,8 @@ class TestProductBugs(TestCaseWithFactory, BugsFeedsTestMixin):
         self.assertEqual(
             'Series subscriber', view.structural_subscriber_label)
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1584,8 +1589,8 @@ class TestProductSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
@@ -1699,8 +1704,8 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugsFeedsTestMixin):
         self.assertEqual(
             'Project or series subscriber', view.structural_subscriber_label)
 
-    def test_mustache_cache_none_for_feeds(self):
-        """The mustache model should not added to JSON cache for feeds."""
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
         cache = self.getFeedViewCache(BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
