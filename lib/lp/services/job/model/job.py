@@ -25,6 +25,7 @@ from storm.locals import (
     Int,
     Reference,
     )
+import transaction
 from zope.interface import implements
 
 from lp.services.database import bulk
@@ -55,6 +56,10 @@ class Job(SQLBase):
     """See `IJob`."""
 
     implements(IJob)
+
+    @property
+    def job_id(self):
+        return self.id
 
     scheduled_start = UtcDateTimeCol()
 
@@ -144,31 +149,49 @@ class Job(SQLBase):
         expiry = timegm(self.lease_expires.timetuple())
         return max(0, expiry - time.time())
 
-    def start(self):
+    def start(self, manage_transaction=False):
         """See `IJob`."""
         self._set_status(JobStatus.RUNNING)
         self.date_started = datetime.datetime.now(UTC)
         self.date_finished = None
         self.attempt_count += 1
+        if manage_transaction:
+            transaction.commit()
 
-    def complete(self):
+    def complete(self, manage_transaction=False):
         """See `IJob`."""
+        # Commit the transaction to update the DB time.
+        if manage_transaction:
+            transaction.commit()
         self._set_status(JobStatus.COMPLETED)
         self.date_finished = datetime.datetime.now(UTC)
+        if manage_transaction:
+            transaction.commit()
 
-    def fail(self):
+    def fail(self, manage_transaction=False):
         """See `IJob`."""
+        if manage_transaction:
+            transaction.abort()
         self._set_status(JobStatus.FAILED)
         self.date_finished = datetime.datetime.now(UTC)
+        if manage_transaction:
+            transaction.commit()
 
-    def queue(self):
+    def queue(self, manage_transaction=False):
         """See `IJob`."""
+        # Commit the transaction to update the DB time.
+        if manage_transaction:
+            transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+        if manage_transaction:
+            transaction.commit()
 
-    def suspend(self):
+    def suspend(self, manage_transaction=False):
         """See `IJob`."""
         self._set_status(JobStatus.SUSPENDED)
+        if manage_transaction:
+            transaction.commit()
 
     def resume(self):
         """See `IJob`."""
