@@ -6,9 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu',
-    'PillarBugsMenu',
-    'PillarView',
+    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -412,8 +410,17 @@ class PillarPersonSharingView(LaunchpadView):
         bug_data = []
         for bug in bugs:
             importance = bug.default_bugtask.importance.title.lower()
+            [bugtask] = [task for task in bug.bugtasks if
+                            task.target == self.pillar]
+            if bugtask is not None:
+                url = canonical_url(bugtask, path_only_if_possible=True)
+            else:
+                # This shouldn't ever happen, but if it does there's no reason
+                # to crash.
+                url = canonical_url(bug, path_only_if_possible=True)
+
             bug_data.append(dict(
-                bug_link=canonical_url(bug),
+                bug_link=url,
                 bug_summary=bug.title,
                 bug_id=bug.id,
                 bug_importance=importance))
