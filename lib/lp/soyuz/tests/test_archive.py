@@ -129,7 +129,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         results = self.getPublications(
             sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(3, num_results)
+        self.assertEqual(3, num_results)
 
     def test_getPublications_empty_list_of_archives(self):
         # Passing an empty list of archives will result in an empty
@@ -137,12 +137,12 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
         archives, sourcepackagename = self.makeArchivesWithPublications()
         results = self.getPublications(
             sourcepackagename, [], archives[0].distribution)
-        self.assertEquals([], list(results))
+        self.assertEqual([], list(results))
 
     def assertPublicationsFromArchives(self, publications, archives):
-        self.assertEquals(len(archives), publications.count())
+        self.assertEqual(len(archives), publications.count())
         for publication, archive in zip(publications, archives):
-            self.assertEquals(archive, publication.archive)
+            self.assertEqual(archive, publication.archive)
 
     def test_getPublications_returns_only_for_given_archives(self):
         # Returns only publications for the specified archives
@@ -160,7 +160,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING)
         results = self.getPublications(
             sourcepackagename, [archive], archive.distribution)
-        self.assertEquals([], list(results))
+        self.assertEqual([], list(results))
 
     def publishSourceInNewArchive(self, sourcepackagename):
         distribution = self.factory.makeDistribution()
@@ -192,12 +192,12 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
     def test_empty_ppa_has_zero_binaries_size(self):
         # An empty PPA has no binaries so has zero binaries_size.
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEquals(0, ppa.binaries_size)
+        self.assertEqual(0, ppa.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
         archive = self.factory.makeArchive()
-        self.assertEquals(0, archive.sources_size)
+        self.assertEqual(0, archive.sources_size)
 
     def publishSourceFile(self, archive, library_file):
         """Publish a source package with the given content to the archive.
@@ -220,12 +220,10 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         library_file = self.factory.makeLibraryFileAlias()
         self.publishSourceFile(archive, library_file)
-        self.assertEquals(
-            library_file.content.filesize, archive.sources_size)
+        self.assertEqual(library_file.content.filesize, archive.sources_size)
 
         self.publishSourceFile(archive, library_file)
-        self.assertEquals(
-            library_file.content.filesize, archive.sources_size)
+        self.assertEqual(library_file.content.filesize, archive.sources_size)
 
 
 class TestSeriesWithSources(TestCaseWithFactory):
@@ -326,23 +324,23 @@ class TestCorrespondingDebugArchive(TestCaseWithFactory):
             distribution=distribution, purpose=ArchivePurpose.PRIMARY)
         debug = self.factory.makeArchive(
             distribution=distribution, purpose=ArchivePurpose.DEBUG)
-        self.assertEquals(primary.debug_archive, debug)
+        self.assertEqual(primary.debug_archive, debug)
 
     def testPartnerDebugArchiveIsSelf(self):
         partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertEquals(partner.debug_archive, partner)
+        self.assertEqual(partner.debug_archive, partner)
 
     def testCopyDebugArchiveIsSelf(self):
         copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
-        self.assertEquals(copy.debug_archive, copy)
+        self.assertEqual(copy.debug_archive, copy)
 
     def testDebugDebugArchiveIsSelf(self):
         debug = self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
-        self.assertEquals(debug.debug_archive, debug)
+        self.assertEqual(debug.debug_archive, debug)
 
     def testPPADebugArchiveIsSelf(self):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEquals(ppa.debug_archive, ppa)
+        self.assertEqual(ppa.debug_archive, ppa)
 
     def testMissingPrimaryDebugArchiveIsNone(self):
         primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -497,10 +495,10 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # Uploading to a PPA should be allowed for a user that is the owner
         owner = self.factory.makePerson(name="somebody")
         archive = self.factory.makeArchive(owner=owner)
-        self.assertEquals(True, archive.checkArchivePermission(owner))
+        self.assertTrue(archive.checkArchivePermission(owner))
         someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
-        self.assertEquals(False,
-            archive.checkArchivePermission(someone_unrelated))
+        self.assertEqual(
+            False, archive.checkArchivePermission(someone_unrelated))
 
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
@@ -511,13 +509,12 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
         somebody = self.factory.makePerson()
-        self.assertEquals(False,
-            archive.checkArchivePermission(somebody, main))
+        self.assertFalse(archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
         coredev = self.factory.makePerson()
         with person_logged_in(archive.distribution.owner):
             archive.newComponentUploader(coredev, main.name)
-        self.assertEquals(True, archive.checkArchivePermission(coredev, main))
+        self.assertTrue(archive.checkArchivePermission(coredev, main))
 
     def test_checkArchivePermission_ppa(self):
         owner = self.factory.makePerson()
@@ -525,9 +522,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                                            owner=owner)
         somebody = self.factory.makePerson()
         # The owner has access
-        self.assertEquals(True, archive.checkArchivePermission(owner))
+        self.assertTrue(archive.checkArchivePermission(owner))
         # Somebody unrelated does not
-        self.assertEquals(False, archive.checkArchivePermission(somebody))
+        self.assertFalse(archive.checkArchivePermission(somebody))
 
     def makeArchiveAndActiveDistroSeries(self, purpose=None):
         if purpose is None:
@@ -1049,7 +1046,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
-        self.assertEquals(0,
+        self.assertEqual(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
         self.assertContentEqual([], self.archive.enabled_restricted_families)
@@ -1059,7 +1056,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         enable enabled_restricted_families for arm for that archive."""
         self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEquals([self.arm],
+        self.assertEqual([self.arm],
                 list(self.archive.enabled_restricted_families))
 
     def test_get_returns_restricted_only(self):
@@ -1076,13 +1073,12 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.archive.enabled_restricted_families = [self.arm]
         allowed_restricted_families = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
-        self.assertEquals(1, allowed_restricted_families.count())
-        self.assertEquals(self.arm,
-            allowed_restricted_families[0].processorfamily)
-        self.assertEquals(
-            [self.arm], self.archive.enabled_restricted_families)
+        self.assertEqual(1, allowed_restricted_families.count())
+        self.assertEqual(
+            self.arm, allowed_restricted_families[0].processorfamily)
+        self.assertEqual([self.arm], self.archive.enabled_restricted_families)
         self.archive.enabled_restricted_families = []
-        self.assertEquals(0,
+        self.assertEqual(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
         self.assertContentEqual([], self.archive.enabled_restricted_families)
@@ -1266,7 +1262,7 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertEquals(
+        self.assertEqual(
             new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
@@ -1457,7 +1453,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
         if archive is None:
             archive = self.archive
 
-        self.assertEquals(
+        self.assertEqual(
             list(
                 archive.findDepCandidates(
                     self.publisher.distroseries[arch_tag], pocket, component,
@@ -1480,7 +1476,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
 
     def test_ppa_searches_primary_archive(self):
         # PPA searches implicitly look in the primary archive too.
-        self.assertEquals(self.archive.purpose, ArchivePurpose.PPA)
+        self.assertEqual(self.archive.purpose, ArchivePurpose.PPA)
         self.assertDep('i386', 'foo', [])
 
         bins = self.publisher.getPubBinaries(
@@ -1747,14 +1743,13 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
     def test_series_components_for_primary_archive(self):
         # The primary archive uses the series' defined components.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertEquals(
-            0, len(archive.getComponentsForSeries(self.series)))
+        self.assertEqual(0, len(archive.getComponentsForSeries(self.series)))
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
         clear_property_cache(self.series)
 
-        self.assertEquals(
+        self.assertEqual(
             set((self.comp1, self.comp2)),
             set(archive.getComponentsForSeries(self.series)))
 
@@ -1763,7 +1758,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
         ComponentSelection(distroseries=self.series, component=self.comp1)
         partner_comp = getUtility(IComponentSet)['partner']
-        self.assertEquals(
+        self.assertEqual(
             [partner_comp],
             list(archive.getComponentsForSeries(self.series)))
 
@@ -1772,7 +1767,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         ComponentSelection(distroseries=self.series, component=self.comp1)
         main_comp = getUtility(IComponentSet)['main']
-        self.assertEquals(
+        self.assertEqual(
             [main_comp], list(archive.getComponentsForSeries(self.series)))
 
 
@@ -1787,12 +1782,12 @@ class TestDefaultComponent(TestCaseWithFactory):
 
     def test_default_component_for_partner(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertEquals(
+        self.assertEqual(
             getUtility(IComponentSet)['partner'], archive.default_component)
 
     def test_default_component_for_ppas(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEquals(
+        self.assertEqual(
             getUtility(IComponentSet)['main'], archive.default_component)
 
 
@@ -1832,7 +1827,7 @@ class TestGetFileByName(TestCaseWithFactory):
         self.assertRaises(
             NotFoundError, self.archive.getFileByName, dsc.filename)
         pub.sourcepackagerelease.addFile(dsc)
-        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+        self.assertEqual(dsc, self.archive.getFileByName(dsc.filename))
 
     def test_nonexistent_source_file_is_not_found(self):
         # Something that looks like a source file but isn't is not
@@ -1848,7 +1843,7 @@ class TestGetFileByName(TestCaseWithFactory):
         self.assertRaises(
             NotFoundError, self.archive.getFileByName, deb.filename)
         pub.binarypackagerelease.addFile(deb)
-        self.assertEquals(deb, self.archive.getFileByName(deb.filename))
+        self.assertEqual(deb, self.archive.getFileByName(deb.filename))
 
     def test_nonexistent_binary_file_is_not_found(self):
         # Something that looks like a binary file but isn't is not
@@ -1867,7 +1862,7 @@ class TestGetFileByName(TestCaseWithFactory):
             NotFoundError, self.archive.getFileByName,
             pu.changesfile.filename)
         pu.addSource(pub.sourcepackagerelease)
-        self.assertEquals(
+        self.assertEqual(
             pu.changesfile,
             self.archive.getFileByName(pu.changesfile.filename))
 
@@ -1885,7 +1880,7 @@ class TestGetFileByName(TestCaseWithFactory):
         diff = self.factory.makePackageDiff(
             to_source=pub.sourcepackagerelease,
             diff_filename='foo_1.0.diff.gz')
-        self.assertEquals(
+        self.assertEqual(
             diff.diff_content,
             self.archive.getFileByName(diff.diff_content.filename))
 
@@ -1897,7 +1892,7 @@ class TestGetFileByName(TestCaseWithFactory):
         pub.sourcepackagerelease.addFile(dsc)
 
         # The file is initially found without trouble.
-        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+        self.assertEqual(dsc, self.archive.getFileByName(dsc.filename))
 
         # But after expiry it is not.
         removeSecurityProxy(dsc).content = None
@@ -1907,7 +1902,7 @@ class TestGetFileByName(TestCaseWithFactory):
         # It reappears if we create a new one.
         new_dsc = self.factory.makeLibraryFileAlias(filename=dsc.filename)
         pub.sourcepackagerelease.addFile(new_dsc)
-        self.assertEquals(new_dsc, self.archive.getFileByName(dsc.filename))
+        self.assertEqual(new_dsc, self.archive.getFileByName(dsc.filename))
 
 
 class TestGetPublishedSources(TestCaseWithFactory):
