@@ -351,10 +351,13 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    _private = BoolCol(dbName='private', notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
+    _security_related = BoolCol(
+        dbName='security_related', notNull=True, default=False)
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
@@ -1768,6 +1771,10 @@ class Bug(SQLBase):
                 if pillar.security_contact is not None:
                     self.subscribe(pillar.security_contact, who)
         self.information_type = information_type
+        # Set the legacy attributes for now.
+        self._private = information_type in PRIVATE_INFORMATION_TYPES
+        self._security_related = (
+            information_type in SECURITY_INFORMATION_TYPES)
         notify(ObjectModifiedEvent(
                 self, bug_before_modification, [information_type], user=who))
         return True
@@ -2867,10 +2874,15 @@ class BugSet:
                 date_made_private=params.datecreated,
                 who_made_private=params.owner)
 
+        # Set the legacy attributes for now.
+        private = params.information_type in PRIVATE_INFORMATION_TYPES
+        security_related = (
+            params.information_type in SECURITY_INFORMATION_TYPES)
         bug = Bug(
             title=params.title, description=params.description,
             owner=params.owner, datecreated=params.datecreated,
             information_type=params.information_type,
+            _private=private, _security_related=security_related,
             **extra_params)
 
         if params.subscribe_owner:
