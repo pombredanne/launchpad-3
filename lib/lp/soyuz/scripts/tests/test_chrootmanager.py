@@ -10,11 +10,11 @@ import re
 import tempfile
 from unittest import TestCase
 
+import transaction
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.soyuz.scripts.chrootmanager import (
     ChrootManager,
     ChrootManagerError,
@@ -89,7 +89,7 @@ class TestChrootManager(TestCase):
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
-        commit()
+        transaction.commit()
 
         dest = self._create_file('chroot.gotten')
 
@@ -127,7 +127,7 @@ class TestChrootManager(TestCase):
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
-        commit()
+        transaction.commit()
 
         chroot_manager = ChrootManager(self.distroarchseries)
 
