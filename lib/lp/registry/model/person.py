@@ -1745,14 +1745,15 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug.information_type in PRIVATE_INFORMATION_TYPES,
+                    Bug.information_type.is_in(PRIVATE_INFORMATION_TYPES),
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.information_type in PRIVATE_INFORMATION_TYPES,
+                where=And(Bug.information_type.is_in(
+                    PRIVATE_INFORMATION_TYPES),
                     BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:

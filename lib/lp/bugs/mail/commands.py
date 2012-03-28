@@ -186,14 +186,14 @@ class PrivateEmailCommand(EmailCommand):
 
         if isinstance(context, CreateBugParams):
             if private and (
-                context.information_type is InformationType.PUBLIC):
+                context.information_type == InformationType.PUBLIC):
                 context.information_type = InformationType.USERDATA
             elif (
-                context.information_type is
+                context.information_type !=
                 InformationType.EMBARGOEDSECURITY):
-                pass
-            else:
                 context.information_type = InformationType.PUBLIC
+            else:
+                raise AssertionError("Unkown state change.")
             return context, current_event
 
         # Snapshot.
@@ -248,8 +248,6 @@ class SecurityEmailCommand(EmailCommand):
         if isinstance(context, CreateBugParams):
             if security_related:
                 context.information_type = InformationType.EMBARGOEDSECURITY
-            else:
-                context.information_type = InformationType.PUBLIC
             return context, current_event
 
         # Take a snapshot.

@@ -52,6 +52,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -1412,16 +1413,18 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
+    public_bug = "Bug.information_type IN (%s, %s)" % (
+        InformationType.PUBLIC.value,
+        InformationType.UNEMBARGOEDSECURITY.value)
     if user is None:
-        return "Bug.information_type IN (1, 2)", _nocache_bug_decorator
+        return public_bug, _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
     public_bug_filter = ''
     if not private_only:
-        # 1 == PUBLIC, 2 == UNEMBARGOEDSECURITY
-        public_bug_filter = 'Bug.information_type IN (1, 2) OR'
+        public_bug_filter = public_bug + ' OR'
 
     # A subselect is used here because joining through
     # TeamParticipation is only relevant to the "user-aware"

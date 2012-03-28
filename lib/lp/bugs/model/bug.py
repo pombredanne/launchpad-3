@@ -1727,7 +1727,7 @@ class Bug(SQLBase):
     def transitionToInformationType(self, information_type, who):
         """See `IBug`."""
         bug_before_modification = Snapshot(self, providing=providedBy(self))
-        if self.information_type is information_type:
+        if self.information_type == information_type:
             return False
         f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
         f_flag = bool(getFeatureFlag(f_flag_str))
@@ -1751,7 +1751,7 @@ class Bug(SQLBase):
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
-        if not f_flag and information_type is InformationType.USERDATA:
+        if not f_flag and information_type == InformationType.USERDATA:
             # If we didn't call reconcileSubscribers(), we may have
             # bug supervisors who should be on this bug, but aren't.
             supervisors = set()
@@ -1795,7 +1795,7 @@ class Bug(SQLBase):
         If bug supervisor or security contact is unset, fallback to bugtask
         reporter/owner.
         """
-        if information_type is InformationType.PUBLIC:
+        if information_type == InformationType.PUBLIC:
             return set()
         result = set()
         result.add(self.owner)
@@ -1891,8 +1891,8 @@ class Bug(SQLBase):
         # unsubscribe any unauthorised direct subscribers.
         pillar = self.default_bugtask.pillar
         private_project = IProduct.providedBy(pillar) and pillar.private_bugs
-        privleged_info = information_type is not InformationType.PUBLIC
-        if private_project and privleged_info:
+        privileged_info = information_type != InformationType.PUBLIC
+        if private_project and privileged_info:
             allowed_subscribers = set()
             allowed_subscribers.add(self.owner)
             for bugtask in self.bugtasks:
@@ -2776,7 +2776,7 @@ class BugSet:
         if params.product and params.product.private_bugs:
             # If the private_bugs flag is set on a product, then
             # force the new bug report to be private.
-            if params.information_type is InformationType.PUBLIC:
+            if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
         bug, event = self.createBugWithoutTarget(params)

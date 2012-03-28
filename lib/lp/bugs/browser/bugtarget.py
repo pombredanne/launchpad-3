@@ -77,7 +77,6 @@ from lp.app.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
-from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
@@ -626,7 +625,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                 'Additional information was added to the bug description.')
 
         if extra_data.private:
-            if params.information_type is InformationType.PUBLIC:
+            if params.information_type == InformationType.PUBLIC:
                 params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
