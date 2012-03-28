@@ -17,7 +17,10 @@ def celeryd():
     """
     from lp.services.job.celeryjob import CeleryRunJob
     from lazr.jobrunner.tests.test_celerytask import running
-    cmd_args = ('--config', 'lp.services.job.tests.celeryconfig')
-    env = dict(os.environ)
-    env['BROKER_URL'] = CeleryRunJob.app.conf['BROKER_URL']
-    return running('bin/celeryd', cmd_args, env=env)
+    cmd_args = (
+        '--config', 'lp.services.job.celeryconfig',
+        '--broker', CeleryRunJob.app.conf['BROKER_URL'],
+        '--concurrency', '1',
+        '--loglevel', 'INFO',
+    )
+    return running('bin/celeryd', cmd_args)
