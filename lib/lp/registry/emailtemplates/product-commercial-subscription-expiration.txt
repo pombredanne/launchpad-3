@@ -1,7 +1,7 @@
 Hello %(user_displayname)s,
 
-The commercial subscription for project '%(product_name)s' will
-expire soon.
+The commercial subscription for project '%(product_name)s' in
+Launchpad will expire soon.
 %(commercial_use_expiration)s
 
 You can renew the commercial-use subscription which costs
