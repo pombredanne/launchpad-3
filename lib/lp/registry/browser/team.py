@@ -2168,18 +2168,32 @@ class TeamFutureWorkView(LaunchpadView):
     # items and bugtasks.
     DELTA = 60
 
+    def initialize(self):
+        super(TeamFutureWorkView, self).initialize()
+        self.workitem_counts = {}
+        self.bugtask_counts = {}
+        for date, containers in self.work_item_containers:
+            self.bugtask_counts[date] = 0
+            self.workitem_counts[date] = 0
+            for container in containers:
+                if isinstance(container, AggregatedBugsContainer):
+                    self.bugtask_counts[date] += len(container.items)
+                else:
+                    self.workitem_counts[date] += len(container.items)
+
     @property
     def label(self):
-        return self.context.displayname
+        return self.page_title
 
     @property
     def page_title(self):
-        return "Upcoming work for %s." % self.label
+        return "Upcoming work for %s." % self.context.displayname
 
     @property
     def page_description(self):
         return "Work for %s in the near future." % self.label
 
+    @cachedproperty
     def overall_completion(self):
         n_complete = 0
         total_workitems = 0
@@ -2193,10 +2207,18 @@ class TeamFutureWorkView(LaunchpadView):
                         n_complete += 1
         return total_containers, total_workitems, n_complete
 
-    @property
+    @cachedproperty
     def upcoming_bp_count(self):
         # XXX: don't call overall_completion from both here and
         # upcoming_wi_count!
+        # We can turn that into a @cachedproperty so that we can call it as
+        # many times as we want without any overhead, but it occurred to me it
+        # doesn't make any sense to have overall stats -- what we want is
+        # per-milestone-date stats. The mockup has that, actually, we just
+        # need to move the summary paragraph that is at the top there to be
+        # under the milestone date, like the milestone-date progress bar.
+        # I've done that now so I think we can kill this, together with
+        # overall_completion and upcoming_wi_count.
         n_blueprints, _, _ = self.overall_completion()
         return n_blueprints
 
@@ -2205,7 +2227,7 @@ class TeamFutureWorkView(LaunchpadView):
         _, n_workitems, _ = self.overall_completion()
         return n_workitems
 
-    @property
+    @cachedproperty
     def work_item_containers(self):
         result = getWorkItemsDueBefore(
             self.context, self.wanted_date, self.user)

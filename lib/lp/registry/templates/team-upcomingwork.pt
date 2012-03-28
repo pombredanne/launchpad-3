@@ -8,19 +8,23 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h2>Upcoming work for <span tal:replace="structure context/displayname"
-      /></h2>
-
-  <p>This team has <span tal:replace="view/upcoming_bp_count" /> upcoming
-    Blueprints with a total of <span tal:replace="view/upcoming_wi_count" /> work items.
 
   <div tal:repeat="pair view/work_item_containers">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
-    <h3 tal:content="date/fmt:date" />
+    <h2 tal:content="date/fmt:date" />
+
+    <p>
+      There are <span tal:replace="python: view.workitem_counts[date]" />
+      Blueprint work items and
+      <span tal:replace="python: view.bugtask_counts[date]" /> Bugs due
+      in <span tal:content="date/fmt:date" /> which are assigned to members
+      of this team.
+    </p>
+
     <table class="listing">
       <thead>
       <tr>
-	<!-- XXX: Do something else to keep the columns equally wide between tables. -->
+      <!-- XXX: Do something else to keep the columns equally wide between tables. -->
         <th width="15%">Blueprint</th>
         <th width="10%">Target</th>
         <th width="5%">Priority</th>
@@ -28,8 +32,8 @@
         <th width="10%">Progress</th>
       </tr>
       </thead>
-      <div tal:repeat="container containers">
-        <tbody>
+      <tbody>
+        <div tal:repeat="container containers">
         <tr>
           <td tal:content="structure container/html_link" />
           <td tal:content="structure container/target_link" />
@@ -43,10 +47,10 @@
           <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
           <td><a tal:replace="structure workitem/assignee/fmt:link" />
           </td>
-	  <td><span tal:replace="workitem/status/name" /></td>
+          <td><span tal:replace="workitem/status/name" /></td>
         </tr>
-        </tbody>
-      </div>
+        </div>
+      </tbody>
     </table>
   </div>
   </div>
