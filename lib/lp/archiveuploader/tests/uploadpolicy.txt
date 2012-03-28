@@ -138,14 +138,11 @@ uploads to post-release pockets would also be auto-approved:
     True
 
 Uploads to the PROPOSED pocket are also not auto-approved by the insecure
-policy:
+policy, either before or after release:
 
     >>> insecure_policy.setDistroSeriesAndPocket('hoary-proposed')
     >>> insecure_policy.autoApprove(FakeUpload())
     False
-
-PROPOSED pocket uploads are not auto-approved post-release either:
-
     >>> hoary.status = SeriesStatus.CURRENT
     >>> flush_database_updates()
     >>> insecure_policy.autoApprove(FakeUpload())
