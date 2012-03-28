@@ -270,10 +270,13 @@ class PersonBugsFeed(BugsFeedBase):
         """See `IFeed`."""
         return "Bugs for %s" % self.context.displayname
 
+    def _createView(self):
+        return PersonRelatedBugTaskSearchListingView(
+            self.context, self.request)
+
     def _getRawItems(self):
         """Perform the search."""
-        delegate_view = PersonRelatedBugTaskSearchListingView(
-            self.context, self.request)
+        delegate_view = self._createView()
         # Since the delegate_view derives from LaunchpadFormView the view must
         # be initialized to setup the widgets.
         delegate_view.initialize()

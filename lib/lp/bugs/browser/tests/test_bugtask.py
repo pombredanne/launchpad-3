@@ -41,6 +41,7 @@ from lp.bugs.browser.bugtask import (
     BugTaskListingItem,
     BugTasksAndNominationsView,
     )
+from lp.bugs.feed.bug import PersonBugsFeed
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
@@ -49,6 +50,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.layers import setFirstLayer, FeedsLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -1424,6 +1426,19 @@ class TestPersonBugs(TestCaseWithFactory):
         self.assertEqual(
             'Project, distribution, package, or series subscriber',
             view.structural_subscriber_label)
+
+    def test_mustache_cache_none_for_feeds(self):
+        """The mustache model should not added to JSON cache for feeds."""
+        with dynamic_listings():
+            request = LaunchpadTestRequest(
+                SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+            setFirstLayer(request, FeedsLayer)
+            feed = PersonBugsFeed(self.target, request)
+            delegate_view = feed._createView()
+            delegate_view.initialize()
+            cache = IJSONRequestCache(delegate_view.request)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 
 class TestDistributionBugs(TestCaseWithFactory):
