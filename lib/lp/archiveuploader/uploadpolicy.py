@@ -29,7 +29,6 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -76,7 +75,7 @@ class AbstractUploadPolicy:
 
     name = 'abstract'
     options = None
-    accepted_type = None # Must be defined in subclasses.
+    accepted_type = None  # Must be defined in subclasses.
 
     def __init__(self):
         """Prepare a policy..."""

@@ -68,7 +68,7 @@ class InsecureCopyPolicy(BasicCopyPolicy):
     def send_email(self, archive):
         if archive.is_ppa:
             return False
-            
+
         return True
 
 

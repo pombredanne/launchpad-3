@@ -2493,7 +2493,7 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
 
     def test_removeCopyNotification_raises_for_not_failed(self):
         distroseries, archive1, archive2, requester, job = self.makeJob()
-        
+
         self.assertNotEqual(JobStatus.FAILED, job.status)
         with person_logged_in(archive2.owner):
             self.assertRaises(
