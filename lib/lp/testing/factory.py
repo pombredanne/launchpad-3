@@ -1422,7 +1422,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We just remove the security proxies to be able to change the branch
         # here.
         removeSecurityProxy(branch).branchChanged(
-            '', 'rev1', None, None, None, skip_celery=True)
+            '', 'rev1', None, None, None, celery_scan=False)
         with person_logged_in(package.distribution.owner):
             package.development_version.setBranch(
                 PackagePublishingPocket.RELEASE, branch,
@@ -1628,7 +1628,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if branch.branch_type not in (BranchType.REMOTE, BranchType.HOSTED):
             branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
-            '', parent.revision_id, None, None, None, skip_celery=True)
+            '', parent.revision_id, None, None, None, celery_scan=False)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id=None, sequence=None,
