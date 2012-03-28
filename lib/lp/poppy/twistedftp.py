@@ -28,19 +28,12 @@ from twisted.cred.portal import (
 from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.python import filepath
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
-from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
-from lp.services.database import read_transaction
-from lp.services.gpg.interfaces import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
 
 
 class PoppyAccessCheck:
@@ -87,15 +80,7 @@ class PoppyAnonymousShell(ftp.FTPShell):
         """
         filename = os.sep.join(file_segments)
         self._create_missing_directories(filename)
-        path = self._path(file_segments)
-        try:
-            fObj = path.open("w")
-        except (IOError, OSError), e:
-            return ftp.errnoToFailure(e.errno, path)
-        except:
-            # Push any other error up to Twisted to deal with.
-            return defer.fail()
-        return defer.succeed(PoppyFileWriter(fObj))
+        return super(PoppyAnonymousShell, self).openForWriting(file_segments)
 
     def makeDirectory(self, path):
         """Make a directory using the secure `UploadFileSystem`."""
@@ -149,51 +134,6 @@ class FTPRealm:
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
             "Only IFTPShell interface is supported by this realm")
-
-
-class PoppyFileWriter(ftp._FileWriter):
-    """An `IWriteFile` that checks for signed changes files."""
-
-    # XXX: deryck, 2012-01-26, Bug 798957
-    # Disable close() as we search for a better fix to bug.
-    def disabled_close(self):
-        """Called after the file has been completely downloaded."""
-        if self.fObj.name.endswith(".changes"):
-            error = self.validateGPG(self.fObj.name)
-            if error is not None:
-                # PermissionDeniedError is one of the few ftp exceptions
-                # that lets us pass an error string back to the client.
-                return defer.fail(ftp.PermissionDeniedError(error))
-        return defer.succeed(None)
-
-    @read_transaction
-    def validateGPG(self, signed_file):
-        """Check the GPG signature in the file referenced by signed_file.
-
-        Return an error string if there's a problem, or None.
-        """
-        try:
-            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
-                file(signed_file, "rb").read())
-        except GPGVerificationError, error:
-            log = logging.getLogger("poppy-sftp")
-            log.info("GPGVerificationError, extra debug output follows:")
-            for attr in ("args", "code", "signatures", "source"):
-                if hasattr(error, attr):
-                    log.info("%s: %s", attr, getattr(error, attr))
-            return ("Changes file must be signed with a valid GPG "
-                    "signature: %s" % error)
-
-        key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
-        if key is None:
-            return (
-                "Signing key %s not registered in launchpad."
-                % sig.fingerprint)
-
-        if key.active == False:
-            return "Changes file is signed with a deactivated key"
-
-        return None
 
 
 class FTPServiceFactory(service.Service):

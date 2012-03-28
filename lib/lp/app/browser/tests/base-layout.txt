@@ -39,7 +39,8 @@ main and side content are positioned using the "yui-t4", "yui-main",
     >>> view = MainSideView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
+    ...
       <!--
         Facet name: overview
         Page type: main_side
@@ -62,7 +63,7 @@ content to take up all the horizontal space.
     >>> view = MainOnlyView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
     ...
       <!--
         Facet name: overview
@@ -85,7 +86,8 @@ slots are rendered, as are the application tabs.
     >>> view = SearchlessView(user, request)
     >>> html = view.render()
     >>> print html
-    <!DOCTYPE html ...
+    <!DOCTYPE html>
+    ...
     ...
       <!--
         Facet name: overview

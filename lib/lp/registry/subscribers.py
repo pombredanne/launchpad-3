@@ -12,7 +12,6 @@ from datetime import datetime
 import textwrap
 
 import pytz
-
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import IPerson
@@ -40,6 +39,7 @@ def product_licenses_modified(product, event):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
         notification.send()
+        notification.display()
 
 
 class LicenseNotification:

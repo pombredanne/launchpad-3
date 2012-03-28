@@ -81,7 +81,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -1092,62 +1091,6 @@ class SpecificationWorkitemMigrator(TunableLoop):
         self.offset += chunk_size
 
 
-class BugsInformationTypeMigrator(TunableLoop):
-    """A `TunableLoop` to populate information_type for all bugs."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BugsInformationTypeMigrator, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Bug)
-
-    def findBugs(self):
-        return self.store.find(Bug, Bug.information_type == None)
-
-    def isDone(self):
-        return self.findBugs().is_empty()
-
-    def __call__(self, chunk_size):
-        for bug in self.findBugs()[:chunk_size]:
-            bug._setInformationType()
-        self.transaction.commit()
-
-
-class BugLegacyAccessMirrorer(TunableLoop):
-    """A `TunableLoop` to populate the access policy schema for all bugs."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BugLegacyAccessMirrorer, self).__init__(log, abort_time)
-        watermark = getUtility(IMemcacheClient).get(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name)
-        self.start_at = watermark or 0
-
-    def findBugIDs(self):
-        return IMasterStore(Bug).find(
-            (Bug.id,), Bug.id >= self.start_at).order_by(Bug.id)
-
-    def isDone(self):
-        return self.findBugIDs().is_empty()
-
-    def __call__(self, chunk_size):
-        ids = [row[0] for row in self.findBugIDs()[:chunk_size]]
-        list(IMasterStore(Bug).using(Bug).find(
-            SQL('bug_mirror_legacy_access(Bug.id)'),
-            Bug.id.is_in(ids)))
-
-        self.start_at = ids[-1] + 1
-        result = getUtility(IMemcacheClient).set(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name,
-            self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1399,8 +1342,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugsInformationTypeMigrator,
-        BugLegacyAccessMirrorer,
         ]
     experimental_tunable_loops = []
 

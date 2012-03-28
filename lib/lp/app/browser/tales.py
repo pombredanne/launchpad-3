@@ -2520,6 +2520,7 @@ class PageMacroDispatcher:
         view/macro:pagetype
 
         view/macro:is-page-contentless
+        view/macro:has-watermark
     """
 
     implements(ITraversable)
@@ -2554,6 +2555,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'is-page-contentless':
             return self.isPageContentless()
+        elif name == 'has-watermark':
+            return self.hasWatermark()
         else:
             raise TraversalError(name)
 
@@ -2568,6 +2571,14 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def hasWatermark(self):
+        """Does the page havethe watermark block.
+
+        The default value is True, but the view can provide has_watermark
+        to force the page not render the standard location information.
+        """
+        return getattr(self.context, 'has_watermark', True)
 
     def isPageContentless(self):
         """Should the template avoid rendering detailed information.

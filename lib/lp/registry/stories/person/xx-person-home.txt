@@ -147,9 +147,9 @@ A person's homepage also lists Karma and Time zone information:
     >>> print extract_text(find_tag_by_id(browser.contents, 'karma'))
     Karma: 130 Karma help
 
-    >>> browser.open('http://launchpad.dev/~kamion')
+    >>> browser.open('http://launchpad.dev/~ddaa')
     >>> print extract_text(find_tag_by_id(browser.contents, 'timezone'))
-    Time zone: Europe/London (UTC+0000)
+    Time zone: UTC (UTC+0000)
 
 Negative Ubuntu Code of Conduct signatory status is only displayed for
 yourself; others won't see it:

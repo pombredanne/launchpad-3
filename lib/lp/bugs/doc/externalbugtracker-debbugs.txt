@@ -621,13 +621,12 @@ There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
-    >>> from lp.services.database.sqlbase import commit
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
     >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
     []
-    >>> commit()
+    >>> transaction.commit()
 
     # Make sane data to play this test.
     >>> from lp.testing.dbuser import lp_dbuser
@@ -656,7 +655,7 @@ tracker.
     INFO    Committing the transaction.
     <BLANKLINE>
 
-    >>> commit()
+    >>> transaction.commit()
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     [u'evolution mail crashes on opening an email with a TIFF attachment']

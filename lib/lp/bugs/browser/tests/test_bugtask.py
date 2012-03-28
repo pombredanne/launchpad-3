@@ -1854,22 +1854,31 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, tags=()):
-    owner = factory.makePerson()
-    bug = factory.makeBug(
-        owner=owner, private=True, security_related=True)
-    with person_logged_in(owner):
-        bugtask = bug.default_bugtask
+def make_bug_task_listing_item(factory, bugtask=None):
+    if bugtask is None:
+        owner = factory.makePerson()
+        bug = factory.makeBug(
+            owner=owner, private=True, security_related=True)
+        with person_logged_in(owner):
+            bugtask = bug.default_bugtask
+    else:
+        owner = bugtask.bug.owner
+    bugtask = removeSecurityProxy(bugtask)
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
     badge_property = bug_badge_properties[bugtask]
+    tags = bug_task_set.getBugTaskTags([bugtask])
+    if tags != {}:
+        tags = tags[bugtask.id]
+    people = bug_task_set.getBugTaskPeople([bugtask])
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
         tags,
+        people,
         target_context=bugtask.target)
 
 
@@ -2412,11 +2421,14 @@ class TestBugTaskListingItem(TestCaseWithFactory):
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        assignee = self.factory.makePerson(displayname='Example Person')
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            removeSecurityProxy(bug).default_bugtask.transitionToAssignee(
+                assignee)
+        owner, item = make_bug_task_listing_item(
+            self.factory, bugtask=bug.default_bugtask)
         with person_logged_in(owner):
-            self.assertIs(None, item.model['assignee'])
-            assignee = self.factory.makePerson(displayname='Example Person')
-            item.bugtask.transitionToAssignee(assignee)
             self.assertEqual('Example Person', item.model['assignee'])
 
     def test_model_age(self):
@@ -2429,8 +2441,11 @@ class TestBugTaskListingItem(TestCaseWithFactory):
 
     def test_model_tags(self):
         """Model contains bug tags."""
+        bug = self.factory.makeBug()
         tags = ['tag1', 'tag2']
-        owner, item = make_bug_task_listing_item(self.factory, tags=tags)
+        removeSecurityProxy(bug).tags = tags
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask)
         with person_logged_in(owner):
             self.assertEqual(2, len(item.model['tags']))
             self.assertTrue('tag' in item.model['tags'][0].keys())
