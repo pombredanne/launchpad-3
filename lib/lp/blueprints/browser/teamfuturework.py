@@ -20,11 +20,20 @@ from lp.services.webapp import (
     LaunchpadView,
     )
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 
 class TeamFutureWorkView(LaunchpadView):
-    """XXX"""
+    """This view displays work items and bugtasks that are due within 60 days
+    and are assigned to a team.
+    """
+
+    # Defines the number of days in the future to look for milestones with work
+    # items and bugtasks.
+    DELTA = 60
 
     @property
     def label(self):
@@ -39,30 +48,39 @@ class TeamFutureWorkView(LaunchpadView):
         return "Work for %s in the near future." % self.label
 
     def overall_completion(self):
-        # This is actually per-milestone and not overall.
         n_complete = 0
-        total = 0
-        for group in self.work_item_groups:
-            for item in group.items:
-                total += 1
-                if item.is_complete:
-                    n_complete += 1
-        return total, n_complete
+        total_workitems = 0
+        total_containers = 0
+        for date, containers in self.work_item_containers:
+            for container in containers:
+                total_containers += 1
+                for item in container.items:
+                    total_workitems += 1
+                    if item.is_done:
+                        n_complete += 1
+        return total_containers, total_workitems, n_complete
 
     @property
     def upcoming_bp_count(self):
-        return len([1,2,3,4])
+        # XXX: don't call overall_completion from both here and
+        # upcoming_wi_count!
+        n_blueprints, _, _ = self.overall_completion()
+        return n_blueprints
 
     @property
     def upcoming_wi_count(self):
-        return len([1,2,3,4,5,6,7,8,9,0])
+        _, n_workitems, _ = self.overall_completion()
+        return n_workitems
 
     @property
     def work_item_containers(self):
         result = getWorkItemsDueBefore(
-            self.context, datetime(2050, 1, 1), self.user)
+            self.context, self.wanted_date, self.user)
         return sorted(result.items(), key=itemgetter(0))
 
+    @property
+    def wanted_date(self):
+        return datetime.today() + timedelta(days=self.DELTA)
 
 class WorkItemContainer:
     """A container of work items, assigned to members of a team, whose

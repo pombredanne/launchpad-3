@@ -9,6 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.blueprints.browser.teamfuturework import (
     getWorkItemsDueBefore,
+    TeamFutureWorkView,
     WorkItemContainer,
     )
 
@@ -147,3 +148,39 @@ class TestWorkItemContainer(TestCase):
         self.assertEqual(container.percent_done, 100.0*3/4)
         container.append(self.MockWorkItem(False))
         self.assertEqual(container.percent_done, 100.0*3/5)
+
+class TestTeamFutureWorkView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamFutureWorkView, self).setUp()
+        self.today = datetime.today().date()
+        current_milestone = self.factory.makeMilestone(
+            dateexpected=self.today)
+        self.current_milestone = current_milestone
+        self.team = self.factory.makeTeam()
+
+    def test_wanted_date(self):
+        view = TeamFutureWorkView(None, None)
+        delta = view.wanted_date - datetime.today()
+        # The delta will be DELTA days minus a few milliseconds.
+        self.assertEqual(delta.days, view.DELTA - 1)
+
+    def test_completion(self):
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            assignee=self.team.teamowner, milestone=self.current_milestone)
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec)
+        bugtask = self.factory.makeBug(
+            milestone=self.current_milestone).bugtasks[0]
+        removeSecurityProxy(bugtask).assignee = self.team.teamowner
+
+        view = TeamFutureWorkView(self.team, None)
+        n_blueprints, n_workitems, n_done = view.overall_completion()
+        # The bugtask container is also a "blueprint" in this sense.
+        self.assertEqual(n_blueprints, 2)
+        # The bugtask is a work item.
+        self.assertEqual(n_workitems, 2)
+        self.assertEqual(n_done, 0)
