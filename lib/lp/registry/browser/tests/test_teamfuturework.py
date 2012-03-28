@@ -7,7 +7,7 @@ from datetime import datetime
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.blueprints.browser.teamfuturework import (
+from lp.registry.browser.team import (
     getWorkItemsDueBefore,
     TeamFutureWorkView,
     WorkItemContainer,
@@ -20,8 +20,6 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-# XXX: This should probably be moved somewhere else, together with
-# browser/teamfuturework.py
 class Test_getWorkItemsDueBefore(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

@@ -628,13 +628,6 @@
         template="../../app/templates/generic-edit.pt"/>
     </facet>
 
-    <browser:page
-        for="lp.registry.interfaces.person.ITeam"
-        class="lp.blueprints.browser.teamfuturework.TeamFutureWorkView"
-        permission="zope.Public"
-        name="+upcomingteamwork"
-        template="../templates/team-work-index.pt"/>
-
   <adapter
       factory="lp.blueprints.browser.specification.starter_xhtml_representation"
       name="starter"/>
