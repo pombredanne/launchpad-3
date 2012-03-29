@@ -2275,15 +2275,7 @@ class WorkItemContainer:
 
     @property
     def display_label(self):
-        # XXX: Appending FOREIGN/FUTURE to the Blueprint's title looks really
-        # ugly.  Should probably get rid of it for now.
         return self.label
-        label = self.label
-        if self.is_foreign:
-            label += ' [FOREIGN] '
-        if self.is_future:
-            label += ' [FUTURE] '
-        return label
 
     @property
     def html_link(self):
@@ -2313,18 +2305,6 @@ class WorkItemContainer:
     def percent_done(self):
         done_items = [w for w in self._items if w.is_done]
         return 100.0 * len(done_items)/len(self._items)
-
-    # I think it might be better to save the progress bars for later.
-    @property
-    def progress_bar(self):
-        # XXX: move css to stylesheet
-        # TODO: round the float in the mouse over text
-        return """
-            <div style="background-color: #bdbdbd;" title="%s %% complete">
-              <div style="width:%s%%">
-                <div style="background-color: green">&nbsp;</div>
-              </div>
-            </div>""" % (self.percent_done, self.percent_done)
 
     def append(self, item):
         self._items.append(item)
