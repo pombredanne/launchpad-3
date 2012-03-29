@@ -6,6 +6,7 @@ __metaclass__ = type
 from collections import namedtuple
 from contextlib import contextmanager
 
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -22,6 +23,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
@@ -169,6 +171,42 @@ class TestBugTaskFlatten(BugTaskFlatTestMixin):
                 "(1, 200, 1, 1, "
                 " current_timestamp at time zone 'UTC', 999, 1, 1, 1, true);")
         self.assertFlattens(200)
+
+    def test_values(self):
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.product.owner):
+            task.transitionToAssignee(self.factory.makePerson())
+            task.transitionToMilestone(
+                self.factory.makeMilestone(product=task.product),
+                task.product.owner)
+            task.bug.markAsDuplicate(self.factory.makeBug())
+        flat = self.getBugTaskFlat(task)
+        self.assertThat(
+            flat,
+            MatchesStructure.byEquality(
+                bugtask=task.id,
+                bug=task.bug.id,
+                datecreated=task.datecreated.replace(tzinfo=None),
+                duplicateof=task.bug.duplicateof.id,
+                bug_owner=task.bug.owner.id,
+                information_type=task.bug.information_type.value,
+                date_last_updated=task.bug.date_last_updated.replace(
+                    tzinfo=None),
+                heat=task.bug.heat,
+                product=task.product.id,
+                productseries=None,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                status=task.status.value,
+                importance=task.importance.value,
+                assignee=task.assignee.id,
+                milestone=task.milestone.id,
+                owner=task.owner.id,
+                active=task.product.active,
+                access_policies=None,
+                access_grants=None))
+        self.assertIsNot(None, flat.fti)
 
     def test_public_access_cache_is_null(self):
         # access_policies and access_grants for a public bug are NULL.
