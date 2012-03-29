@@ -192,8 +192,6 @@ class PrivateEmailCommand(EmailCommand):
                 context.information_type !=
                 InformationType.EMBARGOEDSECURITY):
                 context.information_type = InformationType.PUBLIC
-            else:
-                raise AssertionError("Unkown state change.")
             return context, current_event
 
         # Snapshot.

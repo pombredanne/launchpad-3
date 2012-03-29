@@ -84,7 +84,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1697,9 +1697,8 @@ class BugTaskSet:
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
         if user is None:
-            bug_privacy_filter = 'AND Bug.information_type IN (%s, %s)' % (
-                InformationType.PUBLIC.value,
-                InformationType.UNEMBARGOEDSECURITY.value)
+            bug_privacy_filter = 'AND Bug.information_type IN %s' % (
+                sqlvalues(PUBLIC_INFORMATION_TYPES))
         else:
             # Since the count won't reveal sensitive information, and
             # since the get_bug_privacy_filter() check for non-admins is
