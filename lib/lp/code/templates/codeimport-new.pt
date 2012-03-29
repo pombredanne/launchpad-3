@@ -130,8 +130,8 @@
         //<![CDATA[
         var updateWidgets = function() {
           /* which rcs type radio button has been selected? */
-          var updateField = function (field, enabled) {
-              field.disabled = !enabled;
+          var updateField = function(field, enabled) {
+            field.disabled = !enabled;
           };
 
           var rcs_types = document.getElementsByName('field.rcs_type');
