@@ -210,6 +210,39 @@ CREATE INDEX
     WHERE productseries IS NOT NULL;
 
 
+CREATE OR REPLACE FUNCTION bug_build_access_cache(bug_id integer,
+                                                  information_type integer)
+    RETURNS record
+    LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+    AS $$
+DECLARE
+    _access_artifact integer;
+    _access_policies integer[];
+    _access_grants integer[];
+    cache record;
+BEGIN
+    -- If the bug is private, grab the access control information.
+    -- If the bug is public, access_policies and access_grants are NULL.
+    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
+    IF information_type IN (3, 4, 5) THEN
+        SELECT id INTO _access_artifact
+            FROM accessartifact
+            WHERE bug = bug_id;
+        SELECT COALESCE(array_agg(policy), ARRAY[]::integer[])
+            INTO _access_policies
+            FROM accesspolicyartifact
+            WHERE artifact = _access_artifact;
+        SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[])
+            INTO _access_grants
+            FROM accessartifactgrant
+            WHERE artifact = _access_artifact;
+    END IF;
+    cache := (_access_policies, _access_grants);
+    RETURN cache;
+END;
+$$;
+
+
 -- Update helpers
 
 CREATE OR REPLACE FUNCTION bugtask_flatten(task_id integer, check_only boolean)
@@ -221,6 +254,7 @@ DECLARE
     task_row BugTask%ROWTYPE;
     old_flat_row BugTaskFlat%ROWTYPE;
     new_flat_row BugTaskFlat%ROWTYPE;
+    access_cache record;
     _product_active boolean;
     _access_artifact integer;
     _access_policies integer[];
@@ -260,20 +294,10 @@ BEGIN
             WHERE productseries.id = task_row.productseries LIMIT 1;
     END IF;
 
-    -- If the bug is private, grab the access control information.
-    -- If the bug is public, access_policies and access_grants are NULL.
-    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
-    IF bug_row.information_type IN (3, 4, 5) THEN
-        SELECT id INTO _access_artifact
-            FROM accessartifact
-            WHERE bug = bug_row.id;
-        SELECT COALESCE(array_agg(policy), ARRAY[]::integer[]) INTO _access_policies
-            FROM accesspolicyartifact
-            WHERE artifact = _access_artifact;
-        SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[]) INTO _access_grants
-            FROM accessartifactgrant
-            WHERE artifact = _access_artifact;
-    END IF;
+    SELECT policies, grants
+        INTO _access_policies, _access_grants
+        FROM bug_build_access_cache(bug_row.id, bug_row.information_type)
+            AS (policies integer[], grants integer[]);
 
     -- Compile the new flat row.
     SELECT task_row.id, bug_row.id, task_row.datecreated,
@@ -339,31 +363,20 @@ CREATE OR REPLACE FUNCTION bug_flatten_access(bug_id integer)
     LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
     AS $$
 DECLARE
-    artifact_id integer;
     _information_type integer;
+    _access_policies integer[];
+    _access_grants integer[];
 BEGIN
     SELECT information_type FROM bug INTO _information_type WHERE id = bug_id;
-    SELECT id INTO artifact_id FROM accessartifact WHERE bug = bug_id;
-    -- If the bug is private, grab the access control information.
-    -- If the bug is public, access_policies and access_grants are NULL.
-    -- 3 == EMBARGOEDSECURITY, 4 == USERDATA, 5 == PROPRIETARY
-    IF _information_type IN (3, 4, 5) THEN
-        UPDATE bugtaskflat
-            SET
-                access_policies = (
-                    SELECT COALESCE(array_agg(policy), ARRAY[]::integer[]) FROM accesspolicyartifact
-                    WHERE artifact = artifact_id),
-                access_grants = (
-                    SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[]) FROM accessartifactgrant
-                    WHERE artifact = artifact_id)
-            WHERE bug = bug_id;
-    ELSE
-        UPDATE bugtaskflat
-            SET
-                access_policies = NULL,
-                access_grants = NULL
-            WHERE bug = bug_id;
-    END IF;
+    SELECT policies, grants
+        INTO _access_policies, _access_grants
+        FROM bug_build_access_cache(bug_id, _information_type)
+            AS (policies integer[], grants integer[]);
+    UPDATE bugtaskflat
+        SET
+            access_policies = _access_policies,
+            access_grants = _access_grants
+        WHERE bug = bug_id;
     RETURN;
 END;
 $$;
