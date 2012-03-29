@@ -47,6 +47,7 @@ setup(
         'lazr.enum',
         'lazr.lifecycle',
         'lazr.restful',
+        'lazr.jobrunner',
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',

@@ -352,6 +352,7 @@ Duplicates
 We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
@@ -418,7 +419,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         security_related=True, private=True))
+    ...         information_type=InformationType.EMBARGOEDSECURITY))
 
     >>> sec_vuln_bug.security_related
     True
