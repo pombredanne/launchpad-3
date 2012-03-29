@@ -98,6 +98,18 @@ from lp.testing.sampledata import (
 from lp.testing.views import create_initialized_view
 
 
+def getFeedViewCache(target, feed_cls):
+    """Return JSON cache for a feed's delegate view."""
+    with dynamic_listings():
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+        setFirstLayer(request, FeedsLayer)
+        feed = feed_cls(target, request)
+        delegate_view = feed._createView()
+        delegate_view.initialize()
+        return IJSONRequestCache(delegate_view.request)
+
+
 class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -1412,22 +1424,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(0, len(notifications))
 
 
-class BugsFeedsTestMixin:
-    """Mixin class to provide helper method for bugs feeds tests."""
-
-    def getFeedViewCache(self, feed_cls):
-        """Return JSON cache for a feed's delegate view."""
-        with dynamic_listings():
-            request = LaunchpadTestRequest(
-                SERVER_URL='http://feeds.example.com/latest-bugs.atom')
-            setFirstLayer(request, FeedsLayer)
-            feed = feed_cls(self.target, request)
-            delegate_view = feed._createView()
-            delegate_view.initialize()
-            return IJSONRequestCache(delegate_view.request)
-
-
-class TestPersonBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestPersonBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1450,12 +1447,12 @@ class TestPersonBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(PersonBugsFeed)
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 
-class TestDistributionBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
 
     layer = DatabaseFunctionalLayer
@@ -1477,11 +1474,11 @@ class TestDistributionBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestDistroSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestDistroSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series."""
 
     layer = DatabaseFunctionalLayer
@@ -1503,12 +1500,11 @@ class TestDistroSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestDistributionSourcePackageBugs(
-        TestCaseWithFactory, BugsFeedsTestMixin):
+class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distribution source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1524,12 +1520,11 @@ class TestDistributionSourcePackageBugs(
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestDistroSeriesSourcePackageBugs(
-        TestCaseWithFactory, BugsFeedsTestMixin):
+class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series source packages."""
 
     layer = DatabaseFunctionalLayer
@@ -1545,11 +1540,11 @@ class TestDistroSeriesSourcePackageBugs(
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestProductBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestProductBugs(TestCaseWithFactory):
     """Test the bugs overview page for projects."""
 
     layer = DatabaseFunctionalLayer
@@ -1571,11 +1566,11 @@ class TestProductBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestProductSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestProductSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for project series."""
 
     layer = DatabaseFunctionalLayer
@@ -1591,11 +1586,11 @@ class TestProductSeriesBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
-class TestProjectGroupBugs(TestCaseWithFactory, BugsFeedsTestMixin):
+class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for project groups."""
 
     layer = DatabaseFunctionalLayer
@@ -1706,7 +1701,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugsFeedsTestMixin):
 
     def test_mustache_cache_is_none_for_feed(self):
         """The mustache model should not be added to JSON cache for feeds."""
-        cache = self.getFeedViewCache(BugTargetBugsFeed)
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
 
 
