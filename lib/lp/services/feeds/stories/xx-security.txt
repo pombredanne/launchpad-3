@@ -9,8 +9,7 @@ First, set all the bugs to private.
     >>> from lp.services.database.lpstorm import IStore
     >>> import transaction
     >>> from lp.bugs.model.bug import Bug
-    >>> from lp.registry.enums import InformationType
-    >>> IStore(Bug).find(Bug).set(information_type=InformationType.USERDATA)
+    >>> IStore(Bug).find(Bug).set(_private=True)
     >>> transaction.commit()
 
 There should be zero entries in these feeds, since all the bugs are private.
