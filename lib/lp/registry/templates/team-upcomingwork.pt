@@ -7,6 +7,24 @@
   i18n:domain="launchpad">
 <body>
 
+<head>
+  <tal:block metal:fill-slot="head_epilogue">
+    <script type="text/javascript">
+      LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+          Y.on('domready', function() {
+            Y.all('[class=expandable]').each(function(e) {
+              var expander_icon = e.one('[class=expander]');
+              var widget_body = e.one('[class=listing]');
+              var expander = new Y.lp.app.widgets.expander.Expander(
+                  expander_icon, widget_body);
+              expander.setUp(true);
+            })
+          })
+        });
+    </script>
+  </tal:block>
+</head>
+
 <div metal:fill-slot="main">
 
   <div tal:repeat="pair view/work_item_containers">
@@ -22,21 +40,19 @@
     </p>
 
     <ul>
-      <li tal:repeat="container containers" style="margin-left: 1em" >
+      <li tal:repeat="container containers"
+          style="margin-left: 1em; max-width: 90%" >
         <tal:bp_workitems condition="container/spec">
-          <h3>Work items from Blueprint
-            <a tal:replace="structure container/html_link" /> of 
-            <a tal:replace="structure container/target/fmt:link" />
-          </h3>
-	  <p style="margin-left: 3em">
-	    This blueprint is assigned to
-	    <span tal:replace="structure container/assignee_link" />
-	    and is given
-	    <span tal:replace="structure container/priority_title" /> priority.
-
-	    <span tal:replace="container/percent_done" />
-	    % of the work is completed.
-	  </p> 
+          <div class="expandable">
+          <h4 style="margin-bottom: 0.5em">
+            <a href="#" class="expander">&nbsp;</a>
+            <a tal:replace="structure container/spec/fmt:link" />, from 
+            <a tal:replace="structure container/target/fmt:link" />,
+            assigned to <span tal:replace="structure container/assignee_link" />.
+            <strong tal:content="structure container/priority/title" /> priority.
+            <strong tal:content="container/percent_done" />%
+            of the work is completed.
+          </h4>
           <table class="listing" style="margin-left: 3em">
             <thead>
               <tr>
@@ -47,33 +63,37 @@
             </thead>
             <tbody>
               <tr tal:repeat="item container/items">
-                <td tal:content="item/title" />
+                <td tal:content="item/title/fmt:shorten/120" />
                 <td tal:content="structure item/assignee/fmt:link" />
                 <td tal:content="item/status/name" />
               </tr>
             </tbody>
           </table>
+          <div>
         </tal:bp_workitems>
 
         <tal:bugtasks condition="not: container/spec">
-          <h3 tal:content="container/html_link" />
-	  <p style="margin-left: 3em">
-	    <span tal:replace="container/percent_done" />
-	    % of the bugs are resolved.
-	  </p> 
+          <div class="expandable">
+          <h4>
+            <a href="#" class="expander">&nbsp;</a>
+            <span class="sprite bug-undecided" />
+            Bugs targeted to a milestone on this date.
+            <span tal:replace="container/percent_done" />
+            % of the bugs are resolved.
+          </h4>
           <table class="listing" width="70%" style="margin-left: 3em">
             <thead>
               <tr>
                 <th>Description</th>
                 <th>Target</th>
-                <th>Priority</th>
+                <th>Importance</th>
                 <th>Assignee</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               <tr tal:repeat="item container/items">
-                <td tal:content="item/title" />
+                <td tal:content="structure item/_bugtask/fmt:link" />
                 <td tal:content="structure item/target/fmt:link" />
                 <td tal:content="item/priority/name" />
                 <td tal:content="structure item/assignee/fmt:link" />
@@ -81,6 +101,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </tal:bugtasks>
       </li>
     </ul>

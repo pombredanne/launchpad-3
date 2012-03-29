@@ -2188,45 +2188,11 @@ class TeamFutureWorkView(LaunchpadView):
 
     @property
     def page_title(self):
-        return "Upcoming work for %s." % self.context.displayname
+        return "Upcoming work for %s" % self.context.displayname
 
     @property
     def page_description(self):
         return "Work for %s in the near future." % self.label
-
-    @cachedproperty
-    def overall_completion(self):
-        n_complete = 0
-        total_workitems = 0
-        total_containers = 0
-        for date, containers in self.work_item_containers:
-            for container in containers:
-                total_containers += 1
-                for item in container.items:
-                    total_workitems += 1
-                    if item.is_done:
-                        n_complete += 1
-        return total_containers, total_workitems, n_complete
-
-    @cachedproperty
-    def upcoming_bp_count(self):
-        # XXX: don't call overall_completion from both here and
-        # upcoming_wi_count!
-        # We can turn that into a @cachedproperty so that we can call it as
-        # many times as we want without any overhead, but it occurred to me it
-        # doesn't make any sense to have overall stats -- what we want is
-        # per-milestone-date stats. The mockup has that, actually, we just
-        # need to move the summary paragraph that is at the top there to be
-        # under the milestone date, like the milestone-date progress bar.
-        # I've done that now so I think we can kill this, together with
-        # overall_completion and upcoming_wi_count.
-        n_blueprints, _, _ = self.overall_completion()
-        return n_blueprints
-
-    @property
-    def upcoming_wi_count(self):
-        _, n_workitems, _ = self.overall_completion()
-        return n_workitems
 
     @cachedproperty
     def work_item_containers(self):
@@ -2279,23 +2245,10 @@ class WorkItemContainer:
         return self.label
 
     @property
-    def html_link(self):
-        return '<a href="%s">%s</a>' % (
-            canonical_url(self.spec), self.display_label)
-
-    @property
     def assignee_link(self):
         if self.assignee is None:
             return 'Nobody'
         return format_link(self.assignee)
-
-    @property
-    def target_link(self):
-        return format_link(self.target)
-
-    @property
-    def priority_title(self):
-        return self.priority.title
 
     @property
     def items(self):
@@ -2329,7 +2282,7 @@ class AggregatedBugsContainer(WorkItemContainer):
 
     @property
     def html_link(self):
-        return 'Aggregated bugs'
+        return 'Bugs targeted to a milestone on this date'
 
     @property
     def assignee_link(self):
@@ -2429,7 +2382,7 @@ def getWorkItemsDueBefore(team, date, user):
             if spec.assigneeID not in team.participant_ids:
                 is_foreign = True
             container = WorkItemContainer(
-                spec, spec.name, spec.target, spec.assignee, spec.priority,
+                spec, spec.title, spec.target, spec.assignee, spec.priority,
                 is_future=is_future, is_foreign=is_foreign)
             containers_by_spec[spec] = container
             containers_by_date[milestone.dateexpected].append(container)
