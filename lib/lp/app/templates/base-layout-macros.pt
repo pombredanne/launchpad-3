@@ -193,17 +193,6 @@
         // Lint-safe scripting URL.
         var VOID_URL = '_:void(0);'.replace('_', 'javascript');
 
-        function registerLaunchpadFunction(func) {
-            // registers a function to fire onload.
-            // Use this for initilaizing any javascript that should fire once the page
-            // has been loaded.
-            LPJS.use('node', function(Y) {
-                Y.on('load', function(e) {
-                    func();
-                }, window);
-            });
-        }
-
         // Enable or disable the beta.launchpad.net redirect
         function setBetaRedirect(enable) {
             var expire = new Date();
