@@ -96,6 +96,7 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.app.widgets.popup import PersonPickerWidget
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
@@ -2298,8 +2299,18 @@ class WorkItemContainer:
 
     @property
     def items(self):
-        # TODO: Sort the items by priority.
-        return self._items
+        return sorted(self._items, key=self.item_key)
+
+    def item_key(self, item):
+        # Sort the work items by status since they all have the same priority.
+        status_order = {SpecificationWorkItemStatus.DONE: 4,
+                        SpecificationWorkItemStatus.BLOCKED: 1,
+                        SpecificationWorkItemStatus.TODO: 3,
+                        SpecificationWorkItemStatus.INPROGRESS: 2
+                        }
+        if item.status not in status_order:
+            return 0
+        return status_order[item.status]
 
     @property
     def percent_done(self):
@@ -2331,6 +2342,13 @@ class AggregatedBugsContainer(WorkItemContainer):
     @property
     def priority_title(self):
         return 'N/A'
+
+    def item_key(self, item):
+        # Sort the bugtask items by priority
+        # XXX: It looks to me as the values of BugTaskImportance are
+        # listed by importance, but no doc to confirm that it can be
+        # trusted.
+        return item.priority
 
 
 class GenericWorkItem:

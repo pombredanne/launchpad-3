@@ -27,10 +27,15 @@
           <h3>Work items from Blueprint
             <a tal:replace="structure container/html_link" /> of 
             <a tal:replace="structure container/target/fmt:link" />
-            <!-- TODO: include the priority/assignee here as well -->
           </h3>
 	  <p style="margin-left: 3em">
-	    <span tal:replace="container/percent_done" /> % of the work is completed.
+	    This blueprint is assigned to
+	    <span tal:replace="structure container/assignee_link" />
+	    and is given
+	    <span tal:replace="structure container/priority_title" /> priority.
+
+	    <span tal:replace="container/percent_done" />
+	    % of the work is completed.
 	  </p> 
           <table class="listing" style="margin-left: 3em">
             <thead>
@@ -53,7 +58,8 @@
         <tal:bugtasks condition="not: container/spec">
           <h3 tal:content="container/html_link" />
 	  <p style="margin-left: 3em">
-	    <span tal:replace="container/percent_done" /> % of the bugs are resolved.
+	    <span tal:replace="container/percent_done" />
+	    % of the bugs are resolved.
 	  </p> 
           <table class="listing" width="70%" style="margin-left: 3em">
             <thead>
