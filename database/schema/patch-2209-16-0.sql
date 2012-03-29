@@ -230,14 +230,22 @@ BEGIN
         SELECT id INTO _access_artifact
             FROM accessartifact
             WHERE bug = bug_id;
+        -- We have to do the order in a subquery until 9.0 (8.4 doesn't
+        -- support ordering within an aggregate).
         SELECT COALESCE(array_agg(policy), ARRAY[]::integer[])
             INTO _access_policies
-            FROM accesspolicyartifact
-            WHERE artifact = _access_artifact;
+            FROM (
+                SELECT policy FROM
+                accesspolicyartifact
+                WHERE artifact = _access_artifact
+                ORDER BY policy) AS policies;
         SELECT COALESCE(array_agg(grantee), ARRAY[]::integer[])
             INTO _access_grants
-            FROM accessartifactgrant
-            WHERE artifact = _access_artifact;
+            FROM (
+                SELECT grantee FROM
+                accessartifactgrant
+                WHERE artifact = _access_artifact
+                ORDER BY grantee) AS grantees;
     END IF;
     cache := (_access_policies, _access_grants);
     RETURN cache;
