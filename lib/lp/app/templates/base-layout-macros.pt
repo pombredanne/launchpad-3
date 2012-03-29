@@ -190,9 +190,6 @@
          //<![CDATA[
         // This code is pulled from lp.js that needs to be available on every
         // request. Pulling here to get it outside the scope of the YUI block.
-        // Lint-safe scripting URL.
-        var VOID_URL = '_:void(0);'.replace('_', 'javascript');
-
         function setFocusByName(name) {
             // Focus the first element matching the given name which can be focused.
             var nodes = document.getElementsByName(name);
