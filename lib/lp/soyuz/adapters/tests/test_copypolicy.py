@@ -34,15 +34,13 @@ class TestCopyPolicy(TestCaseWithFactory):
                        status=None, pocket=None):
         archive, distroseries, pocket = self._getUploadCriteria(
             archive_purpose, status=status, pocket=pocket)
-        approved = method(archive, distroseries, pocket)
-        self.assertTrue(approved)
+        self.assertTrue(method(archive, distroseries, pocket))
 
     def assertUnapproved(self, archive_purpose, method,
                          status=None, pocket=None):
         archive, distroseries, pocket = self._getUploadCriteria(
             archive_purpose, status=status, pocket=pocket)
-        approved = method(archive, distroseries, pocket)
-        self.assertFalse(approved)
+        self.assertFalse(method(archive, distroseries, pocket))
 
     def test_insecure_holds_new_distro_package(self):
         cp = InsecureCopyPolicy()
