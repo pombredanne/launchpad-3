@@ -1075,7 +1075,6 @@
     <subscriber
         for="lp.registry.interfaces.person.IPersonViewRestricted zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.person_details_modified"/>
-
     <class
         class="lp.registry.model.mailinglist.MailingList">
         <allow
