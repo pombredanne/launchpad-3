@@ -313,11 +313,6 @@
             }
             return false;
         }
-
-        function updateField(field, enabled)
-        {
-            field.disabled = !enabled;
-        }
         //]]>
     </script>
 </metal:page-javascript>
