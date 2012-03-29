@@ -193,23 +193,6 @@
         // Lint-safe scripting URL.
         var VOID_URL = '_:void(0);'.replace('_', 'javascript');
 
-        // Enable or disable the beta.launchpad.net redirect
-        function setBetaRedirect(enable) {
-            var expire = new Date();
-            if (enable) {
-                expire.setTime(expire.getTime() + 1000);
-                document.cookie = ('inhibit_beta_redirect=0; Expires=' +
-                                   expire.toGMTString() + cookie_scope);
-                alert('Redirection to the beta site has been enabled');
-            } else {
-                expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000);
-                document.cookie = ('inhibit_beta_redirect=1; Expires=' +
-                                   expire.toGMTString() + cookie_scope);
-                alert('You will not be redirected to the beta site for 2 hours');
-            }
-            return false;
-        }
-
         function setFocusByName(name) {
             // Focus the first element matching the given name which can be focused.
             var nodes = document.getElementsByName(name);
