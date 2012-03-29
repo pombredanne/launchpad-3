@@ -8,6 +8,7 @@ import sys
 from textwrap import dedent
 from time import sleep
 
+from lazr.jobrunner.jobrunner import SuspendJobException
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
@@ -19,7 +20,6 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
     LeaseHeld,
-    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -411,8 +411,8 @@ class StuckJob(StaticJobSource):
         self.job = Job()
 
     def __repr__(self):
-        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
-            self.id, self.lease_length, self.delay)
+        return '<%s(%r, lease_length=%s, delay=%s)>' % (
+            self.__class__.__name__, self.id, self.lease_length, self.delay)
 
     def acquireLease(self):
         return self.job.acquireLease(self.lease_length)
@@ -550,15 +550,14 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.oops_capture.sync()
         oops = self.oopses[0]
-        self.assertEqual(
-            ('TimeoutError', 'Job ran too long.'),
-            (oops['type'], oops['value']))
+        expected_exception = ('TimeoutError', 'Job ran too long.')
+        self.assertEqual(expected_exception, (oops['type'], oops['value']))
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
-            INFO Running through Twisted.
-            INFO Running StuckJob \(ID .*\).
-            INFO Running StuckJob \(ID .*\).
-            INFO Job resulted in OOPS: .*
+                INFO Running through Twisted.
+                INFO Running <StuckJob.*?> \(ID .*?\).
+                INFO Running <StuckJob.*?> \(ID .*?\).
+                INFO Job resulted in OOPS: .*
             """)))
 
     def test_timeout_short(self):
@@ -582,8 +581,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             logger.getLogBuffer(), MatchesRegex(
                 dedent("""\
                 INFO Running through Twisted.
-                INFO Running ShorterStuckJob \(ID .*\).
-                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
+                INFO Running <ShorterStuckJob.*?> \(ID .*?\).
                 INFO Job resulted in OOPS: %s
                 """) % oops['id']))
         self.assertEqual(('TimeoutError', 'Job ran too long.'),

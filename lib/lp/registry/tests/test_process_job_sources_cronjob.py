@@ -62,7 +62,7 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
-            ('DEBUG   Running <MembershipNotificationJob '
+            ('INFO    Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
@@ -126,7 +126,7 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            ('DEBUG Running <MembershipNotificationJob '
+            ('INFO Running <MembershipNotificationJob '
              'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)

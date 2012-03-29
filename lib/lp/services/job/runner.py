@@ -38,6 +38,7 @@ from ampoule import (
     pool,
     )
 from lazr.delegates import delegates
+from lazr.jobrunner.jobrunner import JobRunner as LazrJobRunner
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -61,7 +62,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
-    SuspendJobException,
     )
 from lp.services.mail.sendmail import (
     MailController,
@@ -176,20 +176,24 @@ class BaseRunnableJob(BaseRunnableJobSource):
             return
         ctrl.send()
 
+    def makeOopsReport(self, oops_config, info):
+        """Generate an OOPS report using the given OOPS configuration."""
+        return oops_config.create(
+            context=dict(exc_info=info))
 
-class BaseJobRunner(object):
+
+class BaseJobRunner(LazrJobRunner):
     """Runner of Jobs."""
 
     def __init__(self, logger=None, error_utility=None):
-        self.completed_jobs = []
-        self.incomplete_jobs = []
-        if logger is None:
-            logger = logging.getLogger()
-        self.logger = logger
-        self.error_utility = error_utility
         self.oops_ids = []
-        if self.error_utility is None:
+        if error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
+        else:
+            self.error_utility = error_utility
+        super(BaseJobRunner, self).__init__(
+            logger, oops_config=self.error_utility._oops_config,
+            oopsMessage=self.error_utility.oopsMessage)
 
     def acquireLease(self, job):
         self.logger.debug(
@@ -204,83 +208,8 @@ class BaseJobRunner(object):
             return False
         return True
 
-    @staticmethod
-    def job_str(job):
-        class_name = job.__class__.__name__
-        ijob_id = removeSecurityProxy(job).job.id
-        return '%s (ID %d)' % (class_name, ijob_id)
-
     def runJob(self, job):
-        """Attempt to run a job, updating its status as appropriate."""
-        job = IRunnableJob(job)
-
-        self.logger.info(
-            'Running %s in status %s' % (
-                self.job_str(job), job.status.title))
-        job.start()
-        transaction.commit()
-        do_retry = False
-        try:
-            try:
-                job.run()
-            except job.retry_error_types, e:
-                if job.attempt_count > job.max_retries:
-                    raise
-                self.logger.exception(
-                    "Scheduling retry due to %s.", e.__class__.__name__)
-                do_retry = True
-        except SuspendJobException:
-            self.logger.debug("Job suspended itself")
-            job.suspend()
-            self.incomplete_jobs.append(job)
-        except Exception:
-            transaction.abort()
-            job.fail()
-            # Record the failure.
-            transaction.commit()
-            self.incomplete_jobs.append(job)
-            raise
-        else:
-            # Commit transaction to update the DB time.
-            transaction.commit()
-            if do_retry:
-                job.queue()
-                self.incomplete_jobs.append(job)
-            else:
-                job.complete()
-                self.completed_jobs.append(job)
-        # Commit transaction to update job status.
-        transaction.commit()
-
-    def runJobHandleError(self, job):
-        """Run the specified job, handling errors.
-
-        Most errors will be logged as Oopses.  Jobs in user_error_types won't.
-        The list of complete or incomplete jobs will be updated.
-        """
-        job = IRunnableJob(job)
-        with self.error_utility.oopsMessage(
-            dict(job.getOopsVars())):
-            try:
-                try:
-                    self.logger.debug('Running %r', job)
-                    self.runJob(job)
-                except job.user_error_types, e:
-                    self.logger.info('Job %r failed with user error %r.' %
-                        (job, e))
-                    job.notifyUserError(e)
-                except Exception:
-                    info = sys.exc_info()
-                    return self._doOops(job, info)
-            except Exception:
-                # This only happens if sending attempting to notify users
-                # about errors fails for some reason (like a misconfigured
-                # email server).
-                self.logger.exception(
-                    "Failed to notify users about a failure.")
-                info = sys.exc_info()
-                # Returning the oops says something went wrong.
-                return self.error_utility.raising(info)
+        super(BaseJobRunner, self).runJob(IRunnableJob(job))
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -291,6 +220,7 @@ class BaseJobRunner(object):
         """
         oops = self.error_utility.raising(info)
         job.notifyOops(oops)
+        self._logOopsId(oops['id'])
         return oops
 
     def _logOopsId(self, oops_id):
@@ -331,9 +261,7 @@ class JobRunner(BaseJobRunner):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
-            oops = self.runJobHandleError(job)
-            if oops is not None:
-                self._logOopsId(oops['id'])
+            self.runJobHandleError(job)
 
 
 class RunJobCommand(amp.Command):
