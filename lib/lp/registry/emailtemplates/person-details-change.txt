@@ -1,0 +1,6 @@
+Hello %(user_name)s, you've recently had a change to your account details on
+Launchpad.net.
+
+If you didn't intend to make this change please join us in #launchpad on
+Freenode so we can assist in making sure your account has not been tampered
+with.

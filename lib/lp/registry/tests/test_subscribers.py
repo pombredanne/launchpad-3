@@ -8,23 +8,27 @@ __metaclass__ = type
 from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.interfaces.person import IPersonViewRestricted
 from lp.registry.interfaces.product import License
 from lp.registry.subscribers import (
     LicenseNotification,
+    person_details_modified,
     product_licenses_modified,
     )
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.event import TestEventListener
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
-
 
 class ProductLicensesModifiedTestCase(TestCaseWithFactory):
 
@@ -258,3 +262,78 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
             product.commercial_subscription.date_expires.date().isoformat())
         self.assertEqual(message, notification.getCommercialUseMessage())
         self.assertEqual(message, notification.getCommercialUseMessage())
+
+
+class PersonDetailsModifiedTestCase(TestCaseWithFactory):
+    """When some details of a person change, we need to notify the user.
+
+    """
+    layer = DatabaseFunctionalLayer
+
+    def make_modified_email_event(self, email, edited_fields='preferredemail'):
+        person = self.factory.makePerson(email='test@pre.com')
+        login_person(person)
+        pop_notifications()
+        new_email = self.factory.makeEmail('test@post.com', person)
+        person.setPreferredEmail(new_email)
+
+        # after/before objects and list of edited fields
+        event = ObjectModifiedEvent(person, person, ['preferredemail'])
+        return person, event
+
+    def test_preferred_email_modified(self):
+        bob, event = self.make_modified_email_event()
+        person_details_modified(bob, event)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+
+
+
+class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
+    """Test that the events are fired when the person is changed."""
+
+    layer = DatabaseFunctionalLayer
+    event_listener = None
+
+    def setup_event_listener(self):
+        self.events = []
+        if self.event_listener is None:
+            self.event_listener = TestEventListener(
+                IPersonViewRestricted, IObjectModifiedEvent, self.on_event)
+        else:
+            self.event_listener._active = True
+        self.addCleanup(self.event_listener.unregister)
+
+    def on_event(self, thing, event):
+        self.events.append(event)
+
+    def test_change_preferredemail(self):
+        # The project_reviewed property is not reset, if the new licenses
+        # are identical to the current licenses.
+        person = self.factory.makePerson(email='test@pre.com')
+        new_email = self.factory.makeEmail('test@post.com', person)
+        self.setup_event_listener()
+        with person_logged_in(person):
+            person.setPreferredEmail(new_email)
+
+            # Assert form within the context manager to get access to the
+            # email values.
+            self.assertEqual('test@post.com', person.preferredemail.email)
+            self.assertEqual(1, len(self.events))
+            self.assertEqual(person, self.events[0].object)
+            self.assertEqual(['preferredemail'], self.events[0].edited_fields)
+
+    # def test_setLicense_handles_no_change(self):
+    #     # The project_reviewed property is not reset, if the new licenses
+    #     # are identical to the current licenses.
+    #     product = self.factory.makeProduct(licenses=[License.MIT])
+    #     with celebrity_logged_in('registry_experts'):
+    #         product.project_reviewed = True
+    #     self.setup_event_listener()
+    #     with person_logged_in(product.owner):
+    #         product.licenses = [License.MIT]
+    #     with celebrity_logged_in('registry_experts'):
+    #         self.assertIs(True, product.project_reviewed)
+    #     self.assertEqual([], self.events)
+
+

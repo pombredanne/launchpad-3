@@ -14,8 +14,9 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPersonViewRestricted
 from lp.registry.interfaces.product import License
+from lp.registry.model.personnotification import PersonNotification
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
@@ -29,6 +30,15 @@ from lp.services.webapp.publisher import (
     )
 
 
+# tracking emails is a pain, we want to just track any change to the @property
+# validedemails, but then again we don't want validated, because it might not
+# be. We want the notice to go out on a new email.
+PERSON_FIELDS_MONITORED = [
+    'preferredemail',
+    'validatedemails'
+]
+
+
 def product_licenses_modified(product, event):
     """Send a notification if licenses changed and a license is special."""
     if not event.edited_fields:
@@ -36,10 +46,9 @@ def product_licenses_modified(product, event):
     licenses_changed = 'licenses' in event.edited_fields
     needs_notification = LicenseNotification.needs_notification(product)
     if licenses_changed and needs_notification:
-        user = IPerson(event.user)
+        user = IPersonViewRestricted(event.user)
         notification = LicenseNotification(product, user)
         notification.send()
-        notification.display()
 
 
 class LicenseNotification:
@@ -145,3 +154,62 @@ class LicenseNotification:
             naked_product.reviewer_whiteboard = whiteboard
         else:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
+
+
+def person_details_modified(person, event):
+    """Send a notification if important details on a person change."""
+    if not event.edited_fields:
+        return
+
+    # We want to keep tabs on which fields changed so we can attempt to have
+    # an intelligent reply message on what just happened.
+    changed_fields = set(PERSON_FIELDS_MONITORED) &  set(event.edited_fields)
+
+    if changed_fields:
+        user = IPersonViewRestricted(event.user)
+
+        notification = PersonDetailsChangeNotification(changed_fields, user)
+        notification.send()
+
+
+class PersonDetailsChangeNotification(object):
+    """Schedule an email notification to the user about account changes"""
+
+    def __init__(self, field, user):
+        """Notify the user that their account has changed
+
+        :param field: the bit of account data that's altered
+        :param user: the user that changed
+        """
+        self.changed = field
+        self.user = user
+        self.notification = PersonNotification()
+        self.notification.person = user
+
+    def getTemplateName(self):
+        """Return the name of the email template to use in the notification."""
+        return 'person-details-change.txt'
+
+    def getCommercialUseMessage(self):
+        """Return a message explaining the change in the account."""
+        # For now we're only tracking change in perferred email address.
+        message = "Your preferred email address was changed to: %s"
+        return textwrap.fill(
+            message  % self.user.preferredemail.email,
+            72)
+
+    def send(self):
+        """Send the notification to the user about their account change."""
+        self.notification.subject = (
+            "Your Launchpad.net account details have changed."
+        )
+        tpl_substitutions = dict(
+            user_displayname=self.user.displayname,
+            user_name=self.user.name,
+            )
+        template = get_email_template(
+            self.getTemplateName(), app='registry')
+        message = template % tpl_substitutions
+        self.notification.body = message
+        self.notification.send()
+        return True
