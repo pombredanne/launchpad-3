@@ -246,15 +246,16 @@ class IAccessPolicyGrantFlatSource(Interface):
 
         :param policies: a collection of `IAccesPolicy`s.
         :return: a collection of
-            (`IPerson sharee`, `ITeam via`, `IAccessPolicy`, permission)
+            (`IPerson` sharee, `IAccessPolicy`, permission,
+                [`ITeam`] via_teams`) tuples
             where
             sharee is the person or team with access
-            via is the team the sharee belongs to in order to gain access.
-            If via is None, then the sharee has direct access.
             permission is a SharingPermission enum value.
             ALL means the person has an access policy grant and can see all
             artifacts for the associated pillar.
             SOME means the person only has specified access artifact grants.
+            via_teams is the team the sharee belongs to in order to gain
+            access. If via is None, then the sharee has direct access.
         """
 
     def findArtifactsByGrantee(grantee, policies):

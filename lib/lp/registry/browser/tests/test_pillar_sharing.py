@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test views that manage sharing."""
-from lp.registry.model.person import Person
 
 __metaclass__ = type
 
@@ -22,6 +21,7 @@ from zope.security.interfaces import Unauthorized
 from lp.app.interfaces.services import IService
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
+from lp.registry.model.person import Person
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
