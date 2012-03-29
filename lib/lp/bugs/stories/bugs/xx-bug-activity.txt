@@ -123,6 +123,12 @@ We need a feature flag so that multi-pillar bugs can be made private.
     public => private
     --------
 
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+secrecy')
+    >>> admin_browser.getControl(
+    ...     "This bug report should be private").selected = False
+    >>> admin_browser.getControl("Change").click()
+
 Clean up the feature flag.
     >>> flags.cleanUp()
 
