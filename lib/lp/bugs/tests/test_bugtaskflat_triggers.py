@@ -208,6 +208,51 @@ class TestBugTaskFlatten(BugTaskFlatTestMixin):
                 access_grants=None))
         self.assertIsNot(None, flat.fti)
 
+    def test_productseries_target(self):
+        ps = self.factory.makeProductSeries()
+        task = self.factory.makeBugTask(target=ps)
+        flat = self.getBugTaskFlat(task)
+        self.assertThat(
+            flat,
+            MatchesStructure.byEquality(
+                product=None, productseries=ps.id, distribution=None,
+                distroseries=None, sourcepackagename=None, active=True))
+
+    def test_distributionsourcepackage_target(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        task = self.factory.makeBugTask(target=dsp)
+        flat = self.getBugTaskFlat(task)
+        self.assertThat(
+            flat,
+            MatchesStructure.byEquality(
+                product=None, productseries=None,
+                distribution=dsp.distribution.id, distroseries=None,
+                sourcepackagename=dsp.sourcepackagename.id, active=True))
+
+    def test_sourcepackage_target(self):
+        sp = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(target=sp)
+        flat = self.getBugTaskFlat(task)
+        self.assertThat(
+            flat,
+            MatchesStructure.byEquality(
+                product=None, productseries=None, distribution=None,
+                distroseries=sp.distroseries.id,
+                sourcepackagename=sp.sourcepackagename.id, active=True))
+
+    def test_product_active_flag_respected(self):
+        # A bugtask created on a product or productseries respects the
+        # product's active flag. Note that there are no triggers to
+        # handle this change, as the number of changes can be too large.
+        # A job will be used instead.
+        p = self.factory.makeProduct()
+        removeSecurityProxy(p).active = False
+        ps = self.factory.makeProductSeries(product=p)
+        ptask = self.factory.makeBugTask(target=p)
+        pstask = self.factory.makeBugTask(target=ps)
+        self.assertEqual(False, self.getBugTaskFlat(ptask).active)
+        self.assertEqual(False, self.getBugTaskFlat(pstask).active)
+
     def test_public_access_cache_is_null(self):
         # access_policies and access_grants for a public bug are NULL.
         bugtask = self.makeLoggedInTask()

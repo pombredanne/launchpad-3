@@ -389,7 +389,6 @@ COMMENT ON FUNCTION bug_flatten_access(bug_id integer) IS
     'Recalculate the access cache on a bug''s flattened tasks.';
 
 
-
 CREATE OR REPLACE FUNCTION accessartifact_flatten_bug(artifact_id integer)
     RETURNS void
     LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
