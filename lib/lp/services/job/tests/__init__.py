@@ -22,5 +22,6 @@ def celeryd():
         '--broker', CeleryRunJob.app.conf['BROKER_URL'],
         '--concurrency', '1',
         '--loglevel', 'INFO',
+        '--queues', 'branch_write',
     )
     return running('bin/celeryd', cmd_args)

@@ -191,7 +191,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
-        response = CeleryRunJob.delay(self.job_id)
+        response = CeleryRunJob.apply_async(
+            (self.job_id,),
+            routing_key='job.branch_write')
         BaseRunnableJob.last_celery_response = response
         return response
 

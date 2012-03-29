@@ -19,7 +19,6 @@ class TestCelery(TestCaseWithFactory):
         # Delay importing anything that uses Celery until RabbitMQLayer is
         # running, so that config.rabbitmq.host is defined when
         # lp.services.job.celeryconfig is loaded.
-        from lp.services.job.celeryjob import CeleryRunJob
         from celery.exceptions import TimeoutError
         with celeryd() as proc:
             self.useBzrBranches()
@@ -29,7 +28,7 @@ class TestCelery(TestCaseWithFactory):
             job = BranchScanJob.create(db_branch)
             transaction.commit()
             try:
-                CeleryRunJob.delay(job.job_id).wait(30)
+                job.runViaCelery().wait(30)
             except TimeoutError:
                 pass
         self.assertIn(
