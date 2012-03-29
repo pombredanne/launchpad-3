@@ -54,8 +54,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.enums import InformationType
-from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1105,36 +1103,6 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
-
-    def test_BugsInformationTypeMigrator(self):
-        # A non-migrated bug will have information_type set correctly.
-        switch_dbuser('testadmin')
-        bug = self.factory.makeBug(private=True)
-        # Since creating a bug will set information_type, unset it.
-        removeSecurityProxy(bug).information_type = None
-        transaction.commit()
-        self.runHourly()
-        self.assertEqual(InformationType.USERDATA, bug.information_type)
-
-    def test_BugLegacyAccessMirrorer(self):
-        # Private bugs without corresponding data in the access policy
-        # schema get mirrored.
-        switch_dbuser('testadmin')
-        bug = self.factory.makeBug(private=True)
-        # Remove the existing mirrored data.
-        getUtility(IAccessArtifactSource).delete([bug])
-        transaction.commit()
-        self.runHourly()
-        # Check that there's an artifact again, and delete it.
-        switch_dbuser('testadmin')
-        [artifact] = getUtility(IAccessArtifactSource).find([bug])
-        getUtility(IAccessArtifactSource).delete([bug])
-        transaction.commit()
-        self.runHourly()
-        # A watermark is kept in memcache, so a second run doesn't
-        # consider the same bug.
-        self.assertContentEqual(
-            [], getUtility(IAccessArtifactSource).find([bug]))
 
 
 class TestGarboTasks(TestCaseWithFactory):

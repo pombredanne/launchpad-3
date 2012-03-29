@@ -10,28 +10,29 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import (
-    And,
-    )
+from storm.expr import And
 from storm.locals import (
     Int,
     Reference,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
 from lp.registry.enums import ProductJobType
-from lp.registry.interfaces.product import (
-    IProduct,
-    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
+    IProductNotificationJob,
+    IProductNotificationJobSource,
     )
 from lp.registry.model.product import Product
+from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
@@ -39,8 +40,20 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
+from lp.services.propertycache import cachedproperty
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.helpers import (
+    get_email_template,
+    )
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
+from lp.services.webapp.publisher import canonical_url
 
 
 class ProductJob(StormBase):
@@ -149,3 +162,123 @@ class ProductJobDerived(BaseRunnableJob):
             ('product', self.context.product.name),
             ])
         return vars
+
+
+class ProductNotificationJob(ProductJobDerived):
+    """A Job that send an email to the product maintainer."""
+
+    implements(IProductNotificationJob)
+    classProvides(IProductNotificationJobSource)
+    class_job_type = ProductJobType.REVIEWER_NOTIFICATION
+
+    @classmethod
+    def create(cls, product, email_template_name,
+               subject, reviewer, reply_to_commercial=False):
+        """See `IProductNotificationJob`."""
+        metadata = {
+            'email_template_name': email_template_name,
+            'subject': subject,
+            'reviewer_id': reviewer.id,
+            'reply_to_commercial': reply_to_commercial,
+            }
+        return super(ProductNotificationJob, cls).create(product, metadata)
+
+    @property
+    def subject(self):
+        """See `IProductNotificationJob`."""
+        return self.metadata['subject']
+
+    @property
+    def email_template_name(self):
+        """See `IProductNotificationJob`."""
+        return self.metadata['email_template_name']
+
+    @cachedproperty
+    def reviewer(self):
+        """See `IProductNotificationJob`."""
+        return getUtility(IPersonSet).get(self.metadata['reviewer_id'])
+
+    @property
+    def reply_to_commercial(self):
+        """See `IProductNotificationJob`."""
+        return self.metadata['reply_to_commercial']
+
+    @cachedproperty
+    def reply_to(self):
+        """See `IProductNotificationJob`."""
+        if self.reply_to_commercial:
+            return 'Commercial <commercial@launchpad.net>'
+        return None
+
+    @cachedproperty
+    def recipients(self):
+        """See `IProductNotificationJob`."""
+        maintainer = self.product.owner
+        if maintainer.is_team:
+            team_name = maintainer.displayname
+            role = "an admin of %s which is the maintainer" % team_name
+            users = maintainer.adminmembers
+        else:
+            role = "the maintainer"
+            users = maintainer
+        reason = (
+            "You received this notification because you are %s of %s.\n%s" %
+            (role, self.product.displayname, self.message_data['product_url']))
+        header = 'Maintainer'
+        notification_set = NotificationRecipientSet()
+        notification_set.add(users, reason, header)
+        return notification_set
+
+    @cachedproperty
+    def message_data(self):
+        """See `IProductNotificationJob`."""
+        return {
+            'product_name': self.product.name,
+            'product_displayname': self.product.displayname,
+            'product_url': canonical_url(self.product),
+            'reviewer_name': self.reviewer.name,
+            'reviewer_displayname': self.reviewer.displayname,
+            }
+
+    def getErrorRecipients(self):
+        """See `BaseRunnableJob`."""
+        return [format_address_for_person(self.reviewer)]
+
+    def getBodyAndHeaders(self, email_template, address, reply_to=None):
+        """See `IProductNotificationJob`."""
+        reason, rationale = self.recipients.getReason(address)
+        maintainer = self.recipients._emailToPerson[address]
+        message_data = dict(self.message_data)
+        message_data['user_name'] = maintainer.name
+        message_data['user_displayname'] = maintainer.displayname
+        raw_body = email_template % message_data
+        raw_body += '\n\n-- \n%s' % reason
+        body = MailWrapper().format(raw_body, force_wrap=True)
+        headers = {
+            'X-Launchpad-Project':
+                '%(product_displayname)s (%(product_name)s)' % message_data,
+            'X-Launchpad-Message-Rationale': rationale,
+            }
+        if reply_to is not None:
+            headers['Reply-To'] = reply_to
+        return body, headers
+
+    def sendEmailToMaintainer(self, template_name, subject, from_address):
+        """See `IProductNotificationJob`."""
+        email_template = get_email_template(
+            "%s.txt" % template_name, app='registry')
+        for address in self.recipients.getEmails():
+            body, headers = self.getBodyAndHeaders(
+                email_template, address, self.reply_to)
+            simple_sendmail(from_address, address, subject, body, headers)
+
+    def run(self):
+        """See `BaseRunnableJob`.
+
+         Subclasses that are updating products may make changes to the product
+         before or after calling this class' run() method.
+        """
+        from_address = format_address(
+            'Launchpad', config.canonical.noreply_from_address)
+        self.sendEmailToMaintainer(
+            self.email_template_name, self.subject, from_address)

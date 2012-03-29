@@ -62,6 +62,7 @@ from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
+    Coalesce,
     Desc,
     Exists,
     In,
@@ -127,6 +128,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
@@ -221,6 +223,7 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
+from lp.registry.model.milestone import Milestone
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -230,7 +233,10 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.services.config import config
-from lp.services.database import postgresql
+from lp.services.database import (
+    bulk,
+    postgresql,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -290,6 +296,7 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.searchbuilder import any
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
@@ -1468,6 +1475,104 @@ class Person(
         """See `IPerson`."""
         self._inTeam_cache = {}
 
+    @cachedproperty
+    def participant_ids(self):
+        """See `IPerson`."""
+        return list(Store.of(self).find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id))
+
+    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+        """See `IPerson`."""
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+        WorkItem = SpecificationWorkItem
+        origin = [
+            WorkItem,
+            Join(Specification, WorkItem.specification == Specification.id),
+            # WorkItems may not have a milestone and in that case they inherit
+            # the one from the spec.
+            Join(Milestone,
+                 Coalesce(WorkItem.milestone_id,
+                          Specification.milestoneID) == Milestone.id),
+            ]
+        today = datetime.today().date()
+        query = AND(
+            Milestone.dateexpected <= date, Milestone.dateexpected >= today,
+            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+               AND(WorkItem.assignee == None,
+                   Specification.assigneeID.is_in(self.participant_ids))))
+        result = store.using(*origin).find(WorkItem, query)
+        def eager_load(workitems):
+            specs = bulk.load_related(
+                Specification, workitems, ['specification_id'])
+            bulk.load_related(Product, specs, ['productID'])
+            bulk.load_related(Distribution, specs, ['distributionID'])
+            assignee_ids = set(
+                [workitem.assignee_id for workitem in workitems]
+                + [spec.assigneeID for spec in specs])
+            assignee_ids.discard(None)
+            bulk.load(Person, assignee_ids, store)
+            milestone_ids = set(
+                [workitem.milestone_id for workitem in workitems]
+                + [spec.milestoneID for spec in specs])
+            milestone_ids.discard(None)
+            bulk.load(Milestone, milestone_ids, store)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    def getAssignedBugTasksDueBefore(self, date, user):
+        """See `IPerson`."""
+        from lp.bugs.model.bugtask import BugTask
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+        today = datetime.today().date()
+        search_params = BugTaskSearchParams(
+            user, assignee=any(*self.participant_ids),
+            milestone_dateexpected_before=date,
+            milestone_dateexpected_after=today)
+
+        # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
+        # multiple times when load_related() iterates over through the tasks.
+        tasks = list(getUtility(IBugTaskSet).search(search_params))
+        # Eager load the things we need that are not already eager loaded by
+        # BugTaskSet.search().
+        bulk.load_related(ProductSeries, tasks, ['productseriesID'])
+        bulk.load_related(Distribution, tasks, ['distributionID'])
+        bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
+        bulk.load_related(Person, tasks, ['assigneeID'])
+        bulk.load_related(Milestone, tasks, ['milestoneID'])
+
+        for task in tasks:
+            # We skip masters (instead of slaves) from conjoined relationships
+            # because we can do that without hittind the DB, which would not
+            # be possible if we wanted to skip the slaves. The simple (but
+            # expensive) way to skip the slaves would be to skip any tasks
+            # that have a non-None .conjoined_master.
+            productseries = task.productseries
+            distroseries = task.distroseries
+            if productseries is not None and task.product is None:
+                dev_focus_id = productseries.product.development_focusID
+                if (productseries.id == dev_focus_id and
+                    task.status not in BugTask._NON_CONJOINED_STATUSES):
+                    continue
+            elif distroseries is not None:
+                candidate = None
+                for possible_slave in tasks:
+                    sourcepackagename_id = possible_slave.sourcepackagenameID
+                    if sourcepackagename_id == task.sourcepackagenameID:
+                        candidate = possible_slave
+                # Distribution.currentseries is expensive to run for every
+                # bugtask (as it goes through every series of that
+                # distribution), but it's a cached property and there's only
+                # one distribution with bugs in LP, so we can afford to do
+                # it here.
+                if (candidate is not None and
+                    distroseries.distribution.currentseries == distroseries):
+                    continue
+            yield task
+
     #
     # ITeam methods
     #
@@ -1744,14 +1849,14 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug.private == True,
+                    Bug._private == True,
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.private == True, BugTask.assignee == self.id)),
+                where=And(Bug._private == True, BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(
