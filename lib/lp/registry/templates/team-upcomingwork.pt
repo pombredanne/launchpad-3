@@ -29,6 +29,9 @@
             <a tal:replace="structure container/target/fmt:link" />
             <!-- TODO: include the priority/assignee here as well -->
           </h3>
+	  <p style="margin-left: 3em">
+	    <span tal:replace="container/percent_done" /> % of the work is completed.
+	  </p> 
           <table class="listing" style="margin-left: 3em">
             <thead>
               <tr>
@@ -49,6 +52,9 @@
 
         <tal:bugtasks condition="not: container/spec">
           <h3 tal:content="container/html_link" />
+	  <p style="margin-left: 3em">
+	    <span tal:replace="container/percent_done" /> % of the bugs are resolved.
+	  </p> 
           <table class="listing" width="70%" style="margin-left: 3em">
             <thead>
               <tr>
