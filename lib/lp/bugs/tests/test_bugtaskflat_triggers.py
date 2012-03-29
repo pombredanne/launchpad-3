@@ -299,6 +299,15 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
             getUtility(IAccessPolicyArtifactSource).deleteByArtifact(
                 [artifact])
 
+    def test_access_create_public(self):
+        # Creating a grant or policy link on a public bug has no effect.
+        # The access caches remain null.
+        task = self.makeLoggedInTask()
+        with self.bugtaskflat_is_identical(task):
+            [artifact] = getUtility(IAccessArtifactSource).ensure([task.bug])
+            self.factory.makeAccessPolicyArtifact(artifact=artifact)
+            self.factory.makeAccessArtifactGrant(artifact=artifact)
+
     def test_accessartifact_delete(self):
         # Deleting an AccessArtifact removes the corresponding
         # AccessArtifactGrant and AccessPolicyArtifact rows. Even though
