@@ -117,6 +117,7 @@ from lp.registry.browser.product import (
     ProductConfigureBase,
     ProductPrivateBugsMixin,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -580,12 +581,13 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        # Security bugs are always private when filed, but can be disclosed
+        # Security bugs are always embargoed when filed, but can be disclosed
         # after they've been reported.
+        # This will change when the UI does.
         if security_related:
-            private = True
+            information_type = InformationType.EMBARGOEDSECURITY
         else:
-            private = False
+            information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -593,7 +595,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
-            security_related=security_related, private=private,
+            information_type=information_type,
             tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
@@ -623,7 +625,8 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                 'Additional information was added to the bug description.')
 
         if extra_data.private:
-            params.private = extra_data.private
+            if params.information_type == InformationType.PUBLIC:
+                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
         if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
