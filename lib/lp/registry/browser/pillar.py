@@ -383,8 +383,9 @@ class PillarAuditSharingView(BasePillarSharingView):
         return True
 
     def unbatched_sharees(self):
-        """All the sharees for a pillar."""
-        return self._getSharingService().getPillarSharees(self.context)
+        """All the indirect sharees for a pillar."""
+        return self._getSharingService().getPillarSharees(
+            self.context, include_indirect=True)
 
 
 class PillarPersonSharingView(LaunchpadView):
