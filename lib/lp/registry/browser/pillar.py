@@ -6,7 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
+    'InvolvedMenu',
+    'PillarBugsMenu',
+    'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -61,6 +63,7 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -74,6 +77,14 @@ from lp.services.webapp.publisher import (
     stepthrough,
     )
 
+
+
+class PillarPersonBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITeamMembership`."""
+
+    @property
+    def text(self):
+        return "%s" % self.context.person.displayname
 
 class PillarNavigationMixin:
 
