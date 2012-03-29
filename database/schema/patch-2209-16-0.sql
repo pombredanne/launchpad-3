@@ -210,6 +210,8 @@ CREATE INDEX
     WHERE productseries IS NOT NULL;
 
 
+-- Update helpers
+
 CREATE OR REPLACE FUNCTION bug_build_access_cache(bug_id integer,
                                                   information_type integer)
     RETURNS record
@@ -242,8 +244,12 @@ BEGIN
 END;
 $$;
 
+COMMENT ON FUNCTION bug_build_access_cache(bug_id integer,
+                                           information_type integer) IS
+    'Build an access cache for the given bug. Returns '
+    '({AccessPolicyArtifact.policy}, {AccessArtifactGrant.grantee}) '
+    'for private bugs, or (NULL, NULL) for public ones.';
 
--- Update helpers
 
 CREATE OR REPLACE FUNCTION bugtask_flatten(task_id integer, check_only boolean)
     RETURNS boolean
@@ -254,9 +260,7 @@ DECLARE
     task_row BugTask%ROWTYPE;
     old_flat_row BugTaskFlat%ROWTYPE;
     new_flat_row BugTaskFlat%ROWTYPE;
-    access_cache record;
     _product_active boolean;
-    _access_artifact integer;
     _access_policies integer[];
     _access_grants integer[];
 BEGIN
