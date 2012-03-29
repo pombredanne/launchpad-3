@@ -422,9 +422,9 @@ class AccessPolicyGrantFlat(StormBase):
     @classmethod
     def _populateIndirectGranteePermissions(cls,
                                             policies_by_id, result_set):
-        # A cache for the sharing permissions, keyed on grantee
+        # A cache for the sharing permissions, keyed on grantee.
         permissions_cache = defaultdict(dict)
-        # A cache of teams belonged to, keyed by grantee
+        # A cache of teams belonged to, keyed by grantee.
         via_teams_cache = defaultdict(list)
         persons_by_id = dict()
 
