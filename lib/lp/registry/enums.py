@@ -10,6 +10,7 @@ __all__ = [
     'InformationType',
     'PersonTransferJobType',
     'PRIVATE_INFORMATION_TYPES',
+    'PUBLIC_INFORMATION_TYPES',
     'ProductJobType',
     'SECURITY_INFORMATION_TYPES',
     'SharingPermission',
@@ -61,6 +62,10 @@ class InformationType(DBEnumeratedType):
         Only users with permission to see the project's artifacts containing
         proprietary data can see this information.
         """)
+
+
+PUBLIC_INFORMATION_TYPES = (
+    InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY)
 
 
 PRIVATE_INFORMATION_TYPES = (

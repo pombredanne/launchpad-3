@@ -90,8 +90,7 @@ Create a subsequent source publication so a package diff can be provided.
 
 Commit everything.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
 
 PPA file links
@@ -283,7 +282,7 @@ binaries across to no-priv's public ppa.
     ...     'http://launchpad.dev/~no-priv/+archive/ppa/+files/%s' %
     ...     dsc_file.filename)
 
-    >>> commit()
+    >>> transaction.commit()
     >>> logout()
 
     >>> print file_librarian_url
@@ -355,7 +354,7 @@ immediately deleted in case of reported ToS violation.
     >>> store.commit()
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(dsc_file).content = None
-    >>> commit()
+    >>> transaction.commit()
 
 The librarian URL for a deleted file is None, by convention. See
 `ILibraryFileAlias` for more information on this.

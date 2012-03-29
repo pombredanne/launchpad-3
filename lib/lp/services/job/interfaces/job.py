@@ -14,7 +14,6 @@ __all__ = [
     'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
-    'SuspendJobException',
     ]
 
 
@@ -37,11 +36,6 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
-
-
-class SuspendJobException(Exception):
-    """Raised when a running job wants to suspend itself."""
-    pass
 
 
 class LeaseHeld(Exception):
@@ -87,6 +81,9 @@ class JobStatus(DBEnumeratedType):
 
 class IJob(Interface):
     """Basic attributes of a job."""
+
+    job_id = Int(title=_(
+        'A unique identifier for this job.'))
 
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
