@@ -31,7 +31,6 @@ CREATE TABLE BugTaskFlat (
 
 -- Non-target-specific filters
 CREATE INDEX bugtaskflat__bug__idx ON BugTaskFlat USING btree (bug);
-CREATE INDEX bugtaskflat__bugtask__idx ON BugTaskFlat USING btree (bugtask);
 
 CREATE INDEX bugtaskflat__bug_owner__idx
     ON BugTaskFlat USING btree (bug_owner);
