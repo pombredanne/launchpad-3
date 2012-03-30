@@ -610,8 +610,7 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
             members=[indirect_person_grantee])
         # Make a team for indirect grantee which should not appear in the
         # results.
-        some_other_team = self.factory.makeTeam(
-            members=[indirect_person_grantee])
+        self.factory.makeTeam(members=[indirect_person_grantee])
         team_grantee2 = self.factory.makeTeam(
             members=[indirect_person_grantee])
         self.factory.makeAccessPolicyGrant(
@@ -622,7 +621,8 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         # Indirect grantee has access.
         expected_grantees = [
             (indirect_person_grantee, policy_info,
-             [team_grantee1, team_grantee2])]
+             sorted([team_grantee1, team_grantee2],
+                key=lambda x: x.displayname))]
         # All other team members have access.
         expected_grantees.extend([(member, policy_info, [team_grantee1])
             for member in team_grantee1.activemembers
@@ -633,6 +633,40 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         # The team itself has access also.
         expected_grantees.append((team_grantee1, policy_info, None))
         expected_grantees.append((team_grantee2, policy_info, None))
+        self.assertContentEqual(
+            expected_grantees,
+            apgfs.findIndirectGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
+
+    def test_findIndirectGranteePermissionsDirect(self):
+        # Test that findIndirectGranteePermissionsByPolicy() works correctly
+        # when a user is granted access directly as well as via membership of a
+        # team.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        # Make an direct grantee.
+        person_grantee = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=person_grantee)
+        # Make a team grantee with the person grantee as a member.
+        team_grantee = self.factory.makeTeam(owner=self.factory.makePerson(),
+            members=[person_grantee])
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantee=team_grantee)
+        # Make a team for indirect grantee which should not appear in the
+        # results.
+        self.factory.makeTeam(members=[person_grantee])
+        policy_info = {policy: SharingPermission.ALL}
+        # Direct grantee has access.
+        expected_grantees = [(person_grantee, policy_info, None)]
+        # All other team members have indirect access.
+        expected_grantees.extend([(member, policy_info, [team_grantee])
+            for member in team_grantee.activemembers
+            if member != person_grantee])
+        # The team itself has access also.
+        expected_grantees.append((team_grantee, policy_info, None))
         self.assertContentEqual(
             expected_grantees,
             apgfs.findIndirectGranteePermissionsByPolicy(
@@ -668,7 +702,8 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         policy_info = {policy: SharingPermission.ALL}
         expected_grantees = [
             (indirect_person_grantee, policy_info,
-             [team_grantee1, team_grantee2])]
+             sorted([team_grantee1, team_grantee2],
+                key=lambda x: x.displayname))]
         expected_grantees.extend([(member, policy_info, [team_grantee1])
             for member in team_grantee1.activemembers
             if member != indirect_person_grantee])
