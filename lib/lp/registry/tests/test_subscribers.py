@@ -270,19 +270,17 @@ class PersonDetailsModifiedTestCase(TestCaseWithFactory):
     """
     layer = DatabaseFunctionalLayer
 
-    # def test_event_generates_notification(self):
-    #     """Manually firing event should generate a proper notification."""
-    #     person = self.factory.makePerson(email='test@pre.com')
-    #     login_person(person)
-    #     pop_notifications()
-    #     new_email = self.factory.makeEmail('test@post.com', person)
-    #     person.setPreferredEmail(new_email)
-    #     # After/before objects and list of edited fields.
-    #     event = ObjectModifiedEvent(person, None, ['preferredemail'])
-    #     person_details_modified(person, event)
-    #     notifications = pop_notifications()
-    #     self.assertEqual(1, len(notifications))
-    #     self.assertEqual('test@pre.com', notifications[0].get('To'))
+    def test_event_generates_notification(self):
+        """Manually firing event should generate a proper notification."""
+        person = self.factory.makePerson(email='test@pre.com')
+        login_person(person)
+        pop_notifications()
+        # After/before objects and list of edited fields.
+        event = ObjectModifiedEvent(person, person, ['preferredemail'])
+        person_details_modified(person, event)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertTrue('test@pre.com' in notifications[0].get('To'))
 
     def test_preferred_email_modified(self):
         """Modifying the preferred email should get the notification."""
