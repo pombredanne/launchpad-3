@@ -852,15 +852,134 @@ def create_scripts(user, lxcname, ssh_key_path):
                 --server-args='-screen 0 1024x768x24' \
                 -a $PWD/bin/test --shuffle --subunit $@"
             """).format(**mapping)))
-        os.chmod(test_script_file, 0555)
+    os.chmod(test_script_file, 0555)
+    # Create a script for cleaning up cruft possibly left by previous lxc
+    # ephemeral containers that were not properly shut down.
+    cleanup_script_file = '/usr/local/bin/launchpad-lxc-cleanup'
+    with open(cleanup_script_file, 'w') as script:
+        script.write(textwrap.dedent("""\
+            #!/usr/bin/python
+            #Cleanup remnants of LXC containers from previous runs.
+
+            # Runs of LXC may leave cruft laying around that interferes with
+            # the next run.  These items need to be cleaned up.
+
+            # 1) Shut down all running containers
+
+            # 2) for every /var/lib/lxc/lptests-tmp-* directory:
+            #      umount [directory]/ephemeralbind
+            #      umount [directory]
+            #      rm -rf [directory]
+
+            # 3) for every /tmp/lxc-lp-* (or something like that?) directory:
+            #      umount [directory]
+            #      rm -rf [directory]
+
+            # Assumptions:
+            #  * This script is run as root.
+
+            import glob
+            import os.path
+            import re
+            from shelltoolbox import run
+            import shutil
+            import time
+
+
+            LP_TEST_DIR_PATTERN = "/var/lib/lxc/lptests-tmp-*"
+            LXC_LP_DIR_PATTERN = "/tmp/lxc-lp-*"
+            PID_RE = re.compile("pid:\s+(\d+)")
+
+
+            class Scrubber(object):
+                \"\"\"Scrubber will cleanup after lxc ephemeral uncleanliness.
+
+                All running containers will be killed.
+
+                Those directories corresponding the lp_test_dir_pattern will
+                be unmounted and removed.  The 'ephemeralbind' subdirectories
+                will be unmounted.
+
+                The directories corresponding to the lxc_lp_dir_pattern will
+                be unmounted and removed.  No subdirectories will need
+                unmounting.
+                \"\"\"
+                def __init__(self, user='buildbot',
+                             lp_test_dir_pattern=LP_TEST_DIR_PATTERN,
+                             lxc_lp_dir_pattern=LXC_LP_DIR_PATTERN):
+                    self.lp_test_dir_pattern = lp_test_dir_pattern
+                    self.lxc_lp_dir_pattern = lxc_lp_dir_pattern
+                    self.user = user
+
+                def umount(self, dir_):
+                    if os.path.ismount(dir_):
+                        run("umount", dir_)
+
+                def scrubdir(self, dir_, extra):
+                    dirs = [dir_]
+                    if extra is not None:
+                        dirs.insert(0, os.path.join(dir_, extra))
+                    for d in dirs:
+                        self.umount(d)
+                    shutil.rmtree(dir_)
+
+                def scrub(self, pattern, extra=None):
+                    for dir_ in glob.glob(pattern):
+                        if os.path.isdir(dir_):
+                            self.scrubdir(dir_, extra)
+
+                def getPid(self, container):
+                    info = run("lxc-info", "-n", container)
+                    if 'RUNNING' in info:
+                        match = PID_RE.search(info)
+                        if match:
+                            return match.group(1)
+                    return None
+
+                def getRunningContainers(self):
+                    \"\"\"Get the running containers.
+
+                    Returns a list of (name, pid) tuples.
+                    \"\"\"
+                    output = run("lxc-ls")
+                    containers = set(output.split())
+                    pidlist = [(c, self.getPid(c)) for c in containers]
+                    return [(c,p) for c,p in pidlist if p is not None]
+
+                def killer(self):
+                    \"\"\"Kill all running ephemeral containers.\"\"\"
+                    pids = self.getRunningContainers()
+                    if len(pids) > 0:
+                        # We can do this the easy way...
+                        for name, pid in pids:
+                            run("/usr/bin/lxc-stop", "-n", name)
+                        time.sleep(2)
+                        pids = self.getRunningContainers()
+                        # ...or, the hard way.
+                        for name, pid in pids:
+                            run("kill", "-9", pid)
+
+                def run(self):
+                    self.killer()
+                    self.scrub(self.lp_test_dir_pattern, "ephemeralbind")
+                    self.scrub(self.lxc_lp_dir_pattern)
+
+
+            if __name__ == '__main__':
+                scrubber = Scrubber()
+                scrubber.run()
+            """))
+    os.chmod(cleanup_script_file, 0555)
+
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/launchpad-' + user
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
-        sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
-        sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
+        sudoers.write(' {},'.format(build_script_file))
+        sudoers.write(' {},'.format(cleanup_script_file))
+        sudoers.write(' {}\n'.format(test_script_file))
         # The sudoers must have this mode or it will be ignored.
-        os.chmod(sudoers_file, 0440)
+    os.chmod(sudoers_file, 0440)
     # XXX 2012-03-13 frankban bug=944386:
     #     Disable hardlink restriction. This workaround needs
     #     to be removed once the kernel bug is resolved.
@@ -877,10 +996,11 @@ def create_lxc(user, lxcname, ssh_key_path):
     #     much a Good Thing.
     # Disable the apparmor profiles for lxc so that we don't have
     # problems installing postgres.
-    subprocess.call([
-        'ln', '-s',
-        '/etc/apparmor.d/usr.bin.lxc-start',
-        '/etc/apparmor.d/disable/'])
+    if not os.path.exists('/etc/apparmor.d/disable/usr.bin.lxc-start'):
+        subprocess.call([
+            'ln', '-s',
+            '/etc/apparmor.d/usr.bin.lxc-start',
+            '/etc/apparmor.d/disable/'])
     subprocess.call([
         'apparmor_parser', '-R', '/etc/apparmor.d/usr.bin.lxc-start'])
     # Update resolv file in order to get the ability to ssh into the LXC
