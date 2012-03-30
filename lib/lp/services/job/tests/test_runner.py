@@ -612,8 +612,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
-    def test_memory_hog_job(self):
+    def disable_test_memory_hog_job(self):
         """A job with a memory limit will trigger MemoryError on excess."""
+        # XXX: frankban 2012-03-29 bug=963455: This test fails intermittently,
+        # especially in parallel tests.
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
         runner = TwistedJobRunner.runFromSource(
