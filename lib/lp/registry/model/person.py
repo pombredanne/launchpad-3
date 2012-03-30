@@ -2582,9 +2582,11 @@ class Person(
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
-        # Make sure we notify that the property was changed.
-        notify(ObjectModifiedEvent(self, person_before_mod,
-            ['preferredemail'], user=self))
+        # Make sure we notify that the property was changed, but only if we've
+        # changed the preferred email and not set an initial one.
+        if person_before_mod.preferredemail:
+            notify(ObjectModifiedEvent(self, person_before_mod,
+                ['preferredemail'], user=self))
 
     @cachedproperty
     def preferredemail(self):

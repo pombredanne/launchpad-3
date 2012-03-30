@@ -167,7 +167,12 @@ def person_details_modified(person, event):
 
     if changed_fields:
         user = IPersonViewRestricted(event.user)
-        notification = PersonDetailsChangeNotification(changed_fields, user)
+        original_object = event.object_before_modification
+        prev_preferred_email = original_object.preferredemail.email
+
+        notification = PersonDetailsChangeNotification(
+            changed_fields, user,
+            override_noticeto=(user.displayname, prev_preferred_email))
         notification.send()
 
 
