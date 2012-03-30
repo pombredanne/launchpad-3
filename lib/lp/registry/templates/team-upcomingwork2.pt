@@ -14,7 +14,8 @@
           Y.on('domready', function() {
             Y.all('[class=expandable]').each(function(e) {
               var expander_icon = e.one('[class=expander]');
-              var widget_body = e.next();
+              // Our parent's first sibling is the tbody we want to collapse.
+              var widget_body = e.ancestor().next();
               var expander = new Y.lp.app.widgets.expander.Expander(
                   expander_icon, widget_body);
               expander.setUp(true);
@@ -22,6 +23,14 @@
           })
         });
     </script>
+    <style type="text/css">
+      .collapsible-body {
+        background-color: #eee;
+      }
+      tr.padded td {
+        padding-left: 2em;
+      }
+    </style>
   </tal:block>
 </head>
 
@@ -42,65 +51,42 @@
     <table class="listing">
       <thead>
       <tr>
-        <th width="50%">Blueprint</th>
-        <th width="15%">Target</th>
-        <th width="20%">Assignee</th>
-        <th width="10%">Priority</th>
+        <th>Blueprint</th>
+        <th>Target</th>
+        <th>Assignee</th>
+        <th>Priority</th>
+        <th>Progress</th>
       </tr>
       </thead>
-      <tbody tal:repeat="container containers">
-        <tr class="expandable">
+      <tal:containers repeat="container containers">
+      <tbody>
+        <tr class="expandable" style="font-size: 14px">
           <td>
             <a href="#" class="expander">&nbsp;</a>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />
-          <td tal:content="container/priority_title" />
           <td tal:content="structure container/assignee_link" />
-        </tr>
-        <tr>
-          <td colspan="4">
-            <table class="listing" tal:condition="container/spec"
-                   style="margin-left: 2em">
-              <thead>
-              <tr>
-                <th width="65%">Work item</th>
-                <th width="25%">Assignee</th>
-                <th width="10%">Status</th>
-              </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="workitem container/items">
-                  <td><span tal:replace="workitem/title/fmt:shorten/120" /></td>
-                  <td><a tal:replace="structure workitem/assignee/fmt:link" />
-                  </td>
-                  <td><span tal:replace="workitem/status/title" /></td>
-                </tr>
-              </tbody>
-            </table>
-            <table class="listing" tal:condition="not: container/spec"
-                   style="margin-left: 2em">
-              <thead>
-              <tr>
-                <th width="55%">Bug</th>
-                <th width="15%">Target</th>
-                <th width="20%">Assignee</th>
-                <th width="10%">Status</th>
-              </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="workitem container/items">
-                  <td><span tal:replace="structure workitem/_bugtask/fmt:link" /></td>
-                  <td><span tal:replace="structure workitem/target/fmt:link" /></td>
-                  <td><a tal:replace="structure workitem/assignee/fmt:link" />
-                  </td>
-                  <td><span tal:replace="workitem/status/title" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </td>
+          <td tal:content="container/priority_title" />
+          <td><span tal:replace="container/progress_text" />% done</td>
         </tr>
       </tbody>
+      <tbody class="collapsible-body">
+        <tr tal:repeat="workitem container/items" class="padded">
+          <td tal:content="structure workitem/display_title" />
+          <td>
+            <span tal:condition="not: container/spec"
+                  tal:replace="structure workitem/target/fmt:link" />
+          </td>
+          <td><a tal:replace="structure workitem/assignee/fmt:link" /></td>
+          <td>
+            <span tal:condition="not: container/spec"
+              tal:replace="workitem/priority/title" />
+          </td>
+          <td><span tal:replace="workitem/status/title" /></td>
+        </tr>
+      </tbody>
+      </tal:containers>
     </table>
   </div>
   </div>
