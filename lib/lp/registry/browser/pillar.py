@@ -332,6 +332,7 @@ class BasePillarSharingView(LaunchpadView):
             and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['show_indirect_sharees'] = False
 
         view_names = set(reg.name for reg
             in iter_view_registrations(self.__class__))
@@ -377,6 +378,11 @@ class PillarAuditSharingView(BasePillarSharingView):
 
     page_title = "Audit Sharing"
     label = "Audit sharing"
+
+    def initialize(self):
+        super(PillarAuditSharingView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['show_indirect_sharees'] = True
 
     @property
     def show_sharing_information_link(self):

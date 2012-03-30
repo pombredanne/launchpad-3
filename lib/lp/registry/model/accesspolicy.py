@@ -426,12 +426,14 @@ class AccessPolicyGrantFlat(StormBase):
         permissions_cache = defaultdict(dict)
         # A cache of teams belonged to, keyed by grantee.
         via_teams_cache = defaultdict(list)
-        persons_by_id = dict()
+        grantees_by_id = dict()
 
         def set_permission(grantee):
             # Lookup the permissions from the previously loaded cache.
             via_team_ids = via_teams_cache[grantee[0].id]
-            via_teams = [persons_by_id[team_id] for team_id in via_team_ids]
+            via_teams = sorted(
+                [grantees_by_id[team_id] for team_id in via_team_ids],
+                key=lambda x: x.displayname)
             permissions = permissions_cache[grantee[0]]
             # For access via teams, we need to use the team permissions. If a
             # person has access via more than one team, we use the most
@@ -452,26 +454,40 @@ class AccessPolicyGrantFlat(StormBase):
                 return
             store = IStore(cls)
             for grantee in grantees:
-                persons_by_id[grantee[0].id] = grantee[0]
-            # Find any teams associated with the grantees.
-            result_set = store.find(
+                grantees_by_id[grantee[0].id] = grantee[0]
+            # Find any teams associated with the grantees. If grantees is a
+            # sliced list (for batching), it may contain indirect grantees but
+            # not the team they belong to so that needs to be fixed below.
+            with_expr = With("grantees", store.find(
+                cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
+                ).config(distinct=True)._get_select())
+            result_set = store.with_(with_expr).find(
                 (TeamParticipation.teamID, TeamParticipation.personID),
-                Or(
-                    TeamParticipation.teamID.is_in(persons_by_id.keys()),
-                    TeamParticipation.personID.is_in(persons_by_id.keys())))
+                TeamParticipation.personID.is_in(grantees_by_id.keys()),
+                TeamParticipation.teamID.is_in(
+                    Select(
+                        (SQL("grantees.grantee"),),
+                        tables="grantees",
+                        distinct=True)))
             team_ids = set()
+            direct_grantee_ids = set()
             for team_id, team_member_id in result_set:
-                if (team_id != team_member_id
-                    and team_member_id in persons_by_id.keys()):
-                        via_teams_cache[team_member_id].append(team_id)
-                team_ids.add(team_id)
-            # Load and cache the required persons.
+                if team_member_id == team_id:
+                    direct_grantee_ids.add(team_member_id)
+                else:
+                    via_teams_cache[team_member_id].append(team_id)
+                    team_ids.add(team_id)
+            # Remove from the via_teams cache all the direct grantees.
+            for direct_grantee_id in direct_grantee_ids:
+                if direct_grantee_id in via_teams_cache:
+                    del via_teams_cache[direct_grantee_id]
+            # Load and cache the additional required teams.
             persons = store.find(Person, Person.id.is_in(team_ids))
             for person in persons:
-                persons_by_id[person.id] = person
+                grantees_by_id[person.id] = person
             cls._populatePermissionsCache(
-                permissions_cache, persons_by_id.keys(), policies_by_id,
-                persons_by_id)
+                permissions_cache, grantees_by_id.keys(), policies_by_id,
+                grantees_by_id)
 
         return DecoratedResultSet(
             result_set,
@@ -485,7 +501,7 @@ class AccessPolicyGrantFlat(StormBase):
         store = IStore(cls)
         with_expr = With("grantees", store.find(
             cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
-        ).config(distinct=True)._get_select())
+            ).config(distinct=True)._get_select())
         result_set = store.with_(with_expr).find(
             (Person,),
             In(
