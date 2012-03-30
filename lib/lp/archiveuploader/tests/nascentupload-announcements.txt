@@ -4,16 +4,16 @@ NascentUpload Announcements
 NascentUpload announces uploads according its final status (NEW,
 AUTO-APPROVED, UNAPPROVED) and its destination pocket:
 
- * NEW to RELEASE (via insecure): submitter set (changes signer,
+ * NEW to RELEASE/PROPOSED (via insecure): submitter set (changes signer,
    Changed-by and maintainer) receives an 'new' warning message.
 
  * UNAPPROVED to frozen-RELEASE/UPDATES/BACKPORTS/PROPOSED (via insecure):
    submitter set receives an 'unapproved' warning (announcement is
    sent after the upload gets reviewed by archive-admin at queue time).
 
- * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
-   'acceptance' warning and the target distroseries changeslist
-   address receives an 'announcement' message.
+ * AUTO-APPROVED to RELEASE/PROPOSED (via insecure): submitter set receives
+   an 'acceptance' warning and the target distroseries changeslist address
+   receives an 'announcement' message.
 
  * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
    'acceptance' warning ('announcement' is skipped).
@@ -255,7 +255,6 @@ changes file is enclosed as an attachment.
 
 A PPA upload will contain the X-Launchpad-PPA header.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
@@ -265,8 +264,7 @@ A PPA upload will contain the X-Launchpad-PPA header.
     >>> name16_ppa = getUtility(IArchiveSet).new(
     ...     owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
-    >>> ppa_policy = getPolicy(
-    ...     name='insecure', distro='ubuntu', distroseries=None)
+    >>> ppa_policy = getPolicy(name='insecure', distro='ubuntu')
     >>> ppa_policy.archive = name16_ppa
     >>> ppa_policy.setDistroSeriesAndPocket('hoary')
 
@@ -397,8 +395,7 @@ Release hoary, enable uploads to post-release pockets:
 
 UNAPPROVED source uploads for 'translations' section via insecure:
 
-    >>> insecure_policy = getPolicy(
-    ...     name='insecure', distro='ubuntu', distroseries=None)
+    >>> insecure_policy = getPolicy(name='insecure', distro='ubuntu')
     >>> insecure_policy.setDistroSeriesAndPocket('hoary-updates')
 
     >>> lang_pack = NascentUpload.from_changesfile_path(
@@ -487,8 +484,7 @@ saying they are waiting for approval:
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
-    >>> modified_sync_policy = getPolicy(
-    ...     name='sync', distro='ubuntu', distroseries=None)
+    >>> modified_sync_policy = getPolicy(name='sync', distro='ubuntu')
     >>> modified_sync_policy.setDistroSeriesAndPocket('hoary-backports')
 
     >>> bar_src = NascentUpload.from_changesfile_path(
@@ -805,7 +801,7 @@ result in a rejection email.
 
 We first create a misnamed copy of the changes file.
 
-    >>> import os, shutil
+    >>> import shutil
     >>> originalp = datadir('suite/bar_1.0-1/bar_1.0-1_source.changes')
     >>> copyp = datadir('suite/bar_1.0-1/z-z_0.4.12-2~ppa2.changes')
     >>> shutil.copyfile(originalp, copyp)

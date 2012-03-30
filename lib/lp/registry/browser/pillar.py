@@ -6,9 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu',
-    'PillarBugsMenu',
-    'PillarView',
+    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -379,6 +377,8 @@ class PillarPersonSharingView(LaunchpadView):
 
         cache = IJSONRequestCache(self.request)
         branch_data = self._build_branch_template_data(self.branches)
+        bug_data = self._build_bug_template_data(self.bugs)
+        cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
 
     def _loadSharedArtifacts(self):
@@ -388,9 +388,9 @@ class PillarPersonSharingView(LaunchpadView):
                             self.pillar, self.person):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
-                bugs.append(artifact)
+                bugs.append(concrete)
             elif IBranch.providedBy(concrete):
-                branches.append(artifact)
+                branches.append(concrete)
 
         self.bugs = bugs
         self.branches = branches
@@ -405,3 +405,24 @@ class PillarPersonSharingView(LaunchpadView):
                 branch_name=branch.unique_name,
                 branch_id=branch.id))
         return branch_data
+
+    def _build_bug_template_data(self, bugs):
+        bug_data = []
+        for bug in bugs:
+            [bugtask] = [task for task in bug.bugtasks if
+                            task.target == self.pillar]
+            if bugtask is not None:
+                url = canonical_url(bugtask, path_only_if_possible=True)
+                importance = bugtask.importance.title.lower()
+            else:
+                # This shouldn't ever happen, but if it does there's no reason
+                # to crash.
+                url = canonical_url(bug, path_only_if_possible=True)
+                importance = bug.default_bugtask.importance.title.lower()
+
+            bug_data.append(dict(
+                bug_link=url,
+                bug_summary=bug.title,
+                bug_id=bug.id,
+                bug_importance=importance))
+        return bug_data
