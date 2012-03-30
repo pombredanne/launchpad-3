@@ -103,6 +103,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     last_celery_response = None
 
+    routing_key = 'job.standard'
+
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
@@ -192,7 +194,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
         response = CeleryRunJob.apply_async(
-            (self.job_id,), routing_key='job.branch_write')
+            (self.job_id,), routing_key=self.routing_key)
         BaseRunnableJob.last_celery_response = response
         return response
 

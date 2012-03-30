@@ -20,7 +20,7 @@ class TestCelery(TestCaseWithFactory):
         # running, so that config.rabbitmq.host is defined when
         # lp.services.job.celeryconfig is loaded.
         from celery.exceptions import TimeoutError
-        with celeryd() as proc:
+        with celeryd('standard') as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
             bzr_tree.commit(

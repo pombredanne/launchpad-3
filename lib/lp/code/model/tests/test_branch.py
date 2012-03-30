@@ -749,7 +749,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
             [job, ])
 
     def test_requestUpgradeUsesCelery(self):
-        with celeryd():
+        with celeryd('branch_write'):
             self.useBzrBranches()
             db_branch, tree = create_knit(self)
             self.assertEqual(

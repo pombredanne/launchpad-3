@@ -11,7 +11,7 @@ from time import sleep
 
 
 @contextmanager
-def celeryd():
+def celeryd(queue):
     """Return a ContextManager for a celeryd instance.
 
     The celeryd instance will be configured to use the currently-configured
@@ -24,7 +24,7 @@ def celeryd():
         '--broker', CeleryRunJob.app.conf['BROKER_URL'],
         '--concurrency', '1',
         '--loglevel', 'INFO',
-        '--queues', 'branch_write',
+        '--queues', queue,
     )
     with running('bin/celeryd', cmd_args) as proc:
         # Wait for celeryd startup to complete.

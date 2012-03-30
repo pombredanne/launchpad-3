@@ -328,6 +328,8 @@ class BranchUpgradeJob(BranchJobDerived):
 
     user_error_types = (NotBranchError,)
 
+    routing_key = 'job.branch_write'
+
     def getOperationDescription(self):
         return 'upgrading a branch'
 
