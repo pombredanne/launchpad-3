@@ -6,9 +6,11 @@ __metaclass__ = type
 __all__ = ['celeryd']
 
 
-import os
+from contextlib import contextmanager
+from time import sleep
 
 
+@contextmanager
 def celeryd():
     """Return a ContextManager for a celeryd instance.
 
@@ -24,4 +26,7 @@ def celeryd():
         '--loglevel', 'INFO',
         '--queues', 'branch_write',
     )
-    return running('bin/celeryd', cmd_args)
+    with running('bin/celeryd', cmd_args) as proc:
+        # Wait for celeryd startup to complete.
+        sleep(1)
+        yield proc
