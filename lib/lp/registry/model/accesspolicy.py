@@ -420,18 +420,30 @@ class AccessPolicyGrantFlat(StormBase):
         return cls._populateGranteePermissions(policies_by_id, result_set)
 
     @classmethod
+    def _indirectGranteeSnippets(cls, store, policies_by_id):
+        grantee_with_expr = With("grantees", store.find(
+            cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
+        ).config(distinct=True)._get_select())
+        grantee_id_select = Select(
+            (TeamParticipation.personID,),
+            tables=(TeamParticipation, Join("grantees",
+                SQL("grantees.grantee = TeamParticipation.team"))),
+            distinct=True)
+        return grantee_with_expr, grantee_id_select
+
+    @classmethod
     def _populateIndirectGranteePermissions(cls,
                                             policies_by_id, result_set):
         # A cache for the sharing permissions, keyed on grantee.
         permissions_cache = defaultdict(dict)
         # A cache of teams belonged to, keyed by grantee.
         via_teams_cache = defaultdict(list)
-        persons_by_id = dict()
+        grantees_by_id = dict()
 
         def set_permission(grantee):
             # Lookup the permissions from the previously loaded cache.
             via_team_ids = via_teams_cache[grantee[0].id]
-            via_teams = [persons_by_id[team_id] for team_id in via_team_ids]
+            via_teams = [grantees_by_id[team_id] for team_id in via_team_ids]
             permissions = permissions_cache[grantee[0]]
             # For access via teams, we need to use the team permissions. If a
             # person has access via more than one team, we use the most
@@ -452,26 +464,32 @@ class AccessPolicyGrantFlat(StormBase):
                 return
             store = IStore(cls)
             for grantee in grantees:
-                persons_by_id[grantee[0].id] = grantee[0]
-            # Find any teams associated with the grantees.
-            result_set = store.find(
+                grantees_by_id[grantee[0].id] = grantee[0]
+            # Find any teams associated with the grantees. If grantees is a
+            # sliced list (for batching), it may contain indirect grantees but
+            # not the team they belong to so that needs to be fixed below.
+            grantee_with_expr, grantee_id_select = (
+                cls._indirectGranteeSnippets(store, policies_by_id))
+            result_set = store.with_(grantee_with_expr).find(
                 (TeamParticipation.teamID, TeamParticipation.personID),
                 Or(
-                    TeamParticipation.teamID.is_in(persons_by_id.keys()),
-                    TeamParticipation.personID.is_in(persons_by_id.keys())))
+                    TeamParticipation.teamID.is_in(grantees_by_id.keys()),
+                    TeamParticipation.personID.is_in(grantees_by_id.keys())),
+                TeamParticipation.teamID.is_in(grantee_id_select)
+            )
             team_ids = set()
             for team_id, team_member_id in result_set:
                 if (team_id != team_member_id
-                    and team_member_id in persons_by_id.keys()):
+                    and team_member_id in grantees_by_id.keys()):
                         via_teams_cache[team_member_id].append(team_id)
                 team_ids.add(team_id)
-            # Load and cache the required persons.
+            # Load and cache the required teams.
             persons = store.find(Person, Person.id.is_in(team_ids))
             for person in persons:
-                persons_by_id[person.id] = person
+                grantees_by_id[person.id] = person
             cls._populatePermissionsCache(
-                permissions_cache, persons_by_id.keys(), policies_by_id,
-                persons_by_id)
+                permissions_cache, grantees_by_id.keys(), policies_by_id,
+                grantees_by_id)
 
         return DecoratedResultSet(
             result_set,
@@ -483,18 +501,10 @@ class AccessPolicyGrantFlat(StormBase):
         """See `IAccessPolicyGrantFlatSource`."""
         policies_by_id = dict((policy.id, policy) for policy in policies)
         store = IStore(cls)
-        with_expr = With("grantees", store.find(
-            cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
-        ).config(distinct=True)._get_select())
-        result_set = store.with_(with_expr).find(
-            (Person,),
-            In(
-                Person.id,
-                Select(
-                    (TeamParticipation.personID,),
-                    tables=(TeamParticipation, Join("grantees",
-                        SQL("grantees.grantee = TeamParticipation.team"))),
-                    distinct=True)))
+        grantee_with_expr, grantee_id_select = cls._indirectGranteeSnippets(
+            store, policies_by_id)
+        result_set = store.with_(grantee_with_expr).find(
+            (Person,), In(Person.id, grantee_id_select))
         return cls._populateIndirectGranteePermissions(
             policies_by_id, result_set)
 

@@ -608,6 +608,10 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         indirect_person_grantee = self.factory.makePerson()
         team_grantee1 = self.factory.makeTeam(
             members=[indirect_person_grantee])
+        # Make a team for indirect grantee which should not appear in the
+        # results.
+        some_other_team = self.factory.makeTeam(
+            members=[indirect_person_grantee])
         team_grantee2 = self.factory.makeTeam(
             members=[indirect_person_grantee])
         self.factory.makeAccessPolicyGrant(
