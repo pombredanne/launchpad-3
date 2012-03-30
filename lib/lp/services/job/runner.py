@@ -103,7 +103,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     last_celery_response = None
 
-    routing_key = 'job.standard'
+    queue = 'standard'
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -193,20 +193,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
-        import celery.app.amqp
-        needs_declaration = [
-            name for name in CeleryRunJob.app.amqp.queues
-            if name not in celery.app.amqp._queues_declared]
-        if len(needs_declaration) > 0:
-            publisher = CeleryRunJob.app.amqp.publisher_pool.acquire(
-                block=True)
-            try:
-                for queue_name in needs_declaration:
-                    publisher._declare_queue(queue_name)
-            finally:
-                publisher.release()
         response = CeleryRunJob.apply_async(
-            (self.job_id,), routing_key=self.routing_key)
+            (self.job_id,), queue=self.queue)
         BaseRunnableJob.last_celery_response = response
         return response
 
