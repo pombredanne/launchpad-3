@@ -857,9 +857,9 @@ def create_scripts(user, lxcname, ssh_key_path):
     # ephemeral containers that were not properly shut down.
     cleanup_script_file = '/usr/local/bin/launchpad-lxc-cleanup'
     with open(cleanup_script_file, 'w') as script:
-        script.write(textwrap.dedent("""\
+        script.write(textwrap.dedent('''\
             #!/usr/bin/python
-            #Cleanup remnants of LXC containers from previous runs.
+            # Cleanup remnants of LXC containers from previous runs.
 
             # Runs of LXC may leave cruft laying around that interferes with
             # the next run.  These items need to be cleaned up.
@@ -892,7 +892,7 @@ def create_scripts(user, lxcname, ssh_key_path):
 
 
             class Scrubber(object):
-                \"\"\"Scrubber will cleanup after lxc ephemeral uncleanliness.
+                """Scrubber will cleanup after lxc ephemeral uncleanliness.
 
                 All running containers will be killed.
 
@@ -903,7 +903,7 @@ def create_scripts(user, lxcname, ssh_key_path):
                 The directories corresponding to the lxc_lp_dir_pattern will
                 be unmounted and removed.  No subdirectories will need
                 unmounting.
-                \"\"\"
+                """
                 def __init__(self, user='buildbot',
                              lp_test_dir_pattern=LP_TEST_DIR_PATTERN,
                              lxc_lp_dir_pattern=LXC_LP_DIR_PATTERN):
@@ -930,6 +930,9 @@ def create_scripts(user, lxcname, ssh_key_path):
 
                 def getPid(self, container):
                     info = run("lxc-info", "-n", container)
+                    # lxc-info returns a string containing 'RUNNING' for those
+                    # containers that are running followed by 'pid: <pid>', so
+                    # that must be parsed.
                     if 'RUNNING' in info:
                         match = PID_RE.search(info)
                         if match:
@@ -937,17 +940,17 @@ def create_scripts(user, lxcname, ssh_key_path):
                     return None
 
                 def getRunningContainers(self):
-                    \"\"\"Get the running containers.
+                    """Get the running containers.
 
                     Returns a list of (name, pid) tuples.
-                    \"\"\"
+                    """
                     output = run("lxc-ls")
                     containers = set(output.split())
                     pidlist = [(c, self.getPid(c)) for c in containers]
                     return [(c,p) for c,p in pidlist if p is not None]
 
                 def killer(self):
-                    \"\"\"Kill all running ephemeral containers.\"\"\"
+                    """Kill all running ephemeral containers."""
                     pids = self.getRunningContainers()
                     if len(pids) > 0:
                         # We can do this the easy way...
@@ -968,7 +971,7 @@ def create_scripts(user, lxcname, ssh_key_path):
             if __name__ == '__main__':
                 scrubber = Scrubber()
                 scrubber.run()
-            """))
+            '''))
     os.chmod(cleanup_script_file, 0555)
 
     # Add a file to sudoers.d that will let the buildbot user run the above.
