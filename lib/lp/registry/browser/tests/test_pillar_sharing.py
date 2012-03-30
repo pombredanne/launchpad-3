@@ -281,6 +281,7 @@ class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+            self.assertFalse(cache.objects.get('show_indirect_sharees'))
             batch_size = config.launchpad.default_batch_size
             apgfs = getUtility(IAccessPolicyGrantFlatSource)
             sharees = apgfs.findGranteePermissionsByPolicy(
@@ -354,6 +355,7 @@ class PillarAuditSharingViewTestMixin(BasePillarSharingViewTestMixin):
             cache = IJSONRequestCache(view.request)
             self.assertIsNotNone(cache.objects.get('information_types'))
             self.assertIsNotNone(cache.objects.get('sharing_permissions'))
+            self.assertTrue(cache.objects.get('show_indirect_sharees'))
             batch_size = config.launchpad.default_batch_size
             apgfs = getUtility(IAccessPolicyGrantFlatSource)
             sharees = apgfs.findIndirectGranteePermissionsByPolicy(
