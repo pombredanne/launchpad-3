@@ -2245,6 +2245,18 @@ class WorkItemContainer:
         return self.label
 
     @property
+    def html_link(self):
+        return format_link(self.spec)
+
+    @property
+    def priority_title(self):
+        return self.priority.title
+
+    @property
+    def target_link(self):
+        return format_link(self.target)
+
+    @property
     def assignee_link(self):
         if self.assignee is None:
             return 'Nobody'

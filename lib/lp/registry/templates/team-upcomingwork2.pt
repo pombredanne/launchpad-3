@@ -1,0 +1,110 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+<body>
+
+<head>
+  <tal:block metal:fill-slot="head_epilogue">
+    <script type="text/javascript">
+      LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+          Y.on('domready', function() {
+            Y.all('[class=expandable]').each(function(e) {
+              var expander_icon = e.one('[class=expander]');
+              var widget_body = e.next();
+              var expander = new Y.lp.app.widgets.expander.Expander(
+                  expander_icon, widget_body);
+              expander.setUp(true);
+            })
+          })
+        });
+    </script>
+  </tal:block>
+</head>
+
+<div metal:fill-slot="main">
+
+  <div tal:repeat="pair view/work_item_containers">
+  <div tal:define="date python: pair[0]; containers python: pair[1]">
+    <h2 tal:content="date/fmt:date" />
+
+    <p>
+      There are <span tal:replace="python: view.workitem_counts[date]" />
+      Blueprint work items and
+      <span tal:replace="python: view.bugtask_counts[date]" /> Bugs due
+      in <span tal:content="date/fmt:date" /> which are assigned to members
+      of this team.
+    </p>
+
+    <table class="listing">
+      <thead>
+      <tr>
+        <th width="50%">Blueprint</th>
+        <th width="15%">Target</th>
+        <th width="20%">Assignee</th>
+        <th width="10%">Priority</th>
+      </tr>
+      </thead>
+      <tbody tal:repeat="container containers">
+        <tr class="expandable">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+            <span tal:replace="structure container/html_link" />
+          </td>
+          <td tal:content="structure container/target_link" />
+          <td tal:content="container/priority_title" />
+          <td tal:content="structure container/assignee_link" />
+        </tr>
+        <tr>
+          <td colspan="4">
+            <table class="listing" tal:condition="container/spec"
+                   style="margin-left: 2em">
+              <thead>
+              <tr>
+                <th width="65%">Work item</th>
+                <th width="25%">Assignee</th>
+                <th width="10%">Status</th>
+              </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="workitem container/items">
+                  <td><span tal:replace="workitem/title/fmt:shorten/120" /></td>
+                  <td><a tal:replace="structure workitem/assignee/fmt:link" />
+                  </td>
+                  <td><span tal:replace="workitem/status/title" /></td>
+                </tr>
+              </tbody>
+            </table>
+            <table class="listing" tal:condition="not: container/spec"
+                   style="margin-left: 2em">
+              <thead>
+              <tr>
+                <th width="55%">Bug</th>
+                <th width="15%">Target</th>
+                <th width="20%">Assignee</th>
+                <th width="10%">Status</th>
+              </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="workitem container/items">
+                  <td><span tal:replace="structure workitem/_bugtask/fmt:link" /></td>
+                  <td><span tal:replace="structure workitem/target/fmt:link" /></td>
+                  <td><a tal:replace="structure workitem/assignee/fmt:link" />
+                  </td>
+                  <td><span tal:replace="workitem/status/title" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+</div>
+
+</body>
+</html>
