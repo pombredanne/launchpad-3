@@ -56,10 +56,15 @@ class PillarSharingDetailsMixin:
             person = self.factory.makePerson()
         if with_sharing:
             if self.pillar_type == 'product':
-                bug = self.factory.makeBug(product=self.pillar, private=True)
+                bug = self.factory.makeBug(
+                    product=self.pillar,
+                    owner=self.pillar.owner,
+                    private=True)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
-                    distribution=self.pillar, private=True)
+                    distribution=self.pillar,
+                    owner=self.pillar.owner,
+                    private=True)
             artifact = self.factory.makeAccessArtifact(concrete=bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
             self.factory.makeAccessPolicyArtifact(
@@ -78,7 +83,7 @@ class PillarSharingDetailsMixin:
             expected = pillarperson.person.displayname
             url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
-            browser = self.getUserBrowser(user=self.driver, url=url)
+            browser = self.getUserBrowser(user=self.owner, url=url)
             self.assertEqual(expected, browser.title)
 
     def test_not_found_without_sharing(self):
@@ -90,7 +95,7 @@ class PillarSharingDetailsMixin:
             pillarperson = self.getPillarPerson(with_sharing=False)
             url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
-            browser = self.getUserBrowser(user=self.driver)
+            browser = self.getUserBrowser(user=self.owner)
             self.assertRaises(NotFound, browser.open, url)
 
     def test_init_without_feature_flag(self):
@@ -114,11 +119,9 @@ class TestProductSharingDetailsView(
 
     def setUp(self):
         super(TestProductSharingDetailsView, self).setUp()
-        self.driver = self.factory.makePerson()
         self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(
-            owner=self.owner, driver=self.driver)
-        login_person(self.driver)
+        self.pillar = self.factory.makeProduct(owner=self.owner)
+        login_person(self.owner)
 
 
 class TestDistributionSharingDetailsView(
@@ -128,11 +131,9 @@ class TestDistributionSharingDetailsView(
 
     def setUp(self):
         super(TestDistributionSharingDetailsView, self).setUp()
-        self.driver = self.factory.makePerson()
         self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(
-            owner=self.owner, driver=self.driver)
-        login_person(self.driver)
+        self.pillar = self.factory.makeProduct(owner=self.owner)
+        login_person(self.owner)
 
 
 class BasePillarSharingViewTestMixin:

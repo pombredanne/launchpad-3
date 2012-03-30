@@ -48,6 +48,7 @@ import warnings
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 from bzrlib.revision import Revision as BzrRevision
+from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
 import simplejson
@@ -76,6 +77,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -233,7 +235,6 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from lp.services.identity.model.account import Account
-from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -1688,9 +1689,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
+        # Factory changes delayed for a seperate branch.
+        information_type = convert_to_information_type(
+            private, security_related)
         create_bug_params = CreateBugParams(
-            owner, title, comment=comment, private=private,
-            security_related=security_related,
+            owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(

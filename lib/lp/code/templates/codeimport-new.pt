@@ -128,30 +128,35 @@
 
       <script type="text/javascript">
         //<![CDATA[
-        function updateWidgets() {
-          /* which rcs type radio button has been selected? */
-          var rcs_types = document.getElementsByName('field.rcs_type');
-          var form = rcs_types[0].form;
-          var rcs_type = 'None';
-          for (var i = 0; i < rcs_types.length; i++) {
-            if (rcs_types[i].checked) {
-              rcs_type = rcs_types[i].value;
-              break;
+        var updateWidgets = function() {
+            /* which rcs type radio button has been selected? */
+            var updateField = function(field, enabled) {
+                field.disabled = !enabled;
+            };
+
+            var rcs_types = document.getElementsByName('field.rcs_type');
+            var form = rcs_types[0].form;
+            var rcs_type = 'None';
+            var i;
+            for (i = 0; i < rcs_types.length; i++) {
+                if (rcs_types[i].checked) {
+                    rcs_type = rcs_types[i].value;
+                    break;
+                }
             }
-          }
-          // GIT
-          updateField(form['field.git_repo_url'], rcs_type == 'GIT');
-          // HG
-          updateField(form['field.hg_repo_url'], rcs_type == 'HG');
-          // CVS
-          updateField(form['field.cvs_root'], rcs_type == 'CVS');
-          updateField(form['field.cvs_module'], rcs_type == 'CVS');
-          // SVN
-          updateField(form['field.svn_branch_url'], rcs_type == 'BZR_SVN');
-          // BZR
-          updateField(form['field.bzr_branch_url'], rcs_type == 'BZR');
-        }
-        registerLaunchpadFunction(updateWidgets);
+            updateField(form['field.git_repo_url'], rcs_type === 'GIT');
+            updateField(form['field.hg_repo_url'], rcs_type === 'HG');
+            updateField(form['field.cvs_root'], rcs_type === 'CVS');
+            updateField(form['field.cvs_module'], rcs_type === 'CVS');
+            updateField(form['field.svn_branch_url'], rcs_type === 'BZR_SVN');
+            updateField(form['field.bzr_branch_url'], rcs_type === 'BZR');
+        };
+
+        LPJS.use('node', function(Y) {
+            Y.on('domready', function(e) {
+                updateWidgets();
+            });
+        });
         //]]>
       </script>
 

@@ -46,7 +46,8 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
             'cronscripts/reclaimbranchspace.py', [])
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
+            'INFO    '
+            'Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
             'INFO    Reclaimed space for 0 branches.\n', stderr)
         self.assertEqual(0, retcode)
         self.assertTrue(
@@ -63,15 +64,16 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/reclaimbranchspace.py', [])
         self.assertEqual('', stdout)
-        self.assertEqual(
-            'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
-            'INFO    Running ReclaimBranchSpaceJob (ID %d) in status Waiting\n'
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'INFO    '
+            'Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
+            'INFO    Running <RECLAIM_BRANCH_SPACE branch job \(\d+\) for '
+            '\d+> \(ID %s\) in status Waiting\n'
             'INFO    Reclaimed space for 1 branches.\n' % reclaim_job.job.id,
             stderr)
         self.assertEqual(0, retcode)
         self.assertFalse(
             os.path.exists(mirrored_path))
-
 
     def test_reclaimbranchspace_script_logs_oops(self):
         # If the job fails, an oops is logged.
