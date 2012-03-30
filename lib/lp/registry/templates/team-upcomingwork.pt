@@ -50,7 +50,7 @@
             <a tal:replace="structure container/target/fmt:link" />,
             assigned to <span tal:replace="structure container/assignee_link" />.
             <strong tal:content="structure container/priority/title" /> priority.
-            <strong tal:content="container/percent_done" />%
+            <strong tal:content="container/progress_text" />%
             of the work is completed.
           </h4>
           <table class="listing" style="margin-left: 3em">
@@ -78,8 +78,8 @@
             <a href="#" class="expander">&nbsp;</a>
             <span class="sprite bug-undecided" />
             Bugs targeted to a milestone on this date.
-            <span tal:replace="container/percent_done" />
-            % of the bugs are resolved.
+            <strong tal:content="container/progress_text" />%
+            of the bugs are resolved.
           </h4>
           <table class="listing" width="70%" style="margin-left: 3em">
             <thead>
