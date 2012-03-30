@@ -44,99 +44,64 @@
           style="margin-left: 1em; max-width: 90%" >
         <tal:bp_workitems condition="container/spec">
           <div class="expandable">
-          <h4 style="margin-bottom: 0.5em">
-            <a href="#" class="expander">&nbsp;</a>
-            <a tal:replace="structure container/spec/fmt:link" />, from 
-            <a tal:replace="structure container/target/fmt:link" />,
-            assigned to <span tal:replace="structure container/assignee_link" />.
-            <strong tal:content="structure container/priority/title" /> priority.
-            <strong tal:content="container/progress_text" />%
-            of the work is completed.
-          </h4>
-          <table class="listing" style="margin-left: 3em">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Assignee</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr tal:repeat="item container/items">
-                <td tal:content="item/title/fmt:shorten/120" />
-                <td tal:content="structure item/assignee/fmt:link" />
-                <td tal:content="item/status/name" />
-              </tr>
-            </tbody>
-          </table>
+            <div style="margin-bottom: 0.5em; ">
+              <a href="#" class="expander">&nbsp;</a>
+              <strong>
+                <a tal:replace="structure container/spec/fmt:link" />,
+              </strong>
+              <span class="lesser">
+                from <a tal:replace="structure container/target/fmt:link" />,
+                assigned to <span tal:replace="structure container/assignee_link" />.
+              </span>
+            </div>
+            <table class="listing" style="margin-left: 3em">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Assignee</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="item container/items">
+                  <td tal:content="item/title/fmt:shorten/120" />
+                  <td tal:content="structure item/assignee/fmt:link" />
+                  <td tal:content="item/status/title" />
+                </tr>
+              </tbody>
+            </table>
           <div>
         </tal:bp_workitems>
 
         <tal:bugtasks condition="not: container/spec">
           <div class="expandable">
-          <h4>
-            <a href="#" class="expander">&nbsp;</a>
-            <span class="sprite bug-undecided" />
-            Bugs targeted to a milestone on this date.
-            <strong tal:content="container/progress_text" />%
-            of the bugs are resolved.
-          </h4>
-          <table class="listing" width="70%" style="margin-left: 3em">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Target</th>
-                <th>Importance</th>
-                <th>Assignee</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr tal:repeat="item container/items">
-                <td tal:content="structure item/_bugtask/fmt:link" />
-                <td tal:content="structure item/target/fmt:link" />
-                <td tal:content="item/priority/name" />
-                <td tal:content="structure item/assignee/fmt:link" />
-                <td tal:content="item/status/name" />
-              </tr>
-            </tbody>
-          </table>
+            <p>
+              <a href="#" class="expander">&nbsp;</a>
+              <span class="sprite bug-undecided" />
+              <strong>Bugs targeted to a milestone on this date.</strong>
+            </p>
+            <table class="listing" width="70%" style="margin-left: 3em">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Target</th>
+                  <th>Assignee</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="item container/items">
+                  <td tal:content="structure item/_bugtask/fmt:link" />
+                  <td tal:content="structure item/target/fmt:link" />
+                  <td tal:content="structure item/assignee/fmt:link" />
+                  <td tal:content="item/status/title" />
+                </tr>
+              </tbody>
+            </table>
           </div>
         </tal:bugtasks>
       </li>
     </ul>
-    <!--
-    <table class="listing">
-      <thead>
-      <tr>
-        <th width="15%">Blueprint</th>
-        <th width="10%">Target</th>
-        <th width="5%">Priority</th>
-        <th width="10%">Assignee</th>
-        <th width="10%">Progress</th>
-      </tr>
-      </thead>
-      <tbody>
-        <div tal:repeat="container containers">
-        <tr>
-          <td tal:content="structure container/html_link" />
-          <td tal:content="structure container/target_link" />
-          <td tal:content="container/priority_title" />
-          <td tal:content="structure container/assignee_link" />
-          <td tal:content="structure container/progress_bar" />
-        </tr>
-        <tr tal:repeat="workitem container/items">
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/title" /></td>
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="structure workitem/target/fmt:link" /></td>
-          <td>&nbsp;&nbsp;&nbsp;&nbsp;<span tal:replace="workitem/priority/name" /></td>
-          <td><a tal:replace="structure workitem/assignee/fmt:link" />
-          </td>
-          <td><span tal:replace="workitem/status/name" /></td>
-        </tr>
-        </div>
-      </tbody>
-    </table>
-    -->
   </div>
   </div>
 </div>
