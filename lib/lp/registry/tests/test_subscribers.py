@@ -325,13 +325,16 @@ class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
         self.setup_event_listener()
         with person_logged_in(person):
             person.setPreferredEmail(new_email)
-
             # Assert form within the context manager to get access to the
             # email values.
             self.assertEqual('test@post.com', person.preferredemail.email)
             self.assertEqual(1, len(self.events))
-            self.assertEqual(person, self.events[0].object)
-            self.assertEqual(['preferredemail'], self.events[0].edited_fields)
+
+            evt = self.events[0]
+            self.assertEqual(person, evt.object)
+            self.assertEqual('test@pre.com',
+                evt.object_before_modification.preferredemail.email)
+            self.assertEqual(['preferredemail'], evt.edited_fields)
 
     def test_no_event_on_no_change(self):
         """If there's no change to the preferred email there's no event"""

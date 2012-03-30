@@ -174,7 +174,7 @@ def person_details_modified(person, event):
 class PersonDetailsChangeNotification(object):
     """Schedule an email notification to the user about account changes"""
 
-    def __init__(self, field, user):
+    def __init__(self, field, user, override_noticeto=None):
         """Notify the user that their account has changed
 
         :param field: the bit of account data that's altered
@@ -184,18 +184,11 @@ class PersonDetailsChangeNotification(object):
         self.user = user
         self.notification = PersonNotification()
         self.notification.person = user
+        self.override_noticeto = override_noticeto
 
     def getTemplateName(self):
         """Return the name of the email template to use in the notification."""
         return 'person-details-change.txt'
-
-    def getCommercialUseMessage(self):
-        """Return a message explaining the change in the account."""
-        # For now we're only tracking change in perferred email address.
-        message = "Your preferred email address was changed to: %s"
-        return textwrap.fill(
-            message % self.user.preferredemail.email,
-            72)
 
     def send(self):
         """Send the notification to the user about their account change."""
@@ -210,5 +203,9 @@ class PersonDetailsChangeNotification(object):
             self.getTemplateName(), app='registry')
         message = template % tpl_substitutions
         self.notification.body = message
-        self.notification.send()
+        if self.override_noticeto:
+            self.notification.send(
+                sendto=(self.user.displayname, self.override_noticeto))
+        else:
+            self.notification.send()
         return True

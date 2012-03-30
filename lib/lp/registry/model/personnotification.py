@@ -62,19 +62,19 @@ class PersonNotification(SQLBase):
         """See `IPersonNotification`."""
         return len(self.to_addresses) > 0
 
-    def send(self, logger=None, send_to=None):
+    def send(self, logger=None, sendto=None):
         """See `IPersonNotification`.
 
-        :param send_to: Name/email tuple to provide a custom recipient address
+        :param sendto: Name/email tuple to provide a custom recipient address
             for cases when preferredemail isn't the intended target.
         """
-        if not self.can_send and not send_to:
+        if not self.can_send and not sendto:
             raise AssertionError(
                 "Can't send a notification to a person without an email.")
-        if send_to:
-            # We're expecting a tuple of (name, email) for the send_to.
+        if sendto:
+            # We're expecting a tuple of (name, email) for the sendto.
             to_addresses = [
-                format_address(*send_to)
+                format_address(*sendto)
             ]
         else:
             to_addresses = self.to_addresses

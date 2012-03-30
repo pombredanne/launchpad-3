@@ -41,6 +41,7 @@ import weakref
 
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -97,6 +98,7 @@ from zope.interface import (
     classImplements,
     implementer,
     implements,
+    providedBy,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -2565,6 +2567,8 @@ class Person(
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
 
+        person_before_mod = Snapshot(self, providing=providedBy(self))
+
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
@@ -2579,7 +2583,8 @@ class Person(
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
         # Make sure we notify that the property was changed.
-        notify(ObjectModifiedEvent(self, self, ['preferredemail'], user=self))
+        notify(ObjectModifiedEvent(self, person_before_mod,
+            ['preferredemail'], user=self))
 
     @cachedproperty
     def preferredemail(self):
