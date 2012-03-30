@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test MaloneHandler."""
@@ -29,7 +29,6 @@ from lp.bugs.mail.handler import (
     )
 from lp.bugs.model.bugnotification import BugNotification
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
@@ -679,7 +678,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         handler = MaloneHandler()
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])
@@ -699,7 +698,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         del stub.test_emails[:]
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])

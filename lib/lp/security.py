@@ -986,6 +986,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             user_private_bugs_visible_filter = get_bug_privacy_filter(
                 user.person, private_only=True)
 
+            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
             query = """
                 SELECT TRUE WHERE
                 EXISTS (
@@ -1005,7 +1006,8 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                     -- do those first.
                     %(team_bug_select)s
                     WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE Bug.private is FALSE
+                        SELECT Bug.id FROM Bug WHERE Bug.information_type IN
+                        (1, 2)
                     )
                     UNION ALL
                     -- Now do the private bugs the user can see.
