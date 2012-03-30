@@ -78,7 +78,6 @@ from lp.services.webapp.publisher import (
     )
 
 
-
 class PillarPersonBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IPillarPerson`."""
 
