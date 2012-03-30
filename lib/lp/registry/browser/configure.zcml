@@ -1440,7 +1440,7 @@
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarPerson"
-        path_expression="string:+sharingdetails/${person/name}"
+        path_expression="string:+sharing/${person/name}"
         rootsite="mainsite"
         attribute_to_parent="pillar"/>
     <browser:page

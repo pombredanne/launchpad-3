@@ -80,15 +80,16 @@ from lp.services.webapp.publisher import (
 
 
 class PillarPersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ITeamMembership`."""
+    """Builds a breadcrumb for an `IPillarPerson`."""
 
     @property
     def text(self):
         return "%s" % self.context.person.displayname
 
+
 class PillarNavigationMixin:
 
-    @stepthrough('+sharingdetails')
+    @stepthrough('+sharing')
     def traverse_details(self, name):
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
