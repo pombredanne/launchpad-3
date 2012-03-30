@@ -1435,7 +1435,7 @@
         template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        permission="launchpad.Driver"
+        permission="launchpad.Edit"
         name="+audit-sharing"
         class="lp.registry.browser.pillar.PillarAuditSharingView"
         template="../templates/pillar-sharing.pt"/>
@@ -1823,7 +1823,7 @@
         template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        permission="launchpad.Driver"
+        permission="launchpad.Edit"
         name="+audit-sharing"
         class="lp.registry.browser.pillar.PillarAuditSharingView"
         template="../templates/pillar-sharing.pt"/>

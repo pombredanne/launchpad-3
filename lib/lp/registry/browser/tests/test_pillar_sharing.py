@@ -28,6 +28,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    login_celebrity,
     login_person,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -245,6 +246,23 @@ class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
             self.assertEqual('Sharing Information', view.page_title)
             self.assertEqual('Sharing information', view.label)
             self.assertFalse(view.show_sharing_information_link)
+
+    def test_nonowners_cannot_audit(self):
+        with FeatureFixture(ENABLED_FLAG):
+            login_person(self.driver)
+            view = create_initialized_view(self.pillar, '+sharing')
+            self.assertFalse(view.show_audit_sharing_link)
+
+    def test_owners_can_audit(self):
+        with FeatureFixture(ENABLED_FLAG):
+            login_person(self.owner)
+            view = create_initialized_view(self.pillar, '+sharing')
+            self.assertTrue(view.show_audit_sharing_link)
+
+    def test_admins_can_audit(self):
+        with FeatureFixture(ENABLED_FLAG):
+            login_celebrity('admin')
+            view = create_initialized_view(self.pillar, '+sharing')
             self.assertTrue(view.show_audit_sharing_link)
 
     def test_sharing_menu_without_feature_flag(self):
@@ -269,7 +287,7 @@ class PillarSharingInformationViewTestMixin(BasePillarSharingViewTestMixin):
         # The +audit-sharing link is rendered.
         with FeatureFixture(ENABLED_FLAG):
             url = canonical_url(self.pillar, view_name='+sharing')
-            browser = setupBrowserForUser(user=self.driver)
+            browser = setupBrowserForUser(user=self.owner)
             browser.open(url)
             soup = BeautifulSoup(browser.contents)
             audit_sharing_link = soup.find('a', {'href': '+audit-sharing'})
@@ -343,7 +361,8 @@ class PillarAuditSharingViewTestMixin(BasePillarSharingViewTestMixin):
         # The +sharing link is rendered.
         with FeatureFixture(ENABLED_FLAG):
             url = canonical_url(self.pillar, view_name='+audit-sharing')
-            browser = setupBrowserForUser(user=self.driver)
+            login_person(self.owner)
+            browser = setupBrowserForUser(user=self.owner)
             browser.open(url)
             soup = BeautifulSoup(browser.contents)
             sharing_info_link = soup.find('a', {'href': '+sharing'})

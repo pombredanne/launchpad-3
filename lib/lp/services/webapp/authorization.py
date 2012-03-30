@@ -380,18 +380,22 @@ class available_with_permission:
 
     """
 
-    def __init__(self, permission, context_parameter):
+    def __init__(self, permissions, context_parameter):
         """Make a new available_with_permission function decorator.
 
         `permission` is the string permission name, like 'launchpad.Edit'.
+        An iterable of permissions may also be specified.
         `context_parameter` is the name of the function argument which
                             contains the context object.
         """
-        self.permission = permission
+        if not getattr(permissions, '__iter__', False):
+            self.permissions = [permissions]
+        else:
+            self.permissions = permissions
         self.context_parameter = context_parameter
 
     def __call__(self, func):
-        permission = self.permission
+        permissions = self.permissions
         context_parameter = self.context_parameter
 
         def permission_checker(self, *args, **kwargs):
@@ -399,9 +403,14 @@ class available_with_permission:
                 context = kwargs[context_parameter]
             else:
                 context = args[0]
-            if not check_permission(permission, context):
+            all_disallowed = True
+            for permission in permissions:
+                if check_permission(permission, context):
+                    all_disallowed = False
+                    break
+            if all_disallowed:
                 raise Unauthorized(
-                    "Permission %s required on %s."
-                        % (permission, context))
+                    "One of permission %s required on %s."
+                        % (permissions, context))
             return func(self, *args, **kwargs)
         return permission_checker

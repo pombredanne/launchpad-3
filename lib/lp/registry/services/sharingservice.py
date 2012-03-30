@@ -99,7 +99,8 @@ class SharingService:
             sharing_permissions.append(item)
         return sharing_permissions
 
-    @available_with_permission('launchpad.Driver', 'pillar')
+    @available_with_permission(
+        ['launchpad.Driver', 'launchpad.Edit'], 'pillar')
     def getPillarSharees(self, pillar, include_indirect=False):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
@@ -116,7 +117,8 @@ class SharingService:
                 policies).order_by(Person.displayname, Person.name)
         return grant_permissions
 
-    @available_with_permission('launchpad.Driver', 'pillar')
+    @available_with_permission(
+        ['launchpad.Driver', 'launchpad.Edit'], 'pillar')
     def getPillarShareeData(self, pillar, include_indirect=False):
         """See `ISharingService`."""
         grant_permissions = list(

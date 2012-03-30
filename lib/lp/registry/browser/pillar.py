@@ -367,7 +367,8 @@ class PillarSharingInformationView(BasePillarSharingView):
 
     @property
     def show_audit_sharing_link(self):
-        return True
+        # Only pillar owners can audit sharing.
+        return check_permission('launchpad.Edit', self.context)
 
     def unbatched_sharees(self):
         """All the sharees for a pillar."""
