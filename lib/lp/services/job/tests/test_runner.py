@@ -8,7 +8,10 @@ import sys
 from textwrap import dedent
 from time import sleep
 
-from lazr.jobrunner.jobrunner import SuspendJobException
+from lazr.jobrunner.jobrunner import (
+    LeaseHeld,
+    SuspendJobException,
+    )
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
@@ -19,7 +22,6 @@ from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
-    LeaseHeld,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
