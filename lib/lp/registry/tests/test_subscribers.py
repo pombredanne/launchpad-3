@@ -270,23 +270,32 @@ class PersonDetailsModifiedTestCase(TestCaseWithFactory):
     """
     layer = DatabaseFunctionalLayer
 
-    def make_modified_email_event(self, email, edited_fields='preferredemail'):
+    def test_preferred_email_modified(self):
         person = self.factory.makePerson(email='test@pre.com')
         login_person(person)
         pop_notifications()
         new_email = self.factory.makeEmail('test@post.com', person)
         person.setPreferredEmail(new_email)
+        # After/before objects and list of edited fields.
+        event = ObjectModifiedEvent(person, None, ['preferredemail'])
 
-        # after/before objects and list of edited fields
-        event = ObjectModifiedEvent(person, person, ['preferredemail'])
-        return person, event
-
-    def test_preferred_email_modified(self):
-        bob, event = self.make_modified_email_event()
-        person_details_modified(bob, event)
+        person_details_modified(person, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
 
+    def test_email_all_addresses(self):
+        """When notifying, each email addresss should get a notificataion"""
+        person = self.factory.makePerson(email='test@pre.com')
+        # create 2 other email addresses
+        new_email = self.factory.makeEmail('test2@pre.com', person)
+        new_email2 = self.factory.makeEmail('test3@pre.com', person)
+
+        login_person(person)
+        pop_notifications()
+        person.setPreferredEmail(new_email2)
+        notifications = pop_notifications()
+        import pdb; pdb.set_trace()
+        self.assertEqual(3, len(notifications))
 
 
 class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
@@ -310,6 +319,7 @@ class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
     def test_change_preferredemail(self):
         # The project_reviewed property is not reset, if the new licenses
         # are identical to the current licenses.
+        pop_notifications()
         person = self.factory.makePerson(email='test@pre.com')
         new_email = self.factory.makeEmail('test@post.com', person)
         self.setup_event_listener()
@@ -323,17 +333,14 @@ class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
             self.assertEqual(person, self.events[0].object)
             self.assertEqual(['preferredemail'], self.events[0].edited_fields)
 
-    # def test_setLicense_handles_no_change(self):
-    #     # The project_reviewed property is not reset, if the new licenses
-    #     # are identical to the current licenses.
-    #     product = self.factory.makeProduct(licenses=[License.MIT])
-    #     with celebrity_logged_in('registry_experts'):
-    #         product.project_reviewed = True
-    #     self.setup_event_listener()
-    #     with person_logged_in(product.owner):
-    #         product.licenses = [License.MIT]
-    #     with celebrity_logged_in('registry_experts'):
-    #         self.assertIs(True, product.project_reviewed)
-    #     self.assertEqual([], self.events)
-
-
+    def test_no_event_on_no_change(self):
+        """If there's no change to the preferred email there's no event"""
+        pop_notifications()
+        person = self.factory.makePerson(email='test@pre.com')
+        self.setup_event_listener()
+        with person_logged_in(person):
+            person.displayname = 'changed'
+            # Assert form within the context manager to get access to the
+            # email values.
+            self.assertEqual('test@pre.com', person.preferredemail.email)
+            self.assertEqual(0, len(self.events))

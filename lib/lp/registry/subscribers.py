@@ -167,7 +167,6 @@ def person_details_modified(person, event):
 
     if changed_fields:
         user = IPersonViewRestricted(event.user)
-
         notification = PersonDetailsChangeNotification(changed_fields, user)
         notification.send()
 
@@ -195,7 +194,7 @@ class PersonDetailsChangeNotification(object):
         # For now we're only tracking change in perferred email address.
         message = "Your preferred email address was changed to: %s"
         return textwrap.fill(
-            message  % self.user.preferredemail.email,
+            message % self.user.preferredemail.email,
             72)
 
     def send(self):

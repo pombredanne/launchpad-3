@@ -62,12 +62,22 @@ class PersonNotification(SQLBase):
         """See `IPersonNotification`."""
         return len(self.to_addresses) > 0
 
-    def send(self, logger=None):
-        """See `IPersonNotification`."""
-        if not self.can_send:
+    def send(self, logger=None, send_to=None):
+        """See `IPersonNotification`.
+
+        :param send_to: Name/email tuple to provide a custom recipient address
+            for cases when preferredemail isn't the intended target.
+        """
+        if not self.can_send and not send_to:
             raise AssertionError(
                 "Can't send a notification to a person without an email.")
-        to_addresses = self.to_addresses
+        if send_to:
+            # We're expecting a tuple of (name, email) for the send_to.
+            to_addresses = [
+                format_address(*send_to)
+            ]
+        else:
+            to_addresses = self.to_addresses
         if logger:
             logger.info("Sending notification to %r." % to_addresses)
         from_addr = config.canonical.bounce_address
