@@ -11,7 +11,7 @@ from time import sleep
 
 
 @contextmanager
-def celeryd(queue):
+def celeryd(queue, cwd=None):
     """Return a ContextManager for a celeryd instance.
 
     The celeryd instance will be configured to use the currently-configured
@@ -26,7 +26,6 @@ def celeryd(queue):
         '--loglevel', 'INFO',
         '--queues', queue,
     )
-    with running('bin/celeryd', cmd_args) as proc:
+    with running('bin/celeryd', cmd_args, cwd=cwd) as proc:
         # Wait for celeryd startup to complete.
-        sleep(1)
         yield proc

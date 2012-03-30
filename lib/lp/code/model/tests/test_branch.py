@@ -12,6 +12,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import os
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -749,15 +750,16 @@ class TestBranchUpgrade(TestCaseWithFactory):
             [job, ])
 
     def test_requestUpgradeUsesCelery(self):
-        with celeryd('branch_write'):
-            self.useBzrBranches()
-            db_branch, tree = create_knit(self)
-            self.assertEqual(
-                tree.branch.repository._format.get_format_string(),
-                'Bazaar-NG Knit Repository Format 1')
+        cwd = os.getcwd()
+        self.useBzrBranches()
+        db_branch, tree = create_knit(self)
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
 
-            db_branch.requestUpgrade(db_branch.owner)
-            transaction.commit()
+        db_branch.requestUpgrade(db_branch.owner)
+        transaction.commit()
+        with celeryd('branch_write', cwd):
             BaseRunnableJob.last_celery_response.wait(30)
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
