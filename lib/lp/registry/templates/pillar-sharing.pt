@@ -31,7 +31,12 @@
     <ul class="horizontal">
       <li><a id='add-sharee-link' class='sprite add js-action' href="#">Share
         with someone</a></li>
-      <li><a id="audit-link" class="sprite info" href='#'>Audit sharing</a></li>
+      <li tal:condition = "view/show_sharing_information_link">
+          <a id="sharing-link" class="sprite info" href='+sharing'>Sharing Information</a>
+      </li>
+      <li tal:condition = "view/show_audit_sharing_link">
+          <a id="audit-link" class="sprite info" href='+audit-sharing'>Audit sharing</a>
+      </li>
     </ul>
 
     <div tal:define="batch_navigator view/sharees">

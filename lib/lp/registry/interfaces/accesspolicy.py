@@ -238,6 +238,26 @@ class IAccessPolicyGrantFlatSource(Interface):
             SOME means the person only has specified access artifact grants.
         """
 
+    def findIndirectGranteePermissionsByPolicy(policies):
+        """Find teams or users with access grants for the policies.
+
+        This method is similar to findGranteePermissionsByPolicy, but the
+        results contain people who have access by virtue of team membership.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        :return: a collection of
+            (`IPerson` sharee, `IAccessPolicy`, permission,
+                [`ITeam`] via_teams`) tuples
+            where
+            sharee is the person or team with access
+            permission is a SharingPermission enum value.
+            ALL means the person has an access policy grant and can see all
+            artifacts for the associated pillar.
+            SOME means the person only has specified access artifact grants.
+            via_teams is the team the sharee belongs to in order to gain
+            access. If via is None, then the sharee has direct access.
+        """
+
     def findArtifactsByGrantee(grantee, policies):
         """Find the `IAccessArtifact`s for grantee and policies.
 

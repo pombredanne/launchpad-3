@@ -54,7 +54,7 @@ class TestSharingService(TestCaseWithFactory):
         super(TestSharingService, self).setUp()
         self.service = getUtility(IService, 'sharing')
 
-    def _makeShareeData(self, sharee, policy_permissions):
+    def _makeShareeData(self, sharee, policy_permissions, via_teams=None):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
         sharee_data = {
@@ -65,6 +65,12 @@ class TestSharingService(TestCaseWithFactory):
             'permissions': {}}
         browser_request = IWebBrowserOriginatingRequest(request)
         sharee_data['web_link'] = absoluteURL(sharee, browser_request)
+        if via_teams:
+            team_info = [{
+                'display_name': team.displayname,
+                'web_link': absoluteURL(team, browser_request),
+            } for team in via_teams]
+            sharee_data['via_teams'] = team_info
         permissions = {}
         for (policy, permission) in policy_permissions:
             permissions[policy.name] = unicode(permission.name)
@@ -139,6 +145,24 @@ class TestSharingService(TestCaseWithFactory):
              (policy2.type, SharingPermission.SOME)])
         self.assertContentEqual([expected_data], sharees)
 
+    def test_jsonShareeDataIndirect(self):
+        # jsonShareeDataIndirect returns the expected data.
+        product = self.factory.makeProduct()
+        [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
+            [product])
+        grantee = self.factory.makePerson()
+        via_teams = [self.factory.makeTeam(), self.factory.makeTeam()]
+        sharees = self.service.jsonShareeData(
+            [(grantee, {
+                policy1: SharingPermission.ALL,
+                policy2: SharingPermission.SOME}, via_teams)])
+        expected_data = self._makeShareeData(
+            grantee,
+            [(policy1.type, SharingPermission.ALL),
+             (policy2.type, SharingPermission.SOME)],
+            via_teams)
+        self.assertContentEqual([expected_data], sharees)
+
     def _assert_getPillarShareeData(self, pillar):
         # getPillarShareeData returns the expected data.
         access_policy = self.factory.makeAccessPolicy(
@@ -175,6 +199,52 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(driver=driver)
         login_person(driver)
         self._assert_getPillarShareeData(distro)
+
+    def _assert_getPillarShareeDataIndirect(self, pillar):
+        # getPillarShareeData returns the expected data for indirect sharees.
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=pillar,
+            type=InformationType.PROPRIETARY)
+        indirect_person_grantee = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(
+            members=[indirect_person_grantee])
+        # Make access policy grant so that 'All' is returned.
+        self.factory.makeAccessPolicyGrant(access_policy, team_grantee)
+        # Make access artifact grants so that 'Some' is returned.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=access_policy)
+
+        sharees = self.service.getPillarShareeData(
+            pillar, include_indirect=True)
+        expected_sharees = [
+            self._makeShareeData(
+                member,
+                [(InformationType.PROPRIETARY, SharingPermission.ALL)],
+                [team_grantee]) for member in team_grantee.activemembers]
+        expected_sharees.extend([
+            self._makeShareeData(
+                team_grantee,
+                [(InformationType.PROPRIETARY, SharingPermission.ALL)],
+                None),
+            self._makeShareeData(
+                artifact_grant.grantee,
+                [(InformationType.PROPRIETARY, SharingPermission.SOME)])])
+        self.assertContentEqual(expected_sharees, sharees)
+
+    def test_getProductShareeDataIndirect(self):
+        # Users with launchpad.Driver can view indirect sharees.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        login_person(driver)
+        self._assert_getPillarShareeDataIndirect(product)
+
+    def test_getDistroShareeDataIndirect(self):
+        # Users with launchpad.Driver can view indirect sharees.
+        driver = self.factory.makePerson()
+        distro = self.factory.makeDistribution(driver=driver)
+        login_person(driver)
+        self._assert_getPillarShareeDataIndirect(distro)
 
     def _assert_QueryCount(self, func):
         """ getPillarSharees[Data] only should use 3 queries.
@@ -297,6 +367,45 @@ class TestSharingService(TestCaseWithFactory):
         product = self.factory.makeProduct()
         login_person(self.factory.makePerson())
         self._assert_getPillarShareesUnauthorized(product)
+
+    def _assert_getPillarShareesIndirect(self, pillar):
+        # getPillarSharees returns the expected data for indirect sharees.
+        access_policy = self.factory.makeAccessPolicy(
+            pillar=pillar,
+            type=InformationType.PROPRIETARY)
+        indirect_person_grantee = self.factory.makePerson()
+        team_grantee = self.factory.makeTeam(
+            members=[indirect_person_grantee])
+        # Make access policy grant so that 'All' is returned.
+        self.factory.makeAccessPolicyGrant(access_policy, team_grantee)
+        # Make access artifact grants so that 'Some' is returned.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=access_policy)
+
+        sharees = self.service.getPillarSharees(pillar, include_indirect=True)
+        policy_info = {access_policy: SharingPermission.ALL}
+        expected_sharees = [(member, policy_info, [team_grantee])
+            for member in team_grantee.activemembers]
+        expected_sharees.append((team_grantee, policy_info, None))
+        expected_sharees.append(
+            (artifact_grant.grantee,
+                 {access_policy: SharingPermission.SOME}, None))
+        self.assertContentEqual(expected_sharees, sharees)
+
+    def test_getProductShareesIndirect(self):
+        # Users with launchpad.Driver can view indirect sharees.
+        driver = self.factory.makePerson()
+        product = self.factory.makeProduct(driver=driver)
+        login_person(driver)
+        self._assert_getPillarShareesIndirect(product)
+
+    def test_getDistroShareesIndirect(self):
+        # Users with launchpad.Driver can view indirect sharees.
+        driver = self.factory.makePerson()
+        distro = self.factory.makeDistribution(driver=driver)
+        login_person(driver)
+        self._assert_getPillarShareesIndirect(distro)
 
     def _assert_sharePillarInformation(self, pillar):
         """sharePillarInformations works and returns the expected data."""
