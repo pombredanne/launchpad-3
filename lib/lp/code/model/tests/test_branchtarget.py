@@ -129,7 +129,8 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
         removeSecurityProxy(default_branch).branchChanged(
-            '', self.factory.getUniqueString(), None, None, None)
+            '', self.factory.getUniqueString(), None, None, None,
+            celery_scan=False)
         registrant = development_package.distribution.owner
         with person_logged_in(registrant):
             development_package.setBranch(
@@ -397,7 +398,7 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
         removeSecurityProxy(branch).branchChanged(
-            '', 'rev1', None, None, None)
+            '', 'rev1', None, None, None, celery_scan=False)
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
 
@@ -537,7 +538,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
-            '', self.factory.getUniqueString(), None, None, None)
+            '', self.factory.getUniqueString(), None, None, None,
+            celery_scan=False)
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
         self.assertIs(None, check_default_stacked_on(branch))
 
@@ -553,14 +555,16 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(private=True)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.branchChanged(
-            '', self.factory.getUniqueString(), None, None, None)
+            '', self.factory.getUniqueString(), None, None, None,
+            celery_scan=False)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
         # `check_default_stacked_on` returns the branch if it has revisions.
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).branchChanged(
-            '', self.factory.getUniqueString(), None, None, None)
+            '', self.factory.getUniqueString(), None, None, None,
+            celery_scan=False)
         self.assertEqual(branch, check_default_stacked_on(branch))
 
 

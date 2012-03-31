@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseJobRunner',
     'BaseRunnableJob',
     'BaseRunnableJobSource',
     'JobCronScript',
@@ -38,7 +39,10 @@ from ampoule import (
     pool,
     )
 from lazr.delegates import delegates
-from lazr.jobrunner.jobrunner import JobRunner as LazrJobRunner
+from lazr.jobrunner.jobrunner import (
+    JobRunner as LazrJobRunner,
+    LeaseHeld,
+    )
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -61,7 +65,6 @@ from lp.services.config import (
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
-    LeaseHeld,
     )
 from lp.services.mail.sendmail import (
     MailController,
