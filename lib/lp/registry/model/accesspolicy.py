@@ -17,11 +17,9 @@ import pytz
 from storm.expr import (
     And,
     In,
-    Join,
     Or,
     Select,
     SQL,
-    With,
     )
 from storm.properties import (
     DateTime,
@@ -45,7 +43,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrant,
     )
 from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import create
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
@@ -358,52 +355,37 @@ class AccessPolicyGrantFlat(StormBase):
             Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
 
     @classmethod
-    def _populatePermissionsCache(cls, permissions_cache, grantee_ids,
-                                  policies_by_id, persons_by_id):
-        sharing_permission_term = SQL(
-            "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
-            (SharingPermission.ALL.name, SharingPermission.SOME.name))
-        constraints = [
-            cls.grantee_id.is_in(grantee_ids),
-            cls.policy_id.is_in(policies_by_id.keys())]
-        result_set = IStore(cls).find(
-            (cls.grantee_id, cls.policy_id, sharing_permission_term),
-            *constraints).group_by(cls.grantee_id, cls.policy_id)
-        for (person_id, policy_id, permission) in result_set:
-            person = persons_by_id[person_id]
-            policy = policies_by_id[policy_id]
-            permissions_cache[person][policy] = (
-                SharingPermission.items[str(permission)])
-
-    @classmethod
-    def _populateGranteePermissions(cls, policies_by_id, result_set):
-        # A cache for the sharing permissions, keyed on grantee
-        permissions_cache = defaultdict(dict)
-
-        def set_permission(grantee):
-            # Lookup the permissions from the previously loaded cache.
-            return grantee[0], permissions_cache[grantee[0]]
-
-        def load_permissions(grantees):
-            # We now have the grantees and policies we want in the result so
-            # load any corresponding permissions and cache them.
-            if permissions_cache:
-                return
-            grantee_ids = set()
-            grantee_by_id = dict()
-            for grantee in grantees:
-                grantee_ids.add(grantee[0].id)
-                grantee_by_id[grantee[0].id] = grantee[0]
-            cls._populatePermissionsCache(
-                permissions_cache, grantee_ids, policies_by_id, grantee_by_id)
-        return DecoratedResultSet(
-            result_set,
-            result_decorator=set_permission, pre_iter_hook=load_permissions)
-
-    @classmethod
     def findGranteePermissionsByPolicy(cls, policies, grantees=None):
         """See `IAccessPolicyGrantFlatSource`."""
         policies_by_id = dict((policy.id, policy) for policy in policies)
+
+        # A cache for the sharing permissions, keyed on grantee
+        permissions_cache = defaultdict(dict)
+
+        def set_permission(person):
+            # Lookup the permissions from the previously loaded cache.
+            return (person[0], permissions_cache[person[0]])
+
+        def load_permissions(people):
+            # We now have the grantees and policies we want in the result so
+            # load any corresponding permissions and cache them.
+            people_by_id = dict(
+                (person[0].id, person[0]) for person in people)
+            sharing_permission_term = SQL(
+                "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
+                (SharingPermission.ALL.name, SharingPermission.SOME.name))
+            constraints = [
+                cls.grantee_id.is_in(people_by_id.keys()),
+                cls.policy_id.is_in(policies_by_id.keys())]
+            result_set = IStore(cls).find(
+                (cls.grantee_id, cls.policy_id, sharing_permission_term),
+                *constraints).group_by(cls.grantee_id, cls.policy_id)
+            for (person_id, policy_id, permission) in result_set:
+                person = people_by_id[person_id]
+                policy = policies_by_id[policy_id]
+                permissions_cache[person][policy] = (
+                    SharingPermission.items[str(permission)])
+
         constraints = [cls.policy_id.is_in(policies_by_id.keys())]
         if grantees:
             grantee_ids = [grantee.id for grantee in grantees]
@@ -417,102 +399,9 @@ class AccessPolicyGrantFlat(StormBase):
                 Select(
                     (cls.grantee_id,), where=And(*constraints),
                     distinct=True)))
-        return cls._populateGranteePermissions(policies_by_id, result_set)
-
-    @classmethod
-    def _populateIndirectGranteePermissions(cls,
-                                            policies_by_id, result_set):
-        # A cache for the sharing permissions, keyed on grantee.
-        permissions_cache = defaultdict(dict)
-        # A cache of teams belonged to, keyed by grantee.
-        via_teams_cache = defaultdict(list)
-        grantees_by_id = dict()
-
-        def set_permission(grantee):
-            # Lookup the permissions from the previously loaded cache.
-            via_team_ids = via_teams_cache[grantee[0].id]
-            via_teams = sorted(
-                [grantees_by_id[team_id] for team_id in via_team_ids],
-                key=lambda x: x.displayname)
-            permissions = permissions_cache[grantee[0]]
-            # For access via teams, we need to use the team permissions. If a
-            # person has access via more than one team, we use the most
-            # powerful permission of all that are there.
-            for team in via_teams:
-                team_permissions = permissions_cache[team]
-                for info_type, permission in team_permissions.items():
-                    permission_to_use = permissions.get(info_type, permission)
-                    if permission == SharingPermission.ALL:
-                        permission_to_use = permission
-                    permissions[info_type] = permission_to_use
-            return grantee[0], permissions, via_teams or None
-
-        def load_teams_and_permissions(grantees):
-            # We now have the grantees we want in the result so load any
-            # associated team memberships and permissions and cache them.
-            if permissions_cache:
-                return
-            store = IStore(cls)
-            for grantee in grantees:
-                grantees_by_id[grantee[0].id] = grantee[0]
-            # Find any teams associated with the grantees. If grantees is a
-            # sliced list (for batching), it may contain indirect grantees but
-            # not the team they belong to so that needs to be fixed below.
-            with_expr = With("grantees", store.find(
-                cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
-                ).config(distinct=True)._get_select())
-            result_set = store.with_(with_expr).find(
-                (TeamParticipation.teamID, TeamParticipation.personID),
-                TeamParticipation.personID.is_in(grantees_by_id.keys()),
-                TeamParticipation.teamID.is_in(
-                    Select(
-                        (SQL("grantees.grantee"),),
-                        tables="grantees",
-                        distinct=True)))
-            team_ids = set()
-            direct_grantee_ids = set()
-            for team_id, team_member_id in result_set:
-                if team_member_id == team_id:
-                    direct_grantee_ids.add(team_member_id)
-                else:
-                    via_teams_cache[team_member_id].append(team_id)
-                    team_ids.add(team_id)
-            # Remove from the via_teams cache all the direct grantees.
-            for direct_grantee_id in direct_grantee_ids:
-                if direct_grantee_id in via_teams_cache:
-                    del via_teams_cache[direct_grantee_id]
-            # Load and cache the additional required teams.
-            persons = store.find(Person, Person.id.is_in(team_ids))
-            for person in persons:
-                grantees_by_id[person.id] = person
-            cls._populatePermissionsCache(
-                permissions_cache, grantees_by_id.keys(), policies_by_id,
-                grantees_by_id)
-
         return DecoratedResultSet(
             result_set,
-            result_decorator=set_permission,
-            pre_iter_hook=load_teams_and_permissions)
-
-    @classmethod
-    def findIndirectGranteePermissionsByPolicy(cls, policies):
-        """See `IAccessPolicyGrantFlatSource`."""
-        policies_by_id = dict((policy.id, policy) for policy in policies)
-        store = IStore(cls)
-        with_expr = With("grantees", store.find(
-            cls.grantee_id, cls.policy_id.is_in(policies_by_id.keys())
-            ).config(distinct=True)._get_select())
-        result_set = store.with_(with_expr).find(
-            (Person,),
-            In(
-                Person.id,
-                Select(
-                    (TeamParticipation.personID,),
-                    tables=(TeamParticipation, Join("grantees",
-                        SQL("grantees.grantee = TeamParticipation.team"))),
-                    distinct=True)))
-        return cls._populateIndirectGranteePermissions(
-            policies_by_id, result_set)
+            result_decorator=set_permission, pre_iter_hook=load_permissions)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):
