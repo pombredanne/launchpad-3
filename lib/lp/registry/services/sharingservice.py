@@ -99,37 +99,33 @@ class SharingService:
             sharing_permissions.append(item)
         return sharing_permissions
 
-    @available_with_permission(
-        ['launchpad.Driver', 'launchpad.Edit'], 'pillar')
-    def getPillarSharees(self, pillar, include_indirect=False):
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getPillarSharees(self, pillar):
         """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
         # XXX 2012-03-22 wallyworld bug 961836
         # We want to use person_sort_key(Person.displayname, Person.name) but
         # StormRangeFactory doesn't support that yet.
-        if include_indirect:
-            grant_permissions = (
-                ap_grant_flat.findIndirectGranteePermissionsByPolicy(
-                    policies).order_by(Person.displayname, Person.name))
-        else:
-            grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
-                policies).order_by(Person.displayname, Person.name)
+        grant_permissions = ap_grant_flat.findGranteePermissionsByPolicy(
+            policies).order_by(Person.displayname, Person.name)
         return grant_permissions
 
-    @available_with_permission(
-        ['launchpad.Driver', 'launchpad.Edit'], 'pillar')
-    def getPillarShareeData(self, pillar, include_indirect=False):
+    @available_with_permission('launchpad.Driver', 'pillar')
+    def getPillarShareeData(self, pillar):
         """See `ISharingService`."""
-        grant_permissions = list(
-            self.getPillarSharees(pillar, include_indirect))
+        grant_permissions = list(self.getPillarSharees(pillar))
         if not grant_permissions:
             return None
         return self.jsonShareeData(grant_permissions)
 
-    def _jsonShareeData(self, request, browser_request,
-                        grantee, permissions, via_teams=None):
-        result = {
+    def jsonShareeData(self, grant_permissions):
+        """See `ISharingService`."""
+        result = []
+        request = get_current_web_service_request()
+        browser_request = IWebBrowserOriginatingRequest(request)
+        for (grantee, permissions) in grant_permissions:
+            result.append({
                 'name': grantee.name,
                 'meta': 'team' if grantee.is_team else 'person',
                 'display_name': grantee.displayname,
@@ -137,23 +133,7 @@ class SharingService:
                 'web_link': absoluteURL(grantee, browser_request),
                 'permissions': dict(
                     (policy.type.name, permission.name)
-                    for (policy, permission) in permissions.iteritems())}
-        if via_teams:
-            team_info = [{
-                'display_name': team.displayname,
-                'web_link': absoluteURL(team, browser_request),
-            } for team in via_teams]
-            result['via_teams'] = team_info
-        return result
-
-    def jsonShareeData(self, grant_permissions):
-        result = []
-        request = get_current_web_service_request()
-        browser_request = IWebBrowserOriginatingRequest(request)
-        for grantee_info in grant_permissions:
-            result.append(
-                self._jsonShareeData(
-                    request, browser_request, *grantee_info))
+                    for (policy, permission) in permissions.iteritems())})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')

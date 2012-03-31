@@ -688,11 +688,6 @@ class AvailableWithPermissionObject:
     def test_function_bar(self, foo, bar=None):
         pass
 
-    @available_with_permission(
-        ['launchpad.Edit', 'launchpad.Driver'], 'bar')
-    def test_function_multi(self, foo, bar=None):
-        pass
-
 
 class TestAvailableWithPermission(TestCase):
     """Test the available_with_permission decorator."""
@@ -718,17 +713,6 @@ class TestAvailableWithPermission(TestCase):
         obj_to_invoke = AvailableWithPermissionObject()
         foo = Object()
         obj_to_invoke.test_function_bar(foo=foo, bar=bar)
-
-    def test_multi_permission(self):
-        # Method invocation with more than one allowed permission.
-        bar = Object()
-        request = LaunchpadTestRequest()
-        login(ANONYMOUS, request)
-        for permission in ['launchpad.Edit', 'launchpad.Driver']:
-            precache_permission_for_objects(request, permission, [bar])
-            obj_to_invoke = AvailableWithPermissionObject()
-            foo = Object()
-            obj_to_invoke.test_function_multi(foo=foo, bar=bar)
 
     def test_unauthorized(self):
         # Unauthorized method invocation.
