@@ -21,7 +21,6 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import Reference
 from zope.schema import (
-    Bool,
     Choice,
     Dict,
     List,
@@ -55,48 +54,31 @@ class ISharingService(IService):
 
     @export_read_operation()
     @operation_parameters(
-        pillar=Reference(IPillar, title=_('Pillar'), required=True),
-        include_indirect=Bool(title=_('Include indirect'), required=False))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getPillarSharees(pillar, include_indirect=False):
-        """Return people/teams who can see pillar artifacts.
-
-        :param pillar: the pillar to query
-        :param include_indirect: whether to include people/teams who have
-            access by virtue of the fact they are members of a team which has
-            been granted access.
-        """
+    def getPillarSharees(pillar):
+        """Return people/teams who can see pillar artifacts."""
 
     @export_read_operation()
     @operation_parameters(
-        pillar=Reference(IPillar, title=_('Pillar'), required=True),
-        include_indirect=Bool(title=_('Include indirect'), required=False))
+        pillar=Reference(IPillar, title=_('Pillar'), required=True))
     @operation_for_version('devel')
-    def getPillarShareeData(pillar, include_indirect=False):
+    def getPillarShareeData(pillar):
         """Return people/teams who can see pillar artifacts.
-
-        :param pillar: the pillar to query
-        :param include_indirect: whether to include people/teams who have
-            access by virtue of the fact they are members of a team which has
-            been granted access.
 
         The result records are json data which includes:
             - person name
-            - the team via which access is granted (if include_indirect=True)
             - permissions they have for each information type.
         """
 
     def jsonShareeData(grant_permissions):
         """Return people/teams who can see pillar artifacts.
 
-        :param grant_permissions: a list of
-            (grantee, {accesspolicy: permission}) or
-            (grantee, {accesspolicy: permission}, [via_team])
+        :param grant_permissions: a list of (grantee, accesspolicy, permission)
             tuples.
 
         The result records are json data which includes:
             - person name
-            - the teams via which the person has access
             - permissions they have for each information type.
         """
 

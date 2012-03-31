@@ -1431,13 +1431,7 @@
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.Driver"
         name="+sharing"
-        class="lp.registry.browser.pillar.PillarSharingInformationView"
-        template="../templates/pillar-sharing.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        permission="launchpad.Edit"
-        name="+audit-sharing"
-        class="lp.registry.browser.pillar.PillarAuditSharingView"
+        class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarPerson"
@@ -1819,13 +1813,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Driver"
         name="+sharing"
-        class="lp.registry.browser.pillar.PillarSharingInformationView"
-        template="../templates/pillar-sharing.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
-        permission="launchpad.Edit"
-        name="+audit-sharing"
-        class="lp.registry.browser.pillar.PillarAuditSharingView"
+        class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
