@@ -6,10 +6,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
+    'InvolvedMenu',
+    'PillarAuditSharingView',
+    'PillarBugsMenu',
+    'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
-    'PillarSharingView',
+    'PillarSharingInformationView',
     ]
 
 
@@ -250,10 +253,7 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         return Link('+securitycontact', text, icon='edit')
 
 
-class PillarSharingView(LaunchpadView):
-
-    page_title = "Sharing"
-    label = "Sharing information"
+class BasePillarSharingView(LaunchpadView):
 
     related_features = (
         'disclosure.enhanced_sharing.enabled',
@@ -261,6 +261,14 @@ class PillarSharingView(LaunchpadView):
         )
 
     _batch_navigator = None
+
+    @property
+    def show_sharing_information_link(self):
+        return False
+
+    @property
+    def show_audit_sharing_link(self):
+        return False
 
     def _getSharingService(self):
         return getUtility(IService, 'sharing')
@@ -310,12 +318,8 @@ class PillarSharingView(LaunchpadView):
             self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
         return self._batch_navigator
 
-    def unbatched_sharees(self):
-        """All the sharees for a pillar."""
-        return self._getSharingService().getPillarSharees(self.context)
-
     def initialize(self):
-        super(PillarSharingView, self).initialize()
+        super(BasePillarSharingView, self).initialize()
         enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
         enabled_writable_flag = (
             'disclosure.enhanced_sharing.writable')
@@ -328,6 +332,7 @@ class PillarSharingView(LaunchpadView):
             and check_permission('launchpad.Edit', self.context))
         cache.objects['information_types'] = self.information_types
         cache.objects['sharing_permissions'] = self.sharing_permissions
+        cache.objects['show_indirect_sharees'] = False
 
         view_names = set(reg.name for reg
             in iter_view_registrations(self.__class__))
@@ -353,6 +358,41 @@ class PillarSharingView(LaunchpadView):
         last_batch = batch_navigator.batch.lastBatch()
         cache.objects['last_start'] = last_batch.startNumber() - 1
         cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+
+class PillarSharingInformationView(BasePillarSharingView):
+
+    page_title = "Sharing Information"
+    label = "Sharing information"
+
+    @property
+    def show_audit_sharing_link(self):
+        # Only users with launchpad.Edit can audit sharing.
+        return check_permission('launchpad.Edit', self.context)
+
+    def unbatched_sharees(self):
+        """All the sharees for a pillar."""
+        return self._getSharingService().getPillarSharees(self.context)
+
+
+class PillarAuditSharingView(BasePillarSharingView):
+
+    page_title = "Audit Sharing"
+    label = "Audit sharing"
+
+    def initialize(self):
+        super(PillarAuditSharingView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['show_indirect_sharees'] = True
+
+    @property
+    def show_sharing_information_link(self):
+        return True
+
+    def unbatched_sharees(self):
+        """All the indirect sharees for a pillar."""
+        return self._getSharingService().getPillarSharees(
+            self.context, include_indirect=True)
 
 
 class PillarPersonSharingView(LaunchpadView):
