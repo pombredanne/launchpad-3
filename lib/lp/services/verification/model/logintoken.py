@@ -392,6 +392,14 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
+        # **RICK** We want to alert the preferred email that this new address
+        # has been requested. We need to fire a notification on the
+        # owner/Person so the notification gets processed.
+        import pdb; pdb.set_trace()
+
+        # notify(ObjectModifiedEvent(, person_before_mod,
+        #     ['preferredemail'], user=self))
+
         token = create_unique_token_for_table(20, LoginToken.token)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,

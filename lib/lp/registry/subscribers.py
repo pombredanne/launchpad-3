@@ -37,8 +37,9 @@ from lp.services.webapp.publisher import (
 # validedemails, but then again we don't want validated, because it might not
 # be. We want the notice to go out on a new email.
 PERSON_FIELDS_MONITORED = {
-    'preferredemail': 'preferred email address',
-    'validatedemails': 'email accounts'
+    'preferredemail': 'Preferred email address changed.',
+    'newemail': 'Email address added.',
+    'removedemail': 'Email address removed.',
 }
 
 

@@ -292,7 +292,7 @@ class TestPersonDetailsModified(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
         self.assertTrue(
-            'preferred email address' in notifications[0].as_string())
+            'Preferred email address' in notifications[0].as_string())
 
 
 class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
@@ -344,3 +344,22 @@ class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
             # email values.
             self.assertEqual('test@pre.com', person.preferredemail.email)
             self.assertEqual(0, len(self.events))
+
+    def test_removed_email_address(self):
+        """When an email address is removed from the system we should notify"""
+        pop_notifications()
+        self.setup_event_listener()
+        person = self.factory.makePerson(email='test@pre.com')
+
+        with person_logged_in(person):
+            secondary_email = self.factory.makeEmail('test@second.com', person)
+            secondary_email.destroySelf()
+            # We should only have one email address, the preferred.
+            self.assertEqual('test@pre.com', person.preferredemail.email)
+            # The preferred email doesn't show in the list of validated emails
+            # so there are none left once the destroy is done.
+            self.assertEqual(0, person.validatedemails.count())
+            self.assertEqual(1, len(self.events))
+            evt = self.events[0]
+            self.assertEqual(person, evt.object)
+            self.assertEqual(['removedemail'], evt.edited_fields)
