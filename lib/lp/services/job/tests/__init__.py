@@ -7,7 +7,6 @@ __all__ = ['celeryd']
 
 
 from contextlib import contextmanager
-from time import sleep
 
 
 @contextmanager
