@@ -287,7 +287,7 @@ Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
-    '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>...<wbr></wbr>launchpad&gt;'
+    '&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
 
 To get a int with its thousands separated by a comma, use fmt:intcomma.
 
@@ -924,8 +924,8 @@ a foldable span.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
-    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr />nu1YWqI0RAqrNAJ<wbr />...
+    T2PIWy0CUJsX8RX<wbr />St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>
@@ -942,7 +942,7 @@ span.
     Raise your hand if you can read this.</p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
@@ -1012,7 +1012,7 @@ must markup. We can format the three examples at the same time.
     </span></p>
     <p><span class="foldable"...>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    sinzui.<wbr />is@example.<wbr />org<br />
     Guilty of stealing everything I am.
     </span></p>
 
