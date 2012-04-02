@@ -22,6 +22,10 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 from testtools import ExpectedException
+from testtools.matchers import (
+    Not,
+    PathExists,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -105,6 +109,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -297,7 +302,7 @@ class TestBranchChanged(TestCaseWithFactory):
              branch.repository_format))
 
 
-class TestBranchChangedRunsViaCelery(TestCaseWithFactory):
+class TestBranchJobViaCelery(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
@@ -321,6 +326,23 @@ class TestBranchChangedRunsViaCelery(TestCaseWithFactory):
         self.assertIn(
             'Updating branch scanner status: 1 revs', proc.stderr.read())
         self.assertEqual(db_branch.revision_count, 1)
+
+
+    def test_destroySelf_via_celery(self):
+        """Calling destroySelf causes Celery to delete the branch."
+        from celery.exceptions import TimeoutError
+        with celeryd('branch_write') as proc:
+            self.useBzrBranches()
+            db_branch, tree = self.create_branch_and_tree()
+            branch_path = get_real_branch_path(db_branch.id)
+            self.assertThat(branch_path, PathExists())
+            db_branch.destroySelf()
+            transaction.commit()
+            try:
+                BaseRunnableJob.last_celery_response.wait(30)
+            except TimeoutError:
+                pass
+        self.assertThat(branch_path, Not(PathExists()))
 
 
 class TestBranchRevisionMethods(TestCaseWithFactory):
