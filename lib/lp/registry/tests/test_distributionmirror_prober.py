@@ -69,6 +69,14 @@ from lp.testing.layers import (
     )
 
 
+def clean_up_reactor():
+    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+    # calls around.  They need to be updated to use Twisted correctly.
+    # For the meantime, just blat the reactor.
+    for delayed_call in reactor.getDelayedCalls():
+        delayed_call.cancel()
+
+
 class HTTPServerTestSetup(TacTestSetup):
 
     def setUpRoot(self):
@@ -312,8 +320,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
         # We need to remove any DelayedCalls that didn't actually get called.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
+        clean_up_reactor()
         super(
             TestProberFactoryRequestTimeoutRatioWithoutTwisted,
             self).tearDown()
@@ -539,8 +546,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
     def tearDown(self):
         # We need to remove any DelayedCalls that didn't actually get called.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
+        clean_up_reactor()
         super(TestRedirectAwareProberFactoryAndProtocol, self).tearDown()
 
     def test_redirect_resets_timeout(self):
@@ -820,11 +826,8 @@ class TestProbeFunctionSemaphores(TestCase):
         RequestManager.host_locks.clear()
 
     def tearDown(self):
-        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
-        # calls around.  They need to be updated to use Twisted correctly.
-        # For the meantime, just blat the reactor.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
+        # We need to remove any DelayedCalls that didn't actually get called.
+        clean_up_reactor()
         super(TestProbeFunctionSemaphores, self).tearDown()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
@@ -915,8 +918,7 @@ class TestLoggingMixin(TestCase):
 
     def tearDown(self):
         # We need to remove any DelayedCalls that didn't actually get called.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
+        clean_up_reactor()
         super(TestLoggingMixin, self).tearDown()
 
     def _fake_gettime(self):
