@@ -137,8 +137,8 @@ unauthenticated, so he will see the obfuscated email address.
     >>> anon_browser.title.decode('utf-8')
     u'Bug #2 (blackhole) ... : Bugs : Tomcat'
 
-BeautifulSoup doesn't realise that wbr is a void element, so it has a
-habit of extending it to the next tag unless we close it separately.
+XXX: BeautifulSoup doesn't realise that wbr is a void element, so it has
+a habit of extending it to the next tag unless we close it separately.
 
     >>> text = find_tags_by_class(
     ...     anon_browser.contents.replace('<wbr />', '<wbr></wbr>'),
