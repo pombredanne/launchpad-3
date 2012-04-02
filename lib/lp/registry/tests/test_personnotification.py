@@ -67,7 +67,7 @@ class TestPersonNotification(TestCaseWithFactory):
         self.assertTrue(notification.can_send)
 
     def test_to_specified_email(self):
-        # Sometimes we want to notify all validated addresses
+        """We might want to notify a non-preferred email address."""
         user = self.factory.makePerson()
         note = PersonNotification()
         note.person = user

@@ -33,9 +33,6 @@ from lp.services.webapp.publisher import (
     )
 
 
-# tracking emails is a pain, we want to just track any change to the @property
-# validedemails, but then again we don't want validated, because it might not
-# be. We want the notice to go out on a new email.
 PERSON_FIELDS_MONITORED = {
     'preferredemail': 'Preferred email address changed.',
     'newemail': 'Email address added.',
