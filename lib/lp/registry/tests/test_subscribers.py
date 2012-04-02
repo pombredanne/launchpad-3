@@ -19,6 +19,8 @@ from lp.registry.subscribers import (
     person_details_modified,
     product_licenses_modified,
     )
+from lp.services.verification.model.logintoken import LoginTokenSet
+from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
@@ -346,7 +348,7 @@ class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
             self.assertEqual(0, len(self.events))
 
     def test_removed_email_address(self):
-        """When an email address is removed from the system we should notify"""
+        """When an email address is removed we should notify."""
         pop_notifications()
         self.setup_event_listener()
         person = self.factory.makePerson(email='test@pre.com')
@@ -363,3 +365,42 @@ class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
             evt = self.events[0]
             self.assertEqual(person, evt.object)
             self.assertEqual(['removedemail'], evt.edited_fields)
+
+            # The notice of this should be going to the preferred email user.
+            notifications = pop_notifications()
+            self.assertTrue('test@pre.com' in notifications[0].get('To'))
+            self.assertTrue(
+                'Email address removed' in notifications[0].as_string())
+
+    def test_new_email_request(self):
+        """When an email address is added we should notify.
+
+        We want to send the notification when the new email address is
+        requested. This doesn't actually create an email address yet. It
+        builds a LoginToken that the user must ack before the email address is
+        added. The issue is security in alerting the owner of the account that
+        a new address is being requested, so we need to notify at the time of
+        request and not wait for the user to ack the new email address.
+        """
+        pop_notifications()
+        self.setup_event_listener()
+        person = self.factory.makePerson(email='test@pre.com')
+
+        with person_logged_in(person):
+            secondary_email = self.factory.makeEmail('test@second.com', person)
+            # The way that a new email address gets requested is through the
+            # LoginToken done in the browser/person action_add_email.
+            LoginTokenSet().new(person,
+                person.preferredemail.email,
+                secondary_email.email,
+                LoginTokenType.VALIDATEEMAIL)
+            self.assertEqual(1, len(self.events))
+            evt = self.events[0]
+            self.assertEqual(person, evt.object)
+            self.assertEqual(['newemail'], evt.edited_fields)
+
+            # The notice of this should be going to the preferred email user.
+            notifications = pop_notifications()
+            self.assertTrue('test@pre.com' in notifications[0].get('To'))
+            self.assertTrue(
+                'Email address added' in notifications[0].as_string())

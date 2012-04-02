@@ -19,8 +19,10 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
+from lazr.lifecycle.event import ObjectModifiedEvent
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
@@ -392,13 +394,12 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        # **RICK** We want to alert the preferred email that this new address
-        # has been requested. We need to fire a notification on the
-        # owner/Person so the notification gets processed.
-        import pdb; pdb.set_trace()
-
-        # notify(ObjectModifiedEvent(, person_before_mod,
-        #     ['preferredemail'], user=self))
+        # We want to alert the preferred email that this new address has been
+        # requested. We need to fire a notification on the owner/Person so the
+        # notification gets processed.
+        if tokentype == LoginTokenType.VALIDATEEMAIL:
+            notify(ObjectModifiedEvent(requester, requester,
+                ['newemail'], user=requester))
 
         token = create_unique_token_for_table(20, LoginToken.token)
         return LoginToken(requester=requester, requesteremail=requesteremail,
