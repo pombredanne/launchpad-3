@@ -299,6 +299,9 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         # Restore the globals that our tests fiddle with.
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+        # We need to remove any DelayedCalls that didn't actually get called.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
         super(
             TestProberFactoryRequestTimeoutRatioWithoutTwisted,
             self).tearDown()
@@ -517,6 +520,12 @@ class TestMultiLock(TestCase):
 
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
+
+    def tearDown(self):
+        # We need to remove any DelayedCalls that didn't actually get called.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+        super(TestRedirectAwareProberFactoryAndProtocol, self).tearDown()
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -878,6 +887,12 @@ class TestCDImageFileListFetching(TestCase):
 
 
 class TestLoggingMixin(TestCase):
+
+    def tearDown(self):
+        # We need to remove any DelayedCalls that didn't actually get called.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+        super(TestLoggingMixin, self).tearDown()
 
     def _fake_gettime(self):
         # Fake the current time.
