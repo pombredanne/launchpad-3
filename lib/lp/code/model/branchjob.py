@@ -328,7 +328,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     user_error_types = (NotBranchError,)
 
-    queue = 'branch_write'
+    task_queue = 'branch_write'
 
     def getOperationDescription(self):
         return 'upgrading a branch'

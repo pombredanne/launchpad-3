@@ -103,7 +103,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     last_celery_response = None
 
-    queue = 'standard'
+    task_queue = 'standard'
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -194,7 +194,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
         response = CeleryRunJob.apply_async(
-            (self.job_id,), queue=self.queue)
+            (self.job_id,), queue=self.task_queue)
         BaseRunnableJob.last_celery_response = response
         return response
 
