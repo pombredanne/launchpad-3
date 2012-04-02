@@ -142,16 +142,20 @@ class TestProberProtocolAndFactory(TrialTestCase):
         connect to the given host.
         """
         prober = ProberFactory(url)
+
         def fakeConnect(host, port, factory):
             factory.connecting_to = host
             factory.succeeded('200')
+
         prober.connecting_to = None
         orig_connect = reactor.connectTCP
         reactor.connectTCP = fakeConnect
+
         def restore_connect(result, orig_connect):
             self.failUnlessEqual(prober.connecting_to, host)
             reactor.connectTCP = orig_connect
             return None
+
         deferred = prober.probe()
         return deferred.addCallback(restore_connect, orig_connect)
 
@@ -179,11 +183,13 @@ class TestProberProtocolAndFactory(TrialTestCase):
         self.failUnless(prober.redirection_count == 0)
         self.failUnless(prober.url == url)
         deferred = prober.probe()
+
         def got_result(result):
             self.failUnless(prober.redirection_count == 1)
             new_url = 'http://localhost:%s/valid-mirror/file' % self.port
             self.failUnless(prober.url == new_url)
             self.failUnless(result == str(httplib.OK))
+
         return deferred.addCallback(got_result)
 
     def test_redirectawareprober_detects_infinite_loop(self):
@@ -200,26 +206,32 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
+
         def got_result(result):
             self.failUnless(
                 result == str(httplib.OK),
                 "Expected a '200' status but got '%s'" % result)
+
         return d.addCallback(got_result)
 
     def test_success_cancel_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
         deferred = prober.probe()
         self.failUnless(prober.timeoutCall.active())
+
         def check_timeout_call(result):
             self.failIf(prober.timeoutCall.active())
+
         return deferred.addCallback(check_timeout_call)
 
     def test_failure_cancel_timeout_call(self):
         prober = ProberFactory(self.urls['500'])
         deferred = prober.probe()
         self.failUnless(prober.timeoutCall.active())
+
         def check_timeout_call(result):
             self.failIf(prober.timeoutCall.active())
+
         return deferred.addErrback(check_timeout_call)
 
     def test_notfound(self):
@@ -405,22 +417,26 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
         host = 'localhost'
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
+
         def got_error(error):
             self.failUnlessEqual(
                 {host: 1}, distributionmirror_prober.host_requests)
             self.failUnlessEqual(
                 {host: 1}, distributionmirror_prober.host_timeouts)
+
         return d.addErrback(got_error)
 
     def test_non_timeout_is_recorded(self):
         host = 'localhost'
         d = self._createProberAndProbe(
             u'http://%s:%s/valid-mirror' % (host, self.port))
+
         def got_result(result):
             self.failUnlessEqual(
                 {host: 1}, distributionmirror_prober.host_requests)
             self.failUnlessEqual(
                 {host: 0}, distributionmirror_prober.host_timeouts)
+
         return d.addCallback(got_result)
 
     def test_failure_after_too_many_timeouts(self):
@@ -541,16 +557,20 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober = RedirectAwareProberFactory(url)
         prober.timeoutCall = FakeTimeOutCall()
         prober.connectCalled = False
+
         def connect():
             prober.connectCalled = True
+
         prober.connect = connect
         return prober
 
     def test_raises_error_if_redirected_to_different_file(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall(
             'http://foo.bar/baz/boo/package.deb')
+
         def failed(error):
             prober.has_failed = True
+
         prober.failed = failed
         prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
         self.failUnless(prober.has_failed)
@@ -631,8 +651,10 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
     def getLogger(self):
         logger = logging.getLogger('distributionmirror-prober')
         logger.errorCalled = False
+
         def error(msg):
             logger.errorCalled = True
+
         logger.error = error
         return logger
 
@@ -748,13 +770,16 @@ class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
         # not a ProberTimeout, a BadResponseCode or a ConnectionSkipped.
         d = defer.Deferred()
         d.addErrback(callbacks.deleteMirrorSeries)
+        ok = []
+
         def got_result(result):
             self.fail(
                 "Any failure that's not a timeout/bad-response/skipped "
                 "should be propagated.")
-        ok = []
+
         def got_failure(failure):
             ok.append(1)
+
         d.addCallbacks(got_result, got_failure)
         d.errback(Failure(ZeroDivisionError()))
         self.assertEqual([1], ok)
