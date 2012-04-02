@@ -37,19 +37,20 @@ Security contacts are set through properties.
     >>> print firefox.security_contact.name
     ubuntu-team
 
-When creating a bug, use the security_related flag to indicate that the
+When creating a bug, use the information_type enum to indicate that the
 bug is a security vulnerability, and the security contact should be
 subscribed to the bug, even when it's marked private.
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> params = CreateBugParams(
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a security bug",
     ...     comment="this is an example security bug",
-    ...     security_related=True, private=True)
+    ...     information_type=InformationType.EMBARGOEDSECURITY)
     >>> bug = ubuntu.createBug(params)
 
     >>> bug.security_related
@@ -79,7 +80,7 @@ have been subscribed:
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="a security bug",
     ...     comment="this is an example security bug",
-    ...     security_related=False)
+    ...     information_type=InformationType.PUBLIC)
     >>> bug = ubuntu.createBug(params)
 
     >>> bug.security_related
@@ -95,7 +96,7 @@ security contact, the Ubuntu team, to the bug.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is another security bug",
-    ...     security_related=True, private=True)
+    ...     information_type=InformationType.EMBARGOEDSECURITY)
     >>> bug = firefox.createBug(params)
 
     >>> bug.security_related
@@ -113,7 +114,7 @@ contact, the Ubuntu Team, would not have been subscribed:
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is another security bug",
-    ...     security_related=False)
+    ...     information_type=InformationType.PUBLIC)
     >>> bug = firefox.createBug(params)
 
     >>> bug.security_related
@@ -134,7 +135,7 @@ registrant get subscribed.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is another security bug",
-    ...     security_related=True, private=True)
+    ...     information_type=InformationType.EMBARGOEDSECURITY)
 
     >>> bug = firefox.createBug(params)
 
@@ -190,7 +191,7 @@ subscribed.
     ...     owner=getUtility(ILaunchBag).user,
     ...     title="another security bug",
     ...     comment="this is private security bug",
-    ...     private=True, security_related=True)
+    ...     information_type=InformationType.EMBARGOEDSECURITY)
     >>> bug = firefox.createBug(params)
 
     >>> bug.security_related
