@@ -14,7 +14,10 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPersonViewRestricted
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonViewRestricted,
+    )
 from lp.registry.interfaces.product import License
 from lp.registry.model.personnotification import PersonNotification
 from lp.services.config import config
@@ -46,9 +49,10 @@ def product_licenses_modified(product, event):
     licenses_changed = 'licenses' in event.edited_fields
     needs_notification = LicenseNotification.needs_notification(product)
     if licenses_changed and needs_notification:
-        user = IPersonViewRestricted(event.user)
+        user = IPerson(event.user)
         notification = LicenseNotification(product, user)
         notification.send()
+        notification.display()
 
 
 class LicenseNotification:

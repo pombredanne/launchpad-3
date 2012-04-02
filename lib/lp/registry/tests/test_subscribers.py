@@ -30,6 +30,7 @@ from lp.testing.event import TestEventListener
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 
+
 class ProductLicensesModifiedTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -264,10 +265,8 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(message, notification.getCommercialUseMessage())
 
 
-class PersonDetailsModifiedTestCase(TestCaseWithFactory):
-    """When some details of a person change, we need to notify the user.
-
-    """
+class TestPersonDetailsModified(TestCaseWithFactory):
+    """When some details of a person change, we need to notify the user."""
     layer = DatabaseFunctionalLayer
 
     def test_event_generates_notification(self):
@@ -289,13 +288,12 @@ class PersonDetailsModifiedTestCase(TestCaseWithFactory):
         pop_notifications()
         new_email = self.factory.makeEmail('test@post.com', person)
         person.setPreferredEmail(new_email)
-        # After/before objects and list of edited fields.
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
 
 
-class PersonDetailsModifiedEventTestCase(TestCaseWithFactory):
+class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
     """Test that the events are fired when the person is changed."""
 
     layer = DatabaseFunctionalLayer

@@ -73,9 +73,7 @@ class PersonNotification(SQLBase):
                 "Can't send a notification to a person without an email.")
         if sendto:
             # We're expecting a tuple of (name, email) for the sendto.
-            to_addresses = [
-                format_address(*sendto)
-            ]
+            to_addresses = [format_address(*sendto)]
         else:
             to_addresses = self.to_addresses
         if logger:
