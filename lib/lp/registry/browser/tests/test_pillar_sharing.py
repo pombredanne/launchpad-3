@@ -74,13 +74,13 @@ class PillarSharingDetailsMixin:
         return PillarPerson(self.pillar, person)
 
     def test_view_traverses_plus_sharingdetails(self):
-        # The traversed url in the app is pillar/+sharingdetails/person
+        # The traversed url in the app is pillar/+sharing/person
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson()
             expected = pillarperson.person.displayname
-            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+            url = 'http://launchpad.dev/%s/+sharing/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
             self.assertEqual(expected, browser.title)
@@ -92,7 +92,7 @@ class PillarSharingDetailsMixin:
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson(with_sharing=False)
-            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+            url = 'http://launchpad.dev/%s/+sharing/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner)
             self.assertRaises(NotFound, browser.open, url)
