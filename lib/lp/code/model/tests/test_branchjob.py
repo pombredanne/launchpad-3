@@ -71,7 +71,6 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
-from lp.services.job.tests import celeryd
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
@@ -82,7 +81,6 @@ from lp.testing.dbuser import (
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
     )
 from lp.testing.librarianhelpers import get_newest_librarian_file
 from lp.testing.mail_helpers import pop_notifications
