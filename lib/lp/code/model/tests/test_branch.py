@@ -297,6 +297,32 @@ class TestBranchChanged(TestCaseWithFactory):
              branch.repository_format))
 
 
+class TestBranchChangedRunsViaCelery(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    def test_branchChanged_via_celery(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        # Delay importing anything that uses Celery until RabbitMQLayer is
+        # running, so that config.rabbitmq.host is defined when
+        # lp.services.job.celeryconfig is loaded.
+        from celery.exceptions import TimeoutError
+        with celeryd('standard') as proc:
+            self.useBzrBranches()
+            db_branch, bzr_tree = self.create_branch_and_tree()
+            bzr_tree.commit(
+                'First commit', rev_id='rev1', committer='me@example.org')
+            db_branch.branchChanged(None, 'rev1', None, None, None)
+            transaction.commit()
+            try:
+                BaseRunnableJob.last_celery_response.wait(30)
+            except TimeoutError:
+                pass
+        self.assertIn(
+            'Updating branch scanner status: 1 revs', proc.stderr.read())
+        self.assertEqual(db_branch.revision_count, 1)
+
+
 class TestBranchRevisionMethods(TestCaseWithFactory):
     """Test the branch methods for adding and removing branch revisions."""
 
