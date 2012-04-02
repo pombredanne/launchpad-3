@@ -8,7 +8,10 @@ import sys
 from textwrap import dedent
 from time import sleep
 
-from lazr.jobrunner.jobrunner import SuspendJobException
+from lazr.jobrunner.jobrunner import (
+    LeaseHeld,
+    SuspendJobException,
+    )
 from testtools.matchers import MatchesRegex
 from testtools.testcase import ExpectedException
 import transaction
@@ -19,7 +22,6 @@ from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
-    LeaseHeld,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -612,8 +614,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
-    def test_memory_hog_job(self):
+    def disable_test_memory_hog_job(self):
         """A job with a memory limit will trigger MemoryError on excess."""
+        # XXX: frankban 2012-03-29 bug=963455: This test fails intermittently,
+        # especially in parallel tests.
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
         runner = TwistedJobRunner.runFromSource(

@@ -56,6 +56,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.xmlrpc import faults
 
@@ -1290,7 +1291,7 @@ def test_suite():
          ])
     scenarios = [
         ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
+                'layer': LaunchpadFunctionalLayer}),
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]

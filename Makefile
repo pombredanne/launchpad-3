@@ -305,7 +305,7 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: build inplace stop
-	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
+	bin/run -r librarian,sftp,forker,codebrowse,rabbitmq -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian

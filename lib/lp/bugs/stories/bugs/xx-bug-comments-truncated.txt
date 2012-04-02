@@ -191,8 +191,8 @@ the notice that the message is signed, and the signature.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
-    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr />nu1YWqI0RAqrNAJ<wbr />...
+    T2PIWy0CUJsX8RX<wbr />St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>

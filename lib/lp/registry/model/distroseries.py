@@ -724,8 +724,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.status in stable_states):
             return False
 
-        # Deny uploads for post-release pockets in unstable states.
-        if (pocket != PackagePublishingPocket.RELEASE and
+        # Deny uploads for post-release-only pockets in unstable states.
+        pre_release_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if (pocket not in pre_release_pockets and
             self.status not in stable_states):
             return False
 
