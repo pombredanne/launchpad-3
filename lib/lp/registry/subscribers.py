@@ -36,10 +36,10 @@ from lp.services.webapp.publisher import (
 # tracking emails is a pain, we want to just track any change to the @property
 # validedemails, but then again we don't want validated, because it might not
 # be. We want the notice to go out on a new email.
-PERSON_FIELDS_MONITORED = [
-    'preferredemail',
-    'validatedemails'
-]
+PERSON_FIELDS_MONITORED = {
+    'preferredemail': 'preferred email address',
+    'validatedemails': 'email accounts'
+}
 
 
 def product_licenses_modified(product, event):
@@ -167,15 +167,17 @@ def person_details_modified(person, event):
 
     # We want to keep tabs on which fields changed so we can attempt to have
     # an intelligent reply message on what just happened.
-    changed_fields = set(PERSON_FIELDS_MONITORED) &  set(event.edited_fields)
+    changed_fields = set(PERSON_FIELDS_MONITORED.keys()) &  set(event.edited_fields)
 
     if changed_fields:
         user = IPersonViewRestricted(event.user)
         original_object = event.object_before_modification
         prev_preferred_email = original_object.preferredemail.email
 
+        # In theory we could have a list of changed fields, but in practice we
+        # don't see that. Shortcutting to just grab the first changed field.
         notification = PersonDetailsChangeNotification(
-            changed_fields, user,
+            changed_fields.pop(), user,
             override_noticeto=(user.displayname, prev_preferred_email))
         notification.send()
 
@@ -207,6 +209,7 @@ class PersonDetailsChangeNotification(object):
         tpl_substitutions = dict(
             user_displayname=self.user.displayname,
             user_name=self.user.name,
+            field_changed=PERSON_FIELDS_MONITORED[self.changed]
             )
         template = get_email_template(
             self.getTemplateName(), app='registry')

@@ -1,4 +1,4 @@
-Hello %(user_name)s, you've recently had a change to your account details on
+Hello %(user_name)s, your %(field_changed)s has recently changed on
 Launchpad.net.
 
 If you didn't intend to make this change please join us in #launchpad on

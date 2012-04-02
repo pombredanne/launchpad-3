@@ -291,6 +291,8 @@ class TestPersonDetailsModified(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
+        self.assertTrue(
+            'preferred email address' in notifications[0].as_string())
 
 
 class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
