@@ -764,7 +764,7 @@ let us use a DTD to define the html entities that standard xml is missing.
     Newline="&lt;br /&gt;
     "&lt;br /&gt;
     url="&lt;a rel="nofollow"
-    href="http://www.ubuntu.com"&gt;http://&lt;wbr&gt;&lt;/wbr&gt;www.ubuntu.&lt;wbr&gt;&lt;/wbr&gt;com&lt;/a&gt;"...
+    href="http://www.ubuntu.com"&gt;http://&lt;wbr /&gt;www.ubuntu.&lt;wbr /&gt;com&lt;/a&gt;"...
 
 
 Deletion
