@@ -136,13 +136,8 @@ unauthenticated, so he will see the obfuscated email address.
     >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> anon_browser.title.decode('utf-8')
     u'Bug #2 (blackhole) ... : Bugs : Tomcat'
-
-XXX: BeautifulSoup doesn't realise that wbr is a void element, so it has
-a habit of extending it to the next tag unless we close it separately.
-
     >>> text = find_tags_by_class(
-    ...     anon_browser.contents.replace('<wbr />', '<wbr></wbr>'),
-    ...     'boardCommentBody')[-1]
+    ...     anon_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-2])
     --
     ______________________
@@ -196,8 +191,8 @@ the notice that the message is signed, and the signature.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
-    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr />nu1YWqI0RAqrNAJ<wbr />...
+    T2PIWy0CUJsX8RX<wbr />St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>
