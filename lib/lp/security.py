@@ -124,7 +124,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonVisibility,
     )
-from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarPerson,
+    )
 from lp.registry.interfaces.poll import (
     IPoll,
     IPollOption,
@@ -335,6 +338,17 @@ class ViewPillar(AuthorizationBase):
             return (user.in_commercial_admin or
                     user.in_admin or
                     user.in_registry_experts)
+
+
+class PillarPersonSharingDriver(AuthorizationBase):
+    usedfor = IPillarPerson
+    permission = 'launchpad.Driver'
+
+    def checkAuthenticated(self, user):
+        """The Admins & Commercial Admins can see inactive pillars."""
+        return (user.in_admin or
+                user.isOwner(self.obj.pillar) or
+                user.isOneOfDrivers(self.obj.pillar))
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
@@ -972,6 +986,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             user_private_bugs_visible_filter = get_bug_privacy_filter(
                 user.person, private_only=True)
 
+            # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
             query = """
                 SELECT TRUE WHERE
                 EXISTS (
@@ -991,7 +1006,8 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                     -- do those first.
                     %(team_bug_select)s
                     WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE Bug.private is FALSE
+                        SELECT Bug.id FROM Bug WHERE Bug.information_type IN
+                        (1, 2)
                     )
                     UNION ALL
                     -- Now do the private bugs the user can see.

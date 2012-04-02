@@ -84,6 +84,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1392,11 +1393,22 @@ class BugTaskSet:
             BugTask.bug == Bug.id,
             BugTag.bug == Bug.id,
             BugTag.bugID.is_in(bug_ids),
-            BugTask.id.is_in(bugtask_ids))
+            BugTask.id.is_in(bugtask_ids)).order_by(BugTag.tag)
         tags_by_bugtask = defaultdict(list)
         for tag_name, bugtask_id in tags:
             tags_by_bugtask[bugtask_id].append(tag_name)
         return dict(tags_by_bugtask)
+
+    def getBugTaskPeople(self, bugtasks):
+        """See `IBugTaskSet`"""
+        # Avoid circular imports.
+        from lp.registry.interfaces.person import IPersonSet
+        people_ids = set(
+            [bugtask.assigneeID for bugtask in bugtasks] +
+            [bugtask.bug.ownerID for bugtask in bugtasks])
+        people = getUtility(IPersonSet).getPrecachedPersonsFromIDs(people_ids)
+        return dict(
+            (person.id, person) for person in people)
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
@@ -1685,7 +1697,8 @@ class BugTaskSet:
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
         if user is None:
-            bug_privacy_filter = 'AND Bug.private IS FALSE'
+            bug_privacy_filter = 'AND Bug.information_type IN %s' % (
+                sqlvalues(PUBLIC_INFORMATION_TYPES))
         else:
             # Since the count won't reveal sensitive information, and
             # since the get_bug_privacy_filter() check for non-admins is

@@ -11,10 +11,15 @@ __all__ = [
     'AccessPolicyGrant',
     ]
 
+from collections import defaultdict
+
 import pytz
 from storm.expr import (
     And,
+    In,
     Or,
+    Select,
+    SQL,
     )
 from storm.properties import (
     DateTime,
@@ -24,17 +29,22 @@ from storm.references import Reference
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    SharingPermission,
+    )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifact,
     IAccessArtifactGrant,
     IAccessArtifactGrantSource,
     IAccessPolicy,
     IAccessPolicyArtifact,
+    IAccessPolicyArtifactSource,
     IAccessPolicyGrant,
     )
 from lp.registry.model.person import Person
 from lp.services.database.bulk import create
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
@@ -112,6 +122,7 @@ class AccessArtifact(StormBase):
             return
         ids = [abstract.id for abstract in abstracts]
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(abstracts)
+        getUtility(IAccessPolicyArtifactSource).deleteByArtifact(abstracts)
         IStore(abstract).find(cls, cls.id.is_in(ids)).remove()
 
 
@@ -176,6 +187,13 @@ class AccessPolicy(StormBase):
 
     @classmethod
     def findByPillar(cls, pillars):
+        """See `IAccessPolicySource`."""
+        return IStore(cls).find(
+            cls,
+            Or(*(cls._constraintForPillar(pillar) for pillar in pillars)))
+
+    @classmethod
+    def findByPillarAndGrantee(cls, pillars):
         """See `IAccessPolicySource`."""
         return IStore(cls).find(
             cls,
@@ -335,6 +353,55 @@ class AccessPolicyGrantFlat(StormBase):
         ids = [policy.id for policy in policies]
         return IStore(cls).find(
             Person, Person.id == cls.grantee_id, cls.policy_id.is_in(ids))
+
+    @classmethod
+    def findGranteePermissionsByPolicy(cls, policies, grantees=None):
+        """See `IAccessPolicyGrantFlatSource`."""
+        policies_by_id = dict((policy.id, policy) for policy in policies)
+
+        # A cache for the sharing permissions, keyed on grantee
+        permissions_cache = defaultdict(dict)
+
+        def set_permission(person):
+            # Lookup the permissions from the previously loaded cache.
+            return (person[0], permissions_cache[person[0]])
+
+        def load_permissions(people):
+            # We now have the grantees and policies we want in the result so
+            # load any corresponding permissions and cache them.
+            people_by_id = dict(
+                (person[0].id, person[0]) for person in people)
+            sharing_permission_term = SQL(
+                "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
+                (SharingPermission.ALL.name, SharingPermission.SOME.name))
+            constraints = [
+                cls.grantee_id.is_in(people_by_id.keys()),
+                cls.policy_id.is_in(policies_by_id.keys())]
+            result_set = IStore(cls).find(
+                (cls.grantee_id, cls.policy_id, sharing_permission_term),
+                *constraints).group_by(cls.grantee_id, cls.policy_id)
+            for (person_id, policy_id, permission) in result_set:
+                person = people_by_id[person_id]
+                policy = policies_by_id[policy_id]
+                permissions_cache[person][policy] = (
+                    SharingPermission.items[str(permission)])
+
+        constraints = [cls.policy_id.is_in(policies_by_id.keys())]
+        if grantees:
+            grantee_ids = [grantee.id for grantee in grantees]
+            constraints.append(cls.grantee_id.is_in(grantee_ids))
+        # Since the sort time dominates this query, we do the DISTINCT
+        # in a subquery to ensure it's performed first.
+        result_set = IStore(cls).find(
+            (Person,),
+            In(
+                Person.id,
+                Select(
+                    (cls.grantee_id,), where=And(*constraints),
+                    distinct=True)))
+        return DecoratedResultSet(
+            result_set,
+            result_decorator=set_permission, pre_iter_hook=load_permissions)
 
     @classmethod
     def findArtifactsByGrantee(cls, grantee, policies):

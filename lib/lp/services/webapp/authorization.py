@@ -20,7 +20,10 @@ from zope.interface import classProvides
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.checker import CheckerPublic
-from zope.security.interfaces import ISecurityPolicy, Unauthorized
+from zope.security.interfaces import (
+    ISecurityPolicy,
+    Unauthorized,
+    )
 from zope.security.management import (
     checkPermission as zcheckPermission,
     getInteraction,
@@ -313,6 +316,8 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
 def precache_permission_for_objects(participation, permission_name, objects):
     """Precaches the permission for the objects into the policy cache."""
+    if participation is None:
+        participation = getInteraction().participations[0]
     permission_cache = participation.annotations.setdefault(
         LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
         weakref.WeakKeyDictionary())

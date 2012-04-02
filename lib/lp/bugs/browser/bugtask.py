@@ -219,6 +219,7 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.layers import FeedsLayer
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -2161,14 +2162,15 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_bug_branch,
-                 has_specification, has_patch, tags, request=None,
-                 target_context=None):
+                 has_specification, has_patch, tags,
+                 people, request=None, target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
         self.tags = tags
+        self.people = people
         self.request = request
         self.target_context = target_context
 
@@ -2207,8 +2209,9 @@ class BugTaskListingItem:
         else:
             milestone_name = None
         assignee = None
-        if self.assignee is not None:
-            assignee = self.assignee.displayname
+        if self.assigneeID is not None:
+            assignee = self.people[self.assigneeID].displayname
+        reporter = self.people[self.bug.ownerID]
 
         base_tag_url = "%s/?field.tag=" % canonical_url(
             self.bugtask.target,
@@ -2227,7 +2230,7 @@ class BugTaskListingItem:
             'importance_class': 'importance' + self.importance.name,
             'last_updated': last_updated,
             'milestone_name': milestone_name,
-            'reporter': self.bug.owner.displayname,
+            'reporter': reporter.displayname,
             'status': self.status.title,
             'status_class': 'status' + self.status.name,
             'tags': [{'url': base_tag_url + urllib.quote(tag), 'tag': tag}
@@ -2281,6 +2284,11 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """Return a dict matching bugtask to it's tags."""
         return getUtility(IBugTaskSet).getBugTaskTags(self.currentBatch())
 
+    @cachedproperty
+    def bugtask_people(self):
+        """Return mapping of people related to this bugtask set."""
+        return getUtility(IBugTaskSet).getBugTaskPeople(self.currentBatch())
+
     def getCookieName(self):
         """Return the cookie name used in bug listings js code."""
         cookie_name_template = '%s-buglist-fields'
@@ -2331,6 +2339,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             badge_property['has_specification'],
             badge_property['has_patch'],
             tags,
+            self.bugtask_people,
             request=self.request,
             target_context=target_context)
 
@@ -2687,38 +2696,39 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
         if getFeatureFlag('bugs.dynamic_bug_listings.enabled'):
-            cache = IJSONRequestCache(self.request)
-            view_names = set(reg.name for reg
-                in iter_view_registrations(self.__class__))
-            if len(view_names) != 1:
-                raise AssertionError("Ambiguous view name.")
-            cache.objects['view_name'] = view_names.pop()
-            batch_navigator = self.search()
-            cache.objects['mustache_model'] = batch_navigator.model
-            cache.objects['field_visibility'] = (
-                batch_navigator.field_visibility)
-            cache.objects['field_visibility_defaults'] = (
-                batch_navigator.field_visibility_defaults)
-            cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
+            if not FeedsLayer.providedBy(self.request):
+                cache = IJSONRequestCache(self.request)
+                view_names = set(reg.name for reg
+                    in iter_view_registrations(self.__class__))
+                if len(view_names) != 1:
+                    raise AssertionError("Ambiguous view name.")
+                cache.objects['view_name'] = view_names.pop()
+                batch_navigator = self.search()
+                cache.objects['mustache_model'] = batch_navigator.model
+                cache.objects['field_visibility'] = (
+                    batch_navigator.field_visibility)
+                cache.objects['field_visibility_defaults'] = (
+                    batch_navigator.field_visibility_defaults)
+                cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
 
-            def _getBatchInfo(batch):
-                if batch is None:
-                    return None
-                return {'memo': batch.range_memo,
-                        'start': batch.startNumber() - 1}
+                def _getBatchInfo(batch):
+                    if batch is None:
+                        return None
+                    return {'memo': batch.range_memo,
+                            'start': batch.startNumber() - 1}
 
-            next_batch = batch_navigator.batch.nextBatch()
-            cache.objects['next'] = _getBatchInfo(next_batch)
-            prev_batch = batch_navigator.batch.prevBatch()
-            cache.objects['prev'] = _getBatchInfo(prev_batch)
-            cache.objects['total'] = batch_navigator.batch.total()
-            cache.objects['order_by'] = ','.join(
-                get_sortorder_from_request(self.request))
-            cache.objects['forwards'] = batch_navigator.batch.range_forwards
-            last_batch = batch_navigator.batch.lastBatch()
-            cache.objects['last_start'] = last_batch.startNumber() - 1
-            cache.objects.update(_getBatchInfo(batch_navigator.batch))
-            cache.objects['sort_keys'] = SORT_KEYS
+                next_batch = batch_navigator.batch.nextBatch()
+                cache.objects['next'] = _getBatchInfo(next_batch)
+                prev_batch = batch_navigator.batch.prevBatch()
+                cache.objects['prev'] = _getBatchInfo(prev_batch)
+                cache.objects['total'] = batch_navigator.batch.total()
+                cache.objects['order_by'] = ','.join(
+                    get_sortorder_from_request(self.request))
+                cache.objects['forwards'] = batch_navigator.batch.range_forwards
+                last_batch = batch_navigator.batch.lastBatch()
+                cache.objects['last_start'] = last_batch.startNumber() - 1
+                cache.objects.update(_getBatchInfo(batch_navigator.batch))
+                cache.objects['sort_keys'] = SORT_KEYS
 
     @property
     def show_config_portlet(self):

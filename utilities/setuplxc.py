@@ -48,6 +48,10 @@ APT_REPOSITORIES = (
     'deb http://archive.ubuntu.com/ubuntu {distro}-security multiverse',
     'ppa:launchpad/ppa',
     'ppa:bzr/ppa',
+    # XXX 2012-03-19 frankban bug=955006:
+    #     The yellow PPA contains an updated version of testrepository
+    #     that fixes the encoding issue.
+    'ppa:yellow/ppa',
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
@@ -684,6 +688,9 @@ parser.add_argument(
          'The directory must reside under the home directory of the '
          'given user (see -u argument).')
 parser.add_argument(
+    '-U', '--use-urandom', action='store_true',
+    help='Use /dev/urandom to feed /dev/random and avoid entropy exhaustion.')
+parser.add_argument(
     'directory',
     help='The directory of the Launchpad repository to be created. '
          'The directory must reside under the home directory of the '
@@ -698,7 +705,7 @@ parser.validators = (
 
 def initialize_host(
     user, fullname, email, lpuser, private_key, public_key, ssh_key_path,
-    dependencies_dir, directory):
+    use_urandom, dependencies_dir, directory):
     """Initialize host machine."""
     # Install necessary deb packages.  This requires Oneiric or later.
     subprocess.call(['apt-get', 'update'])
@@ -759,12 +766,25 @@ def initialize_host(
             subprocess.call([
                 'bzr', 'co', '--lightweight',
                 LP_SOURCE_DEPS, 'download-cache'])
+    # rng-tools is used to set /dev/urandom as random data source, avoiding
+    # entropy exhaustion during automated parallel tests.
+    if use_urandom:
+        subprocess.call(['apt-get', '-y', 'install', 'rng-tools'])
+        file_append('/etc/default/rng-tools', 'HRNGDEVICE=/dev/urandom')
+        subprocess.call(['/etc/init.d/rng-tools', 'start'])
 
 
 def create_scripts(user, lxcname, ssh_key_path):
     """Create scripts to update the Launchpad environment and run tests."""
+    # Leases path in lucid differs from the one in oneiric/precise.
     mapping = {
+        'leases1': get_container_path(
+            lxcname, '/var/lib/dhcp3/dhclient.eth0.leases'),
+        'leases2': get_container_path(
+            lxcname, '/var/lib/dhcp/dhclient.eth0.leases'),
         'lxcname': lxcname,
+        'pattern':
+            r's/.* ([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}).*/\1/',
         'ssh_key_path': ssh_key_path,
         'user': user,
         }
@@ -775,21 +795,43 @@ def create_scripts(user, lxcname, ssh_key_path):
         script.write(textwrap.dedent("""\
             #!/bin/sh
             set -ux
+            truncate -c -s0 {leases1}
+            truncate -c -s0 {leases2}
+
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
-            for i in $(seq 1 30); do
-                su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
-                    -i '{ssh_key_path}' {lxcname} make -C $PWD schema"
-                if [ ! 255 -eq $? ]; then
-                    # If ssh returns 255 then its connection failed.
-                    # Anything else is either success (status 0) or a
-                    # failure from whatever we ran over the SSH connection.
-                    # In those cases we want to stop looping, so we break
-                    # here.
-                    break;
-                fi
+
+            delay=30
+            while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
+            do
+                delay=$(( $delay - 1 ))
                 sleep 1
             done
+
+            [ -s {leases1} ] && LEASES={leases1} || LEASES={leases2}
+            IP_ADDRESS=`grep fixed-address $LEASES | \\
+                tail -n 1 | sed -r '{pattern}'`
+
+            if [ 0 -eq $? -a -n "$IP_ADDRESS" ]; then
+                for i in $(seq 1 30); do
+                    su {user} -c "/usr/bin/ssh -o StrictHostKeyChecking=no \\
+                        -i '{ssh_key_path}' $IP_ADDRESS make -C $PWD schema"
+                    if [ ! 255 -eq $? ]; then
+                        # If ssh returns 255 then its connection failed.
+                        # Anything else is either success (status 0) or a
+                        # failure from whatever we ran over the SSH connection.
+                        # In those cases we want to stop looping, so we break
+                        # here.
+                        break;
+                    fi
+                    sleep 1
+                done
+            else
+                echo "could not get IP address - aborting." >&2
+                echo "content of $LEASES:" >&2
+                cat $LEASES >&2
+            fi
+
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
             """.format(**mapping)))
@@ -808,17 +850,139 @@ def create_scripts(user, lxcname, ssh_key_path):
             lxc-start-ephemeral -u {user} -S '{ssh_key_path}' -o {lxcname} -- \
                 "xvfb-run --error-file=/var/tmp/xvfb-errors.log \
                 --server-args='-screen 0 1024x768x24' \
-                -a $PWD/bin/test --subunit $@"
+                -a $PWD/bin/test --shuffle --subunit $@"
             """).format(**mapping)))
-        os.chmod(test_script_file, 0555)
+    os.chmod(test_script_file, 0555)
+    # Create a script for cleaning up cruft possibly left by previous lxc
+    # ephemeral containers that were not properly shut down.
+    cleanup_script_file = '/usr/local/bin/launchpad-lxc-cleanup'
+    with open(cleanup_script_file, 'w') as script:
+        script.write(textwrap.dedent('''\
+            #!/usr/bin/python
+            # Cleanup remnants of LXC containers from previous runs.
+
+            # Runs of LXC may leave cruft laying around that interferes with
+            # the next run.  These items need to be cleaned up.
+
+            # 1) Shut down all running containers
+
+            # 2) for every /var/lib/lxc/lptests-tmp-* directory:
+            #      umount [directory]/ephemeralbind
+            #      umount [directory]
+            #      rm -rf [directory]
+
+            # 3) for every /tmp/lxc-lp-* (or something like that?) directory:
+            #      umount [directory]
+            #      rm -rf [directory]
+
+            # Assumptions:
+            #  * This script is run as root.
+
+            import glob
+            import os.path
+            import re
+            from shelltoolbox import run
+            import shutil
+            import time
+
+
+            LP_TEST_DIR_PATTERN = "/var/lib/lxc/lptests-tmp-*"
+            LXC_LP_DIR_PATTERN = "/tmp/lxc-lp-*"
+            PID_RE = re.compile("pid:\s+(\d+)")
+
+
+            class Scrubber(object):
+                """Scrubber will cleanup after lxc ephemeral uncleanliness.
+
+                All running containers will be killed.
+
+                Those directories corresponding the lp_test_dir_pattern will
+                be unmounted and removed.  The 'ephemeralbind' subdirectories
+                will be unmounted.
+
+                The directories corresponding to the lxc_lp_dir_pattern will
+                be unmounted and removed.  No subdirectories will need
+                unmounting.
+                """
+                def __init__(self, user='buildbot',
+                             lp_test_dir_pattern=LP_TEST_DIR_PATTERN,
+                             lxc_lp_dir_pattern=LXC_LP_DIR_PATTERN):
+                    self.lp_test_dir_pattern = lp_test_dir_pattern
+                    self.lxc_lp_dir_pattern = lxc_lp_dir_pattern
+                    self.user = user
+
+                def umount(self, dir_):
+                    if os.path.ismount(dir_):
+                        run("umount", dir_)
+
+                def scrubdir(self, dir_, extra):
+                    dirs = [dir_]
+                    if extra is not None:
+                        dirs.insert(0, os.path.join(dir_, extra))
+                    for d in dirs:
+                        self.umount(d)
+                    shutil.rmtree(dir_)
+
+                def scrub(self, pattern, extra=None):
+                    for dir_ in glob.glob(pattern):
+                        if os.path.isdir(dir_):
+                            self.scrubdir(dir_, extra)
+
+                def getPid(self, container):
+                    info = run("lxc-info", "-n", container)
+                    # lxc-info returns a string containing 'RUNNING' for those
+                    # containers that are running followed by 'pid: <pid>', so
+                    # that must be parsed.
+                    if 'RUNNING' in info:
+                        match = PID_RE.search(info)
+                        if match:
+                            return match.group(1)
+                    return None
+
+                def getRunningContainers(self):
+                    """Get the running containers.
+
+                    Returns a list of (name, pid) tuples.
+                    """
+                    output = run("lxc-ls")
+                    containers = set(output.split())
+                    pidlist = [(c, self.getPid(c)) for c in containers]
+                    return [(c,p) for c,p in pidlist if p is not None]
+
+                def killer(self):
+                    """Kill all running ephemeral containers."""
+                    pids = self.getRunningContainers()
+                    if len(pids) > 0:
+                        # We can do this the easy way...
+                        for name, pid in pids:
+                            run("/usr/bin/lxc-stop", "-n", name)
+                        time.sleep(2)
+                        pids = self.getRunningContainers()
+                        # ...or, the hard way.
+                        for name, pid in pids:
+                            run("kill", "-9", pid)
+
+                def run(self):
+                    self.killer()
+                    self.scrub(self.lp_test_dir_pattern, "ephemeralbind")
+                    self.scrub(self.lxc_lp_dir_pattern)
+
+
+            if __name__ == '__main__':
+                scrubber = Scrubber()
+                scrubber.run()
+            '''))
+    os.chmod(cleanup_script_file, 0555)
+
     # Add a file to sudoers.d that will let the buildbot user run the above.
     sudoers_file = '/etc/sudoers.d/launchpad-' + user
     with open(sudoers_file, 'w') as sudoers:
         sudoers.write('{} ALL = (ALL) NOPASSWD:'.format(user))
-        sudoers.write(' /usr/local/bin/launchpad-lxc-build,')
-        sudoers.write(' /usr/local/bin/launchpad-lxc-test\n')
+        sudoers.write(' {},'.format(build_script_file))
+        sudoers.write(' {},'.format(cleanup_script_file))
+        sudoers.write(' {}\n'.format(test_script_file))
         # The sudoers must have this mode or it will be ignored.
-        os.chmod(sudoers_file, 0440)
+    os.chmod(sudoers_file, 0440)
     # XXX 2012-03-13 frankban bug=944386:
     #     Disable hardlink restriction. This workaround needs
     #     to be removed once the kernel bug is resolved.
@@ -835,10 +999,11 @@ def create_lxc(user, lxcname, ssh_key_path):
     #     much a Good Thing.
     # Disable the apparmor profiles for lxc so that we don't have
     # problems installing postgres.
-    subprocess.call([
-        'ln', '-s',
-        '/etc/apparmor.d/usr.bin.lxc-start',
-        '/etc/apparmor.d/disable/'])
+    if not os.path.exists('/etc/apparmor.d/disable/usr.bin.lxc-start'):
+        subprocess.call([
+            'ln', '-s',
+            '/etc/apparmor.d/usr.bin.lxc-start',
+            '/etc/apparmor.d/disable/'])
     subprocess.call([
         'apparmor_parser', '-R', '/etc/apparmor.d/usr.bin.lxc-start'])
     # Update resolv file in order to get the ability to ssh into the LXC
@@ -942,6 +1107,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     file_append(lxc_hosts_file, '\n'.join(lines))
     # Make and install launchpad.
     root_sshcall('cd {} && make install'.format(checkout_dir))
+    # XXX benji 2012-03-19 bug=959352: this is so graphviz will work in an
+    # ephemeral container
+    root_sshcall('mkdir -p /rootfs/usr/lib')
+    root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
 
 
 def stop_lxc(lxcname, ssh_key_path):
@@ -965,11 +1134,11 @@ def stop_lxc(lxcname, ssh_key_path):
 
 def main(
     user, fullname, email, lpuser, private_key, public_key, actions,
-    lxc_name, ssh_key_path, dependencies_dir, directory):
+    lxc_name, ssh_key_path, use_urandom, dependencies_dir, directory):
     function_args_map = OrderedDict((
         ('initialize_host', (
             user, fullname, email, lpuser, private_key, public_key,
-            ssh_key_path, dependencies_dir, directory)),
+            ssh_key_path, use_urandom, dependencies_dir, directory)),
         ('create_scripts', (user, lxc_name, ssh_key_path)),
         ('create_lxc', (user, lxc_name, ssh_key_path)),
         ('initialize_lxc', (
@@ -999,6 +1168,7 @@ if __name__ == '__main__':
             args.actions,
             args.lxc_name,
             args.ssh_key_path,
+            args.use_urandom,
             args.dependencies_dir,
             args.directory,
             )

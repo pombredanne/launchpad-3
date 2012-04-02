@@ -121,9 +121,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
@@ -1258,7 +1256,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
-    @action('Propose Merge', name='register')
+    @action('Propose Merge', name='register',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def register_action(self, action, data):
         """Register the new branch merge proposal."""
 
@@ -1281,6 +1280,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.user, reviewer, branch_names)
         visible_branches = list(visibility_info['visible_branches'])
         if self.request.is_ajax and len(visible_branches) < 2:
+            self.request.response.setStatus(400, "Branch Visibility")
             self.request.response.setHeader(
                 'Content-Type', 'application/json')
             return simplejson.dumps({

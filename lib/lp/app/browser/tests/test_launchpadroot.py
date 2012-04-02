@@ -108,3 +108,23 @@ class TestLaunchpadRootNavigation(TestCaseWithFactory):
         self.assertEqual(
             'https://help.launchpad.net/Feedback',
             request.response.getHeader('location'))
+
+
+class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_has_logo_without_watermark(self):
+        root = getUtility(ILaunchpadRoot)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(root, 'index.html', principal=user)
+        # Replace the blog posts so the view does not make a network request.
+        view.getRecentBlogPosts = lambda: []
+        markup = BeautifulSoup(
+            view(), parseOnlyThese=SoupStrainer(id='document'))
+        self.assertIs(False, view.has_watermark)
+        self.assertIs(None, markup.find(True, id='watermark'))
+        logo = markup.find(True, id='launchpad-logo-and-name')
+        self.assertIsNot(None, logo)
+        self.assertEqual('/@@/launchpad-logo-and-name.png', logo['src'])

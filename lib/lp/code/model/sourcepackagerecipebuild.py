@@ -444,7 +444,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
             )
         return list(IStore(SourcePackageRecipeBuildJob).find(
             SourcePackageRecipeBuild,
-            [SourcePackageRecipeBuildJob.id.is_in([job.id for job in jobs]),
+            [SourcePackageRecipeBuildJob.job_id.is_in([j.id for j in jobs]),
              SourcePackageRecipeBuildJob.build_id ==
                  SourcePackageRecipeBuild.id]))
 

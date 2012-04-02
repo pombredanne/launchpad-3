@@ -80,6 +80,7 @@ from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.bzrutils import server
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
     branch_id_to_path,
@@ -93,7 +94,10 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
@@ -212,8 +216,13 @@ class BranchJob(SQLBase):
         SQLBase.destroySelf(self)
         self.job.destroySelf()
 
+    def makeDerived(self):
+        return BranchJobDerived.makeSubclass(self)
+
 
 class BranchJobDerived(BaseRunnableJob):
+
+    __metaclass__ = EnumeratedSubclass
 
     delegates(IBranchJob)
 
@@ -287,29 +296,26 @@ class BranchScanJob(BranchJobDerived):
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
-    server = None
 
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
-        branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
+        branch_job = BranchJob(branch, cls.class_job_type, {})
         return cls(branch_job)
 
     def run(self):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
-        bzrsync = BzrSync(self.branch, log)
-        bzrsync.syncBranchAndClose()
+        with server(get_ro_server(), no_replace=True):
+            bzrsync = BzrSync(self.branch, log)
+            bzrsync.syncBranchAndClose()
 
     @classmethod
     @contextlib.contextmanager
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_ro_server()
-        cls.server.start_server()
         yield
-        cls.server.stop_server()
 
 
 class BranchUpgradeJob(BranchJobDerived):
@@ -330,7 +336,7 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         branch.checkUpgrade()
         branch_job = BranchJob(
-            branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
+            branch, cls.class_job_type, {}, requester=requester)
         return cls(branch_job)
 
     @staticmethod
@@ -338,63 +344,63 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_rw_server()
-        server.start_server()
         yield
-        server.stop_server()
 
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
-        upgrade_branch_path = tempfile.mkdtemp()
-        try:
-            upgrade_transport = get_transport(upgrade_branch_path)
-            upgrade_transport.mkdir('.bzr')
-            source_branch_transport = get_transport(
-                self.branch.getInternalBzrUrl())
-            source_branch_transport.clone('.bzr').copy_tree_to_transport(
-                upgrade_transport.clone('.bzr'))
-            transaction.commit()
-            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
-
-            # No transactions are open so the DB connection won't be killed.
-            with TransactionFreeOperation():
-                # Perform the upgrade.
-                upgrade(upgrade_branch.base)
-
-            # Re-open the branch, since its format has changed.
-            upgrade_branch = BzrBranch.open_from_transport(
-                upgrade_transport)
-            source_branch = BzrBranch.open_from_transport(
-                source_branch_transport)
-
-            source_branch.lock_write()
-            upgrade_branch.pull(source_branch)
-            upgrade_branch.fetch(source_branch)
-            source_branch.unlock()
-
-            # Move the branch in the old format to backup.bzr
+        with server(get_rw_server(), no_replace=True):
+            upgrade_branch_path = tempfile.mkdtemp()
             try:
-                source_branch_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            source_branch_transport.rename('.bzr', 'backup.bzr')
-            source_branch_transport.mkdir('.bzr')
-            upgrade_transport.clone('.bzr').copy_tree_to_transport(
-                source_branch_transport.clone('.bzr'))
+                upgrade_transport = get_transport(upgrade_branch_path)
+                upgrade_transport.mkdir('.bzr')
+                source_branch_transport = get_transport(
+                    self.branch.getInternalBzrUrl())
+                source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                    upgrade_transport.clone('.bzr'))
+                transaction.commit()
+                upgrade_branch = BzrBranch.open_from_transport(
+                    upgrade_transport)
 
-            # Re-open the source branch again.
-            source_branch = BzrBranch.open_from_transport(
-                source_branch_transport)
+                # No transactions are open so the DB connection won't be
+                # killed.
+                with TransactionFreeOperation():
+                    # Perform the upgrade.
+                    upgrade(upgrade_branch.base)
 
-            formats = get_branch_formats(source_branch)
+                # Re-open the branch, since its format has changed.
+                upgrade_branch = BzrBranch.open_from_transport(
+                    upgrade_transport)
+                source_branch = BzrBranch.open_from_transport(
+                    source_branch_transport)
 
-            self.branch.branchChanged(
-                self.branch.stacked_on,
-                self.branch.last_scanned_id,
-                *formats)
-        finally:
-            shutil.rmtree(upgrade_branch_path)
+                source_branch.lock_write()
+                upgrade_branch.pull(source_branch)
+                upgrade_branch.fetch(source_branch)
+                source_branch.unlock()
+
+                # Move the branch in the old format to backup.bzr
+                try:
+                    source_branch_transport.delete_tree('backup.bzr')
+                except NoSuchFile:
+                    pass
+                source_branch_transport.rename('.bzr', 'backup.bzr')
+                source_branch_transport.mkdir('.bzr')
+                upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                    source_branch_transport.clone('.bzr'))
+
+                # Re-open the source branch again.
+                source_branch = BzrBranch.open_from_transport(
+                    source_branch_transport)
+
+                formats = get_branch_formats(source_branch)
+
+                self.branch.branchChanged(
+                    self.branch.stacked_on,
+                    self.branch.last_scanned_id,
+                    *formats)
+            finally:
+                shutil.rmtree(upgrade_branch_path)
 
 
 class RevisionMailJob(BranchJobDerived):
@@ -415,7 +421,7 @@ class RevisionMailJob(BranchJobDerived):
             'body': body,
             'subject': subject,
         }
-        branch_job = BranchJob(branch, BranchJobType.REVISION_MAIL, metadata)
+        branch_job = BranchJob(branch, cls.class_job_type, metadata)
         return cls(branch_job)
 
     @property

@@ -597,6 +597,21 @@
             interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
     </securedutility>
 
+    <!-- PillarPerson-->
+
+    <class
+        class="lp.registry.model.pillar.PillarPerson">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPerson"/>
+    </class>
+
+    <securedutility
+        component="lp.registry.model.pillar.PillarPerson"
+        provides="lp.registry.interfaces.pillar.IPillarPersonFactory">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPersonFactory"/>
+    </securedutility>
+
     <!-- SourcePackageName -->
 
     <class
@@ -1056,7 +1071,7 @@
     </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
         <allow

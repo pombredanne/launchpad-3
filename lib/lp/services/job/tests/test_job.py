@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 
 import pytz
+from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
 
 from lp.services.database.constants import UTC_NOW
@@ -18,7 +19,6 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import (
     InvalidTransition,
     Job,
-    LeaseHeld,
     )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (

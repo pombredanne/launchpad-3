@@ -30,10 +30,6 @@
 <script tal:condition="view/can_write"
         tal:content="structure string:
 LPJS.use('lp.app.picker', 'lp.client', function(Y) {
-    if (Y.UA.ie) {
-        return;
-    }
-
     var picker_config = ${view/json_config}
     picker_config.validate_callback = Y.lp.app.picker.public_private_warning;
     Y.on('load', function(e) {
