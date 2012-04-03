@@ -160,7 +160,7 @@ class LicenseNotification:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
 
 
-def person_details_modified(person, event):
+def person_alteration_security_notice(person, event):
     """Send a notification if important details on a person change."""
     if not event.edited_fields:
         return
@@ -176,13 +176,13 @@ def person_details_modified(person, event):
 
         # In theory we could have a list of changed fields, but in practice we
         # don't see that. Shortcutting to just grab the first changed field.
-        notification = PersonDetailsChangeNotification(
+        notification = PersonAlteractionSecurityNotification(
             changed_fields.pop(), user,
             override_noticeto=(user.displayname, prev_preferred_email))
         notification.send()
 
 
-class PersonDetailsChangeNotification(object):
+class PersonAlteractionSecurityNotification(object):
     """Schedule an email notification to the user about account changes"""
 
     def __init__(self, field, user, override_noticeto=None):

@@ -17,7 +17,7 @@ from lp.registry.interfaces.person import IPersonViewRestricted
 from lp.registry.interfaces.product import License
 from lp.registry.subscribers import (
     LicenseNotification,
-    person_details_modified,
+    person_alteration_security_notice,
     product_licenses_modified,
     )
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
@@ -279,7 +279,7 @@ class TestPersonDetailsModified(TestCaseWithFactory):
         pop_notifications()
         # After/before objects and list of edited fields.
         event = ObjectModifiedEvent(person, person, ['preferredemail'])
-        person_details_modified(person, event)
+        person_alteration_security_notice(person, event)
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
