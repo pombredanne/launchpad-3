@@ -176,13 +176,13 @@ def person_alteration_security_notice(person, event):
 
         # In theory we could have a list of changed fields, but in practice we
         # don't see that. Shortcutting to just grab the first changed field.
-        notification = PersonAlteractionSecurityNotification(
+        notification = PersonAlterationSecurityNotification(
             changed_fields.pop(), user,
             override_noticeto=(user.displayname, prev_preferred_email))
         notification.send()
 
 
-class PersonAlteractionSecurityNotification(object):
+class PersonAlterationSecurityNotification(object):
     """Schedule an email notification to the user about account changes"""
 
     def __init__(self, field, user, override_noticeto=None):

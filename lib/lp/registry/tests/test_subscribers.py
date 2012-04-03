@@ -268,11 +268,11 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(message, notification.getCommercialUseMessage())
 
 
-class TestPersonDetailsModified(TestCaseWithFactory):
+class TestPersonDataModifiedHandler(TestCaseWithFactory):
     """When some details of a person change, we need to notify the user."""
     layer = DatabaseFunctionalLayer
 
-    def test_event_generates_notification(self):
+    def test_handler_generates_notification(self):
         """Manually firing event should generate a proper notification."""
         person = self.factory.makePerson(email='test@pre.com')
         login_person(person)
@@ -284,8 +284,8 @@ class TestPersonDetailsModified(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
 
-    def test_preferred_email_modified(self):
-        """Modifying the preferred email should get the notification."""
+    def test_event_generates_notification(self):
+        """Triggering the event should generate a proper notification."""
         person = self.factory.makePerson(email='test@pre.com')
         login_person(person)
         pop_notifications()
@@ -298,7 +298,7 @@ class TestPersonDetailsModified(TestCaseWithFactory):
             'Preferred email address' in notifications[0].as_string())
 
 
-class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
+class TestPersonAlterationEvent(TestCaseWithFactory):
     """Test that the events are fired when the person is changed."""
 
     layer = DatabaseFunctionalLayer
