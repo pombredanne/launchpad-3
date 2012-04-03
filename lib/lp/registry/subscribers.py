@@ -33,7 +33,7 @@ from lp.services.webapp.publisher import (
     )
 
 
-PERSON_FIELDS_MONITORED = {
+PERSON_DATA_MONITORED = {
     'preferredemail': 'Preferred email address changed.',
     'newemail': 'Email address added.',
     'removedemail': 'Email address removed.',
@@ -167,7 +167,7 @@ def person_alteration_security_notice(person, event):
 
     # We want to keep tabs on which fields changed so we can attempt to have
     # an intelligent reply message on what just happened.
-    changed_fields = set(PERSON_FIELDS_MONITORED.keys()) &  set(event.edited_fields)
+    changed_fields = set(PERSON_DATA_MONITORED.keys()) &  set(event.edited_fields)
 
     if changed_fields:
         user = IPersonViewRestricted(event.user)
@@ -209,7 +209,7 @@ class PersonAlteractionSecurityNotification(object):
         tpl_substitutions = dict(
             user_displayname=self.user.displayname,
             user_name=self.user.name,
-            field_changed=PERSON_FIELDS_MONITORED[self.changed]
+            field_changed=PERSON_DATA_MONITORED[self.changed]
             )
         template = get_email_template(
             self.getTemplateName(), app='registry')
