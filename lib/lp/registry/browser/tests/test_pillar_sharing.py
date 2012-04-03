@@ -87,12 +87,11 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson(with_sharing=False)
             self._create_sharing(grantee=pillarperson.person, security=True)
-            expected = pillarperson.person.displayname
-            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
-                pillarperson.pillar.name, pillarperson.person.name)
-            browser = self.getUserBrowser(user=self.owner, url=url)
-            # The page still loads.
-            self.assertEqual(expected, browser.title)
+            view = create_initialized_view(pillarperson, '+index')
+            # The page loads
+            self.assertEqual(pillarperson.person.displayname, view.page_title)
+            # The bug, which is not shared with the owner, is not included. 
+            self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
         # The traversed url in the app is pillar/+sharingdetails/person
@@ -130,6 +129,7 @@ class PillarSharingDetailsMixin:
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
             self.assertEqual(pillarperson.person.displayname, view.page_title)
+            self.assertEqual(1, view.shared_bugs_count)
 
 
 class TestProductSharingDetailsView(

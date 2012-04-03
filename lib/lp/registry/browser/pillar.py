@@ -404,23 +404,25 @@ class PillarPersonSharingView(LaunchpadView):
         return list(safe_bugs)
 
     def _loadSharedArtifacts(self):
-        bugs = []
-        branches = []
+        # As a concrete can by linked via more than one policy, we use sets to
+        # filter out dupes.
+        bugs = set()
+        branches = set()
         for artifact in self.sharing_service.getSharedArtifacts(
                             self.pillar, self.person):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
-                bugs.append(concrete)
+                bugs.add(concrete)
             elif IBranch.providedBy(concrete):
-                branches.append(concrete)
+                branches.add(concrete)
 
         # For security reasons, the bugs have to be refetched by ID through
         # the normal querying mechanism. This prevents bugs the user shouldn't
         # be able to see from being displayed.
         self.bugs = self._getSafeBugs(bugs)
         self.branches = branches
-        self.shared_bugs_count = len(bugs)
-        self.shared_branches_count = len(branches)
+        self.shared_bugs_count = len(self.bugs)
+        self.shared_branches_count = len(self.branches)
 
     def _build_branch_template_data(self, branches):
         branch_data = []
