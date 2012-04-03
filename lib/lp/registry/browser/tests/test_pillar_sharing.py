@@ -54,24 +54,37 @@ class PillarSharingDetailsMixin:
         if person is None:
             person = self.factory.makePerson()
         if with_sharing:
+            self._create_sharing(person)
+
+        return PillarPerson(self.pillar, person)
+
+    def _create_sharing(self, grantee, security=False):
+            if security:
+                owner = self.factory.makePerson()
+            else:
+                owner = self.pillar.owner
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(
                     product=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
                     distribution=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
             artifact = self.factory.makeAccessArtifact(concrete=bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
             self.factory.makeAccessPolicyArtifact(
                 artifact=artifact, policy=policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact, grantee=person, grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
 
-        return PillarPerson(self.pillar, person)
+    #def test_view_filters_security_wisely(self):
+        ## There are bugs in the sharingdetails view that not everyone with
+        ## `launchpad.Driver` should be able to see.
+        #with FeatureFixture(DETAILS_ENABLED_FLAG):
+            #pillarperson = self.getPillarPerson()
 
     def test_view_traverses_plus_sharingdetails(self):
         # The traversed url in the app is pillar/+sharingdetails/person
