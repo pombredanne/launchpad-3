@@ -2967,6 +2967,11 @@ class Person(
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False, commercial=False):
         """See `IPerson`."""
+        # XXX: We pass through the Person on whom the PPA is being created,
+        # but validatePPA assumes that that Person is also the one creating
+        # the PPA.  This is not true in general, and particularly not for
+        # teams.  Instead, both the acting user and the target of the PPA
+        # creation ought to be passed through.
         errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
            raise PPACreationError(errors)

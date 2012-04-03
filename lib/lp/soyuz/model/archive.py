@@ -1977,7 +1977,7 @@ class Archive(SQLBase):
     def validatePPA(self, person, proposed_name, private=False,
                     commercial=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if private:
+        if private or commercial:
             # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
             # which says that one needs 'launchpad.Commercial' permission to
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
@@ -1986,17 +1986,18 @@ class Archive(SQLBase):
             commercial_admin = getUtility(
                 ILaunchpadCelebrities).commercial_admin
             admin = getUtility(ILaunchpadCelebrities).admin
-            if (not person.inTeam(commercial_admin)
-                and not person.inTeam(admin)):
-                return '%s is not allowed to make private PPAs' % person.name
-        if commercial:
-            # NOTE: This duplicates the code just above. Duh.
-            commercial_admin = getUtility(
-                ILaunchpadCelebrities).commercial_admin
-            admin = getUtility(ILaunchpadCelebrities).admin
-            if (not person.inTeam(commercial_admin)
-                and not person.inTeam(admin)):
-                return '%s is not allowed to make commercial PPAs' % person.name
+            has_the_power = (
+                person.inTeam(commercial_admin)
+                or person.inTeam(admin))
+            if not has_the_power:
+                if private:
+                    return (
+                        '%s is not allowed to make private PPAs' % person.name)
+                if commercial:
+                    return (
+                        '%s is not allowed to make commercial PPAs'
+                        % person.name)
+                
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
