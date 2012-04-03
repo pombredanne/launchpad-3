@@ -2167,15 +2167,17 @@ class TeamUpcomingWorkView(LaunchpadView):
     and are assigned to members of a team.
     """
 
-    # Defines the number of days in the future to look for milestones with work
-    # items and bugtasks.
-    DELTA = 60
+    # We'll show bugs and work items targeted to milestones with a due date up
+    # to DAYS from now.
+    DAYS = 180
 
     def initialize(self):
         super(TeamUpcomingWorkView, self).initialize()
         self.workitem_counts = {}
         self.bugtask_counts = {}
+        self.milestones_per_date = {}
         for date, containers in self.work_item_containers:
+            milestones = set()
             self.bugtask_counts[date] = 0
             self.workitem_counts[date] = 0
             for container in containers:
@@ -2183,8 +2185,11 @@ class TeamUpcomingWorkView(LaunchpadView):
                     self.bugtask_counts[date] += len(container.items)
                 else:
                     self.workitem_counts[date] += len(container.items)
-        # TODO: Store a dict with milestones per date, to show along the date
-        # headings on the page.
+                for item in container.items:
+                    if item.milestone not in milestones:
+                        milestones.add(item.milestone)
+            self.milestones_per_date[date] = sorted(
+                milestones, key=attrgetter('displayname'))
 
     @property
     def label(self):
@@ -2206,7 +2211,7 @@ class TeamUpcomingWorkView(LaunchpadView):
 
     @property
     def wanted_date(self):
-        return datetime.today() + timedelta(days=self.DELTA)
+        return datetime.today() + timedelta(days=self.DAYS)
 
 
 class WorkItemContainer:
@@ -2351,6 +2356,15 @@ class GenericWorkItem:
             return FormattersAPI(self.title).shorten(120)
         else:
             return format_link(self._bugtask)
+
+    @property
+    def milestone(self):
+        milestone = self.actual_workitem.milestone
+        if milestone is None:
+            assert self._work_item is not None, (
+                "BugTaks without a milestone must not be here.")
+            milestone = self._work_item.specification.milestone
+        return milestone
 
     @property
     def actual_workitem(self):

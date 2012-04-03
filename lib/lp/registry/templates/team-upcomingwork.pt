@@ -23,6 +23,8 @@
           })
         });
     </script>
+    <!-- TODO: Once this page is done and no longer guarded with a feature
+    flag, move this to the appropriate css files. -->
     <style type="text/css">
       .collapsible-body {
         background-color: #eee;
@@ -38,7 +40,14 @@
 
   <div tal:repeat="pair view/work_item_containers">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
-    <h2 tal:content="date/fmt:date" />
+    <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
+    <p>
+      From
+      <tal:milestones repeat="milestone python: view.milestones_per_date[date]">
+        <a tal:replace="structure milestone/fmt:link"
+          /><span tal:condition="not: repeat/milestone/end">,</span>
+      </tal:milestones>
+    </p>
 
     <p>
       There are <span tal:replace="python: view.workitem_counts[date]" />
@@ -60,7 +69,7 @@
       </thead>
       <tal:containers repeat="container containers">
       <tbody>
-        <tr class="expandable" style="font-size: 14px">
+        <tr class="expandable">
           <td>
             <a href="#" class="expander">&nbsp;</a>
             <span tal:replace="structure container/html_link" />
@@ -81,7 +90,7 @@
           <td><a tal:replace="structure workitem/assignee/fmt:link" /></td>
           <td>
             <span tal:condition="not: container/spec"
-              tal:replace="workitem/priority/title" />
+                  tal:replace="workitem/priority/title" />
           </td>
           <td><span tal:replace="workitem/status/title" /></td>
         </tr>
