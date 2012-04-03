@@ -13,7 +13,6 @@ __all__ = [
     'IRunnableJob',
     'ITwistedJobSource',
     'JobStatus',
-    'LeaseHeld',
     ]
 
 
@@ -36,13 +35,6 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
-
-
-class LeaseHeld(Exception):
-    """Raised when attempting to acquire a list that is already held."""
-
-    def __init__(self):
-        Exception.__init__(self, 'Lease is already held.')
 
 
 class JobStatus(DBEnumeratedType):
