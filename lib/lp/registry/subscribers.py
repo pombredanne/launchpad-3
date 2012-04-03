@@ -37,6 +37,8 @@ PERSON_FIELDS_MONITORED = {
     'preferredemail': 'Preferred email address changed.',
     'newemail': 'Email address added.',
     'removedemail': 'Email address removed.',
+    'newsshkey': 'SSH key added.',
+    'removedsshkey': 'SSH key removed.',
 }
 
 

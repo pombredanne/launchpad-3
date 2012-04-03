@@ -4521,6 +4521,14 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    def destroySelf(self):
+        """We trigger some events on removal."""
+        # For security reasons we want to notify the preferred email address
+        # that this sshkey has been removed.
+        notify(ObjectModifiedEvent(self.person, self.person,
+            ['removedsshkey'], user=self.person))
+        super(SSHKey, self).destroySelf()
+
 
 class SSHKeySet:
     implements(ISSHKeySet)
@@ -4547,6 +4555,11 @@ class SSHKeySet:
             keytype = SSHKeyType.DSA
         else:
             raise SSHKeyAdditionError
+
+        # We need to make sure we notify the user that the ssh key is added in
+        # case they didn't request this change.
+        notify(ObjectModifiedEvent(person, person,
+            ['newsshkey'], user=person))
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)

@@ -404,3 +404,50 @@ class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
             self.assertTrue('test@pre.com' in notifications[0].get('To'))
             self.assertTrue(
                 'Email address added' in notifications[0].as_string())
+
+    def test_new_ssh_key(self):
+        """We also want the notification when users add ssh keys."""
+        pop_notifications()
+        self.setup_event_listener()
+        person = self.factory.makePerson(email='test@pre.com')
+
+        with person_logged_in(person):
+            # The factory method generates a fresh ssh key through the
+            # SSHKeySet that we're bound into. The view uses the same ssh key
+            # set .new method so it's safe to just let the factory trigger our
+            # event for us.
+            self.factory.makeSSHKey(person)
+            self.assertEqual(1, len(self.events))
+            evt = self.events[0]
+            self.assertEqual(person, evt.object)
+            self.assertEqual(['newsshkey'], evt.edited_fields)
+
+            # The notice of this should be going to the preferred email user.
+            notifications = pop_notifications()
+            self.assertTrue('test@pre.com' in notifications[0].get('To'))
+            self.assertTrue(
+                'SSH key added' in notifications[0].as_string())
+
+    def test_remove_ssh_key(self):
+        """Notifications should fire when we remove an ssh key."""
+        pop_notifications()
+        self.setup_event_listener()
+        person = self.factory.makePerson(email='test@pre.com')
+
+        with person_logged_in(person):
+            sshkey = self.factory.makeSSHKey(person)
+            # Make sure to clear notifications/events before we remove the key.
+            pop_notifications()
+            self.events = []
+            sshkey.destroySelf()
+            self.assertEqual(1, len(self.events))
+            evt = self.events[0]
+            self.assertEqual(person, evt.object)
+            self.assertEqual(['removedsshkey'], evt.edited_fields)
+
+            # The notice of this should be going to the preferred email user.
+            notifications = pop_notifications()
+            self.assertTrue('test@pre.com' in notifications[0].get('To'))
+            self.assertTrue(
+                'SSH key removed' in notifications[0].as_string())
+
