@@ -90,7 +90,8 @@ class PillarSharingDetailsMixin:
             view = create_initialized_view(pillarperson, '+index')
             # The page loads
             self.assertEqual(pillarperson.person.displayname, view.page_title)
-            # The bug, which is not shared with the owner, is not included. 
+            # The bug, which is not shared with the owner, is not included.
+
             self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):

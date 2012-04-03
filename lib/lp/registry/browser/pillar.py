@@ -400,7 +400,7 @@ class PillarPersonSharingView(LaunchpadView):
                 param.setDistribution(self.pillar)
             params.append(param)
 
-        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:]) 
+        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:])
         return list(safe_bugs)
 
     def _loadSharedArtifacts(self):
