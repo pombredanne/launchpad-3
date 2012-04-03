@@ -203,16 +203,6 @@ subscribed.
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-We are moving away from allowing private bugs to affect multiple projects.
-This is required still for some teams until they update their tools and
-processes. So we need to use a feature flag to perform the next tests.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-    >>> privacy_flags = FeatureFixture(feature_flag)
-    >>> privacy_flags.setUp()
-
     >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
     >>> subscriber_names(bug)
     [u'name12', u'name16']

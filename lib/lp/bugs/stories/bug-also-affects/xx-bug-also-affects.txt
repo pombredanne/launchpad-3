@@ -226,8 +226,8 @@ We cannot allow private bugs to affect more than one pillar.
 
     >>> print get_feedback_messages(browser.contents)
     [u'There is 1 error.',
-     u'This private bug already affects Mozilla Firefox.
-       Private bugs cannot affect multiple projects.']
+     u'This proprietary bug already affects Mozilla Firefox.
+       Proprietary bugs cannot affect multiple projects.']
 
 
 Forwarding bugs upstream
