@@ -90,6 +90,7 @@ we will register a handler to observe the event.
 The event can be seen when we file a bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
 
     >>> steve_harris = factory.makePerson(name='steve-harris')
     >>> params = CreateBugParams(
@@ -477,7 +478,7 @@ When a private bug is filed:
 
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
-    ...     private=True)
+    ...     information_type=InformationType.USERDATA)
     >>> params.setBugTarget(product=firefox)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
@@ -507,7 +508,7 @@ sourcepackage. E.g.
     >>> evolution = spnset.get(9)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah",
-    ...     owner=foobar, private=True)
+    ...     owner=foobar, information_type=InformationType.USERDATA)
     >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
     >>> added_bug = getUtility(IBugSet).createBug(params)
     >>> private_bug = bugset.get(added_bug.id)
@@ -824,6 +825,7 @@ Changing bug visibility.
 
 We need a feature flag for this test since multi-pillar bugs shouldn't be
 private by default.
+
     >>> from lp.services.features.testing import FeatureFixture
     >>> feature_flag = {
     ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
@@ -850,6 +852,7 @@ Clean up the feature flag.
 
 Changing bug security.
 
+    >>> ign = firefox_bug.setPrivate(False, getUtility(ILaunchBag).user)
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
     >>> firefox_bug.security_related
