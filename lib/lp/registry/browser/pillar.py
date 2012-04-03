@@ -83,7 +83,7 @@ class PillarPersonBreadcrumb(Breadcrumb):
 
     @property
     def text(self):
-        return "%s" % self.context.person.displayname
+        return "Sharing details for %s" % self.context.person.displayname
 
 
 class PillarNavigationMixin:
