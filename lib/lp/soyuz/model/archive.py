@@ -1974,7 +1974,8 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name, private=False):
+    def validatePPA(self, person, proposed_name, private=False,
+                    commercial=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if private:
             # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
@@ -1982,10 +1983,20 @@ class Archive(SQLBase):
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
             # which determines who is granted launchpad.Commercial
             # permissions.
-            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            commercial_admin = getUtility(
+                ILaunchpadCelebrities).commercial_admin
             admin = getUtility(ILaunchpadCelebrities).admin
-            if not person.inTeam(commercial) and not person.inTeam(admin):
+            if (not person.inTeam(commercial_admin)
+                and not person.inTeam(admin)):
                 return '%s is not allowed to make private PPAs' % person.name
+        if commercial:
+            # NOTE: This duplicates the code just above. Duh.
+            commercial_admin = getUtility(
+                ILaunchpadCelebrities).commercial_admin
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if (not person.inTeam(commercial_admin)
+                and not person.inTeam(admin)):
+                return '%s is not allowed to make commercial PPAs' % person.name
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -2120,7 +2131,7 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True, private=False):
+            require_virtualized=True, private=False, commercial=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2196,6 +2207,8 @@ class ArchiveSet:
             new_archive.private = True
         else:
             new_archive.private = private
+
+        new_archive.commercial = commercial
 
         return new_archive
 

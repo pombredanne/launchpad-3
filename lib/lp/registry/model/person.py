@@ -2965,16 +2965,17 @@ class Person(
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def createPPA(self, name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, commercial=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name, private)
+        errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
-            raise PPACreationError(errors)
+           raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description, private=private)
+            description=description, private=private,
+            commercial=commercial)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

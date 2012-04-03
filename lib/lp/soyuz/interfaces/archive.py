@@ -1742,7 +1742,7 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False):
+            private=False, commercial=False):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
