@@ -1600,9 +1600,6 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
 
-    # XXX: Why is this protected with launchpad.View while the page
-    # is public (as defined in the zcml)?
-    @enabled_with_permission('launchpad.View')
     def upcomingwork(self):
         target = '+upcomingwork'
         text = 'Upcoming work for this team'
@@ -2186,8 +2183,7 @@ class TeamUpcomingWorkView(LaunchpadView):
                 else:
                     self.workitem_counts[date] += len(container.items)
                 for item in container.items:
-                    if item.milestone not in milestones:
-                        milestones.add(item.milestone)
+                    milestones.add(item.milestone)
             self.milestones_per_date[date] = sorted(
                 milestones, key=attrgetter('displayname'))
 
@@ -2199,50 +2195,59 @@ class TeamUpcomingWorkView(LaunchpadView):
     def page_title(self):
         return "Upcoming work for %s" % self.context.displayname
 
-    @property
-    def page_description(self):
-        return "Work for %s in the near future." % self.label
-
     @cachedproperty
     def work_item_containers(self):
-        result = getWorkItemsDueBefore(
-            self.context, self.wanted_date, self.user)
+        cutoff_date = datetime.today().date() + timedelta(days=self.DAYS)
+        result = getWorkItemsDueBefore(self.context, cutoff_date, self.user)
         return sorted(result.items(), key=itemgetter(0))
-
-    @property
-    def wanted_date(self):
-        return datetime.today() + timedelta(days=self.DAYS)
 
 
 class WorkItemContainer:
     """A container of work items, assigned to members of a team, whose
     milestone is due on a certain date.
-
-    This might represent a Specification with its SpecificationWorkItems or
-    just a collection of BugTasks.
-
-    In the case of SpecificationWorkItems, their milestones should have the
-    same due date but they should also come from the same Specification.
-
-    In the case of BugTasks, the only thing they will have in common is the
-    due date of their milestones.
-
-    It is the responsibility of callsites to group the BugTasks and
-    SpecificationWorkItems appropriately in as many WorkItemContainer objects
-    are necessary.
     """
 
-    def __init__(self, spec, label, target, assignee, priority):
-        self.spec = spec
-        self.label = label
-        self.target = target
-        self.assignee = assignee
-        self.priority = priority
+    def __init__(self):
         self._items = []
 
     @property
-    def display_label(self):
-        return self.label
+    def html_link(self):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    @property
+    def priority_title(self):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    @property
+    def target_link(self):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    @property
+    def assignee_link(self):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    @property
+    def items(self):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    @property
+    def progress_text(self):
+        done_items = [item for item in self._items if item.is_complete]
+        return '{0:.0f}%'.format(100.0 * len(done_items) / len(self._items))
+
+    def append(self, item):
+        self._items.append(item)
+
+
+class SpecWorkItemContainer(WorkItemContainer):
+    """A container of SpecificationWorkItems wrapped with GenericWorkItem."""
+
+    def __init__(self, spec):
+        super(SpecWorkItemContainer, self).__init__()
+        self.spec = spec
+        self.priority = spec.priority
+        self.target = spec.target
+        self.assignee = spec.assignee
 
     @property
     def html_link(self):
@@ -2264,33 +2269,22 @@ class WorkItemContainer:
 
     @property
     def items(self):
-        return sorted(self._items, key=self._sort_key)
-
-    def _sort_key(self, item):
-        # Sort the work items by status since they all have the same priority.
-        status_order = {SpecificationWorkItemStatus.DONE: 4,
-                        SpecificationWorkItemStatus.BLOCKED: 1,
-                        SpecificationWorkItemStatus.TODO: 3,
-                        SpecificationWorkItemStatus.INPROGRESS: 2
-                        }
-        if item.status not in status_order:
-            return 0
-        return status_order[item.status]
-
-    @property
-    def progress_text(self):
-        done_items = [w for w in self._items if w.is_done]
-        return '{0:.0f}'.format(100.0 * len(done_items) / len(self._items))
-
-    def append(self, item):
-        self._items.append(item)
+        # Sort the work items by status only because they all have the same
+        # priority.
+        def sort_key(item):
+            status_order = {
+                SpecificationWorkItemStatus.POSTPONED: 5,
+                SpecificationWorkItemStatus.DONE: 4,
+                SpecificationWorkItemStatus.INPROGRESS: 3,
+                SpecificationWorkItemStatus.TODO: 2,
+                SpecificationWorkItemStatus.BLOCKED: 1,
+                }
+            return status_order[item.status]
+        return sorted(self._items, key=sort_key)
 
 
 class AggregatedBugsContainer(WorkItemContainer):
-
-    def __init__(self):
-        super(AggregatedBugsContainer, self).__init__(
-            spec=None, label=None, target=None, assignee=None, priority=None)
+    """A container of BugTasks wrapped with GenericWorkItem."""
 
     @property
     def html_link(self):
@@ -2308,12 +2302,13 @@ class AggregatedBugsContainer(WorkItemContainer):
     def priority_title(self):
         return 'N/A'
 
-    def _sort_key(self, item):
-        # Sort the bugtask items by priority
-        # XXX: It looks to me as the values of BugTaskImportance are
-        # listed by importance, but no doc to confirm that it can be
-        # trusted.
-        return item.priority
+    @property
+    def items(self):
+        def sort_key(item):
+            return (item.status.value, item.priority.value)
+        # Sort by (status, priority) in reverse order because the biggest the
+        # status/priority the more interesting it is to us.
+        return sorted(self._items, key=sort_key, reverse=True)
 
 
 class GenericWorkItem:
@@ -2378,7 +2373,7 @@ class GenericWorkItem:
             return self._bugtask
 
     @property
-    def is_done(self):
+    def is_complete(self):
         return self.actual_workitem.is_complete
 
 
@@ -2389,14 +2384,13 @@ def getWorkItemsDueBefore(team, cutoff_date, user):
     (SpecificationWorkItems/BugTasks) assigned to any member of this
     team.
 
-    Only work items whose milestone have a due date before the given date
-    are included here.
+    Only work items whose milestone have a due date between today and the
+    given cut-off date are included in the results.
     """
     workitems = team.getAssignedSpecificationWorkItemsDueBefore(cutoff_date)
-    # Now we need to regroup our work items by specification and by date
-    # because that's how they'll end up being displayed. While we do this
-    # we store all the data we need into WorkItemContainer objects because
-    # that's what we want to return.
+    # For every specification that has work items in the list above, create
+    # one SpecWorkItemContainer holding the work items from that spec that are
+    # targeted to the same milestone and assigned to members of the given team.
     containers_by_date = {}
     containers_by_spec = {}
     for workitem in workitems:
@@ -2408,8 +2402,7 @@ def getWorkItemsDueBefore(team, cutoff_date, user):
             containers_by_date[milestone.dateexpected] = []
         container = containers_by_spec.get(spec)
         if container is None:
-            container = WorkItemContainer(
-                spec, spec.title, spec.target, spec.assignee, spec.priority)
+            container = SpecWorkItemContainer(spec)
             containers_by_spec[spec] = container
             containers_by_date[milestone.dateexpected].append(container)
         container.append(GenericWorkItem.from_workitem(workitem))
@@ -2421,7 +2414,9 @@ def getWorkItemsDueBefore(team, cutoff_date, user):
 
     bugtasks = team.getAssignedBugTasksDueBefore(cutoff_date, user)
     bug_containers_by_date = {}
-    # Group all bug tasks by their milestone.dateexpected.
+    # For every milestone due date, create an AggregatedBugsContainer with all
+    # the bugtasks targeted to a milestone on that date and assigned to
+    # members of this team.
     for task in bugtasks:
         dateexpected = task.milestone.dateexpected
         container = bug_containers_by_date.get(dateexpected)

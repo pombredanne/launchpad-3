@@ -38,7 +38,7 @@
 
 <div metal:fill-slot="main">
 
-  <div tal:repeat="pair view/work_item_containers">
+  <div tal:repeat="pair view/work_item_containers" class="workitems-group">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
     <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
     <p>
@@ -77,19 +77,19 @@
           <td tal:content="structure container/target_link" />
           <td tal:content="structure container/assignee_link" />
           <td tal:content="container/priority_title" />
-          <td><span tal:replace="container/progress_text" />% done</td>
+          <td><span tal:replace="container/progress_text" /> done</td>
         </tr>
       </tbody>
       <tbody class="collapsible-body">
         <tr tal:repeat="workitem container/items" class="padded">
           <td tal:content="structure workitem/display_title" />
           <td>
-            <span tal:condition="not: container/spec"
+            <span tal:condition="not: container/spec|nothing"
                   tal:replace="structure workitem/target/fmt:link" />
           </td>
           <td><a tal:replace="structure workitem/assignee/fmt:link" /></td>
           <td>
-            <span tal:condition="not: container/spec"
+            <span tal:condition="not: container/spec|nothing"
                   tal:replace="workitem/priority/title" />
           </td>
           <td><span tal:replace="workitem/status/title" /></td>

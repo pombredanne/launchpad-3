@@ -76,6 +76,7 @@ class ISpecificationWorkItem(Interface):
             "UI."))
 
     is_complete = Bool(
-        readonly=True, description=_(
-                "True or False depending on whether or not there is more "
-                "work required on this work item."))
+        readonly=True,
+        description=_(
+            "True or False depending on whether or not there is more "
+            "work required on this work item."))

@@ -62,5 +62,5 @@ class SpecificationWorkItem(StormBase):
 
     @property
     def is_complete(self):
-        """See ISpecificationWorkItem`."""
+        """See `ISpecificationWorkItem`."""
         return self.status == SpecificationWorkItemStatus.DONE
