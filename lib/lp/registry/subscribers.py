@@ -167,7 +167,8 @@ def person_alteration_security_notice(person, event):
 
     # We want to keep tabs on which fields changed so we can attempt to have
     # an intelligent reply message on what just happened.
-    changed_fields = set(PERSON_DATA_MONITORED.keys()) &  set(event.edited_fields)
+    changed_fields = set(PERSON_DATA_MONITORED.keys()) & set(
+        event.edited_fields)
 
     if changed_fields:
         user = IPersonViewRestricted(event.user)

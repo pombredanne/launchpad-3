@@ -273,7 +273,7 @@ class TestPersonDataModifiedHandler(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_handler_generates_notification(self):
-        """Manually firing event should generate a proper notification."""
+        """Manually firing event generates a proper notification."""
         person = self.factory.makePerson(email='test@pre.com')
         login_person(person)
         pop_notifications()
@@ -285,7 +285,7 @@ class TestPersonDataModifiedHandler(TestCaseWithFactory):
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
 
     def test_event_generates_notification(self):
-        """Triggering the event should generate a proper notification."""
+        """Triggering the event generates a proper notification."""
         person = self.factory.makePerson(email='test@pre.com')
         login_person(person)
         pop_notifications()
@@ -317,16 +317,13 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
         self.events.append(event)
 
     def test_change_preferredemail(self):
-        # The project_reviewed property is not reset, if the new licenses
-        # are identical to the current licenses.
+        """Event and notification are triggered by preferred email change."""
         pop_notifications()
         person = self.factory.makePerson(email='test@pre.com')
         new_email = self.factory.makeEmail('test@post.com', person)
         self.setup_event_listener()
         with person_logged_in(person):
             person.setPreferredEmail(new_email)
-            # Assert form within the context manager to get access to the
-            # email values.
             self.assertEqual('test@post.com', person.preferredemail.email)
             self.assertEqual(1, len(self.events))
 
@@ -337,19 +334,17 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
             self.assertEqual(['preferredemail'], evt.edited_fields)
 
     def test_no_event_on_no_change(self):
-        """If there's no change to the preferred email there's no event"""
+        """No event should be triggered if there's no change."""
         pop_notifications()
         person = self.factory.makePerson(email='test@pre.com')
         self.setup_event_listener()
         with person_logged_in(person):
             person.displayname = 'changed'
-            # Assert form within the context manager to get access to the
-            # email values.
             self.assertEqual('test@pre.com', person.preferredemail.email)
             self.assertEqual(0, len(self.events))
 
     def test_removed_email_address(self):
-        """When an email address is removed we should notify."""
+        """Event and notification are created when an email is removed."""
         pop_notifications()
         self.setup_event_listener()
         person = self.factory.makePerson(email='test@pre.com')
@@ -374,15 +369,7 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
                 'Email address removed' in notifications[0].as_string())
 
     def test_new_email_request(self):
-        """When an email address is added we should notify.
-
-        We want to send the notification when the new email address is
-        requested. This doesn't actually create an email address yet. It
-        builds a LoginToken that the user must ack before the email address is
-        added. The issue is security in alerting the owner of the account that
-        a new address is being requested, so we need to notify at the time of
-        request and not wait for the user to ack the new email address.
-        """
+        """Event and notification are created when a new email is added."""
         pop_notifications()
         self.setup_event_listener()
         person = self.factory.makePerson(email='test@pre.com')
@@ -407,7 +394,7 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
                 'Email address added' in notifications[0].as_string())
 
     def test_new_ssh_key(self):
-        """We also want the notification when users add ssh keys."""
+        """Event and notification are created when users add a ssh key."""
         pop_notifications()
         self.setup_event_listener()
         person = self.factory.makePerson(email='test@pre.com')
@@ -430,7 +417,7 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
                 'SSH key added' in notifications[0].as_string())
 
     def test_remove_ssh_key(self):
-        """Notifications should fire when we remove an ssh key."""
+        """Event and notification are created when a user removes a ssh key"""
         pop_notifications()
         self.setup_event_listener()
         person = self.factory.makePerson(email='test@pre.com')
@@ -451,4 +438,3 @@ class TestPersonAlterationEvent(TestCaseWithFactory):
             self.assertTrue('test@pre.com' in notifications[0].get('To'))
             self.assertTrue(
                 'SSH key removed' in notifications[0].as_string())
-

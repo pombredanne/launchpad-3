@@ -394,8 +394,10 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        # We want to alert the preferred email that this new address has been
-        # requested.
+        # We want to send the notification when the new email address is
+        # requested. We don't have an email address yet, just this LoginToken,
+        # but we want the owner to get the notification before it's approved
+        # in case this is malicious and the user did not request it.
         if tokentype == LoginTokenType.VALIDATEEMAIL:
             notify(ObjectModifiedEvent(requester, requester,
                 ['newemail'], user=requester))
