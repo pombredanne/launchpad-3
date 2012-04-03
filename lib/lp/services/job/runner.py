@@ -9,6 +9,7 @@ __all__ = [
     'BaseJobRunner',
     'BaseRunnableJob',
     'BaseRunnableJobSource',
+    'celery_enabled',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -62,6 +63,7 @@ from lp.services.config import (
     config,
     dbconfig,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
@@ -100,6 +102,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     user_error_types = ()
 
     retry_error_types = ()
+
+    celery_responses = None
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -585,3 +589,14 @@ class TimeoutError(Exception):
 
     def __init__(self):
         Exception.__init__(self, "Job ran too long.")
+
+
+def celery_enabled(class_name):
+    """Determine whether a given class is configured to run via Celery.
+
+    The name of a BaseRunnableJob must be specified.
+    """
+    flag = getFeatureFlag('jobs.celery.enabled_classses')
+    if flag is None:
+        return False
+    return class_name in flag.split(' ')
