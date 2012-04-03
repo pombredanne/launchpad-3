@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import get_current_web_service_request
 import simplejson
 from testtools.matchers import (
     LessThan,
@@ -17,6 +18,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
 from lp.registry.enums import InformationType
@@ -41,6 +43,9 @@ from lp.testing.views import (
 
 
 DETAILS_ENABLED_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
+DETAILS_WRITE_FLAG = {
+    'disclosure.enhanced_sharing_details.enabled': 'true',
+    'disclosure.enhanced_sharing.writable': 'true'}
 ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
@@ -55,21 +60,34 @@ class PillarSharingDetailsMixin:
             person = self.factory.makePerson()
         if with_sharing:
             if self.pillar_type == 'product':
-                bug = self.factory.makeBug(
+                self.bug = self.factory.makeBug(
+                    product=self.pillar,
+                    owner=self.pillar.owner,
+                    private=True)
+                self.branch = self.factory.makeBranch(
                     product=self.pillar,
                     owner=self.pillar.owner,
                     private=True)
             elif self.pillar_type == 'distribution':
-                bug = self.factory.makeBug(
+                self.branch = None
+                self.bug = self.factory.makeBug(
                     distribution=self.pillar,
                     owner=self.pillar.owner,
                     private=True)
-            artifact = self.factory.makeAccessArtifact(concrete=bug)
+            artifact = self.factory.makeAccessArtifact(concrete=self.bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
             self.factory.makeAccessPolicyArtifact(
                 artifact=artifact, policy=policy)
             self.factory.makeAccessArtifactGrant(
                 artifact=artifact, grantee=person, grantor=self.pillar.owner)
+            if self.branch:
+                artifact = self.factory.makeAccessArtifact(
+                    concrete=self.branch)
+                self.factory.makeAccessPolicyArtifact(
+                    artifact=artifact, policy=policy)
+                self.factory.makeAccessArtifactGrant(
+                    artifact=artifact, grantee=person,
+                    grantor=self.pillar.owner)
 
         return PillarPerson(self.pillar, person)
 
@@ -109,6 +127,54 @@ class PillarSharingDetailsMixin:
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
             self.assertEqual(pillarperson.person.displayname, view.page_title)
+
+    def test_view_data_model(self):
+        # Test that the json request cache contains the view data model.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            pillarperson = self.getPillarPerson()
+            view = create_initialized_view(pillarperson, '+index')
+            cache = IJSONRequestCache(view.request)
+            request = get_current_web_service_request()
+            self.assertEqual({
+                'self_link': absoluteURL(pillarperson.person, request),
+                'displayname': pillarperson.person.displayname
+            }, cache.objects.get('sharee'))
+            self.assertEqual({
+                'self_link': absoluteURL(pillarperson.pillar, request),
+            }, cache.objects.get('pillar'))
+            bugtask = self.bug.default_bugtask
+            self.assertEqual({
+                'bug_id': self.bug.id,
+                'bug_summary': self.bug.title,
+                'bug_importance': bugtask.importance.title.lower(),
+                'web_link': canonical_url(
+                    bugtask, path_only_if_possible=True),
+                'self_link': absoluteURL(bugtask, request),
+            }, cache.objects.get('bugs')[0])
+            if self.pillar_type == 'product':
+                self.assertEqual({
+                    'branch_id': self.branch.id,
+                    'branch_name': self.branch.unique_name,
+                    'web_link': canonical_url(
+                        self.branch, path_only_if_possible=True),
+                    'self_link': absoluteURL(self.branch, request),
+                }, cache.objects.get('branches')[0])
+
+    def test_view_write_enabled_without_feature_flag(self):
+        # Test that sharing_write_enabled is not set without the feature flag.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            pillarperson = self.getPillarPerson()
+            view = create_initialized_view(pillarperson, '+index')
+            cache = IJSONRequestCache(view.request)
+            self.assertFalse(cache.objects.get('sharing_write_enabled'))
+
+    def test_view_write_enabled_with_feature_flag(self):
+        # Test that sharing_write_enabled is set when required.
+        with FeatureFixture(DETAILS_WRITE_FLAG):
+            pillarperson = self.getPillarPerson()
+            view = create_initialized_view(pillarperson, '+index')
+            cache = IJSONRequestCache(view.request)
+            self.assertTrue(cache.objects.get('sharing_write_enabled'))
 
 
 class TestProductSharingDetailsView(
