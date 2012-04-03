@@ -240,6 +240,14 @@ class TestLoginHelpers(TestCaseWithFactory):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(team))
 
+    def test_team_logged_in_provides_person(self):
+        # person_logged_in makes the logged-in person available through
+        # the context manager.
+        team = self.factory.makeTeam()
+        with person_logged_in(team) as p:
+            person = self.getLoggedInPerson()
+        self.assertEqual(p, person)
+
     def test_celebrity_logged_in(self):
         # celebrity_logged_in runs in a context where a celebrity is logged
         # in.
@@ -247,6 +255,12 @@ class TestLoginHelpers(TestCaseWithFactory):
         with celebrity_logged_in('vcs_imports'):
             person = self.getLoggedInPerson()
         self.assertTrue(person.inTeam(vcs_imports))
+
+    def test_celebrity_logged_in_provides_person(self):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        with celebrity_logged_in('vcs_imports') as p:
+            person = self.getLoggedInPerson()
+        self.assertEqual(p, person)
 
     def test_celebrity_logged_in_restores_person(self):
         # Once outside of the celebrity_logged_in context, the originally
