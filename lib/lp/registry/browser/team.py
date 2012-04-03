@@ -2368,7 +2368,7 @@ class GenericWorkItem:
         return self.actual_workitem.is_complete
 
 
-def getWorkItemsDueBefore(team, date, user):
+def getWorkItemsDueBefore(team, cutoff_date, user):
     """Return a dict mapping dates to lists of WorkItemContainers.
 
     This is a grouping, by milestone due date, of all work items
@@ -2378,7 +2378,7 @@ def getWorkItemsDueBefore(team, date, user):
     Only work items whose milestone have a due date before the given date
     are included here.
     """
-    workitems = team.getAssignedSpecificationWorkItemsDueBefore(date)
+    workitems = team.getAssignedSpecificationWorkItemsDueBefore(cutoff_date)
     # Now we need to regroup our work items by specification and by date
     # because that's how they'll end up being displayed. While we do this
     # we store all the data we need into WorkItemContainer objects because
@@ -2405,7 +2405,7 @@ def getWorkItemsDueBefore(team, date, user):
         containers_by_date[date].sort(
             key=attrgetter('priority'), reverse=True)
 
-    bugtasks = team.getAssignedBugTasksDueBefore(date, user)
+    bugtasks = team.getAssignedBugTasksDueBefore(cutoff_date, user)
     bug_containers_by_date = {}
     # Group all bug tasks by their milestone.dateexpected.
     for task in bugtasks:
