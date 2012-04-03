@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    celebrity_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -14,7 +17,13 @@ class TestCreatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_create_ppa(self):
+    def test_default_name(self):
         person = self.factory.makePerson()
         ppa = person.createPPA()
         self.assertEqual(ppa.name, 'ppa')
+
+    def test_private(self):
+        with celebrity_logged_in('commercial_admin') as person:
+            ppa = person.createPPA(private=True)
+            self.assertEqual(True, ppa.private)
+
