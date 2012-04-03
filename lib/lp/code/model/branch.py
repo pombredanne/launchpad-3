@@ -1032,8 +1032,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             return getUtility(IBranchLookup).getByUniqueName(location)
 
     def branchChanged(self, stacked_on_url, last_revision_id,
-                      control_format, branch_format, repository_format,
-                      celery_scan=True):
+                      control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
@@ -1059,8 +1058,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             job = BranchScanJob.create(self)
-            if celery_scan:
-                job.celeryRunOnCommit()
+            job.celeryRunOnCommit()
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
