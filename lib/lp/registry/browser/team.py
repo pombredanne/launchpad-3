@@ -2164,7 +2164,7 @@ class TeamMugshotView(LaunchpadView):
 
 class TeamUpcomingWorkView(LaunchpadView):
     """This view displays work items and bugtasks that are due within 60 days
-    and are assigned to a team.
+    and are assigned to members of a team.
     """
 
     # Defines the number of days in the future to look for milestones with work
@@ -2183,6 +2183,8 @@ class TeamUpcomingWorkView(LaunchpadView):
                     self.bugtask_counts[date] += len(container.items)
                 else:
                     self.workitem_counts[date] += len(container.items)
+        # TODO: Store a dict with milestones per date, to show along the date
+        # headings on the page.
 
     @property
     def label(self):
@@ -2225,22 +2227,13 @@ class WorkItemContainer:
     are necessary.
     """
 
-    def __init__(self, spec, label, target, assignee, priority,
-                 is_future=False, is_foreign=False):
+    def __init__(self, spec, label, target, assignee, priority):
         self.spec = spec
         self.label = label
         self.target = target
         self.assignee = assignee
         self.priority = priority
         self._items = []
-
-        # Is this container targeted to a milestone that is farther into the
-        # future than the milestone to which .items are targeted to?
-        self.is_future = is_future
-
-        # Is this container assigned to a person which is not a member of the
-        # team we're dealing with here?
-        self.is_foreign = is_foreign
 
     @property
     def display_label(self):
@@ -2266,9 +2259,9 @@ class WorkItemContainer:
 
     @property
     def items(self):
-        return sorted(self._items, key=self.item_key)
+        return sorted(self._items, key=self._sort_key)
 
-    def item_key(self, item):
+    def _sort_key(self, item):
         # Sort the work items by status since they all have the same priority.
         status_order = {SpecificationWorkItemStatus.DONE: 4,
                         SpecificationWorkItemStatus.BLOCKED: 1,
@@ -2280,13 +2273,9 @@ class WorkItemContainer:
         return status_order[item.status]
 
     @property
-    def percent_done(self):
-        done_items = [w for w in self._items if w.is_done]
-        return 100.0 * len(done_items)/len(self._items)
-
-    @property
     def progress_text(self):
-        return '{0:.0f}'.format(self.percent_done)
+        done_items = [w for w in self._items if w.is_done]
+        return '{0:.0f}'.format(100.0 * len(done_items) / len(self._items))
 
     def append(self, item):
         self._items.append(item)
@@ -2314,7 +2303,7 @@ class AggregatedBugsContainer(WorkItemContainer):
     def priority_title(self):
         return 'N/A'
 
-    def item_key(self, item):
+    def _sort_key(self, item):
         # Sort the bugtask items by priority
         # XXX: It looks to me as the values of BugTaskImportance are
         # listed by importance, but no doc to confirm that it can be
@@ -2323,9 +2312,11 @@ class AggregatedBugsContainer(WorkItemContainer):
 
 
 class GenericWorkItem:
-    """A generic piece of work.
+    """A generic piece of work; either a BugTask or a SpecificationWorkItem.
 
-    This can be either a BugTask or a SpecificationWorkItem.
+    This class wraps a BugTask or a SpecificationWorkItem to provide a
+    common API so that the template doesn't have to worry about what kind of
+    work item it's dealing with.
     """
 
     def __init__(self, assignee, status, priority, target, title,
@@ -2335,7 +2326,6 @@ class GenericWorkItem:
         self.priority = priority
         self.target = target
         self.title = title
-
         self._bugtask = bugtask
         self._work_item = work_item
 
@@ -2364,6 +2354,10 @@ class GenericWorkItem:
 
     @property
     def actual_workitem(self):
+        """Return the actual work item that we are wrapping.
+
+        This may be either an IBugTask or an ISpecificationWorkItem.
+        """
         if self._work_item is not None:
             return self._work_item
         else:
@@ -2400,15 +2394,8 @@ def getWorkItemsDueBefore(team, date, user):
             containers_by_date[milestone.dateexpected] = []
         container = containers_by_spec.get(spec)
         if container is None:
-            is_future = False
-            if spec.milestoneID != milestone.id:
-                is_future = True
-            is_foreign = False
-            if spec.assigneeID not in team.participant_ids:
-                is_foreign = True
             container = WorkItemContainer(
-                spec, spec.title, spec.target, spec.assignee, spec.priority,
-                is_future=is_future, is_foreign=is_foreign)
+                spec, spec.title, spec.target, spec.assignee, spec.priority)
             containers_by_spec[spec] = container
             containers_by_date[milestone.dateexpected].append(container)
         container.append(GenericWorkItem.from_workitem(workitem))

@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.browser.team import (
     getWorkItemsDueBefore,
-    TeamFutureWorkView,
+    TeamUpcomingWorkView,
     WorkItemContainer,
     )
 
@@ -57,14 +57,11 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         [workitem_container, bugtask_container] = containers
 
         self.assertEqual(1, len(bugtask_container.items))
-        self.assertEqual(bugtask.title, bugtask_container.items[0].title)
-        self.assertFalse(bugtask_container.is_foreign)
-        self.assertFalse(bugtask_container.is_future)
+        self.assertEqual(bugtask, bugtask_container.items[0].actual_workitem)
 
         self.assertEqual(1, len(workitem_container.items))
-        self.assertEqual(workitem.title, workitem_container.items[0].title)
-        self.assertFalse(workitem_container.is_foreign)
-        self.assertFalse(workitem_container.is_future)
+        self.assertEqual(
+            workitem, workitem_container.items[0].actual_workitem)
 
     def test_foreign_container(self):
         # This spec is targeted to a person who's not a member of our team, so
@@ -89,8 +86,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(1, len(containers))
         [container] = containers
         self.assertEqual(1, len(container.items))
-        self.assertEqual(workitem.title, container.items[0].title)
-        self.assertTrue(container.is_foreign)
+        self.assertEqual(workitem, container.items[0].actual_workitem)
 
     def test_future_container(self):
         spec = self.factory.makeSpecification(
@@ -114,8 +110,8 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(1, len(containers))
         [container] = containers
         self.assertEqual(1, len(container.items))
-        self.assertEqual(current_wi.title, container.items[0].title)
-        self.assertTrue(container.is_future)
+        self.assertEqual(current_wi, container.items[0].actual_workitem)
+
 
 class TestWorkItemContainer(TestCase):
 
@@ -128,31 +124,21 @@ class TestWorkItemContainer(TestCase):
         def is_done(self):
             return self._is_done
 
-    def test_progress_bar(self):
-        container = WorkItemContainer(None, None, None, None, None)
-        container.append(self.MockWorkItem(True))
-        container.append(self.MockWorkItem(False))
-        container.append(self.MockWorkItem(True))
-        container.append(self.MockWorkItem(True))
-        self.assertIn('width:75.0%', container.progress_bar)
-
     def test_percent_done(self):
         container = WorkItemContainer(None, None, None, None, None)
         container.append(self.MockWorkItem(True))
         container.append(self.MockWorkItem(False))
         container.append(self.MockWorkItem(True))
-        self.assertEqual(container.percent_done, 100.0*2/3)
-        container.append(self.MockWorkItem(True))
-        self.assertEqual(container.percent_done, 100.0*3/4)
-        container.append(self.MockWorkItem(False))
-        self.assertEqual(container.percent_done, 100.0*3/5)
+        self.assertEqual(
+            '{0:.0f}'.format(100.0 * 2 / 3), container.progress_text)
 
-class TestTeamFutureWorkView(TestCaseWithFactory):
+
+class TestTeamUpcomingWorkView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestTeamFutureWorkView, self).setUp()
+        super(TestTeamUpcomingWorkView, self).setUp()
         self.today = datetime.today().date()
         current_milestone = self.factory.makeMilestone(
             dateexpected=self.today)
@@ -160,12 +146,12 @@ class TestTeamFutureWorkView(TestCaseWithFactory):
         self.team = self.factory.makeTeam()
 
     def test_wanted_date(self):
-        view = TeamFutureWorkView(None, None)
+        view = TeamUpcomingWorkView(None, None)
         delta = view.wanted_date - datetime.today()
         # The delta will be DELTA days minus a few milliseconds.
         self.assertEqual(delta.days, view.DELTA - 1)
 
-    def test_completion(self):
+    def test_workitem_counts(self):
         spec = self.factory.makeSpecification(
             product=self.current_milestone.product,
             assignee=self.team.teamowner, milestone=self.current_milestone)
@@ -175,10 +161,9 @@ class TestTeamFutureWorkView(TestCaseWithFactory):
             milestone=self.current_milestone).bugtasks[0]
         removeSecurityProxy(bugtask).assignee = self.team.teamowner
 
-        view = TeamFutureWorkView(self.team, None)
-        n_blueprints, n_workitems, n_done = view.overall_completion()
-        # The bugtask container is also a "blueprint" in this sense.
-        self.assertEqual(n_blueprints, 2)
-        # The bugtask is a work item.
-        self.assertEqual(n_workitems, 2)
-        self.assertEqual(n_done, 0)
+        view = TeamUpcomingWorkView(self.team, None)
+        # TODO:
+
+    def test_bugtask_counts(self):
+        # TODO:
+        pass
