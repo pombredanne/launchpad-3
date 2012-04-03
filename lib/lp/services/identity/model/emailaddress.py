@@ -90,8 +90,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             subscription.destroySelf()
 
         # We need to notify the preferred email address that this address has
-        # been removed. We tell the owner/Person of the email that it's been
-        # modified.
+        # been removed.
         notify(ObjectModifiedEvent(self.person, self.person,
             ['removedemail'], user=self.person))
 
