@@ -82,7 +82,8 @@ class PillarSharingDetailsMixin:
 
     def test_view_filters_security_wisely(self):
         # There are bugs in the sharingdetails view that not everyone with
-        # `launchpad.Driver` should be able to see.
+        # `launchpad.Driver` -- the permission level for the page -- should be
+        # able to see.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson(with_sharing=False)
             self._create_sharing(grantee=pillarperson.person, security=True)
@@ -90,6 +91,7 @@ class PillarSharingDetailsMixin:
             url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
+            # The page still loads.
             self.assertEqual(expected, browser.title)
 
     def test_view_traverses_plus_sharingdetails(self):

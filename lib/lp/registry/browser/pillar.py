@@ -381,6 +381,28 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
 
+    def _getSafeBugs(self, bugs):
+        """Uses the bugsearch tools to safely get the list of bugs the user is
+        allowed to see."""
+        from lp.registry.interfaces.product import IProduct
+        from lp.registry.interfaces.distribution import IDistribution
+        from lp.bugs.interfaces.bugtask import (
+            BugTaskSearchParams,
+            IBugTaskSet,
+            )
+        from zope.component import getUtility
+        params = []
+        for b in bugs:
+            param = BugTaskSearchParams(user=self.user, bug=b)
+            if IProduct.providedBy(self.pillar):
+                param.setProduct(self.pillar)
+            elif IDistribution.providedBy(self.pillar):
+                param.setDistribution(self.pillar)
+            params.append(param)
+
+        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:]) 
+        return list(safe_bugs)
+
     def _loadSharedArtifacts(self):
         bugs = []
         branches = []
@@ -395,8 +417,7 @@ class PillarPersonSharingView(LaunchpadView):
         # For security reasons, the bugs have to be refetched by ID through
         # the normal querying mechanism. This prevents bugs the user shouldn't
         # be able to see from being displayed.
-
-        self.bugs = bugs
+        self.bugs = self._getSafeBugs(bugs)
         self.branches = branches
         self.shared_bugs_count = len(bugs)
         self.shared_branches_count = len(branches)
@@ -413,16 +434,8 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_bug_template_data(self, bugs):
         bug_data = []
         for bug in bugs:
-            [bugtask] = [task for task in bug.bugtasks if
-                            task.target == self.pillar]
-            if bugtask is not None:
-                url = canonical_url(bugtask, path_only_if_possible=True)
-                importance = bugtask.importance.title.lower()
-            else:
-                # This shouldn't ever happen, but if it does there's no reason
-                # to crash.
-                url = canonical_url(bug, path_only_if_possible=True)
-                importance = bug.default_bugtask.importance.title.lower()
+            url = canonical_url(bug, path_only_if_possible=True)
+            importance = bug.importance.title.lower()
 
             bug_data.append(dict(
                 bug_link=url,
