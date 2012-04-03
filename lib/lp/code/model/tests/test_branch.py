@@ -352,7 +352,7 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         from celery.exceptions import TimeoutError
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classses': 'ReclaimBranchSpaceJob'}))
-        with celeryd('branch_write') as proc:
+        with celeryd('branch_write'):
             self.useBzrBranches()
             db_branch, tree = self.create_branch_and_tree()
             branch_path = get_real_branch_path(db_branch.id)
