@@ -111,6 +111,9 @@ stagingsetup:
 	    LAG="0 seconds"
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging_new
+	# Drop the plpgsql language if it was installed, as it will be
+	# recreated with the dump from PostgreSQL 8.4
+	-droplang plpgsql lpmain_staging_new
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
@@ -162,6 +165,8 @@ stagingswitch:
 dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
+	# May be needed with PG 9.1 if the dump is from PG 8.4.
+	-droplang plpgsql ${DOGFOOD_DBNAME}
 	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
