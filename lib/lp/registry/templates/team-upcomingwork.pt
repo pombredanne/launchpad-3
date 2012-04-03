@@ -14,7 +14,8 @@
           Y.on('domready', function() {
             Y.all('[class=expandable]').each(function(e) {
               var expander_icon = e.one('[class=expander]');
-              var widget_body = e.one('[class=listing]');
+              // Our parent's first sibling is the tbody we want to collapse.
+              var widget_body = e.ancestor().next();
               var expander = new Y.lp.app.widgets.expander.Expander(
                   expander_icon, widget_body);
               expander.setUp(true);
@@ -22,6 +23,14 @@
           })
         });
     </script>
+    <style type="text/css">
+      .collapsible-body {
+        background-color: #eee;
+      }
+      tr.padded td {
+        padding-left: 2em;
+      }
+    </style>
   </tal:block>
 </head>
 
@@ -39,69 +48,46 @@
       of this team.
     </p>
 
-    <ul>
-      <li tal:repeat="container containers"
-          style="margin-left: 1em; max-width: 90%" >
-        <tal:bp_workitems condition="container/spec">
-          <div class="expandable">
-            <div style="margin-bottom: 0.5em; ">
-              <a href="#" class="expander">&nbsp;</a>
-              <strong>
-                <a tal:replace="structure container/spec/fmt:link" />,
-              </strong>
-              <span class="lesser">
-                from <a tal:replace="structure container/target/fmt:link" />,
-                assigned to <span tal:replace="structure container/assignee_link" />.
-              </span>
-            </div>
-            <table class="listing" style="margin-left: 3em">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Assignee</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="item container/items">
-                  <td tal:content="item/title/fmt:shorten/120" />
-                  <td tal:content="structure item/assignee/fmt:link" />
-                  <td tal:content="item/status/title" />
-                </tr>
-              </tbody>
-            </table>
-          <div>
-        </tal:bp_workitems>
-
-        <tal:bugtasks condition="not: container/spec">
-          <div class="expandable">
-            <p>
-              <a href="#" class="expander">&nbsp;</a>
-              <span class="sprite bug-undecided" />
-              <strong>Bugs targeted to a milestone on this date.</strong>
-            </p>
-            <table class="listing" width="70%" style="margin-left: 3em">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Target</th>
-                  <th>Assignee</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="item container/items">
-                  <td tal:content="structure item/_bugtask/fmt:link" />
-                  <td tal:content="structure item/target/fmt:link" />
-                  <td tal:content="structure item/assignee/fmt:link" />
-                  <td tal:content="item/status/title" />
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </tal:bugtasks>
-      </li>
-    </ul>
+    <table class="listing">
+      <thead>
+      <tr>
+        <th>Blueprint</th>
+        <th>Target</th>
+        <th>Assignee</th>
+        <th>Priority</th>
+        <th>Progress</th>
+      </tr>
+      </thead>
+      <tal:containers repeat="container containers">
+      <tbody>
+        <tr class="expandable" style="font-size: 14px">
+          <td>
+            <a href="#" class="expander">&nbsp;</a>
+            <span tal:replace="structure container/html_link" />
+          </td>
+          <td tal:content="structure container/target_link" />
+          <td tal:content="structure container/assignee_link" />
+          <td tal:content="container/priority_title" />
+          <td><span tal:replace="container/progress_text" />% done</td>
+        </tr>
+      </tbody>
+      <tbody class="collapsible-body">
+        <tr tal:repeat="workitem container/items" class="padded">
+          <td tal:content="structure workitem/display_title" />
+          <td>
+            <span tal:condition="not: container/spec"
+                  tal:replace="structure workitem/target/fmt:link" />
+          </td>
+          <td><a tal:replace="structure workitem/assignee/fmt:link" /></td>
+          <td>
+            <span tal:condition="not: container/spec"
+              tal:replace="workitem/priority/title" />
+          </td>
+          <td><span tal:replace="workitem/status/title" /></td>
+        </tr>
+      </tbody>
+      </tal:containers>
+    </table>
   </div>
   </div>
 </div>

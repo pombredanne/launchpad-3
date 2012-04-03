@@ -1086,16 +1086,10 @@
             class="lp.registry.browser.team.TeamMugshotView"/>
       <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamFutureWorkView"
+            class="lp.registry.browser.team.TeamUpcomingWorkView"
             permission="zope.Public"
             name="+upcomingwork"
             template="../templates/team-upcomingwork.pt"/>
-      <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamFutureWorkView"
-            permission="zope.Public"
-            name="+upcomingwork2"
-            template="../templates/team-upcomingwork2.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"

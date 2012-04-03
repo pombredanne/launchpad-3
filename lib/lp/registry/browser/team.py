@@ -28,6 +28,7 @@ __all__ = [
     'TeamOverviewNavigationMenu',
     'TeamPrivacyAdapter',
     'TeamReassignmentView',
+    'TeamUpcomingWorkView',
     ]
 
 
@@ -2161,7 +2162,7 @@ class TeamMugshotView(LaunchpadView):
         return batch_nav
 
 
-class TeamFutureWorkView(LaunchpadView):
+class TeamUpcomingWorkView(LaunchpadView):
     """This view displays work items and bugtasks that are due within 60 days
     and are assigned to a team.
     """
@@ -2171,7 +2172,7 @@ class TeamFutureWorkView(LaunchpadView):
     DELTA = 60
 
     def initialize(self):
-        super(TeamFutureWorkView, self).initialize()
+        super(TeamUpcomingWorkView, self).initialize()
         self.workitem_counts = {}
         self.bugtask_counts = {}
         for date, containers in self.work_item_containers:
