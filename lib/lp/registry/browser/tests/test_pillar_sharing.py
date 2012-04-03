@@ -80,11 +80,17 @@ class PillarSharingDetailsMixin:
             self.factory.makeAccessArtifactGrant(
                 artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
 
-    #def test_view_filters_security_wisely(self):
-        ## There are bugs in the sharingdetails view that not everyone with
-        ## `launchpad.Driver` should be able to see.
-        #with FeatureFixture(DETAILS_ENABLED_FLAG):
-            #pillarperson = self.getPillarPerson()
+    def test_view_filters_security_wisely(self):
+        # There are bugs in the sharingdetails view that not everyone with
+        # `launchpad.Driver` should be able to see.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            pillarperson = self.getPillarPerson(with_sharing=False)
+            self._create_sharing(grantee=pillarperson.person, security=True)
+            expected = pillarperson.person.displayname
+            url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.owner, url=url)
+            self.assertEqual(expected, browser.title)
 
     def test_view_traverses_plus_sharingdetails(self):
         # The traversed url in the app is pillar/+sharingdetails/person

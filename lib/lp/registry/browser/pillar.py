@@ -392,6 +392,10 @@ class PillarPersonSharingView(LaunchpadView):
             elif IBranch.providedBy(concrete):
                 branches.append(concrete)
 
+        # For security reasons, the bugs have to be refetched by ID through
+        # the normal querying mechanism. This prevents bugs the user shouldn't
+        # be able to see from being displayed.
+
         self.bugs = bugs
         self.branches = branches
         self.shared_bugs_count = len(bugs)
