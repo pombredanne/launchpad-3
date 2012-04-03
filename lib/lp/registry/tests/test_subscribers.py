@@ -10,6 +10,7 @@ from datetime import datetime
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import IPersonViewRestricted
@@ -19,7 +20,7 @@ from lp.registry.subscribers import (
     person_details_modified,
     product_licenses_modified,
     )
-from lp.services.verification.model.logintoken import LoginTokenSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
@@ -390,7 +391,7 @@ class TestPersonDetailsModifiedEvent(TestCaseWithFactory):
             secondary_email = self.factory.makeEmail('test@second.com', person)
             # The way that a new email address gets requested is through the
             # LoginToken done in the browser/person action_add_email.
-            LoginTokenSet().new(person,
+            getUtility(ILoginTokenSet).new(person,
                 person.preferredemail.email,
                 secondary_email.email,
                 LoginTokenType.VALIDATEEMAIL)
