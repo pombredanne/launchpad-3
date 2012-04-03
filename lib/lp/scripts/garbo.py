@@ -44,6 +44,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -1092,33 +1093,33 @@ class SpecificationWorkitemMigrator(TunableLoop):
         self.offset += chunk_size
 
 
-class BugLegacyAccessMirrorer(TunableLoop):
-    """A `TunableLoop` to populate the access policy schema for all bugs."""
+class BugTaskFlattener(TunableLoop):
+    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
 
     maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
-        super(BugLegacyAccessMirrorer, self).__init__(log, abort_time)
+        super(BugTaskFlattener, self).__init__(log, abort_time)
         watermark = getUtility(IMemcacheClient).get(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name)
+            '%s:bugtask-flattener' % config.instance_name)
         self.start_at = watermark or 0
 
-    def findBugIDs(self):
-        return IMasterStore(Bug).find(
-            (Bug.id,), Bug.id >= self.start_at).order_by(Bug.id)
+    def findTaskIDs(self):
+        return IMasterStore(BugTask).find(
+            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
     def isDone(self):
-        return self.findBugIDs().is_empty()
+        return self.findTaskIDs().is_empty()
 
     def __call__(self, chunk_size):
-        ids = [row[0] for row in self.findBugIDs()[:chunk_size]]
-        list(IMasterStore(Bug).using(Bug).find(
-            SQL('bug_mirror_legacy_access(Bug.id)'),
-            Bug.id.is_in(ids)))
+        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
+        list(IMasterStore(BugTask).using(BugTask).find(
+            SQL('bugtask_flatten(BugTask.id, false)'),
+            BugTask.id.is_in(ids)))
 
         self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name,
+            '%s:bugtask-flattener' % config.instance_name,
             self.start_at)
         if not result:
             self.log.warning('Failed to set start_at in memcache.')
@@ -1377,7 +1378,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugLegacyAccessMirrorer,
+        BugTaskFlattener,
         ]
     experimental_tunable_loops = []
 

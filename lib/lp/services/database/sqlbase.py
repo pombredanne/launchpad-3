@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'block_implicit_flushes',
     'clear_current_connection_cache',
-    'commit',
     'connect',
     'convert_storm_clause_to_string',
     'cursor',
@@ -49,7 +48,6 @@ from storm.locals import (
     Storm,
     )
 from storm.zope.interfaces import IZStorm
-import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.interface import implements
@@ -556,11 +554,6 @@ def reset_store(func):
         finally:
             _get_sqlobject_store().reset()
     return mergeFunctionMetadata(func, reset_store_decorator)
-
-
-# DEPRECATED -- use transaction.commit() directly.
-def commit():
-    transaction.commit()
 
 
 def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):

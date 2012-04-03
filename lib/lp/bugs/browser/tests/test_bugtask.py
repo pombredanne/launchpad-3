@@ -41,6 +41,10 @@ from lp.bugs.browser.bugtask import (
     BugTaskListingItem,
     BugTasksAndNominationsView,
     )
+from lp.bugs.feed.bug import (
+    BugTargetBugsFeed,
+    PersonBugsFeed,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
@@ -49,6 +53,10 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.layers import (
+    FeedsLayer,
+    setFirstLayer,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -88,6 +96,18 @@ from lp.testing.sampledata import (
     USER_EMAIL,
     )
 from lp.testing.views import create_initialized_view
+
+
+def getFeedViewCache(target, feed_cls):
+    """Return JSON cache for a feed's delegate view."""
+    with dynamic_listings():
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+        setFirstLayer(request, FeedsLayer)
+        feed = feed_cls(target, request)
+        delegate_view = feed._createView()
+        delegate_view.initialize()
+        return IJSONRequestCache(delegate_view.request)
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -1425,6 +1445,12 @@ class TestPersonBugs(TestCaseWithFactory):
             'Project, distribution, package, or series subscriber',
             view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
+
 
 class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
@@ -1445,6 +1471,11 @@ class TestDistributionBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Package or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestDistroSeriesBugs(TestCaseWithFactory):
@@ -1467,6 +1498,11 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.assertEqual(
             'Package subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distribution source packages."""
@@ -1482,6 +1518,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series source packages."""
@@ -1496,6 +1537,11 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestProductBugs(TestCaseWithFactory):
@@ -1518,6 +1564,11 @@ class TestProductBugs(TestCaseWithFactory):
         self.assertEqual(
             'Series subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProductSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for project series."""
@@ -1533,6 +1584,11 @@ class TestProductSeriesBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for project groups."""
@@ -1542,38 +1598,38 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
         self.owner = self.factory.makePerson(name='bob')
-        self.projectgroup = self.factory.makeProject(name='container',
+        self.target = self.factory.makeProject(name='container',
                                                      owner=self.owner)
 
     def makeSubordinateProduct(self, tracks_bugs_in_lp):
         """Create a new product and add it to the project group."""
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
-            product.project = self.projectgroup
+            product.project = self.target
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(self.projectgroup.hasProducts())
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.target.hasProducts())
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_not_using_launchpad(self):
         # A project group with all subordinates not using Launchpad
         # will itself be marked as not using Launchpad for bugs.
         self.makeSubordinateProduct(False)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_using_launchpad(self):
         # A project group with one subordinate using Launchpad
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_with_mixed_subordinates(self):
@@ -1581,9 +1637,9 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(False)
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_has_no_portlets_if_not_using_LP(self):
@@ -1591,7 +1647,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # bug portlets.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertFalse(view.should_show_bug_information)
         contents = view.render()
@@ -1603,7 +1659,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # portlets.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertTrue(view.should_show_bug_information)
         contents = view.render()
@@ -1615,7 +1671,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1626,7 +1682,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1634,14 +1690,19 @@ class TestProjectGroupBugs(TestCaseWithFactory):
 
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
     def test_structural_subscriber_label(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Project or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestBugActivityItem(TestCaseWithFactory):

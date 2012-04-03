@@ -11,8 +11,10 @@ from os.path import (
     )
 
 from lxml import html
+import simplejson
 from testtools.content import text_content
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.formlib.form import action
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -198,3 +200,67 @@ class TestWidgetDiv(TestCase):
              "field.multi_line", "hidden",
              "field.checkbox", "hidden"],
             root.xpath("//input/@id | //input/@type"))
+
+
+class TestFormView(TestWidgetDivView):
+    """A trivial view with an action and a validator which sets errors."""
+    @action('Test', name='test',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def test_action(self, action, data):
+        pass
+
+    def validate(self, data):
+        single_line_value = data['single_line']
+        if single_line_value == 'success':
+            return
+        self.setFieldError('single_line', 'An error occurred')
+        self.addError('A form error')
+
+
+class TestAjaxValidator(TestCase):
+    # For ajax requests to form views, when the validators record errors as
+    # having occurred, the form returns json data which contains information
+    # about the errors.
+
+    layer = FunctionalLayer
+
+    def test_ajax_failure_handler(self):
+        # Validation errors are recorded properly.
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST',
+            form={
+                'field.actions.test': 'Test',
+                'field.single_line': 'error'},
+            **extra)
+        view = TestFormView({}, request)
+        view.initialize()
+        self.assertEqual(
+                {"error_summary": "There are 2 errors.",
+                 "errors": {"field.single_line": "An error occurred"},
+                 "form_wide_errors": ["A form error"]},
+            simplejson.loads(view.form_result))
+
+    def test_non_ajax_failure_handler(self):
+        # The ajax error handler is not run if the request is not ajax.
+        request = LaunchpadTestRequest(
+            method='POST',
+            form={
+                'field.actions.test': 'Test',
+                'field.single_line': 'error'})
+        view = TestFormView({}, request)
+        view.initialize()
+        self.assertIsNone(view.form_result)
+
+    def test_ajax_action_success(self):
+        # When there are no errors, form_result is None.
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        request = LaunchpadTestRequest(
+            method='POST',
+            form={
+                'field.actions.test': 'Test',
+                'field.single_line': 'success'},
+            **extra)
+        view = TestFormView({}, request)
+        view.initialize()
+        self.assertIsNone(view.form_result)

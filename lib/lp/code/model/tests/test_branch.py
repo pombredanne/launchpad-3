@@ -130,6 +130,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
@@ -159,7 +160,7 @@ class TestCodeImport(TestCase):
 class TestBranchChanged(TestCaseWithFactory):
     """Tests for `IBranch.branchChanged`."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -2144,7 +2145,7 @@ class TestBranchNamespace(TestCaseWithFactory):
 class TestPendingWrites(TestCaseWithFactory):
     """Are there changes to this branch not reflected in the database?"""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_new_branch_no_writes(self):
         # New branches have no pending writes.

@@ -22,6 +22,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
   <head>
+    <meta charset="UTF-8" />
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <link
@@ -79,7 +80,8 @@
         <tal:login replace="structure context/@@login_status" />
       </div><!--id="locationbar"-->
 
-      <div id="watermark" class="watermark-apps-portlet">
+      <div id="watermark" class="watermark-apps-portlet"
+        tal:condition="view/macro:has-watermark">
         <div>
           <span tal:replace="structure view/watermark:logo"></span>
         </div>

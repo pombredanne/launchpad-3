@@ -6,9 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu',
-    'PillarBugsMenu',
-    'PillarView',
+    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -41,6 +39,8 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.bugs.interfaces.bug import IBug
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantFlatSource,
     IAccessPolicySource,
@@ -68,6 +68,7 @@ from lp.services.webapp.menu import (
     NavigationMenu,
     )
 from lp.services.webapp.publisher import (
+    canonical_url,
     LaunchpadView,
     nearest,
     stepthrough,
@@ -285,7 +286,7 @@ class PillarSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            vocabulary='ValidPillarOwner',
+            vocabulary='NewPillarSharee',
             vocabulary_filters=self.sharing_vocabulary_filters,
             header='Share with a user or team')
 
@@ -360,7 +361,7 @@ class PillarPersonSharingView(LaunchpadView):
     label = "Information shared with person or team"
 
     def initialize(self):
-        enabled_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
         enabled = bool(getFeatureFlag(enabled_flag))
         if not enabled:
             raise Unauthorized("This feature is not yet available.")
@@ -370,3 +371,58 @@ class PillarPersonSharingView(LaunchpadView):
 
         self.label = "Information shared with %s" % self.person.displayname
         self.page_title = "%s" % self.person.displayname
+        self.sharing_service = getUtility(IService, 'sharing')
+
+        self._loadSharedArtifacts()
+
+        cache = IJSONRequestCache(self.request)
+        branch_data = self._build_branch_template_data(self.branches)
+        bug_data = self._build_bug_template_data(self.bugs)
+        cache.objects['bugs'] = bug_data
+        cache.objects['branches'] = branch_data
+
+    def _loadSharedArtifacts(self):
+        bugs = []
+        branches = []
+        for artifact in self.sharing_service.getSharedArtifacts(
+                            self.pillar, self.person):
+            concrete = artifact.concrete_artifact
+            if IBug.providedBy(concrete):
+                bugs.append(concrete)
+            elif IBranch.providedBy(concrete):
+                branches.append(concrete)
+
+        self.bugs = bugs
+        self.branches = branches
+        self.shared_bugs_count = len(bugs)
+        self.shared_branches_count = len(branches)
+
+    def _build_branch_template_data(self, branches):
+        branch_data = []
+        for branch in branches:
+            branch_data.append(dict(
+                branch_link=canonical_url(branch),
+                branch_name=branch.unique_name,
+                branch_id=branch.id))
+        return branch_data
+
+    def _build_bug_template_data(self, bugs):
+        bug_data = []
+        for bug in bugs:
+            [bugtask] = [task for task in bug.bugtasks if
+                            task.target == self.pillar]
+            if bugtask is not None:
+                url = canonical_url(bugtask, path_only_if_possible=True)
+                importance = bugtask.importance.title.lower()
+            else:
+                # This shouldn't ever happen, but if it does there's no reason
+                # to crash.
+                url = canonical_url(bug, path_only_if_possible=True)
+                importance = bug.default_bugtask.importance.title.lower()
+
+            bug_data.append(dict(
+                bug_link=url,
+                bug_summary=bug.title,
+                bug_id=bug.id,
+                bug_importance=importance))
+        return bug_data

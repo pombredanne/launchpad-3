@@ -42,6 +42,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -54,7 +55,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.accesspolicy import IAccessArtifactSource
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1105,25 +1105,34 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
 
-    def test_BugLegacyAccessMirrorer(self):
+    def test_BugTaskFlattener(self):
         # Private bugs without corresponding data in the access policy
         # schema get mirrored.
         switch_dbuser('testadmin')
-        bug = self.factory.makeBug(private=True)
+        task = self.factory.makeBugTask()
         # Remove the existing mirrored data.
-        getUtility(IAccessArtifactSource).delete([bug])
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
         transaction.commit()
         self.runHourly()
-        # Check that there's an artifact again, and delete it.
+        # Check that there's a record again, and delete it.
         switch_dbuser('testadmin')
-        [artifact] = getUtility(IAccessArtifactSource).find([bug])
-        getUtility(IAccessArtifactSource).delete([bug])
+        self.assertEqual(
+            (task.id,),
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
         transaction.commit()
         self.runHourly()
         # A watermark is kept in memcache, so a second run doesn't
-        # consider the same bug.
-        self.assertContentEqual(
-            [], getUtility(IAccessArtifactSource).find([bug]))
+        # consider the same task.
+        self.assertIs(
+            None,
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
 
 
 class TestGarboTasks(TestCaseWithFactory):
