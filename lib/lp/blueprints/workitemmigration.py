@@ -75,7 +75,7 @@ class WorkitemParser(object):
 
 def milestone_extract(text, valid_milestones):
     words = text.replace('(', ' ').replace(')', ' ').replace(
-        '[', ' ').replace(']', ' ').replace('<wbr></wbr>', '').split()
+        '[', ' ').replace(']', ' ').replace('<wbr />', '').split()
     for milestone in valid_milestones:
         for word in words:
             if word == milestone.name:

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `DirectBranchCommit`."""
@@ -20,6 +20,7 @@ from lp.testing import (
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
 
@@ -63,7 +64,7 @@ class DirectBranchCommitTestCase:
 class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
     """Test `DirectBranchCommit`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def test_defaults_to_branch_owner(self):
         # If no committer is given, DirectBranchCommits defaults to

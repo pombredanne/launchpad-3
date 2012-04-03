@@ -28,7 +28,7 @@ homepage_content is formatted as HTML.
     >>> print view.homepage_content
     <p>line one &lt;script&gt;</p>
     <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
 
 Teams are always valid and do not have probation rules; the homepage
 content is formatted HTML.
@@ -44,7 +44,7 @@ content is formatted HTML.
     >>> print view.homepage_content
     <p>line one &lt;script&gt;</p>
     <BLANKLINE>
-    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr />aa.aa/</a></p>
 
 New users are on probation; the homepage content is escaped HTML.
 

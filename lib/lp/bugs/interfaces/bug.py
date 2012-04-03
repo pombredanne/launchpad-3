@@ -100,9 +100,9 @@ from lp.services.messages.interfaces.message import IMessage
 class CreateBugParams:
     """The parameters used to create a bug."""
 
-    def __init__(self, owner, title, comment=None, description=None, msg=None,
-                 status=None, datecreated=None, security_related=False,
-                 private=False, subscribers=(),
+    def __init__(self, owner, title, comment=None, description=None,
+                 msg=None, status=None, datecreated=None,
+                 information_type=InformationType.PUBLIC, subscribers=(),
                  tags=None, subscribe_owner=True, filed_by=None,
                  importance=None, milestone=None, assignee=None, cve=None):
         self.owner = owner
@@ -112,8 +112,7 @@ class CreateBugParams:
         self.msg = msg
         self.status = status
         self.datecreated = datecreated
-        self.security_related = security_related
-        self.private = private
+        self.information_type = information_type
         self.subscribers = subscribers
         self.product = None
         self.distribution = None
@@ -891,20 +890,16 @@ class IBugEdit(Interface):
         """
 
     @operation_parameters(
-        private=copy_field(IBugPublic['private']),
-        security_related=copy_field(IBugView['security_related']),
+        information_type=copy_field(IBugPublic['information_type']),
         )
     @call_with(who=REQUEST_USER)
     @export_write_operation()
     @operation_for_version("devel")
-    def setPrivacyAndSecurityRelated(private, security_related, who):
-        """Set bug privacy and security .
+    def transitionToInformationType(information_type, who):
+        """Set the information type for this bug.
 
-            :private: True/False.
-            :security_related: True/False.
-            :who: The IPerson who is making the change.
-
-        Return (private_changed, security_related_changed) tuple.
+        :information_type: The `InformationType` to transition to.
+        :who: The `IPerson` who is making the change.
         """
 
     @operation_parameters(
