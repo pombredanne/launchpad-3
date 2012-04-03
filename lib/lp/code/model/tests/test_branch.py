@@ -116,8 +116,11 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.job.tests import celeryd
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import (
+    celeryd,
+    monitor_celery,
+    )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -312,36 +315,55 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         # running, so that config.rabbitmq.host is defined when
         # lp.services.job.celeryconfig is loaded.
         from celery.exceptions import TimeoutError
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classses': 'BranchScanJob'}))
         with celeryd('standard') as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
             bzr_tree.commit(
                 'First commit', rev_id='rev1', committer='me@example.org')
             db_branch.branchChanged(None, 'rev1', None, None, None)
-            transaction.commit()
-            try:
-                BaseRunnableJob.last_celery_response.wait(30)
-            except TimeoutError:
-                pass
+            with monitor_celery() as responses:
+                transaction.commit()
+                try:
+                    responses[-1].wait(30)
+                except TimeoutError:
+                    pass
         self.assertIn(
             'Updating branch scanner status: 1 revs', proc.stderr.read())
         self.assertEqual(db_branch.revision_count, 1)
 
+    def test_branchChanged_via_celery_no_enabled(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        # Delay importing anything that uses Celery until RabbitMQLayer is
+        # running, so that config.rabbitmq.host is defined when
+        # lp.services.job.celeryconfig is loaded.
+        self.useBzrBranches()
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit(
+            'First commit', rev_id='rev1', committer='me@example.org')
+        db_branch.branchChanged(None, 'rev1', None, None, None)
+        with monitor_celery() as responses:
+            transaction.commit()
+            self.assertEqual([], responses)
 
     def test_destroySelf_via_celery(self):
-        """Calling destroySelf causes Celery to delete the branch."
+        """Calling destroySelf causes Celery to delete the branch."""
         from celery.exceptions import TimeoutError
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classses': 'ReclaimBranchSpaceJob'}))
         with celeryd('branch_write') as proc:
             self.useBzrBranches()
             db_branch, tree = self.create_branch_and_tree()
             branch_path = get_real_branch_path(db_branch.id)
             self.assertThat(branch_path, PathExists())
             db_branch.destroySelf()
-            transaction.commit()
-            try:
-                BaseRunnableJob.last_celery_response.wait(30)
-            except TimeoutError:
-                pass
+            with monitor_celery() as responses:
+                transaction.commit()
+                try:
+                    responses[-1].wait(30)
+                except TimeoutError:
+                    pass
         self.assertThat(branch_path, Not(PathExists()))
 
 
@@ -798,6 +820,8 @@ class TestBranchUpgrade(TestCaseWithFactory):
             [job, ])
 
     def test_requestUpgradeUsesCelery(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classses': 'BranchUpgradeJob'}))
         cwd = os.getcwd()
         self.useBzrBranches()
         db_branch, tree = create_knit(self)
@@ -806,9 +830,10 @@ class TestBranchUpgrade(TestCaseWithFactory):
             'Bazaar-NG Knit Repository Format 1')
 
         db_branch.requestUpgrade(db_branch.owner)
-        transaction.commit()
-        with celeryd('branch_write', cwd):
-            BaseRunnableJob.last_celery_response.wait(30)
+        with monitor_celery() as responses:
+            transaction.commit()
+            with celeryd('branch_write', cwd):
+                responses[-1].wait(30)
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
             new_branch.repository._format.get_format_string(),

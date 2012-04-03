@@ -3,10 +3,12 @@
 
 __metaclass__ = type
 
-__all__ = ['celeryd']
+__all__ = ['celeryd', 'monitor_celery']
 
 
 from contextlib import contextmanager
+
+from lp.services.job.runner import BaseRunnableJob
 
 
 @contextmanager
@@ -28,3 +30,15 @@ def celeryd(queue, cwd=None):
     with running('bin/celeryd', cmd_args, cwd=cwd) as proc:
         # Wait for celeryd startup to complete.
         yield proc
+
+
+@contextmanager
+def monitor_celery():
+    """Context manager that provides a list of Celery responses."""
+    responses = []
+    old_responses = BaseRunnableJob.celery_responses
+    BaseRunnableJob.celery_responses = responses
+    try:
+        yield responses
+    finally:
+        BaseRunnableJob.celery_responses = old_responses
