@@ -19,7 +19,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -400,19 +399,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         self.createInitializedSecrecyView(bug=bug, security_related=True)
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
-
-    def test_hide_private_option_for_multipillar_proprietary_bugs(self):
-        # A multi-pillar bug cannot be made private, so hide the form field.
-        bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY)
-        product = self.factory.makeProduct()
-        self.factory.makeBugTask(bug=bug, target=product)
-        view = create_initialized_view(bug.default_bugtask, '+secrecy')
-        self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
-        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
-        view = create_initialized_view(bug.default_bugtask, '+secrecy')
-        self.assertIsNotNone(
-            find_tag_by_id(view.render(), 'field.private'))
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
