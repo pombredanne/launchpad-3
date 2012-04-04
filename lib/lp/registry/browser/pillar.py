@@ -6,7 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
+    'InvolvedMenu',
+    'PillarBugsMenu',
+    'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -40,17 +42,23 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantFlatSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -384,13 +392,6 @@ class PillarPersonSharingView(LaunchpadView):
     def _getSafeBugs(self, bugs):
         """Uses the bugsearch tools to safely get the list of bugs the user is
         allowed to see."""
-        from lp.registry.interfaces.product import IProduct
-        from lp.registry.interfaces.distribution import IDistribution
-        from lp.bugs.interfaces.bugtask import (
-            BugTaskSearchParams,
-            IBugTaskSet,
-            )
-        from zope.component import getUtility
         params = []
         for b in bugs:
             param = BugTaskSearchParams(user=self.user, bug=b)
