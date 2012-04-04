@@ -68,8 +68,11 @@
       There are <span tal:replace="python: view.workitem_counts[date]" />
       Blueprint work items and
       <span tal:replace="python: view.bugtask_counts[date]" /> Bugs due
-      in <span tal:content="date/fmt:date" /> which are assigned to members
-      of this team.
+      in <span tal:content="date/fmt:date" /> which are assigned to
+      <tal:team condition="context/is_team">members of this team.</tal:team>
+      <tal:not-team condition="not: context/is_team">
+        <span tal:replace="context/displayname" />
+      </tal:not-team>
     </p>
 
     <table class="listing">

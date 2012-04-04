@@ -1085,11 +1085,11 @@
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
       <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamUpcomingWorkView"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.registry.browser.person.PersonUpcomingWorkView"
             permission="zope.Public"
             name="+upcomingwork"
-            template="../templates/team-upcomingwork.pt"/>
+            template="../templates/person-upcomingwork.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"
