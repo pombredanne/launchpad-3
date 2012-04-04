@@ -18,7 +18,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -26,11 +25,6 @@ from lp.testing.layers import DatabaseFunctionalLayer
 class TestBugMirrorAccessTriggers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugMirrorAccessTriggers, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'disclosure.allow_multipillar_private_bugs.enabled': 'true'}))
 
     def assertMirrored(self, bug):
         """Check that a bug has been correctly mirrored to the new schema.

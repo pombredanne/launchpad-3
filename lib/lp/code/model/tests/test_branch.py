@@ -12,6 +12,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import os
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
@@ -109,6 +110,7 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -132,6 +134,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -283,6 +286,56 @@ class TestBranchChanged(TestCaseWithFactory):
              RepositoryFormat.BZR_KNITPACK_1),
             (branch.control_format, branch.branch_format,
              branch.repository_format))
+
+
+class TestBranchJobViaCelery(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    def test_branchChanged_via_celery(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        # Delay importing anything that uses Celery until RabbitMQLayer is
+        # running, so that config.rabbitmq.host is defined when
+        # lp.services.job.celeryconfig is loaded.
+        from lp.services.job.celeryjob import CeleryRunJob
+        from lp.services.job.tests.test_celeryjob import monitor_celery
+        from celery.exceptions import TimeoutError
+        from lazr.jobrunner.tests.test_celerytask import running
+        self.useFixture(FeatureFixture({'jobs.celery.enabled_classses':
+            'BranchScanJob'}))
+        cmd_args = ('--config', 'lp.services.job.tests.celeryconfig')
+        env = dict(os.environ)
+        env['BROKER_URL'] = CeleryRunJob.app.conf['BROKER_URL']
+        with running('bin/celeryd', cmd_args, env=env) as proc:
+            self.useBzrBranches()
+            db_branch, bzr_tree = self.create_branch_and_tree()
+            bzr_tree.commit(
+                'First commit', rev_id='rev1', committer='me@example.org')
+            db_branch.branchChanged(None, 'rev1', None, None, None)
+            with monitor_celery() as responses:
+                transaction.commit()
+                try:
+                    responses[-1].wait(30)
+                except TimeoutError:
+                    pass
+        self.assertIn(
+            'Updating branch scanner status: 1 revs', proc.stderr.read())
+        self.assertEqual(db_branch.revision_count, 1)
+
+    def test_branchChanged_via_celery_no_enabled(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        # Delay importing anything that uses Celery until RabbitMQLayer is
+        # running, so that config.rabbitmq.host is defined when
+        # lp.services.job.celeryconfig is loaded.
+        from lp.services.job.tests.test_celeryjob import monitor_celery
+        self.useBzrBranches()
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit(
+            'First commit', rev_id='rev1', committer='me@example.org')
+        db_branch.branchChanged(None, 'rev1', None, None, None)
+        with monitor_celery() as responses:
+            transaction.commit()
+            self.assertEqual([], responses)
 
 
 class TestBranchRevisionMethods(TestCaseWithFactory):
