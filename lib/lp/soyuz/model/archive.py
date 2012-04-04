@@ -65,7 +65,10 @@ from lp.registry.interfaces.person import (
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -1983,13 +1986,8 @@ class Archive(SQLBase):
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
             # which determines who is granted launchpad.Commercial
             # permissions.
-            commercial_admin = getUtility(
-                ILaunchpadCelebrities).commercial_admin
-            admin = getUtility(ILaunchpadCelebrities).admin
-            has_the_power = (
-                person.inTeam(commercial_admin)
-                or person.inTeam(admin))
-            if not has_the_power:
+            role = IPersonRoles(person)
+            if not (role.in_admin or role.in_commercial_admin):
                 if private:
                     return (
                         '%s is not allowed to make private PPAs' % person.name)
@@ -1997,7 +1995,6 @@ class Archive(SQLBase):
                     return (
                         '%s is not allowed to make commercial PPAs'
                         % person.name)
-                
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
