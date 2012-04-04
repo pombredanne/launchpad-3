@@ -327,7 +327,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     user_error_types = (NotBranchError,)
 
-    task_queue = 'branch_write'
+    task_queue = 'branch_write_job'
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -949,7 +949,7 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
-    task_queue = 'branch_write'
+    task_queue = 'branch_write_job'
 
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {

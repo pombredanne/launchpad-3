@@ -103,7 +103,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     retry_error_types = ()
 
-    task_queue = 'standard'
+    task_queue = 'job'
 
     celery_responses = None
 
