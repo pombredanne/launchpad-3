@@ -16,7 +16,6 @@ from lp.registry.browser.team import (
     getWorkItemsDueBefore,
     WorkItemContainer,
     )
-
 from lp.testing import (
     anonymous_logged_in,
     BrowserTestCase,

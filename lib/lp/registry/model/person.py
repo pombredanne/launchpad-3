@@ -128,11 +128,11 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
