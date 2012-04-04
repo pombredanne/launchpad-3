@@ -2,13 +2,27 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
+from contextlib import contextmanager
 import os
 
 import transaction
 
 from lp.code.model.branchjob import BranchScanJob
+from lp.services.job.runner import BaseRunnableJob
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessAppServerLayer
+
+
+@contextmanager
+def monitor_celery():
+    """Context manager that provides a list of Celery responses."""
+    responses = []
+    old_responses = BaseRunnableJob.celery_responses
+    BaseRunnableJob.celery_responses = responses
+    try:
+        yield responses
+    finally:
+        BaseRunnableJob.celery_responses = old_responses
 
 
 class TestCelery(TestCaseWithFactory):
