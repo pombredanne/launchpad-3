@@ -42,7 +42,9 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
-WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
+WRITE_FLAG = {
+    'disclosure.enhanced_sharing.writable': 'true',
+    'disclosure.enhanced_sharing_details.enabled': 'true'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
@@ -193,7 +195,8 @@ class TestSharingService(TestCaseWithFactory):
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=access_policy)
 
-        sharees = self.service.getPillarShareeData(pillar)
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.getPillarShareeData(pillar)
         expected_sharees = [
             self._makeShareeData(
                 grantee,
