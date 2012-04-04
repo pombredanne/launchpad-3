@@ -20,7 +20,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -58,11 +57,6 @@ BugTaskFlat = namedtuple('BugTaskFlat', BUGTASKFLAT_COLUMNS)
 
 
 class BugTaskFlatTestMixin(TestCaseWithFactory):
-
-    def setUp(self):
-        super(BugTaskFlatTestMixin, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'disclosure.allow_multipillar_private_bugs.enabled': 'true'}))
 
     def checkFlattened(self, bugtask, check_only=True):
         if hasattr(bugtask, 'id'):
