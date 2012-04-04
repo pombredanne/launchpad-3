@@ -290,6 +290,21 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
+    def test_findByArtifact_specified_grantees(self):
+        # findByArtifact() finds only the relevant grants for the specified
+        # grantees.
+        artifact = self.factory.makeAccessArtifact()
+        grantees = [self.factory.makePerson() for i in range(3)]
+        grants = [
+            self.factory.makeAccessArtifactGrant(
+                artifact=artifact, grantee=grantee)
+            for grantee in grantees]
+        self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            grants[:2],
+            getUtility(IAccessArtifactGrantSource).findByArtifact(
+                [artifact], grantees=grantees[:2]))
+
     def test_revokeByArtifact(self):
         # revokeByArtifact() removes the relevant grants.
         artifact = self.factory.makeAccessArtifact()
@@ -298,6 +313,25 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
         getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
         IStore(grant).invalidate()
         self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
+
+    def test_revokeByArtifact_specified_grantees(self):
+        # revokeByArtifact() removes the relevant grants for the specified
+        # grantees.
+        artifact = self.factory.makeAccessArtifact()
+        grantee = self.factory.makePerson()
+        someone_else = self.factory.makePerson()
+        grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=grantee)
+        someone_else_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=someone_else)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        aags = getUtility(IAccessArtifactGrantSource)
+        aags.revokeByArtifact([artifact], [grantee])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertEqual(
+            someone_else_grant, aags.findByArtifact([artifact])[0])
         self.assertIsNot(None, other_grant.grantor)
 
 

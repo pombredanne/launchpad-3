@@ -124,11 +124,19 @@ class IAccessArtifactGrantSource(Interface):
             pairs.
         """
 
-    def findByArtifact(artifacts):
-        """Return all `IAccessArtifactGrant` objects for the artifacts."""
+    def findByArtifact(artifacts, grantees=None):
+        """Return all `IAccessArtifactGrant` objects for the artifacts.
 
-    def revokeByArtifact(artifacts):
-        """Delete all `IAccessArtifactGrant` objects for the artifacts."""
+        :param artifacts: the artifacts for which to find any grants.
+        :param grantees: find grants for the specified grantees only.
+        """
+
+    def revokeByArtifact(artifacts, grantees=None):
+        """Delete all `IAccessArtifactGrant` objects for the artifacts.
+
+        :param artifacts: the artifacts to which revoke access.
+        :param grantees: revoke access for the specified grantees only.
+        """
 
 
 class IAccessPolicyArtifactSource(Interface):
