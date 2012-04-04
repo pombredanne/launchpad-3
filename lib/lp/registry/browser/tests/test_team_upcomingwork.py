@@ -11,7 +11,10 @@ from operator import attrgetter
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.blueprints.enums import SpecificationWorkItemStatus
+from lp.blueprints.enums import (
+    SpecificationPriority,
+    SpecificationWorkItemStatus,
+    )
 from lp.registry.browser.team import (
     GenericWorkItem,
     getWorkItemsDueBefore,
@@ -217,6 +220,9 @@ class TestTeamUpcomingWork(BrowserTestCase):
             self.assertIn(bugtask2.bug.title, tomorrows_group)
 
     def test_overall_progressbar(self):
+        """Check that the per-date progress bar is present."""
+        # Create two work items on separate specs. One of them is done and the
+        # other is in progress.
         self.factory.makeSpecificationWorkItem(
             assignee=self.team.teamowner, milestone=self.today_milestone,
             status=SpecificationWorkItemStatus.DONE)
@@ -227,20 +233,37 @@ class TestTeamUpcomingWork(BrowserTestCase):
         browser = self.getViewBrowser(
             self.team, view_name='+upcomingwork', no_login=True)
 
+        # The progress bar for the due date of today_milestone will show that
+        # 50% of the work is done (1 out of 2 work items).
         progressbar = find_tag_by_id(browser.contents, 'progressbar_0')
         self.assertEqual('50%', progressbar.get('width'))
 
     def test_container_progressbar(self):
+        """Check that the per-blueprint progress bar is present."""
+        # Create two work items on separate specs. One of them is done and the
+        # other is in progress. Here we create the specs explicitly, using
+        # different priorities to force spec1 to show up first on the page.
+        spec1 = self.factory.makeSpecification(
+            product=self.today_milestone.product,
+            priority=SpecificationPriority.HIGH)
+        spec2 = self.factory.makeSpecification(
+            product=self.today_milestone.product,
+            priority=SpecificationPriority.LOW)
         self.factory.makeSpecificationWorkItem(
-            assignee=self.team.teamowner, milestone=self.today_milestone,
+            specification=spec1, assignee=self.team.teamowner,
+            milestone=self.today_milestone,
             status=SpecificationWorkItemStatus.DONE)
         self.factory.makeSpecificationWorkItem(
-            assignee=self.team.teamowner, milestone=self.today_milestone,
-            status=SpecificationWorkItemStatus.TODO)
+            specification=spec2, assignee=self.team.teamowner,
+            milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.INPROGRESS)
 
         browser = self.getViewBrowser(
             self.team, view_name='+upcomingwork', no_login=True)
 
+        # The progress bar of the first blueprint will be complete as the sole
+        # work item there is done, while the other is going to be empty as the
+        # sole work item is still in progress.
         container1_progressbar = find_tag_by_id(
             browser.contents, 'container_progressbar_0')
         container2_progressbar = find_tag_by_id(
