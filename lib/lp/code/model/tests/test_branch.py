@@ -335,9 +335,6 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
 
     def test_branchChanged_via_celery_no_enabled(self):
         """Running a job via Celery succeeds and emits expected output."""
-        # Delay importing anything that uses Celery until RabbitMQLayer is
-        # running, so that config.rabbitmq.host is defined when
-        # lp.services.job.celeryconfig is loaded.
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(

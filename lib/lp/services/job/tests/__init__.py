@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
-__all__ = ['celeryd', 'monitor_celery']
+__all__ = [
+    'celeryd',
+    'monitor_celery'
+    ]
 
 
 from contextlib import contextmanager
