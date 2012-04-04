@@ -14,6 +14,7 @@ __all__ = ['CeleryRunJob']
 import os
 
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
+from celery.task import task
 from lazr.jobrunner.celerytask import RunJob
 
 from lp.services.job.model.job import UniversalJobSource
@@ -28,3 +29,9 @@ class CeleryRunJob(RunJob):
     def getJobRunner(self):
         """Return a BaseJobRunner, to support customization."""
         return BaseJobRunner()
+
+
+@task
+def pop_notifications():
+    from lp.testing.mail_helpers import pop_notifications
+    return pop_notifications()

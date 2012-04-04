@@ -190,23 +190,22 @@ class BaseRunnableJob(BaseRunnableJobSource):
         return oops_config.create(
             context=dict(exc_info=info))
 
-    def runViaCelery(self):
+    def runViaCelery(self, ignore_result=False):
         """Request that this job be run via celery."""
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import CeleryRunJob
-        ignore_result = bool(BaseRunnableJob.celery_responses is None)
-        response = CeleryRunJob.apply_async(
+        return CeleryRunJob.apply_async(
             (self.job_id,), queue=self.task_queue,
             ignore_result=ignore_result)
-        if not ignore_result:
-            BaseRunnableJob.celery_responses.append(response)
-        return response
 
     def celeryCommitHook(self, succeeded):
         """Hook function to call when a commit completes."""
         if succeeded:
-            self.runViaCelery()
+            ignore_result = bool(BaseRunnableJob.celery_responses is None)
+            response = self.runViaCelery(ignore_result)
+            if not ignore_result:
+                BaseRunnableJob.celery_responses.append(response)
 
     def celeryRunOnCommit(self):
         """Configure transaction so that commit runs this job via Celery."""
