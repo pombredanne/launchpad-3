@@ -41,6 +41,17 @@
   <div tal:repeat="pair view/work_item_containers" class="workitems-group">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
     <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
+
+    <div tal:define="percent_done python: view.progress_per_date[date]"
+         tal:attributes="id string:progressbar_${repeat/pair/index};
+                         title string:${percent_done}% of items completed;"
+         style="border: 1px solid gray; width: 300px">
+      <img tal:attributes="style string:display: block;
+                           width: string:${percent_done}%"
+          src="/@@/green-bar"
+          height="15"/>
+    </div>
+
     <p>
       From
       <tal:milestones repeat="milestone python: view.milestones_per_date[date]">

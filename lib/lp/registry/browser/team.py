@@ -2173,11 +2173,16 @@ class TeamUpcomingWorkView(LaunchpadView):
         self.workitem_counts = {}
         self.bugtask_counts = {}
         self.milestones_per_date = {}
+        self.progress_per_date = {}
         for date, containers in self.work_item_containers:
+            total_items = 0
+            total_done = 0
             milestones = set()
             self.bugtask_counts[date] = 0
             self.workitem_counts[date] = 0
             for container in containers:
+                total_items += len(container.items)
+                total_done += len(container.done_items)
                 if isinstance(container, AggregatedBugsContainer):
                     self.bugtask_counts[date] += len(container.items)
                 else:
@@ -2186,6 +2191,8 @@ class TeamUpcomingWorkView(LaunchpadView):
                     milestones.add(item.milestone)
             self.milestones_per_date[date] = sorted(
                 milestones, key=attrgetter('displayname'))
+            self.progress_per_date[date] = '{0:.0f}'.format(
+                100.0 * total_done / float(total_items))
 
     @property
     def label(self):
@@ -2231,9 +2238,13 @@ class WorkItemContainer:
         raise NotImplementedError("Must be implemented in subclasses")
 
     @property
+    def done_items(self):
+        return [item for item in self.items if item.is_complete]
+
+    @property
     def progress_text(self):
-        done_items = [item for item in self._items if item.is_complete]
-        return '{0:.0f}%'.format(100.0 * len(done_items) / len(self._items))
+        return '{0:.0f}%'.format(
+            100.0 * len(self.done_items) / len(self._items))
 
     def append(self, item):
         self._items.append(item)
