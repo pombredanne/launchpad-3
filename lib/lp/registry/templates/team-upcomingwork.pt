@@ -42,14 +42,18 @@
   <div tal:define="date python: pair[0]; containers python: pair[1]">
     <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
 
-    <div tal:define="percent_done python: view.progress_per_date[date]"
-         tal:attributes="id string:progressbar_${repeat/pair/index};
-                         title string:${percent_done}% of items completed;"
-         style="border: 1px solid gray; width: 300px">
-      <img tal:attributes="style string:display: block;
-                           width: string:${percent_done}%"
-          src="/@@/green-bar"
-          height="15"/>
+    <div>
+      <div style="float: left">Overall completion: &nbsp;</div>
+      <div tal:define="percent_done python: view.progress_per_date[date]"
+           tal:attributes="id string:progressbar_${repeat/pair/index};
+                           title string:${percent_done}% of items completed;"
+           style="border: 1px solid gray; width: 300px; float:left">
+        <img tal:attributes="style string:display: block;
+                             width string:${percent_done}%"
+            src="/@@/green-bar"
+            height="15"/>
+      </div>
+      <div style="clear: both" />
     </div>
 
     <p>
@@ -88,7 +92,16 @@
           <td tal:content="structure container/target_link" />
           <td tal:content="structure container/assignee_link" />
           <td tal:content="container/priority_title" />
-          <td><span tal:replace="container/progress_text" /> done</td>
+          <td>
+            <div tal:attributes="id string:container_progressbar_${repeat/pair/index};
+                                 title string:${container/percent_done}% of items completed;"
+                 style="border: 1px solid gray; width: 60px">
+              <img tal:attributes="style string:display: block;
+                                   width string:${container/percent_done}%"
+                  src="/@@/green-bar"
+                  height="10"/>
+            </div>
+          </td>
         </tr>
       </tbody>
       <tbody class="collapsible-body">

@@ -2242,8 +2242,8 @@ class WorkItemContainer:
         return [item for item in self.items if item.is_complete]
 
     @property
-    def progress_text(self):
-        return '{0:.0f}%'.format(
+    def percent_done(self):
+        return '{0:.0f}'.format(
             100.0 * len(self.done_items) / len(self._items))
 
     def append(self, item):
