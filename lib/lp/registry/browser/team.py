@@ -2239,7 +2239,7 @@ class WorkItemContainer:
 
     @property
     def done_items(self):
-        return [item for item in self.items if item.is_complete]
+        return [item for item in self._items if item.is_complete]
 
     @property
     def percent_done(self):

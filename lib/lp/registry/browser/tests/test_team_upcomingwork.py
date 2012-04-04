@@ -11,6 +11,7 @@ from operator import attrgetter
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.registry.browser.team import (
     GenericWorkItem,
     getWorkItemsDueBefore,
@@ -25,6 +26,7 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     extract_text,
+    find_tag_by_id,
     find_tags_by_class,
     )
 from lp.testing.views import create_initialized_view
@@ -161,12 +163,12 @@ class TestWorkItemContainer(TestCase):
         def __init__(self, is_complete):
             self.is_complete = is_complete
 
-    def test_progress_text(self):
+    def test_percent_done(self):
         container = WorkItemContainer()
         container.append(self.MockWorkItem(True))
         container.append(self.MockWorkItem(False))
         container.append(self.MockWorkItem(True))
-        self.assertEqual('67%', container.progress_text)
+        self.assertEqual('67', container.percent_done)
 
 
 class TestTeamUpcomingWork(BrowserTestCase):
@@ -213,6 +215,38 @@ class TestTeamUpcomingWork(BrowserTestCase):
         self.assertIn(workitem2.title, tomorrows_group)
         with anonymous_logged_in():
             self.assertIn(bugtask2.bug.title, tomorrows_group)
+
+    def test_overall_progressbar(self):
+        self.factory.makeSpecificationWorkItem(
+            assignee=self.team.teamowner, milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.DONE)
+        self.factory.makeSpecificationWorkItem(
+            assignee=self.team.teamowner, milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.INPROGRESS)
+
+        browser = self.getViewBrowser(
+            self.team, view_name='+upcomingwork', no_login=True)
+
+        progressbar = find_tag_by_id(browser.contents, 'progressbar_0')
+        self.assertEqual('50%', progressbar.get('width'))
+
+    def test_container_progressbar(self):
+        self.factory.makeSpecificationWorkItem(
+            assignee=self.team.teamowner, milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.DONE)
+        self.factory.makeSpecificationWorkItem(
+            assignee=self.team.teamowner, milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.TODO)
+
+        browser = self.getViewBrowser(
+            self.team, view_name='+upcomingwork', no_login=True)
+
+        container1_progressbar = find_tag_by_id(
+            browser.contents, 'container_progressbar_0')
+        container2_progressbar = find_tag_by_id(
+            browser.contents, 'container_progressbar_1')
+        self.assertEqual('100%', container1_progressbar.get('width'))
+        self.assertEqual('0%', container2_progressbar.get('width'))
 
 
 class TestTeamUpcomingWorkView(TestCaseWithFactory):
