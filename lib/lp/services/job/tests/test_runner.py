@@ -19,6 +19,7 @@ from zope.interface import implements
 
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
@@ -26,6 +27,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob,
+    celery_enabled,
     JobCronScript,
     JobRunner,
     TwistedJobRunner,
@@ -705,3 +707,32 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
         """No --log-twisted sets JobCronScript.log_twisted False."""
         jcs = JobCronScript(TwistedJobRunner, test_args=[])
         self.assertFalse(jcs.log_twisted)
+
+
+class TestCeleryEnabled(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_no_flag(self):
+        """With no flag set, result is False."""
+        self.assertFalse(celery_enabled('foo'))
+
+    def test_matching_flag(self):
+        """A matching flag returns True."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classses': 'foo bar'}))
+        self.assertTrue(celery_enabled('foo'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_non_matching_flag(self):
+        """A non-matching flag returns false."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classses': 'foo bar'}))
+        self.assertFalse(celery_enabled('baz'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_substring(self):
+        """A substring of an enabled class does not match."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classses': 'foobar'}))
+        self.assertFalse(celery_enabled('bar'))

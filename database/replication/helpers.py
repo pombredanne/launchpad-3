@@ -46,8 +46,6 @@ LPMIRROR_SET_ID = 4
 # calculate_replication_set().
 LPMAIN_SEED = frozenset([
     ('public', 'account'),
-    ('public', 'openidnonce'),
-    ('public', 'openidassociation'),
     ('public', 'person'),
     ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
@@ -56,13 +54,11 @@ LPMAIN_SEED = frozenset([
     ('public', 'openidconsumernonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
-    ('public', 'standardshipitrequest'),
-    ('public', 'bugtag'),
     ('public', 'launchpadstatistic'),
     ('public', 'parsedapachelog'),
-    ('public', 'shipitsurvey'),
     ('public', 'databasereplicationlag'),
     ('public', 'featureflag'),
+    ('public', 'bugtaskflat'),
     # suggestivepotemplate can be removed when the
     # suggestivepotemplate.potemplate foreign key constraint exists on
     # production.
