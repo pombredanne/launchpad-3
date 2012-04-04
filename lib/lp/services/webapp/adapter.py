@@ -25,6 +25,7 @@ import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_REPEATABLE_READ,
     ISOLATION_LEVEL_SERIALIZABLE,
     QueryCanceledError,
     )
@@ -467,6 +468,7 @@ def break_main_thread_db_access(*ignored):
 isolation_level_map = {
     'autocommit': ISOLATION_LEVEL_AUTOCOMMIT,
     'read_committed': ISOLATION_LEVEL_READ_COMMITTED,
+    'repeatable_read': ISOLATION_LEVEL_REPEATABLE_READ,
     'serializable': ISOLATION_LEVEL_SERIALIZABLE,
     }
 
