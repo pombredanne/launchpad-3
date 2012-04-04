@@ -127,9 +127,9 @@ class ISharingService(IService):
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         sharee=Reference(IPerson, title=_('Sharee'), required=True),
         bugs=List(
-            Reference(IBug, title=_('Bugs'), required=False)),
+            Reference(schema=IBug), title=_('Bugs'), required=False),
         branches=List(
-            Reference(IBranch), title=_('Branches'), required=False))
+            Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
     def revokeAccessGrants(pillar, sharee, branches=None, bugs=None):
         """Remove a sharee's access to the specified artifacts.
