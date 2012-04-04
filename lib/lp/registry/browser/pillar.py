@@ -427,9 +427,19 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_bug_template_data(self, bugs, request):
         bug_data = []
         for bug in bugs:
-            web_link = canonical_url(bug, path_only_if_possible=True)
-            self_link = absoluteURL(bug, request)
-            importance = bug.default_bugtask.importance.title.lower()
+            [bugtask] = [task for task in bug.bugtasks if
+                            task.target == self.pillar]
+            if bugtask is not None:
+                web_link = canonical_url(bugtask, path_only_if_possible=True)
+                self_link = absoluteURL(bug, request)
+                importance = bugtask.importance.title.lower()
+            else:
+                # This shouldn't ever happen, but if it does there's no reason
+                # to crash.
+                web_link = canonical_url(bug, path_only_if_possible=True)
+                self_link = absoluteURL(bug, request)
+                importance = bug.default_bugtask.importance.title.lower()
+
             bug_data.append(dict(
                 self_link=self_link,
                 web_link=web_link,

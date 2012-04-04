@@ -142,13 +142,13 @@ class PillarSharingDetailsMixin:
             self.assertEqual({
                 'self_link': absoluteURL(pillarperson.pillar, request),
             }, cache.objects.get('pillar'))
+            bugtask = self.bug.default_bugtask
             self.assertEqual({
                 'bug_id': self.bug.id,
                 'bug_summary': self.bug.title,
-                'bug_importance':
-                    self.bug.default_bugtask.importance.title.lower(),
+                'bug_importance': bugtask.importance.title.lower(),
                 'web_link': canonical_url(
-                    self.bug, path_only_if_possible=True),
+                    bugtask, path_only_if_possible=True),
                 'self_link': absoluteURL(self.bug, request),
             }, cache.objects.get('bugs')[0])
             if self.pillar_type == 'product':
