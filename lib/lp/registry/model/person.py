@@ -99,7 +99,6 @@ from zope.interface import (
     classImplements,
     implementer,
     implements,
-    providedBy,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
@@ -2674,12 +2673,13 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-
-        person_before_mod = Snapshot(self, providing=providedBy(self))
-
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
+
+        # This might be a new person so there's no before mod to use.
+        person_before_mod = Snapshot(self,
+            names=['name', 'displayname', 'preferredemail'])
 
         if existing_preferred_email is not None:
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
