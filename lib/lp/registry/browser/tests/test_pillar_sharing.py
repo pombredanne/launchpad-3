@@ -79,7 +79,9 @@ class PillarSharingDetailsMixin:
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson()
-            expected = pillarperson.person.displayname
+            expected = "Sharing details for %s : %s" % (
+                    pillarperson.person.displayname,
+                    pillarperson.pillar.displayname)
             url = 'http://launchpad.dev/%s/+sharing/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
