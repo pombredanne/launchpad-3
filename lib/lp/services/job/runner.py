@@ -623,7 +623,7 @@ def celery_enabled(class_name):
 
     The name of a BaseRunnableJob must be specified.
     """
-    flag = getFeatureFlag('jobs.celery.enabled_classses')
+    flag = getFeatureFlag('jobs.celery.enabled_classes')
     if flag is None:
         return False
     return class_name in flag.split(' ')
