@@ -379,10 +379,6 @@ Only bugs that the supplied user has access to will be counted:
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
     {u'crash': 1L}
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
-
 When context doesn't have any tags getUsedBugTags() returns a empty list.
 
     >>> gimp = getUtility(IProjectGroupSet).getByName('gimp')

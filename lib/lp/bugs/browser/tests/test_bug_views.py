@@ -19,6 +19,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -68,7 +69,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     """ Tests the rendering of the Also Affects links on the bug index view.
 
     The links are rendered with a css class 'private-disallow' if they are
-    not valid for private bugs.
+    not valid for proprietary bugs.
     """
 
     layer = DatabaseFunctionalLayer
@@ -76,9 +77,11 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     def test_also_affects_links_product_bug(self):
         # We expect that both Also Affects links (for project and distro) are
         # disallowed.
-        bug = self.factory.makeBug()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
+        browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
             browser.contents, 'also-affects-product')
         self.assertIn(
@@ -91,9 +94,12 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     def test_also_affects_links_distro_bug(self):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro,
+            information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
+        browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
             browser.contents, 'also-affects-product')
         self.assertIn(

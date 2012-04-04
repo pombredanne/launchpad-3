@@ -29,5 +29,3 @@ the Subscribe someone else page.
     >>> admin_browser.getLink('additional contacts').click()
     >>> 'Page not found' not in admin_browser.contents
     True
-
-    >>> privacy_flags.cleanUp()

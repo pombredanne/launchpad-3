@@ -106,10 +106,6 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
-
 Ordering of search results
 --------------------------
 

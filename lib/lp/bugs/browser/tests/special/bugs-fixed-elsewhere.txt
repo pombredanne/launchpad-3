@@ -90,9 +90,9 @@ Only bugs that the user has permission to view are included in the count.
     True
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
-    >>>     another_bug, getUtility(ILaunchBag).user, evolution)
+    ...     another_bug, getUtility(ILaunchBag).user, evolution)
     >>> another_elsewhere.transitionToStatus(
-    >>>     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
     >>> get_view().bugs_fixed_elsewhere_count
     2L

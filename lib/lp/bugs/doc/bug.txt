@@ -804,7 +804,8 @@ We can also add an allowed distro series source package.
 We cannot add distro series or source package tasks for different distros.
 
     >>> private_bug = tubuntu.createBug(params)
-    >>> private_bug.setPrivate(True, current_user())
+    >>> private_bug.transitionToInformationType(
+    ...     InformationType.PROPRIETARY, current_user())
     True
 
     >>> private_bug.addTask(owner=foobar, target=warty)

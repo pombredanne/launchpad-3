@@ -1067,35 +1067,38 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
 
     def _createView(self, bug):
         request = LaunchpadTestRequest()
-        bugtasks_and_nominations_view = getMultiAdapter(
+        return getMultiAdapter(
             (bug, request), name="+bugtasks-and-nominations-portal")
-        return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
         # A bug affecting a project cannot also affect another project or
         # package.
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            information_type=InformationType.PROPRIETARY)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertFalse(view.canAddPackageTask())
-        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
-        self.assertTrue(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertFalse(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
 
     def test_distro_bug_cannot_affect_project(self):
         # A bug affecting a distro cannot also affect another project but it
         # could affect another package.
         distro = self.factory.makeDistribution()
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro,
+            distribution=distro, owner=owner,
             information_type=InformationType.PROPRIETARY)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
-        self.assertTrue(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
 
     def test_sourcepkg_bug_cannot_affect_project(self):
         # A bug affecting a source pkg cannot also affect another project but
@@ -1105,15 +1108,17 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp_name = self.factory.getOrMakeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name,
+            distribution=distro, sourcepackagename=sp_name, owner=owner,
             information_type=InformationType.PROPRIETARY)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
-        self.assertTrue(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
+            self.assertTrue(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
 
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):

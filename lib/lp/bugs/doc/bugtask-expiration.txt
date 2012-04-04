@@ -451,10 +451,6 @@ even the private bugs are returned.
     True
     >>> reset_bug_modified_date(private_bug, 351)
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
-
 The default expiration age
 --------------------------
 

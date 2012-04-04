@@ -111,6 +111,3 @@ Set the bug back to public:
   >>> browser.getControl('Change').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
-
-Clean up the feature flag.
-    >>> flags.cleanUp()

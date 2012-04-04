@@ -122,9 +122,6 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
     ...     "This bug report should be private").selected = False
     >>> admin_browser.getControl("Change").click()
 
-Clean up the feature flag.
-    >>> flags.cleanUp()
-
 Changes to a bug's security_related field will be displayed as
 'security vulnerability' changes, with values of 'yes' or 'no'. Note
 that changes are grouped together if they occur at similar times, but
