@@ -168,40 +168,53 @@ class TestViaCelery(TestCaseWithFactory):
         from lp.services.job.tests.celery_helpers import pop_notifications
         return pop_notifications.delay().get(30)
 
+    def prepare(self, job_name):
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': job_name}))
+        self.useContext(celeryd('job'))
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        add_subscriber(db_branch)
+        switch_dbuser(config.branchscanner.dbuser)
+        # Needed for feature flag teardown
+        self.addCleanup(switch_dbuser, config.launchpad.dbuser)
+        return db_branch, tree
+
     def test_empty_branch(self):
         """RevisionMailJob for empty branches runs via Celery."""
-        self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classes': 'RevisionMailJob'}))
-        with celeryd('job'):
-            self.useBzrBranches(direct_database=True)
-            db_branch, tree = self.create_branch_and_tree()
-            add_subscriber(db_branch)
-            with monitor_celery() as responses:
-                BzrSync(db_branch).syncBranchAndClose(tree.branch)
-            responses[-1].wait(30)
-            self.assertEqual(1, len(self.pop_notifications()))
+        db_branch, tree = self.prepare('RevisionMailJob')
+        with monitor_celery() as responses:
+            BzrSync(db_branch).syncBranchAndClose(tree.branch)
+        responses[-1].wait(30)
+        self.assertEqual(1, len(self.pop_notifications()))
 
     def test_uncommit_branch(self):
         """RevisionMailJob for removed revisions runs via Celery."""
-        self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classes': 'RevisionMailJob'}))
-        with celeryd('job'):
-            self.useBzrBranches(direct_database=True)
-            db_branch, tree = self.create_branch_and_tree()
-            tree.commit('message')
-            add_subscriber(db_branch)
-            switch_dbuser(config.branchscanner.dbuser)
-            bzr_sync = BzrSync(db_branch)
-            with monitor_celery() as responses:
-                bzr_sync.syncBranchAndClose(tree.branch)
-                responses[0].wait(30)
-                self.pop_notifications()
-                uncommit(tree.branch)
-                bzr_sync.syncBranchAndClose(tree.branch)
-            responses[1].wait(30)
+        db_branch, tree = self.prepare('RevisionMailJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        with monitor_celery() as responses:
+            bzr_sync.syncBranchAndClose(tree.branch)
+            responses[0].wait(30)
+            self.pop_notifications()
+            uncommit(tree.branch)
+            bzr_sync.syncBranchAndClose(tree.branch)
+        responses[1].wait(30)
+        self.assertEqual(1, len(self.pop_notifications()))
+        # Needed for feature flag teardown
+
+    def test_revisions_added(self):
+        """RevisionMailJob for removed revisions runs via Celery."""
+        db_branch, tree = self.prepare('RevisionsAddedJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        bzr_sync.syncBranchAndClose(tree.branch)
+        self.pop_notifications()
+        tree.commit('message2')
+        with monitor_celery() as responses:
+            bzr_sync.syncBranchAndClose(tree.branch)
+            responses[-1].wait(30)
             self.assertEqual(1, len(self.pop_notifications()))
-            # Needed for feature flag teardown
-            switch_dbuser(config.launchpad.dbuser)
 
 
 class TestScanBranches(TestCaseWithFactory):

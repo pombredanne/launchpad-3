@@ -70,9 +70,9 @@ def queue_tip_changed_email_jobs(tip_changed):
         job = getUtility(IRevisionMailJobSource).create(
             tip_changed.db_branch, 'initial',
             config.canonical.noreply_from_address, message, subject)
-        job.celeryRunOnCommit()
     else:
-        getUtility(IRevisionsAddedJobSource).create(
+        job = getUtility(IRevisionsAddedJobSource).create(
             tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,
             tip_changed.bzr_branch.last_revision(),
             config.canonical.noreply_from_address)
+    job.celeryRunOnCommit()

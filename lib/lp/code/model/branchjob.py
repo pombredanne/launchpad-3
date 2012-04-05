@@ -80,7 +80,10 @@ from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.bzrutils import server
+from lp.codehosting.bzrutils import (
+    read_locked,
+    server,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
     get_ro_server,
@@ -465,6 +468,8 @@ class RevisionsAddedJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
+    config = config.sendbranchmail
+
     @classmethod
     def create(cls, branch, last_scanned_id, last_revision_id,
                from_address):
@@ -527,15 +532,13 @@ class RevisionsAddedJob(BranchJobDerived):
         if not subscriptions:
             return
 
-        self.bzr_branch.lock_read()
-        try:
+        with server(get_ro_server(), no_replace=True), \
+                read_locked(self.bzr_branch):
             for revision, revno in self.iterAddedMainline():
                 assert revno is not None
                 mailer = self.getMailerForRevision(
                     revision, revno, self.generateDiffs())
                 mailer.sendAll()
-        finally:
-            self.bzr_branch.unlock()
 
     def getDiffForRevisions(self, from_revision_id, to_revision_id):
         """Generate the diff between from_revision_id and to_revision_id."""
