@@ -91,8 +91,9 @@ class EmailAddress(SQLBase, HasOwnerMixin):
 
         # We need to notify the preferred email address that this address has
         # been removed.
-        notify(ObjectModifiedEvent(self.person, self.person,
-            ['removedemail'], user=self.person))
+        if self.person.is_valid_person:
+            notify(ObjectModifiedEvent(self.person, self.person,
+                ['removedemail'], user=self.person))
 
         super(EmailAddress, self).destroySelf()
 

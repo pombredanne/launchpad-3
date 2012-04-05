@@ -196,7 +196,7 @@ Let's give "ssh-user" a key via the back door of our internal Python APIs:
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login(ANONYMOUS)
+    >>> login('test@canonical.com')
     >>> ssh_user = getUtility(IPersonSet).getByName('ssh-user')
     >>> ssh_key = factory.makeSSHKey(ssh_user)
     >>> logout()

@@ -74,7 +74,7 @@ class TestPersonNotification(TestCaseWithFactory):
         note.body = 'body'
         note.subject = 'subject'
         pop_notifications()
-        note.send(send_to=(user.displayname, 'testing@me.com'))
+        note.send(sendto=(user.displayname, 'testing@me.com'))
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertTrue('testing@me.com' in notifications[0].get('To'))
