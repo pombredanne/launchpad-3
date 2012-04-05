@@ -89,6 +89,7 @@ from lp.codehosting.vfs import (
 from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
@@ -296,6 +297,8 @@ class BranchScanJob(BranchJobDerived):
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
 
+    config = config.branchscanner
+
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
@@ -328,6 +331,8 @@ class BranchUpgradeJob(BranchJobDerived):
     user_error_types = (NotBranchError,)
 
     task_queue = 'branch_write_job'
+
+    config = config.upgrade_branches
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -412,6 +417,8 @@ class RevisionMailJob(BranchJobDerived):
     classProvides(IRevisionMailJobSource)
 
     class_job_type = BranchJobType.REVISION_MAIL
+
+    config = config.sendbranchmail
 
     @classmethod
     def create(cls, branch, revno, from_address, body, subject):
@@ -950,6 +957,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
     task_queue = 'branch_write_job'
+
+    config = config.reclaimbranchspace
 
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {

@@ -253,17 +253,22 @@ class UniversalJobSource:
 
     needs_init = True
 
-    @classmethod
-    def get(cls, job_id):
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-
-        dbconfig.override(
-            dbuser='branchscanner', isolation_level='read_committed')
+    @staticmethod
+    def getDerived(job_id):
         from lp.code.model.branchjob import (
             BranchJob,
             )
         store = IStore(BranchJob)
         branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
         return branch_job.makeDerived()
+
+    @classmethod
+    def get(cls, job_id):
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+        derived = cls.getDerived(job_id)
+        dbconfig.override(
+            dbuser=derived.config.dbuser, isolation_level='read_committed')
+        # Re-load to use new database connection.
+        return cls.getDerived(job_id)
