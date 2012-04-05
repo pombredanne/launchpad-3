@@ -33,7 +33,9 @@ from storm.locals import (
     Int,
     Reference,
     )
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import dbconfig
@@ -48,7 +50,6 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services import scripts
-from lp.testing.dbuser import update_store_connections
 
 
 UTC = pytz.timezone('UTC')
@@ -263,7 +264,7 @@ class UniversalJobSource:
         branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
         if branch_job is None:
             raise ValueError('No BranchJob with job=%s.' % job_id)
-        return branch_job.makeDerived()
+        return branch_job.makeDerived(), store
 
     @classmethod
     def get(cls, job_id):
@@ -271,9 +272,11 @@ class UniversalJobSource:
         if cls.needs_init:
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
-        derived = cls.getDerived(job_id)
+        derived, store = cls.getDerived(job_id)
         dbconfig.override(
             dbuser=derived.config.dbuser, isolation_level='read_committed')
-        update_store_connections()
+        transaction.abort()
+        getUtility(IZStorm).remove(store)
+        store.close()
         # Re-load to use new database connection.
-        return cls.getDerived(job_id)
+        return cls.getDerived(job_id)[0]
