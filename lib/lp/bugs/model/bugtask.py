@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -84,7 +84,10 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
+from lp.registry.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -365,8 +368,7 @@ def validate_target(bug, target, retarget_existing=True):
             except NotFoundError, e:
                 raise IllegalTarget(e[0])
 
-    if bug.private and not bool(features.getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled')):
+    if bug.information_type == InformationType.PROPRIETARY:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.
         if retarget_existing and len(bug.bugtasks) <= 1:
@@ -375,8 +377,8 @@ def validate_target(bug, target, retarget_existing=True):
         if (len(bug.affected_pillars) > 0
                 and target.pillar not in bug.affected_pillars):
             raise IllegalTarget(
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
 
 

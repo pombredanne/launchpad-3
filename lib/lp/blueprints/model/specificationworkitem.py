@@ -59,8 +59,3 @@ class SpecificationWorkItem(StormBase):
         self.assignee=assignee
         self.milestone=milestone
         self.sequence=sequence
-
-    @property
-    def is_complete(self):
-        """See `ISpecificationWorkItem`."""
-        return self.status == SpecificationWorkItemStatus.DONE

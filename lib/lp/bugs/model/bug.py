@@ -1733,13 +1733,11 @@ class Bug(SQLBase):
         f_flag = bool(getFeatureFlag(f_flag_str))
         if f_flag:
             self.reconcileSubscribers(information_type, who)
+        if (information_type == InformationType.PROPRIETARY and
+            len(self.affected_pillars) > 1):
+            raise BugCannotBePrivate(
+                "Multi-pillar bugs cannot be proprietary.")
         if information_type in PRIVATE_INFORMATION_TYPES:
-            allow_multi_pillar_private = bool(getFeatureFlag(
-                'disclosure.allow_multipillar_private_bugs.enabled'))
-            if (not allow_multi_pillar_private
-                    and len(self.affected_pillars) > 1):
-                raise BugCannotBePrivate(
-                    "Multi-pillar bugs cannot be private.")
             self.who_made_private = who
             self.date_made_private = UTC_NOW
         else:

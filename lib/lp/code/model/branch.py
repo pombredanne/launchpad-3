@@ -150,6 +150,10 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    celery_enabled,
+    )
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
@@ -891,7 +895,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             (a and unicode(a) or None, b and unicode(b) or None)
                 for a, b in revision_id_sequence_pairs]
         store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], expr=unicode_revid_sequence_pairs))
+            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
@@ -1060,13 +1064,18 @@ class Branch(SQLBase, BzrIdentityMixin):
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             job_id = BranchScanJob.create(self).job_id
-            if celery_scan:
+            if celery_scan and celery_enabled('BranchScanJob'):
                 # lp.services.job.celery is imported only where needed.
                 from lp.services.job.celeryjob import CeleryRunJob
                 current = transaction.get()
+
                 def runHook(succeeded):
+                    ignore_result = (BaseRunnableJob.celery_responses is None)
                     if succeeded:
-                        CeleryRunJob.delay(job_id)
+                        response = CeleryRunJob.apply_async(
+                            (job_id,), ignore_result=ignore_result)
+                        if not ignore_result:
+                            BaseRunnableJob.celery_responses.append(response)
                 current.addAfterCommitHook(runHook)
         self.control_format = control_format
         self.branch_format = branch_format
