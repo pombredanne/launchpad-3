@@ -103,17 +103,19 @@ class PillarSharingDetailsMixin:
             browser = self.getUserBrowser(user=self.owner, url=url)
             self.assertEqual(expected, browser.title)
 
-    def test_not_found_without_sharing(self):
-        # If there is no sharing between pillar and person, NotFound is the
-        # result.
+    def test_no_sharing_message(self):
+        # If there is no sharing between pillar and person, a suitable message
+        # is displayed.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson(with_sharing=False)
             url = 'http://launchpad.dev/%s/+sharingdetails/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
-            browser = self.getUserBrowser(user=self.owner)
-            self.assertRaises(NotFound, browser.open, url)
+            browser = self.getUserBrowser(user=self.owner, url=url)
+            self.assertIn(
+                'There are no shared bugs or branches.',
+                browser.contents)
 
     def test_init_without_feature_flag(self):
         # We need a feature flag to enable the view.

@@ -50,7 +50,13 @@
           </th>
         </tr>
       </thead>
-      <tbody id="sharing-table-body"></tbody>
+      <tbody id="sharing-table-body">
+          <tr>
+              <td colspan="4">
+                  There are no shared bugs or branches.
+              </td>
+          </tr>
+      </tbody>
     </table>
 
   </div>

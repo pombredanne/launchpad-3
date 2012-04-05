@@ -43,10 +43,6 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantFlatSource,
-    IAccessPolicySource,
-    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -84,11 +80,6 @@ class PillarNavigationMixin:
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
         if person is None:
-            return None
-        policies = getUtility(IAccessPolicySource).findByPillar([self.context])
-        source = getUtility(IAccessPolicyGrantFlatSource)
-        artifacts = source.findArtifactsByGrantee(person, policies)
-        if artifacts.is_empty():
             return None
         return PillarPerson.create(self.context, person)
 
