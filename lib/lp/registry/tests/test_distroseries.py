@@ -308,34 +308,39 @@ class TestDistroSeries(TestCaseWithFactory):
             [comment], distroseries.getDifferenceComments())
 
     def checkLegalPocket(self, status, pocket):
-        distroseries = self.factory.makeDistroSeries(
-            status=SeriesStatus.DEVELOPMENT)
+        distroseries = self.factory.makeDistroSeries(status=status)
         spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
+            distroseries=distroseries, pocket=pocket)
         return removeSecurityProxy(distroseries).checkLegalPocket(
             spph, False, getLogger())
 
     def test_checkLegalPocket_allows_unstable_release(self):
+        """Publishing to RELEASE in a DEVELOPMENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
 
     def test_checkLegalPocket_allows_unstable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
 
     def test_checkLegalPocket_forbids_unstable_updates(self):
-        self.assertTrue(self.checkLegalPocket(
+        """Publishing to UPDATES in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
             SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
 
     def test_checkLegalPocket_forbids_stable_release(self):
-        self.assertTrue(self.checkLegalPocket(
+        """Publishing to RELEASE in a DEVELOPMENT series is forbidden."""
+        self.assertFalse(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
 
     def test_checkLegalPocket_allows_stable_proposed(self):
+        """Publishing to PROPOSED in a DEVELOPMENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
 
     def test_checkLegalPocket_allows_stable_updates(self):
+        """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
 
