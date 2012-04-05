@@ -16,7 +16,6 @@ from testtools.matchers import (
     Raises,
     )
 from zope.component import getUtility
-from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
