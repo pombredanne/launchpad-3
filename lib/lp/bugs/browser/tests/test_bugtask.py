@@ -57,6 +57,7 @@ from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -1058,33 +1059,28 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
 
 
 class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
-    """ Tests the boolean methods on the view used to indicate whether the
-        Also Affects... links should be allowed or not. Currently these
-        restrictions are only used for private bugs. ie where body.private
-        is true.
-
-        A feature flag is used to turn off the new restrictions. Each test
-        is performed with and without the feature flag.
-    """
+    """Tests the boolean methods on the view used to indicate whether the
+       Also Affects... links should be allowed or not. These restrictions
+       are only used for proprietary bugs. """
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-
     def _createView(self, bug):
         request = LaunchpadTestRequest()
-        bugtasks_and_nominations_view = getMultiAdapter(
+        return getMultiAdapter(
             (bug, request), name="+bugtasks-and-nominations-portal")
-        return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
         # A bug affecting a project cannot also affect another project or
         # package.
-        bug = self.factory.makeBug()
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertFalse(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertFalse(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1092,11 +1088,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # A bug affecting a distro cannot also affect another project but it
         # could affect another package.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1108,12 +1108,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp_name = self.factory.getOrMakeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1449,7 +1452,6 @@ class TestPersonBugs(TestCaseWithFactory):
         """The mustache model should not be added to JSON cache for feeds."""
         cache = getFeedViewCache(self.target, PersonBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
-
 
 
 class TestDistributionBugs(TestCaseWithFactory):

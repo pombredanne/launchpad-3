@@ -15,7 +15,7 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationWorkItemStatus,
     )
-from lp.registry.browser.person import (
+from lp.registry.browser.team import (
     GenericWorkItem,
     getWorkItemsDueBefore,
     WorkItemContainer,
@@ -224,33 +224,21 @@ class TestPersonUpcomingWork(BrowserTestCase):
         with anonymous_logged_in():
             self.assertIn(bugtask2.bug.title, tomorrows_group)
 
-    def test_basic_for_person(self):
-        """Check that the page shows the bugs/work items assigned to a person.
-        """
-        person = self.factory.makePerson()
-        workitem = self.factory.makeSpecificationWorkItem(
-            assignee=person, milestone=self.today_milestone)
-        bugtask = self.factory.makeBug(
-            milestone=self.tomorrow_milestone).bugtasks[0]
-        removeSecurityProxy(bugtask).assignee = person
+    def test_no_xss_on_workitem_title(self):
+        self.factory.makeSpecificationWorkItem(
+            title=u"<script>window.alert('XSS')</script>",
+            assignee=self.team.teamowner, milestone=self.today_milestone)
 
         browser = self.getViewBrowser(
-            person, view_name='+upcomingwork', no_login=True)
+            self.team, view_name='+upcomingwork', no_login=True)
 
-        # Check that the two work items created above are shown and grouped
-        # under the appropriate milestone date.
-        groups = find_tags_by_class(browser.contents, 'workitems-group')
-        self.assertEqual(2, len(groups))
-        todays_group = extract_text(groups[0])
-        tomorrows_group = extract_text(groups[1])
-        self.assertStartsWith(
-            todays_group, 'Work items due in %s' % self.today)
-        self.assertIn(workitem.title, todays_group)
-
-        self.assertStartsWith(
-            tomorrows_group, 'Work items due in %s' % self.tomorrow)
-        with anonymous_logged_in():
-            self.assertIn(bugtask.bug.title, tomorrows_group)
+        groups = find_tags_by_class(browser.contents, 'collapsible-body')
+        self.assertEqual(1, len(groups))
+        tbody = groups[0]
+        title_td = tbody.findChildren('td')[0]
+        self.assertEqual(
+            "<td>\n<span>&lt;script&gt;window.alert('XSS')&lt;/script&gt;"
+            "</span>\n</td>", str(title_td))
 
     def test_overall_progressbar(self):
         """Check that the per-date progress bar is present."""
@@ -303,6 +291,34 @@ class TestPersonUpcomingWork(BrowserTestCase):
             browser.contents, 'container_progressbar_1')
         self.assertEqual('100%', container1_progressbar.get('width'))
         self.assertEqual('0%', container2_progressbar.get('width'))
+
+    def test_basic_for_person(self):
+        """Check that the page shows the bugs/work items assigned to a person.
+        """
+        person = self.factory.makePerson()
+        workitem = self.factory.makeSpecificationWorkItem(
+            assignee=person, milestone=self.today_milestone)
+        bugtask = self.factory.makeBug(
+            milestone=self.tomorrow_milestone).bugtasks[0]
+        removeSecurityProxy(bugtask).assignee = person
+
+        browser = self.getViewBrowser(
+            person, view_name='+upcomingwork', no_login=True)
+
+        # Check that the two work items created above are shown and grouped
+        # under the appropriate milestone date.
+        groups = find_tags_by_class(browser.contents, 'workitems-group')
+        self.assertEqual(2, len(groups))
+        todays_group = extract_text(groups[0])
+        tomorrows_group = extract_text(groups[1])
+        self.assertStartsWith(
+            todays_group, 'Work items due in %s' % self.today)
+        self.assertIn(workitem.title, todays_group)
+
+        self.assertStartsWith(
+            tomorrows_group, 'Work items due in %s' % self.tomorrow)
+        with anonymous_logged_in():
+            self.assertIn(bugtask.bug.title, tomorrows_group)
 
 
 class TestPersonUpcomingWorkView(TestCaseWithFactory):
