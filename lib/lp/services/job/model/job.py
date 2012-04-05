@@ -48,6 +48,7 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services import scripts
+from lp.testing.dbuser import update_store_connections
 
 
 UTC = pytz.timezone('UTC')
@@ -260,15 +261,19 @@ class UniversalJobSource:
             )
         store = IStore(BranchJob)
         branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
+        if branch_job is None:
+            raise ValueError('No BranchJob with job=%s.' % job_id)
         return branch_job.makeDerived()
 
     @classmethod
     def get(cls, job_id):
+        transaction.abort()
         if cls.needs_init:
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
         derived = cls.getDerived(job_id)
         dbconfig.override(
             dbuser=derived.config.dbuser, isolation_level='read_committed')
+        update_store_connections()
         # Re-load to use new database connection.
         return cls.getDerived(job_id)
