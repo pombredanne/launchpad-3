@@ -83,7 +83,6 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
     format_link,
     PersonFormatterAPI,
@@ -2344,13 +2343,6 @@ class GenericWorkItem:
             assignee, work_item.status, work_item.specification.priority,
             work_item.specification.target, work_item.title,
             work_item=work_item)
-
-    @property
-    def display_title(self):
-        if self._work_item is not None:
-            return FormattersAPI(self.title).shorten(120)
-        else:
-            return format_link(self._bugtask)
 
     @property
     def milestone(self):

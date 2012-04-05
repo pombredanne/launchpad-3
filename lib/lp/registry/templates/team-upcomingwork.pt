@@ -82,7 +82,12 @@
       </tbody>
       <tbody class="collapsible-body">
         <tr tal:repeat="workitem container/items" class="padded">
-          <td tal:content="structure workitem/display_title" />
+          <td>
+            <span tal:condition="not: container/spec|nothing"
+                  tal:content="structure workitem/actual_workitem/fmt:link" />
+            <span tal:condition="container/spec|nothing"
+                  tal:content="workitem/title/fmt:shorten/120" />
+          </td>
           <td>
             <span tal:condition="not: container/spec|nothing"
                   tal:replace="structure workitem/target/fmt:link" />
