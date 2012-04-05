@@ -18,6 +18,8 @@ from lp.registry.enums import (
     SharingPermission,
     )
 from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
@@ -585,6 +587,101 @@ class TestSharingService(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, self.service.deletePillarSharee,
             product, [InformationType.USERDATA])
+
+    def _assert_revokeAccessGrants(self, pillar, bugs, branches):
+        artifacts = []
+        if bugs:
+            artifacts.extend(bugs)
+        if branches:
+            artifacts.extend(branches)
+        policy = self.factory.makeAccessPolicy(pillar=pillar)
+        # Grant access to a grantee and another person.
+        grantee = self.factory.makePerson()
+        someone = self.factory.makePerson()
+        access_artifacts = []
+        for artifact in artifacts:
+            access_artifact = self.factory.makeAccessArtifact(
+                concrete=artifact)
+            access_artifacts.append(access_artifact)
+            self.factory.makeAccessPolicyArtifact(
+                artifact=access_artifact, policy=policy)
+            for person in [grantee, someone]:
+                self.factory.makeAccessArtifactGrant(
+                    artifact=access_artifact, grantee=person,
+                    grantor=pillar.owner)
+
+        # Check that grantee has expected access grants.
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        grants = accessartifact_grant_source.findByArtifact(
+            access_artifacts, [grantee])
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        self.assertEqual(1, grants.count())
+
+        with FeatureFixture(WRITE_FLAG):
+            self.service.revokeAccessGrants(
+                pillar, grantee, bugs=bugs, branches=branches)
+
+        # The grantee now has no access to anything.
+        permission_info = apgfs.findGranteePermissionsByPolicy(
+            [policy], [grantee])
+        self.assertEqual(0, permission_info.count())
+
+        # Someone else still has access to the bugs and branches.
+        grants = accessartifact_grant_source.findByArtifact(
+            access_artifacts, [someone])
+        self.assertEqual(1, grants.count())
+
+    def test_revokeAccessGrantsBugs(self):
+        # Users with launchpad.Edit can delete all access for a sharee.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner, private=True)
+        self._assert_revokeAccessGrants(distro, [bug], None)
+
+    def test_revokeAccessGrantsBranches(self):
+        # Users with launchpad.Edit can delete all access for a sharee.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, private=True)
+        self._assert_revokeAccessGrants(product, None, [branch])
+
+    def _assert_revokeAccessGrantsUnauthorized(self):
+        # revokeAccessGrants raises an Unauthorized exception if the user
+        # is not permitted to do so.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, private=True)
+        sharee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            self.assertRaises(
+                Unauthorized, self.service.revokeAccessGrants,
+                product, sharee, bugs=[bug])
+
+    def test_revokeAccessGrantsAnonymous(self):
+        # Anonymous users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            login(ANONYMOUS)
+            self._assert_revokeAccessGrantsUnauthorized()
+
+    def test_revokeAccessGrantsAnyone(self):
+        # Unauthorized users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            login_person(self.factory.makePerson())
+            self._assert_revokeAccessGrantsUnauthorized()
+
+    def test_revokeAccessGrants_without_flag(self):
+        # The feature flag needs to be enabled.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(product=product, private=True)
+        sharee = self.factory.makePerson()
+        login_person(owner)
+        self.assertRaises(
+            Unauthorized, self.service.revokeAccessGrants,
+            product, sharee, bugs=[bug])
 
 
 class ApiTestMixin:

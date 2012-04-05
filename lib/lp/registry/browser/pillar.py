@@ -17,6 +17,7 @@ from operator import attrgetter
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import get_current_web_service_request
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
@@ -26,6 +27,7 @@ from zope.interface import (
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
@@ -41,10 +43,6 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantFlatSource,
-    IAccessPolicySource,
-    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -82,11 +80,6 @@ class PillarNavigationMixin:
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
         if person is None:
-            return None
-        policies = getUtility(IAccessPolicySource).findByPillar([self.context])
-        source = getUtility(IAccessPolicyGrantFlatSource)
-        artifacts = source.findArtifactsByGrantee(person, policies)
-        if artifacts.is_empty():
             return None
         return PillarPerson.create(self.context, person)
 
@@ -376,10 +369,25 @@ class PillarPersonSharingView(LaunchpadView):
         self._loadSharedArtifacts()
 
         cache = IJSONRequestCache(self.request)
-        branch_data = self._build_branch_template_data(self.branches)
-        bug_data = self._build_bug_template_data(self.bugs)
+        request = get_current_web_service_request()
+        branch_data = self._build_branch_template_data(self.branches, request)
+        bug_data = self._build_bug_template_data(self.bugs, request)
+        sharee_data = {
+            'displayname': self.person.displayname,
+            'self_link': absoluteURL(self.person, request)
+        }
+        pillar_data = {
+            'self_link': absoluteURL(self.pillar, request)
+        }
+        cache.objects['sharee'] = sharee_data
+        cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.pillar))
 
     def _loadSharedArtifacts(self):
         bugs = []
@@ -397,31 +405,35 @@ class PillarPersonSharingView(LaunchpadView):
         self.shared_bugs_count = len(bugs)
         self.shared_branches_count = len(branches)
 
-    def _build_branch_template_data(self, branches):
+    def _build_branch_template_data(self, branches, request):
         branch_data = []
         for branch in branches:
             branch_data.append(dict(
-                branch_link=canonical_url(branch),
+                self_link=absoluteURL(branch, request),
+                web_link=canonical_url(branch, path_only_if_possible=True),
                 branch_name=branch.unique_name,
                 branch_id=branch.id))
         return branch_data
 
-    def _build_bug_template_data(self, bugs):
+    def _build_bug_template_data(self, bugs, request):
         bug_data = []
         for bug in bugs:
             [bugtask] = [task for task in bug.bugtasks if
                             task.target == self.pillar]
             if bugtask is not None:
-                url = canonical_url(bugtask, path_only_if_possible=True)
+                web_link = canonical_url(bugtask, path_only_if_possible=True)
+                self_link = absoluteURL(bug, request)
                 importance = bugtask.importance.title.lower()
             else:
                 # This shouldn't ever happen, but if it does there's no reason
                 # to crash.
-                url = canonical_url(bug, path_only_if_possible=True)
+                web_link = canonical_url(bug, path_only_if_possible=True)
+                self_link = absoluteURL(bug, request)
                 importance = bug.default_bugtask.importance.title.lower()
 
             bug_data.append(dict(
-                bug_link=url,
+                self_link=self_link,
+                web_link=web_link,
                 bug_summary=bug.title,
                 bug_id=bug.id,
                 bug_importance=importance))

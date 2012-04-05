@@ -28,6 +28,8 @@ from zope.schema import (
 
 from lp import _
 from lp.app.interfaces.services import IService
+from lp.bugs.interfaces.bug import IBug
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
@@ -118,4 +120,22 @@ class ISharingService(IService):
         :param sharee: the person or team to remove
         :param information_types: if None, remove all access, otherwise just
                                    remove the specified access_policies
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        pillar=Reference(IPillar, title=_('Pillar'), required=True),
+        sharee=Reference(IPerson, title=_('Sharee'), required=True),
+        bugs=List(
+            Reference(schema=IBug), title=_('Bugs'), required=False),
+        branches=List(
+            Reference(schema=IBranch), title=_('Branches'), required=False))
+    @operation_for_version('devel')
+    def revokeAccessGrants(pillar, sharee, branches=None, bugs=None):
+        """Remove a sharee's access to the specified artifacts.
+
+        :param pillar: the pillar from which to remove access
+        :param sharee: the person or team for whom to revoke access
+        :param bugs: the bugs for which to revoke access
+        :param branches: the branches for which to revoke access
         """
