@@ -267,16 +267,20 @@ class UniversalJobSource:
         return branch_job.makeDerived(), store
 
     @classmethod
-    def get(cls, job_id):
-        transaction.abort()
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
+    def switchDBUser(cls, job_id):
+        """Switch to the DB user associated with this Job ID."""
         derived, store = cls.getDerived(job_id)
         dbconfig.override(
             dbuser=derived.config.dbuser, isolation_level='read_committed')
         transaction.abort()
         getUtility(IZStorm).remove(store)
         store.close()
-        # Re-load to use new database connection.
+
+    @classmethod
+    def get(cls, job_id):
+        transaction.abort()
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+        cls.switchDBUser(job_id)
         return cls.getDerived(job_id)[0]
