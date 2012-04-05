@@ -315,6 +315,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('registry.upcoming_work_view.enabled',
+     'boolean',
+     ('If true, the new upcoming work view of teams is available.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
