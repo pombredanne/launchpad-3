@@ -4631,13 +4631,6 @@ class GenericWorkItem:
             work_item=work_item)
 
     @property
-    def display_title(self):
-        if self._work_item is not None:
-            return FormattersAPI(self.title).shorten(120)
-        else:
-            return format_link(self._bugtask)
-
-    @property
     def milestone(self):
         milestone = self.actual_workitem.milestone
         if milestone is None:
