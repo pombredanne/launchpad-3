@@ -23,9 +23,12 @@ def celeryd(queue, cwd=None):
     """
     from lp.services.job.celeryjob import CeleryRunJob
     from lazr.jobrunner.tests.test_celerytask import running
+    # convert config params to a URL, so they can be passed as --broker.
+    with CeleryRunJob.app.broker_connection() as connection:
+        broker_uri = connection.as_uri(include_password=True)
     cmd_args = (
         '--config', 'lp.services.job.celeryconfig',
-        '--broker', CeleryRunJob.app.conf['BROKER_URL'],
+        '--broker', broker_uri,
         '--concurrency', '1',
         '--loglevel', 'INFO',
         '--queues', queue,
