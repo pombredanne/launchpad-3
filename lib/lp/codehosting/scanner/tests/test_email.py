@@ -165,7 +165,7 @@ class TestViaCelery(TestCaseWithFactory):
 
     @staticmethod
     def pop_notifications():
-        from lp.services.job.celeryjob import pop_notifications
+        from lp.services.job.tests.celery_helpers import pop_notifications
         return pop_notifications.delay().get(30)
 
     def test_empty_branch(self):
