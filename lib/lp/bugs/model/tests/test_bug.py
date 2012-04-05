@@ -896,24 +896,17 @@ class TestBugPrivacy(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_multipillar_private_bugs_disallowed(self):
-        # A multi-pillar bug cannot be made private.
+    def test_multipillar_proprietary_bugs_disallowed(self):
+        # A multi-pillar bug cannot be made proprietary.
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
         self.factory.makeBugTask(bug=bug, target=product)
         login_person(bug.owner)
         self.assertRaises(
             BugCannotBePrivate, bug.transitionToInformationType,
-            InformationType.USERDATA, bug.owner)
-
-        # Some teams though need multi-pillar private bugs.
-        feature_flag = {
-            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
-            }
-        with FeatureFixture(feature_flag):
-            bug.transitionToInformationType(
-                InformationType.USERDATA, bug.owner)
-            self.assertTrue(bug.private)
+            InformationType.PROPRIETARY, bug.owner)
+        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
+        self.assertTrue(bug.private)
 
     def test_bug_information_type(self):
         # Bugs have the correct corresponding information type.
