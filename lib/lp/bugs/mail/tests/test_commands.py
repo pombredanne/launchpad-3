@@ -286,15 +286,16 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(private=True, product=product)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')
         login_celebrity('admin')
         login_person(bug.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
-        reason = ("This private bug already affects %s. "
-                    "Private bugs cannot affect multiple projects." %
+        reason = ("This proprietary bug already affects %s. "
+                    "Proprietary bugs cannot affect multiple projects." %
                     product.displayname)
         self.assertEqual(
             normalize_whitespace(

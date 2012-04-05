@@ -42,7 +42,10 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
 
 
-WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
+WRITE_FLAG = {
+    'disclosure.enhanced_sharing.writable': 'true',
+    'disclosure.enhanced_sharing_details.enabled': 'true'}
+DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
 class TestSharingService(TestCaseWithFactory):
@@ -65,9 +68,13 @@ class TestSharingService(TestCaseWithFactory):
             'permissions': {}}
         browser_request = IWebBrowserOriginatingRequest(request)
         sharee_data['web_link'] = absoluteURL(sharee, browser_request)
+        shared_items_exist = False
         permissions = {}
         for (policy, permission) in policy_permissions:
             permissions[policy.name] = unicode(permission.name)
+            if permission == SharingPermission.SOME:
+                shared_items_exist = True
+        sharee_data['shared_items_exist'] = shared_items_exist
         sharee_data['permissions'] = permissions
         return sharee_data
 
@@ -123,8 +130,27 @@ class TestSharingService(TestCaseWithFactory):
             distro,
             [InformationType.EMBARGOEDSECURITY, InformationType.USERDATA])
 
-    def test_jsonShareeData(self):
-        # jsonShareeData returns the expected data.
+    def test_jsonShareeData_with_Some(self):
+        # jsonShareeData returns the expected data for a grantee with
+        # permissions which include SOME.
+        product = self.factory.makeProduct()
+        [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
+            [product])
+        grantee = self.factory.makePerson()
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.jsonShareeData(
+                [(grantee, {
+                    policy1: SharingPermission.ALL,
+                    policy2: SharingPermission.SOME})])
+        expected_data = self._makeShareeData(
+            grantee,
+            [(policy1.type, SharingPermission.ALL),
+             (policy2.type, SharingPermission.SOME)])
+        self.assertContentEqual([expected_data], sharees)
+
+    def test_jsonShareeData_with_Some_without_flag(self):
+        # jsonShareeData returns the expected data for a grantee with
+        # permissions which include SOME and the feature flag not set.
         product = self.factory.makeProduct()
         [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
             [product])
@@ -137,6 +163,23 @@ class TestSharingService(TestCaseWithFactory):
             grantee,
             [(policy1.type, SharingPermission.ALL),
              (policy2.type, SharingPermission.SOME)])
+        expected_data['shared_items_exist'] = False
+        self.assertContentEqual([expected_data], sharees)
+
+    def test_jsonShareeData_without_Some(self):
+        # jsonShareeData returns the expected data for a grantee with only ALL
+        # permissions.
+        product = self.factory.makeProduct()
+        [policy1, policy2] = getUtility(IAccessPolicySource).findByPillar(
+            [product])
+        grantee = self.factory.makePerson()
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.jsonShareeData(
+                [(grantee, {
+                    policy1: SharingPermission.ALL})])
+        expected_data = self._makeShareeData(
+            grantee,
+            [(policy1.type, SharingPermission.ALL)])
         self.assertContentEqual([expected_data], sharees)
 
     def _assert_getPillarShareeData(self, pillar):
@@ -152,7 +195,8 @@ class TestSharingService(TestCaseWithFactory):
         self.factory.makeAccessPolicyArtifact(
             artifact=artifact_grant.abstract_artifact, policy=access_policy)
 
-        sharees = self.service.getPillarShareeData(pillar)
+        with FeatureFixture(DETAILS_FLAG):
+            sharees = self.service.getPillarShareeData(pillar)
         expected_sharees = [
             self._makeShareeData(
                 grantee,

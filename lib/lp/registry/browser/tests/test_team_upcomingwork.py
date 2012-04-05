@@ -219,6 +219,22 @@ class TestTeamUpcomingWork(BrowserTestCase):
         with anonymous_logged_in():
             self.assertIn(bugtask2.bug.title, tomorrows_group)
 
+    def test_no_xss_on_workitem_title(self):
+        self.factory.makeSpecificationWorkItem(
+            title=u"<script>window.alert('XSS')</script>",
+            assignee=self.team.teamowner, milestone=self.today_milestone)
+
+        browser = self.getViewBrowser(
+            self.team, view_name='+upcomingwork', no_login=True)
+
+        groups = find_tags_by_class(browser.contents, 'collapsible-body')
+        self.assertEqual(1, len(groups))
+        tbody = groups[0]
+        title_td = tbody.findChildren('td')[0]
+        self.assertEqual(
+            "<td>\n<span>&lt;script&gt;window.alert('XSS')&lt;/script&gt;"
+            "</span>\n</td>", str(title_td))
+
     def test_overall_progressbar(self):
         """Check that the per-date progress bar is present."""
         # Create two work items on separate specs. One of them is done and the
