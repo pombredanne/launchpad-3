@@ -44,6 +44,6 @@ dbconfig.override(dbuser='launchpad_main', isolation_level='read_committed')
 disconnect_stores()
 check()
 
-dbconfig.override(isolation_level='serializable')
+dbconfig.override(isolation_level='repeatable_read')
 disconnect_stores()
 check()

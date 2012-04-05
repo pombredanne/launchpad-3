@@ -545,7 +545,7 @@ class LaunchpadDatabase(Postgres):
         flags = _get_dirty_commit_flags()
 
         if dbconfig.isolation_level is None:
-            self._isolation = ISOLATION_LEVEL_SERIALIZABLE
+            self._isolation = ISOLATION_LEVEL_REPEATABLE_READ
         else:
             self._isolation = isolation_level_map[dbconfig.isolation_level]
 

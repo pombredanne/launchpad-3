@@ -158,7 +158,7 @@ class MultiTableCopy:
 
     This stage will lock the rows that are being inserted in the source
     tables, if the database is so inclined (e.g. when using postgres with
-    SERIALIZABLE isolation level).  For that reason, the pouring is done in
+    REPEATABLE READ isolation level).  For that reason, the pouring is done in
     smaller, controlled batches.  If you give the object a database
     transaction to work with, that transaction will be committed and restarted
     between batches.
