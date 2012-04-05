@@ -450,7 +450,7 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_bug_template_data(self, bugtasks, request):
         bug_data = []
         for bugtask in bugtasks:
-            url = canonical_url(bug, path_only_if_possible=True)
+            url = canonical_url(bugtask, path_only_if_possible=True)
             importance = bugtask.importance.title.lower()
             web_link = canonical_url(bugtask, path_only_if_possible=True)
             self_link = absoluteURL(bugtask.bug, request)
@@ -458,7 +458,7 @@ class PillarPersonSharingView(LaunchpadView):
             bug_data.append(dict(
                 self_link=self_link,
                 web_link=web_link,
-                bug_summary=bug.title,
-                bug_id=bug.id,
+                bug_summary=bugtask.bug.title,
+                bug_id=bugtask.bug.id,
                 bug_importance=importance))
         return bug_data
