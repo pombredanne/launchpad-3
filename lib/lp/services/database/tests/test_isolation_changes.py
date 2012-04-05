@@ -74,6 +74,10 @@ class TestIsolation(unittest.TestCase):
         set_isolation_level('read_committed')
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
+    def test_repeatableRead(self):
+        set_isolation_level('repeatable_read')
+        self.failUnlessEqual(self.getCurrentIsolation(), 'repeatable read')
+
     def test_serializable(self):
         set_isolation_level('serializable')
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
@@ -113,8 +117,8 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(script_output, dedent("""\
                 read committed
                 read committed
-                serializable
-                serializable
+                repeatable read
+                repeatable read
                 """))
 
     def test_connect(self):

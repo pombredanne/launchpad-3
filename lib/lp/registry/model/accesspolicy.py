@@ -283,15 +283,19 @@ class AccessArtifactGrant(StormBase):
                 for (artifact, grantee) in grants)))
 
     @classmethod
-    def findByArtifact(cls, artifacts):
+    def findByArtifact(cls, artifacts, grantees=None):
         """See `IAccessArtifactGrantSource`."""
-        ids = [artifact.id for artifact in artifacts]
-        return IStore(cls).find(cls, cls.abstract_artifact_id.is_in(ids))
+        artifact_ids = [artifact.id for artifact in artifacts]
+        constraints = [cls.abstract_artifact_id.is_in(artifact_ids)]
+        if grantees:
+            grantee_ids = [grantee.id for grantee in grantees]
+            constraints.append(cls.grantee_id.is_in(grantee_ids))
+        return IStore(cls).find(cls, *constraints)
 
     @classmethod
-    def revokeByArtifact(cls, artifacts):
+    def revokeByArtifact(cls, artifacts, grantees=None):
         """See `IAccessPolicyGrantSource`."""
-        cls.findByArtifact(artifacts).remove()
+        cls.findByArtifact(artifacts, grantees).remove()
 
 
 class AccessPolicyGrant(StormBase):

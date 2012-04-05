@@ -40,7 +40,6 @@ from storm.locals import (
     Reference,
     )
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -150,10 +149,6 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.job.runner import (
-    BaseRunnableJob,
-    celery_enabled,
-    )
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import urlappend
@@ -895,7 +890,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             (a and unicode(a) or None, b and unicode(b) or None)
                 for a, b in revision_id_sequence_pairs]
         store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], expr=unicode_revid_sequence_pairs))
+            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
@@ -1037,8 +1032,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             return getUtility(IBranchLookup).getByUniqueName(location)
 
     def branchChanged(self, stacked_on_url, last_revision_id,
-                      control_format, branch_format, repository_format,
-                      celery_scan=True):
+                      control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
         if stacked_on_url == '' or stacked_on_url is None:
@@ -1063,20 +1057,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            job_id = BranchScanJob.create(self).job_id
-            if celery_scan and celery_enabled('BranchScanJob'):
-                # lp.services.job.celery is imported only where needed.
-                from lp.services.job.celeryjob import CeleryRunJob
-                current = transaction.get()
-
-                def runHook(succeeded):
-                    ignore_result = (BaseRunnableJob.celery_responses is None)
-                    if succeeded:
-                        response = CeleryRunJob.apply_async(
-                            (job_id,), ignore_result=ignore_result)
-                        if not ignore_result:
-                            BaseRunnableJob.celery_responses.append(response)
-                current.addAfterCommitHook(runHook)
+            job = BranchScanJob.create(self)
+            job.celeryRunOnCommit()
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
@@ -1151,7 +1133,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         branch_id = self.id
         SQLBase.destroySelf(self)
         # And now create a job to remove the branch from disk when it's done.
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job.celeryRunOnCommit()
 
     def commitsForDays(self, since):
         """See `IBranch`."""
@@ -1205,7 +1188,9 @@ class Branch(SQLBase, BzrIdentityMixin):
     def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job = getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job.celeryRunOnCommit()
+        return job
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
