@@ -25,7 +25,7 @@ team and the name of the team owner as arguments.
     0
 
     # The script already committed its transaction but this test runs
-    # the LaunchpadFunctionalLayer which, in turn, uses the SERIALIZABLE
+    # the LaunchpadFunctionalLayer which, in turn, uses the REPEATABLE READ
     # isolation level, so we need to forcibly begin another transaction here.
     >>> import transaction; transaction.abort()
 
