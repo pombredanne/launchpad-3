@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import timedelta
+from logging import getLogger
 
 import transaction
 from zope.component import getUtility
@@ -14,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -304,6 +306,38 @@ class TestDistroSeries(TestCaseWithFactory):
         comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
         self.assertContentEqual(
             [comment], distroseries.getDifferenceComments())
+
+    def checkLegalPocket(self, status, pocket):
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.DEVELOPMENT)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
+        return removeSecurityProxy(distroseries).checkLegalPocket(
+            spph, False, getLogger())
+
+    def test_checkLegalPocket_allows_unstable_release(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_unstable_proposed(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_forbids_unstable_updates(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.DEVELOPMENT, PackagePublishingPocket.UPDATES))
+
+    def test_checkLegalPocket_forbids_stable_release(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.RELEASE))
+
+    def test_checkLegalPocket_allows_stable_proposed(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.PROPOSED))
+
+    def test_checkLegalPocket_allows_stable_updates(self):
+        self.assertTrue(self.checkLegalPocket(
+            SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
