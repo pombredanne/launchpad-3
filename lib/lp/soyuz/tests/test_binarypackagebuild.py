@@ -426,8 +426,7 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_getByBuildFarmJob_returns_none_when_missing(self):
         sprb = self.factory.makeSourcePackageRecipeBuild()
-        self.assertIs(
-            None,
+        self.assertIsNone(
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
                 sprb.build_farm_job))
 
@@ -598,8 +597,7 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         expected = self.build.can_be_cancelled
         entry_url = api_url(self.build)
         logout()
-        entry = self.webservice.get(
-            entry_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(entry_url, api_version='devel').jsonBody()
         self.assertEqual(expected, entry['can_be_cancelled'])
 
     def test_cancel_is_exported(self):
@@ -607,13 +605,11 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         build_url = api_url(self.build)
         self.build.queueBuild()
         logout()
-        entry = self.webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         response = self.webservice.named_post(
             entry['self_link'], 'cancel', api_version='devel')
         self.assertEqual(200, response.status)
-        entry = self.webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEqual(BuildStatus.CANCELLED.title, entry['buildstate'])
 
     def test_cancel_security(self):
@@ -624,8 +620,7 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
             person, permission=OAuthPermission.WRITE_PUBLIC)
         logout()
 
-        entry = webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = webservice.get(build_url, api_version='devel').jsonBody()
         response = webservice.named_post(
             entry['self_link'], 'cancel', api_version='devel')
         self.assertEqual(401, response.status)
