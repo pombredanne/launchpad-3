@@ -21,6 +21,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -249,3 +250,23 @@ class SharingService:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
             accessartifact_grant_source.revokeByArtifact(to_delete)
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def revokeAccessGrants(self, pillar, sharee, branches=None, bugs=None):
+        """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
+
+        artifacts = []
+        if branches:
+            artifacts.extend(branches)
+        if bugs:
+            artifacts.extend(bugs)
+        # Find the access artifacts associated with the bugs and branches.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        artifacts_to_delete = accessartifact_source.find(artifacts)
+        # Revoke access to bugs/branches for the specified sharee.
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            artifacts_to_delete, [sharee])
