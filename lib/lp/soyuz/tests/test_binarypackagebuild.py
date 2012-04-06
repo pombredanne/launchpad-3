@@ -173,8 +173,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # If getSpecificJob is called on the binary build it is a noop.
         store = Store.of(self.build)
         store.flush()
-        self.assertStatementCount(
-            0, self.build.getSpecificJob)
+        self.assertStatementCount(0, self.build.getSpecificJob)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the changes file signer.
@@ -303,6 +302,11 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, '')
 
+    def assertRaisesUnparsableDependencies(self, depwait_build, dependencies):
+        depwait_build.dependencies = dependencies
+        self.assertRaises(
+            UnparsableDependencies, depwait_build.updateDependencies)
+
     def testInvalidDependencies(self):
         # Calling `IBinaryPackageBuild.updateDependencies` on a build with
         # invalid 'dependencies' raises an AssertionError.
@@ -310,24 +314,16 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
 
         # None is not a valid dependency values.
-        depwait_build.dependencies = None
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, None)
 
         # Missing 'name'.
-        depwait_build.dependencies = u'(>> version)'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, u'(>> version)')
 
         # Missing 'version'.
-        depwait_build.dependencies = u'name (>>)'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, u'name (>>)')
 
-        # Missing comman between dependencies.
-        depwait_build.dependencies = u'name1 name2'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        # Missing comma between dependencies.
+        self.assertRaisesUnparsableDependencies(depwait_build, u'name1 name2')
 
     def testBug378828(self):
         # `IBinaryPackageBuild.updateDependencies` copes with the
@@ -615,9 +611,8 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
     def test_cancel_security(self):
         # Check that unauthorised users cannot call cancel()
         build_url = api_url(self.build)
-        person = self.factory.makePerson()
         webservice = webservice_for_person(
-            person, permission=OAuthPermission.WRITE_PUBLIC)
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
         logout()
 
         entry = webservice.get(build_url, api_version='devel').jsonBody()
