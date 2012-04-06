@@ -6,7 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
+    'InvolvedMenu',
+    'PillarBugsMenu',
+    'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -59,6 +61,7 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -73,9 +76,17 @@ from lp.services.webapp.publisher import (
     )
 
 
+class PillarPersonBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IPillarPerson`."""
+
+    @property
+    def text(self):
+        return "Sharing details for %s" % self.context.person.displayname
+
+
 class PillarNavigationMixin:
 
-    @stepthrough('+sharingdetails')
+    @stepthrough('+sharing')
     def traverse_details(self, name):
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
