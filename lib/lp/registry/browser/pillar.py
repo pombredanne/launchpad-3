@@ -71,6 +71,7 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -85,9 +86,17 @@ from lp.services.webapp.publisher import (
     )
 
 
+class PillarPersonBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IPillarPerson`."""
+
+    @property
+    def text(self):
+        return "Sharing details for %s" % self.context.person.displayname
+
+
 class PillarNavigationMixin:
 
-    @stepthrough('+sharingdetails')
+    @stepthrough('+sharing')
     def traverse_details(self, name):
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
@@ -450,10 +459,9 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_bug_template_data(self, bugtasks, request):
         bug_data = []
         for bugtask in bugtasks:
-            url = canonical_url(bugtask, path_only_if_possible=True)
-            importance = bugtask.importance.title.lower()
             web_link = canonical_url(bugtask, path_only_if_possible=True)
             self_link = absoluteURL(bugtask.bug, request)
+            importance = bugtask.importance.title.lower()
 
             bug_data.append(dict(
                 self_link=self_link,
