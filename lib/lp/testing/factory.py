@@ -2134,7 +2134,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString(u'title')
         if specification is None:
-            specification = self.makeSpecification()
+            product = None
+            distribution = None
+            if milestone is not None:
+                product = milestone.product
+                distribution = milestone.distribution
+            specification = self.makeSpecification(
+                product=product, distribution=distribution)
         if sequence is None:
             sequence = self.getUniqueInteger()
         work_item = removeSecurityProxy(specification).newWorkItem(
