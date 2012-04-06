@@ -629,3 +629,12 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         response = webservice.named_post(
             entry['self_link'], 'cancel', api_version='devel')
         self.assertEqual(401, response.status)
+
+    def test_builder_is_exported(self):
+        # The builder property is exported.
+        removeSecurityProxy(self.build).builder = self.factory.makeBuilder()
+        build_url = api_url(self.build)
+        builder_url = api_url(self.build.builder)
+        logout()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
+        self.assertEndsWith(entry['builder_link'], builder_url)

@@ -209,9 +209,10 @@ class IBuildFarmJob(IBuildFarmJobOld):
                           "is dispatched the first time and not changed in "
                           "subsequent build attempts.")))
 
-    builder = Reference(
-        title=_("Builder"), schema=IBuilder, required=False, readonly=True,
-        description=_("The builder assigned to this job."))
+    builder = exported(
+        Reference(
+            title=_("Builder"), schema=IBuilder, required=False, readonly=True,
+            description=_("The builder assigned to this job.")))
 
     buildqueue_record = Reference(
         # Really IBuildQueue, set in _schema_circular_imports to avoid
