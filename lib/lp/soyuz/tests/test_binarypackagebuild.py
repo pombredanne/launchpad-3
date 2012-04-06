@@ -83,9 +83,9 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         bq = self.build.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, IBuildPackageJob)
-        self.failUnlessEqual(self.build.is_virtualized, bq.virtualized)
-        self.failIfEqual(None, bq.processor)
-        self.failUnless(bq, self.build.buildqueue_record)
+        self.assertEqual(self.build.is_virtualized, bq.virtualized)
+        self.assertIsNotNone(bq.processor)
+        self.assertEqual(bq, self.build.buildqueue_record)
 
     def test_getBuildCookie(self):
         # A build cookie is made up of the job type and record id.
@@ -93,7 +93,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         Store.of(self.build).flush()
         cookie = self.build.getBuildCookie()
         expected_cookie = "PACKAGEBUILD-%d" % self.build.id
-        self.assertEquals(expected_cookie, cookie)
+        self.assertEqual(expected_cookie, cookie)
 
     def test_estimateDuration(self):
         # Without previous builds, a negligable package size estimate is 60s
@@ -124,7 +124,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # the distribution source package release when the context
         # is not a PPA or a copy archive.
         self.addFakeBuildLog()
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/ubuntutest/+source/'
             'gedit/666/+build/%d/+files/mybuildlog.txt' % (
                 self.build.package_build.build_farm_job.id),
@@ -137,7 +137,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         ppa_owner = self.factory.makePerson(name="joe")
         removeSecurityProxy(self.build).archive = self.factory.makeArchive(
             owner=ppa_owner, name="myppa")
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/~joe/'
             '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
@@ -150,7 +150,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         store = Store.of(build_farm_job)
         store.flush()
 
-        self.failUnlessEqual(self.build, build_farm_job.getSpecificJob())
+        self.assertEqual(self.build, build_farm_job.getSpecificJob())
 
     def test_adapt_from_build_farm_job_prefetching(self):
         # The package_build is prefetched for efficiency.
@@ -182,7 +182,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         class MockChanges:
             signer = "Somebody <somebody@ubuntu.com>"
 
-        self.assertEquals("Somebody <somebody@ubuntu.com>",
+        self.assertEqual("Somebody <somebody@ubuntu.com>",
             self.build.getUploader(MockChanges()))
 
     def test_can_be_cancelled(self):
@@ -301,7 +301,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
+        self.assertEqual(depwait_build.dependencies, '')
 
     def testInvalidDependencies(self):
         # Calling `IBinaryPackageBuild.updateDependencies` on a build with
@@ -344,7 +344,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         self.layer.txn.commit()
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
+        self.assertEqual(depwait_build.dependencies, '')
 
     def testVersionedDependencies(self):
         # `IBinaryPackageBuild.updateDependencies` supports versioned
@@ -357,10 +357,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.dependencies = u'dep-bin (>> 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'dep-bin (>> 666)')
+        self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
         depwait_build.dependencies = u'dep-bin (>= 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
 
     def testVersionedDependencyOnOldPublication(self):
         # `IBinaryPackageBuild.updateDependencies` doesn't just consider
@@ -376,10 +376,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.dependencies = u'dep-bin (= 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
         depwait_build.dependencies = u'dep-bin (= 999)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
 
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
