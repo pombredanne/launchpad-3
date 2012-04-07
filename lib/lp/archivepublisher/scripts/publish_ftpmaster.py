@@ -26,11 +26,13 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.scripts.publishdistro import PublishDistro
-from lp.soyuz.scripts.querydistro import LpQueryDistro
 
 
 def get_publishable_archives(distribution):
@@ -119,13 +121,6 @@ def extend_PATH():
     """
     scripts_dir = os.path.join(config.root, "cronscripts", "publishing")
     return {"PATH": '"$PATH":%s' % shell_quote(scripts_dir)}
-
-
-class StoreArgument:
-    """Helper class: receive argument and store it."""
-
-    def __call__(self, argument):
-        self.argument = argument
 
 
 def find_run_parts_dir(distro, parts):
@@ -329,12 +324,20 @@ class PublishFTPMaster(LaunchpadCronScript):
     def getDirtySuites(self, distribution):
         """Return list of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
-        query_distro = LpQueryDistro(
-            test_args=['-d', distribution.name, "pending_suites"],
-            logger=self.logger)
-        receiver = StoreArgument()
-        query_distro.runAction(presenter=receiver)
-        return receiver.argument.split()
+
+        pending_suites = set()
+        pending_sources = distribution.main_archive.getPublishedSources(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_sources:
+            pending_suites.add((pub.distroseries, pub.pocket))
+
+        pending_binaries = distribution.main_archive.getAllPublishedBinaries(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_binaries:
+            pending_suites.add((pub.distroarchseries.distroseries, pub.pocket))
+
+        return [distroseries.name + pocketsuffix[pocket]
+                for distroseries, pocket in pending_suites]
 
     def getDirtySecuritySuites(self, distribution):
         """List security suites with pending publications."""

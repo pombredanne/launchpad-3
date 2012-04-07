@@ -17,7 +17,6 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 
 
 class LpQueryDistro(LaunchpadScript):
@@ -29,7 +28,7 @@ class LpQueryDistro(LaunchpadScript):
         Also initialize the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'supported', 'pending_suites', 'archs',
+            'current', 'development', 'supported', 'archs',
             'official_archs', 'nominated_arch_indep', 'pocket_suffixes']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
@@ -195,28 +194,6 @@ class LpQueryDistro(LaunchpadScript):
                 self.location.distribution.name)
 
         return " ".join(supported_series)
-
-    @property
-    def pending_suites(self):
-        """Return the suite names containing PENDING publication.
-
-        It check for sources and/or binary publications.
-        """
-        self.checkNoSuiteDefined()
-        pending_suites = set()
-        pending_sources = self.location.archive.getPublishedSources(
-            status=PackagePublishingStatus.PENDING)
-        for pub in pending_sources:
-            pending_suites.add((pub.distroseries, pub.pocket))
-
-        pending_binaries = self.location.archive.getAllPublishedBinaries(
-            status=PackagePublishingStatus.PENDING)
-        for pub in pending_binaries:
-            pending_suites.add(
-                (pub.distroarchseries.distroseries, pub.pocket))
-
-        return " ".join([distroseries.name + pocketsuffix[pocket]
-                         for distroseries, pocket in pending_suites])
 
     @property
     def archs(self):
