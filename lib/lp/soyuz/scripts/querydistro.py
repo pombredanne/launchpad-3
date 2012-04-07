@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = ['LpQueryDistro']
 
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -27,9 +26,7 @@ class LpQueryDistro(LaunchpadScript):
 
         Also initialize the list 'allowed_arguments'.
         """
-        self.allowed_actions = [
-            'current', 'development', 'supported', 'archs',
-            'official_archs', 'nominated_arch_indep', 'pocket_suffixes']
+        self.allowed_actions = ['development', 'supported', 'archs']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -121,23 +118,6 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite.")
 
     @property
-    def current(self):
-        """Return the name of the CURRENT distroseries.
-
-        It is restricted for the context distribution.
-
-        It may raise LaunchpadScriptFailure if a suite was passed on the
-        command-line or if not CURRENT distroseries was found.
-        """
-        self.checkNoSuiteDefined()
-        series = self.location.distribution.getSeriesByStatus(
-            SeriesStatus.CURRENT)
-        if not series:
-            raise LaunchpadScriptFailure("No CURRENT series.")
-
-        return series[0].name
-
-    @property
     def development(self):
         """Return the name of the DEVELOPMENT distroseries.
 
@@ -203,35 +183,3 @@ class LpQueryDistro(LaunchpadScript):
         """
         architectures = self.location.distroseries.architectures
         return " ".join(arch.architecturetag for arch in architectures)
-
-    @property
-    def official_archs(self):
-        """Return a space-separated list of official architecture tags.
-
-        It is restricted to the context distribution and suite.
-        """
-        architectures = self.location.distroseries.architectures
-        return " ".join(arch.architecturetag
-                        for arch in architectures
-                        if arch.official)
-
-    @property
-    def nominated_arch_indep(self):
-        """Return the nominated arch indep architecture tag.
-
-        It is restricted to the context distribution and suite.
-        """
-        series = self.location.distroseries
-        return series.nominatedarchindep.architecturetag
-
-    @property
-    def pocket_suffixes(self):
-        """Return a space-separated list of non-empty pocket suffixes.
-
-        The RELEASE pocket (whose suffix is the empty string) is omitted.
-
-        The returned space-separated string is ordered alphabetically.
-        """
-        sorted_non_empty_suffixes = sorted(
-            suffix for suffix in pocketsuffix.values() if suffix != '')
-        return " ".join(sorted_non_empty_suffixes)
