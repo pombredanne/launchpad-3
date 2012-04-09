@@ -1749,25 +1749,37 @@ class Bug(SQLBase):
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
-        if not f_flag and information_type == InformationType.USERDATA:
-            # If we didn't call reconcileSubscribers(), we may have
-            # bug supervisors who should be on this bug, but aren't.
-            supervisors = set()
-            for bugtask in self.bugtasks:
-                supervisors.add(bugtask.pillar.bug_supervisor)
-            if None in supervisors:
-                supervisors.remove(None)
-            for s in supervisors:
-                if not get_structural_subscriptions_for_bug(self, s):
-                    self.subscribe(s, who)
-        if not f_flag and information_type in SECURITY_INFORMATION_TYPES:
-            # The bug turned out to be security-related, subscribe the
-            # security contact. We do it here only if the feature flag
-            # is not set, otherwise it's done in
-            # reconcileSubscribers().
-            for pillar in self.affected_pillars:
-                if pillar.security_contact is not None:
-                    self.subscribe(pillar.security_contact, who)
+        
+        # We have to do some cleanup if the feature flag wasn't set, since
+        # reconcileSubscribers was not called.
+        if not f_flag:
+            # If the information type is userdata, we need to check for bug
+            # supervisors who aren't subscribed and should be. If there is no
+            # bug supervisor, we need to subscribe the maintainer.
+            import pdb; pdb.set_trace()
+            missing_subscribers = set()
+            pillars = self.affected_pillars
+            if information_type == InformationType.USERDATA:
+                for pillar in pillars:
+                    if pillar.bug_supervisor is not None:
+                        missing_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        missing_subscribers.add(pillar.owner)
+
+            # If the information type is security related, we need to ensure
+            # the security contacts are subscribed. If there is no security
+            # contact, we need to subscribe the maintainer.
+            if information_type in SECURITY_INFORMATION_TYPES:
+                for pillar in pillars:
+                    if pillar.security_contact is not None:
+                        missing_subscribers.add(pillar.security_contact)
+                    else:
+                        missing_subscribers.add(pillar.owner)
+
+            for subscriber in missing_subscribers:
+                if not get_structural_subscriptions_for_bug(self, subscriber):
+                    self.subscribe(subscriber, who)
+
         self.information_type = information_type
         # Set the legacy attributes for now.
         self._private = information_type in PRIVATE_INFORMATION_TYPES
