@@ -128,11 +128,11 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -1535,7 +1535,7 @@ class Person(
             milestone_dateexpected_after=today)
 
         # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
-        # multiple times when load_related() iterates over through the tasks.
+        # multiple times when load_related() iterates over the tasks.
         tasks = list(getUtility(IBugTaskSet).search(search_params))
         # Eager load the things we need that are not already eager loaded by
         # BugTaskSet.search().
