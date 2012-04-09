@@ -54,14 +54,15 @@ class PillarSharingDetailsMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def getPillarPerson(self, person=None, with_sharing=True):
-        if person is None:
-            person = self.factory.makePerson()
-        if with_sharing:
+    def _create_sharing(self, grantee, security=False):
+            if security:
+                owner = self.factory.makePerson()
+            else:
+                owner = self.pillar.owner
             if self.pillar_type == 'product':
                 self.bug = self.factory.makeBug(
                     product=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
                 self.branch = self.factory.makeBranch(
                     product=self.pillar,
@@ -71,22 +72,29 @@ class PillarSharingDetailsMixin:
                 self.branch = None
                 self.bug = self.factory.makeBug(
                     distribution=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
             artifact = self.factory.makeAccessArtifact(concrete=self.bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
             self.factory.makeAccessPolicyArtifact(
                 artifact=artifact, policy=policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact, grantee=person, grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
+
             if self.branch:
                 artifact = self.factory.makeAccessArtifact(
                     concrete=self.branch)
                 self.factory.makeAccessPolicyArtifact(
                     artifact=artifact, policy=policy)
                 self.factory.makeAccessArtifactGrant(
-                    artifact=artifact, grantee=person,
+                    artifact=artifact, grantee=grantee,
                     grantor=self.pillar.owner)
+
+    def getPillarPerson(self, person=None, with_sharing=True):
+        if person is None:
+            person = self.factory.makePerson()
+        if with_sharing:
+            self._create_sharing(person)
 
         return PillarPerson(self.pillar, person)
 

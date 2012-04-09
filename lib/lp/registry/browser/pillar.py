@@ -413,6 +413,8 @@ class PillarPersonSharingView(LaunchpadView):
     def _getSafeBugs(self, bugs):
         """Uses the bugsearch tools to safely get the list of bugs the user is
         allowed to see."""
+        if bugs == set([]):
+            return []
         params = []
         for b in bugs:
             param = BugTaskSearchParams(user=self.user, bug=b)
