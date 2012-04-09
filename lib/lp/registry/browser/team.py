@@ -142,6 +142,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -1589,6 +1590,14 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
 
+    def upcomingwork(self):
+        target = '+upcomingwork'
+        text = 'Upcoming work for this team'
+        enabled = False
+        if getFeatureFlag('registry.upcoming_work_view.enabled'):
+            enabled = True
+        return Link(target, text, icon='team', enabled=enabled)
+
 
 class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
@@ -1622,6 +1631,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'view_recipes',
         'subscriptions',
         'structural_subscriptions',
+        'upcomingwork',
         ]
 
 
@@ -2089,6 +2099,10 @@ class ITeamEditMenu(Interface):
     """A marker interface for the edit navigation menu."""
 
 
+classImplements(TeamIndexView, ITeamIndexMenu)
+classImplements(TeamEditView, ITeamEditMenu)
+
+
 class TeamNavigationMenuBase(NavigationMenu, TeamMenuMixin):
 
     @property
@@ -2133,7 +2147,3 @@ class TeamMugshotView(LaunchpadView):
         batch_nav = BatchNavigator(
             self.context.allmembers, self.request, size=self.batch_size)
         return batch_nav
-
-
-classImplements(TeamIndexView, ITeamIndexMenu)
-classImplements(TeamEditView, ITeamEditMenu)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -50,6 +50,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -59,7 +60,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -2217,8 +2217,6 @@ class ValidateTargetMixin:
         a private bugs to check for multi-tenant constraints.
     """
 
-    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-
     def test_private_multi_tenanted_forbidden(self):
         # A new task project cannot be added if there is already one from
         # another pillar.
@@ -2228,16 +2226,17 @@ class ValidateTargetMixin:
             self.factory.makeBugTask(bug=bug)
         p = self.factory.makeProduct()
         with person_logged_in(bug.owner):
-            bug.setPrivate(True, bug.owner)
+            bug.transitionToInformationType(
+                InformationType.PROPRIETARY, bug.owner)
             self.assertRaisesWithContent(
                 IllegalTarget,
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % d.displayname,
                 self.validate_method, bug, p)
-            # It works with the feature flag
-            with FeatureFixture(self.feature_flag):
-                self.validate_method(bug, p)
+            bug.transitionToInformationType(
+                InformationType.USERDATA, bug.owner)
+            self.validate_method(bug, p)
 
     def test_private_incorrect_pillar_task_forbidden(self):
         # A product or distro cannot be added if there is already a bugtask.
@@ -2248,22 +2247,23 @@ class ValidateTargetMixin:
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
-            bug.setPrivate(True, bug.owner)
+            bug.transitionToInformationType(
+                InformationType.PROPRIETARY, bug.owner)
             self.assertRaisesWithContent(
                 IllegalTarget,
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % p1.displayname,
                 self.validate_method, bug, p2)
             self.assertRaisesWithContent(
                 IllegalTarget,
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % p1.displayname,
                 self.validate_method, bug, d)
-            # It works with the feature flag
-            with FeatureFixture(self.feature_flag):
-                self.validate_method(bug, p2)
+            bug.transitionToInformationType(
+                InformationType.USERDATA, bug.owner)
+            self.validate_method(bug, p2)
 
     def test_private_incorrect_product_series_task_forbidden(self):
         # A product series cannot be added if there is already a bugtask for
@@ -2275,16 +2275,17 @@ class ValidateTargetMixin:
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
-            bug.setPrivate(True, bug.owner)
+            bug.transitionToInformationType(
+                InformationType.PROPRIETARY, bug.owner)
             self.assertRaisesWithContent(
                 IllegalTarget,
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % p1.displayname,
                 self.validate_method, bug, series)
-            # It works with the feature flag
-            with FeatureFixture(self.feature_flag):
-                self.validate_method(bug, series)
+            bug.transitionToInformationType(
+                InformationType.USERDATA, bug.owner)
+            self.validate_method(bug, series)
 
     def test_private_incorrect_distro_series_task_forbidden(self):
         # A distro series cannot be added if there is already a bugtask for
@@ -2296,16 +2297,17 @@ class ValidateTargetMixin:
         if not self.multi_tenant_test_one_task_only:
             self.factory.makeBugTask(bug=bug)
         with person_logged_in(bug.owner):
-            bug.setPrivate(True, bug.owner)
+            bug.transitionToInformationType(
+                InformationType.PROPRIETARY, bug.owner)
             self.assertRaisesWithContent(
                 IllegalTarget,
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % d1.displayname,
                 self.validate_method, bug, series)
-            # It works with the feature flag
-            with FeatureFixture(self.feature_flag):
-                self.validate_method(bug, series)
+            bug.transitionToInformationType(
+                InformationType.USERDATA, bug.owner)
+            self.validate_method(bug, series)
 
 
 class TestValidateTarget(TestCaseWithFactory, ValidateTargetMixin):

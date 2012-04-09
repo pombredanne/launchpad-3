@@ -93,7 +93,7 @@
         replace="structure link/render" />
     <div class="private-only formHelp"
         tal:condition="python:not view.canAddPackageTask() or not view.canAddProjectTask()">
-        Private bugs cannot affect multiple projects.
+        Proprietary bugs cannot affect multiple projects.
     </div>
   </tal:also-affects-links>
 

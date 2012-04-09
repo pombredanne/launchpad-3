@@ -95,7 +95,7 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.services import features
+from lp.registry.enums import InformationType
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -847,11 +847,10 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
-        LaunchpadFormView.setUpFields(self)
-        allow_multi_pillar_private = bool(features.getFeatureFlag(
-                'disclosure.allow_multipillar_private_bugs.enabled'))
-        if (not allow_multi_pillar_private
-                and len(self.context.bug.affected_pillars) > 1):
+        super(BugSecrecyEditView, self).setUpFields()
+        bug = self.context.bug
+        if (bug.information_type == InformationType.PROPRIETARY
+            and len(bug.affected_pillars) > 1):
             self.form_fields = self.form_fields.omit('private')
 
     @property
@@ -860,6 +859,8 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         if not self.request.is_ajax:
             return canonical_url(self.context)
         return None
+
+    cancel_url = next_url
 
     @property
     def initial_values(self):
@@ -954,7 +955,7 @@ class DeprecatedAssignedBugsView(RedirectionView):
         self.context = context
         self.request = request
         self.status = 303
-    
+
     def __call__(self):
         self.target = canonical_url(
             getUtility(ILaunchBag).user, view_name='+assignedbugs')

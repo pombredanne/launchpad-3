@@ -83,13 +83,12 @@ from lp.code.model.revision import RevisionSet
 from lp.codehosting.bzrutils import server
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
-    branch_id_to_path,
     get_ro_server,
     get_rw_server,
     )
+from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
-from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
@@ -327,6 +326,8 @@ class BranchUpgradeJob(BranchJobDerived):
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
     user_error_types = (NotBranchError,)
+
+    task_queue = 'branch_write'
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -948,6 +949,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
+    task_queue = 'branch_write'
+
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
             'id': self.context.id,
@@ -970,8 +973,6 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        branch_path = os.path.join(
-            config.codehosting.mirrored_branches_root,
-            branch_id_to_path(self.branch_id))
+        branch_path = get_real_branch_path(self.branch_id)
         if os.path.exists(branch_path):
             shutil.rmtree(branch_path)
