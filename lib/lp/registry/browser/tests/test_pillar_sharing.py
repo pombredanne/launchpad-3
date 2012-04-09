@@ -152,6 +152,7 @@ class PillarSharingDetailsMixin:
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
             self.assertEqual(pillarperson.person.displayname, view.page_title)
+            self.assertEqual(1, view.shared_bugs_count)
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.
@@ -263,7 +264,6 @@ class PillarSharingViewTestMixin:
         with FeatureFixture(ENABLED_FLAG):
             view = create_initialized_view(self.pillar, '+sharing')
             self.assertEqual('Sharing', view.page_title)
-            self.assertEqual(1, view.shared_bugs_count)
 
     def test_sharing_menu_without_feature_flag(self):
         url = canonical_url(self.pillar)
