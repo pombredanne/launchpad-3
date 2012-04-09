@@ -731,6 +731,25 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertEquals(sorted(sreg_extension.required),
                           sorted(sreg_extension.allRequestedFields()))
 
+    def test_pape_extension(self):
+        # We can signal that a request should be reauthenticated with
+        # PAPE extension's max_auth_age paramter.
+        request = LaunchpadTestRequest()
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        extensions = view.openid_request.extensions
+        self.assertIsNot(None, extensions)
+        sreg_extension = extensions[0]
+        self.assertIsInstance(sreg_extension, sreg.SRegRequest)
+        self.assertEquals(['email', 'fullname'],
+                          sorted(sreg_extension.allRequestedFields()))
+        self.assertEquals(sorted(sreg_extension.required),
+                          sorted(sreg_extension.allRequestedFields()))
+
+
     def test_logs_to_timeline(self):
         # Beginning an OpenID association makes an HTTP request to the
         # OP, so it's a potentially long action. It is logged to the
