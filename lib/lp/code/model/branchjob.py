@@ -728,6 +728,8 @@ class RosettaUploadJob(BranchJobDerived):
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
+    config = config.rosettabranches
+
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
 
@@ -773,7 +775,9 @@ class RosettaUploadJob(BranchJobDerived):
                                        force_translations_upload)
             branch_job = BranchJob(
                 branch, BranchJobType.ROSETTA_UPLOAD, metadata)
-            return cls(branch_job)
+            job = cls(branch_job)
+            job.celeryRunOnCommit()
+            return job
         else:
             return None
 
@@ -899,27 +903,28 @@ class RosettaUploadJob(BranchJobDerived):
 
     def run(self):
         """See `IRosettaUploadJob`."""
-        # This is not called upon job creation because the branch would
-        # neither have been mirrored nor scanned then.
-        self._init_translation_file_lists()
-        # Get the product series that are connected to this branch and
-        # that want to upload translations.
-        productseriesset = getUtility(IProductSeriesSet)
-        productseries = productseriesset.findByTranslationsImportBranch(
-            self.branch, self.force_translations_upload)
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        for series in productseries:
-            approver = TranslationBranchApprover(self.file_names,
-                                                 productseries=series)
-            for iter_info in self._iter_lists_and_uploaders(series):
-                file_names, changed_files, uploader = iter_info
-                for upload_file_name, upload_file_content in changed_files:
-                    if len(upload_file_content) == 0:
-                        continue  # Skip empty files
-                    entry = translation_import_queue.addOrUpdateEntry(
-                        upload_file_name, upload_file_content,
-                        True, uploader, productseries=series)
-                    approver.approve(entry)
+        with server(get_ro_server(), no_replace=True):
+            # This is not called upon job creation because the branch would
+            # neither have been mirrored nor scanned then.
+            self._init_translation_file_lists()
+            # Get the product series that are connected to this branch and
+            # that want to upload translations.
+            productseriesset = getUtility(IProductSeriesSet)
+            productseries = productseriesset.findByTranslationsImportBranch(
+                self.branch, self.force_translations_upload)
+            translation_import_queue = getUtility(ITranslationImportQueue)
+            for series in productseries:
+                approver = TranslationBranchApprover(self.file_names,
+                                                     productseries=series)
+                for iter_info in self._iter_lists_and_uploaders(series):
+                    file_names, changed_files, uploader = iter_info
+                    for upload_file_name, upload_file_content in changed_files:
+                        if len(upload_file_content) == 0:
+                            continue  # Skip empty files
+                        entry = translation_import_queue.addOrUpdateEntry(
+                            upload_file_name, upload_file_content,
+                            True, uploader, productseries=series)
+                        approver.approve(entry)
 
     @staticmethod
     def iterReady():
