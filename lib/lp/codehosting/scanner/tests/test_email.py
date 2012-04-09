@@ -201,7 +201,6 @@ class TestViaCelery(TestCaseWithFactory):
             bzr_sync.syncBranchAndClose(tree.branch)
         responses[1].wait(30)
         self.assertEqual(1, len(self.pop_notifications()))
-        # Needed for feature flag teardown
 
     def test_revisions_added(self):
         """RevisionMailJob for removed revisions runs via Celery."""

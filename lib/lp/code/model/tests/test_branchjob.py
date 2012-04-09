@@ -1237,30 +1237,30 @@ class TestViaCelery(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_RosettaUploadJob(self):
-        # Now create the RosettaUploadJob.
+        """Ensure RosettaUploadJob can run under Celery."""
         self.useContext(celeryd('job'))
         self.useBzrBranches(direct_database=True)
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
+        }))
         db_branch = self.factory.makeAnyBranch()
         self.createBzrBranch(db_branch)
         commit = DirectBranchCommit(db_branch, no_race_check=True)
         commit.writeFile('foo.pot', 'gibberish')
-        self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
-        }))
         with monitor_celery() as responses:
             with person_logged_in(db_branch.owner):
                 commit.commit('message')
                 transaction.commit()
+                # Wait for branch scan to complete.
                 responses[0].wait(30)
                 series = self.factory.makeProductSeries(branch=db_branch)
                 RosettaUploadJob.create(
                     commit.db_branch, NULL_REVISION,
                     force_translations_upload=True)
                 transaction.commit()
+        # Wait for RosettaUploadJob to complete
         responses[1].wait(30)
         queue = getUtility(ITranslationImportQueue)
-        # Using getAllEntries also asserts that the right product series
-        # was used in the upload.
         entries = list(queue.getAllEntries(target=series))
         self.assertEqual(len(entries), 1)
         entry = entries[0]
