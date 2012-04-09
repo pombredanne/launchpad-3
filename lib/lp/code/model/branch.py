@@ -890,7 +890,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             (a and unicode(a) or None, b and unicode(b) or None)
                 for a, b in revision_id_sequence_pairs]
         store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], expr=unicode_revid_sequence_pairs))
+            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)

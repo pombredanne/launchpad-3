@@ -1084,6 +1084,12 @@
             name="+mugshots"
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
+      <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.registry.browser.person.PersonUpcomingWorkView"
+            permission="zope.Public"
+            name="+upcomingwork"
+            template="../templates/person-upcomingwork.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"
@@ -1433,9 +1439,14 @@
         name="+sharing"
         class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        factory="lp.registry.browser.pillar.PillarPersonBreadcrumb"
+        permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarPerson"
-        path_expression="string:+sharingdetails/${person/name}"
+        path_expression="string:+sharing/${person/name}"
         rootsite="mainsite"
         attribute_to_parent="pillar"/>
     <browser:page
