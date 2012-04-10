@@ -125,7 +125,7 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('jobs.celery.enabled_classses',
+    ('jobs.celery.enabled_classes',
      'space delimited',
      'Names of Job classes that should be run via celery',
      'No jobs run via celery',
