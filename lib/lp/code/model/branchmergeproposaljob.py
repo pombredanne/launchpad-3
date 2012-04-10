@@ -263,9 +263,11 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     @classmethod
     def create(cls, bmp):
         """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
+        base_job = BranchMergeProposalJob(
             bmp, cls.class_job_type, {})
-        return cls(job)
+        job = cls(base_job)
+        job.celeryRunOnCommit()
+        return job
 
     @classmethod
     def get(cls, job_id):
@@ -323,6 +325,8 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
     classProvides(IMergeProposalNeedsReviewEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
+
+    config = config.merge_proposal_jobs
 
     def run(self):
         """See `IMergeProposalNeedsReviewEmailJob`."""

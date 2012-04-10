@@ -55,9 +55,15 @@ from lp.code.model.tests.test_diff import (
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    celeryd,
+    monitor_celery,
+    pop_remote_notifications,
+    )
 from lp.services.osutils import override_environ
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -65,7 +71,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    AppServerLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -573,3 +582,20 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
         self.assertEqual(
             'emailing subscribers about merge proposal changes',
             job.getOperationDescription())
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_MergeProposalNeedsReviewEmailJob(self):
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes':
+             'MergeProposalNeedsReviewEmailJob'}))
+        self.useContext(celeryd('job'))
+        bmp = self.factory.makeBranchMergeProposal()
+        with monitor_celery() as responses:
+            job = MergeProposalNeedsReviewEmailJob.create(bmp)
+            transaction.commit()
+        responses[0].wait(30)
+        self.assertEqual(2, len(pop_remote_notifications()))
