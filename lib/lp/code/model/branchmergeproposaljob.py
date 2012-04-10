@@ -488,6 +488,8 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
+    config = config.merge_proposal_jobs
+
     def run(self):
         """See `IRunnableJob`."""
         mailer = CodeReviewCommentMailer.forCreation(self.code_review_comment)
@@ -498,8 +500,10 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         """See `ICodeReviewCommentEmailJobSource`."""
         metadata = cls.getMetadata(code_review_comment)
         bmp = code_review_comment.branch_merge_proposal
-        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
-        return cls(job)
+        base_job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
+        job = cls(base_job)
+        job.celeryRunOnCommit()
+        return job
 
     @staticmethod
     def getMetadata(code_review_comment):

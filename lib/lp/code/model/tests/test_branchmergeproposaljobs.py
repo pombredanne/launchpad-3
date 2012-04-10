@@ -612,3 +612,14 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
             responses[0].wait(30)
         self.assertIsNot(None, bmp.preview_diff)
+
+    def test_CodeReviewCommentEmailJob(self):
+        comment = self.factory.makeCodeReviewComment()
+        self.useContext(celeryd('job'))
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
+        with monitor_celery() as responses:
+            job = CodeReviewCommentEmailJob.create(comment)
+            transaction.commit()
+        responses[0].wait(30)
+        self.assertEqual(2, len(pop_remote_notifications()))
