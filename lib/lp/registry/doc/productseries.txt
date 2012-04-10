@@ -73,7 +73,7 @@ owner or driver can call Product.newSeries().
     ...
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> emacs_series = firefox.newSeries(
     ...     firefox.owner , 'emacs', summary,
     ...     releasefileglob='ftp://gnu.org/emacs*.gz')
@@ -90,7 +90,7 @@ When a driver creates a series, he is also the driver of the new series
 to make him the release manager.
 
     >>> firefox.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
     >>> print emacs2.driver.name
     driver
@@ -114,7 +114,7 @@ A driver for an IProduct or IProjectGroup cannot modify a product series.
 
     >>> from lp.services.webapp.authorization import check_permission
 
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> print emacs_series.owner.name
     name12
     >>> print emacs_series.driver
@@ -125,9 +125,9 @@ A driver for an IProduct or IProjectGroup cannot modify a product series.
 A person appointed to the series driver has the release manager role and can
 edit a product series.
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> emacs_series.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> check_permission('launchpad.Edit', emacs_series)
     True
 

@@ -24,7 +24,7 @@ The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
     >>> from lp.app.enums import ServiceUsage
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.answers_usage = ServiceUsage.LAUNCHPAD
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
@@ -81,7 +81,7 @@ update the milestones and releases table.
 If the Create milestone link is not enabled, the script is not present.
 
     >>> a_user = factory.makePerson(name="hedgehog")
-    >>> login_person(a_user)
+    >>> ignored = login_person(a_user)
     >>> view = create_view(series, '+index', principal=a_user)
     >>> content = view.render()
     >>> print find_tag_by_id(content, 'milestone-script')
@@ -93,7 +93,7 @@ The view also sets the class of the milestone and releases table which can
 be removed by the in-page script. If the product series has no milestones,
 the class table is 'listing unseen'.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> print view.milestone_table_class
     listing unseen
@@ -196,7 +196,7 @@ The view provides a cancel_url and a next_url.
 
 Users without edit permission cannot access the view.
 
-    >>> login_person(a_user)
+    >>> ignored = login_person(a_user)
     >>> view = create_view(series, name='+review')
     >>> check_permission('launchpad.Admin', view)
     False
@@ -236,7 +236,7 @@ mistake.
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit', date_created=test_date)
-    >>> login_person(celebrities.admin.teamowner)
+    >>> ignored = login_person(celebrities.admin.teamowner)
     >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
 Users without edit permission cannot access the view.
@@ -250,14 +250,14 @@ Users without edit permission cannot access the view.
 
 The project owner can access the view.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_view(productseries, name='+delete')
     >>> check_permission('launchpad.Edit', view)
     True
 
 Registry experts can also access the view.
 
-    >>> login_person(celebrities.registry_experts.teamowner)
+    >>> ignored = login_person(celebrities.registry_experts.teamowner)
     >>> check_permission('launchpad.Edit', view)
     True
 

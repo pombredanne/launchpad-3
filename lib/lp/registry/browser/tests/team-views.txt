@@ -30,7 +30,7 @@ as well as the up to five latest members who proposed themselves.
 If new members are added/proposed, they'll show up at the top of the lists.
 
     >>> sample_person = person_set.getByName('name12')
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> sample_person.join(ubuntu_team)
     >>> salgado = person_set.getByName('salgado')
     >>> mark = person_set.getByName('mark')
@@ -80,7 +80,7 @@ because bart is not a member of the team.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> bart = factory.makePerson(email='bart@example.com', name='bart')
-    >>> login_person(bart)
+    >>> ignored = login_person(bart)
 
     >>> view = create_initialized_view(guadamen, '+index')
     >>> print view.contact_link_title
@@ -150,7 +150,7 @@ Private teams are indicated as private.
 This page lists the teams that you administer and can add as a member
 to the current team.
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> view = create_initialized_view(guadamen, '+add-my-teams')
     >>> for candidate in view.candidate_teams:
     ...     print candidate.name, candidate.visibility.title

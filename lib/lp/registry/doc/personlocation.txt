@@ -22,7 +22,7 @@ setLocation() will always set the time zone to the given value and both
 latitude and longitude to None, regardless of what was passed in.
 
     >>> cprov = personset.getByName('cprov')
-    >>> login_person(cprov)
+    >>> ignored = login_person(cprov)
     >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
     >>> print cprov.time_zone
     America/Sao_Paulo
