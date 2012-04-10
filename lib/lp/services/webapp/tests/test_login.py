@@ -28,7 +28,10 @@ from openid.consumer.consumer import (
     FAILURE,
     SUCCESS,
     )
-from openid.extensions import sreg
+from openid.extensions import (
+    pape,
+    sreg,
+    )
 from openid.yadis.discover import DiscoveryFailure
 from testtools.matchers import Contains
 from zope.component import getUtility
@@ -742,12 +745,9 @@ class TestOpenIDLogin(TestCaseWithFactory):
         view()
         extensions = view.openid_request.extensions
         self.assertIsNot(None, extensions)
-        sreg_extension = extensions[0]
-        self.assertIsInstance(sreg_extension, sreg.SRegRequest)
-        self.assertEquals(['email', 'fullname'],
-                          sorted(sreg_extension.allRequestedFields()))
-        self.assertEquals(sorted(sreg_extension.required),
-                          sorted(sreg_extension.allRequestedFields()))
+        pape_extension = extensions[1]
+        self.assertIsInstance(pape_extension, pape.Request)
+        self.assertEqual(0, pape_extension.max_auth_age)
 
 
     def test_logs_to_timeline(self):
