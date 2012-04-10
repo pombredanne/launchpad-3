@@ -599,3 +599,16 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_UpdatePreviewDiffJob(self):
+        self.useContext(celeryd('job'))
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
+        with monitor_celery() as responses:
+            job = UpdatePreviewDiffJob.create(bmp)
+            transaction.commit()
+            responses[0].wait(30)
+        self.assertIsNot(None, bmp.preview_diff)

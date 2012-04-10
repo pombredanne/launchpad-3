@@ -88,6 +88,7 @@ from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
+from lp.codehosting.bzrutils import server
 from lp.codehosting.vfs import (
     get_ro_server,
     get_rw_server,
@@ -355,6 +356,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
+    config = config.merge_proposal_jobs
+
     user_error_types = (UpdatePreviewDiffNotReady, )
 
     retry_error_types = (BranchHasPendingWrites, )
@@ -380,8 +383,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     def run(self):
         """See `IRunnableJob`."""
         self.checkReady()
-        preview = PreviewDiff.fromBranchMergeProposal(
-            self.branch_merge_proposal)
+        with server(get_ro_server(), no_replace=True):
+            preview = PreviewDiff.fromBranchMergeProposal(
+                self.branch_merge_proposal)
         with BranchMergeProposalDelta.monitor(
             self.branch_merge_proposal):
             self.branch_merge_proposal.preview_diff = preview
@@ -734,10 +738,6 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     def contextManager():
         """See `IJobSource`."""
         errorlog.globalErrorUtility.configure('merge_proposal_jobs')
-        server = get_ro_server()
-        server.start_server()
-        yield
-        server.stop_server()
 
     @staticmethod
     def get(job_id):
