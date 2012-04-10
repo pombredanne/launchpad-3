@@ -14,7 +14,6 @@ __metaclass__ = type
 
 __all__ = [
     'BranchMergeProposalJob',
-    'BranchMergeProposalJobFactory',
     'BranchMergeProposalJobSource',
     'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
@@ -718,31 +717,6 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         return format_address_for_person(registrant)
 
 
-class BranchMergeProposalJobFactory:
-    """Construct a derived merge proposal job for a BranchMergeProposalJob."""
-
-    job_classes = {
-        BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW:
-            MergeProposalNeedsReviewEmailJob,
-        BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF:
-            UpdatePreviewDiffJob,
-        BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL:
-            CodeReviewCommentEmailJob,
-        BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL:
-            ReviewRequestedEmailJob,
-        BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED:
-            MergeProposalUpdatedEmailJob,
-        BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF:
-            GenerateIncrementalDiffJob,
-        }
-
-    @classmethod
-    def create(cls, bmp_job):
-        """Create the derived job for the bmp_job's job type."""
-        job_class = cls.job_classes[bmp_job.job_type]
-        return job_class(bmp_job)
-
-
 class BranchMergeProposalJobSource(BaseRunnableJobSource):
     """Provide a job source for all merge proposal jobs.
 
@@ -771,7 +745,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             or its job_type does not match the desired subclass.
         """
         job = BranchMergeProposalJob.get(job_id)
-        return BranchMergeProposalJobFactory.create(job)
+        return job.makeDerived()
 
     @staticmethod
     def iterReady(job_type=None):
@@ -810,7 +784,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             # If the job is running, then skip it
             if job.status == JobStatus.RUNNING:
                 continue
-            derived_job = BranchMergeProposalJobFactory.create(bmp_job)
+            derived_job = bmp_job.makeDerived()
             # If the job is an update preview diff, then check that it is
             # ready.
             if IUpdatePreviewDiffJob.providedBy(derived_job):
