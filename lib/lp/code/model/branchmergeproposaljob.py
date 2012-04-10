@@ -264,8 +264,12 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     @classmethod
     def create(cls, bmp):
         """See `IMergeProposalCreationJob`."""
+        return cls._create(bmp, {})
+
+    @classmethod
+    def _create(cls, bmp, metadata):
         base_job = BranchMergeProposalJob(
-            bmp, cls.class_job_type, {})
+            bmp, cls.class_job_type, metadata)
         job = cls(base_job)
         job.celeryRunOnCommit()
         return job
@@ -500,10 +504,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         """See `ICodeReviewCommentEmailJobSource`."""
         metadata = cls.getMetadata(code_review_comment)
         bmp = code_review_comment.branch_merge_proposal
-        base_job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
-        job = cls(base_job)
-        job.celeryRunOnCommit()
-        return job
+        return cls._create(bmp, metadata)
 
     @staticmethod
     def getMetadata(code_review_comment):
@@ -544,6 +545,8 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
 
+    config = config.merge_proposal_jobs
+
     def run(self):
         """See `IRunnableJob`."""
         reason = RecipientReason.forReviewer(
@@ -557,8 +560,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         """See `IReviewRequestedEmailJobSource`."""
         metadata = cls.getMetadata(review_request)
         bmp = review_request.branch_merge_proposal
-        job = BranchMergeProposalJob(bmp, cls.class_job_type, metadata)
-        return cls(job)
+        return cls._create(bmp, metadata)
 
     @staticmethod
     def getMetadata(review_request):

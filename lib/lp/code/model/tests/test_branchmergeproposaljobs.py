@@ -558,6 +558,15 @@ class TestReviewRequestedEmailJob(TestCaseWithFactory):
             'emailing a reviewer requesting a review',
             job.getOperationDescription())
 
+    def test_run_sends_mail(self):
+        request = self.factory.makeCodeReviewVoteReference()
+        job = ReviewRequestedEmailJob.create(request)
+        job.run()
+        (notification,) = pop_notifications()
+        self.assertIn(
+            'You have been requested to review the proposed merge',
+            notification.get_payload(decode=True))
+
 
 class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
 
@@ -623,3 +632,14 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_ReviewRequestedEmailJob(self):
+        request = self.factory.makeCodeReviewVoteReference()
+        self.useContext(celeryd('job'))
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
+        with monitor_celery() as responses:
+            job = ReviewRequestedEmailJob.create(request)
+            transaction.commit()
+        responses[0].wait(30)
+        self.assertEqual(1, len(pop_remote_notifications()))
