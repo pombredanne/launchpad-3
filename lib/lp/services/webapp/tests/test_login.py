@@ -737,7 +737,7 @@ class TestOpenIDLogin(TestCaseWithFactory):
     def test_pape_extension(self):
         # We can signal that a request should be reauthenticated with
         # PAPE extension's max_auth_age paramter.
-        request = LaunchpadTestRequest()
+        request = LaunchpadTestRequest(QUERY_STRING='reauth=1')
         # This is a hack to make the request.getURL(1) call issued by the view
         # not raise an IndexError.
         request._app_names = ['foo']
