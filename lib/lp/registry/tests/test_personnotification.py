@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.model.personnotification import PersonNotification
 from lp.registry.scripts.personnotification import PersonNotificationManager
 from lp.services.config import config
 from lp.testing import (
@@ -25,6 +26,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPersonNotification(TestCaseWithFactory):
@@ -63,6 +65,19 @@ class TestPersonNotification(TestCaseWithFactory):
         email = removeSecurityProxy(team.teamowner.preferredemail).email
         self.assertEqual([email], notification.to_addresses)
         self.assertTrue(notification.can_send)
+
+    def test_to_specified_email(self):
+        """We might want to notify a non-preferred email address."""
+        user = self.factory.makePerson()
+        note = PersonNotification()
+        note.person = user
+        note.body = 'body'
+        note.subject = 'subject'
+        pop_notifications()
+        note.send(sendto=(user.displayname, 'testing@me.com'))
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertTrue('testing@me.com' in notifications[0].get('To'))
 
 
 class TestPersonNotificationManager(TestCaseWithFactory):
