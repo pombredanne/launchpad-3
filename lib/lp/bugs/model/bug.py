@@ -1746,10 +1746,11 @@ class Bug(SQLBase):
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
         
+        # There are several people we need to ensure are subscribed.
+        missing_subscribers = set([who, self.owner])
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
         # bug supervisor, we need to subscribe the maintainer.
-        missing_subscribers = set()
         pillars = self.affected_pillars
         if information_type == InformationType.USERDATA:
             for pillar in pillars:
