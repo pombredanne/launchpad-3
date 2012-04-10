@@ -98,7 +98,10 @@ from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import (
     BaseRunnableJob,
     BaseRunnableJobSource,
@@ -236,10 +239,15 @@ class BranchMergeProposalJob(StormBase):
                 'No occurrence of %s has key %s' % (klass.__name__, key))
         return instance
 
+    def makeDerived(self):
+        return BranchMergeProposalJobDerived.makeSubclass(self)
+
 
 class BranchMergeProposalJobDerived(BaseRunnableJob):
-
     """Intermediate class for deriving from BranchMergeProposalJob."""
+
+    __metaclass__ = EnumeratedSubclass
+
     delegates(IBranchMergeProposalJob)
 
     def __init__(self, job):
