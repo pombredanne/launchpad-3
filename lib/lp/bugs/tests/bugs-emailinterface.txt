@@ -1445,7 +1445,7 @@ Bug supervisors can set some restricted statuses:
     ...     login('foo.bar@canonical.com')
     ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
 
-    >>> login_person(email_user)
+    >>> ignored = login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
     >>> print upstream_task.status.title
@@ -1495,7 +1495,7 @@ Everyone else gets an explanatory error message:
 Let's take a look at all the other error messages that the sub
 commands can produce.
 
-    >>> login_person(email_user)
+    >>> ignored = login_person(email_user)
 
 Invalid status:
 

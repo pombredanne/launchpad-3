@@ -50,10 +50,10 @@ one for all team admins and another for the member.
 
 In open teams joining and leaving the team generates no notifications.
 
-    >>> login_person(admin_person)
+    >>> ignored = login_person(admin_person)
     >>> base_mails = len(stub.test_emails)
     >>> new_person = factory.makePerson()
-    >>> login_person(new_person)
+    >>> ignored = login_person(new_person)
     >>> new_person.join(open_team)
     >>> membership = membershipset.getByPersonAndTeam(new_person, open_team)
     >>> membership.status.title
@@ -72,7 +72,7 @@ Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> lifeless = personset.getByName('lifeless')
-    >>> login_person(lifeless)
+    >>> ignored = login_person(lifeless)
     >>> lifeless.join(ubuntu_team)
     >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
@@ -708,7 +708,7 @@ notification is sent to all team admins.
     >>> print karl_on_mirroradmins.dateexpires
     None
 
-    >>> login_person(mirror_admins.teamowner)
+    >>> ignored = login_person(mirror_admins.teamowner)
     >>> karl_on_mirroradmins.setExpirationDate(
     ...     tomorrow, mirror_admins.teamowner)
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
@@ -716,7 +716,7 @@ notification is sent to all team admins.
     >>> mirror_admins.defaultrenewalperiod = 365
     >>> flush_database_updates()
 
-    >>> login_person(karl)
+    >>> ignored = login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
     >>> run_mail_jobs()
     >>> len(stub.test_emails)
@@ -847,7 +847,7 @@ notifications sent) by Launchpad Administrators.
     >>> print dumper_hwdb_membership.status.title
     Approved
 
-    >>> login_person(admin_person)
+    >>> ignored = login_person(admin_person)
     >>> setStatus(dumper_hwdb_membership, TeamMembershipStatus.DEACTIVATED,
     ...     reviewer=admin_person, silent=True)
     >>> run_mail_jobs()
@@ -862,7 +862,7 @@ membership statues silently.
 
     >>> kamion = getUtility(IPersonSet).getByName('kamion')
     >>> stevea = getUtility(IPersonSet).getByName('stevea')
-    >>> login_person(kamion)
+    >>> ignored = login_person(kamion)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> kamion_ubuntu_team_membership = membershipset.getByPersonAndTeam(
     ...     kamion, ubuntu_team)
@@ -890,7 +890,7 @@ When a user joins a team with a mailing list, the new member's
 notification email contain subscription information.
 
     >>> owner = factory.makePerson(name='team-owner')
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> team_one, list_one = factory.makeTeamAndMailingList(
     ...     'team-one', owner.name)
     >>> dummy = pop_notifications()

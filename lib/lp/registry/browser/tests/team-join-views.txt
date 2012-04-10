@@ -37,7 +37,7 @@ is thwarted by the view because it strips the checkbox from the form.
 Therefore no error message is seen.
 
     >>> sample_person = personset.getByName('name12')
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> no_list_team = make_team(
     ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 

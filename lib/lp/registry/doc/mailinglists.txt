@@ -215,7 +215,7 @@ A list which is active may be deactivated.
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> transaction.commit()
 
-    >>> login_person(team_three.teamowner)
+    >>> ignored = login_person(team_three.teamowner)
     >>> list_three.deactivate()
     >>> print list_three.status.name
     DEACTIVATING

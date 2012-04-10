@@ -11,7 +11,7 @@ contributors on a given context and the top contributors by category.
 
     >>> product = getUtility(IProductSet).getByName('evolution')
     >>> user = product.owner
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> view = create_initialized_view(
     ...     product, '+topcontributors', principal=user)
     >>> contributors = view._getTopContributorsWithLimit(limit=3)
