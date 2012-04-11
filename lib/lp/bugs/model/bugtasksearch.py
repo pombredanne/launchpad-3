@@ -459,6 +459,7 @@ def _build_query(params):
         # We can't use search_value_to_storm_where_condition in its current
         # form, as it doesn't convert Storm objects to their IDs, and is_in
         # doesn't work for References.
+        # But do we really need the any/NULL cases?
         if isinstance(params.project, any):
             extra_clauses.append(
                 Product.projectID.is_in(
