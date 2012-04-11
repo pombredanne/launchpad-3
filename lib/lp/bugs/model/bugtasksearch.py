@@ -441,19 +441,10 @@ def _build_query(params):
 
     if params.project:
         clauseTables.append(Product)
-        extra_clauses.append(BugTask.productID == Product.id)
-        # We can't use search_value_to_storm_where_condition in its current
-        # form, as it doesn't convert Storm objects to their IDs, and is_in
-        # doesn't work for References.
-        # But do we really need the any/NULL cases?
-        if isinstance(params.project, any):
-            extra_clauses.append(
-                Product.projectID.is_in(
-                    p.id for p in params.project.query_values))
-        elif params.project is NULL:
-            extra_clauses.append(Product.project == None)
-        else:
-            extra_clauses.append(Product.project == params.project)
+        extra_clauses.append(And(
+            BugTask.productID == Product.id,
+            search_value_to_storm_where_condition(
+                Product.project, params.project)))
 
     if params.omit_dupes:
         extra_clauses.append(Bug.duplicateof == None)
