@@ -561,8 +561,6 @@ class BugView(LaunchpadView, BugViewMixin):
             'name': term.title} for term in InformationTypeVocabulary()]
         cache.objects['private_types'] = [
             type.name for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['initial_information_type'] = (
-            IBug(self.context).information_type.name)
 
     @cachedproperty
     def page_description(self):
