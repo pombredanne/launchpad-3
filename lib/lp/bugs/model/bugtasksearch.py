@@ -658,10 +658,7 @@ def _build_query(params):
         extra_clauses.append(bug_supervisor_clause)
 
     if params.bug_reporter:
-        bug_reporter_clause = (
-            "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
-                params.bug_reporter))
-        extra_clauses.append(bug_reporter_clause)
+        extra_clauses.append(Bug.owner == params.bug_reporter)
 
     if params.bug_commenter:
         extra_clauses.append(
@@ -683,35 +680,29 @@ def _build_query(params):
                     BugAffectsPerson.person == params.affected_user))))
 
     if params.nominated_for:
-        mappings = sqlvalues(
-            target=params.nominated_for,
-            nomination_status=BugNominationStatus.PROPOSED)
         if IDistroSeries.providedBy(params.nominated_for):
-            mappings['target_column'] = 'distroseries'
+            target = BugNomination.distroseries == params.nominated_for
         elif IProductSeries.providedBy(params.nominated_for):
-            mappings['target_column'] = 'productseries'
+            target = BugNomination.productseries == params.nominated_for
         else:
             raise AssertionError(
                 'Unknown nomination target: %r.' % params.nominated_for)
-        nominated_for_clause = """
-            BugNomination.bug = BugTask.bug AND
-            BugNomination.%(target_column)s = %(target)s AND
-            BugNomination.status = %(nomination_status)s
-            """ % mappings
-        extra_clauses.append(nominated_for_clause)
+        extra_clauses.append(And(
+            BugNomination.bugID == BugTask.bugID,
+            BugNomination.status == BugNominationStatus.PROPOSED,
+            target
+            ))
         clauseTables.append(BugNomination)
 
     dateexpected_before = params.milestone_dateexpected_before
     dateexpected_after = params.milestone_dateexpected_after
     if dateexpected_after or dateexpected_before:
         clauseTables.append(Milestone)
-        extra_clauses.append("BugTask.milestone = Milestone.id")
+        extra_clauses.append(BugTask.milestoneID == Milestone.id)
         if dateexpected_after:
-            extra_clauses.append("Milestone.dateexpected >= %s"
-                                 % sqlvalues(dateexpected_after))
+            extra_clauses.append(Milestone.dateexpected >= dateexpected_after)
         if dateexpected_before:
-            extra_clauses.append("Milestone.dateexpected <= %s"
-                                 % sqlvalues(dateexpected_before))
+            extra_clauses.append(Milestone.dateexpected <= dateexpected_before)
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
