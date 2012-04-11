@@ -95,7 +95,12 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
+from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -548,6 +553,17 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    def initialize(self):
+        super(BugView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['information_types'] = [
+            {'value': term.value, 'description': term.description,
+            'name': term.title} for term in InformationTypeVocabulary()]
+        cache.objects['private_types'] = [
+            type.value for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['initial_information_type'] = (
+            IBug(self.context).information_type.value)
+
     @cachedproperty
     def page_description(self):
         return IBug(self.context).description
@@ -596,6 +612,16 @@ class BugView(LaunchpadView, BugViewMixin):
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
 
+    @property
+    def information_type(self):
+        title = self.context.information_type.title
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if (
+            self.context.information_type == InformationType.USERDATA and
+            show_userdata_as_private):
+            return 'Private'
+        return title
 
 class BugActivity(BugView):
 
