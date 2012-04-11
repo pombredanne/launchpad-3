@@ -18,6 +18,7 @@ from storm.expr import (
     Alias,
     And,
     Desc,
+    Exists,
     In,
     Join,
     LeftJoin,
@@ -50,6 +51,8 @@ from lp.bugs.model.bug import (
     Bug,
     BugTag,
     )
+from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
@@ -661,11 +664,13 @@ def _build_query(params):
         extra_clauses.append(bug_reporter_clause)
 
     if params.bug_commenter:
-        bug_commenter_clause = """
-        Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
-        BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
-        """ % sqlvalues(bug_commenter=params.bug_commenter)
-        extra_clauses.append(bug_commenter_clause)
+        extra_clauses.append(
+            Bug.id.is_in(Select(
+                BugMessage.bugID,
+                where=And(
+                    BugMessage.index > 0,
+                    BugMessage.owner == params.bug_commenter),
+                distinct=True)))
 
     if params.affects_me:
         params.affected_user = params.user
@@ -718,24 +723,22 @@ def _build_query(params):
         extra_clauses.append(hw_clause)
 
     if zope_isinstance(params.linked_branches, BaseItem):
+        base = Exists(Select(
+            1, tables=[BugBranch], where=(BugBranch.bugID == Bug.id)))
         if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
-            extra_clauses.append(
-                """EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
+            extra_clauses.append(base)
         elif (params.linked_branches ==
                 BugBranchSearch.BUGS_WITHOUT_BRANCHES):
-            extra_clauses.append(
-                """NOT EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
+            extra_clauses.append(Not(base))
     elif zope_isinstance(params.linked_branches, (any, all, int)):
         # A specific search term has been supplied.
         extra_clauses.append(
-            """EXISTS (
-                SELECT TRUE FROM BugBranch WHERE BugBranch.bug=Bug.id AND
-                BugBranch.branch %s)
-            """ % search_value_to_where_condition(params.linked_branches))
+            Exists(Select(
+                1, tables=[BugBranch],
+                where=And(
+                    BugBranch.bugID == Bug.id,
+                    search_value_to_where_condition(
+                        BugBranch.branchID, params.linked_branches)))))
 
     linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:
