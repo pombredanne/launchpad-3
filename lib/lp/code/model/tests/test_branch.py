@@ -316,8 +316,8 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         # lp.services.job.celeryconfig is loaded.
         from celery.exceptions import TimeoutError
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classses': 'BranchScanJob'}))
-        with celeryd('standard') as proc:
+            'jobs.celery.enabled_classes': 'BranchScanJob'}))
+        with celeryd('job') as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
             bzr_tree.commit(
@@ -348,8 +348,8 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         """Calling destroySelf causes Celery to delete the branch."""
         from celery.exceptions import TimeoutError
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classses': 'ReclaimBranchSpaceJob'}))
-        with celeryd('branch_write'):
+            'jobs.celery.enabled_classes': 'ReclaimBranchSpaceJob'}))
+        with celeryd('branch_write_job'):
             self.useBzrBranches()
             db_branch, tree = self.create_branch_and_tree()
             branch_path = get_real_branch_path(db_branch.id)
@@ -818,7 +818,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     def test_requestUpgradeUsesCelery(self):
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classses': 'BranchUpgradeJob'}))
+            'jobs.celery.enabled_classes': 'BranchUpgradeJob'}))
         cwd = os.getcwd()
         self.useBzrBranches()
         db_branch, tree = create_knit(self)
@@ -829,7 +829,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         db_branch.requestUpgrade(db_branch.owner)
         with monitor_celery() as responses:
             transaction.commit()
-            with celeryd('branch_write', cwd):
+            with celeryd('branch_write_job', cwd):
                 responses[-1].wait(30)
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
