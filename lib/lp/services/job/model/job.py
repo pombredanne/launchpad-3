@@ -33,7 +33,9 @@ from storm.locals import (
     Int,
     Reference,
     )
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import dbconfig
@@ -253,17 +255,33 @@ class UniversalJobSource:
 
     needs_init = True
 
-    @classmethod
-    def get(cls, job_id):
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-
-        dbconfig.override(
-            dbuser='branchscanner', isolation_level='read_committed')
+    @staticmethod
+    def getDerived(job_id):
+        """Return the derived branch job associated with the job id."""
         from lp.code.model.branchjob import (
             BranchJob,
             )
         store = IStore(BranchJob)
         branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        return branch_job.makeDerived()
+        if branch_job is None:
+            raise ValueError('No BranchJob with job=%s.' % job_id)
+        return branch_job.makeDerived(), store
+
+    @classmethod
+    def switchDBUser(cls, job_id):
+        """Switch to the DB user associated with this Job ID."""
+        derived, store = cls.getDerived(job_id)
+        dbconfig.override(
+            dbuser=derived.config.dbuser, isolation_level='read_committed')
+        transaction.abort()
+        getUtility(IZStorm).remove(store)
+        store.close()
+
+    @classmethod
+    def get(cls, job_id):
+        transaction.abort()
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+        cls.switchDBUser(job_id)
+        return cls.getDerived(job_id)[0]

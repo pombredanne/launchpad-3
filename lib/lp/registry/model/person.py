@@ -40,6 +40,8 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -128,11 +130,11 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -1535,7 +1537,7 @@ class Person(
             milestone_dateexpected_after=today)
 
         # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
-        # multiple times when load_related() iterates over through the tasks.
+        # multiple times when load_related() iterates over the tasks.
         tasks = list(getUtility(IBugTaskSet).search(search_params))
         # Eager load the things we need that are not already eager loaded by
         # BugTaskSet.search().
@@ -2671,10 +2673,13 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
+
+        # This might be a new person so there's no before mod to use.
+        person_before_mod = Snapshot(self,
+            names=['name', 'displayname', 'preferredemail'])
 
         if existing_preferred_email is not None:
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
@@ -2685,6 +2690,11 @@ class Person(
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
+        # Make sure we notify that the property was changed, but only if we've
+        # changed the preferred email and not set an initial one.
+        if person_before_mod.preferredemail:
+            notify(ObjectModifiedEvent(self, person_before_mod,
+                ['preferredemail'], user=self))
 
     @cachedproperty
     def preferredemail(self):
@@ -2965,16 +2975,22 @@ class Person(
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def createPPA(self, name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, commercial=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name, private)
+        # XXX: We pass through the Person on whom the PPA is being created,
+        # but validatePPA assumes that that Person is also the one creating
+        # the PPA.  This is not true in general, and particularly not for
+        # teams.  Instead, both the acting user and the target of the PPA
+        # creation ought to be passed through.
+        errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
-            raise PPACreationError(errors)
+           raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description, private=private)
+            description=description, private=private,
+            commercial=commercial)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -4619,6 +4635,14 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    def destroySelf(self):
+        """We trigger some events on removal."""
+        # For security reasons we want to notify the preferred email address
+        # that this sshkey has been removed.
+        notify(ObjectModifiedEvent(self.person, self.person,
+            ['removedsshkey'], user=self.person))
+        super(SSHKey, self).destroySelf()
+
 
 class SSHKeySet:
     implements(ISSHKeySet)
@@ -4645,6 +4669,11 @@ class SSHKeySet:
             keytype = SSHKeyType.DSA
         else:
             raise SSHKeyAdditionError
+
+        # We need to make sure we notify the user that the ssh key is added in
+        # case they didn't request this change.
+        notify(ObjectModifiedEvent(person, person,
+            ['newsshkey'], user=person))
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)

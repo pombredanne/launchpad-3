@@ -9,7 +9,7 @@ project involvement. Only links to official applications are rendered.
 
 
     >>> distribution = factory.makeDistribution(name='umbra')
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> view = create_view(
     ...     distribution, '+get-involved', principal=distribution.owner)
 
@@ -65,7 +65,7 @@ The view provides a list of enabled links that is rendered by the template.
 Products are supported.
 
     >>> product = factory.makeProduct(name='bread')
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> view = create_view(product, '+get-involved')
     >>> print view.blueprints_usage.name
@@ -236,7 +236,7 @@ set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
 
     >>> from lp.app.enums import ServiceUsage
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> distribution.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> distribution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> package = factory.makeDistributionSourcePackage(

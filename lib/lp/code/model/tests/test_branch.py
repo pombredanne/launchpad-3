@@ -14,6 +14,7 @@ from datetime import (
     )
 import os
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
@@ -21,6 +22,10 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 from testtools import ExpectedException
+from testtools.matchers import (
+    Not,
+    PathExists,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -104,6 +109,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -111,6 +117,10 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import (
+    celeryd,
+    monitor_celery,
+    )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -139,6 +149,13 @@ from lp.testing.layers import (
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
+
+
+def create_knit(test_case):
+    db_branch, tree = test_case.create_branch_and_tree(format='knit')
+    db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+    db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+    return db_branch, tree
 
 
 class TestCodeImport(TestCase):
@@ -297,16 +314,10 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         # Delay importing anything that uses Celery until RabbitMQLayer is
         # running, so that config.rabbitmq.host is defined when
         # lp.services.job.celeryconfig is loaded.
-        from lp.services.job.celeryjob import CeleryRunJob
-        from lp.services.job.tests.test_celeryjob import monitor_celery
         from celery.exceptions import TimeoutError
-        from lazr.jobrunner.tests.test_celerytask import running
-        self.useFixture(FeatureFixture({'jobs.celery.enabled_classses':
-            'BranchScanJob'}))
-        cmd_args = ('--config', 'lp.services.job.tests.celeryconfig')
-        env = dict(os.environ)
-        env['BROKER_URL'] = CeleryRunJob.app.conf['BROKER_URL']
-        with running('bin/celeryd', cmd_args, env=env) as proc:
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob'}))
+        with celeryd('job') as proc:
             self.useBzrBranches()
             db_branch, bzr_tree = self.create_branch_and_tree()
             bzr_tree.commit(
@@ -324,10 +335,6 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
 
     def test_branchChanged_via_celery_no_enabled(self):
         """Running a job via Celery succeeds and emits expected output."""
-        # Delay importing anything that uses Celery until RabbitMQLayer is
-        # running, so that config.rabbitmq.host is defined when
-        # lp.services.job.celeryconfig is loaded.
-        from lp.services.job.tests.test_celeryjob import monitor_celery
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
@@ -336,6 +343,25 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         with monitor_celery() as responses:
             transaction.commit()
             self.assertEqual([], responses)
+
+    def test_destroySelf_via_celery(self):
+        """Calling destroySelf causes Celery to delete the branch."""
+        from celery.exceptions import TimeoutError
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'ReclaimBranchSpaceJob'}))
+        with celeryd('branch_write_job'):
+            self.useBzrBranches()
+            db_branch, tree = self.create_branch_and_tree()
+            branch_path = get_real_branch_path(db_branch.id)
+            self.assertThat(branch_path, PathExists())
+            db_branch.destroySelf()
+            with monitor_celery() as responses:
+                transaction.commit()
+                try:
+                    responses[-1].wait(30)
+                except TimeoutError:
+                    pass
+        self.assertThat(branch_path, Not(PathExists()))
 
 
 class TestBranchRevisionMethods(TestCaseWithFactory):
@@ -638,7 +664,7 @@ class TestBranch(TestCaseWithFactory):
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessAppServerLayer
 
     def test_needsUpgrading_empty_formats(self):
         branch = self.factory.makePersonalBranch()
@@ -789,6 +815,27 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertEqual(
             jobs,
             [job, ])
+
+    def test_requestUpgradeUsesCelery(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchUpgradeJob'}))
+        cwd = os.getcwd()
+        self.useBzrBranches()
+        db_branch, tree = create_knit(self)
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        db_branch.requestUpgrade(db_branch.owner)
+        with monitor_celery() as responses:
+            transaction.commit()
+            with celeryd('branch_write_job', cwd):
+                responses[-1].wait(30)
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+        self.assertFalse(db_branch.needs_upgrading)
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an

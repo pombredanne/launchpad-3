@@ -103,6 +103,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     retry_error_types = ()
 
+    task_queue = 'job'
+
     celery_responses = None
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
@@ -187,6 +189,30 @@ class BaseRunnableJob(BaseRunnableJobSource):
         """Generate an OOPS report using the given OOPS configuration."""
         return oops_config.create(
             context=dict(exc_info=info))
+
+    def runViaCelery(self, ignore_result=False):
+        """Request that this job be run via celery."""
+        # Avoid importing from lp.services.job.celeryjob where not needed, to
+        # avoid configuring Celery when Rabbit is not configured.
+        from lp.services.job.celeryjob import CeleryRunJob
+        return CeleryRunJob.apply_async(
+            (self.job_id,), queue=self.task_queue,
+            ignore_result=ignore_result)
+
+    def celeryCommitHook(self, succeeded):
+        """Hook function to call when a commit completes."""
+        if succeeded:
+            ignore_result = bool(BaseRunnableJob.celery_responses is None)
+            response = self.runViaCelery(ignore_result)
+            if not ignore_result:
+                BaseRunnableJob.celery_responses.append(response)
+
+    def celeryRunOnCommit(self):
+        """Configure transaction so that commit runs this job via Celery."""
+        if not celery_enabled(self.__class__.__name__):
+            return
+        current = transaction.get()
+        current.addAfterCommitHook(self.celeryCommitHook)
 
 
 class BaseJobRunner(LazrJobRunner):
@@ -596,7 +622,7 @@ def celery_enabled(class_name):
 
     The name of a BaseRunnableJob must be specified.
     """
-    flag = getFeatureFlag('jobs.celery.enabled_classses')
+    flag = getFeatureFlag('jobs.celery.enabled_classes')
     if flag is None:
         return False
     return class_name in flag.split(' ')

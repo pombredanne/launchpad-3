@@ -21,7 +21,7 @@ class TestDatabaseConfig(TestCase):
         # dbuser and isolation_level can be overridden at runtime.
         dbc = DatabaseConfig()
         self.assertEqual('launchpad_main', dbc.dbuser)
-        self.assertEqual('serializable', dbc.isolation_level)
+        self.assertEqual('repeatable_read', dbc.isolation_level)
 
         # dbuser and isolation_level overrides both work.
         dbc.override(dbuser='not_launchpad', isolation_level='autocommit')
@@ -36,7 +36,7 @@ class TestDatabaseConfig(TestCase):
         # Overriding with None removes the override.
         dbc.override(dbuser=None, isolation_level=None)
         self.assertEqual('launchpad_main', dbc.dbuser)
-        self.assertEqual('serializable', dbc.isolation_level)
+        self.assertEqual('repeatable_read', dbc.isolation_level)
 
     def test_reset(self):
         # reset() removes any overrides.

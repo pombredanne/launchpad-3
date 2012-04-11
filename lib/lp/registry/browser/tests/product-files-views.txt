@@ -61,7 +61,7 @@ page will be links to add new files for each series and release.
 
     >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(product, '+download',
     ...                                principal=product.owner)
     >>> admin_links = find_tag_by_id(view.render(), 'admin-links')

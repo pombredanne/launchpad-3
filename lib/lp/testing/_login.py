@@ -84,6 +84,7 @@ def login_person(person, participation=None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
+    return person
 
 
 def login_team(team, participation=None):
@@ -140,9 +141,9 @@ def logout():
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
     interaction = queryInteraction()
-    login_method(identifier)
+    person = login_method(identifier)
     try:
-        yield
+        yield person
     finally:
         if interaction is None:
             logout()

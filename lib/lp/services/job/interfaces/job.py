@@ -171,6 +171,9 @@ class IRunnableJob(IJob):
     def run():
         """Run this job."""
 
+    def celeryRunOnCommit():
+        """Request Celery to run this job on transaction commit."""
+
 
 class IJobSource(Interface):
     """Interface for creating and getting jobs."""

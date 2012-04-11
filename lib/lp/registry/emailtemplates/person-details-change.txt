@@ -1,0 +1,8 @@
+Hello %(user_name)s, your account has recently changed on Launchpad.net.
+
+Change:
+%(field_changed)s
+
+If you did not intend to make this change, please open a new Question on
+Launchpad [https://answers.launchpad.net/launchpad/+addquestion] or visit
+#launchpad in irc at Freenode to alert staff of the issue.

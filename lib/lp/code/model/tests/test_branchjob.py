@@ -60,24 +60,35 @@ from lp.code.model.branchjob import (
     RosettaUploadJob,
     )
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.code.model.tests.test_branch import create_knit
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    celeryd,
+    monitor_celery,
+    )
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
     )
 from lp.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -193,7 +204,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
@@ -222,17 +233,11 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             AlreadyLatestFormat, BranchUpgradeJob.create, branch,
             self.factory.makePerson())
 
-    def create_knit(self):
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-        return db_branch, tree
-
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_knit()
+        db_branch, tree = create_knit(self)
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getInternalBzrUrl())
@@ -1225,6 +1230,41 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([], unfinished_jobs)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_RosettaUploadJob(self):
+        """Ensure RosettaUploadJob can run under Celery."""
+        self.useContext(celeryd('job'))
+        self.useBzrBranches(direct_database=True)
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
+        }))
+        db_branch = self.factory.makeAnyBranch()
+        self.createBzrBranch(db_branch)
+        commit = DirectBranchCommit(db_branch, no_race_check=True)
+        commit.writeFile('foo.pot', 'gibberish')
+        with monitor_celery() as responses:
+            with person_logged_in(db_branch.owner):
+                commit.commit('message')
+                transaction.commit()
+                # Wait for branch scan to complete.
+                responses[0].wait(30)
+                series = self.factory.makeProductSeries(branch=db_branch)
+                RosettaUploadJob.create(
+                    commit.db_branch, NULL_REVISION,
+                    force_translations_upload=True)
+                transaction.commit()
+        # Wait for RosettaUploadJob to complete
+        responses[1].wait(30)
+        queue = getUtility(ITranslationImportQueue)
+        entries = list(queue.getAllEntries(target=series))
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual('foo.pot', entry.path)
 
 
 class TestReclaimBranchSpaceJob(TestCaseWithFactory):
