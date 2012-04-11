@@ -35,6 +35,7 @@ from zope.security.proxy import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
@@ -126,10 +127,10 @@ orderby_expression = {
                     BugTag.bug == Bug.id and
                     # We want at most one tag per bug. Select the
                     # tag that comes first in alphabetic order.
-                    BugTag.id == SQL("""
-                        SELECT id FROM BugTag AS bt
-                        WHERE bt.bug=bug.id ORDER BY bt.tag LIMIT 1
-                        """))),
+                    BugTag.id == Select(
+                        BugTag.id, tables=[BugTag],
+                        where=(BugTag.bugID == Bug.id),
+                        order_by=BugTag.tag, limit=1))),
             ]
         ),
     "specification": (
@@ -142,16 +143,14 @@ orderby_expression = {
                     # We want at most one specification per bug.
                     # Select the specification that comes first
                     # in alphabetic order.
-                    Specification.id == SQL("""
-                        SELECT Specification.id
-                        FROM SpecificationBug
-                        JOIN Specification
-                            ON SpecificationBug.specification=
-                                Specification.id
-                        WHERE SpecificationBug.bug=Bug.id
-                        ORDER BY Specification.name
-                        LIMIT 1
-                        """))),
+                    Specification.id == Select(
+                        Specification.id,
+                        tables=[
+                            SpecificationBug,
+                            Join(Specification, Specification.id ==
+                                    SpecificationBug.specificationID)],
+                        where=(SpecificationBug.id == Bug.id),
+                        order_by=Specification.name, limit=1))),
             ]
         ),
     }
