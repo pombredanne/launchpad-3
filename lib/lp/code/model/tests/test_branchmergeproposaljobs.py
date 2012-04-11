@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -643,3 +643,15 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(1, len(pop_remote_notifications()))
+
+    def test_MergeProposalUpdatedEmailJob(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useContext(celeryd('job'))
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
+        with monitor_celery() as responses:
+            job = MergeProposalUpdatedEmailJob.create(
+                bmp, 'change', bmp.registrant)
+            transaction.commit()
+        responses[0].wait(30)
+        self.assertEqual(2, len(pop_remote_notifications()))

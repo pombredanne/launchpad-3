@@ -612,6 +612,8 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
 
+    config = config.merge_proposal_jobs
+
     def run(self):
         """See `IRunnableJob`."""
         mailer = BMPMailer.forModification(
@@ -622,9 +624,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
     def create(cls, merge_proposal, delta_text, editor):
         """See `IReviewRequestedEmailJobSource`."""
         metadata = cls.getMetadata(delta_text, editor)
-        job = BranchMergeProposalJob(
-            merge_proposal, cls.class_job_type, metadata)
-        return cls(job)
+        return cls._create(merge_proposal, metadata)
 
     @staticmethod
     def getMetadata(delta_text, editor):
