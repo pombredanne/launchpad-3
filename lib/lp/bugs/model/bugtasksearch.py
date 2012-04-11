@@ -72,7 +72,6 @@ from lp.registry.model.product import Product
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
-    convert_storm_clause_to_string,
     quote,
     sqlvalues,
     )
@@ -1014,12 +1013,8 @@ def _build_hardware_related_clause(params):
     clauses.append(Or(*bug_link_clauses))
     clauses.append(_userCanAccessSubmissionStormClause(params.user))
 
-    tables = [convert_storm_clause_to_string(table) for table in tables]
-    clauses = ['(%s)' % convert_storm_clause_to_string(clause)
-                for clause in clauses]
-    clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
-        ', '.join(tables), ' AND '.join(clauses))
-    return clause
+    return Bug.id.is_in(
+        Select(Bug.id, tables=tables, where=And(*clauses), distinct=True))
 
 
 def _build_blueprint_related_clause(params):
