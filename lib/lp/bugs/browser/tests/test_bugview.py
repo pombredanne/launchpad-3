@@ -63,7 +63,9 @@ class TestBugView(TestCaseWithFactory):
         self.assertEqual(
             self.bug.information_type.title, self.view.information_type)
         
-    def test_information_type_feature_flag(self):
+    def test_userdata_shown_as_private(self):
+        # When the display_userdata_as_private feature flag is enabled, the
+        # information_type is shown as 'Private'.
         self.bug.transitionToInformationType(
             InformationType.USERDATA, self.bug.owner)
         feature_flag = {

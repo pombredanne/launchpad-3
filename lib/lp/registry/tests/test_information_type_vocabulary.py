@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 
+from testtools.matchers import MatchesStructure
+
 from lp.registry.enums import InformationType
 from lp.registry.vocabularies import InformationTypeVocabulary
 from lp.services.features.testing import FeatureFixture
@@ -20,11 +22,13 @@ class TestInformationTypeVocabulary(TestCase):
     def test_getTermByToken(self):
         vocab = InformationTypeVocabulary()
         term = vocab.getTermByToken('PUBLIC')
-        self.assertEqual(InformationType.PUBLIC, term.value)
-        self.assertEqual('PUBLIC', term.token)
-        self.assertEqual('Public', term.title)
-        self.assertEqual(
-            InformationType.PUBLIC.description, term.description)
+        self.assertThat(
+            term,
+            MatchesStructure.byEquality(
+                value=InformationType.PUBLIC,
+                token='PUBLIC',
+                title='Public',
+                description=InformationType.PUBLIC.description))
 
     def test_proprietary_disabled(self):
         feature_flag = {

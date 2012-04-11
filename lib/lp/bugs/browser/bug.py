@@ -560,9 +560,9 @@ class BugView(LaunchpadView, BugViewMixin):
             {'value': term.value, 'description': term.description,
             'name': term.title} for term in InformationTypeVocabulary()]
         cache.objects['private_types'] = [
-            type.value for type in PRIVATE_INFORMATION_TYPES]
+            type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['initial_information_type'] = (
-            IBug(self.context).information_type.value)
+            IBug(self.context).information_type.name)
 
     @cachedproperty
     def page_description(self):
@@ -614,6 +614,8 @@ class BugView(LaunchpadView, BugViewMixin):
 
     @property
     def information_type(self):
+        # This can be replaced with just a return when the feature flag is
+        # dropped.
         title = self.context.information_type.title
         show_userdata_as_private = bool(getFeatureFlag(
             'disclosure.display_userdata_as_private.enabled'))
