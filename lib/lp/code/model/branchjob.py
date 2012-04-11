@@ -531,14 +531,13 @@ class RevisionsAddedJob(BranchJobDerived):
         subscriptions = self.branch.getSubscriptionsByLevel(diff_levels)
         if not subscriptions:
             return
-
-        with server(get_ro_server(), no_replace=True), \
-                read_locked(self.bzr_branch):
-            for revision, revno in self.iterAddedMainline():
-                assert revno is not None
-                mailer = self.getMailerForRevision(
-                    revision, revno, self.generateDiffs())
-                mailer.sendAll()
+        with server(get_ro_server(), no_replace=True):
+            with read_locked(self.bzr_branch):
+                for revision, revno in self.iterAddedMainline():
+                    assert revno is not None
+                    mailer = self.getMailerForRevision(
+                        revision, revno, self.generateDiffs())
+                    mailer.sendAll()
 
     def getDiffForRevisions(self, from_revision_id, to_revision_id):
         """Generate the diff between from_revision_id and to_revision_id."""
