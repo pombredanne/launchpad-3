@@ -389,7 +389,8 @@ def _build_query(params):
             extra_clauses.append(where_cond)
 
     if params.status is not None:
-        extra_clauses.append(_build_status_clause(params.status))
+        extra_clauses.append(
+            _build_status_clause(BugTask._status, params.status))
 
     if params.exclude_conjoined_tasks:
         # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
@@ -886,7 +887,7 @@ def _build_search_text_clause(params, fast=False):
     return "Bug.fti @@ ftq(%s)" % searchtext_quoted
 
 
-def _build_status_clause(status):
+def _build_status_clause(col, status):
     """Return the SQL query fragment for search by status.
 
     Called from `_build_query` or recursively."""
@@ -897,20 +898,16 @@ def _build_status_clause(status):
         if BugTaskStatus.INCOMPLETE in values:
             values.remove(BugTaskStatus.INCOMPLETE)
             values.extend(DB_INCOMPLETE_BUGTASK_STATUSES)
-        return '(BugTask.status {0})'.format(
-            search_value_to_where_condition(any(*values)))
+        return search_value_to_storm_where_condition(col, any(*values))
     elif zope_isinstance(status, not_equals):
-        return '(NOT {0})'.format(_build_status_clause(status.value))
+        return Not(_build_status_clause(col, status.value))
     elif zope_isinstance(status, BaseItem):
         # INCOMPLETE is not stored in the DB, instead one of
         # DB_INCOMPLETE_BUGTASK_STATUSES is stored, so any request to
         # search for INCOMPLETE should instead search for those values.
         if status == BugTaskStatus.INCOMPLETE:
-            return '(BugTask.status {0})'.format(
-                search_value_to_where_condition(
-                    any(*DB_INCOMPLETE_BUGTASK_STATUSES)))
-        else:
-            return '(BugTask.status = %s)' % sqlvalues(status)
+            status = any(*DB_INCOMPLETE_BUGTASK_STATUSES)
+        return search_value_to_storm_where_condition(col, status)
     else:
         raise ValueError('Unrecognized status value: %r' % (status,))
 
