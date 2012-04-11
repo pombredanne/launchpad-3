@@ -176,7 +176,8 @@ def person_alteration_security_notice(person, event):
         prev_preferred_email = original_object.preferredemail.email
 
         # In theory we could have a list of changed fields, but in practice we
-        # don't see that. Shortcutting to just grab the first changed field.
+        # don't see that. Asserting that there's only one changed field.
+        assert len(changed_fields) == 1
         notification = PersonAlterationSecurityNotification(
             changed_fields.pop(), user,
             override_noticeto=(user.displayname, prev_preferred_email))
