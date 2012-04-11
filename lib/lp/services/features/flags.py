@@ -321,6 +321,18 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.proprietary_information_type.disabled',
+     'boolean',
+     'If true, disables the PROPRIETARY information_type for bugs.',
+     '',
+     '',
+     ''),
+    ('disclosure.display_userdata_as_private.enabled',
+     'boolean',
+     'If true, displays the USERDATA information_type as Private.',
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
