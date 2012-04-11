@@ -64,6 +64,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.person import Person
+from lp.registry.model.product import Product
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
@@ -452,8 +453,6 @@ def _build_query(params):
         #     extra_clauses += clauses
 
     if params.project:
-        # Prevent circular import problems.
-        from lp.registry.model.product import Product
         clauseTables.append(Product)
         extra_clauses.append(BugTask.productID == Product.id)
         # We can't use search_value_to_storm_where_condition in its current
@@ -513,8 +512,6 @@ def _build_query(params):
             '''ss as (SELECT * from StructuralSubscription
             WHERE StructuralSubscription.subscriber = %s)'''
             % sqlvalues(params.structural_subscriber))
-        # Prevent circular import problems.
-        from lp.registry.model.product import Product
         join_tables.append(
             (Product, LeftJoin(Product, And(
                             BugTask.productID == Product.id,
@@ -582,8 +579,6 @@ def _build_query(params):
         params.distribution is None and
         params.productseries is None and
         params.distroseries is None):
-        # Prevent circular import problems.
-        from lp.registry.model.product import Product
         extra_clauses.append(
             Or(BugTask.product == None, Product.active == True))
         join_tables.append(
@@ -947,7 +942,6 @@ def _build_exclude_conjoined_clause(milestone):
     else:
         # Prevent import loop.
         from lp.registry.model.milestone import Milestone
-        from lp.registry.model.product import Product
         if IProjectGroupMilestone.providedBy(milestone):
             # Since an IProjectGroupMilestone could have bugs with
             # bugtasks on two different projects, the project
