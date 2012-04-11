@@ -2677,7 +2677,6 @@ class Person(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
 
-        # This might be a new person so there's no before mod to use.
         person_before_mod = Snapshot(self,
             names=['name', 'displayname', 'preferredemail'])
 
@@ -4636,7 +4635,6 @@ class SSHKey(SQLBase):
     comment = StringCol(dbName='comment', notNull=True)
 
     def destroySelf(self):
-        """We trigger some events on removal."""
         # For security reasons we want to notify the preferred email address
         # that this sshkey has been removed.
         notify(ObjectModifiedEvent(self.person, self.person,
