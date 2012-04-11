@@ -713,23 +713,23 @@ def _build_query(params):
     if hw_clause is not None:
         extra_clauses.append(hw_clause)
 
+    def make_branch_clause(branches=None):
+        where = [BugBranch.bugID == Bug.id]
+        if branches is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    BugBranch.branchID, params.linked_branches))
+        return Exists(Select(1, tables=[BugBranch], where=And(*where)))
+
     if zope_isinstance(params.linked_branches, BaseItem):
-        base = Exists(Select(
-            1, tables=[BugBranch], where=(BugBranch.bugID == Bug.id)))
         if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
-            extra_clauses.append(base)
+            extra_clauses.append(make_branch_clause())
         elif (params.linked_branches ==
                 BugBranchSearch.BUGS_WITHOUT_BRANCHES):
-            extra_clauses.append(Not(base))
+            extra_clauses.append(Not(make_branch_clause()))
     elif zope_isinstance(params.linked_branches, (any, all, int)):
         # A specific search term has been supplied.
-        extra_clauses.append(
-            Exists(Select(
-                1, tables=[BugBranch],
-                where=And(
-                    BugBranch.bugID == Bug.id,
-                    search_value_to_where_condition(
-                        BugBranch.branchID, params.linked_branches)))))
+        extra_clauses.append(make_branch_clause(params.linked_branches))
 
     linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:
