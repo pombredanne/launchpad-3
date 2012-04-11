@@ -218,7 +218,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         if has_duplicate_results:
             origin = _build_origin(join_tables, [], clauseTables)
             outer_origin = _build_origin(orderby_joins, prejoins, [])
-            subquery = Select(BugTask.id, where=SQL(query), tables=origin)
+            subquery = Select(BugTask.id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
@@ -713,7 +713,12 @@ def _build_query(params):
             "BugTask.datecreated > %s" % (
                 sqlvalues(params.created_since,)))
 
-    query = " AND ".join(extra_clauses)
+    storm_clauses = []
+    for clause in extra_clauses:
+        if isinstance(clause, str):
+            clause = SQL(clause)
+        storm_clauses.append(clause)
+    query = And(storm_clauses)
 
     if not decorators:
         decorator = lambda x: x
