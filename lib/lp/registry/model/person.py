@@ -40,8 +40,6 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.utils import (
     get_current_browser_request,
     smartquote,
@@ -2673,13 +2671,10 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
+
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
-
-        # This might be a new person so there's no before mod to use.
-        person_before_mod = Snapshot(self,
-            names=['name', 'displayname', 'preferredemail'])
 
         if existing_preferred_email is not None:
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
@@ -2690,11 +2685,6 @@ class Person(
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
-        # Make sure we notify that the property was changed, but only if we've
-        # changed the preferred email and not set an initial one.
-        if person_before_mod.preferredemail:
-            notify(ObjectModifiedEvent(self, person_before_mod,
-                ['preferredemail'], user=self))
 
     @cachedproperty
     def preferredemail(self):
@@ -4635,14 +4625,6 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
-    def destroySelf(self):
-        """We trigger some events on removal."""
-        # For security reasons we want to notify the preferred email address
-        # that this sshkey has been removed.
-        notify(ObjectModifiedEvent(self.person, self.person,
-            ['removedsshkey'], user=self.person))
-        super(SSHKey, self).destroySelf()
-
 
 class SSHKeySet:
     implements(ISSHKeySet)
@@ -4669,11 +4651,6 @@ class SSHKeySet:
             keytype = SSHKeyType.DSA
         else:
             raise SSHKeyAdditionError
-
-        # We need to make sure we notify the user that the ssh key is added in
-        # case they didn't request this change.
-        notify(ObjectModifiedEvent(person, person,
-            ['newsshkey'], user=person))
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
