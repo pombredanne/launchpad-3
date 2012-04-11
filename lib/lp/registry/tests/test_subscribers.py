@@ -272,30 +272,32 @@ class TestPersonDataModifiedHandler(TestCaseWithFactory):
     """When some details of a person change, we need to notify the user."""
     layer = DatabaseFunctionalLayer
 
-    def test_handler_generates_notification(self):
-        """Manually firing event generates a proper notification."""
-        person = self.factory.makePerson(email='test@pre.com')
-        login_person(person)
+    def setUp(self):
+        super(TestPersonDataModifiedHandler, self).setUp()
+        self.person = self.factory.makePerson(email='test@pre.com')
+        login_person(self.person)
         pop_notifications()
-        # After/before objects and list of edited fields.
-        event = ObjectModifiedEvent(person, person, ['preferredemail'])
-        person_alteration_security_notice(person, event)
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.assertTrue('test@pre.com' in notifications[0].get('To'))
 
-    def test_event_generates_notification(self):
-        """Triggering the event generates a proper notification."""
-        person = self.factory.makePerson(email='test@pre.com')
-        login_person(person)
-        pop_notifications()
-        new_email = self.factory.makeEmail('test@post.com', person)
-        person.setPreferredEmail(new_email)
+    def check_notification(self):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertTrue('test@pre.com' in notifications[0].get('To'))
         self.assertTrue(
             'Preferred email address' in notifications[0].as_string())
+
+    def test_handler_generates_notification(self):
+        """Manually firing event generates a proper notification."""
+        # After/before objects and list of edited fields.
+        event = ObjectModifiedEvent(
+            self.person, self.person, ['preferredemail'])
+        person_alteration_security_notice(self.person, event)
+        self.check_notification()
+
+    def test_event_generates_notification(self):
+        """Triggering the event generates a proper notification."""
+        new_email = self.factory.makeEmail('test@post.com', self.person)
+        self.person.setPreferredEmail(new_email)
+        self.check_notification()
 
 
 class TestPersonAlterationEvent(TestCaseWithFactory):
