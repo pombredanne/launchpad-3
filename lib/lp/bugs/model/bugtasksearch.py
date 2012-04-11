@@ -202,23 +202,7 @@ def search_value_to_where_condition(search_value):
 
 
 def search_value_to_storm_where_condition(comp, search_value):
-    """Convert a search value to a Storm WHERE condition.
-
-        >>> foo = SQL('foo')
-        >>> search_value_to_where_condition(foo, any(1, 2, 3))
-        'foo IN (1,2,3)'
-        >>> search_value_to_where_condition(foo, any()) is None
-        True
-        >>> search_value_to_where_condition(foo, not_equals('foo'))
-        "foo != 'foo'"
-        >>> search_value_to_where_condition(foo, greater_than('foo'))
-        "foo > 'foo'"
-        >>> search_value_to_where_condition(foo, 1)
-        'foo = 1'
-        >>> search_value_to_where_condition(foo, NULL)
-        'foo IS NULL'
-
-    """
+    """Convert a search value to a Storm WHERE condition."""
     if zope_isinstance(search_value, any):
         # When an any() clause is provided, the argument value
         # is a list of acceptable filter values.
