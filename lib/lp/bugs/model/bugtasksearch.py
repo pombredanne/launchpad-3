@@ -155,7 +155,9 @@ orderby_expression = {
                         Specification.id,
                         tables=[
                             SpecificationBug,
-                            Join(Specification, Specification.id ==
+                            Join(
+                                Specification,
+                                Specification.id ==
                                     SpecificationBug.specificationID)],
                         where=(SpecificationBug.bugID == Bug.id),
                         order_by=Specification.name, limit=1))),
@@ -454,7 +456,8 @@ def _build_query(params):
 
     if params.has_cve:
         extra_clauses.append(
-            BugTask.bugID.is_in(Select(BugCve.bugID, distinct=True)))
+            BugTask.bugID.is_in(
+                Select(BugCve.bugID, tables=[BugCve], distinct=True)))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -463,7 +466,7 @@ def _build_query(params):
             extra_clauses.append(
                 Bug.id.is_in(
                     Select(
-                        BugAttachment.bug,
+                        BugAttachment.bugID, tables=[BugAttachment],
                         where=search_value_to_storm_where_condition(
                             BugAttachment.type, params.attachmenttype))))
 
@@ -637,7 +640,7 @@ def _build_query(params):
     if params.bug_commenter:
         extra_clauses.append(
             Bug.id.is_in(Select(
-                BugMessage.bugID,
+                BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
                     BugMessage.owner == params.bug_commenter),
@@ -655,17 +658,16 @@ def _build_query(params):
 
     if params.nominated_for:
         if IDistroSeries.providedBy(params.nominated_for):
-            target = BugNomination.distroseries == params.nominated_for
+            target_col = BugNomination.distroseries
         elif IProductSeries.providedBy(params.nominated_for):
-            target = BugNomination.productseries == params.nominated_for
+            target_col = BugNomination.productseries
         else:
             raise AssertionError(
                 'Unknown nomination target: %r.' % params.nominated_for)
         extra_clauses.append(And(
             BugNomination.bugID == BugTask.bugID,
             BugNomination.status == BugNominationStatus.PROPOSED,
-            target
-            ))
+            target_col == params.nominated_for))
         clauseTables.append(BugNomination)
 
     dateexpected_before = params.milestone_dateexpected_before
@@ -674,9 +676,11 @@ def _build_query(params):
         clauseTables.append(Milestone)
         extra_clauses.append(BugTask.milestoneID == Milestone.id)
         if dateexpected_after:
-            extra_clauses.append(Milestone.dateexpected >= dateexpected_after)
+            extra_clauses.append(
+                Milestone.dateexpected >= dateexpected_after)
         if dateexpected_before:
-            extra_clauses.append(Milestone.dateexpected <= dateexpected_before)
+            extra_clauses.append(
+                Milestone.dateexpected <= dateexpected_before)
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
