@@ -52,6 +52,7 @@ from lp.bugs.model.bug import (
     BugTag,
     )
 from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
@@ -465,15 +466,15 @@ def _build_query(params):
                                     params.project.id)
 
     if params.omit_dupes:
-        extra_clauses.append("Bug.duplicateof is NULL")
+        extra_clauses.append(Bug.duplicateof == None)
 
     if params.omit_targeted:
-        extra_clauses.append("BugTask.distroseries is NULL AND "
-                                "BugTask.productseries is NULL")
+        extra_clauses.append(And(
+            BugTask.distroseries == None, BugTask.productseries == None))
 
     if params.has_cve:
-        extra_clauses.append("BugTask.bug IN "
-                                "(SELECT DISTINCT bug FROM BugCve)")
+        extra_clauses.append(
+            BugTask.bugID.is_in(Select(BugCve.bugID, distinct=True)))
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
@@ -497,9 +498,9 @@ def _build_query(params):
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
-        extra_clauses.append("""Bug.id = BugSubscription.bug AND
-                BugSubscription.person = %(personid)s""" %
-                sqlvalues(personid=params.subscriber.id))
+        extra_clauses.append(And(
+            Bug.id == BugSubscription.bugID,
+            BugSubscription.person == params.subscriber))
 
     if params.structural_subscriber is not None:
         # See bug 787294 for the story that led to the query elements
@@ -580,7 +581,7 @@ def _build_query(params):
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         extra_clauses.append(
-            "(Bugtask.product IS NULL OR Product.active = TRUE)")
+            Or(BugTask.product == None, Product.active == True))
         join_tables.append(
             (Product, LeftJoin(Product, And(
                             BugTask.productID == Product.id,
@@ -619,8 +620,8 @@ def _build_query(params):
                             component_ids,
                             PackagePublishingStatus.PUBLISHED))
         extra_clauses.append(
-            """BugTask.sourcepackagename in (
-                select sourcepackagename from spns)""")
+            BugTask.sourcepackagenameID.is_in(
+                SQL('SELECT sourcepackagename FROM spns')))
 
     upstream_clause = _build_upstream_clause(params)
     if upstream_clause:
