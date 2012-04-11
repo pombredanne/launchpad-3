@@ -194,10 +194,13 @@ class BaseRunnableJob(BaseRunnableJobSource):
         """Request that this job be run via celery."""
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
-        from lp.services.job.celeryjob import CeleryRunJob
-        return CeleryRunJob.apply_async(
-            (self.job_id,), queue=self.task_queue,
-            ignore_result=ignore_result)
+        from lp.services.job.celeryjob import (
+            CeleryRunJob, CeleryRunJobIgnoreResult)
+        if ignore_result:
+            cls = CeleryRunJobIgnoreResult
+        else:
+            cls = CeleryRunJob
+        return cls.apply_async((self.job_id,), queue=self.task_queue)
 
     def celeryCommitHook(self, succeeded):
         """Hook function to call when a commit completes."""
