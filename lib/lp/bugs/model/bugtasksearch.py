@@ -52,6 +52,7 @@ from lp.bugs.model.bug import (
     Bug,
     BugTag,
     )
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
 from lp.bugs.model.bugmessage import BugMessage
@@ -486,17 +487,14 @@ def _build_query(params):
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
-            extra_clauses.append("Bug.latest_patch_uploaded IS NOT NULL")
+            extra_clauses.append(Bug.latest_patch_uploaded != None)
         else:
-            attachment_clause = (
-                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
-            if isinstance(params.attachmenttype, any):
-                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*params.attachmenttype.query_values))
-            else:
-                where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    params.attachmenttype)
-            extra_clauses.append(attachment_clause % where_cond)
+            extra_clauses.append(
+                Bug.id.is_in(
+                    Select(
+                        BugAttachment.bug,
+                        where=search_value_to_storm_where_condition(
+                            BugAttachment.type, params.attachmenttype))))
 
     if params.searchtext:
         extra_clauses.append(_build_search_text_clause(params))
