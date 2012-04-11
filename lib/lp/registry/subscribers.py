@@ -164,12 +164,10 @@ def person_alteration_security_notice(person, event):
     """Send a notification if important details on a person change."""
     if not event.edited_fields:
         return
-
     # We want to keep tabs on which fields changed so we can attempt to have
     # an intelligent reply message on what just happened.
     changed_fields = set(PERSON_DATA_MONITORED.keys()) & set(
         event.edited_fields)
-
     if changed_fields:
         user = IPersonViewRestricted(event.user)
         original_object = event.object_before_modification
@@ -183,7 +181,6 @@ def person_alteration_security_notice(person, event):
         notification.person = user
         notification.subject = (
             "Your Launchpad.net account details have changed.")
-
         tpl_substitutions = dict(
             user_displayname=user.displayname,
             user_name=user.name,
@@ -193,6 +190,5 @@ def person_alteration_security_notice(person, event):
             'person-details-change.txt',
             app='registry')
         notification.body = template % tpl_substitutions
-
         notification.send(
             sendto=(user.displayname, prev_preferred_email))
