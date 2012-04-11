@@ -21,9 +21,8 @@ class TestInformationTypeVocabulary(TestCase):
 
     def test_getTermByToken(self):
         vocab = InformationTypeVocabulary()
-        term = vocab.getTermByToken('PUBLIC')
         self.assertThat(
-            term,
+            vocab.getTermByToken('PUBLIC'),
             MatchesStructure.byEquality(
                 value=InformationType.PUBLIC,
                 token='PUBLIC',
