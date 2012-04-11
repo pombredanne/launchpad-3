@@ -16,7 +16,6 @@ from lp.testing.layers import (
     )
 
 
-
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 

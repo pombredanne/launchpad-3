@@ -1745,7 +1745,7 @@ class Bug(SQLBase):
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
-        
+
         # There are several people we need to ensure are subscribed.
         missing_subscribers = set([who, self.owner])
         # If the information type is userdata, we need to check for bug
