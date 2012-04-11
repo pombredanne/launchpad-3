@@ -58,17 +58,20 @@ them.
     # must check them both in order to make sure it's sent.
     >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
-    >>> found = False
-    >>> for from_addr, to_addrs, raw_msg in stub.test_emails:
-    ...     if 'token' in raw_msg:
-    ...         found = True
-    ...         token_url = get_token_url_from_email(raw_msg)
-    ...         token_url
-    ...         to_addrs
+    >>> def check_tokenemail_and_reset():
+    ...     found, url, toaddr = False, None, None
+    ...     for from_addr, to_addrs, raw_msg in stub.test_emails:
+    ...         if 'token' in raw_msg:
+    ...             found = True
+    ...             url = get_token_url_from_email(raw_msg)
+    ...             toaddr = to_addrs
+    ...     assert found
+    ...     return url, toaddr
+    >>> token_url, toaddrs = check_tokenemail_and_reset()
+    >>> token_url
     'http://launchpad.dev/token/...'
+    >>> toaddrs
     ['test2@canonical.com']
-    >>> assert found
-    >>> stub.test_emails = []
 
 Follow the token link, to confirm the new email address.
 
@@ -120,17 +123,11 @@ that it's already registered.
 
     # Extract the link (from the email we just sent) the user will have to
     # use to finish the registration process.
-    >>> found = False
-    >>> for from_addr, to_addrs, raw_msg in stub.test_emails:
-    ...     if 'token' in raw_msg:
-    ...         found = True
-    ...         token_url = get_token_url_from_email(raw_msg)
-    ...         token_url
-    ...         to_addrs
+    >>> token_url, toaddrs = check_tokenemail_and_reset()
+    >>> token_url
     'http://launchpad.dev/token/...'
+    >>> toaddrs
     ['sample@ubuntu.com']
-    >>> assert found
-    >>> stub.test_emails = []
 
 Follow the token link, to confirm the new email address.
 
