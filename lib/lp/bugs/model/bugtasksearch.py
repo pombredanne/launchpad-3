@@ -50,6 +50,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bug import (
     Bug,
+    BugAffectsPerson,
     BugTag,
     )
 from lp.bugs.model.bugattachment import BugAttachment
@@ -349,11 +350,7 @@ def _build_query(params):
         decorator to call on each returned row.
     """
     params = _require_params(params)
-    from lp.bugs.model.bug import (
-        Bug,
-        BugAffectsPerson,
-        )
-    extra_clauses = ['Bug.id = BugTask.bug']
+    extra_clauses = [Bug.id == BugTask.bugID]
     clauseTables = [BugTask, Bug]
     join_tables = []
     decorators = []
@@ -776,8 +773,6 @@ def _process_order_by(params):
 
     :return: A Storm order_by tuple.
     """
-    # Local import of Bug to avoid import loop.
-    from lp.bugs.model.bug import Bug
     orderby = params.orderby
     if orderby is None:
         orderby = []
@@ -943,8 +938,6 @@ def _build_exclude_conjoined_clause(milestone):
                         BugTask._NON_CONJOINED_STATUSES))))
         join_tables = [(ConjoinedMaster, join)]
     else:
-        # Prevent import loop.
-        from lp.registry.model.milestone import Milestone
         if IProjectGroupMilestone.providedBy(milestone):
             # Since an IProjectGroupMilestone could have bugs with
             # bugtasks on two different projects, the project
@@ -999,7 +992,6 @@ def _build_hardware_related_clause(params):
         HWSubmission, HWSubmissionBug, HWSubmissionDevice,
         _userCanAccessSubmissionStormClause,
         make_submission_device_statistics_clause)
-    from lp.bugs.model.bug import Bug, BugAffectsPerson
 
     bus = params.hardware_bus
     vendor_id = params.hardware_vendor_id
