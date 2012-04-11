@@ -605,7 +605,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useContext(celeryd('job'))
         bmp = self.factory.makeBranchMergeProposal()
         with monitor_celery() as responses:
-            job = MergeProposalNeedsReviewEmailJob.create(bmp)
+            MergeProposalNeedsReviewEmailJob.create(bmp)
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
@@ -619,7 +619,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
         with monitor_celery() as responses:
-            job = UpdatePreviewDiffJob.create(bmp)
+            UpdatePreviewDiffJob.create(bmp)
             transaction.commit()
             responses[0].wait(30)
         self.assertIsNot(None, bmp.preview_diff)
@@ -631,7 +631,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
         with monitor_celery() as responses:
-            job = CodeReviewCommentEmailJob.create(comment)
+            CodeReviewCommentEmailJob.create(comment)
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
@@ -643,7 +643,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
         with monitor_celery() as responses:
-            job = ReviewRequestedEmailJob.create(request)
+            ReviewRequestedEmailJob.create(request)
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(1, len(pop_remote_notifications()))
@@ -655,7 +655,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
         with monitor_celery() as responses:
-            job = MergeProposalUpdatedEmailJob.create(
+            MergeProposalUpdatedEmailJob.create(
                 bmp, 'change', bmp.registrant)
             transaction.commit()
         responses[0].wait(30)
