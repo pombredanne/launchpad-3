@@ -477,7 +477,7 @@ def _build_query(params):
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
         extra_clauses.append(And(
-            Bug.id == BugSubscription.bugID,
+            Bug.id == BugSubscription.bug_id,
             BugSubscription.person == params.subscriber))
 
     if params.structural_subscriber is not None:
