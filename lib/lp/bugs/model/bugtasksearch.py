@@ -157,7 +157,7 @@ orderby_expression = {
 
 
 def search_value_to_where_condition(search_value):
-    """Convert a search value to a WHERE condition.
+    """Convert a search value to a string WHERE condition.
 
         >>> search_value_to_where_condition(any(1, 2, 3))
         'IN (1,2,3)'
@@ -190,6 +190,43 @@ def search_value_to_where_condition(search_value):
         # only NULL values for the column named by
         # arg_name.
         return "IS NULL"
+
+
+def search_value_to_storm_where_condition(comp, search_value):
+    """Convert a search value to a Storm WHERE condition.
+
+        >>> foo = SQL('foo')
+        >>> search_value_to_where_condition(foo, any(1, 2, 3))
+        'foo IN (1,2,3)'
+        >>> search_value_to_where_condition(foo, any()) is None
+        True
+        >>> search_value_to_where_condition(foo, not_equals('foo'))
+        "foo != 'foo'"
+        >>> search_value_to_where_condition(foo, greater_than('foo'))
+        "foo > 'foo'"
+        >>> search_value_to_where_condition(foo, 1)
+        'foo = 1'
+        >>> search_value_to_where_condition(foo, NULL)
+        'foo IS NULL'
+
+    """
+    if zope_isinstance(search_value, any):
+        # When an any() clause is provided, the argument value
+        # is a list of acceptable filter values.
+        if not search_value.query_values:
+            return None
+        return comp.is_in(search_value.query_values)
+    elif zope_isinstance(search_value, not_equals):
+        return comp != search_value.value
+    elif zope_isinstance(search_value, greater_than):
+        return comp > search_value.value
+    elif search_value is not NULL:
+        return comp == search_value
+    else:
+        # The argument value indicates we should match
+        # only NULL values for the column named by
+        # arg_name.
+        return comp == None
 
 
 def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
@@ -318,16 +355,16 @@ def _build_query(params):
     # These arguments can be processed in a loop without any other
     # special handling.
     standard_args = {
-        'bug': params.bug,
-        'importance': params.importance,
-        'product': params.product,
-        'distribution': params.distribution,
-        'distroseries': params.distroseries,
-        'productseries': params.productseries,
-        'assignee': params.assignee,
-        'sourcepackagename': params.sourcepackagename,
-        'owner': params.owner,
-        'date_closed': params.date_closed,
+        BugTask.bug: params.bug,
+        BugTask.importance: params.importance,
+        BugTask.product: params.product,
+        BugTask.distribution: params.distribution,
+        BugTask.distroseries: params.distroseries,
+        BugTask.productseries: params.productseries,
+        BugTask.assignee: params.assignee,
+        BugTask.sourcepackagename: params.sourcepackagename,
+        BugTask.owner: params.owner,
+        BugTask.date_closed: params.date_closed,
     }
 
     # Loop through the standard, "normal" arguments and build the
@@ -344,12 +381,12 @@ def _build_query(params):
     # XXX: kiko 2006-03-16:
     # Is this a good candidate for becoming infrastructure in
     # lp.services.database.sqlbase?
-    for arg_name, arg_value in standard_args.items():
+    for col, arg_value in standard_args.items():
         if arg_value is None:
             continue
-        where_cond = search_value_to_where_condition(arg_value)
+        where_cond = search_value_to_storm_where_condition(col, arg_value)
         if where_cond is not None:
-            extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+            extra_clauses.append(where_cond)
 
     if params.status is not None:
         extra_clauses.append(_build_status_clause(params.status))
@@ -704,14 +741,10 @@ def _build_query(params):
         extra_clauses.append(linked_blueprints_clause)
 
     if params.modified_since:
-        extra_clauses.append(
-            "Bug.date_last_updated > %s" % (
-                sqlvalues(params.modified_since,)))
+        extra_clauses.append(Bug.date_last_updated > params.modified_since)
 
     if params.created_since:
-        extra_clauses.append(
-            "BugTask.datecreated > %s" % (
-                sqlvalues(params.created_since,)))
+        extra_clauses.append(BugTask.datecreated > params.created_since)
 
     storm_clauses = []
     for clause in extra_clauses:
