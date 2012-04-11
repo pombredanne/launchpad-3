@@ -411,17 +411,19 @@ def _build_query(params):
 
     if params.milestone:
         if IProjectGroupMilestone.providedBy(params.milestone):
-            where_cond = """
-                IN (SELECT Milestone.id
-                    FROM Milestone, Product
-                    WHERE Milestone.product = Product.id
-                        AND Product.project = %s
-                        AND Milestone.name = %s)
-            """ % sqlvalues(params.milestone.target,
-                            params.milestone.name)
+            extra_clauses.append(
+                BugTask.milestoneID.is_in(
+                    Select(
+                        Milestone.id,
+                        tables=[Milestone, Product],
+                        where=And(
+                            Product.project == params.milestone.target,
+                            Milestone.productID == Product.id,
+                            Milestone.name == params.milestone.name))))
         else:
-            where_cond = search_value_to_where_condition(params.milestone)
-        extra_clauses.append("BugTask.milestone %s" % where_cond)
+            extra_clauses.append(
+                search_value_to_storm_where_condition(
+                    BugTask.milestone, params.milestone))
 
         if params.exclude_conjoined_tasks:
             tables, clauses = _build_exclude_conjoined_clause(
