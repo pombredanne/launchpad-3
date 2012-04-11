@@ -598,6 +598,7 @@ class TestViaCelery(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_MergeProposalNeedsReviewEmailJob(self):
+        """MergeProposalNeedsReviewEmailJob runs under Celery."""
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes':
              'MergeProposalNeedsReviewEmailJob'}))
@@ -610,6 +611,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_UpdatePreviewDiffJob(self):
+        """UpdatePreviewDiffJob runs under Celery."""
         self.useContext(celeryd('job'))
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
@@ -623,6 +625,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertIsNot(None, bmp.preview_diff)
 
     def test_CodeReviewCommentEmailJob(self):
+        """CodeReviewCommentEmailJob runs under Celery."""
         comment = self.factory.makeCodeReviewComment()
         self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
@@ -634,6 +637,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_ReviewRequestedEmailJob(self):
+        """ReviewRequestedEmailJob runs under Celery."""
         request = self.factory.makeCodeReviewVoteReference()
         self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
@@ -645,6 +649,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_MergeProposalUpdatedEmailJob(self):
+        """MergeProposalUpdatedEmailJob runs under Celery."""
         bmp = self.factory.makeBranchMergeProposal()
         self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
@@ -657,6 +662,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_GenerateIncrementalDiffJob(self):
+        """GenerateIncrementalDiffJob runs under Celery."""
         self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
