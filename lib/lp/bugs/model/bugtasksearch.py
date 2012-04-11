@@ -455,15 +455,18 @@ def _build_query(params):
         # Prevent circular import problems.
         from lp.registry.model.product import Product
         clauseTables.append(Product)
-        extra_clauses.append("BugTask.product = Product.id")
+        extra_clauses.append(BugTask.productID == Product.id)
+        # We can't use search_value_to_storm_where_condition in its current
+        # form, as it doesn't convert Storm objects to their IDs, and is_in
+        # doesn't work for References.
         if isinstance(params.project, any):
-            extra_clauses.append("Product.project IN (%s)" % ",".join(
-                [str(proj.id) for proj in params.project.query_values]))
+            extra_clauses.append(
+                Product.projectID.is_in(
+                    p.id for p in params.project.query_values))
         elif params.project is NULL:
-            extra_clauses.append("Product.project IS NULL")
+            extra_clauses.append(Product.project == None)
         else:
-            extra_clauses.append("Product.project = %d" %
-                                    params.project.id)
+            extra_clauses.append(Product.project == params.project)
 
     if params.omit_dupes:
         extra_clauses.append(Bug.duplicateof == None)
