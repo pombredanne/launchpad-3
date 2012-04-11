@@ -655,3 +655,13 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_GenerateIncrementalDiffJob(self):
+        self.useContext(celeryd('job'))
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
+        with monitor_celery() as responses:
+            job = make_runnable_incremental_diff_job(self)
+            transaction.commit()
+        responses[0].wait(30)
+        self.assertEqual(JobStatus.COMPLETED, job.status)

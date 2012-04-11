@@ -679,6 +679,8 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
 
+    config = config.merge_proposal_jobs
+
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
 
@@ -686,15 +688,14 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         revision_set = getUtility(IRevisionSet)
         old_revision = revision_set.getByRevisionId(self.old_revision_id)
         new_revision = revision_set.getByRevisionId(self.new_revision_id)
-        self.branch_merge_proposal.generateIncrementalDiff(
-            old_revision, new_revision)
+        with server(get_ro_server(), no_replace=True):
+            self.branch_merge_proposal.generateIncrementalDiff(
+                old_revision, new_revision)
 
     @classmethod
     def create(cls, merge_proposal, old_revision_id, new_revision_id):
         metadata = cls.getMetadata(old_revision_id, new_revision_id)
-        job = BranchMergeProposalJob(
-            merge_proposal, cls.class_job_type, metadata)
-        return cls(job)
+        return cls._create(merge_proposal, metadata)
 
     @staticmethod
     def getMetadata(old_revision_id, new_revision_id):
