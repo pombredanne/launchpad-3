@@ -27,7 +27,7 @@ key registered, directions are shown.
     ...         for index, li in enumerate(ol.findAll('li')):
     ...             print '%s. %s' % ((index+1), extract_text(li))
     >>> user = factory.makePerson()
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.testing.pages import (
@@ -70,7 +70,7 @@ If the user has multiple keys, a count is shown.
 If the user has already signed the code of conduct, no directions are shown.
 
     >>> admin = getUtility(IPersonSet).getByEmail('admin@canonical.com')
-    >>> login_person(admin)
+    >>> ignored = login_person(admin)
     >>> view = create_initialized_view(coc_set, '+index', principal=admin)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print_coc_directions(content)

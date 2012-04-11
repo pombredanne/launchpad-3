@@ -32,6 +32,7 @@ def celeryd(queue, cwd=None):
         '--concurrency', '1',
         '--loglevel', 'INFO',
         '--queues', queue,
+        '--include', 'lp.services.job.tests.celery_helpers',
     )
     with running('bin/celeryd', cmd_args, cwd=cwd) as proc:
         # Wait for celeryd startup to complete.

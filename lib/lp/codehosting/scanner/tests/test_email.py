@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import email
 
+from bzrlib.uncommit import uncommit
 from zope.component import getUtility
 from zope.event import notify
 
@@ -20,13 +21,34 @@ from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource,
     )
 from lp.code.model.branchjob import RevisionMailJob
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
+from lp.services.job.tests import (
+    celeryd,
+    monitor_celery,
+    )
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
+    )
+
+
+def add_subscriber(branch):
+    test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    branch.subscribe(
+        test_user,
+        BranchSubscriptionNotificationLevel.FULL,
+        BranchSubscriptionDiffSize.FIVEKLINES,
+        CodeReviewNotificationLevel.NOEMAIL,
+        test_user)
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
@@ -39,13 +61,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
     def makeDatabaseBranch(self):
         branch = BzrSyncTestCase.makeDatabaseBranch(self)
         LaunchpadZopelessLayer.txn.begin()
-        test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        branch.subscribe(
-            test_user,
-            BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.FIVEKLINES,
-            CodeReviewNotificationLevel.NOEMAIL,
-            test_user)
+        add_subscriber(branch)
         LaunchpadZopelessLayer.txn.commit()
         return branch
 
@@ -130,17 +146,74 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         recommit_email_msg = email.message_from_string(recommit_email[2])
         recommit_email_body = recommit_email_msg.get_payload()[0].get_payload(
             decode=True)
-        subject =  '[Branch %s] Rev 1: second' % self.db_branch.unique_name
+        subject = '[Branch %s] Rev 1: second' % self.db_branch.unique_name
         self.assertEmailHeadersEqual(subject, recommit_email_msg['Subject'])
         body_bits = [
             'revno: 1',
             'committer: %s' % author,
-            'branch nick: %s'  % self.bzr_branch.nick,
+            'branch nick: %s' % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
             ]
         for bit in body_bits:
             self.assertTextIn(bit, recommit_email_body)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    @staticmethod
+    def pop_notifications():
+        from lp.services.job.tests.celery_helpers import pop_notifications
+        return pop_notifications.delay().get(30)
+
+    def prepare(self, job_name):
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': job_name}))
+        self.useContext(celeryd('job'))
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        add_subscriber(db_branch)
+        switch_dbuser(config.branchscanner.dbuser)
+        # Needed for feature flag teardown
+        self.addCleanup(switch_dbuser, config.launchpad.dbuser)
+        return db_branch, tree
+
+    def test_empty_branch(self):
+        """RevisionMailJob for empty branches runs via Celery."""
+        db_branch, tree = self.prepare('RevisionMailJob')
+        with monitor_celery() as responses:
+            BzrSync(db_branch).syncBranchAndClose(tree.branch)
+        responses[-1].wait(30)
+        self.assertEqual(1, len(self.pop_notifications()))
+
+    def test_uncommit_branch(self):
+        """RevisionMailJob for removed revisions runs via Celery."""
+        db_branch, tree = self.prepare('RevisionMailJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        with monitor_celery() as responses:
+            bzr_sync.syncBranchAndClose(tree.branch)
+            responses[0].wait(30)
+            self.pop_notifications()
+            uncommit(tree.branch)
+            bzr_sync.syncBranchAndClose(tree.branch)
+        responses[1].wait(30)
+        self.assertEqual(1, len(self.pop_notifications()))
+
+    def test_revisions_added(self):
+        """RevisionMailJob for removed revisions runs via Celery."""
+        db_branch, tree = self.prepare('RevisionsAddedJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        bzr_sync.syncBranchAndClose(tree.branch)
+        self.pop_notifications()
+        tree.commit('message2')
+        with monitor_celery() as responses:
+            bzr_sync.syncBranchAndClose(tree.branch)
+            responses[-1].wait(30)
+            self.assertEqual(1, len(self.pop_notifications()))
 
 
 class TestScanBranches(TestCaseWithFactory):

@@ -24,7 +24,7 @@ For example, let's say No Privileges Person wants to contact Salgado...
 ...No Priv would start by going to Salgado's +contactuser page.
 
     >>> from lp.testing import login
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> view = create_view(no_priv, salgado)
 
 This contact is allowed.
@@ -220,13 +220,13 @@ Hidden addresses
 
 Salgado decides to hide his email addresses.
 
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.hide_email_addresses = True
 
 Anne contacts Salgado even though his email addresses are hidden.
 
     >>> anne = factory.makePerson(email='anne@example.com', name='anne')
-    >>> login_person(anne)
+    >>> ignored = login_person(anne)
 
     >>> view = create_view(
     ...     anne, salgado, {
@@ -284,7 +284,7 @@ Non-members may only contact the team owner.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> bart = factory.makePerson(email='bart@example.com', name='bart')
-    >>> login_person(bart)
+    >>> ignored = login_person(bart)
 
     >>> view = create_view(
     ...     bart, guadamen, {
@@ -424,7 +424,7 @@ that contains an explanation as well.
 
     >>> cris = factory.makePerson(email='cris@example.com', name='cris')
     >>> dave = factory.makePerson(email='dave@example.com', name='dave')
-    >>> login_person(cris)
+    >>> ignored = login_person(cris)
 
     >>> view = create_view(
     ...     cris, dave, {

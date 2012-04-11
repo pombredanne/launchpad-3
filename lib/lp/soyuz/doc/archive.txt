@@ -1041,7 +1041,7 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 
@@ -1518,7 +1518,7 @@ first PPA that the person created.
 
     >>> ppa_owner = factory.makePerson(
     ...     name="ppa-owner", displayname="PPA Owner")
-    >>> login_person(ppa_owner)
+    >>> ignored = login_person(ppa_owner)
 
 If no PPAs match the search criteria, and a name is not given, then
 None is returned.
@@ -2105,7 +2105,7 @@ to it.
     >>> check_permission('launchpad.Append', joes_ppa)
     False
 
-    >>> login_person(joes_ppa.owner)
+    >>> ignored = login_person(joes_ppa.owner)
     >>> check_permission('launchpad.Append', joes_ppa)
     False
 

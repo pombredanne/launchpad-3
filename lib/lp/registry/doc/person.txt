@@ -798,7 +798,7 @@ Anonymous users cannot see non-public teams, such as 'private-team'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login_person(private_team_owner)
+    >>> ignored = login_person(private_team_owner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
@@ -1089,7 +1089,7 @@ The method does not return inactive projects.
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in mark.getOwnedProjects():
