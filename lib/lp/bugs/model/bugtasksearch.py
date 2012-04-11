@@ -149,7 +149,7 @@ orderby_expression = {
                             SpecificationBug,
                             Join(Specification, Specification.id ==
                                     SpecificationBug.specificationID)],
-                        where=(SpecificationBug.id == Bug.id),
+                        where=(SpecificationBug.bugID == Bug.id),
                         order_by=Specification.name, limit=1))),
             ]
         ),
