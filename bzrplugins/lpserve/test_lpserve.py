@@ -437,7 +437,14 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
         expected = 'Listening on socket: %s\n' % (path,)
-        path_line = proc.stderr.readline()
+        while True:
+            path_line = proc.stderr.readline()
+            # Stop once we have found the path line.
+            if path_line.startswith('Listening on socket:'):
+                break
+            # If the subprocess has finished, there is no more to read.
+            if proc.poll() is not None:
+                break
         trace.mutter(path_line)
         self.assertEqual(expected, path_line)
         return proc

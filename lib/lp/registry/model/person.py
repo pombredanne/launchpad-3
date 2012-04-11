@@ -130,11 +130,11 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationSort,
     )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -1537,7 +1537,7 @@ class Person(
             milestone_dateexpected_after=today)
 
         # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
-        # multiple times when load_related() iterates over through the tasks.
+        # multiple times when load_related() iterates over the tasks.
         tasks = list(getUtility(IBugTaskSet).search(search_params))
         # Eager load the things we need that are not already eager loaded by
         # BugTaskSet.search().
@@ -2975,16 +2975,22 @@ class Person(
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def createPPA(self, name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, commercial=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name, private)
+        # XXX: We pass through the Person on whom the PPA is being created,
+        # but validatePPA assumes that that Person is also the one creating
+        # the PPA.  This is not true in general, and particularly not for
+        # teams.  Instead, both the acting user and the target of the PPA
+        # creation ought to be passed through.
+        errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
-            raise PPACreationError(errors)
+           raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description, private=private)
+            description=description, private=private,
+            commercial=commercial)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

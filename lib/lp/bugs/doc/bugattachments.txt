@@ -616,7 +616,7 @@ If an attachment is added to a private bug, the "restricted" flag of
 its Librarian file is set.
 
     >>> private_bug_owner = factory.makePerson()
-    >>> login_person(private_bug_owner)
+    >>> ignored = login_person(private_bug_owner)
     >>> private_bug = factory.makeBug(private=True, owner=private_bug_owner)
     >>> private_attachment = private_bug.addAttachment(
     ...     owner=private_bug_owner, data="secret", filename="baz.txt",

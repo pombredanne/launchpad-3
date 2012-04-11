@@ -12,7 +12,7 @@ email addresses must be unique.
 
 We can get an email address through IEmailAddressSet.getByEmail().
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> email = emailset.getByEmail(person.preferredemail.email)
     >>> email == person.preferredemail
     True
@@ -78,7 +78,7 @@ Deleting email addresses
 Email addresses may be deleted if they're not a person's preferred one
 or the address of a team's mailing list.
 
-    >>> login_person(foobar)
+    >>> ignored = login_person(foobar)
     >>> emailaddress = emailset.getByEmail('oink@canonical.com')
     >>> emailaddress.destroySelf()
     >>> print emailset.getByEmail('oink@canonical.com')

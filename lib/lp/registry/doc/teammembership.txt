@@ -67,7 +67,7 @@ One way of adding new members to a team is by having the user himself join the
 team he wants.
 
     >>> salgado = personset.getByName('salgado')
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.join(t3)
     >>> salgado.join(t4)
 
@@ -79,7 +79,7 @@ member of that team --somebody has to approve his membership first:
 
     >>> [m.displayname for m in t3.allmembers]
     [u'Jeff Waugh']
-    >>> login_person(t3.teamowner)
+    >>> ignored = login_person(t3.teamowner)
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
     >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
@@ -92,7 +92,7 @@ given team.
     >>> launchpad = personset.getByName('launchpad')
     >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
     True
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.join(launchpad)
     Traceback (most recent call last):
     ...
@@ -112,7 +112,7 @@ approved.  Note, though, that in the case of teams we need to pass a
 requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> login_person(ubuntu_team.teamowner)
+    >>> ignored = login_person(ubuntu_team.teamowner)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
     >>> t3.subscriptionpolicy
     <DBItem TeamSubscriptionPolicy.MODERATED...
@@ -126,7 +126,7 @@ requester to the join() method.
     True
 
     # Clean things up to not upset the other tests.
-    >>> login_person(t2.teamowner)
+    >>> ignored = login_person(t2.teamowner)
     >>> t2.setMembershipData(
     ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
     >>> ubuntu_team in t2.activemembers
@@ -151,7 +151,7 @@ to a team.
     Unauthorized:...
 
     # Log in as the team owner.
-    >>> login_person(t3.teamowner)
+    >>> ignored = login_person(t3.teamowner)
 
 If the member was added (i.e. he wasn't already a member of the team),
 addMember returns a tuple with True plus the new membership status.
@@ -203,7 +203,7 @@ when the added member is a team. In that case the team will actually be
 invited to be a member and one of the team's admins will have to accept the
 invitation before the team is made a member.
 
-    >>> login_person(t1.teamowner)
+    >>> ignored = login_person(t1.teamowner)
 
     # If the reviewer were also an admin of the team being added,
     # the status would go to APPROVED instead of INVITED.
@@ -220,7 +220,7 @@ invitation before the team is made a member.
 Once one of the t2 admins approve the membership, t2 is shown as a member
 of t1 and the owner of t2 is an indirect member.
 
-    >>> login_person(t2.teamowner)
+    >>> ignored = login_person(t2.teamowner)
     >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
     >>> [m.displayname for m in t1.activemembers]
     [u'James Blackwell', u't2']
@@ -231,7 +231,7 @@ A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=mark)
     (True, <DBItem TeamMembershipStatus.INVITED...)
-    >>> login_person(t3.teamowner)
+    >>> ignored = login_person(t3.teamowner)
     >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
     >>> membership = membershipset.getByPersonAndTeam(t3, t2)
     >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
@@ -242,7 +242,7 @@ add teams as members of other teams. We can do that by passing an extra
 force_team_add=True to addMember(). We'll use that to add t3 as a member of
 t2, thus making all t3 members be considered members of t2 as well.
 
-    >>> login_person(t2.teamowner)
+    >>> ignored = login_person(t2.teamowner)
 
     # If the reviewer is also an admin of the team being added,
     # force_team_add is unnecessary, and we can't prove that that
@@ -264,7 +264,7 @@ And members of t1 as well, since t2 is a member of t1.
 Passing in force_team_add=True is not necessary if the reviewer is the
 admin of the team being added.
 
-    >>> login_person(t3.teamowner)
+    >>> ignored = login_person(t3.teamowner)
     >>> t6.addMember(t3, reviewer=t3.teamowner)
     (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> [m.displayname for m in t6.allmembers]
@@ -275,7 +275,7 @@ can't do this because our vocabularies won't allow members that would cause
 loops.
 
     >>> foobar = personset.getByEmail('foo.bar@canonical.com')
-    >>> login_person(foobar)
+    >>> ignored = login_person(foobar)
     >>> t3.addMember(t2, reviewer)
     Traceback (most recent call last):
     ...
@@ -336,7 +336,7 @@ t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.
 
-    >>> login_person(t5.teamowner)
+    >>> ignored = login_person(t5.teamowner)
     >>> t5.setMembershipData(t2, TeamMembershipStatus.DEACTIVATED, reviewer)
 
 Removing t2 from t5 will have implications in all teams that have t5 as a
@@ -364,7 +364,7 @@ Nothing changes in t1, because t5 wasn't one of its members.
 If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
 and t2, but not from t4, because he's a direct member of t4.
 
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
@@ -412,7 +412,7 @@ removes his membership, he will still be the team's owner and retain his
 rights over it. This ensures we'll never have teams which can't be
 managed. This does not imply that the owner will be a member of the team.
 
-    >>> login_person(t5.teamowner)
+    >>> ignored = login_person(t5.teamowner)
     >>> t5.teamowner.leave(t5)
     >>> flush_database_updates()
     >>> [m.displayname for m in t5.allmembers]
@@ -449,7 +449,7 @@ an extra check to ensure that doesn't happen.
 
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
     # status/expiry-date by hand.
-    >>> login_person(foobar)
+    >>> ignored = login_person(foobar)
     >>> membership = foobar.team_memberships[0]
     >>> membership.status = None
     Traceback (most recent call last):
@@ -749,7 +749,7 @@ still active.
 
 The member himself can't change the expiration date of his membership.
 
-    >>> login_person(karl)
+    >>> ignored = login_person(karl)
     >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
     Traceback (most recent call last):
     ...
@@ -757,7 +757,7 @@ The member himself can't change the expiration date of his membership.
 
 Only a team admin can.
 
-    >>> login_person(mirror_admins.teamowner)
+    >>> ignored = login_person(mirror_admins.teamowner)
     >>> karl_on_mirroradmins.setExpirationDate(
     ...     tomorrow, mirror_admins.teamowner)
     >>> karl_on_mirroradmins.dateexpires == tomorrow
@@ -783,7 +783,7 @@ active and set to expire tomorrow).
     >>> karl_on_mirroradmins.canBeRenewedByMember()
     True
 
-    >>> login_person(karl)
+    >>> ignored = login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
 
 
@@ -831,7 +831,7 @@ except shorter)
 
 We can also change the sort order of the results of getMembersByStatus.
 
-    >>> login_person(cprov)
+    >>> ignored = login_person(cprov)
     >>> cprov.leave(t3)
     >>> flush_database_updates()
 
@@ -932,7 +932,7 @@ member of.
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> login_person(t1.teamowner)
+    >>> ignored = login_person(t1.teamowner)
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> flush_database_updates()
@@ -948,7 +948,7 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
 On the other hand, making t3 a member of admins won't change anything
 for Salgado.
 
-    >>> login_person(foobar)
+    >>> ignored = login_person(foobar)
     >>> admins.addMember(t3, reviewer=admins.teamowner, force_team_add=True)
     (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> flush_database_updates()

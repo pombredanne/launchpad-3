@@ -6,7 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvolvedMenu', 'PillarBugsMenu', 'PillarView',
+    'InvolvedMenu',
+    'PillarBugsMenu',
+    'PillarView',
     'PillarNavigationMixin',
     'PillarPersonSharingView',
     'PillarSharingView',
@@ -17,6 +19,7 @@ from operator import attrgetter
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import get_current_web_service_request
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
@@ -26,6 +29,7 @@ from zope.interface import (
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
@@ -40,17 +44,23 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantFlatSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -61,6 +71,7 @@ from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
     )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.menu import (
     ApplicationMenu,
     enabled_with_permission,
@@ -75,18 +86,21 @@ from lp.services.webapp.publisher import (
     )
 
 
+class PillarPersonBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IPillarPerson`."""
+
+    @property
+    def text(self):
+        return "Sharing details for %s" % self.context.person.displayname
+
+
 class PillarNavigationMixin:
 
-    @stepthrough('+sharingdetails')
+    @stepthrough('+sharing')
     def traverse_details(self, name):
         """Traverse to the sharing details for a given person."""
         person = getUtility(IPersonSet).getByName(name)
         if person is None:
-            return None
-        policies = getUtility(IAccessPolicySource).findByPillar([self.context])
-        source = getUtility(IAccessPolicyGrantFlatSource)
-        artifacts = source.findArtifactsByGrantee(person, policies)
-        if artifacts.is_empty():
             return None
         return PillarPerson.create(self.context, person)
 
@@ -376,53 +390,85 @@ class PillarPersonSharingView(LaunchpadView):
         self._loadSharedArtifacts()
 
         cache = IJSONRequestCache(self.request)
-        branch_data = self._build_branch_template_data(self.branches)
-        bug_data = self._build_bug_template_data(self.bugs)
+        request = get_current_web_service_request()
+        branch_data = self._build_branch_template_data(self.branches, request)
+        bug_data = self._build_bug_template_data(self.bugs, request)
+        sharee_data = {
+            'displayname': self.person.displayname,
+            'self_link': absoluteURL(self.person, request)
+        }
+        pillar_data = {
+            'self_link': absoluteURL(self.pillar, request)
+        }
+        cache.objects['sharee'] = sharee_data
+        cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.pillar))
+
+    def _getSafeBugs(self, bugs):
+        """Uses the bugsearch tools to safely get the list of bugs the user is
+        allowed to see."""
+        if bugs == set([]):
+            return []
+        params = []
+        for b in bugs:
+            param = BugTaskSearchParams(user=self.user, bug=b)
+            if IProduct.providedBy(self.pillar):
+                param.setProduct(self.pillar)
+            elif IDistribution.providedBy(self.pillar):
+                param.setDistribution(self.pillar)
+            params.append(param)
+
+        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:])
+        return list(safe_bugs)
 
     def _loadSharedArtifacts(self):
-        bugs = []
-        branches = []
+        # As a concrete can by linked via more than one policy, we use sets to
+        # filter out dupes.
+        bugs = set()
+        branches = set()
         for artifact in self.sharing_service.getSharedArtifacts(
                             self.pillar, self.person):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
-                bugs.append(concrete)
+                bugs.add(concrete)
             elif IBranch.providedBy(concrete):
-                branches.append(concrete)
+                branches.add(concrete)
 
-        self.bugs = bugs
+        # For security reasons, the bugs have to be refetched by ID through
+        # the normal querying mechanism. This prevents bugs the user shouldn't
+        # be able to see from being displayed.
+        self.bugs = self._getSafeBugs(bugs)
         self.branches = branches
-        self.shared_bugs_count = len(bugs)
-        self.shared_branches_count = len(branches)
+        self.shared_bugs_count = len(self.bugs)
+        self.shared_branches_count = len(self.branches)
 
-    def _build_branch_template_data(self, branches):
+    def _build_branch_template_data(self, branches, request):
         branch_data = []
         for branch in branches:
             branch_data.append(dict(
-                branch_link=canonical_url(branch),
+                self_link=absoluteURL(branch, request),
+                web_link=canonical_url(branch, path_only_if_possible=True),
                 branch_name=branch.unique_name,
                 branch_id=branch.id))
         return branch_data
 
-    def _build_bug_template_data(self, bugs):
+    def _build_bug_template_data(self, bugtasks, request):
         bug_data = []
-        for bug in bugs:
-            [bugtask] = [task for task in bug.bugtasks if
-                            task.target == self.pillar]
-            if bugtask is not None:
-                url = canonical_url(bugtask, path_only_if_possible=True)
-                importance = bugtask.importance.title.lower()
-            else:
-                # This shouldn't ever happen, but if it does there's no reason
-                # to crash.
-                url = canonical_url(bug, path_only_if_possible=True)
-                importance = bug.default_bugtask.importance.title.lower()
+        for bugtask in bugtasks:
+            web_link = canonical_url(bugtask, path_only_if_possible=True)
+            self_link = absoluteURL(bugtask.bug, request)
+            importance = bugtask.importance.title.lower()
 
             bug_data.append(dict(
-                bug_link=url,
-                bug_summary=bug.title,
-                bug_id=bug.id,
+                self_link=self_link,
+                web_link=web_link,
+                bug_summary=bugtask.bug.title,
+                bug_id=bugtask.bug.id,
                 bug_importance=importance))
         return bug_data

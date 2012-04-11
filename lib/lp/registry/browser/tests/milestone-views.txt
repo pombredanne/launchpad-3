@@ -47,7 +47,7 @@ for use with inline presentation of milestones.
 The MilestoneView provides access to the milestone and to its release if
 it has one.
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> view = create_view(milestone, '+index')
     >>> print view.context.name
     kakapo
@@ -205,7 +205,7 @@ The user_counts property is the count items assigned to the current user.
 
 The user_counts property is an empty list if the user is None.
 
-    >>> login_person(None)
+    >>> ignored = login_person(None)
     >>> view = create_view(milestone, '+index')
     >>> view.user_counts
     []
@@ -214,7 +214,7 @@ The view uses ProductDownloadFileMixin to provide access to downloadable
 files. It implements getReleases() that always returns the view's
 release as a set.
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> view = create_view(milestone, '+index')
     >>> view.getReleases()
     set([<ProductRelease ...>])
@@ -285,7 +285,7 @@ This release notes and change log do appear when the release has them.
 The delete column and delete submit are not rendered if the user does
 not have edit permission.
 
-    >>> login_person(engineer)
+    >>> ignored = login_person(engineer)
     >>> view = create_view(
     ...     milestone, '+productrelease-data', principal=engineer)
     >>> content = find_tag_by_id(view.render(), 'release-data')
@@ -296,7 +296,7 @@ not have edit permission.
     >>> print find_tag_by_id(content, 'delete-files')
     None
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
 
 
 ProjectGroup milestones
@@ -332,7 +332,7 @@ user may edit.
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> firefox_1_0 =  firefox.getSeries('1.0')
     >>> milestone = firefox_1_0.newMilestone('1.0.8')
 
@@ -440,7 +440,7 @@ instead of a productseries field.
     ...     IDistributionSet)
 
     >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> login_person(ubuntu_distro.owner.teamowner)
+    >>> ignored = login_person(ubuntu_distro.owner.teamowner)
     >>> hoary_series =  ubuntu_distro.getSeries('hoary')
     >>> milestone = hoary_series.newMilestone('alpha')
     >>> view = create_initialized_view(milestone, '+edit')
@@ -498,7 +498,7 @@ Users without launchpad.Edit permissions cannot access the view.
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> view = create_initialized_view(milestone, '+edit')
     >>> check_permission('launchpad.Edit', view)
     False
@@ -510,7 +510,7 @@ Adding milestones
 The AddMilestoneView is used to create a new milestone.
 
     >>> owner = firefox.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> view = create_initialized_view(firefox_1_0, '+addmilestone')
     >>> print view.label
     Register a new milestone
@@ -582,9 +582,9 @@ release manager and can create milestones.
 
     >>> distroseries = factory.makeDistroSeries(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
-    >>> login_person(distroseries.distribution.owner)
+    >>> ignored = login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver
-    >>> login_person(driver)
+    >>> ignored = login_person(driver)
 
     >>> form = {
     ...     'field.name': 'pie',
@@ -605,9 +605,9 @@ The driver has access to the milestone.
 The driver of an `IBaseDistribution` such as Ubuntu cannot create a
 milestone.
 
-    >>> login_person(ubuntu_distro.owner.teamowner)
+    >>> ignored = login_person(ubuntu_distro.owner.teamowner)
     >>> hoary_series.driver = driver
-    >>> login_person(driver)
+    >>> ignored = login_person(driver)
 
     >>> view = create_initialized_view(hoary_series, '+addmilestone')
     >>> check_permission('launchpad.Edit', view)
@@ -628,7 +628,7 @@ The DeleteMilestoneView allows users to edit permissions to delete
 Milestones. The view is restricted to owners of the project and drivers
 of the series.
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
     >>> print milestone.name
     1.0.10
@@ -724,7 +724,7 @@ No Privileges Person cannot access this view because he is neither the
 project owner or series driver..
 
     >>> milestone = firefox_1_0.newMilestone('1.0.12')
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)
     False
@@ -734,7 +734,7 @@ deleting the milestone must have permssion to access the bug for it to be
 untargeted. It is possible for the owner or release manager to not have access
 to a private bug that was targeted to a milestone by a driver.
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.13')
     >>> private_bug = factory.makeBug(product=firefox, private=True)
     >>> private_bugtask = bug.bugtasks[0]

@@ -507,7 +507,7 @@ for upstream and an Ubuntu series and see how the list changes.
 
 (Login as a bug supervisor to be able to nominate.)
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getSeries("warty")

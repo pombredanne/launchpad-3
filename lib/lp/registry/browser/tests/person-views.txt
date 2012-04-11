@@ -18,7 +18,7 @@ homepage_content is formatted as HTML.
     >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
     >>> person_set = getUtility(IPersonSet)
     >>> active_user = person_set.getByName('name12')
-    >>> login_person(active_user)
+    >>> ignored = login_person(active_user)
     >>> active_user.homepage_content = homepage_content
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(active_user, '+index')
@@ -34,7 +34,7 @@ Teams are always valid and do not have probation rules; the homepage
 content is formatted HTML.
 
     >>> team = factory.makeTeam()
-    >>> login_person(team.teamowner)
+    >>> ignored = login_person(team.teamowner)
     >>> team.homepage_content = homepage_content
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(team, '+index')
@@ -69,7 +69,7 @@ escaped HTML.
     # Only admins can change an account.
 
     >>> admin_user = person_set.getByName('name16')
-    >>> login_person(admin_user)
+    >>> ignored = login_person(admin_user)
     >>> invalid_user = factory.makePerson(name="ugh")
     >>> invalid_user.homepage_content = homepage_content
     >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
@@ -334,7 +334,7 @@ progress state.
 
     >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')
@@ -729,7 +729,7 @@ If the PPA is private, only the owner will see the section.
     >>> login("admin@canonical.com")
     >>> private_ppa = factory.makeArchive(private=True)
 
-    >>> login_person(private_ppa.owner)
+    >>> ignored = login_person(private_ppa.owner)
     >>> view = create_initialized_view(private_ppa.owner, "+index")
     >>> view.should_show_ppa_section
     True
@@ -745,7 +745,7 @@ This aspect allows him to access the 'Create a new PPA' link.
     >>> print sample_person.archive
     None
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     True

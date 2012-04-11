@@ -1407,7 +1407,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We just remove the security proxies to be able to change the objects
         # here.
         removeSecurityProxy(branch).branchChanged(
-            '', 'rev1', None, None, None, celery_scan=False)
+            '', 'rev1', None, None, None)
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
         return branch
@@ -1422,7 +1422,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # We just remove the security proxies to be able to change the branch
         # here.
         removeSecurityProxy(branch).branchChanged(
-            '', 'rev1', None, None, None, celery_scan=False)
+            '', 'rev1', None, None, None)
         with person_logged_in(package.distribution.owner):
             package.development_version.setBranch(
                 PackagePublishingPocket.RELEASE, branch,
@@ -1628,7 +1628,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if branch.branch_type not in (BranchType.REMOTE, BranchType.HOSTED):
             branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
-            '', parent.revision_id, None, None, None, celery_scan=False)
+            '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id=None, sequence=None,
@@ -1639,10 +1639,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, security_related=False, date_closed=None,
-                title=None, date_created=None, description=None, comment=None,
-                status=None, distribution=None, milestone=None, series=None,
-                tags=None, sourcepackagename=None):
+                private=False, security_related=False, information_type=None,
+                date_closed=None, title=None, date_created=None,
+                description=None, comment=None, status=None,
+                distribution=None, milestone=None, series=None, tags=None,
+                sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1690,8 +1691,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
         # Factory changes delayed for a seperate branch.
-        information_type = convert_to_information_type(
-            private, security_related)
+        if information_type is None:
+            information_type = convert_to_information_type(
+                private, security_related)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
@@ -2132,7 +2134,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString(u'title')
         if specification is None:
-            specification = self.makeSpecification()
+            product = None
+            distribution = None
+            if milestone is not None:
+                product = milestone.product
+                distribution = milestone.distribution
+            specification = self.makeSpecification(
+                product=product, distribution=distribution)
         if sequence is None:
             sequence = self.getUniqueInteger()
         work_item = removeSecurityProxy(specification).newWorkItem(
