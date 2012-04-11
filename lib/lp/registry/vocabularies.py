@@ -1042,20 +1042,19 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(TeamVocabularyMixin,
-                                    ValidPersonOrTeamVocabulary):
+class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
     existing sharee for the pillar.
     """
 
-    displayname = 'Share with a user or team'
+    displayname = 'Grant access to project artifacts'
     step_title = 'Search for user or exclusive team with whom to share'
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(ValidPersonOrTeamVocabulary, self).__init__(context)
+        super(NewPillarShareeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1068,7 +1067,9 @@ class NewPillarShareeVocabulary(TeamVocabularyMixin,
                 WHERE policy in %s
                 )
             """ % sqlvalues(self.policy_ids))
-        return clause
+        return And(
+            clause,
+            super(NewPillarShareeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
