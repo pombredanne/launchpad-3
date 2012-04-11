@@ -178,48 +178,21 @@ def person_alteration_security_notice(person, event):
         # In theory we could have a list of changed fields, but in practice we
         # don't see that. Asserting that there's only one changed field.
         assert len(changed_fields) == 1
-        notification = PersonAlterationSecurityNotification(
-            changed_fields.pop(), user,
-            override_noticeto=(user.displayname, prev_preferred_email))
-        notification.send()
 
+        notification = PersonNotification()
+        notification.person = user
+        notification.subject = (
+            "Your Launchpad.net account details have changed.")
 
-class PersonAlterationSecurityNotification(object):
-    """Schedule an email notification to the user about account changes"""
-
-    def __init__(self, field, user, override_noticeto=None):
-        """Notify the user that their account has changed
-
-        :param field: the bit of account data that's altered
-        :param user: the user that changed
-        """
-        self.changed = field
-        self.user = user
-        self.notification = PersonNotification()
-        self.notification.person = user
-        self.override_noticeto = override_noticeto
-
-    def getTemplateName(self):
-        """Return the name of the email template to use in the notification."""
-        return 'person-details-change.txt'
-
-    def send(self):
-        """Send the notification to the user about their account change."""
-        self.notification.subject = (
-            "Your Launchpad.net account details have changed."
-        )
         tpl_substitutions = dict(
-            user_displayname=self.user.displayname,
-            user_name=self.user.name,
-            field_changed=PERSON_DATA_MONITORED[self.changed]
+            user_displayname=user.displayname,
+            user_name=user.name,
+            field_changed=PERSON_DATA_MONITORED[changed_fields.pop()]
             )
         template = get_email_template(
-            self.getTemplateName(), app='registry')
-        message = template % tpl_substitutions
-        self.notification.body = message
-        if self.override_noticeto:
-            self.notification.send(
-                sendto=(self.user.displayname, self.override_noticeto))
-        else:
-            self.notification.send()
-        return True
+            'person-details-change.txt',
+            app='registry')
+        notification.body = template % tpl_substitutions
+
+        notification.send(
+            sendto=(user.displayname, prev_preferred_email))
