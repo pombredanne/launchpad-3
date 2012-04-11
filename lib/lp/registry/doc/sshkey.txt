@@ -9,7 +9,7 @@ Launchpad models SSH keys in a SSHKey class.
     >>> from lp.registry.interfaces.ssh import ISSHKeySet
     >>> personset = getUtility(IPersonSet)
     >>> name12 = personset.getByName('name12')
-    >>> login_person(name12)
+    >>> ignored = login_person(name12)
     >>> [(key.keytype, key.comment) for key in name12.sshkeys]
     [(<DBItem SSHKeyType.DSA, (2) DSA>, u'andrew@trogdor')]
 
@@ -23,7 +23,7 @@ You can fetch SSH keys by ID:
 Adding new keys is pretty easy:
 
     >>> foobar = personset.getByName('name16')
-    >>> login_person(foobar)
+    >>> ignored = login_person(foobar)
     >>> key = sshkeyset.new(
     ...     foobar, "ssh-rsa zzzNOT-REALLY This is just a test key")
     >>> key, key.keytext
