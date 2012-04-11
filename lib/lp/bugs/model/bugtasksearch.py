@@ -17,6 +17,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    Count,
     Desc,
     Exists,
     In,
@@ -63,6 +64,7 @@ from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.model.milestone import Milestone
+from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -432,19 +434,20 @@ def _build_query(params):
             extra_clauses += clauses
 
     if params.milestone_tag:
-        where_cond = """
-            IN (SELECT Milestone.id
-                FROM Milestone, Product, MilestoneTag
-                WHERE Milestone.product = Product.id
-                    AND Product.project = %s
-                    AND MilestoneTag.milestone = Milestone.id
-                    AND MilestoneTag.tag IN %s
-                GROUP BY Milestone.id
-                HAVING COUNT(Milestone.id) = %s)
-        """ % sqlvalues(params.milestone_tag.target,
-                        params.milestone_tag.tags,
-                        len(params.milestone_tag.tags))
-        extra_clauses.append("BugTask.milestone %s" % where_cond)
+        extra_clauses.append(
+            BugTask.milestoneID.is_in(
+                Select(
+                    Milestone.id,
+                    tables=[Milestone, Product, MilestoneTag],
+                    where=And(
+                        Product.project == params.milestone_tag.target,
+                        Milestone.productID == Product.id,
+                        Milestone.id == MilestoneTag.milestone_id,
+                        MilestoneTag.tag.is_in(params.milestone_tag.tags)),
+                    group_by=Milestone.id,
+                    having=(
+                        Count(Milestone.id) ==
+                            len(params.milestone_tag.tags)))))
 
         # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
         # bugtasks is not currently supported for milestone tags.
