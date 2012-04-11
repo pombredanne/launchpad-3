@@ -2657,7 +2657,7 @@ class PersonGPGView(LaunchpadView):
 
         found = []
         notfound = []
-        # Verify if we have multiple entries to activate.
+        # verify if we have multiple entries to deactive
         if not isinstance(key_ids, list):
             key_ids = [key_ids]
 

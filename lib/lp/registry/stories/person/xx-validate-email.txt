@@ -24,14 +24,10 @@ added by gina. Now he wants to validate it.
 Retrieve the email and make sure it was sent to the right address.
 
     >>> import email
-    >>> found = False
-    >>> raw_msg = None
-    >>> for from_addr, to_addrs, orig_msg in stub.test_emails:
-    ...     msg = email.message_from_string(orig_msg)
-    ...     if msg.get('to') == 'salgado@ubuntu.com':
-    ...        raw_msg = orig_msg
-    ...        found = True
-    >>> assert found
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print msg.get('to')
+    salgado@ubuntu.com
 
 Visit the token URL mentioned in the email, and get redirected to
 +validateemail.
