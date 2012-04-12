@@ -275,15 +275,20 @@ class UniversalJobSource:
 
         return base_job.makeDerived(), store
 
-    @classmethod
-    def switchDBUser(cls, job_id):
-        """Switch to the DB user associated with this Job ID."""
-        derived, store = cls.getDerived(job_id)
-        dbconfig.override(
-            dbuser=derived.config.dbuser, isolation_level='read_committed')
+    @staticmethod
+    def clearStore(store):
         transaction.abort()
         getUtility(IZStorm).remove(store)
         store.close()
+
+    @classmethod
+    def switchDBUser(cls, job_id):
+        """Switch to the DB user associated with this Job ID."""
+        cls.clearStore(IStore(Job))
+        derived, store = cls.getDerived(job_id)
+        dbconfig.override(
+            dbuser=derived.config.dbuser, isolation_level='read_committed')
+        cls.clearStore(store)
 
     @classmethod
     def get(cls, job_id):
