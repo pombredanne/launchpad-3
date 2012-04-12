@@ -3,13 +3,15 @@
 
 """Test error views."""
 
-import urllib2
 
+import httplib
 from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
+import time
 import transaction
+import urllib2
 
 from lp.services.webapp.error import (
     DisconnectionErrorView,
@@ -113,7 +115,22 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        urllib2.urlopen(url)
+        # bouncer.start() can sometimes return before the service is actually
+        # available for use.  To be defensive, let's retry a few times.  See
+        # bug 974617.
+        for i in xrange(5):
+            try:
+                urllib2.urlopen(url)
+            except urllib2.HTTPError as e:
+                if e.code != httplib.SERVICE_UNAVAILABLE:
+                    raise
+            else:
+                break
+            time.sleep(0.5)
+        else:
+            raise
+
+
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()
