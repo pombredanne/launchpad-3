@@ -73,6 +73,7 @@ from lp.testing import (
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     AppServerLayer,
+    CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -595,14 +596,13 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
 
 class TestViaCelery(TestCaseWithFactory):
 
-    layer = AppServerLayer
+    layer = CeleryJobLayer
 
     def test_MergeProposalNeedsReviewEmailJob(self):
         """MergeProposalNeedsReviewEmailJob runs under Celery."""
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes':
              'MergeProposalNeedsReviewEmailJob'}))
-        self.useContext(celeryd('job'))
         bmp = self.factory.makeBranchMergeProposal()
         with monitor_celery() as responses:
             MergeProposalNeedsReviewEmailJob.create(bmp)
@@ -612,7 +612,6 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_UpdatePreviewDiffJob(self):
         """UpdatePreviewDiffJob runs under Celery."""
-        self.useContext(celeryd('job'))
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
@@ -627,7 +626,6 @@ class TestViaCelery(TestCaseWithFactory):
     def test_CodeReviewCommentEmailJob(self):
         """CodeReviewCommentEmailJob runs under Celery."""
         comment = self.factory.makeCodeReviewComment()
-        self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
         with monitor_celery() as responses:
@@ -639,7 +637,6 @@ class TestViaCelery(TestCaseWithFactory):
     def test_ReviewRequestedEmailJob(self):
         """ReviewRequestedEmailJob runs under Celery."""
         request = self.factory.makeCodeReviewVoteReference()
-        self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
         with monitor_celery() as responses:
@@ -651,7 +648,6 @@ class TestViaCelery(TestCaseWithFactory):
     def test_MergeProposalUpdatedEmailJob(self):
         """MergeProposalUpdatedEmailJob runs under Celery."""
         bmp = self.factory.makeBranchMergeProposal()
-        self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
         with monitor_celery() as responses:
@@ -663,7 +659,6 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_GenerateIncrementalDiffJob(self):
         """GenerateIncrementalDiffJob runs under Celery."""
-        self.useContext(celeryd('job'))
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
         with monitor_celery() as responses:
