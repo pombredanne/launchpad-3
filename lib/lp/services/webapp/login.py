@@ -474,6 +474,17 @@ class AlreadyLoggedInView(LaunchpadView):
     template = ViewPageTemplateFile("templates/login-already.pt")
 
 
+def isFreshLogin(request):
+    """Return True if the principal login happened in the last 120 seconds."""
+    session = ISession(request)
+    authdata = session['launchpad.authenticateduser']
+    logintime = authdata.get('logintime', None)
+    if logintime is not None:
+        now = datetime.utcnow()
+        return logintime > now - timedelta(seconds=120)
+    return False
+
+
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
     # Force a fresh session, per Bug #828638. Any changes to any

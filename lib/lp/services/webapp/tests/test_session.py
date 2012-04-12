@@ -4,11 +4,13 @@
 from testtools import TestCase
 from testtools.matchers import Contains
 
+from lp.services.webapp.login import isFreshLogin
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.session import (
     get_cookie_domain,
     LaunchpadCookieClientIdManager,
     )
+from lp.testing.layers import FunctionalLayer
 
 
 class GetCookieDomainTestCase(TestCase):
@@ -55,3 +57,13 @@ class TestLaunchpadCookieClientIdManager(TestCase):
         self.assertThat(
             dict(request.response.getHeaders())['Set-Cookie'],
             Contains('; httponly;'))
+
+
+class TestSessionRelatedFunctions(TestCase):
+
+    layer = FunctionalLayer
+
+    def test_isFreshLogin_returns_false_for_anonymous(self):
+        """isFreshLogin should return Falde for anonymous views."""
+        request = LaunchpadTestRequest()
+        self.assertFalse(isFreshLogin(request))
