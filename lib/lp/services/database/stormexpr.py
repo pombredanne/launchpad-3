@@ -3,13 +3,16 @@
 
 __metaclass__ = type
 __all__ = [
+    'Array',
     'Concatenate',
     'CountDistinct',
     'Greatest',
+    'NullCount',
     ]
 
 from storm.expr import (
     BinaryOper,
+    ComparableExpr,
     compile,
     EXPR,
     Expr,
@@ -48,3 +51,23 @@ class Concatenate(BinaryOper):
     """Storm operator for string concatenation."""
     __slots__ = ()
     oper = " || "
+
+
+class NullCount(NamedFunc):
+    __slots__ = ()
+    name = "NULL_COUNT"
+
+
+class Array(ComparableExpr):
+    __slots__ = ("args",)
+
+    def __init__(self, *args):
+        self.args = args
+
+
+@compile.when(Array)
+def compile_array(compile, array, state):
+    state.push("context", EXPR)
+    args = compile(array.args, state)
+    state.pop()
+    return "ARRAY[%s]" % args

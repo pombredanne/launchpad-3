@@ -17,12 +17,16 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    ComparableExpr,
+    compile,
     Count,
     Desc,
     Exists,
+    EXPR,
     In,
     Join,
     LeftJoin,
+    NamedFunc,
     Not,
     Or,
     Select,
@@ -60,6 +64,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -74,6 +79,10 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    Array,
+    NullCount,
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
@@ -489,59 +498,70 @@ def _build_query(params):
             '''ss as (SELECT * from StructuralSubscription
             WHERE StructuralSubscription.subscriber = %s)'''
             % sqlvalues(params.structural_subscriber))
+
+        class StructuralSubscriptionWith(StructuralSubscription):
+            __storm_table__ = 'ss'
+
         join_tables.append(
             (Product, LeftJoin(Product, And(
                             BugTask.productID == Product.id,
                             Product.active))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss1'),
-                BugTask.product == SQL('ss1.product'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss2'),
-                BugTask.productseries == SQL('ss2.productseries'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss3'),
-                Product.project == SQL('ss3.project'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss4'),
-                And(BugTask.distribution == SQL('ss4.distribution'),
-                    Or(BugTask.sourcepackagename ==
-                        SQL('ss4.sourcepackagename'),
-                        SQL('ss4.sourcepackagename IS NULL'))))))
+        ProductSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            ProductSub,
+            LeftJoin(
+                ProductSub,
+                BugTask.productID == ProductSub.productID)))
+        ProductSeriesSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            ProductSeriesSub,
+            LeftJoin(
+                ProductSeriesSub,
+                BugTask.productseriesID == ProductSub.productseriesID)))
+        ProjectSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            ProjectSub,
+            LeftJoin(
+                ProjectSub,
+                Product.projectID == ProjectSub.projectID)))
+        DistributionSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            DistributionSub,
+            LeftJoin(
+                DistributionSub,
+                And(BugTask.distributionID == DistributionSub.distributionID,
+                    Or(
+                        DistributionSub.sourcepackagenameID ==
+                            BugTask.sourcepackagenameID,
+                        DistributionSub.sourcepackagenameID == None)))))
         if params.distroseries is not None:
             parent_distro_id = params.distroseries.distributionID
         else:
             parent_distro_id = 0
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss5'),
-                Or(BugTask.distroseries == SQL('ss5.distroseries'),
+        DistroSeriesSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            DistroSeriesSub,
+            LeftJoin(
+                DistroSeriesSub,
+                Or(BugTask.distroseriesID == DistroSeriesSub.distroseriesID,
                     # There is a mismatch between BugTask and
                     # StructuralSubscription. SS does not support
                     # distroseries. This clause works because other
                     # joins ensure the match bugtask is the right
                     # series.
-                    And(parent_distro_id == SQL('ss5.distribution'),
-                        BugTask.sourcepackagename == SQL(
-                            'ss5.sourcepackagename'))))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss6'),
-                BugTask.milestone == SQL('ss6.milestone'))))
+                    And(parent_distro_id == DistroSeriesSub.distributionID,
+                        BugTask.sourcepackagenameID ==
+                            DistroSeriesSub.sourcepackagenameID)))))
+        MilestoneSub = ClassAlias(StructuralSubscriptionWith)
+        join_tables.append((
+            MilestoneSub,
+            LeftJoin(
+                MilestoneSub,
+                BugTask.milestoneID == MilestoneSub.milestoneID)))
         extra_clauses.append(
-            "NULL_COUNT("
-            "ARRAY[ss1.id, ss2.id, ss3.id, ss4.id, ss5.id, ss6.id]"
-            ") < 6")
+            NullCount(Array(
+                ProductSub.id, ProductSeriesSub.id, ProjectSub.id,
+                DistributionSub.id, DistroSeriesSub.id, MilestoneSub.id)) < 6)
         has_duplicate_results = True
 
     # Remove bugtasks from deactivated products, if necessary.
