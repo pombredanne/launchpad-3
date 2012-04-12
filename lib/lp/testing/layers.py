@@ -1878,6 +1878,24 @@ class CeleryJobLayer(AppServerLayer):
         cls.celeryd = None
 
 
+class CeleryBranchWriteJobLayer(AppServerLayer):
+    """Layer for tests that run jobs which write to branches via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('branch_write_job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
+
+
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     """Layer for tests that run in the zopeless environment with an appserver.
     """
