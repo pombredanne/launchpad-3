@@ -1161,12 +1161,12 @@ def _build_open_or_resolved_upstream_clause(params,
                                       statuses_for_upstream_tasks):
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
+    RelatedBugTask = ClassAlias(BugTask)
+    watch_tasks_clause = search_value_to_storm_where_condition(
+        RelatedBugTask._status, any(*statuses_for_watch_tasks))
+    upstream_tasks_clause = search_value_to_storm_where_condition(
+        RelatedBugTask._status, any(*statuses_for_upstream_tasks))
     if params.upstream_target is None:
-        RelatedBugTask = ClassAlias(BugTask)
-        watch_tasks_clause = search_value_to_storm_where_condition(
-            RelatedBugTask._status, any(*statuses_for_watch_tasks))
-        upstream_tasks_clause = search_value_to_storm_where_condition(
-            RelatedBugTask._status, any(*statuses_for_upstream_tasks))
         return Exists(Select(
             1,
             tables=[RelatedBugTask],
@@ -1180,19 +1180,27 @@ def _build_open_or_resolved_upstream_clause(params,
                         RelatedBugTask.bugwatchID == None,
                         upstream_tasks_clause)))))
     elif IProduct.providedBy(params.upstream_target):
-        query_values = {'target_column': 'product'}
+        target_col = RelatedBugTask.productID
     elif IDistribution.providedBy(params.upstream_target):
-        query_values = {'target_column': 'distribution'}
+        target_col = RelatedBugTask.distributionID
     else:
         raise AssertionError(
             'params.upstream_target must be a Distribution or '
             'a Product')
-    query_values['target_id'] = sqlvalues(params.upstream_target.id)[0]
-    query_values['status_with_watch'] = search_value_to_where_condition(
-        any(*statuses_for_watch_tasks))
-    query_values['status_without_watch'] = search_value_to_where_condition(
-        any(*statuses_for_upstream_tasks))
-    return SQL(_open_resolved_upstream_with_target % query_values)
+    target_clause = target_col == params.upstream_target.id
+    return Exists(Select(
+        1,
+        tables=[RelatedBugTask],
+        where=And(
+            RelatedBugTask.bugID == BugTask.bugID,
+            RelatedBugTask.id != BugTask.id,
+            Or(
+                And(target_clause,
+                    RelatedBugTask.bugwatchID != None,
+                    watch_tasks_clause),
+                And(target_clause,
+                    RelatedBugTask.bugwatchID == None,
+                    upstream_tasks_clause)))))
 
 
 def _build_open_upstream_clause(params):
