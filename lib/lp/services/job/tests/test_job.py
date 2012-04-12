@@ -260,8 +260,7 @@ class TestJob(TestCaseWithFactory):
             job.start()
             self.assertEqual([], recorder.transaction_calls)
 
-        # If explicitly specified, Job.start() commits the
-        # transaction.
+        # If explicitly specified, Job.start() commits the transaction.
         with TransactionRecorder() as recorder:
             job = Job()
             job.start(manage_transaction=True)
@@ -275,8 +274,7 @@ class TestJob(TestCaseWithFactory):
             job.complete()
             self.assertEqual([], recorder.transaction_calls)
 
-        # If explicitly specified, Job.complete() commits the
-        # transaction.
+        # If explicitly specified, Job.complete() commits the transaction.
         job = Job()
         job.start()
         with TransactionRecorder() as recorder:
@@ -291,9 +289,8 @@ class TestJob(TestCaseWithFactory):
             job.fail()
             self.assertEqual([], recorder.transaction_calls)
 
-        # If explicitly specified, Job.fail() commits the
-        # transaction. Note that there is an additional commit to
-        # update the job status.
+        # If explicitly specified, Job.fail() commits the transaction.
+        # Note that there is an additional commit to update the job status.
         job = Job()
         job.start()
         with TransactionRecorder() as recorder:
@@ -308,9 +305,8 @@ class TestJob(TestCaseWithFactory):
             job.queue()
             self.assertEqual([], recorder.transaction_calls)
 
-        # If explicitly specified, Job.queue() commits the
-        # transaction. Note that there is an additional commit to
-        # update the job status.
+        # If explicitly specified, Job.queue() commits the transaction.
+        # Note that there is an additional commit to update the job status.
         job = Job()
         job.start()
         with TransactionRecorder() as recorder:
@@ -334,8 +330,7 @@ class TestJob(TestCaseWithFactory):
             job.suspend()
             self.assertEqual([], recorder.transaction_calls)
 
-        # If explicitly specified, Job.suspend() commits the
-        # transaction.
+        # If explicitly specified, Job.suspend() commits the transaction.
         job = Job()
         job.start()
         with TransactionRecorder() as recorder:
