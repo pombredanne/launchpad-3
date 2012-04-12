@@ -1279,18 +1279,17 @@ def _build_upstream_clause(params):
     upstream_clauses = []
     if params.pending_bugwatch_elsewhere:
         upstream_clauses.append(
-            _build_pending_bugwatch_elsewhere_clause(params))
+            SQL(_build_pending_bugwatch_elsewhere_clause(params)))
     if params.has_no_upstream_bugtask:
         upstream_clauses.append(
-            _build_no_upstream_bugtask_clause(params))
+            SQL(_build_no_upstream_bugtask_clause(params)))
     if params.resolved_upstream:
-        upstream_clauses.append(_build_resolved_upstream_clause(params))
+        upstream_clauses.append(SQL(_build_resolved_upstream_clause(params)))
     if params.open_upstream:
-        upstream_clauses.append(_build_open_upstream_clause(params))
+        upstream_clauses.append(SQL(_build_open_upstream_clause(params)))
 
     if upstream_clauses:
-        upstream_clause = " OR ".join(upstream_clauses)
-        return '(%s)' % upstream_clause
+        return Or(*upstream_clauses)
     return None
 
 
