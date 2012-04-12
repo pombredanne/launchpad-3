@@ -28,6 +28,10 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
 
 
+class TimeoutException(Exception):
+    pass
+
+
 class TestSystemErrorView(TestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -114,11 +118,12 @@ class TestDatabaseErrorViews(TestCase):
         # We keep seeing the correct exception on subsequent requests.
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
-        bouncer.start()
+        #bouncer.start()
         # bouncer.start() can sometimes return before the service is actually
         # available for use.  To be defensive, let's retry a few times.  See
         # bug 974617.
-        for i in xrange(5):
+        retries = 5
+        for i in xrange(retries):
             try:
                 urllib2.urlopen(url)
             except urllib2.HTTPError as e:
@@ -128,7 +133,8 @@ class TestDatabaseErrorViews(TestCase):
                 break
             time.sleep(0.5)
         else:
-            raise
+            raise TimeoutException(
+                "bouncer did not come up after {} attempts.".format(retries))
 
 
 
