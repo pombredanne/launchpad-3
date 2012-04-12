@@ -1072,23 +1072,6 @@ def _build_blueprint_related_clause(params):
 
 # Upstream task restrictions
 
-_open_resolved_upstream_with_target = """
-    EXISTS (
-        SELECT TRUE FROM BugTask AS RelatedBugTask
-        WHERE RelatedBugTask.bug = BugTask.bug
-            AND RelatedBugTask.id != BugTask.id
-            AND ((
-                RelatedBugTask.%(target_column)s = %(target_id)s AND
-                RelatedBugTask.bugwatch IS NOT NULL AND
-                RelatedBugTask.status %(status_with_watch)s)
-                OR (
-                RelatedBugTask.%(target_column)s = %(target_id)s AND
-                RelatedBugTask.bugwatch IS NULL AND
-                RelatedBugTask.status %(status_without_watch)s))
-        )
-    """
-
-
 def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
@@ -1162,32 +1145,24 @@ def _build_open_or_resolved_upstream_clause(params,
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
     RelatedBugTask = ClassAlias(BugTask)
-    watch_tasks_clause = search_value_to_storm_where_condition(
+    watch_status_clause = search_value_to_storm_where_condition(
         RelatedBugTask._status, any(*statuses_for_watch_tasks))
-    upstream_tasks_clause = search_value_to_storm_where_condition(
+    no_watch_status_clause = search_value_to_storm_where_condition(
         RelatedBugTask._status, any(*statuses_for_upstream_tasks))
     if params.upstream_target is None:
-        return Exists(Select(
-            1,
-            tables=[RelatedBugTask],
-            where=And(
-                RelatedBugTask.bugID == BugTask.bugID,
-                RelatedBugTask.id != BugTask.id,
-                Or(
-                    And(RelatedBugTask.bugwatchID != None,
-                        watch_tasks_clause),
-                    And(RelatedBugTask.productID != None,
-                        RelatedBugTask.bugwatchID == None,
-                        upstream_tasks_clause)))))
-    elif IProduct.providedBy(params.upstream_target):
-        target_col = RelatedBugTask.productID
-    elif IDistribution.providedBy(params.upstream_target):
-        target_col = RelatedBugTask.distributionID
+        watch_target_clause = True
+        no_watch_target_clause = RelatedBugTask.productID != None
     else:
-        raise AssertionError(
-            'params.upstream_target must be a Distribution or '
-            'a Product')
-    target_clause = target_col == params.upstream_target.id
+        if IProduct.providedBy(params.upstream_target):
+            target_col = RelatedBugTask.productID
+        elif IDistribution.providedBy(params.upstream_target):
+            target_col = RelatedBugTask.distributionID
+        else:
+            raise AssertionError(
+                'params.upstream_target must be a Distribution or '
+                'a Product')
+        watch_target_clause = no_watch_target_clause = (
+            target_col == params.upstream_target.id)
     return Exists(Select(
         1,
         tables=[RelatedBugTask],
@@ -1195,12 +1170,12 @@ def _build_open_or_resolved_upstream_clause(params,
             RelatedBugTask.bugID == BugTask.bugID,
             RelatedBugTask.id != BugTask.id,
             Or(
-                And(target_clause,
+                And(watch_target_clause,
                     RelatedBugTask.bugwatchID != None,
-                    watch_tasks_clause),
-                And(target_clause,
+                    watch_status_clause),
+                And(no_watch_target_clause,
                     RelatedBugTask.bugwatchID == None,
-                    upstream_tasks_clause)))))
+                    no_watch_status_clause)))))
 
 
 def _build_open_upstream_clause(params):
