@@ -49,10 +49,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyGrantFlatSource,
-    IAccessPolicySource,
-    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -451,11 +448,15 @@ class PillarPersonSharingView(LaunchpadView):
     def _build_branch_template_data(self, branches, request):
         branch_data = []
         for branch in branches:
+            # At the moment, all branches displayed on the sharing details
+            # page are private.
+            information_type = InformationType.USERDATA.title
             branch_data.append(dict(
                 self_link=absoluteURL(branch, request),
                 web_link=canonical_url(branch, path_only_if_possible=True),
                 branch_name=branch.unique_name,
-                branch_id=branch.id))
+                branch_id=branch.id,
+                information_type=information_type))
         return branch_data
 
     def _build_bug_template_data(self, bugtasks, request):
@@ -464,11 +465,12 @@ class PillarPersonSharingView(LaunchpadView):
             web_link = canonical_url(bugtask, path_only_if_possible=True)
             self_link = absoluteURL(bugtask.bug, request)
             importance = bugtask.importance.title.lower()
-
+            information_type = bugtask.bug.information_type.title
             bug_data.append(dict(
                 self_link=self_link,
                 web_link=web_link,
                 bug_summary=bugtask.bug.title,
                 bug_id=bugtask.bug.id,
-                bug_importance=importance))
+                bug_importance=importance,
+                information_type=information_type))
         return bug_data
