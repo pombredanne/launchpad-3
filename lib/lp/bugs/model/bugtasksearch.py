@@ -864,20 +864,20 @@ def _build_search_text_clause(params, fast=False):
     if fast:
         assert params.searchtext is None, (
             'Cannot use searchtext at the same time as fast_searchtext.')
-        searchtext_quoted = quote(params.fast_searchtext)
+        searchtext = params.fast_searchtext
     else:
         assert params.fast_searchtext is None, (
             'Cannot use fast_searchtext at the same time as searchtext.')
-        searchtext_quoted = quote(params.searchtext)
+        searchtext = params.searchtext
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
         params.orderby = [
-            SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+            SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,)),
             ]
 
-    return "Bug.fti @@ ftq(%s)" % searchtext_quoted
+    return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
 
 
 def _build_status_clause(col, status):
