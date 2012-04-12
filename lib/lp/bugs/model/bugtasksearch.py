@@ -1038,7 +1038,32 @@ def _build_pending_bugwatch_elsewhere_clause(params):
     """
     RelatedBugTask = ClassAlias(BugTask)
     extra_joins = []
-    if params.upstream_target is None:
+    # Normally we want to exclude the current task from the search,
+    # unless we're looking at an upstream project.
+    task_match_clause = RelatedBugTask.id != BugTask.id
+    target = None
+    if params.product:
+        # Looking for pending bugwatches in a project context is
+        # special: instead of returning bugs with *other* tasks that
+        # need forwarding, we return the subset of these tasks that
+        # does. So the task ID should match, and there is no need for a
+        # target clause.
+        target = params.product
+        task_match_clause = RelatedBugTask.id == BugTask.id
+        target_clause = True
+    elif params.upstream_target:
+        # Restrict the target to params.upstream_target.
+        target = params.upstream_target
+        if IProduct.providedBy(target):
+            target_col = RelatedBugTask.productID
+        elif IDistribution.providedBy(target):
+            target_col = RelatedBugTask.distributionID
+        else:
+            raise AssertionError(
+                'params.upstream_target must be a Distribution or '
+                'a Product')
+        target_clause = target_col == target.id
+    else:
         # Restrict the target to distributions or products which don't
         # use Launchpad for bug tracking.
         OtherDistribution = ClassAlias(Distribution)
@@ -1054,21 +1079,13 @@ def _build_pending_bugwatch_elsewhere_clause(params):
         target_clause = Or(
             OtherDistribution.official_malone == False,
             OtherProduct.official_malone == False)
-    else:
-        # Restrict the target to params.upstream_target.
-        if IProduct.providedBy(params.upstream_target):
-            target_col = RelatedBugTask.productID
-        elif IDistribution.providedBy(params.upstream_target):
-            target_col = RelatedBugTask.distributionID
-        else:
-            raise AssertionError(
-                'params.upstream_target must be a Distribution or '
-                'a Product')
-        # There is no point to construct a real sub-select if we
-        # already know that the result will be empty.
-        if params.upstream_target.official_malone:
-            return False
-        target_clause = target_col == params.upstream_target.id
+
+    # We only include tasks on targets that don't use Launchpad for bug
+    # tracking. If we're examining a single target, get out early if it
+    # uses LP.
+    if target and target.official_malone:
+        return False
+
     # Include only bugtasks that have other bugtasks on matching
     # targets which are not Invalid and have no bug watch.
     return Exists(Select(
@@ -1076,7 +1093,7 @@ def _build_pending_bugwatch_elsewhere_clause(params):
         tables=[RelatedBugTask] + extra_joins,
         where=And(
             RelatedBugTask.bugID == BugTask.bugID,
-            RelatedBugTask.id != BugTask.id,
+            task_match_clause,
             RelatedBugTask.bugwatchID == None,
             RelatedBugTask._status != BugTaskStatus.INVALID,
             target_clause)))
