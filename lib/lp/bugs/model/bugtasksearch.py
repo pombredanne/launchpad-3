@@ -466,32 +466,32 @@ def _build_query(params):
             WHERE StructuralSubscription.subscriber = %s)'''
             % sqlvalues(params.structural_subscriber))
 
-        class StructuralSubscriptionWith(StructuralSubscription):
+        class StructuralSubscriptionCTE(StructuralSubscription):
             __storm_table__ = 'ss'
 
         join_tables.append(
             (Product, LeftJoin(Product, And(
                             BugTask.productID == Product.id,
                             Product.active))))
-        ProductSub = ClassAlias(StructuralSubscriptionWith)
+        ProductSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProductSub,
             LeftJoin(
                 ProductSub,
                 BugTask.productID == ProductSub.productID)))
-        ProductSeriesSub = ClassAlias(StructuralSubscriptionWith)
+        ProductSeriesSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProductSeriesSub,
             LeftJoin(
                 ProductSeriesSub,
                 BugTask.productseriesID == ProductSub.productseriesID)))
-        ProjectSub = ClassAlias(StructuralSubscriptionWith)
+        ProjectSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProjectSub,
             LeftJoin(
                 ProjectSub,
                 Product.projectID == ProjectSub.projectID)))
-        DistributionSub = ClassAlias(StructuralSubscriptionWith)
+        DistributionSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             DistributionSub,
             LeftJoin(
@@ -505,7 +505,7 @@ def _build_query(params):
             parent_distro_id = params.distroseries.distributionID
         else:
             parent_distro_id = 0
-        DistroSeriesSub = ClassAlias(StructuralSubscriptionWith)
+        DistroSeriesSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             DistroSeriesSub,
             LeftJoin(
@@ -519,7 +519,7 @@ def _build_query(params):
                     And(parent_distro_id == DistroSeriesSub.distributionID,
                         BugTask.sourcepackagenameID ==
                             DistroSeriesSub.sourcepackagenameID)))))
-        MilestoneSub = ClassAlias(StructuralSubscriptionWith)
+        MilestoneSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             MilestoneSub,
             LeftJoin(
