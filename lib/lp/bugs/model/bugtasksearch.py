@@ -33,6 +33,7 @@ from storm.expr import (
     SQL,
     )
 from storm.info import ClassAlias
+from storm.references import Reference
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
@@ -218,7 +219,13 @@ def search_value_to_storm_where_condition(comp, search_value):
         # is a list of acceptable filter values.
         if not search_value.query_values:
             return None
-        return comp.is_in(search_value.query_values)
+        if isinstance(comp, Reference):
+            # References don't have an is_in.
+            return Or(*[
+                comp._relation.get_where_for_local(value)
+                for value in search_value.query_values])
+        else:
+            return comp.is_in(search_value.query_values)
     elif zope_isinstance(search_value, not_equals):
         return comp != search_value.value
     elif zope_isinstance(search_value, greater_than):
