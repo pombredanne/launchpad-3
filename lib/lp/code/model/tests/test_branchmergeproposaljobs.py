@@ -71,7 +71,6 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
-    AppServerLayer,
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
