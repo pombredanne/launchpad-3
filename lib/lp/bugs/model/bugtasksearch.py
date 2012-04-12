@@ -1106,22 +1106,7 @@ _open_resolved_upstream_with_target = """
 def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
-    if params.product:
-        # Include only bugtasks that do no have bug watches that
-        # belong to a product that does not use Malone.
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id = BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND OtherProduct.official_malone IS FALSE
-                    AND RelatedBugTask.status != %s)
-            """ % sqlvalues(BugTaskStatus.INVALID)
-    elif params.upstream_target is None:
+    if params.upstream_target is None:
         # Include only bugtasks that have other bugtasks on targets
         # not using Malone, which are not Invalid, and have no bug
         # watch.
