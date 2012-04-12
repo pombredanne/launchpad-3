@@ -93,6 +93,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         self.assertEqual('private', formatter.public_private_css())
 
 class TestPillarFormatterAPI(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     FORMATTER_CSS_CLASS = u'sprite product'
