@@ -928,7 +928,7 @@ def _build_exclude_conjoined_clause(milestone):
     # Perform a LEFT JOIN to the conjoined master bugtask.  If the
     # conjoined master is not null, it gets filtered out.
     ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
-    extra_clauses = ["ConjoinedMaster.id IS NULL"]
+    extra_clauses = [ConjoinedMaster.id == None]
     if milestone.distribution is not None:
         current_series = milestone.distribution.currentseries
         join = LeftJoin(
