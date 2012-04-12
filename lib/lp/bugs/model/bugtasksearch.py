@@ -1108,36 +1108,25 @@ def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
     RelatedBugTask = ClassAlias(BugTask)
+    extra_joins = []
     if params.upstream_target is None:
-        # Include only bugtasks that have other bugtasks on targets
-        # not using Malone, which are not Invalid, and have no bug
-        # watch.
+        # Restrict the target to distributions or products which don't
+        # use Launchpad for bug tracking.
         OtherDistribution = ClassAlias(Distribution)
         OtherProduct = ClassAlias(Product)
-        return Exists(Select(
-            1,
-            tables=[
-                RelatedBugTask,
-                LeftJoin(
-                    OtherDistribution,
-                    OtherDistribution.id == RelatedBugTask.distributionID),
-                LeftJoin(
-                    OtherProduct,
-                    OtherProduct.id == RelatedBugTask.productID),
-                ],
-            where=And(
-                RelatedBugTask.bugID == BugTask.bugID,
-                RelatedBugTask.id != BugTask.id,
-                RelatedBugTask.bugwatchID == None,
-                RelatedBugTask.status != BugTaskStatus.INVALID,
-                Or(
-                    OtherDistribution.official_malone == False,
-                    OtherProduct.official_malone == False))))
+        extra_joins = [
+            LeftJoin(
+                OtherDistribution,
+                OtherDistribution.id == RelatedBugTask.distributionID),
+            LeftJoin(
+                OtherProduct,
+                OtherProduct.id == RelatedBugTask.productID),
+            ]
+        target_clause = Or(
+            OtherDistribution.official_malone == False,
+            OtherProduct.official_malone == False)
     else:
-        # Include only bugtasks that have other bugtasks on
-        # params.upstream_target, but only if this this product
-        # does not use Malone and if the bugtasks are not Invalid,
-        # and have no bug watch.
+        # Restrict the target to params.upstream_target.
         if IProduct.providedBy(params.upstream_target):
             target_col = RelatedBugTask.productID
         elif IDistribution.providedBy(params.upstream_target):
@@ -1150,15 +1139,18 @@ def _build_pending_bugwatch_elsewhere_clause(params):
         # already know that the result will be empty.
         if params.upstream_target.official_malone:
             return False
-        return Exists(Select(
-            1,
-            tables=[RelatedBugTask],
-            where=And(
-                RelatedBugTask.bugID == BugTask.bugID,
-                RelatedBugTask.id != BugTask.id,
-                RelatedBugTask.bugwatchID == None,
-                RelatedBugTask.status != BugTaskStatus.INVALID,
-                target_col == params.upstream_target.id)))
+        target_clause = target_col == params.upstream_target.id
+    # Include only bugtasks that have other bugtasks on matching
+    # targets which are not Invalid and have no bug watch.
+    return Exists(Select(
+        1,
+        tables=[RelatedBugTask] + extra_joins,
+        where=And(
+            RelatedBugTask.bugID == BugTask.bugID,
+            RelatedBugTask.id != BugTask.id,
+            RelatedBugTask.bugwatchID == None,
+            RelatedBugTask.status != BugTaskStatus.INVALID,
+            target_clause)))
 
 
 def _build_no_upstream_bugtask_clause(params):
