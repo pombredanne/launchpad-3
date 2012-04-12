@@ -7,7 +7,6 @@ __all__ = [
     'get_bug_privacy_filter',
     'orderby_expression',
     'search_bugs',
-    'search_value_to_where_condition',
     ]
 
 from operator import itemgetter
@@ -171,42 +170,6 @@ orderby_expression = {
             ]
         ),
     }
-
-
-def search_value_to_where_condition(search_value):
-    """Convert a search value to a string WHERE condition.
-
-        >>> search_value_to_where_condition(any(1, 2, 3))
-        'IN (1,2,3)'
-        >>> search_value_to_where_condition(any()) is None
-        True
-        >>> search_value_to_where_condition(not_equals('foo'))
-        "!= 'foo'"
-        >>> search_value_to_where_condition(greater_than('foo'))
-        "> 'foo'"
-        >>> search_value_to_where_condition(1)
-        '= 1'
-        >>> search_value_to_where_condition(NULL)
-        'IS NULL'
-
-    """
-    if zope_isinstance(search_value, any):
-        # When an any() clause is provided, the argument value
-        # is a list of acceptable filter values.
-        if not search_value.query_values:
-            return None
-        return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
-    elif zope_isinstance(search_value, not_equals):
-        return "!= %s" % sqlvalues(search_value.value)
-    elif zope_isinstance(search_value, greater_than):
-        return "> %s" % sqlvalues(search_value.value)
-    elif search_value is not NULL:
-        return "= %s" % sqlvalues(search_value)
-    else:
-        # The argument value indicates we should match
-        # only NULL values for the column named by
-        # arg_name.
-        return "IS NULL"
 
 
 def search_value_to_storm_where_condition(comp, search_value):
