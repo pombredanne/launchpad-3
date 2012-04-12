@@ -1177,11 +1177,11 @@ def _build_open_or_resolved_upstream_clause(params,
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
     if params.upstream_target is None:
-        return _open_resolved_upstream % (
+        return SQL(_open_resolved_upstream % (
                 search_value_to_where_condition(
                     any(*statuses_for_watch_tasks)),
                 search_value_to_where_condition(
-                    any(*statuses_for_upstream_tasks)))
+                    any(*statuses_for_upstream_tasks))))
     elif IProduct.providedBy(params.upstream_target):
         query_values = {'target_column': 'product'}
     elif IDistribution.providedBy(params.upstream_target):
@@ -1195,7 +1195,7 @@ def _build_open_or_resolved_upstream_clause(params,
         any(*statuses_for_watch_tasks))
     query_values['status_without_watch'] = search_value_to_where_condition(
         any(*statuses_for_upstream_tasks))
-    return _open_resolved_upstream_with_target % query_values
+    return SQL(_open_resolved_upstream_with_target % query_values)
 
 
 def _build_open_upstream_clause(params):
@@ -1250,9 +1250,9 @@ def _build_upstream_clause(params):
         upstream_clauses.append(
             _build_no_upstream_bugtask_clause(params))
     if params.resolved_upstream:
-        upstream_clauses.append(SQL(_build_resolved_upstream_clause(params)))
+        upstream_clauses.append(_build_resolved_upstream_clause(params))
     if params.open_upstream:
-        upstream_clauses.append(SQL(_build_open_upstream_clause(params)))
+        upstream_clauses.append(_build_open_upstream_clause(params))
 
     if upstream_clauses:
         return Or(*upstream_clauses)
