@@ -67,6 +67,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
@@ -1106,36 +1107,41 @@ _open_resolved_upstream_with_target = """
 def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
+    RelatedBugTask = ClassAlias(BugTask)
     if params.upstream_target is None:
         # Include only bugtasks that have other bugtasks on targets
         # not using Malone, which are not Invalid, and have no bug
         # watch.
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution =
-                            OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id != BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND (
-                        OtherDistribution.official_malone IS FALSE
-                        OR OtherProduct.official_malone IS FALSE)
-                    AND RelatedBugTask.status != %s)
-            """ % sqlvalues(BugTaskStatus.INVALID)
+        OtherDistribution = ClassAlias(Distribution)
+        OtherProduct = ClassAlias(Product)
+        return Exists(Select(
+            1,
+            tables=[
+                RelatedBugTask,
+                LeftJoin(
+                    OtherDistribution,
+                    OtherDistribution.id == RelatedBugTask.distributionID),
+                LeftJoin(
+                    OtherProduct,
+                    OtherProduct.id == RelatedBugTask.productID),
+                ],
+            where=And(
+                RelatedBugTask.bugID == BugTask.bugID,
+                RelatedBugTask.id != BugTask.id,
+                RelatedBugTask.bugwatchID == None,
+                RelatedBugTask.status != BugTaskStatus.INVALID,
+                Or(
+                    OtherDistribution.official_malone == False,
+                    OtherProduct.official_malone == False))))
     else:
         # Include only bugtasks that have other bugtasks on
         # params.upstream_target, but only if this this product
         # does not use Malone and if the bugtasks are not Invalid,
         # and have no bug watch.
         if IProduct.providedBy(params.upstream_target):
-            target_clause = 'RelatedBugTask.product = %s'
+            target_col = RelatedBugTask.productID
         elif IDistribution.providedBy(params.upstream_target):
-            target_clause = 'RelatedBugTask.distribution = %s'
+            target_col = RelatedBugTask.distributionID
         else:
             raise AssertionError(
                 'params.upstream_target must be a Distribution or '
@@ -1143,19 +1149,16 @@ def _build_pending_bugwatch_elsewhere_clause(params):
         # There is no point to construct a real sub-select if we
         # already know that the result will be empty.
         if params.upstream_target.official_malone:
-            return 'false'
-        target_clause = target_clause % sqlvalues(
-            params.upstream_target.id)
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id != BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND %s
-                    AND RelatedBugTask.status != %s)
-            """ % (target_clause, sqlvalues(BugTaskStatus.INVALID)[0])
+            return False
+        return Exists(Select(
+            1,
+            tables=[RelatedBugTask],
+            where=And(
+                RelatedBugTask.bugID == BugTask.bugID,
+                RelatedBugTask.id != BugTask.id,
+                RelatedBugTask.bugwatchID == None,
+                RelatedBugTask.status != BugTaskStatus.INVALID,
+                target_col == params.upstream_target.id)))
 
 
 def _build_no_upstream_bugtask_clause(params):
@@ -1250,7 +1253,7 @@ def _build_upstream_clause(params):
     upstream_clauses = []
     if params.pending_bugwatch_elsewhere:
         upstream_clauses.append(
-            SQL(_build_pending_bugwatch_elsewhere_clause(params)))
+            _build_pending_bugwatch_elsewhere_clause(params))
     if params.has_no_upstream_bugtask:
         upstream_clauses.append(
             _build_no_upstream_bugtask_clause(params))
