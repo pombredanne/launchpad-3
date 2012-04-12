@@ -82,7 +82,6 @@ def add_custom_loglevels():
 
 def silence_amqplib_logger():
     """Install the NullHandler on the amqplib logger to silence logs."""
-    return
     amqplib_logger = logging.getLogger('amqplib')
     amqplib_logger.addHandler(NullHandler())
     amqplib_logger.propagate = False
