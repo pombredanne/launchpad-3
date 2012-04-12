@@ -26,7 +26,6 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
@@ -266,6 +265,8 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    sharing_vocabulary_name = 'NewPillarSharee'
+
     related_features = (
         'disclosure.enhanced_sharing.enabled',
         'disclosure.enhanced_sharing.writable',
@@ -288,7 +289,7 @@ class PillarSharingView(LaunchpadView):
     def sharing_vocabulary(self):
         registry = getVocabularyRegistry()
         return registry.get(
-            IVocabulary, 'ValidPillarOwner')
+            self.context, self.sharing_vocabulary_name)
 
     @cachedproperty
     def sharing_vocabulary_filters(self):
@@ -297,9 +298,10 @@ class PillarSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            vocabulary='NewPillarSharee',
+            vocabulary=self.sharing_vocabulary_name,
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Share with a user or team')
+            header=self.sharing_vocabulary.displayname,
+            steptitle=self.sharing_vocabulary.step_title)
 
     @property
     def json_sharing_picker_config(self):
