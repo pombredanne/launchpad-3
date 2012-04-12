@@ -1047,25 +1047,26 @@ def _build_hardware_related_clause(params):
 def _build_blueprint_related_clause(params):
     """Find bugs related to Blueprints, or not."""
     linked_blueprints = params.linked_blueprints
+
+    def make_clause(blueprints=None):
+        where = [SpecificationBug.bugID == Bug.id]
+        if blueprints is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    SpecificationBug.specificationID, blueprints))
+        return Exists(Select(1, tables=[SpecificationBug], where=And(*where)))
+
     if linked_blueprints is None:
         return None
     elif zope_isinstance(linked_blueprints, BaseItem):
         if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
-            return "EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
+            return make_clause()
         elif (linked_blueprints ==
                 BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
-            return "NOT EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
+            return Not(make_clause())
     else:
         # A specific search term has been supplied.
-        return """EXISTS (
-                SELECT TRUE FROM SpecificationBug
-                WHERE SpecificationBug.bug=Bug.id AND
-                SpecificationBug.specification %s)
-            """ % search_value_to_where_condition(linked_blueprints)
+        return make_clause(linked_blueprints)
 
 
 # Upstream task restrictions
