@@ -258,6 +258,7 @@ class UniversalJobSource:
     @staticmethod
     def getDerived(job_id):
         """Return the derived branch job associated with the job id."""
+        # Avoid circular imports.
         from lp.code.model.branchjob import (
             BranchJob,
             )
