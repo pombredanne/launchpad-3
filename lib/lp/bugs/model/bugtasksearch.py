@@ -837,9 +837,7 @@ def _build_search_text_clause(params, fast=False):
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
-        params.orderby = [
-            SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,)),
-            ]
+        params.orderby = [SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
 
     return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
 
