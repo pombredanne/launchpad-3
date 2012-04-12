@@ -60,8 +60,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.job.tests import (
-    celeryd,
-    monitor_celery,
+    block_on_job,
     pop_remote_notifications,
     )
 from lp.services.osutils import override_environ
@@ -604,10 +603,9 @@ class TestViaCelery(TestCaseWithFactory):
             {'jobs.celery.enabled_classes':
              'MergeProposalNeedsReviewEmailJob'}))
         bmp = self.factory.makeBranchMergeProposal()
-        with monitor_celery() as responses:
+        with block_on_job():
             MergeProposalNeedsReviewEmailJob.create(bmp)
             transaction.commit()
-        responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_UpdatePreviewDiffJob(self):
@@ -617,10 +615,9 @@ class TestViaCelery(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
-        with monitor_celery() as responses:
+        with block_on_job():
             UpdatePreviewDiffJob.create(bmp)
             transaction.commit()
-            responses[0].wait(30)
         self.assertIsNot(None, bmp.preview_diff)
 
     def test_CodeReviewCommentEmailJob(self):
@@ -628,10 +625,9 @@ class TestViaCelery(TestCaseWithFactory):
         comment = self.factory.makeCodeReviewComment()
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
-        with monitor_celery() as responses:
+        with block_on_job():
             CodeReviewCommentEmailJob.create(comment)
             transaction.commit()
-        responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_ReviewRequestedEmailJob(self):
@@ -639,10 +635,9 @@ class TestViaCelery(TestCaseWithFactory):
         request = self.factory.makeCodeReviewVoteReference()
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
-        with monitor_celery() as responses:
+        with block_on_job():
             ReviewRequestedEmailJob.create(request)
             transaction.commit()
-        responses[0].wait(30)
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_MergeProposalUpdatedEmailJob(self):
@@ -650,19 +645,17 @@ class TestViaCelery(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
-        with monitor_celery() as responses:
+        with block_on_job():
             MergeProposalUpdatedEmailJob.create(
                 bmp, 'change', bmp.registrant)
             transaction.commit()
-        responses[0].wait(30)
         self.assertEqual(2, len(pop_remote_notifications()))
 
     def test_GenerateIncrementalDiffJob(self):
         """GenerateIncrementalDiffJob runs under Celery."""
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
-        with monitor_celery() as responses:
+        with block_on_job():
             job = make_runnable_incremental_diff_job(self)
             transaction.commit()
-        responses[0].wait(30)
         self.assertEqual(JobStatus.COMPLETED, job.status)
