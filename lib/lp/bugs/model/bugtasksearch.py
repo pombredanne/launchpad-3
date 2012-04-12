@@ -1072,21 +1072,6 @@ def _build_blueprint_related_clause(params):
 
 # Upstream task restrictions
 
-_open_resolved_upstream = """
-    EXISTS (
-        SELECT TRUE FROM BugTask AS RelatedBugTask
-        WHERE RelatedBugTask.bug = BugTask.bug
-            AND RelatedBugTask.id != BugTask.id
-            AND ((
-                RelatedBugTask.bugwatch IS NOT NULL AND
-                RelatedBugTask.status %s)
-                OR (
-                RelatedBugTask.product IS NOT NULL AND
-                RelatedBugTask.bugwatch IS NULL AND
-                RelatedBugTask.status %s))
-        )
-    """
-
 _open_resolved_upstream_with_target = """
     EXISTS (
         SELECT TRUE FROM BugTask AS RelatedBugTask
@@ -1177,11 +1162,23 @@ def _build_open_or_resolved_upstream_clause(params,
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
     if params.upstream_target is None:
-        return SQL(_open_resolved_upstream % (
-                search_value_to_where_condition(
-                    any(*statuses_for_watch_tasks)),
-                search_value_to_where_condition(
-                    any(*statuses_for_upstream_tasks))))
+        RelatedBugTask = ClassAlias(BugTask)
+        watch_tasks_clause = search_value_to_storm_where_condition(
+            RelatedBugTask._status, any(*statuses_for_watch_tasks))
+        upstream_tasks_clause = search_value_to_storm_where_condition(
+            RelatedBugTask._status, any(*statuses_for_upstream_tasks))
+        return Exists(Select(
+            1,
+            tables=[RelatedBugTask],
+            where=And(
+                RelatedBugTask.bugID == BugTask.bugID,
+                RelatedBugTask.id != BugTask.id,
+                Or(
+                    And(RelatedBugTask.bugwatchID != None,
+                        watch_tasks_clause),
+                    And(RelatedBugTask.productID != None,
+                        RelatedBugTask.bugwatchID == None,
+                        upstream_tasks_clause)))))
     elif IProduct.providedBy(params.upstream_target):
         query_values = {'target_column': 'product'}
     elif IDistribution.providedBy(params.upstream_target):
