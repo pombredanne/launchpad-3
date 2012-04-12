@@ -719,7 +719,7 @@ def _build_query(params):
         if branches is not None:
             where.append(
                 search_value_to_storm_where_condition(
-                    BugBranch.branchID, params.linked_branches))
+                    BugBranch.branchID, branches))
         return Exists(Select(1, tables=[BugBranch], where=And(*where)))
 
     if zope_isinstance(params.linked_branches, BaseItem):
