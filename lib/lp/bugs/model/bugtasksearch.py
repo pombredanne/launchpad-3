@@ -1078,7 +1078,7 @@ def _build_pending_bugwatch_elsewhere_clause(params):
             RelatedBugTask.bugID == BugTask.bugID,
             RelatedBugTask.id != BugTask.id,
             RelatedBugTask.bugwatchID == None,
-            RelatedBugTask.status != BugTaskStatus.INVALID,
+            RelatedBugTask._status != BugTaskStatus.INVALID,
             target_clause)))
 
 
