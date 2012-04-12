@@ -4,13 +4,20 @@
 from testtools import TestCase
 from testtools.matchers import Contains
 
-from lp.services.webapp.login import isFreshLogin
+from lp.services.webapp.login import (
+    isFreshLogin,
+    OpenIDCallbackView,
+    )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.session import (
     get_cookie_domain,
     LaunchpadCookieClientIdManager,
     )
-from lp.testing.layers import FunctionalLayer
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class GetCookieDomainTestCase(TestCase):
@@ -59,11 +66,24 @@ class TestLaunchpadCookieClientIdManager(TestCase):
             Contains('; httponly;'))
 
 
-class TestSessionRelatedFunctions(TestCase):
+class TestSessionRelatedFunctions(TestCaseWithFactory):
 
-    layer = FunctionalLayer
+    layer = DatabaseFunctionalLayer
+
+    def setupLoggedInRequest(self, user, request):
+        """Test helper to login a user for a request."""
+        with person_logged_in(user):
+            view = OpenIDCallbackView(user, request)
+            view.login(user)
 
     def test_isFreshLogin_returns_false_for_anonymous(self):
-        """isFreshLogin should return Falde for anonymous views."""
+        """isFreshLogin should return False for anonymous views."""
         request = LaunchpadTestRequest()
         self.assertFalse(isFreshLogin(request))
+
+    def test_isFreshLogin_returns_true(self):
+        """isFreshLogin should return True with a fresh logged in user."""
+        user = self.factory.makePerson()
+        request = LaunchpadTestRequest()
+        self.setupLoggedInRequest(user, request)
+        self.assertTrue(isFreshLogin(request))
