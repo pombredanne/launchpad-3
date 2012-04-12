@@ -337,13 +337,13 @@ class OpenIDCallbackView(OpenIDLogin):
         finally:
             timeline_action.finish()
 
-    def login(self, person):
+    def login(self, person, when=None):
         loginsource = getUtility(IPlacelessLoginSource)
         # We don't have a logged in principal, so we must remove the security
         # proxy of the account's preferred email.
         email = removeSecurityProxy(person.preferredemail).email
         logInPrincipal(
-            self.request, loginsource.getPrincipalByLogin(email), email)
+            self.request, loginsource.getPrincipalByLogin(email), email, when)
 
     @cachedproperty
     def sreg_response(self):
@@ -485,7 +485,7 @@ def isFreshLogin(request):
     return False
 
 
-def logInPrincipal(request, principal, email):
+def logInPrincipal(request, principal, email, when=None):
     """Log the principal in. Password validation must be done in callsites."""
     # Force a fresh session, per Bug #828638. Any changes to any
     # existing session made this request will be lost, but that should
@@ -498,8 +498,10 @@ def logInPrincipal(request, principal, email):
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
+    if when is None:
+        when = datetime.utcnow()
     authdata['accountid'] = principal.id
-    authdata['logintime'] = datetime.utcnow()
+    authdata['logintime'] = when
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
 

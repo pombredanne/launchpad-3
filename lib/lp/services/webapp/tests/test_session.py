@@ -1,6 +1,8 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import datetime
+
 from testtools import TestCase
 from testtools.matchers import Contains
 
@@ -70,11 +72,11 @@ class TestSessionRelatedFunctions(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setupLoggedInRequest(self, user, request):
+    def setupLoggedInRequest(self, user, request, when=None):
         """Test helper to login a user for a request."""
         with person_logged_in(user):
             view = OpenIDCallbackView(user, request)
-            view.login(user)
+            view.login(user, when)
 
     def test_isFreshLogin_returns_false_for_anonymous(self):
         """isFreshLogin should return False for anonymous views."""
@@ -87,3 +89,11 @@ class TestSessionRelatedFunctions(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         self.setupLoggedInRequest(user, request)
         self.assertTrue(isFreshLogin(request))
+
+    def test_isFreshLogin_returns_false(self):
+        """isFreshLogin should be False for users logged in over 2 minutes."""
+        user = self.factory.makePerson()
+        request = LaunchpadTestRequest()
+        when = datetime.datetime.utcnow() - datetime.timedelta(seconds=180)
+        self.setupLoggedInRequest(user, request, when)
+        self.assertFalse(isFreshLogin(request))
