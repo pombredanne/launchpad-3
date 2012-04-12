@@ -484,7 +484,7 @@ def _build_query(params):
             ProductSeriesSub,
             LeftJoin(
                 ProductSeriesSub,
-                BugTask.productseriesID == ProductSub.productseriesID)))
+                BugTask.productseriesID == ProductSeriesSub.productseriesID)))
         ProjectSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProjectSub,
