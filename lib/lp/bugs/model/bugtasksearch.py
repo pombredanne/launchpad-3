@@ -1175,34 +1175,20 @@ def _build_pending_bugwatch_elsewhere_clause(params):
 
 def _build_no_upstream_bugtask_clause(params):
     """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask."""
+    OtherBugTask = ClassAlias(BugTask)
     if params.upstream_target is None:
-        # Find all bugs that has no product bugtask. We limit the
-        # SELECT by matching against BugTask.bug to make the query
-        # faster.
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.product IS NOT NULL)
-        """
+        target = OtherBugTask.productID != None
     elif IProduct.providedBy(params.upstream_target):
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.product=%s)
-        """ % sqlvalues(params.upstream_target.id)
+        target = OtherBugTask.productID == params.upstream_target.id
     elif IDistribution.providedBy(params.upstream_target):
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.distribution=%s)
-        """ % sqlvalues(params.upstream_target.id)
+        target = OtherBugTask.distributionID == params.upstream_target.id
     else:
         raise AssertionError(
             'params.upstream_target must be a Distribution or '
             'a Product')
+    return Not(Exists(Select(
+        1, tables=[OtherBugTask],
+        where=And(OtherBugTask.bugID == BugTask.bugID, target))))
 
 
 def _build_open_or_resolved_upstream_clause(params,
@@ -1282,7 +1268,7 @@ def _build_upstream_clause(params):
             SQL(_build_pending_bugwatch_elsewhere_clause(params)))
     if params.has_no_upstream_bugtask:
         upstream_clauses.append(
-            SQL(_build_no_upstream_bugtask_clause(params)))
+            _build_no_upstream_bugtask_clause(params))
     if params.resolved_upstream:
         upstream_clauses.append(SQL(_build_resolved_upstream_clause(params)))
     if params.open_upstream:
