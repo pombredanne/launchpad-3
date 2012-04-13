@@ -93,15 +93,15 @@ class TestDKIM(TestCaseWithFactory):
 
         self.addCleanup(restore)
 
-    def preload_dns_response(self, response_type=None):
+    def preload_dns_response(self, response_type='valid'):
         """Configure a fake DNS key response.
 
         :param response_type: Describes what response to give back as the
-        key.  The default, None, is to give the valid test signing key.
+        key.  The default, 'valid', is to give the valid test signing key.
         'broken' gives a key that's almost but not quite valid, 'garbage'
         gives one that doesn't look valid at all.
         """
-        if response_type is None:
+        if response_type == 'valid':
             key = sample_dns
         elif response_type == 'broken':
             key = sample_dns.replace(';', '')
