@@ -54,14 +54,15 @@ class PillarSharingDetailsMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def getPillarPerson(self, person=None, with_sharing=True):
-        if person is None:
-            person = self.factory.makePerson()
-        if with_sharing:
+    def _create_sharing(self, grantee, security=False):
+            if security:
+                owner = self.factory.makePerson()
+            else:
+                owner = self.pillar.owner
             if self.pillar_type == 'product':
                 self.bug = self.factory.makeBug(
                     product=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
                 self.branch = self.factory.makeBranch(
                     product=self.pillar,
@@ -71,24 +72,45 @@ class PillarSharingDetailsMixin:
                 self.branch = None
                 self.bug = self.factory.makeBug(
                     distribution=self.pillar,
-                    owner=self.pillar.owner,
+                    owner=owner,
                     private=True)
             artifact = self.factory.makeAccessArtifact(concrete=self.bug)
             policy = self.factory.makeAccessPolicy(pillar=self.pillar)
             self.factory.makeAccessPolicyArtifact(
                 artifact=artifact, policy=policy)
             self.factory.makeAccessArtifactGrant(
-                artifact=artifact, grantee=person, grantor=self.pillar.owner)
+                artifact=artifact, grantee=grantee, grantor=self.pillar.owner)
+
             if self.branch:
                 artifact = self.factory.makeAccessArtifact(
                     concrete=self.branch)
                 self.factory.makeAccessPolicyArtifact(
                     artifact=artifact, policy=policy)
                 self.factory.makeAccessArtifactGrant(
-                    artifact=artifact, grantee=person,
+                    artifact=artifact, grantee=grantee,
                     grantor=self.pillar.owner)
 
+    def getPillarPerson(self, person=None, with_sharing=True):
+        if person is None:
+            person = self.factory.makePerson()
+        if with_sharing:
+            self._create_sharing(person)
+
         return PillarPerson(self.pillar, person)
+
+    def test_view_filters_security_wisely(self):
+        # There are bugs in the sharingdetails view that not everyone with
+        # `launchpad.Driver` -- the permission level for the page -- should be
+        # able to see.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            pillarperson = self.getPillarPerson(with_sharing=False)
+            self._create_sharing(grantee=pillarperson.person, security=True)
+            view = create_initialized_view(pillarperson, '+index')
+            # The page loads
+            self.assertEqual(pillarperson.person.displayname, view.page_title)
+            # The bug, which is not shared with the owner, is not included.
+
+            self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
         # The traversed url in the app is pillar/+sharing/person
@@ -130,6 +152,7 @@ class PillarSharingDetailsMixin:
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
             self.assertEqual(pillarperson.person.displayname, view.page_title)
+            self.assertEqual(1, view.shared_bugs_count)
 
     def test_view_data_model(self):
         # Test that the json request cache contains the view data model.
@@ -150,6 +173,7 @@ class PillarSharingDetailsMixin:
                 'bug_id': self.bug.id,
                 'bug_summary': self.bug.title,
                 'bug_importance': bugtask.importance.title.lower(),
+                'information_type': self.bug.information_type.title,
                 'web_link': canonical_url(
                     bugtask, path_only_if_possible=True),
                 'self_link': absoluteURL(self.bug, request),
@@ -158,6 +182,7 @@ class PillarSharingDetailsMixin:
                 self.assertEqual({
                     'branch_id': self.branch.id,
                     'branch_name': self.branch.unique_name,
+                    'information_type': InformationType.USERDATA.title,
                     'web_link': canonical_url(
                         self.branch, path_only_if_possible=True),
                     'self_link': absoluteURL(self.branch, request),
@@ -267,8 +292,11 @@ class PillarSharingViewTestMixin:
             picker_config = simplejson.loads(view.json_sharing_picker_config)
             self.assertTrue('vocabulary_filters' in picker_config)
             self.assertEqual(
-                'Share with a user or team',
+                'Grant access to project artifacts',
                 picker_config['header'])
+            self.assertEqual(
+                'Search for user or exclusive team with whom to share',
+                picker_config['steptitle'])
             self.assertEqual(
                 'NewPillarSharee', picker_config['vocabulary'])
 

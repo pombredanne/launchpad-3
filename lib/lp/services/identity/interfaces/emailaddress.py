@@ -99,9 +99,9 @@ class IEmailAddress(IHasOwner):
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
     person = exported(
-        Reference(title=_('Person'), required=False, readonly=False,
-                  schema=Interface))
-    personID = Int(title=_('PersonID'), required=False, readonly=True)
+        Reference(title=_('Person'), required=True, readonly=False,
+        schema=Interface))
+    personID = Int(title=_('PersonID'), required=True, readonly=True)
 
     rdf_sha1 = TextLine(
         title=_("RDF-ready SHA-1 Hash"),

@@ -26,7 +26,6 @@ from zope.interface import (
     implements,
     Interface,
     )
-from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
@@ -44,13 +43,20 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.code.interfaces.branch import IBranch
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -259,6 +265,8 @@ class PillarSharingView(LaunchpadView):
     page_title = "Sharing"
     label = "Sharing information"
 
+    sharing_vocabulary_name = 'NewPillarSharee'
+
     related_features = (
         'disclosure.enhanced_sharing.enabled',
         'disclosure.enhanced_sharing.writable',
@@ -281,7 +289,7 @@ class PillarSharingView(LaunchpadView):
     def sharing_vocabulary(self):
         registry = getVocabularyRegistry()
         return registry.get(
-            IVocabulary, 'ValidPillarOwner')
+            self.context, self.sharing_vocabulary_name)
 
     @cachedproperty
     def sharing_vocabulary_filters(self):
@@ -290,9 +298,10 @@ class PillarSharingView(LaunchpadView):
     @property
     def sharing_picker_config(self):
         return dict(
-            vocabulary='NewPillarSharee',
+            vocabulary=self.sharing_vocabulary_name,
             vocabulary_filters=self.sharing_vocabulary_filters,
-            header='Share with a user or team')
+            header=self.sharing_vocabulary.displayname,
+            steptitle=self.sharing_vocabulary.step_title)
 
     @property
     def json_sharing_picker_config(self):
@@ -400,52 +409,70 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['sharing_write_enabled'] = (write_flag_enabled
             and check_permission('launchpad.Edit', self.pillar))
 
+    def _getSafeBugs(self, bugs):
+        """Uses the bugsearch tools to safely get the list of bugs the user is
+        allowed to see."""
+        if bugs == set([]):
+            return []
+        params = []
+        for b in bugs:
+            param = BugTaskSearchParams(user=self.user, bug=b)
+            if IProduct.providedBy(self.pillar):
+                param.setProduct(self.pillar)
+            elif IDistribution.providedBy(self.pillar):
+                param.setDistribution(self.pillar)
+            params.append(param)
+
+        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:])
+        return list(safe_bugs)
+
     def _loadSharedArtifacts(self):
-        bugs = []
-        branches = []
+        # As a concrete can by linked via more than one policy, we use sets to
+        # filter out dupes.
+        bugs = set()
+        branches = set()
         for artifact in self.sharing_service.getSharedArtifacts(
                             self.pillar, self.person):
             concrete = artifact.concrete_artifact
             if IBug.providedBy(concrete):
-                bugs.append(concrete)
+                bugs.add(concrete)
             elif IBranch.providedBy(concrete):
-                branches.append(concrete)
+                branches.add(concrete)
 
-        self.bugs = bugs
+        # For security reasons, the bugs have to be refetched by ID through
+        # the normal querying mechanism. This prevents bugs the user shouldn't
+        # be able to see from being displayed.
+        self.bugs = self._getSafeBugs(bugs)
         self.branches = branches
-        self.shared_bugs_count = len(bugs)
-        self.shared_branches_count = len(branches)
+        self.shared_bugs_count = len(self.bugs)
+        self.shared_branches_count = len(self.branches)
 
     def _build_branch_template_data(self, branches, request):
         branch_data = []
         for branch in branches:
+            # At the moment, all branches displayed on the sharing details
+            # page are private.
+            information_type = InformationType.USERDATA.title
             branch_data.append(dict(
                 self_link=absoluteURL(branch, request),
                 web_link=canonical_url(branch, path_only_if_possible=True),
                 branch_name=branch.unique_name,
-                branch_id=branch.id))
+                branch_id=branch.id,
+                information_type=information_type))
         return branch_data
 
-    def _build_bug_template_data(self, bugs, request):
+    def _build_bug_template_data(self, bugtasks, request):
         bug_data = []
-        for bug in bugs:
-            [bugtask] = [task for task in bug.bugtasks if
-                            task.target == self.pillar]
-            if bugtask is not None:
-                web_link = canonical_url(bugtask, path_only_if_possible=True)
-                self_link = absoluteURL(bug, request)
-                importance = bugtask.importance.title.lower()
-            else:
-                # This shouldn't ever happen, but if it does there's no reason
-                # to crash.
-                web_link = canonical_url(bug, path_only_if_possible=True)
-                self_link = absoluteURL(bug, request)
-                importance = bug.default_bugtask.importance.title.lower()
-
+        for bugtask in bugtasks:
+            web_link = canonical_url(bugtask, path_only_if_possible=True)
+            self_link = absoluteURL(bugtask.bug, request)
+            importance = bugtask.importance.title.lower()
+            information_type = bugtask.bug.information_type.title
             bug_data.append(dict(
                 self_link=self_link,
                 web_link=web_link,
-                bug_summary=bug.title,
-                bug_id=bug.id,
-                bug_importance=importance))
+                bug_summary=bugtask.bug.title,
+                bug_id=bugtask.bug.id,
+                bug_importance=importance,
+                information_type=information_type))
         return bug_data

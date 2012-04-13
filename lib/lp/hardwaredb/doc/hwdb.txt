@@ -410,7 +410,7 @@ the field `owner` is updated.
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
     >>> transaction.commit()
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
     >>> HWSubmissionEmailLinker(log=DevNullLogger()).run()

@@ -182,7 +182,7 @@ perform the task.
     >>> login(ANONYMOUS)
     >>> product = getUtility(IProductSet).getByName('firefox')
     >>> old_branch = product.development_focus.branch
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = None
     >>> logout()
     >>> def print_links(browser):
@@ -235,7 +235,7 @@ And a regular user can only register and import branches.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import a branch' button is still shown.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.development_focus.branch = old_branch
     >>> logout()
     >>> browser.open('http://code.launchpad.dev/firefox')

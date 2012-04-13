@@ -14,7 +14,7 @@ branches that have been created in error.
     ...     product=product, branch_type=BranchType.HOSTED)
     >>> productseries = factory.makeProductSeries(
     ...     product=product, branch=branch)
-    >>> login_person(alice)
+    >>> ignored = login_person(alice)
     >>> product.development_focus = productseries
     >>> delete_branch = factory.makeProductBranch(
     ...     name='to-delete', owner=alice,
@@ -56,7 +56,7 @@ the branch has been deleted.
 If the branch is junk, then the user is taken back to the code listing for
 the deleted branch's owner.
 
-    >>> login_person(alice)
+    >>> ignored = login_person(alice)
     >>> delete_branch = factory.makePersonalBranch(
     ...     name='to-delete', owner=alice)
     >>> logout()

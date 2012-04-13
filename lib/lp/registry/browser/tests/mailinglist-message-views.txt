@@ -26,7 +26,7 @@ the mailing list administrator.
     >>> held_message = mlist.holdMessage(message)
     >>> transaction.commit()
 
-    >>> login_person(team.teamowner)
+    >>> ignored = login_person(team.teamowner)
     >>> view = create_initialized_view(
     ...     held_message, name='+moderation', principal=team.teamowner)
     >>> print view.widget_name

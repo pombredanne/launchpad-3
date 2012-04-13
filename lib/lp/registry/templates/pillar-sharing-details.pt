@@ -43,16 +43,20 @@
       <col width="auto"/>
       <col width="auto"/>
       <col width="auto"/>
+      <col width="auto"/>
       <thead>
         <tr>
           <th colspan="4" width="">
-            <a href="#" class="sortheader">Bug Report or Branch</a>
+            <a href="#" class="sortheader">Subscribed Bug Report or Branch</a>
+          </th>
+          <th>
+            Information Type
           </th>
         </tr>
       </thead>
       <tbody id="sharing-table-body">
           <tr>
-              <td colspan="4">
+              <td colspan="5">
                   There are no shared bugs or branches.
               </td>
           </tr>

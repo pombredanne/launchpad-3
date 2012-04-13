@@ -16,7 +16,7 @@ admins and members of that team can see the team.
     ...     visibility=PersonVisibility.PRIVATE)
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> ignored = priv_team.addMember(cprov, reviewer=owner)
     >>> logout()
 
