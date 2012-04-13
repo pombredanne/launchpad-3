@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test DKIM-signed messages"""
@@ -12,11 +12,17 @@ import dkim
 import dns.resolver
 
 from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    )
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     )
 from lp.services.mail import incoming
-from lp.services.mail.incoming import authenticateEmail
+from lp.services.mail.incoming import (
+    InactiveAccount,
+    authenticateEmail,
+    )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
@@ -364,3 +370,28 @@ Why isn't this fixed yet?""")
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertDkimLogContains(
             'valid dkim signature, but not from an active email address')
+
+    def test_dkim_signed_from_person_without_account(self):
+        """You can have a person with no account.
+
+        We don't accept mail from them.
+
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        from_address = "dkimtest@example.com"
+        # This is not quite the same as having account=None, but it seems as
+        # close as the factory lets us get? -- mbp 2012-04-13
+        person = self.factory.makePerson(
+            email=from_address,
+            name='dkimtest',
+            displayname='DKIM Test',
+            account_status=AccountStatus.NOACCOUNT)
+        self.preload_dns_response()
+        message_text = self.makeMessageText(
+            sender=from_address,
+            from_address=from_address)
+        signed_message = self.fake_signing(message_text)
+        self.assertRaises(
+            InactiveAccount,
+            authenticateEmail,
+            signed_message_from_string(signed_message))
