@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import os
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -118,7 +117,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
-    celeryd,
+    block_on_job,
     monitor_celery,
     )
 from lp.services.osutils import override_environ
@@ -141,6 +140,8 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
+    CeleryBranchWriteJobLayer,
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -153,8 +154,9 @@ from lp.translations.model.translationtemplatesbuildjob import (
 
 def create_knit(test_case):
     db_branch, tree = test_case.create_branch_and_tree(format='knit')
-    db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-    db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+    with person_logged_in(db_branch.owner):
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
     return db_branch, tree
 
 
@@ -307,61 +309,74 @@ class TestBranchChanged(TestCaseWithFactory):
 
 class TestBranchJobViaCelery(TestCaseWithFactory):
 
-    layer = ZopelessAppServerLayer
+    layer = CeleryJobLayer
 
     def test_branchChanged_via_celery(self):
         """Running a job via Celery succeeds and emits expected output."""
         # Delay importing anything that uses Celery until RabbitMQLayer is
         # running, so that config.rabbitmq.host is defined when
         # lp.services.job.celeryconfig is loaded.
-        from celery.exceptions import TimeoutError
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'BranchScanJob'}))
-        with celeryd('job') as proc:
-            self.useBzrBranches()
-            db_branch, bzr_tree = self.create_branch_and_tree()
-            bzr_tree.commit(
-                'First commit', rev_id='rev1', committer='me@example.org')
-            db_branch.branchChanged(None, 'rev1', None, None, None)
-            with monitor_celery() as responses:
-                transaction.commit()
-                try:
-                    responses[-1].wait(30)
-                except TimeoutError:
-                    pass
-        self.assertIn(
-            'Updating branch scanner status: 1 revs', proc.stderr.read())
-        self.assertEqual(db_branch.revision_count, 1)
-
-    def test_branchChanged_via_celery_no_enabled(self):
-        """Running a job via Celery succeeds and emits expected output."""
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
             'First commit', rev_id='rev1', committer='me@example.org')
-        db_branch.branchChanged(None, 'rev1', None, None, None)
+        with person_logged_in(db_branch.owner):
+            db_branch.branchChanged(None, 'rev1', None, None, None)
+        with block_on_job():
+            transaction.commit()
+        self.assertEqual(db_branch.revision_count, 1)
+
+    def test_branchChanged_via_celery_no_enabled(self):
+        """With no feature flag, no task is created."""
+        self.useBzrBranches()
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit(
+            'First commit', rev_id='rev1', committer='me@example.org')
+        with person_logged_in(db_branch.owner):
+            db_branch.branchChanged(None, 'rev1', None, None, None)
         with monitor_celery() as responses:
             transaction.commit()
             self.assertEqual([], responses)
 
+
+class TestBranchWriteJobViaCelery(TestCaseWithFactory):
+
+    layer = CeleryBranchWriteJobLayer
+
     def test_destroySelf_via_celery(self):
         """Calling destroySelf causes Celery to delete the branch."""
-        from celery.exceptions import TimeoutError
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'ReclaimBranchSpaceJob'}))
-        with celeryd('branch_write_job'):
-            self.useBzrBranches()
-            db_branch, tree = self.create_branch_and_tree()
-            branch_path = get_real_branch_path(db_branch.id)
-            self.assertThat(branch_path, PathExists())
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        branch_path = get_real_branch_path(db_branch.id)
+        self.assertThat(branch_path, PathExists())
+        with person_logged_in(db_branch.owner):
             db_branch.destroySelf()
-            with monitor_celery() as responses:
-                transaction.commit()
-                try:
-                    responses[-1].wait(30)
-                except TimeoutError:
-                    pass
+        with block_on_job():
+            transaction.commit()
         self.assertThat(branch_path, Not(PathExists()))
+
+    def test_requestUpgradeUsesCelery(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchUpgradeJob'}))
+        self.useBzrBranches()
+        db_branch, tree = create_knit(self)
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        with person_logged_in(db_branch.owner):
+            db_branch.requestUpgrade(db_branch.owner)
+        with block_on_job():
+            transaction.commit()
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+        self.assertFalse(db_branch.needs_upgrading)
 
 
 class TestBranchRevisionMethods(TestCaseWithFactory):
@@ -815,27 +830,6 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertEqual(
             jobs,
             [job, ])
-
-    def test_requestUpgradeUsesCelery(self):
-        self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'BranchUpgradeJob'}))
-        cwd = os.getcwd()
-        self.useBzrBranches()
-        db_branch, tree = create_knit(self)
-        self.assertEqual(
-            tree.branch.repository._format.get_format_string(),
-            'Bazaar-NG Knit Repository Format 1')
-
-        db_branch.requestUpgrade(db_branch.owner)
-        with monitor_celery() as responses:
-            transaction.commit()
-            with celeryd('branch_write_job', cwd):
-                responses[-1].wait(30)
-        new_branch = Branch.open(tree.branch.base)
-        self.assertEqual(
-            new_branch.repository._format.get_format_string(),
-            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
-        self.assertFalse(db_branch.needs_upgrading)
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an

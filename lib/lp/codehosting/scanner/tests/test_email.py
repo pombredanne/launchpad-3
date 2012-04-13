@@ -30,15 +30,14 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.job.tests import (
-    celeryd,
-    monitor_celery,
+    block_on_job,
     pop_remote_notifications,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
+    CeleryJobLayer,
     LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
     )
 
 
@@ -162,12 +161,11 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
 class TestViaCelery(TestCaseWithFactory):
 
-    layer = ZopelessAppServerLayer
+    layer = CeleryJobLayer
 
     def prepare(self, job_name):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': job_name}))
-        self.useContext(celeryd('job'))
         self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         add_subscriber(db_branch)
@@ -179,9 +177,8 @@ class TestViaCelery(TestCaseWithFactory):
     def test_empty_branch(self):
         """RevisionMailJob for empty branches runs via Celery."""
         db_branch, tree = self.prepare('RevisionMailJob')
-        with monitor_celery() as responses:
+        with block_on_job():
             BzrSync(db_branch).syncBranchAndClose(tree.branch)
-        responses[-1].wait(30)
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_uncommit_branch(self):
@@ -189,13 +186,12 @@ class TestViaCelery(TestCaseWithFactory):
         db_branch, tree = self.prepare('RevisionMailJob')
         tree.commit('message')
         bzr_sync = BzrSync(db_branch)
-        with monitor_celery() as responses:
+        with block_on_job():
             bzr_sync.syncBranchAndClose(tree.branch)
-            responses[0].wait(30)
-            pop_remote_notifications()
-            uncommit(tree.branch)
+        pop_remote_notifications()
+        uncommit(tree.branch)
+        with block_on_job():
             bzr_sync.syncBranchAndClose(tree.branch)
-        responses[1].wait(30)
         self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_revisions_added(self):
@@ -206,10 +202,9 @@ class TestViaCelery(TestCaseWithFactory):
         bzr_sync.syncBranchAndClose(tree.branch)
         pop_remote_notifications()
         tree.commit('message2')
-        with monitor_celery() as responses:
+        with block_on_job():
             bzr_sync.syncBranchAndClose(tree.branch)
-            responses[-1].wait(30)
-            self.assertEqual(1, len(pop_remote_notifications()))
+        self.assertEqual(1, len(pop_remote_notifications()))
 
 
 class TestScanBranches(TestCaseWithFactory):
