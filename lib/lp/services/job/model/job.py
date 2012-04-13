@@ -260,14 +260,22 @@ class UniversalJobSource:
     @staticmethod
     def getDerived(job_id):
         """Return the derived branch job associated with the job id."""
+        # Avoid circular imports.
         from lp.code.model.branchjob import (
             BranchJob,
             )
-        store = IStore(BranchJob)
-        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        if branch_job is None:
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob,
+            )
+        store = IStore(Job)
+        for cls in [BranchJob, BranchMergeProposalJob]:
+            base_job = store.find(cls, cls.job == job_id).one()
+            if base_job is not None:
+                break
+        if base_job is None:
             raise ValueError('No BranchJob with job=%s.' % job_id)
-        return branch_job.makeDerived(), store
+
+        return base_job.makeDerived(), store
 
     @classmethod
     def switchDBUser(cls, job_id):

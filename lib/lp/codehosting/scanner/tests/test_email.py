@@ -32,6 +32,7 @@ from lp.services.mail import stub
 from lp.services.job.tests import (
     celeryd,
     monitor_celery,
+    pop_remote_notifications,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -163,11 +164,6 @@ class TestViaCelery(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
-    @staticmethod
-    def pop_notifications():
-        from lp.services.job.tests.celery_helpers import pop_notifications
-        return pop_notifications.delay().get(30)
-
     def prepare(self, job_name):
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': job_name}))
@@ -186,7 +182,7 @@ class TestViaCelery(TestCaseWithFactory):
         with monitor_celery() as responses:
             BzrSync(db_branch).syncBranchAndClose(tree.branch)
         responses[-1].wait(30)
-        self.assertEqual(1, len(self.pop_notifications()))
+        self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_uncommit_branch(self):
         """RevisionMailJob for removed revisions runs via Celery."""
@@ -196,11 +192,11 @@ class TestViaCelery(TestCaseWithFactory):
         with monitor_celery() as responses:
             bzr_sync.syncBranchAndClose(tree.branch)
             responses[0].wait(30)
-            self.pop_notifications()
+            pop_remote_notifications()
             uncommit(tree.branch)
             bzr_sync.syncBranchAndClose(tree.branch)
         responses[1].wait(30)
-        self.assertEqual(1, len(self.pop_notifications()))
+        self.assertEqual(1, len(pop_remote_notifications()))
 
     def test_revisions_added(self):
         """RevisionMailJob for removed revisions runs via Celery."""
@@ -208,12 +204,12 @@ class TestViaCelery(TestCaseWithFactory):
         tree.commit('message')
         bzr_sync = BzrSync(db_branch)
         bzr_sync.syncBranchAndClose(tree.branch)
-        self.pop_notifications()
+        pop_remote_notifications()
         tree.commit('message2')
         with monitor_celery() as responses:
             bzr_sync.syncBranchAndClose(tree.branch)
             responses[-1].wait(30)
-            self.assertEqual(1, len(self.pop_notifications()))
+            self.assertEqual(1, len(pop_remote_notifications()))
 
 
 class TestScanBranches(TestCaseWithFactory):

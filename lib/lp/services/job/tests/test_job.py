@@ -11,6 +11,7 @@ from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
 import transaction
 
+from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
@@ -20,6 +21,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import (
     InvalidTransition,
     Job,
+    UniversalJobSource,
     )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -449,3 +451,14 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
+
+
+class TestUniversalJobSource(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getDerived_with_merge_proposal_job(self):
+        comment = self.factory.makeCodeReviewComment()
+        job = CodeReviewCommentEmailJob.create(comment)
+        newjob = UniversalJobSource.getDerived(job.job_id)[0]
+        self.assertEqual(job, newjob)

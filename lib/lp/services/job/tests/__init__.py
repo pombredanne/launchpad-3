@@ -5,7 +5,8 @@ __metaclass__ = type
 
 __all__ = [
     'celeryd',
-    'monitor_celery'
+    'monitor_celery',
+    'pop_remote_notifications',
     ]
 
 
@@ -49,3 +50,9 @@ def monitor_celery():
         yield responses
     finally:
         BaseRunnableJob.celery_responses = old_responses
+
+
+def pop_remote_notifications():
+    """Pop the notifications from a celeryd worker."""
+    from lp.services.job.tests.celery_helpers import pop_notifications
+    return pop_notifications.delay().get(30)
