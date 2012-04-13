@@ -27,6 +27,7 @@ __all__ = [
     ]
 
 import httplib
+import re
 
 from lazr.restful import (
     EntryResource,
@@ -90,6 +91,9 @@ from lp.services.webapp.vhosts import allvhosts
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
 error_status(httplib.NOT_FOUND)(NotFound)
+
+# Used to match zope namespaces eg ++model++.
+RESERVED_NAMESPACE = re.compile('\\+\\+.*\\+\\+')
 
 
 class DecoratorAdvisor:
@@ -906,19 +910,25 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
+        # If the next path step is a zope namespace eg ++model++, then we
+        # actually do not want to process the path steps as a stepthrough
+        # traversal so we just ignore it here.
         namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
                 if stepstogo:
-                    nextstep = stepstogo.consume()
-                    handler = namespace_traversals[name]
-                    try:
-                        nextobj = handler(self, nextstep)
-                    except NotFoundError:
-                        nextobj = None
-                    return self._handle_next_object(nextobj, request,
-                        nextstep)
+                    # First peek at the nextstep to see if we should ignore it.
+                    nextstep = stepstogo.peek()
+                    if not RESERVED_NAMESPACE.match(nextstep):
+                        nextstep = stepstogo.consume()
+                        handler = namespace_traversals[name]
+                        try:
+                            nextobj = handler(self, nextstep)
+                        except NotFoundError:
+                            nextobj = None
+                        return self._handle_next_object(nextobj, request,
+                            nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.
