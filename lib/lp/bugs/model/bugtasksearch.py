@@ -20,10 +20,12 @@ from storm.expr import (
     Desc,
     Exists,
     In,
+    Intersect,
     Join,
     LeftJoin,
     Not,
     Or,
+    Row,
     Select,
     SQL,
     )
@@ -605,21 +607,28 @@ def _build_query(params):
     # is not for subscription to notifications.
     # See bug #191809
     if params.bug_supervisor:
-        bug_supervisor_clause = """(
-            BugTask.product IN (
-                SELECT id FROM Product
-                WHERE Product.bug_supervisor = %(bug_supervisor)s)
-            OR
-            ((BugTask.distribution, Bugtask.sourcepackagename) IN
-                (SELECT distribution,  sourcepackagename FROM
-                    StructuralSubscription
-                    WHERE subscriber = %(bug_supervisor)s))
-            OR
-            BugTask.distribution IN (
-                SELECT id from Distribution WHERE
-                Distribution.bug_supervisor = %(bug_supervisor)s)
-            )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
-        extra_clauses.append(bug_supervisor_clause)
+        extra_clauses.append(Or(
+            In(
+                BugTask.productID,
+                Select(
+                    Product.id, tables=[Product],
+                    where=Product.bug_supervisor == params.bug_supervisor)),
+            In(
+                BugTask.distributionID,
+                Select(
+                    Distribution.id, tables=[Distribution],
+                    where=(
+                        Distribution.bug_supervisor ==
+                            params.bug_supervisor))),
+            In(
+                Row(BugTask.distributionID, BugTask.sourcepackagenameID),
+                Select(
+                    ((StructuralSubscription.distributionID,
+                     StructuralSubscription.sourcepackagenameID),),
+                    tables=[StructuralSubscription],
+                    where=(
+                        StructuralSubscription.subscriber ==
+                            params.bug_supervisor)))))
 
     if params.bug_reporter:
         extra_clauses.append(Bug.owner == params.bug_reporter)
@@ -671,7 +680,7 @@ def _build_query(params):
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
-        extra_clauses.append(clause)
+        extra_clauses.append(SQL(clause))
         decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
@@ -706,12 +715,7 @@ def _build_query(params):
     if params.created_since:
         extra_clauses.append(BugTask.datecreated > params.created_since)
 
-    storm_clauses = []
-    for clause in extra_clauses:
-        if isinstance(clause, str):
-            clause = SQL(clause)
-        storm_clauses.append(clause)
-    query = And(storm_clauses)
+    query = And(extra_clauses)
 
     if not decorators:
         decorator = lambda x: x
@@ -1219,47 +1223,36 @@ def _build_upstream_clause(params):
 
 # Tag restrictions
 
-def _build_tag_set_query(joiner, tags):
-    """Return an SQL snippet to find whether a bug matches the given tags.
+def _build_tag_set_query(clauses):
+    subselects = [
+        Select(1, tables=[BugTag], where=And(BugTag.bugID == Bug.id, clause))
+        for clause in clauses]
+    if len(subselects) == 1:
+        return Exists(subselects[0])
+    else:
+        return Exists(Intersect(*subselects))
 
-    The tags are sorted so that testing the generated queries is
-    easier and more reliable.
 
-    This SQL is designed to be a sub-query where the parent SQL defines
-    Bug.id. It evaluates to TRUE or FALSE, indicating whether the bug
-    with Bug.id matches against the tags passed.
+def _build_tag_set_query_all(tags):
+    """Return a Storm expression for bugs matching all given tags.
 
-    Returns None if no tags are passed.
-
-    :param joiner: The SQL set term used to join the individual tag
-        clauses, typically "INTERSECT" or "UNION".
-    :param tags: An iterable of valid tag names (not prefixed minus
-        signs, not wildcards).
+    :param tags: An iterable of valid tags without - or + and not wildcards.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = list(tags)
-    if tags == []:
+    if not tags:
         return None
-
-    joiner = " %s " % joiner
-    return "EXISTS (%s)" % joiner.join(
-        "SELECT TRUE FROM BugTag WHERE " +
-            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
-        for tag in sorted(tags))
+    return _build_tag_set_query([BugTag.tag == tag for tag in sorted(tags)])
 
 
 def _build_tag_set_query_any(tags):
-    """Return a query fragment for bugs matching any tag.
+    """Return a Storm expression for bugs matching any given tag.
 
     :param tags: An iterable of valid tags without - or + and not wildcards.
-    :return: A string SQL query fragment or None if no tags were provided.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = sorted(tags)
-    if tags == []:
+    if not tags:
         return None
-    return "EXISTS (%s)" % (
-        "SELECT TRUE FROM BugTag"
-        " WHERE BugTag.bug = Bug.id"
-        " AND BugTag.tag IN %s") % sqlvalues(tags)
+    return _build_tag_set_query([BugTag.tag.is_in(sorted(tags))])
 
 
 def _build_tag_search_clause(tags_spec):
@@ -1283,46 +1276,45 @@ def _build_tag_search_clause(tags_spec):
     if find_all:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'AND'
+        combine_with = And
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = _build_tag_set_query("INTERSECT", include)
+        include_clause = _build_tag_set_query_all(include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
         exclude_clause = _build_tag_set_query_any(exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'OR'
+        combine_with = Or
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
         include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = _build_tag_set_query("INTERSECT", exclude)
+        exclude_clause = _build_tag_set_query_all(exclude)
 
+    universal_clause = (
+        Exists(Select(1, tables=[BugTag], where=BugTag.bugID == Bug.id)))
     # Search for the *presence* of any tag.
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
         if include_clause == None or not find_all:
-            include_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            include_clause = universal_clause
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
         if exclude_clause == None or find_all:
-            exclude_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            exclude_clause = universal_clause
 
     # Combine the include and exclude sets.
     if include_clause != None and exclude_clause != None:
-        return "(%s %s NOT %s)" % (
-            include_clause, combine_with, exclude_clause)
+        return combine_with(include_clause, Not(exclude_clause))
     elif include_clause != None:
-        return "%s" % include_clause
+        return include_clause
     elif exclude_clause != None:
-        return "NOT %s" % exclude_clause
+        return Not(exclude_clause)
     else:
         # This means that there were no tags (wildcard or specific) to
         # search for (which is allowed, even if it's a bit weird).
