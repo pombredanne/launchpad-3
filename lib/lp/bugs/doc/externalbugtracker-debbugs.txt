@@ -120,12 +120,13 @@ option, is disabled here and will be tested later.
 
     >>> transaction.commit()
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
-    INFO:...:Updating 5 watches for 5 bugs on http://...
+    INFO Updating 5 watches for 5 bugs on http://...
 
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:

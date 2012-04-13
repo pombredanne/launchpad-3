@@ -189,10 +189,12 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
-        # Commit the transaction to update the DB time.
         if manage_transaction:
+            if abort_transaction:
+                transaction.abort()
+            # Commit the transaction to update the DB time.
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
