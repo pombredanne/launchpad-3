@@ -557,14 +557,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestBugPrivateAndSecurityRelatedUpdatesMixin, self).setUp()
-        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
-        feature_flag = {f_flag_str: 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-
     def test_setPrivate_subscribes_person_who_makes_bug_private(self):
         # When setPrivate(True) is called on a bug, the person who is
         # marking the bug private is subscribed to the bug.
