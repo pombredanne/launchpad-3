@@ -46,7 +46,6 @@ p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANmBe10IgY+u7h3enWTukkqtUD5PR52T\
 b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ=="""
 
 
-
 class TestDKIM(TestCaseWithFactory):
     """Messages can be strongly authenticated by DKIM."""
 
@@ -123,7 +122,6 @@ Why isn't this fixed yet?""")
         if sender is not None:
             text = "Sender: " + sender + "\n" + text
         return text
-
 
     def test_dkim_broken_pubkey(self):
         """Handle a subtly-broken pubkey like qq.com, see bug 881237.
@@ -308,10 +306,10 @@ Why isn't this fixed yet?""")
 
     def test_dkim_signed_but_from_unknown_address(self):
         """Sent from trusted dkim address, but only the From address is known.
-        
+
         See https://bugs.launchpad.net/launchpad/+bug/925597
         """
-        person = self.factory.makePerson(
+        self.factory.makePerson(
             email='dkimtest@example.com',
             name='dkimtest',
             displayname='DKIM Test')

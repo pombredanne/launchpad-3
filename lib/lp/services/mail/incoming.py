@@ -104,7 +104,7 @@ def _isDkimDomainTrusted(domain):
 
 
 def _verifyDkimOrigin(signed_message):
-    """Find a From or Sender address for which there's a DKIM signature, if any.
+    """Find a From or Sender address for which there's a DKIM signature.
 
     :returns: A string email address for the trusted sender, if there is one,
     otherwise None.
@@ -215,7 +215,6 @@ def _getPrincipalByDkim(mail):
         return None, None
     else:
         return (dkim_principal, dkim_trusted_address)
-
 
 
 def authenticateEmail(mail,
