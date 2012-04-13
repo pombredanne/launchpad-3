@@ -118,7 +118,7 @@ class TestDatabaseErrorViews(TestCase):
         # We keep seeing the correct exception on subsequent requests.
         self.assertEqual(503, self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
-        #bouncer.start()
+        bouncer.start()
         # bouncer.start() can sometimes return before the service is actually
         # available for use.  To be defensive, let's retry a few times.  See
         # bug 974617.
