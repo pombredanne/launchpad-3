@@ -8,6 +8,7 @@ __all__ = [
     'CountDistinct',
     'Greatest',
     'NullCount',
+    'Row',
     ]
 
 from storm.expr import (
@@ -71,3 +72,8 @@ def compile_array(compile, array, state):
     args = compile(array.args, state)
     state.pop()
     return "ARRAY[%s]" % args
+
+
+class Row(NamedFunc):
+    __slots__ = ()
+    name = "ROW"

@@ -25,6 +25,7 @@ from storm.expr import (
     LeftJoin,
     Not,
     Or,
+    Row,
     Select,
     SQL,
     )
@@ -606,21 +607,28 @@ def _build_query(params):
     # is not for subscription to notifications.
     # See bug #191809
     if params.bug_supervisor:
-        bug_supervisor_clause = """(
-            BugTask.product IN (
-                SELECT id FROM Product
-                WHERE Product.bug_supervisor = %(bug_supervisor)s)
-            OR
-            ((BugTask.distribution, Bugtask.sourcepackagename) IN
-                (SELECT distribution,  sourcepackagename FROM
-                    StructuralSubscription
-                    WHERE subscriber = %(bug_supervisor)s))
-            OR
-            BugTask.distribution IN (
-                SELECT id from Distribution WHERE
-                Distribution.bug_supervisor = %(bug_supervisor)s)
-            )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
-        extra_clauses.append(bug_supervisor_clause)
+        extra_clauses.append(Or(
+            In(
+                BugTask.productID,
+                Select(
+                    Product.id, tables=[Product],
+                    where=Product.bug_supervisor == params.bug_supervisor)),
+            In(
+                BugTask.distributionID,
+                Select(
+                    Distribution.id, tables=[Distribution],
+                    where=(
+                        Distribution.bug_supervisor ==
+                            params.bug_supervisor))),
+            In(
+                Row(BugTask.distributionID, BugTask.sourcepackagenameID),
+                Select(
+                    ((StructuralSubscription.distributionID,
+                     StructuralSubscription.sourcepackagenameID),),
+                    tables=[StructuralSubscription],
+                    where=(
+                        StructuralSubscription.subscriber ==
+                            params.bug_supervisor)))))
 
     if params.bug_reporter:
         extra_clauses.append(Bug.owner == params.bug_reporter)
