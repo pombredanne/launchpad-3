@@ -12,6 +12,9 @@ import dkim
 import dns.resolver
 
 from lp.services.features.testing import FeatureFixture
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    )
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
@@ -334,3 +337,30 @@ Why isn't this fixed yet?""")
         self.assertWeaklyAuthenticated(principal, signed_message)
         self.assertDkimLogContains(
             'valid dkim signature, but not from a known email address')
+
+    def test_dkim_signed_but_from_unverified_address(self):
+        """Sent from trusted dkim address, but only the From address is known.
+
+        The sender is a known, but unverified address.
+
+        See https://bugs.launchpad.net/launchpad/+bug/925597
+        """
+        from_address = "dkimtest@example.com"
+        sender_address = "dkimtest@canonical.com"
+        person = self.factory.makePerson(
+            email=from_address,
+            name='dkimtest',
+            displayname='DKIM Test')
+        self.factory.makeEmail(sender_address, person, EmailAddressStatus.NEW)
+        self.preload_dns_response()
+        tweaked_message = self.makeMessageText(
+            sender=sender_address,
+            from_address="DKIM Test <dkimtest@example.com>")
+        signed_message = self.fake_signing(tweaked_message)
+        principal = authenticateEmail(
+            signed_message_from_string(signed_message))
+        self.assertEqual(principal.person.preferredemail.email,
+            from_address)
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertDkimLogContains(
+            'valid dkim signature, but not from an active email address')

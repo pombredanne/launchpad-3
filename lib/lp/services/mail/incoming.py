@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -28,6 +28,10 @@ from zope.interface import (
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
@@ -208,13 +212,26 @@ def _getPrincipalByDkim(mail):
         return None, None
 
     log.debug('authenticated DKIM mail origin %s' % dkim_trusted_address)
-    dkim_principal = authutil.getPrincipalByLogin(dkim_trusted_address)
-    if dkim_principal is None:
+    address = getUtility(IEmailAddressSet).getByEmail(dkim_trusted_address)
+    if address is None:
         log.debug("valid dkim signature, but not from a known email address, "
             "therefore disregarding it")
         return None, None
-    else:
-        return (dkim_principal, dkim_trusted_address)
+    elif address.status not in (EmailAddressStatus.VALIDATED,
+            EmailAddressStatus.PREFERRED):
+        log.debug("valid dkim signature, "
+            "but not from an active email address, "
+            "therefore disregarding it")
+        return None, None
+    if address.person is None:
+        log.debug("address is not associated with a person")
+        return None, None
+    account = address.person.account
+    if account is None:
+        log.debug("person does not have an account")
+        return None, None
+    dkim_principal = authutil.getPrincipal(account.id)
+    return (dkim_principal, dkim_trusted_address)
 
 
 def authenticateEmail(mail,
