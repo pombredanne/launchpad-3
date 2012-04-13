@@ -319,9 +319,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # tag where all tags are desired.
         expected_query = (
             """EXISTS
-                 ((SELECT 1 FROM BugTag
+                 (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred'))""")
+                     AND BugTag.tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(all(u'fred')))
@@ -331,9 +331,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # tag where at least one tag is desired.
         expected_query = (
             """NOT EXISTS
-                 ((SELECT 1 FROM BugTag
+                 (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred'))""")
+                     AND BugTag.tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
             expected_query,
             self.searchClause(any(u'-fred')))
@@ -414,9 +414,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # specific tag" is a superset of "bugs without any tags".
         self.assertEqualIgnoringWhitespace(
             """NOT EXISTS
-                 ((SELECT 1 FROM BugTag
+                 (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred'))""",
+                     AND BugTag.tag = 'fred')""",
             self.searchClause(any(u'-fred', u'-*')))
 
     def test_multiple_tag_presence_all(self):
@@ -438,9 +438,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # with one or more tags".
         self.assertEqualIgnoringWhitespace(
             """EXISTS
-                 ((SELECT 1 FROM BugTag
+                 (SELECT 1 FROM BugTag
                    WHERE BugTag.bug = Bug.id
-                     AND BugTag.tag = 'fred'))""",
+                     AND BugTag.tag = 'fred')""",
             self.searchClause(all(u'fred', u'*')))
 
     def test_multiple_tag_absence_all(self):
@@ -472,9 +472,9 @@ class TestBugTaskTagSearchClauses(TestCase):
                     WHERE BugTag.bug = Bug.id
                       AND BugTag.tag IN ('fred'))
                 OR NOT EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'))""",
+                      AND BugTag.tag = 'bob')""",
             self.searchClause(any(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
             """EXISTS
@@ -512,9 +512,9 @@ class TestBugTaskTagSearchClauses(TestCase):
                     WHERE BugTag.bug = Bug.id
                       AND BugTag.tag IN ('eric', 'fred'))
                 OR NOT EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'bob'))""",
+                      AND BugTag.tag = 'bob')""",
             self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')))
         # The negative wildcard is not superfluous in the absence of
         # other negative tags.
@@ -535,9 +535,9 @@ class TestBugTaskTagSearchClauses(TestCase):
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id)
                 OR NOT EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'harry'))""",
+                      AND BugTag.tag = 'harry')""",
             self.searchClause(any(u'fred', u'-*', u'*', u'-harry')))
 
     def test_mixed_tags_all(self):
@@ -546,9 +546,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # tags.
         self.assertEqualIgnoringWhitespace(
             """EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred'))
+                      AND BugTag.tag = 'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
@@ -572,9 +572,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # other positive tags.
         self.assertEqualIgnoringWhitespace(
             """EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred'))
+                      AND BugTag.tag = 'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
@@ -610,9 +610,9 @@ class TestBugTaskTagSearchClauses(TestCase):
         # over other negative tags.
         self.assertEqualIgnoringWhitespace(
             """EXISTS
-                  ((SELECT 1 FROM BugTag
+                  (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id
-                      AND BugTag.tag = 'fred'))
+                      AND BugTag.tag = 'fred')
                 AND NOT EXISTS
                   (SELECT 1 FROM BugTag
                     WHERE BugTag.bug = Bug.id)""",

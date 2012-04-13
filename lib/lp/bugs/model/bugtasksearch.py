@@ -1220,44 +1220,36 @@ def _build_upstream_clause(params):
 
 # Tag restrictions
 
+def _build_tag_set_query(clauses):
+    subselects = [
+        Select(1, tables=[BugTag], where=And(BugTag.bugID == Bug.id, clause))
+        for clause in clauses]
+    if len(subselects) == 1:
+        return Exists(subselects[0])
+    else:
+        return Exists(Intersect(*subselects))
+
+
 def _build_tag_set_query_all(tags):
-    """Return an SQL snippet to find whether a bug matches the given tags.
+    """Return a Storm expression for bugs matching all given tags.
 
-    The tags are sorted so that testing the generated queries is
-    easier and more reliable.
-
-    This SQL is designed to be a sub-query where the parent SQL defines
-    Bug.id. It evaluates to TRUE or FALSE, indicating whether the bug
-    with Bug.id matches against the tags passed.
-
-    Returns None if no tags are passed.
-
-    :param tags: An iterable of valid tag names (not prefixed minus
-        signs, not wildcards).
+    :param tags: An iterable of valid tags without - or + and not wildcards.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = sorted(tags)
-    if tags == []:
+    if not tags:
         return None
-
-    return Exists(Intersect(*(
-        Select(
-            1, tables=[BugTag],
-            where=And(BugTag.bugID == Bug.id, BugTag.tag == tag))
-        for tag in tags)))
+    return _build_tag_set_query([BugTag.tag == tag for tag in sorted(tags)])
 
 
 def _build_tag_set_query_any(tags):
-    """Return a query fragment for bugs matching any tag.
+    """Return a Storm expression for bugs matching any given tag.
 
     :param tags: An iterable of valid tags without - or + and not wildcards.
-    :return: A string SQL query fragment or None if no tags were provided.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = sorted(tags)
-    if tags == []:
+    if not tags:
         return None
-    return Exists(Select(
-        1, tables=[BugTag],
-        where=And(BugTag.bugID == Bug.id, BugTag.tag.is_in(tags))))
+    return _build_tag_set_query([BugTag.tag.is_in(sorted(tags))])
 
 
 def _build_tag_search_clause(tags_spec):
