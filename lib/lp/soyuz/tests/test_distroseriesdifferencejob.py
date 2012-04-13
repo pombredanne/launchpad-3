@@ -22,6 +22,9 @@ from lp.services.database import bulk
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import (
+    block_on_job,
+    )
 from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -44,6 +47,7 @@ from lp.soyuz.model.distroseriesdifferencejob import (
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
+    CeleryJobLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -977,3 +981,20 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
 
         # The test is that we get here without exceptions.
         pass
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_DerivedDistroseriesDifferenceJob(self):
+        self.useFixture(FeatureFixture({
+            FEATURE_FLAG_ENABLE_MODULE: u'on',
+            'jobs.celery.enabled_classes': 'DistroSeriesDifferenceJob',
+            }))
+        dsp = self.factory.makeDistroSeriesParent()
+        package = self.factory.makeSourcePackageName()
+        with block_on_job():
+            job = create_job(dsp.derived_series, package, dsp.parent_series)
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)

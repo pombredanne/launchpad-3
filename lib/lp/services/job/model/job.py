@@ -38,7 +38,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import dbconfig
+from lp.services.config import config, dbconfig
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -256,7 +256,15 @@ class UniversalJobSource:
     needs_init = True
 
     @staticmethod
-    def getDerived(job_id):
+    def _getDerived(job_id, base_class):
+        store = IStore(base_class)
+        base_job = store.find(base_class, base_class.job == job_id).one()
+        if base_job is None:
+            return None, None, None
+        return base_job.makeDerived(), base_job.__class__, store
+
+    @classmethod
+    def getUserAndBaseJob(cls, job_id):
         """Return the derived branch job associated with the job id."""
         # Avoid circular imports.
         from lp.code.model.branchjob import (
@@ -265,15 +273,16 @@ class UniversalJobSource:
         from lp.code.model.branchmergeproposaljob import (
             BranchMergeProposalJob,
             )
-        store = IStore(Job)
-        for cls in [BranchJob, BranchMergeProposalJob]:
-            base_job = store.find(cls, cls.job == job_id).one()
-            if base_job is not None:
-                break
-        if base_job is None:
-            raise ValueError('No BranchJob with job=%s.' % job_id)
+        from lp.soyuz.model.distributionjob import DistributionJob
+        dbconfig.override(
+            dbuser=config.launchpad.dbuser, isolation_level='read_committed')
 
-        return base_job.makeDerived(), store
+        for baseclass in [BranchJob, BranchMergeProposalJob, DistributionJob]:
+            derived, base_class, store = cls._getDerived(job_id, baseclass)
+            if derived is not None:
+                cls.clearStore(store)
+                return derived.config.dbuser, base_class
+        raise ValueError('No Job with job=%s.' % job_id)
 
     @staticmethod
     def clearStore(store):
@@ -282,19 +291,12 @@ class UniversalJobSource:
         store.close()
 
     @classmethod
-    def switchDBUser(cls, job_id):
-        """Switch to the DB user associated with this Job ID."""
-        cls.clearStore(IStore(Job))
-        derived, store = cls.getDerived(job_id)
-        dbconfig.override(
-            dbuser=derived.config.dbuser, isolation_level='read_committed')
-        cls.clearStore(store)
-
-    @classmethod
     def get(cls, job_id):
         transaction.abort()
         if cls.needs_init:
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
-        cls.switchDBUser(job_id)
-        return cls.getDerived(job_id)[0]
+        cls.clearStore(IStore(Job))
+        dbuser, base_class = cls.getUserAndBaseJob(job_id)
+        dbconfig.override(dbuser=dbuser, isolation_level='read_committed')
+        return cls._getDerived(job_id, base_class)[0]
