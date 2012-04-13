@@ -381,7 +381,7 @@ Why isn't this fixed yet?""")
         from_address = "dkimtest@example.com"
         # This is not quite the same as having account=None, but it seems as
         # close as the factory lets us get? -- mbp 2012-04-13
-        person = self.factory.makePerson(
+        self.factory.makePerson(
             email=from_address,
             name='dkimtest',
             displayname='DKIM Test',
