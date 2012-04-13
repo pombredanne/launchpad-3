@@ -745,6 +745,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     def contextManager():
         """See `IJobSource`."""
         errorlog.globalErrorUtility.configure('merge_proposal_jobs')
+        yield
 
     @staticmethod
     def get(job_id):
