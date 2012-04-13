@@ -286,6 +286,8 @@ class LaunchpadView(UserAttributeCache):
     - publishTraverse() <-- override this to support traversing-through.
     """
 
+    private = False
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
