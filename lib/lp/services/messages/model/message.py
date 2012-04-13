@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'DirectEmailAuthorization',
+    'MAX_EMAIL_SIZE',
     'Message',
     'MessageChunk',
     'MessageJob',
@@ -310,7 +311,10 @@ class MessageSet:
         if not rfc822msgid:
             raise InvalidEmailMessage('Missing Message-Id')
 
-        # make sure we don't process anything too long
+        # Make sure we don't process anything too long.  Large messages should
+        # normally be rejected at the handle_one_mail level, which gives a
+        # nice message back to the user, but we check again here in case there
+        # are other paths.
         if len(email_message) > MAX_EMAIL_SIZE:
             raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
                 rfc822msgid, len(email_message), MAX_EMAIL_SIZE))

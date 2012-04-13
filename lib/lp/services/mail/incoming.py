@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -45,6 +45,7 @@ from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
+from lp.services.messages.model.message import MAX_EMAIL_SIZE
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -459,6 +460,22 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
         return
     if 'precedence' in mail:
         log.info("Got a message with a precedence header.")
+        return
+
+    if mail.raw_length > MAX_EMAIL_SIZE:
+        complaint = (
+            "The mail you sent to Launchpad is too long.\n\n"
+            "Your message <%s>\nwas %d MB and the limit is %d MB." %
+            (mail['message-id'], mail.raw_length / 1e6, MAX_EMAIL_SIZE / 1e6))
+        log.info(complaint)
+        # It's probably big and it's probably mostly binary, so trim it pretty
+        # aggressively.
+        send_process_error_notification(
+            mail['From'],
+            'Mail to Launchpad was too large',
+            complaint,
+            mail,
+            max_return_size=8192)
         return
 
     try:
