@@ -20,7 +20,7 @@ A new ProductRelease can be created using ProductReleaseAddView.
 The view explains what that the user is creating a release, and lists
 the other releases for the series. There are no other releases yet.
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> view = create_initialized_view(naked_milestone, '+addrelease')
     >>> print view.label
     Create a new release for App

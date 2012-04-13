@@ -29,7 +29,7 @@ view because he is not yet an owner/maintainer or admin.
 Sample person, as the owner/maintainer can change the owner/maintainer
 to No Privileges Person.
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> form = {
     ...     'field.owner': 'no-priv',
     ...     'field.actions.save': 'Save changes',
@@ -45,7 +45,7 @@ to No Privileges Person.
 Ownership can not be transferred to an open team.
 
     >>> owner = factory.makePerson()
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> product = factory.makeProduct(owner=owner)
     >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> team = factory.makeTeam(
@@ -67,7 +67,7 @@ Assigning to Registry Administrators
 As a short-cut, a checkbox is presented to disclaim the maintainer
 role and transfer it to the Registry Administrators team.
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> product = factory.makeProduct(owner=sample_person)
     >>> transaction.commit()
 

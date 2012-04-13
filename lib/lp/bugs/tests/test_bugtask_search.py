@@ -294,14 +294,14 @@ class SearchTestBase:
         # Full text searches find text indexed by Bug.fti.
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, searchtext='one title')
+            user=None, searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='one title')
+            user=None, fast_searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_has_no_upstream_bugtask(self):
@@ -637,7 +637,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
         bugtask_set = getUtility(IBugTaskSet)
-        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
+        param = BugTaskSearchParams(user=None, fast_searchtext=u'Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
         self.assertEqual([self.active_bugtask], list(results))
 

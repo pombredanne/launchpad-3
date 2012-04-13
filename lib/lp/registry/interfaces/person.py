@@ -1491,7 +1491,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, commercial=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
