@@ -1111,6 +1111,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     # ephemeral container
     root_sshcall('mkdir -p /rootfs/usr/lib')
     root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
+    # XXX: BradCrittenden 2012-04-13 bug=981114: Manually create /etc/mailname
+    # or bzrlib gets upset and returns None,None for whoami causing test
+    # failures.
+    root_sshcall("echo 'localhost' | cat > /etc/mailname")
 
 
 def stop_lxc(lxcname, ssh_key_path):
