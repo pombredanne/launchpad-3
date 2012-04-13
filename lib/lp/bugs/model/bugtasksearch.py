@@ -680,7 +680,7 @@ def _build_query(params):
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
-        extra_clauses.append(clause)
+        extra_clauses.append(SQL(clause))
         decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
@@ -715,12 +715,7 @@ def _build_query(params):
     if params.created_since:
         extra_clauses.append(BugTask.datecreated > params.created_since)
 
-    storm_clauses = []
-    for clause in extra_clauses:
-        if isinstance(clause, str):
-            clause = SQL(clause)
-        storm_clauses.append(clause)
-    query = And(storm_clauses)
+    query = And(extra_clauses)
 
     if not decorators:
         decorator = lambda x: x
