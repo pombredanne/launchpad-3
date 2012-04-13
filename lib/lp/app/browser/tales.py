@@ -670,7 +670,7 @@ class ObjectFormatterAPI:
 
         # If the view is not marked as private, privacy is determined by the
         # view's context.
-        privacy = IPrivacy(view.context, None)
+        privacy = IPrivacy(getattr(view, 'context', None), None)
         if privacy is not None and privacy.private:
             return 'private'
         else:
