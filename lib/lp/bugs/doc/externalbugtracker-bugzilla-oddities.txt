@@ -17,6 +17,7 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
+    >>> from lp.services.log.logger import FakeLogger
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)
@@ -30,11 +31,11 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     42: FUBAR BAZBAZ
     42: FUBAR BAZBAZ
     >>> transaction.commit()
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)
-    INFO:...:Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
-    INFO:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
+    INFO Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
+    INFO Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
 
     >>> for bug_watch in mozilla_bugzilla.watches:

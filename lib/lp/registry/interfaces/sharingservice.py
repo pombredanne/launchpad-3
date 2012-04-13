@@ -54,10 +54,6 @@ class ISharingService(IService):
     def getSharingPermissions():
         """Return the information sharing permissions."""
 
-    @export_read_operation()
-    @operation_parameters(
-        pillar=Reference(IPillar, title=_('Pillar'), required=True))
-    @operation_for_version('devel')
     def getPillarSharees(pillar):
         """Return people/teams who can see pillar artifacts."""
 

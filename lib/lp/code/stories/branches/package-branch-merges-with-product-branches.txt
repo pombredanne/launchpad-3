@@ -37,7 +37,7 @@ with a product branch.
 
 Linking the packages makes this possible.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> b1.sourcepackage.setPackaging(b2.product.development_focus, eric)
     >>> logout()
 

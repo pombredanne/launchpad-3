@@ -152,10 +152,6 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.security import (
-    BugTargetOwnerOrBugSupervisorOrAdmins,
-    ModerateByRegistryExpertsOrAdmins,
-    )
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -519,6 +515,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
         """See `IProductPublic`."""
+        from lp.security import (
+            BugTargetOwnerOrBugSupervisorOrAdmins,
+            ModerateByRegistryExpertsOrAdmins,
+            )
         if user is not None:
             person_roles = IPersonRoles(user)
             moderator_check = ModerateByRegistryExpertsOrAdmins(self)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -33,6 +33,10 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
@@ -103,8 +107,8 @@ def _isDkimDomainTrusted(domain):
     return domain in _trusted_dkim_domains
 
 
-def _authenticateDkim(signed_message):
-    """Attempt DKIM authentication of email.
+def _verifyDkimOrigin(signed_message):
+    """Find a From or Sender address for which there's a DKIM signature.
 
     :returns: A string email address for the trusted sender, if there is one,
     otherwise None.
@@ -190,6 +194,46 @@ def _authenticateDkim(signed_message):
         return None
 
 
+def _getPrincipalByDkim(mail):
+    """Determine the security principal from DKIM, if possible.
+
+    To qualify:
+        * there must be a dkim signature from a trusted domain
+        * the From or Sender must be in that domain
+        * the address in this header must be verified for a person
+
+    :returns: (None, None), or (principal, trusted_addr).
+    """
+    log = logging.getLogger('mail-authenticate-dkim')
+    authutil = getUtility(IPlacelessAuthUtility)
+
+    dkim_trusted_address = _verifyDkimOrigin(mail)
+    if dkim_trusted_address is None:
+        return None, None
+
+    log.debug('authenticated DKIM mail origin %s' % dkim_trusted_address)
+    address = getUtility(IEmailAddressSet).getByEmail(dkim_trusted_address)
+    if address is None:
+        log.debug("valid dkim signature, but not from a known email address, "
+            "therefore disregarding it")
+        return None, None
+    elif address.status not in (EmailAddressStatus.VALIDATED,
+            EmailAddressStatus.PREFERRED):
+        log.debug("valid dkim signature, "
+            "but not from an active email address, "
+            "therefore disregarding it")
+        return None, None
+    if address.person is None:
+        log.debug("address is not associated with a person")
+        return None, None
+    account = address.person.account
+    if account is None:
+        log.debug("person does not have an account")
+        return None, None
+    dkim_principal = authutil.getPrincipal(account.id)
+    return (dkim_principal, dkim_trusted_address)
+
+
 def authenticateEmail(mail,
     signature_timestamp_checker=None):
     """Authenticates an email by verifying the PGP signature.
@@ -207,20 +251,13 @@ def authenticateEmail(mail,
     """
 
     log = logging.getLogger('process-mail')
-
-    dkim_trusted_addr = _authenticateDkim(mail)
-    if dkim_trusted_addr is not None:
-        # The Sender field, if signed by a trusted domain, is the strong
-        # authenticator for this mail.
-        log.debug('trusted DKIM mail from %s' % dkim_trusted_addr)
-        email_addr = dkim_trusted_addr
-    else:
-        email_addr = parseaddr(mail['From'])[1]
-
     authutil = getUtility(IPlacelessAuthUtility)
-    principal = authutil.getPrincipalByLogin(email_addr)
 
-    # Check that sender is registered in Launchpad and the email is signed.
+    principal, dkim_trusted_address = _getPrincipalByDkim(mail)
+    if dkim_trusted_address is None:
+        from_addr = parseaddr(mail['From'])[1]
+        principal = authutil.getPrincipalByLogin(from_addr)
+
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
         return None
@@ -230,9 +267,9 @@ def authenticateEmail(mail,
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
 
-    if dkim_trusted_addr is not None:
+    if dkim_trusted_address:
         log.debug('accepting dkim strongly authenticated mail')
-        setupInteraction(principal, dkim_trusted_addr)
+        setupInteraction(principal, dkim_trusted_address)
         return principal
     else:
         log.debug("attempt gpg authentication for %r" % person)

@@ -79,7 +79,7 @@ The time_zone attribute gives the user's time zone, as an pytz object.
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> person = factory.makePerson()
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> launchbag.time_zone
     <UTC>
 
