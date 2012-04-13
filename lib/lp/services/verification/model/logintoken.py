@@ -19,10 +19,8 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
-from lazr.lifecycle.event import ObjectModifiedEvent
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
@@ -116,6 +114,10 @@ class LoginToken(SQLBase):
         message = template % replacements
         subject = "Launchpad: Validate your email address"
         self._send_email("Launchpad Email Validator", subject, message)
+        self.requester.security_field_changed(
+            "A new email address is being added to your Launchpad account.",
+            "<%s> will be activated for your account when you follow the "
+            "instructions that were sent to <%s>." % (self.email, self.email))
 
     def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
@@ -393,15 +395,6 @@ class LoginTokenSet:
             # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
-
-        # We want to send the notification when the new email address is
-        # requested. We don't have an email address yet, just this LoginToken,
-        # but we want the owner to get the notification before it's approved
-        # in case this is malicious and the user did not request it.
-        if tokentype == LoginTokenType.VALIDATEEMAIL:
-            notify(ObjectModifiedEvent(requester, requester,
-                ['newemail'], user=requester))
-
         token = create_unique_token_for_table(20, LoginToken.token)
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,

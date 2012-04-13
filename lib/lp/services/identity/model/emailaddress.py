@@ -22,7 +22,6 @@ from sqlobject import (
 
 from zope.event import notify
 from zope.interface import implements
-from lazr.lifecycle.event import ObjectModifiedEvent
 
 from lp.app.validators.email import valid_email
 from lp.services.database.enumcol import EnumCol
@@ -88,13 +87,6 @@ class EmailAddress(SQLBase, HasOwnerMixin):
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()
-
-        # We need to notify the preferred email address that this address has
-        # been removed.
-        if self.person.is_valid_person:
-            notify(ObjectModifiedEvent(self.person, self.person,
-                ['removedemail'], user=self.person))
-
         super(EmailAddress, self).destroySelf()
 
     @property

@@ -19,7 +19,6 @@ from lp.registry.interfaces.person import (
     IPersonViewRestricted,
     )
 from lp.registry.interfaces.product import License
-from lp.registry.model.personnotification import PersonNotification
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
@@ -31,15 +30,6 @@ from lp.services.webapp.publisher import (
     canonical_url,
     get_current_browser_request,
     )
-
-
-PERSON_DATA_MONITORED = {
-    'preferredemail': 'Preferred email address changed.',
-    'newemail': 'Email address added.',
-    'removedemail': 'Email address removed.',
-    'newsshkey': 'SSH key added.',
-    'removedsshkey': 'SSH key removed.',
-}
 
 
 def product_licenses_modified(product, event):
@@ -158,37 +148,3 @@ class LicenseNotification:
             naked_product.reviewer_whiteboard = whiteboard
         else:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
-
-
-def person_alteration_security_notice(person, event):
-    """Send a notification if important details on a person change."""
-    if not event.edited_fields:
-        return
-    # We want to keep tabs on which fields changed so we can attempt to have
-    # an intelligent reply message on what just happened.
-    changed_fields = set(PERSON_DATA_MONITORED.keys()) & set(
-        event.edited_fields)
-    if changed_fields:
-        user = IPersonViewRestricted(event.user)
-        original_object = event.object_before_modification
-        prev_preferred_email = original_object.preferredemail.email
-
-        # In theory we could have a list of changed fields, but in practice we
-        # don't see that. Asserting that there's only one changed field.
-        assert len(changed_fields) == 1
-
-        notification = PersonNotification()
-        notification.person = user
-        notification.subject = (
-            "Your Launchpad.net account details have changed.")
-        tpl_substitutions = dict(
-            user_displayname=user.displayname,
-            user_name=user.name,
-            field_changed=PERSON_DATA_MONITORED[changed_fields.pop()]
-            )
-        template = get_email_template(
-            'person-details-change.txt',
-            app='registry')
-        notification.body = template % tpl_substitutions
-        notification.send(
-            sendto=(user.displayname, prev_preferred_email))

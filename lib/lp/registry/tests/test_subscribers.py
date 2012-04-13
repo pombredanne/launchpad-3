@@ -8,28 +8,20 @@ __metaclass__ = type
 from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.interfaces import IObjectModifiedEvent
 import pytz
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPersonViewRestricted
 from lp.registry.interfaces.product import License
 from lp.registry.subscribers import (
     LicenseNotification,
-    person_alteration_security_notice,
     product_licenses_modified,
     )
-from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
-    person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.event import TestEventListener
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 
@@ -266,144 +258,3 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
             product.commercial_subscription.date_expires.date().isoformat())
         self.assertEqual(message, notification.getCommercialUseMessage())
         self.assertEqual(message, notification.getCommercialUseMessage())
-
-
-class TestPersonDataModifiedHandler(TestCaseWithFactory):
-    """When some details of a person change, we need to notify the user."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestPersonDataModifiedHandler, self).setUp()
-        self.person = self.factory.makePerson(email='test@pre.com')
-        login_person(self.person)
-        pop_notifications()
-
-    def check_notification(self):
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.assertTrue('test@pre.com' in notifications[0].get('To'))
-        self.assertTrue(
-            'Preferred email address' in notifications[0].as_string())
-
-    def test_handler_generates_notification(self):
-        """Manually firing event generates a proper notification."""
-        # After/before objects and list of edited fields.
-        event = ObjectModifiedEvent(
-            self.person, self.person, ['preferredemail'])
-        person_alteration_security_notice(self.person, event)
-        self.check_notification()
-
-    def test_event_generates_notification(self):
-        """Triggering the event generates a proper notification."""
-        new_email = self.factory.makeEmail('test@post.com', self.person)
-        self.person.setPreferredEmail(new_email)
-        self.check_notification()
-
-
-class TestPersonAlterationEvent(TestCaseWithFactory):
-    """Test that the events are fired when the person is changed."""
-
-    layer = DatabaseFunctionalLayer
-    event_listener = None
-
-    def setUp(self):
-        super(TestPersonAlterationEvent, self).setUp()
-        pop_notifications()
-        self.setup_event_listener()
-        self.person = self.factory.makePerson(email='test@pre.com')
-
-    def setup_event_listener(self):
-        self.events = []
-        if self.event_listener is None:
-            self.event_listener = TestEventListener(
-                IPersonViewRestricted, IObjectModifiedEvent, self.on_event)
-        else:
-            self.event_listener._active = True
-        self.addCleanup(self.event_listener.unregister)
-
-    def check_event(self, edited_field):
-        """Verify that the event is the correct one."""
-        evt = self.events[0]
-        self.assertEqual(self.person, evt.object)
-        self.assertEqual('test@pre.com',
-            evt.object_before_modification.preferredemail.email)
-        self.assertEqual([edited_field], evt.edited_fields)
-
-    def check_notification(self, email_str):
-        """Check the actual notification email for correctness."""
-        notifications = pop_notifications()
-        self.assertTrue('test@pre.com' in notifications[0].get('To'))
-        self.assertTrue(email_str in notifications[0].as_string())
-
-    def on_event(self, thing, event):
-        self.events.append(event)
-
-    def test_change_preferredemail(self):
-        """Event and notification are triggered by preferred email change."""
-        new_email = self.factory.makeEmail('test@post.com', self.person)
-        with person_logged_in(self.person):
-            self.person.setPreferredEmail(new_email)
-            self.assertEqual('test@post.com', self.person.preferredemail.email)
-            self.assertEqual(1, len(self.events))
-            self.check_event('preferredemail')
-
-    def test_no_event_on_no_change(self):
-        """No event should be triggered if there's no change."""
-        with person_logged_in(self.person):
-            self.person.displayname = 'changed'
-            self.assertEqual('test@pre.com', self.person.preferredemail.email)
-            self.assertEqual(0, len(self.events))
-
-    def test_removed_email_address(self):
-        """Event and notification are created when an email is removed."""
-        with person_logged_in(self.person):
-            secondary_email = self.factory.makeEmail(
-                'test@second.com', self.person)
-            secondary_email.destroySelf()
-            # We should only have one email address, the preferred.
-            self.assertEqual('test@pre.com', self.person.preferredemail.email)
-            # The preferred email doesn't show in the list of validated emails
-            # so there are none left once the destroy is done.
-            self.assertEqual(0, self.person.validatedemails.count())
-            self.assertEqual(1, len(self.events))
-            self.check_event('removedemail')
-            self.check_notification('Email address removed')
-
-    def test_new_email_request(self):
-        """Event and notification are created when a new email is added."""
-        with person_logged_in(self.person):
-            secondary_email = self.factory.makeEmail(
-                'test@second.com', self.person)
-            # The way that a new email address gets requested is through the
-            # LoginToken done in the browser/person action_add_email.
-            getUtility(ILoginTokenSet).new(self.person,
-                self.person.preferredemail.email,
-                secondary_email.email,
-                LoginTokenType.VALIDATEEMAIL)
-            self.assertEqual(1, len(self.events))
-            self.check_event('newemail')
-            self.check_notification('Email address added')
-
-    def test_new_ssh_key(self):
-        """Event and notification are created when users add a ssh key."""
-        with person_logged_in(self.person):
-            # The factory method generates a fresh ssh key through the
-            # SSHKeySet that we're bound into. The view uses the same ssh key
-            # set .new method so it's safe to just let the factory trigger our
-            # event for us.
-            self.factory.makeSSHKey(self.person)
-            self.assertEqual(1, len(self.events))
-            self.check_event('newsshkey')
-            self.check_notification('SSH key added')
-
-    def test_remove_ssh_key(self):
-        """Event and notification are created when a user removes a ssh key"""
-        with person_logged_in(self.person):
-            sshkey = self.factory.makeSSHKey(self.person)
-            # Make sure to clear notifications/events before we remove the key.
-            pop_notifications()
-            self.events = []
-            sshkey.destroySelf()
-            self.assertEqual(1, len(self.events))
-            self.check_event('removedsshkey')
-            self.check_notification('SSH key removed')
