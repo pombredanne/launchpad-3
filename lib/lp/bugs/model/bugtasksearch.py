@@ -27,7 +27,6 @@ from storm.expr import (
     Or,
     Select,
     SQL,
-    Union,
     )
 from storm.info import ClassAlias
 from storm.references import Reference
@@ -1221,7 +1220,7 @@ def _build_upstream_clause(params):
 
 # Tag restrictions
 
-def _build_tag_set_query(joiner, tags):
+def _build_tag_set_query_all(tags):
     """Return an SQL snippet to find whether a bug matches the given tags.
 
     The tags are sorted so that testing the generated queries is
@@ -1233,20 +1232,18 @@ def _build_tag_set_query(joiner, tags):
 
     Returns None if no tags are passed.
 
-    :param joiner: The Storm expression used to join the individual tag
-        clauses, typically Intersect or Union.
     :param tags: An iterable of valid tag names (not prefixed minus
         signs, not wildcards).
     """
-    tags = list(tags)
+    tags = sorted(tags)
     if tags == []:
         return None
 
-    return Exists(joiner(*(
+    return Exists(Intersect(*(
         Select(
             1, tables=[BugTag],
             where=And(BugTag.bugID == Bug.id, BugTag.tag == tag))
-        for tag in sorted(tags))))
+        for tag in tags)))
 
 
 def _build_tag_set_query_any(tags):
@@ -1287,7 +1284,7 @@ def _build_tag_search_clause(tags_spec):
         combine_with = And
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = _build_tag_set_query(Intersect, include)
+        include_clause = _build_tag_set_query_all(include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
         exclude_clause = _build_tag_set_query_any(exclude)
@@ -1300,7 +1297,7 @@ def _build_tag_search_clause(tags_spec):
         include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = _build_tag_set_query(Intersect, exclude)
+        exclude_clause = _build_tag_set_query_all(exclude)
 
     universal_clause = (
         Exists(Select(1, tables=[BugTag], where=BugTag.bugID == Bug.id)))
