@@ -28,15 +28,15 @@ from zope.interface import (
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.services.librarian.interfaces.client import UploadFailed
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (

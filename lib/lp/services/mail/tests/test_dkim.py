@@ -12,16 +12,12 @@ import dkim
 import dns.resolver
 
 from lp.services.features.testing import FeatureFixture
-from lp.services.identity.interfaces.account import (
-    AccountStatus,
-    )
-from lp.services.identity.interfaces.emailaddress import (
-    EmailAddressStatus,
-    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import incoming
 from lp.services.mail.incoming import (
-    InactiveAccount,
     authenticateEmail,
+    InactiveAccount,
     )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
