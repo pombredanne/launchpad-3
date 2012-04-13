@@ -20,12 +20,14 @@ from storm.expr import (
     Desc,
     Exists,
     In,
+    Intersect,
     Join,
     LeftJoin,
     Not,
     Or,
     Select,
     SQL,
+    Union,
     )
 from storm.info import ClassAlias
 from storm.references import Reference
@@ -1231,8 +1233,8 @@ def _build_tag_set_query(joiner, tags):
 
     Returns None if no tags are passed.
 
-    :param joiner: The SQL set term used to join the individual tag
-        clauses, typically "INTERSECT" or "UNION".
+    :param joiner: The Storm expression used to join the individual tag
+        clauses, typically Intersect or Union.
     :param tags: An iterable of valid tag names (not prefixed minus
         signs, not wildcards).
     """
@@ -1240,11 +1242,11 @@ def _build_tag_set_query(joiner, tags):
     if tags == []:
         return None
 
-    joiner = " %s " % joiner
-    return "EXISTS (%s)" % joiner.join(
-        "SELECT TRUE FROM BugTag WHERE " +
-            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
-        for tag in sorted(tags))
+    return Exists(joiner(*(
+        Select(
+            1, tables=[BugTag],
+            where=And(BugTag.bugID == Bug.id, BugTag.tag == tag))
+        for tag in sorted(tags))))
 
 
 def _build_tag_set_query_any(tags):
@@ -1256,10 +1258,9 @@ def _build_tag_set_query_any(tags):
     tags = sorted(tags)
     if tags == []:
         return None
-    return "EXISTS (%s)" % (
-        "SELECT TRUE FROM BugTag"
-        " WHERE BugTag.bug = Bug.id"
-        " AND BugTag.tag IN %s") % sqlvalues(tags)
+    return Exists(Select(
+        1, tables=[BugTag],
+        where=And(BugTag.bugID == Bug.id, BugTag.tag.is_in(tags))))
 
 
 def _build_tag_search_clause(tags_spec):
@@ -1283,46 +1284,45 @@ def _build_tag_search_clause(tags_spec):
     if find_all:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'AND'
+        combine_with = And
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = _build_tag_set_query("INTERSECT", include)
+        include_clause = _build_tag_set_query(Intersect, include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
         exclude_clause = _build_tag_set_query_any(exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'OR'
+        combine_with = Or
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
         include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = _build_tag_set_query("INTERSECT", exclude)
+        exclude_clause = _build_tag_set_query(Intersect, exclude)
 
+    universal_clause = (
+        Exists(Select(1, tables=[BugTag], where=BugTag.bugID == Bug.id)))
     # Search for the *presence* of any tag.
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
         if include_clause == None or not find_all:
-            include_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            include_clause = universal_clause
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
         if exclude_clause == None or find_all:
-            exclude_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            exclude_clause = universal_clause
 
     # Combine the include and exclude sets.
     if include_clause != None and exclude_clause != None:
-        return "(%s %s NOT %s)" % (
-            include_clause, combine_with, exclude_clause)
+        return combine_with(include_clause, Not(exclude_clause))
     elif include_clause != None:
-        return "%s" % include_clause
+        return include_clause
     elif exclude_clause != None:
-        return "NOT %s" % exclude_clause
+        return Not(exclude_clause)
     else:
         # This means that there were no tags (wildcard or specific) to
         # search for (which is allowed, even if it's a bit weird).
