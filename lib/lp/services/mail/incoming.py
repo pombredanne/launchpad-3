@@ -45,7 +45,6 @@ from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
-from lp.services.messages.model.message import MAX_EMAIL_SIZE
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -62,6 +61,10 @@ non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
 # Match trailing whitespace.
 trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
+
+# this is a hard limit on the size of email we will be willing to store in
+# the database.
+MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 
 def canonicalise_line_endings(text):
