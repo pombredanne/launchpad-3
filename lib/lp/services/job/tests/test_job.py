@@ -9,6 +9,7 @@ import time
 import pytz
 from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
+import transaction
 
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
@@ -251,6 +252,114 @@ class TestJob(TestCaseWithFactory):
             job = Job(_status=status)
             self.assertEqual(
                 status in Job.PENDING_STATUSES, job.is_pending)
+
+    def test_start_manages_transactions(self):
+        # Job.start() does not commit the transaction by default.
+        with TransactionRecorder() as recorder:
+            job = Job()
+            job.start()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.start() commits the transaction.
+        with TransactionRecorder() as recorder:
+            job = Job()
+            job.start(manage_transaction=True)
+            self.assertEqual(['commit'], recorder.transaction_calls)
+
+    def test_complete_manages_transactions(self):
+        # Job.complete() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.complete()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.complete() commits the transaction.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.complete(manage_transaction=True)
+            self.assertEqual(['commit', 'commit'], recorder.transaction_calls)
+
+    def test_fail_manages_transactions(self):
+        # Job.fail() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.fail()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.fail() commits the transaction.
+        # Note that there is an additional commit to update the job status.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.fail(manage_transaction=True)
+            self.assertEqual(['abort', 'commit'], recorder.transaction_calls)
+
+    def test_queue_manages_transactions(self):
+        # Job.queue() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.queue() commits the transaction.
+        # Note that there is an additional commit to update the job status.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue(manage_transaction=True)
+            self.assertEqual(['commit', 'commit'], recorder.transaction_calls)
+
+        # If abort_transaction=True is also passed to Job.queue()
+        # the transaction is first aborted, then two times committed.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue(manage_transaction=True, abort_transaction=True)
+            self.assertEqual(
+                ['abort', 'commit', 'commit'], recorder.transaction_calls)
+
+    def test_suspend_manages_transactions(self):
+        # Job.suspend() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.suspend()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.suspend() commits the transaction.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.suspend(manage_transaction=True)
+            self.assertEqual(['commit'], recorder.transaction_calls)
+
+
+class TransactionRecorder:
+    def __init__(self):
+        self.transaction_calls = []
+
+    def __enter__(self):
+        self.real_commit = transaction.commit
+        self.real_abort = transaction.abort
+        transaction.commit = self.commit
+        transaction.abort = self.abort
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        transaction.commit = self.real_commit
+        transaction.abort = self.real_abort
+
+    def commit(self):
+        self.transaction_calls.append('commit')
+        self.real_commit()
+
+    def abort(self):
+        self.transaction_calls.append('abort')
+        self.real_abort()
 
 
 class TestReadiness(TestCase):
