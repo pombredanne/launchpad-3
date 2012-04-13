@@ -2672,12 +2672,14 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-        original_recipients = get_recipients(self)
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
         if existing_preferred_email is not None:
+            original_recipients = existing_preferred_email.email
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
+        else:
+            original_recipients = None
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
@@ -3106,16 +3108,14 @@ class Person(
         recipient_emails=None):
         """See `IPerson`."""
         tpl_substitutions = dict(
-            user_displayname=user.displayname,
-            user_name=user.name,
             field_changed=change_description,
             )
         template = get_email_template(
             'person-details-change.txt', app='registry')
         body = template % tpl_substitutions
         from_addr = config.canonical.bounce_address
-        if not recipient_email:
-            to_addrs = get_recipients(self)
+        if not recipient_emails:
+            to_addrs = self.preferredemail.email
         else:
             to_addrs = recipient_emails
         simple_sendmail(from_addr, to_addrs, subject, body)

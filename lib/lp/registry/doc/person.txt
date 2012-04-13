@@ -5,6 +5,8 @@ The Person class is what we use to represent Launchpad users, teams and
 some people which have done work on the free software community but are
 not Launchpad users.
 
+    >>> from lp.services.mail import stub
+    >>> import transaction
     >>> from zope.component import getUtility
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
@@ -162,18 +164,26 @@ to the person, and it updates the email address's status.
     <DBItem EmailAddressStatus.VALIDATED...
 
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status.
+setPreferredEmail() method updated the address's status. This will generate a
+security email notification to the original preferred email address.
 
     >>> preferred_email = emailset.new(
     ...     'preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
 
+    >>> login('validated@canonical.com')
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
+    >>> transaction.commit()
+    >>> efrom, eto, emsg = stub.test_emails.pop()
+    >>> eto
+    ['randomuser@randomhost.com']
 
     >>> login(ANONYMOUS)
+
+
 
 In the case of teams, though, the account_status is not changed as their
 account_status must always be set to NOACCOUNT. (Notice how we use
@@ -472,7 +482,6 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
