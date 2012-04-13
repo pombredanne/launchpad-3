@@ -90,6 +90,24 @@ class TestDKIM(TestCaseWithFactory):
 
         self.addCleanup(restore)
 
+    def preload_dns_response(self, response_type=None):
+        """Configure a fake DNS key response.
+
+        :param response_type: Describes what response to give back as the
+        key.  The default, None, is to give the valid test signing key.
+        'broken' gives a key that's almost but not quite valid, 'garbage'
+        gives one that doesn't look valid at all.
+        """
+        if response_type is None:
+            key = sample_dns
+        elif response_type == 'broken':
+            key = sample_dns.replace(';', '')
+        elif response_type == 'garbage':
+            key = 'abcdefg'
+        else:
+            raise ValueError(response_type)
+        self._dns_responses['example._domainkey.canonical.com.'] = key
+
     def get_dkim_log(self):
         return self._log_output.getvalue()
 
@@ -130,8 +148,7 @@ Why isn't this fixed yet?""")
         abort either.
         """
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns.replace(';', '')
+        self.preload_dns_response('broken')
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -141,8 +158,7 @@ Why isn't this fixed yet?""")
 
     def test_dkim_garbage_pubkey(self):
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            'aothuaonu'
+        self.preload_dns_response('garbage')
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -161,8 +177,7 @@ Why isn't this fixed yet?""")
     def test_dkim_valid_strict(self):
         signed_message = self.fake_signing(self.makeMessageText(),
             canonicalize=(dkim.Simple, dkim.Simple))
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
@@ -171,8 +186,7 @@ Why isn't this fixed yet?""")
 
     def test_dkim_valid(self):
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertStronglyAuthenticated(principal, signed_message)
@@ -182,8 +196,7 @@ Why isn't this fixed yet?""")
     def test_dkim_untrusted_signer(self):
         # Valid signature from an untrusted domain -> untrusted
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         saved_domains = incoming._trusted_dkim_domains[:]
 
         def restore():
@@ -205,8 +218,7 @@ Why isn't this fixed yet?""")
         tweaked_message = self.makeMessageText(
             from_address='steve.alexander@ubuntulinux.com')
         signed_message = self.fake_signing(tweaked_message)
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -220,8 +232,7 @@ Why isn't this fixed yet?""")
         # From-header sender, though perhaps in future we would prefer
         # to reject these messages.
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         fiddled_message = signed_message.replace(
             'From: Foo Bar <foo.bar@canonical.com>',
             'From: Carlos <carlos@canonical.com>')
@@ -235,8 +246,7 @@ Why isn't this fixed yet?""")
     def test_dkim_changed_from_realname(self):
         # If the real name part of the message has changed, it's detected.
         signed_message = self.fake_signing(self.makeMessageText())
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         fiddled_message = signed_message.replace(
             'From: Foo Bar <foo.bar@canonical.com>',
             'From: Evil Foo <foo.bar@canonical.com>')
@@ -273,8 +283,7 @@ Why isn't this fixed yet?""")
         # something about this but we don't want to drop the message.
         signed_message = self.fake_signing(self.makeMessageText())
         signed_message += 'blah blah'
-        self._dns_responses['example._domainkey.canonical.com.'] = \
-            sample_dns
+        self.preload_dns_response()
         principal = authenticateEmail(
             signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
@@ -295,7 +304,7 @@ Why isn't this fixed yet?""")
         self.factory.makeEmail(
             person=person,
             address='dkimtest@example.com')
-        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
+        self.preload_dns_response()
         tweaked_message = self.makeMessageText(
             sender="dkimtest@canonical.com",
             from_address="DKIM Test <dkimtest@example.com>")
@@ -313,7 +322,7 @@ Why isn't this fixed yet?""")
             email='dkimtest@example.com',
             name='dkimtest',
             displayname='DKIM Test')
-        self._dns_responses['example._domainkey.canonical.com.'] = sample_dns
+        self.preload_dns_response()
         tweaked_message = self.makeMessageText(
             sender="dkimtest@canonical.com",
             from_address="DKIM Test <dkimtest@example.com>")
