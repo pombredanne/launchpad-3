@@ -58,6 +58,7 @@ DHCP_FILE = '/etc/dhcp/dhclient.conf'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
     'python-shell-toolbox']
 HOSTS_FILE = '/etc/hosts'
+MAILNAME_FILE = '/etc/mailname'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
     '/var/tmp/bazaar.launchpad.dev/static',
@@ -1114,7 +1115,10 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     # XXX: BradCrittenden 2012-04-13 bug=981114: Manually create /etc/mailname
     # or bzrlib gets upset and returns None,None for whoami causing test
     # failures.
-    root_sshcall("echo 'localhost' | cat > /etc/mailname")
+    mailname_file = get_container_path(lxcname, MAILNAME_FILE)
+    if not os.path.exists(mailname_file):
+        with open(mailname_file, 'w') as fd:
+            fd.write('localhost')
 
 
 def stop_lxc(lxcname, ssh_key_path):
