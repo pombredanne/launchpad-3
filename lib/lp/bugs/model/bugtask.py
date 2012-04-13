@@ -1980,10 +1980,7 @@ class BugTaskSet:
 
         See `IBugTask.getBugCountsForPackages` for more information.
         """
-        from lp.bugs.model.bugtasksearch import (
-            get_bug_privacy_filter,
-            search_value_to_where_condition,
-            )
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         packages = [
             package for package in packages
@@ -1992,23 +1989,23 @@ class BugTaskSet:
             package.sourcepackagename.id for package in packages]
 
         open_bugs_cond = (
-            'BugTask.status %s' % search_value_to_where_condition(
-                any(*DB_UNRESOLVED_BUGTASK_STATUSES)))
+            'BugTask.status IN %s' %
+            sqlvalues(DB_UNRESOLVED_BUGTASK_STATUSES))
 
         sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
         sums = [
             sum_template % (open_bugs_cond, 'open_bugs'),
             sum_template % (
-                'BugTask.importance %s' % search_value_to_where_condition(
-                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
+                'BugTask.importance = %s' %
+                sqlvalues(BugTaskImportance.CRITICAL), 'open_critical_bugs'),
             sum_template % (
                 'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
             sum_template % (
-                'BugTask.status %s' % search_value_to_where_condition(
-                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+                'BugTask.status = %s' %
+                sqlvalues(BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
             sum_template % (
-                'BugTask.importance %s' % search_value_to_where_condition(
-                    BugTaskImportance.HIGH), 'open_high_bugs'),
+                'BugTask.importance = %s' %
+                sqlvalues(BugTaskImportance.HIGH), 'open_high_bugs'),
             ]
 
         conditions = [
