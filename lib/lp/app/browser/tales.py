@@ -661,7 +661,16 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        privacy = IPrivacy(self._context, None)
+        # If a view is marked as private, the context doesn't matter. It will
+        # always be displayed as private.
+        view = self._context
+        private_view = getattr(view, 'private', False)
+        if private_view:
+            return 'private'
+
+        # If the view is not marked as private, privacy is determined by the
+        # view's context.
+        privacy = IPrivacy(getattr(view, 'context', None), None)
         if privacy is not None and privacy.private:
             return 'private'
         else:

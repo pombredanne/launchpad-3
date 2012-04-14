@@ -308,6 +308,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
     label = "Private PPA access"
+    private = True
 
     @cachedproperty
     def subscriptions_with_tokens(self):
