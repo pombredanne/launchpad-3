@@ -62,6 +62,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -73,6 +74,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
@@ -83,6 +85,7 @@ from lp.services.database.stormexpr import (
     Array,
     NullCount,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -248,29 +251,42 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
     orderby_expression, orderby_joins = _process_order_by(alternatives[0])
     decorators = []
 
+    use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
+    if resultrow is not BugTask:
+        raise AssertionError("Caller wanted %r" % (resultrow,))
+
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
-         has_duplicate_results, with_clause] = _build_query(alternatives[0])
+         has_duplicate_results, with_clause] = _build_query(
+             alternatives[0], use_flat)
         if with_clause:
             store = store.with_(with_clause)
         decorators.append(bugtask_decorator)
 
         if has_duplicate_results:
+            assert not use_flat
             origin = _build_origin(join_tables, [], clauseTables, BugTask)
-            outer_origin = _build_origin(orderby_joins, prejoins, [], BugTask)
+            outer_origin = _build_origin(
+                orderby_joins, prejoins, [], BugTask)
             subquery = Select(BugTask.id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
+            if use_flat:
+                want = BugTaskFlat.bugtask_id
+            else:
+                want = BugTask
             origin = _build_origin(
-                join_tables + orderby_joins, prejoins, clauseTables, BugTask)
-            result = store.using(*origin).find(resultrow, query)
+                join_tables + orderby_joins, prejoins, clauseTables,
+                BugTaskFlat if use_flat else BugTask)
+            result = store.using(*origin).find(want, query)
     else:
+        assert not use_flat
         results = []
 
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(params)
+             has_duplicate_results, with_clause] = _build_query(params, False)
             origin = _build_origin(join_tables, [], clauseTables, BugTask)
             localstore = store
             if with_clause:
@@ -285,17 +301,25 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         resultset = reduce(lambda l, r: l.union(r), results)
         origin = _build_origin(
             orderby_joins, prejoins, [],
-            start_with=Alias(resultset._get_select(), "BugTask"))
+            Alias(resultset._get_select(), "BugTask"))
         result = store.using(*origin).find(resultrow)
+
+    if use_flat:
+        decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
 
     if prejoins:
         decorators.insert(0, itemgetter(0))
+
+    def my_pre_iter_hook(rows):
+        load(BugTask, rows)
+        if pre_iter_hook:
+            pre_iter_hook(rows)
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
         result,
         lambda row: reduce(lambda task, dec: dec(task), decorators, row),
-        pre_iter_hook=pre_iter_hook)
+        pre_iter_hook=my_pre_iter_hook if use_flat else pre_iter_hook)
 
 
 def _build_origin(join_tables, prejoin_tables, clauseTables, start_with):
@@ -334,7 +358,7 @@ def _build_origin(join_tables, prejoin_tables, clauseTables, start_with):
     return origin
 
 
-def _build_query(params):
+def _build_query(params, use_flat):
     """Build and return an SQL query with the given parameters.
 
     Also return the clauseTables and orderBy for the generated query.
@@ -344,9 +368,18 @@ def _build_query(params):
     """
     params = _require_params(params)
 
-    extra_clauses = [Bug.id == BugTask.bugID]
-    clauseTables = [BugTask, Bug]
-    join_tables = []
+    if use_flat:
+        extra_clauses = []
+        clauseTables = []
+        join_tables = [
+            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
+            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
+            ]
+    else:
+        extra_clauses = [Bug.id == BugTask.bugID]
+        clauseTables = [BugTask, Bug]
+        join_tables = []
+
     decorators = []
     has_duplicate_results = False
     with_clauses = []

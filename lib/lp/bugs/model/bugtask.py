@@ -1513,7 +1513,7 @@ class BugTaskSet:
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtasksearch import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
-        if _noprejoins:
+        if _noprejoins or True:
             prejoins = []
             resultrow = BugTask
             eager_load = None
