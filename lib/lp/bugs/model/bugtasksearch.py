@@ -94,6 +94,37 @@ from lp.services.searchbuilder import (
 from lp.soyuz.enums import PackagePublishingStatus
 
 
+# This abstracts most of the columns involved in search so we can switch
+# to/from BugTaskFlat easily.
+cols = {
+    'Bug.id': Bug.id,
+    'Bug.duplicateof': Bug.duplicateof,
+    'Bug.owner': Bug.owner,
+    'Bug.date_last_updated': Bug.date_last_updated,
+    'BugTask.id': BugTask.id,
+    'BugTask.bug': BugTask.bug,
+    'BugTask.bugID': BugTask.bugID,
+    'BugTask.importance': BugTask.importance,
+    'BugTask.product': BugTask.product,
+    'BugTask.productID': BugTask.productID,
+    'BugTask.productseries': BugTask.productseries,
+    'BugTask.productseriesID': BugTask.productseriesID,
+    'BugTask.distribution': BugTask.distribution,
+    'BugTask.distributionID': BugTask.distributionID,
+    'BugTask.distroseries': BugTask.distroseries,
+    'BugTask.distroseriesID': BugTask.distroseriesID,
+    'BugTask.sourcepackagename': BugTask.sourcepackagename,
+    'BugTask.sourcepackagenameID': BugTask.sourcepackagenameID,
+    'BugTask.milestone': BugTask.milestone,
+    'BugTask.milestoneID': BugTask.milestoneID,
+    'BugTask.assignee': BugTask.assignee,
+    'BugTask.owner': BugTask.owner,
+    'BugTask.date_closed': BugTask.date_closed,
+    'BugTask.datecreated': BugTask.datecreated,
+    'BugTask._status': BugTask._status,
+    }
+
+
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
 orderby_expression = {
@@ -313,35 +344,6 @@ def _build_query(params):
         decorator to call on each returned row.
     """
     params = _require_params(params)
-
-    # Will soon be overridden to use BugTaskFlat.bug_id instead.
-    cols = {
-        'Bug.id': Bug.id,
-        'Bug.duplicateof': Bug.duplicateof,
-        'Bug.owner': Bug.owner,
-        'Bug.date_last_updated': Bug.date_last_updated,
-        'BugTask.id': BugTask.id,
-        'BugTask.bug': BugTask.bug,
-        'BugTask.bugID': BugTask.bugID,
-        'BugTask.importance': BugTask.importance,
-        'BugTask.product': BugTask.product,
-        'BugTask.productID': BugTask.productID,
-        'BugTask.productseries': BugTask.productseries,
-        'BugTask.productseriesID': BugTask.productseriesID,
-        'BugTask.distribution': BugTask.distribution,
-        'BugTask.distributionID': BugTask.distributionID,
-        'BugTask.distroseries': BugTask.distroseries,
-        'BugTask.distroseriesID': BugTask.distroseriesID,
-        'BugTask.sourcepackagename': BugTask.sourcepackagename,
-        'BugTask.sourcepackagenameID': BugTask.sourcepackagenameID,
-        'BugTask.milestone': BugTask.milestone,
-        'BugTask.milestoneID': BugTask.milestoneID,
-        'BugTask.assignee': BugTask.assignee,
-        'BugTask.owner': BugTask.owner,
-        'BugTask.date_closed': BugTask.date_closed,
-        'BugTask.datecreated': BugTask.datecreated,
-        'BugTask._status': BugTask._status,
-        }
 
     extra_clauses = [Bug.id == BugTask.bugID]
     clauseTables = [BugTask, Bug]
