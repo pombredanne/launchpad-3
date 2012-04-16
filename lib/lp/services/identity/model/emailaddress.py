@@ -20,7 +20,6 @@ from sqlobject import (
     StringCol,
     )
 
-from zope.event import notify
 from zope.interface import implements
 
 from lp.app.validators.email import valid_email
