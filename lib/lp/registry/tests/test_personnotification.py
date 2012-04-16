@@ -66,19 +66,6 @@ class TestPersonNotification(TestCaseWithFactory):
         self.assertEqual([email], notification.to_addresses)
         self.assertTrue(notification.can_send)
 
-    def test_to_specified_email(self):
-        """We might want to notify a non-preferred email address."""
-        user = self.factory.makePerson()
-        note = PersonNotification()
-        note.person = user
-        note.body = 'body'
-        note.subject = 'subject'
-        pop_notifications()
-        note.send(sendto=(user.displayname, 'testing@me.com'))
-        notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.assertTrue('testing@me.com' in notifications[0].get('To'))
-
 
 class TestPersonNotificationManager(TestCaseWithFactory):
     """Tests for the PersonNotificationManager use in scripts."""
