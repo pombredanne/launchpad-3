@@ -66,6 +66,10 @@ non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 # Match trailing whitespace.
 trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
 
+# this is a hard limit on the size of email we will be willing to store in
+# the database.
+MAX_EMAIL_SIZE = 10 * 1024 * 1024
+
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
@@ -496,6 +500,22 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
         return
     if 'precedence' in mail:
         log.info("Got a message with a precedence header.")
+        return
+
+    if mail.raw_length > MAX_EMAIL_SIZE:
+        complaint = (
+            "The mail you sent to Launchpad is too long.\n\n"
+            "Your message <%s>\nwas %d MB and the limit is %d MB." %
+            (mail['message-id'], mail.raw_length / 1e6, MAX_EMAIL_SIZE / 1e6))
+        log.info(complaint)
+        # It's probably big and it's probably mostly binary, so trim it pretty
+        # aggressively.
+        send_process_error_notification(
+            mail['From'],
+            'Mail to Launchpad was too large',
+            complaint,
+            mail,
+            max_return_size=8192)
         return
 
     try:
