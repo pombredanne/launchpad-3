@@ -329,12 +329,21 @@ verifies this:
 
 On a mad whim he decides to de-activate the key he just imported.
 
+    >>> from lp.services.mail import stub
     >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Deactivate Key').click()
 
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Deactivated key(s): 1024D/17B05A8F
+
+The user now gets a security notification that their GPG key has been
+deactivated.
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> to_addr
+    ['test@canonical.com']
+    >>> assert 'OpenGPG key' in msg
 
 Coming to his senses, he asks for a re-validation of the key.
 

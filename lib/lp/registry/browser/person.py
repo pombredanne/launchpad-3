@@ -2617,6 +2617,13 @@ class PersonGPGView(LaunchpadView):
                     "Cannot deactivate someone else's key")
                 return
             gpgkey.active = False
+
+            # When a GPG is deactivated we want to make sure we send a
+            # security notification to the user that it's been done.
+            self.user.security_field_changed(
+                "OpenPGP Key deactivated on Launchpad.",
+                "Your OpenGPG key <%s> has been deactivated." % key_id)
+
             deactivated_keys.append(gpgkey.displayname)
 
         flush_database_updates()
