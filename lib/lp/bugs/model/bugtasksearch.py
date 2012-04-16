@@ -422,7 +422,7 @@ def _build_query(params):
 
         if params.exclude_conjoined_tasks:
             tables, clauses = _build_exclude_conjoined_clause(
-                params.milestone)
+                params.milestone, cols)
             join_tables += tables
             extra_clauses += clauses
 
