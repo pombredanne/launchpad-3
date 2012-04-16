@@ -221,6 +221,40 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(message, removeSecurityProxy(job).error_description)
 
 
+def create_child(factory):
+    pf = factory.makeProcessorFamily()
+    pf.addProcessor('x86', '', '')
+    parent = factory.makeDistroSeries()
+    parent_das = factory.makeDistroArchSeries(
+        distroseries=parent, processorfamily=pf)
+    lf = factory.makeLibraryFileAlias()
+    # Since the LFA needs to be in the librarian, commit.
+    transaction.commit()
+    parent_das.addOrUpdateChroot(lf)
+    parent_das.supports_virtualized = True
+    parent.nominatedarchindep = parent_das
+    publisher = SoyuzTestPublisher()
+    publisher.prepareBreezyAutotest()
+    packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
+    for package in packages.keys():
+        publisher.getPubBinaries(
+            distroseries=parent, binaryname=package,
+            version=packages[package],
+            status=PackagePublishingStatus.PUBLISHED)
+    test1 = getUtility(IPackagesetSet).new(
+        u'test1', u'test 1 packageset', parent.owner,
+        distroseries=parent)
+    test1_packageset_id = str(test1.id)
+    test1.addSources('udev')
+    parent.updatePackageCount()
+    child = factory.makeDistroSeries()
+    getUtility(ISourcePackageFormatSelectionSet).add(
+        child, SourcePackageFormat.FORMAT_1_0)
+    # Make sure everything hits the database, switching db users aborts.
+    transaction.commit()
+    return parent, child, test1_packageset_id
+
+
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     """Test case for InitializeDistroSeriesJob."""
 
@@ -241,41 +275,8 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         parent_das.supports_virtualized = True
         return parent_das
 
-    def _create_child(self):
-        pf = self.factory.makeProcessorFamily()
-        pf.addProcessor('x86', '', '')
-        parent = self.factory.makeDistroSeries()
-        parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf)
-        lf = self.factory.makeLibraryFileAlias()
-        # Since the LFA needs to be in the librarian, commit.
-        transaction.commit()
-        parent_das.addOrUpdateChroot(lf)
-        parent_das.supports_virtualized = True
-        parent.nominatedarchindep = parent_das
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
-        for package in packages.keys():
-            publisher.getPubBinaries(
-                distroseries=parent, binaryname=package,
-                version=packages[package],
-                status=PackagePublishingStatus.PUBLISHED)
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', parent.owner,
-            distroseries=parent)
-        self.test1_packageset_id = str(test1.id)
-        test1.addSources('udev')
-        parent.updatePackageCount()
-        child = self.factory.makeDistroSeries()
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            child, SourcePackageFormat.FORMAT_1_0)
-        # Make sure everything hits the database, switching db users aborts.
-        transaction.commit()
-        return parent, child
-
     def test_job(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         job = self.job_source.create(child, [parent.id])
         switch_dbuser('initializedistroseries')
 
@@ -285,10 +286,10 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(parent.binarycount, child.binarycount)
 
     def test_job_with_arguments(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         arch = parent.nominatedarchindep.architecturetag
         job = self.job_source.create(
-            child, [parent.id], packagesets=(self.test1_packageset_id,),
+            child, [parent.id], packagesets=(test1_packageset_id,),
             arches=(arch,), rebuild=True)
         switch_dbuser('initializedistroseries')
 
@@ -302,7 +303,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(builds.count(), 1)
 
     def test_job_with_none_arguments(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         job = self.job_source.create(
             child, [parent.id], archindep_archtag=None, packagesets=None,
             arches=None, overlays=None, overlay_pockets=None,
@@ -314,7 +315,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(parent.sourcecount, child.sourcecount)
 
     def test_job_with_none_archindep_archtag_argument(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         job = self.job_source.create(
             child, [parent.id], archindep_archtag=None, packagesets=None,
             arches=None, overlays=None, overlay_pockets=None,
@@ -327,7 +328,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             child.nominatedarchindep.architecturetag)
 
     def test_job_with_archindep_archtag_argument(self):
-        parent, child = self._create_child()
+        parent, child, test1_packageset_id = create_child(self.factory)
         self.setupDas(parent, 'amd64', 'amd64')
         self.setupDas(parent, 'powerpc', 'hppa')
         job = self.job_source.create(
