@@ -7,7 +7,6 @@ __all__ = [
     'get_bug_privacy_filter',
     'orderby_expression',
     'search_bugs',
-    'search_value_to_where_condition',
     ]
 
 from operator import itemgetter
@@ -21,10 +20,12 @@ from storm.expr import (
     Desc,
     Exists,
     In,
+    Intersect,
     Join,
     LeftJoin,
     Not,
     Or,
+    Row,
     Select,
     SQL,
     )
@@ -61,11 +62,13 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.model.distribution import Distribution
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.milestonetag import MilestoneTag
 from lp.registry.model.person import Person
@@ -75,6 +78,10 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    Array,
+    NullCount,
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
@@ -165,42 +172,6 @@ orderby_expression = {
             ]
         ),
     }
-
-
-def search_value_to_where_condition(search_value):
-    """Convert a search value to a string WHERE condition.
-
-        >>> search_value_to_where_condition(any(1, 2, 3))
-        'IN (1,2,3)'
-        >>> search_value_to_where_condition(any()) is None
-        True
-        >>> search_value_to_where_condition(not_equals('foo'))
-        "!= 'foo'"
-        >>> search_value_to_where_condition(greater_than('foo'))
-        "> 'foo'"
-        >>> search_value_to_where_condition(1)
-        '= 1'
-        >>> search_value_to_where_condition(NULL)
-        'IS NULL'
-
-    """
-    if zope_isinstance(search_value, any):
-        # When an any() clause is provided, the argument value
-        # is a list of acceptable filter values.
-        if not search_value.query_values:
-            return None
-        return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
-    elif zope_isinstance(search_value, not_equals):
-        return "!= %s" % sqlvalues(search_value.value)
-    elif zope_isinstance(search_value, greater_than):
-        return "> %s" % sqlvalues(search_value.value)
-    elif search_value is not NULL:
-        return "= %s" % sqlvalues(search_value)
-    else:
-        # The argument value indicates we should match
-        # only NULL values for the column named by
-        # arg_name.
-        return "IS NULL"
 
 
 def search_value_to_storm_where_condition(comp, search_value):
@@ -496,59 +467,70 @@ def _build_query(params):
             '''ss as (SELECT * from StructuralSubscription
             WHERE StructuralSubscription.subscriber = %s)'''
             % sqlvalues(params.structural_subscriber))
+
+        class StructuralSubscriptionCTE(StructuralSubscription):
+            __storm_table__ = 'ss'
+
         join_tables.append(
             (Product, LeftJoin(Product, And(
                             BugTask.productID == Product.id,
                             Product.active))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss1'),
-                BugTask.product == SQL('ss1.product'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss2'),
-                BugTask.productseries == SQL('ss2.productseries'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss3'),
-                Product.project == SQL('ss3.project'))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss4'),
-                And(BugTask.distribution == SQL('ss4.distribution'),
-                    Or(BugTask.sourcepackagename ==
-                        SQL('ss4.sourcepackagename'),
-                        SQL('ss4.sourcepackagename IS NULL'))))))
+        ProductSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            ProductSub,
+            LeftJoin(
+                ProductSub,
+                BugTask.productID == ProductSub.productID)))
+        ProductSeriesSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            ProductSeriesSub,
+            LeftJoin(
+                ProductSeriesSub,
+                BugTask.productseriesID == ProductSeriesSub.productseriesID)))
+        ProjectSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            ProjectSub,
+            LeftJoin(
+                ProjectSub,
+                Product.projectID == ProjectSub.projectID)))
+        DistributionSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            DistributionSub,
+            LeftJoin(
+                DistributionSub,
+                And(BugTask.distributionID == DistributionSub.distributionID,
+                    Or(
+                        DistributionSub.sourcepackagenameID ==
+                            BugTask.sourcepackagenameID,
+                        DistributionSub.sourcepackagenameID == None)))))
         if params.distroseries is not None:
             parent_distro_id = params.distroseries.distributionID
         else:
             parent_distro_id = 0
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss5'),
-                Or(BugTask.distroseries == SQL('ss5.distroseries'),
+        DistroSeriesSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            DistroSeriesSub,
+            LeftJoin(
+                DistroSeriesSub,
+                Or(BugTask.distroseriesID == DistroSeriesSub.distroseriesID,
                     # There is a mismatch between BugTask and
                     # StructuralSubscription. SS does not support
                     # distroseries. This clause works because other
                     # joins ensure the match bugtask is the right
                     # series.
-                    And(parent_distro_id == SQL('ss5.distribution'),
-                        BugTask.sourcepackagename == SQL(
-                            'ss5.sourcepackagename'))))))
-        join_tables.append(
-            (None,
-                LeftJoin(
-                SQL('ss ss6'),
-                BugTask.milestone == SQL('ss6.milestone'))))
+                    And(parent_distro_id == DistroSeriesSub.distributionID,
+                        BugTask.sourcepackagenameID ==
+                            DistroSeriesSub.sourcepackagenameID)))))
+        MilestoneSub = ClassAlias(StructuralSubscriptionCTE)
+        join_tables.append((
+            MilestoneSub,
+            LeftJoin(
+                MilestoneSub,
+                BugTask.milestoneID == MilestoneSub.milestoneID)))
         extra_clauses.append(
-            "NULL_COUNT("
-            "ARRAY[ss1.id, ss2.id, ss3.id, ss4.id, ss5.id, ss6.id]"
-            ") < 6")
+            NullCount(Array(
+                ProductSub.id, ProductSeriesSub.id, ProjectSub.id,
+                DistributionSub.id, DistroSeriesSub.id, MilestoneSub.id)) < 6)
         has_duplicate_results = True
 
     # Remove bugtasks from deactivated products, if necessary.
@@ -625,21 +607,28 @@ def _build_query(params):
     # is not for subscription to notifications.
     # See bug #191809
     if params.bug_supervisor:
-        bug_supervisor_clause = """(
-            BugTask.product IN (
-                SELECT id FROM Product
-                WHERE Product.bug_supervisor = %(bug_supervisor)s)
-            OR
-            ((BugTask.distribution, Bugtask.sourcepackagename) IN
-                (SELECT distribution,  sourcepackagename FROM
-                    StructuralSubscription
-                    WHERE subscriber = %(bug_supervisor)s))
-            OR
-            BugTask.distribution IN (
-                SELECT id from Distribution WHERE
-                Distribution.bug_supervisor = %(bug_supervisor)s)
-            )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
-        extra_clauses.append(bug_supervisor_clause)
+        extra_clauses.append(Or(
+            In(
+                BugTask.productID,
+                Select(
+                    Product.id, tables=[Product],
+                    where=Product.bug_supervisor == params.bug_supervisor)),
+            In(
+                BugTask.distributionID,
+                Select(
+                    Distribution.id, tables=[Distribution],
+                    where=(
+                        Distribution.bug_supervisor ==
+                            params.bug_supervisor))),
+            In(
+                Row(BugTask.distributionID, BugTask.sourcepackagenameID),
+                Select(
+                    ((StructuralSubscription.distributionID,
+                     StructuralSubscription.sourcepackagenameID),),
+                    tables=[StructuralSubscription],
+                    where=(
+                        StructuralSubscription.subscriber ==
+                            params.bug_supervisor)))))
 
     if params.bug_reporter:
         extra_clauses.append(Bug.owner == params.bug_reporter)
@@ -691,7 +680,7 @@ def _build_query(params):
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
-        extra_clauses.append(clause)
+        extra_clauses.append(SQL(clause))
         decorators.append(decorator)
 
     hw_clause = _build_hardware_related_clause(params)
@@ -703,7 +692,7 @@ def _build_query(params):
         if branches is not None:
             where.append(
                 search_value_to_storm_where_condition(
-                    BugBranch.branchID, params.linked_branches))
+                    BugBranch.branchID, branches))
         return Exists(Select(1, tables=[BugBranch], where=And(*where)))
 
     if zope_isinstance(params.linked_branches, BaseItem):
@@ -726,12 +715,7 @@ def _build_query(params):
     if params.created_since:
         extra_clauses.append(BugTask.datecreated > params.created_since)
 
-    storm_clauses = []
-    for clause in extra_clauses:
-        if isinstance(clause, str):
-            clause = SQL(clause)
-        storm_clauses.append(clause)
-    query = And(storm_clauses)
+    query = And(extra_clauses)
 
     if not decorators:
         decorator = lambda x: x
@@ -848,20 +832,18 @@ def _build_search_text_clause(params, fast=False):
     if fast:
         assert params.searchtext is None, (
             'Cannot use searchtext at the same time as fast_searchtext.')
-        searchtext_quoted = quote(params.fast_searchtext)
+        searchtext = params.fast_searchtext
     else:
         assert params.fast_searchtext is None, (
             'Cannot use fast_searchtext at the same time as searchtext.')
-        searchtext_quoted = quote(params.searchtext)
+        searchtext = params.searchtext
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
-        params.orderby = [
-            SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-            ]
+        params.orderby = [SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
 
-    return "Bug.fti @@ ftq(%s)" % searchtext_quoted
+    return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
 
 
 def _build_status_clause(col, status):
@@ -911,7 +893,7 @@ def _build_exclude_conjoined_clause(milestone):
     # Perform a LEFT JOIN to the conjoined master bugtask.  If the
     # conjoined master is not null, it gets filtered out.
     ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
-    extra_clauses = ["ConjoinedMaster.id IS NULL"]
+    extra_clauses = [ConjoinedMaster.id == None]
     if milestone.distribution is not None:
         current_series = milestone.distribution.currentseries
         join = LeftJoin(
@@ -1031,161 +1013,112 @@ def _build_hardware_related_clause(params):
 def _build_blueprint_related_clause(params):
     """Find bugs related to Blueprints, or not."""
     linked_blueprints = params.linked_blueprints
+
+    def make_clause(blueprints=None):
+        where = [SpecificationBug.bugID == Bug.id]
+        if blueprints is not None:
+            where.append(
+                search_value_to_storm_where_condition(
+                    SpecificationBug.specificationID, blueprints))
+        return Exists(Select(1, tables=[SpecificationBug], where=And(*where)))
+
     if linked_blueprints is None:
         return None
     elif zope_isinstance(linked_blueprints, BaseItem):
         if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
-            return "EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
+            return make_clause()
         elif (linked_blueprints ==
                 BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
-            return "NOT EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
+            return Not(make_clause())
     else:
         # A specific search term has been supplied.
-        return """EXISTS (
-                SELECT TRUE FROM SpecificationBug
-                WHERE SpecificationBug.bug=Bug.id AND
-                SpecificationBug.specification %s)
-            """ % search_value_to_where_condition(linked_blueprints)
+        return make_clause(linked_blueprints)
 
 
 # Upstream task restrictions
 
-_open_resolved_upstream = """
-    EXISTS (
-        SELECT TRUE FROM BugTask AS RelatedBugTask
-        WHERE RelatedBugTask.bug = BugTask.bug
-            AND RelatedBugTask.id != BugTask.id
-            AND ((
-                RelatedBugTask.bugwatch IS NOT NULL AND
-                RelatedBugTask.status %s)
-                OR (
-                RelatedBugTask.product IS NOT NULL AND
-                RelatedBugTask.bugwatch IS NULL AND
-                RelatedBugTask.status %s))
-        )
-    """
-
-_open_resolved_upstream_with_target = """
-    EXISTS (
-        SELECT TRUE FROM BugTask AS RelatedBugTask
-        WHERE RelatedBugTask.bug = BugTask.bug
-            AND RelatedBugTask.id != BugTask.id
-            AND ((
-                RelatedBugTask.%(target_column)s = %(target_id)s AND
-                RelatedBugTask.bugwatch IS NOT NULL AND
-                RelatedBugTask.status %(status_with_watch)s)
-                OR (
-                RelatedBugTask.%(target_column)s = %(target_id)s AND
-                RelatedBugTask.bugwatch IS NULL AND
-                RelatedBugTask.status %(status_without_watch)s))
-        )
-    """
-
-
 def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
+    RelatedBugTask = ClassAlias(BugTask)
+    extra_joins = []
+    # Normally we want to exclude the current task from the search,
+    # unless we're looking at an upstream project.
+    task_match_clause = RelatedBugTask.id != BugTask.id
+    target = None
     if params.product:
-        # Include only bugtasks that do no have bug watches that
-        # belong to a product that does not use Malone.
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id = BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND OtherProduct.official_malone IS FALSE
-                    AND RelatedBugTask.status != %s)
-            """ % sqlvalues(BugTaskStatus.INVALID)
-    elif params.upstream_target is None:
-        # Include only bugtasks that have other bugtasks on targets
-        # not using Malone, which are not Invalid, and have no bug
-        # watch.
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution =
-                            OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id != BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND (
-                        OtherDistribution.official_malone IS FALSE
-                        OR OtherProduct.official_malone IS FALSE)
-                    AND RelatedBugTask.status != %s)
-            """ % sqlvalues(BugTaskStatus.INVALID)
-    else:
-        # Include only bugtasks that have other bugtasks on
-        # params.upstream_target, but only if this this product
-        # does not use Malone and if the bugtasks are not Invalid,
-        # and have no bug watch.
-        if IProduct.providedBy(params.upstream_target):
-            target_clause = 'RelatedBugTask.product = %s'
-        elif IDistribution.providedBy(params.upstream_target):
-            target_clause = 'RelatedBugTask.distribution = %s'
+        # Looking for pending bugwatches in a project context is
+        # special: instead of returning bugs with *other* tasks that
+        # need forwarding, we return the subset of these tasks that
+        # does. So the task ID should match, and there is no need for a
+        # target clause.
+        target = params.product
+        task_match_clause = RelatedBugTask.id == BugTask.id
+        target_clause = True
+    elif params.upstream_target:
+        # Restrict the target to params.upstream_target.
+        target = params.upstream_target
+        if IProduct.providedBy(target):
+            target_col = RelatedBugTask.productID
+        elif IDistribution.providedBy(target):
+            target_col = RelatedBugTask.distributionID
         else:
             raise AssertionError(
                 'params.upstream_target must be a Distribution or '
                 'a Product')
-        # There is no point to construct a real sub-select if we
-        # already know that the result will be empty.
-        if params.upstream_target.official_malone:
-            return 'false'
-        target_clause = target_clause % sqlvalues(
-            params.upstream_target.id)
-        return """
-            EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.id != BugTask.id
-                    AND RelatedBugTask.bugwatch IS NULL
-                    AND %s
-                    AND RelatedBugTask.status != %s)
-            """ % (target_clause, sqlvalues(BugTaskStatus.INVALID)[0])
+        target_clause = target_col == target.id
+    else:
+        # Restrict the target to distributions or products which don't
+        # use Launchpad for bug tracking.
+        OtherDistribution = ClassAlias(Distribution)
+        OtherProduct = ClassAlias(Product)
+        extra_joins = [
+            LeftJoin(
+                OtherDistribution,
+                OtherDistribution.id == RelatedBugTask.distributionID),
+            LeftJoin(
+                OtherProduct,
+                OtherProduct.id == RelatedBugTask.productID),
+            ]
+        target_clause = Or(
+            OtherDistribution.official_malone == False,
+            OtherProduct.official_malone == False)
+
+    # We only include tasks on targets that don't use Launchpad for bug
+    # tracking. If we're examining a single target, get out early if it
+    # uses LP.
+    if target and target.official_malone:
+        return False
+
+    # Include only bugtasks that have other bugtasks on matching
+    # targets which are not Invalid and have no bug watch.
+    return Exists(Select(
+        1,
+        tables=[RelatedBugTask] + extra_joins,
+        where=And(
+            RelatedBugTask.bugID == BugTask.bugID,
+            task_match_clause,
+            RelatedBugTask.bugwatchID == None,
+            RelatedBugTask._status != BugTaskStatus.INVALID,
+            target_clause)))
 
 
 def _build_no_upstream_bugtask_clause(params):
     """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask."""
+    OtherBugTask = ClassAlias(BugTask)
     if params.upstream_target is None:
-        # Find all bugs that has no product bugtask. We limit the
-        # SELECT by matching against BugTask.bug to make the query
-        # faster.
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.product IS NOT NULL)
-        """
+        target = OtherBugTask.productID != None
     elif IProduct.providedBy(params.upstream_target):
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.product=%s)
-        """ % sqlvalues(params.upstream_target.id)
+        target = OtherBugTask.productID == params.upstream_target.id
     elif IDistribution.providedBy(params.upstream_target):
-        return """
-            NOT EXISTS (SELECT TRUE
-                        FROM BugTask AS OtherBugTask
-                        WHERE OtherBugTask.bug = BugTask.bug
-                            AND OtherBugTask.distribution=%s)
-        """ % sqlvalues(params.upstream_target.id)
+        target = OtherBugTask.distributionID == params.upstream_target.id
     else:
         raise AssertionError(
             'params.upstream_target must be a Distribution or '
             'a Product')
+    return Not(Exists(Select(
+        1, tables=[OtherBugTask],
+        where=And(OtherBugTask.bugID == BugTask.bugID, target))))
 
 
 def _build_open_or_resolved_upstream_clause(params,
@@ -1193,26 +1126,38 @@ def _build_open_or_resolved_upstream_clause(params,
                                       statuses_for_upstream_tasks):
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
+    RelatedBugTask = ClassAlias(BugTask)
+    watch_status_clause = search_value_to_storm_where_condition(
+        RelatedBugTask._status, any(*statuses_for_watch_tasks))
+    no_watch_status_clause = search_value_to_storm_where_condition(
+        RelatedBugTask._status, any(*statuses_for_upstream_tasks))
     if params.upstream_target is None:
-        return _open_resolved_upstream % (
-                search_value_to_where_condition(
-                    any(*statuses_for_watch_tasks)),
-                search_value_to_where_condition(
-                    any(*statuses_for_upstream_tasks)))
-    elif IProduct.providedBy(params.upstream_target):
-        query_values = {'target_column': 'product'}
-    elif IDistribution.providedBy(params.upstream_target):
-        query_values = {'target_column': 'distribution'}
+        watch_target_clause = True
+        no_watch_target_clause = RelatedBugTask.productID != None
     else:
-        raise AssertionError(
-            'params.upstream_target must be a Distribution or '
-            'a Product')
-    query_values['target_id'] = sqlvalues(params.upstream_target.id)[0]
-    query_values['status_with_watch'] = search_value_to_where_condition(
-        any(*statuses_for_watch_tasks))
-    query_values['status_without_watch'] = search_value_to_where_condition(
-        any(*statuses_for_upstream_tasks))
-    return _open_resolved_upstream_with_target % query_values
+        if IProduct.providedBy(params.upstream_target):
+            target_col = RelatedBugTask.productID
+        elif IDistribution.providedBy(params.upstream_target):
+            target_col = RelatedBugTask.distributionID
+        else:
+            raise AssertionError(
+                'params.upstream_target must be a Distribution or '
+                'a Product')
+        watch_target_clause = no_watch_target_clause = (
+            target_col == params.upstream_target.id)
+    return Exists(Select(
+        1,
+        tables=[RelatedBugTask],
+        where=And(
+            RelatedBugTask.bugID == BugTask.bugID,
+            RelatedBugTask.id != BugTask.id,
+            Or(
+                And(watch_target_clause,
+                    RelatedBugTask.bugwatchID != None,
+                    watch_status_clause),
+                And(no_watch_target_clause,
+                    RelatedBugTask.bugwatchID == None,
+                    no_watch_status_clause)))))
 
 
 def _build_open_upstream_clause(params):
@@ -1272,54 +1217,42 @@ def _build_upstream_clause(params):
         upstream_clauses.append(_build_open_upstream_clause(params))
 
     if upstream_clauses:
-        upstream_clause = " OR ".join(upstream_clauses)
-        return '(%s)' % upstream_clause
+        return Or(*upstream_clauses)
     return None
 
 
 # Tag restrictions
 
-def _build_tag_set_query(joiner, tags):
-    """Return an SQL snippet to find whether a bug matches the given tags.
+def _build_tag_set_query(clauses):
+    subselects = [
+        Select(1, tables=[BugTag], where=And(BugTag.bugID == Bug.id, clause))
+        for clause in clauses]
+    if len(subselects) == 1:
+        return Exists(subselects[0])
+    else:
+        return Exists(Intersect(*subselects))
 
-    The tags are sorted so that testing the generated queries is
-    easier and more reliable.
 
-    This SQL is designed to be a sub-query where the parent SQL defines
-    Bug.id. It evaluates to TRUE or FALSE, indicating whether the bug
-    with Bug.id matches against the tags passed.
+def _build_tag_set_query_all(tags):
+    """Return a Storm expression for bugs matching all given tags.
 
-    Returns None if no tags are passed.
-
-    :param joiner: The SQL set term used to join the individual tag
-        clauses, typically "INTERSECT" or "UNION".
-    :param tags: An iterable of valid tag names (not prefixed minus
-        signs, not wildcards).
+    :param tags: An iterable of valid tags without - or + and not wildcards.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = list(tags)
-    if tags == []:
+    if not tags:
         return None
-
-    joiner = " %s " % joiner
-    return "EXISTS (%s)" % joiner.join(
-        "SELECT TRUE FROM BugTag WHERE " +
-            "BugTag.bug = Bug.id AND BugTag.tag = %s" % quote(tag)
-        for tag in sorted(tags))
+    return _build_tag_set_query([BugTag.tag == tag for tag in sorted(tags)])
 
 
 def _build_tag_set_query_any(tags):
-    """Return a query fragment for bugs matching any tag.
+    """Return a Storm expression for bugs matching any given tag.
 
     :param tags: An iterable of valid tags without - or + and not wildcards.
-    :return: A string SQL query fragment or None if no tags were provided.
+    :return: A Storm expression or None if no tags were provided.
     """
-    tags = sorted(tags)
-    if tags == []:
+    if not tags:
         return None
-    return "EXISTS (%s)" % (
-        "SELECT TRUE FROM BugTag"
-        " WHERE BugTag.bug = Bug.id"
-        " AND BugTag.tag IN %s") % sqlvalues(tags)
+    return _build_tag_set_query([BugTag.tag.is_in(sorted(tags))])
 
 
 def _build_tag_search_clause(tags_spec):
@@ -1343,46 +1276,45 @@ def _build_tag_search_clause(tags_spec):
     if find_all:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'AND'
+        combine_with = And
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = _build_tag_set_query("INTERSECT", include)
+        include_clause = _build_tag_set_query_all(include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
         exclude_clause = _build_tag_set_query_any(exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
-        combine_with = 'OR'
+        combine_with = Or
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
         include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = _build_tag_set_query("INTERSECT", exclude)
+        exclude_clause = _build_tag_set_query_all(exclude)
 
+    universal_clause = (
+        Exists(Select(1, tables=[BugTag], where=BugTag.bugID == Bug.id)))
     # Search for the *presence* of any tag.
     if '*' in wildcards:
         # Only clobber the clause if not searching for all tags.
         if include_clause == None or not find_all:
-            include_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            include_clause = universal_clause
 
     # Search for the *absence* of any tag.
     if '-*' in wildcards:
         # Only clobber the clause if searching for all tags.
         if exclude_clause == None or find_all:
-            exclude_clause = (
-                "EXISTS (SELECT TRUE FROM BugTag WHERE BugTag.bug = Bug.id)")
+            exclude_clause = universal_clause
 
     # Combine the include and exclude sets.
     if include_clause != None and exclude_clause != None:
-        return "(%s %s NOT %s)" % (
-            include_clause, combine_with, exclude_clause)
+        return combine_with(include_clause, Not(exclude_clause))
     elif include_clause != None:
-        return "%s" % include_clause
+        return include_clause
     elif exclude_clause != None:
-        return "NOT %s" % exclude_clause
+        return Not(exclude_clause)
     else:
         # This means that there were no tags (wildcard or specific) to
         # search for (which is allowed, even if it's a bit weird).

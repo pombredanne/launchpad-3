@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = ['LpQueryDistro']
 
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -16,6 +17,7 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 
 
 class LpQueryDistro(LaunchpadScript):
@@ -26,7 +28,9 @@ class LpQueryDistro(LaunchpadScript):
 
         Also initialize the list 'allowed_arguments'.
         """
-        self.allowed_actions = ['development', 'supported', 'archs']
+        self.allowed_actions = [
+            'current', 'development', 'supported', 'pending_suites', 'archs',
+            'official_archs', 'nominated_arch_indep', 'pocket_suffixes']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -118,6 +122,23 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite.")
 
     @property
+    def current(self):
+        """Return the name of the CURRENT distroseries.
+
+        It is restricted for the context distribution.
+
+        It may raise LaunchpadScriptFailure if a suite was passed on the
+        command-line or if not CURRENT distroseries was found.
+        """
+        self.checkNoSuiteDefined()
+        series = self.location.distribution.getSeriesByStatus(
+            SeriesStatus.CURRENT)
+        if not series:
+            raise LaunchpadScriptFailure("No CURRENT series.")
+
+        return series[0].name
+
+    @property
     def development(self):
         """Return the name of the DEVELOPMENT distroseries.
 
@@ -176,6 +197,28 @@ class LpQueryDistro(LaunchpadScript):
         return " ".join(supported_series)
 
     @property
+    def pending_suites(self):
+        """Return the suite names containing PENDING publication.
+
+        It check for sources and/or binary publications.
+        """
+        self.checkNoSuiteDefined()
+        pending_suites = set()
+        pending_sources = self.location.archive.getPublishedSources(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_sources:
+            pending_suites.add((pub.distroseries, pub.pocket))
+
+        pending_binaries = self.location.archive.getAllPublishedBinaries(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_binaries:
+            pending_suites.add(
+                (pub.distroarchseries.distroseries, pub.pocket))
+
+        return " ".join([distroseries.name + pocketsuffix[pocket]
+                         for distroseries, pocket in pending_suites])
+
+    @property
     def archs(self):
         """Return a space-separated list of architecture tags.
 
@@ -183,3 +226,35 @@ class LpQueryDistro(LaunchpadScript):
         """
         architectures = self.location.distroseries.architectures
         return " ".join(arch.architecturetag for arch in architectures)
+
+    @property
+    def official_archs(self):
+        """Return a space-separated list of official architecture tags.
+
+        It is restricted to the context distribution and suite.
+        """
+        architectures = self.location.distroseries.architectures
+        return " ".join(arch.architecturetag
+                        for arch in architectures
+                        if arch.official)
+
+    @property
+    def nominated_arch_indep(self):
+        """Return the nominated arch indep architecture tag.
+
+        It is restricted to the context distribution and suite.
+        """
+        series = self.location.distroseries
+        return series.nominatedarchindep.architecturetag
+
+    @property
+    def pocket_suffixes(self):
+        """Return a space-separated list of non-empty pocket suffixes.
+
+        The RELEASE pocket (whose suffix is the empty string) is omitted.
+
+        The returned space-separated string is ordered alphabetically.
+        """
+        sorted_non_empty_suffixes = sorted(
+            suffix for suffix in pocketsuffix.values() if suffix != '')
+        return " ".join(sorted_non_empty_suffixes)

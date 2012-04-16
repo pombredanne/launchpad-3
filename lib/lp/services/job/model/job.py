@@ -189,10 +189,12 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
-        # Commit the transaction to update the DB time.
         if manage_transaction:
+            if abort_transaction:
+                transaction.abort()
+            # Commit the transaction to update the DB time.
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
@@ -258,24 +260,37 @@ class UniversalJobSource:
     @staticmethod
     def getDerived(job_id):
         """Return the derived branch job associated with the job id."""
+        # Avoid circular imports.
         from lp.code.model.branchjob import (
             BranchJob,
             )
-        store = IStore(BranchJob)
-        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        if branch_job is None:
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob,
+            )
+        store = IStore(Job)
+        for cls in [BranchJob, BranchMergeProposalJob]:
+            base_job = store.find(cls, cls.job == job_id).one()
+            if base_job is not None:
+                break
+        if base_job is None:
             raise ValueError('No BranchJob with job=%s.' % job_id)
-        return branch_job.makeDerived(), store
+
+        return base_job.makeDerived(), store
+
+    @staticmethod
+    def clearStore(store):
+        transaction.abort()
+        getUtility(IZStorm).remove(store)
+        store.close()
 
     @classmethod
     def switchDBUser(cls, job_id):
         """Switch to the DB user associated with this Job ID."""
+        cls.clearStore(IStore(Job))
         derived, store = cls.getDerived(job_id)
         dbconfig.override(
             dbuser=derived.config.dbuser, isolation_level='read_committed')
-        transaction.abort()
-        getUtility(IZStorm).remove(store)
-        store.close()
+        cls.clearStore(store)
 
     @classmethod
     def get(cls, job_id):

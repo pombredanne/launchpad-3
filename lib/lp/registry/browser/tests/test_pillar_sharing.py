@@ -173,6 +173,7 @@ class PillarSharingDetailsMixin:
                 'bug_id': self.bug.id,
                 'bug_summary': self.bug.title,
                 'bug_importance': bugtask.importance.title.lower(),
+                'information_type': self.bug.information_type.title,
                 'web_link': canonical_url(
                     bugtask, path_only_if_possible=True),
                 'self_link': absoluteURL(self.bug, request),
@@ -181,6 +182,7 @@ class PillarSharingDetailsMixin:
                 self.assertEqual({
                     'branch_id': self.branch.id,
                     'branch_name': self.branch.unique_name,
+                    'information_type': InformationType.USERDATA.title,
                     'web_link': canonical_url(
                         self.branch, path_only_if_possible=True),
                     'self_link': absoluteURL(self.branch, request),

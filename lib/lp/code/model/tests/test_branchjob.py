@@ -74,8 +74,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.job.tests import (
-    celeryd,
-    monitor_celery,
+    block_on_job,
     )
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
@@ -88,7 +87,7 @@ from lp.testing.dbuser import (
     switch_dbuser,
     )
 from lp.testing.layers import (
-    AppServerLayer,
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -1234,11 +1233,10 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
 class TestViaCelery(TestCaseWithFactory):
 
-    layer = AppServerLayer
+    layer = CeleryJobLayer
 
     def test_RosettaUploadJob(self):
         """Ensure RosettaUploadJob can run under Celery."""
-        self.useContext(celeryd('job'))
         self.useBzrBranches(direct_database=True)
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
@@ -1247,19 +1245,17 @@ class TestViaCelery(TestCaseWithFactory):
         self.createBzrBranch(db_branch)
         commit = DirectBranchCommit(db_branch, no_race_check=True)
         commit.writeFile('foo.pot', 'gibberish')
-        with monitor_celery() as responses:
-            with person_logged_in(db_branch.owner):
+        with person_logged_in(db_branch.owner):
+            # wait for branch scan
+            with block_on_job():
                 commit.commit('message')
                 transaction.commit()
-                # Wait for branch scan to complete.
-                responses[0].wait(30)
-                series = self.factory.makeProductSeries(branch=db_branch)
-                RosettaUploadJob.create(
-                    commit.db_branch, NULL_REVISION,
-                    force_translations_upload=True)
-                transaction.commit()
-        # Wait for RosettaUploadJob to complete
-        responses[1].wait(30)
+        series = self.factory.makeProductSeries(branch=db_branch)
+        with block_on_job():
+            RosettaUploadJob.create(
+                commit.db_branch, NULL_REVISION,
+                force_translations_upload=True)
+            transaction.commit()
         queue = getUtility(ITranslationImportQueue)
         entries = list(queue.getAllEntries(target=series))
         self.assertEqual(len(entries), 1)
