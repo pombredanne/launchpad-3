@@ -62,7 +62,7 @@
     itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
-      ${view/context/fmt:public-private-css}
+      ${view/fmt:public-private-css}
       yui3-skin-sam">
         <script type="text/javascript"
           tal:condition="python: is_lpnet">
