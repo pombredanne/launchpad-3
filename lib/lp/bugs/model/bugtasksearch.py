@@ -256,14 +256,14 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         decorators.append(bugtask_decorator)
 
         if has_duplicate_results:
-            origin = _build_origin(join_tables, [], clauseTables)
-            outer_origin = _build_origin(orderby_joins, prejoins, [])
+            origin = _build_origin(join_tables, [], clauseTables, BugTask)
+            outer_origin = _build_origin(orderby_joins, prejoins, [], BugTask)
             subquery = Select(BugTask.id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
             origin = _build_origin(
-                join_tables + orderby_joins, prejoins, clauseTables)
+                join_tables + orderby_joins, prejoins, clauseTables, BugTask)
             result = store.using(*origin).find(resultrow, query)
     else:
         results = []
@@ -271,7 +271,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
              has_duplicate_results, with_clause] = _build_query(params)
-            origin = _build_origin(join_tables, [], clauseTables)
+            origin = _build_origin(join_tables, [], clauseTables, BugTask)
             localstore = store
             if with_clause:
                 localstore = store.with_(with_clause)
@@ -298,8 +298,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         pre_iter_hook=pre_iter_hook)
 
 
-def _build_origin(join_tables, prejoin_tables, clauseTables,
-                start_with=BugTask):
+def _build_origin(join_tables, prejoin_tables, clauseTables, start_with):
     """Build the parameter list for Store.using().
 
     :param join_tables: A sequence of tables that should be joined
