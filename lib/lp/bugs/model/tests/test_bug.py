@@ -717,21 +717,19 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(), bug_owner,
+            self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
-            expected_direct_subscribers = set(bug.getDirectSubscribers())
+            who = self.factory.makePerson(name='who')
+            subscribers_before_public = set(bug.getDirectSubscribers())
             bug.transitionToInformationType(InformationType.PUBLIC, who)
-        subscribers = set(bug.getDirectSubscribers())
-        expected_direct_subscribers.difference_update(
-            (default_bugtask.pillar.security_contact,
-             default_bugtask.pillar.bug_supervisor,
-             bugtask_a.pillar.security_contact))
-        self.assertContentEqual(expected_direct_subscribers, subscribers)
+        subscribers_after_public = set(bug.getDirectSubscribers())
+        self.assertContentEqual(
+            subscribers_before_public,
+            subscribers_after_public)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
         # The pillar owner is subscribed if the bug supervisor is not set.

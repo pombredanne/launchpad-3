@@ -1736,9 +1736,11 @@ class Bug(SQLBase):
         if information_type in PRIVATE_INFORMATION_TYPES:
             self.who_made_private = who
             self.date_made_private = UTC_NOW
+            missing_subscribers = set([who, self.owner])
         else:
             self.who_made_private = None
             self.date_made_private = None
+            missing_subscribers = set()
         # XXX: This should be a bulk update. RBC 20100827
         # bug=https://bugs.launchpad.net/storm/+bug/625071
         for attachment in self.attachments_unpopulated:
@@ -1747,7 +1749,6 @@ class Bug(SQLBase):
         self.updateHeat()
 
         # There are several people we need to ensure are subscribed.
-        missing_subscribers = set([who, self.owner])
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
         # bug supervisor, we need to subscribe the maintainer.
