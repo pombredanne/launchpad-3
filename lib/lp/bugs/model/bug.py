@@ -1769,7 +1769,6 @@ class Bug(SQLBase):
                 else:
                     missing_subscribers.add(pillar.owner)
 
-        import pdb; pdb.set_trace()
         for s in missing_subscribers:
             subscriptions = get_structural_subscriptions_for_bug(self, s)
             if subscriptions.is_empty():
