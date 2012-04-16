@@ -1727,6 +1727,9 @@ class Bug(SQLBase):
     def transitionToInformationType(self, information_type, who):
         """See `IBug`."""
         bug_before_modification = Snapshot(self, providing=providedBy(self))
+        if information_type == InformationType.PROPRIETARY:
+            raise BugCannotBePrivate(
+                "Can not transition the information type to proprietary.")
         if self.information_type == information_type:
             return False
         f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
