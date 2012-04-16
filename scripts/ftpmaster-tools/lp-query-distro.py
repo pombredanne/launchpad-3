@@ -9,10 +9,15 @@
    It should provide an easy way to retrieve current information from
    Launchpad when using plain shell scripts, for example:
 
+   * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
    * DEVELOPMENT distroseries name:
        `./ubuntu-helper.py -d ubuntu development`
    * Distroseries architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
+   * Distroseries official architectures:
+       `./lp-query-distro.py -d ubuntu -s feisty official_archs`
+   * Distroseries nominated-arch-indep:
+       `./lp-query-distro.py -d ubuntu -s feisty nominated_arch_indep`
 
    Standard Output will carry the successfully executed information and
    exit_code will be ZERO.
