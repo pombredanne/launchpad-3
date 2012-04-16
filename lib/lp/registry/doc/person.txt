@@ -183,8 +183,6 @@ security email notification to the original preferred email address.
 
     >>> login(ANONYMOUS)
 
-
-
 In the case of teams, though, the account_status is not changed as their
 account_status must always be set to NOACCOUNT. (Notice how we use
 setContactAddress() rather than setPreferredEmail() here, since the
