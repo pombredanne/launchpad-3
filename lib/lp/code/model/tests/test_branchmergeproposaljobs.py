@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -55,9 +55,14 @@ from lp.code.model.tests.test_diff import (
     )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    block_on_job,
+    pop_remote_notifications,
+    )
 from lp.services.osutils import override_environ
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -65,7 +70,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -549,6 +557,15 @@ class TestReviewRequestedEmailJob(TestCaseWithFactory):
             'emailing a reviewer requesting a review',
             job.getOperationDescription())
 
+    def test_run_sends_mail(self):
+        request = self.factory.makeCodeReviewVoteReference()
+        job = ReviewRequestedEmailJob.create(request)
+        job.run()
+        (notification,) = pop_notifications()
+        self.assertIn(
+            'You have been requested to review the proposed merge',
+            notification.get_payload(decode=True))
+
 
 class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
 
@@ -573,3 +590,71 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
         self.assertEqual(
             'emailing subscribers about merge proposal changes',
             job.getOperationDescription())
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_MergeProposalNeedsReviewEmailJob(self):
+        """MergeProposalNeedsReviewEmailJob runs under Celery."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes':
+             'MergeProposalNeedsReviewEmailJob'}))
+        bmp = self.factory.makeBranchMergeProposal()
+        with block_on_job():
+            MergeProposalNeedsReviewEmailJob.create(bmp)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_UpdatePreviewDiffJob(self):
+        """UpdatePreviewDiffJob runs under Celery."""
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
+        with block_on_job():
+            UpdatePreviewDiffJob.create(bmp)
+            transaction.commit()
+        self.assertIsNot(None, bmp.preview_diff)
+
+    def test_CodeReviewCommentEmailJob(self):
+        """CodeReviewCommentEmailJob runs under Celery."""
+        comment = self.factory.makeCodeReviewComment()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'CodeReviewCommentEmailJob'}))
+        with block_on_job():
+            CodeReviewCommentEmailJob.create(comment)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_ReviewRequestedEmailJob(self):
+        """ReviewRequestedEmailJob runs under Celery."""
+        request = self.factory.makeCodeReviewVoteReference()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'ReviewRequestedEmailJob'}))
+        with block_on_job():
+            ReviewRequestedEmailJob.create(request)
+            transaction.commit()
+        self.assertEqual(1, len(pop_remote_notifications()))
+
+    def test_MergeProposalUpdatedEmailJob(self):
+        """MergeProposalUpdatedEmailJob runs under Celery."""
+        bmp = self.factory.makeBranchMergeProposal()
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'MergeProposalUpdatedEmailJob'}))
+        with block_on_job():
+            MergeProposalUpdatedEmailJob.create(
+                bmp, 'change', bmp.registrant)
+            transaction.commit()
+        self.assertEqual(2, len(pop_remote_notifications()))
+
+    def test_GenerateIncrementalDiffJob(self):
+        """GenerateIncrementalDiffJob runs under Celery."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'GenerateIncrementalDiffJob'}))
+        with block_on_job():
+            job = make_runnable_incremental_diff_job(self)
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)

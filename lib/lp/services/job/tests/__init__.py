@@ -4,8 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'block_on_job',
     'celeryd',
-    'monitor_celery'
+    'monitor_celery',
+    'pop_remote_notifications',
     ]
 
 
@@ -14,7 +16,6 @@ from contextlib import contextmanager
 from lp.services.job.runner import BaseRunnableJob
 
 
-@contextmanager
 def celeryd(queue, cwd=None):
     """Return a ContextManager for a celeryd instance.
 
@@ -34,9 +35,7 @@ def celeryd(queue, cwd=None):
         '--queues', queue,
         '--include', 'lp.services.job.tests.celery_helpers',
     )
-    with running('bin/celeryd', cmd_args, cwd=cwd) as proc:
-        # Wait for celeryd startup to complete.
-        yield proc
+    return running('bin/celeryd', cmd_args, cwd=cwd)
 
 
 @contextmanager
@@ -49,3 +48,16 @@ def monitor_celery():
         yield responses
     finally:
         BaseRunnableJob.celery_responses = old_responses
+
+
+@contextmanager
+def block_on_job():
+    with monitor_celery() as responses:
+        yield
+    responses[-1].wait(30)
+
+
+def pop_remote_notifications():
+    """Pop the notifications from a celeryd worker."""
+    from lp.services.job.tests.celery_helpers import pop_notifications
+    return pop_notifications.delay().get(30)
