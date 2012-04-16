@@ -753,13 +753,13 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         bug_owner = self.factory.makePerson(name='bugowner')
         bug = self.factory.makeBug(owner=bug_owner)
         with person_logged_in(bug_owner):
-            who = self.factory.makePerson()
+            who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(
                 InformationType.UNEMBARGOEDSECURITY, who)
             subscribers = bug.getDirectSubscribers()
         naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
-            set((naked_bugtask.pillar.owner, bug_owner)),
+            set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
 
     def _fetch_notifications(self, bug, reason_header):
@@ -815,32 +815,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
                     actual_recipients.append(recipient.person)
         self.assertContentEqual(expected_recipients, actual_recipients)
 
-    def test_bugSupervisorUnsubscribedIfBugMadePublic(self):
-        # The bug supervisors are unsubscribed if a bug is made public and an
-        # email is sent telling them they have been unsubscribed.
-
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(default_bugtask.pillar.bug_supervisor, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.transitionToInformationType(
-                InformationType.UNEMBARGOEDSECURITY, who)
-            subscribers = bug.getDirectSubscribers()
-            self.assertNotIn(
-                default_bugtask.pillar.bug_supervisor, subscribers)
-
-            expected_recipients = [
-                default_bugtask.pillar.bug_supervisor,
-                ]
-            expected_body_text = '** This bug is no longer private'
-            expected_reason_body = ('You received this bug notification '
-                    'because you are a bug supervisor.')
-            self._check_notifications(
-                bug, expected_recipients, expected_body_text,
-                expected_reason_body, False, True, 'Bug Supervisor')
-
     def test_structural_bug_supervisor_becomes_direct_on_private(self):
         # If a bug supervisor has a structural subscription to the bug, and
         # the bug is marked as private, the supervisor should get a direct
@@ -857,31 +831,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             who = self.factory.makePerson(name="who")
             bug.transitionToInformationType(InformationType.USERDATA, who)
         self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
-
-    def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
-        # The security contacts are unsubscribed if a bug has security_related
-        # set to false and an email is sent telling them they have been
-        # unsubscribed.
-
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(bugtask_a.pillar.security_contact, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.transitionToInformationType(InformationType.USERDATA, who)
-            subscribers = bug.getDirectSubscribers()
-            self.assertFalse(bugtask_a.pillar.security_contact in subscribers)
-
-            expected_recipients = [
-                bugtask_a.pillar.security_contact,
-                ]
-            expected_body_text = '** This bug is no longer security related'
-            expected_reason_body = ('You received this bug notification '
-                    'because you are a security contact.')
-            self._check_notifications(
-                bug, expected_recipients, expected_body_text,
-                expected_reason_body, True, False, 'Security Contact')
 
 
 class TestBugPrivacy(TestCaseWithFactory):
