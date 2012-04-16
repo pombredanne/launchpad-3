@@ -1061,7 +1061,7 @@ def _build_pending_bugwatch_elsewhere_clause(params, cols):
         # does. So the task ID should match, and there is no need for a
         # target clause.
         target = params.product
-        task_match_clause = RelatedBugTask.id == col['BugTask.id']
+        task_match_clause = RelatedBugTask.id == cols['BugTask.id']
         target_clause = True
     elif params.upstream_target:
         # Restrict the target to params.upstream_target.
