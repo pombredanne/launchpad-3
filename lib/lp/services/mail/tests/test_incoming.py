@@ -92,7 +92,7 @@ class TestIncoming(TestCaseWithFactory):
             "The mail you sent to Launchpad is too long.",
             body)
         self.assertIn(
-            "was 55 MB\nand the limit is 10 MB.",
+            "was 55 MB and the limit is 10 MB.",
             body)
 
     def test_invalid_to_addresses(self):
