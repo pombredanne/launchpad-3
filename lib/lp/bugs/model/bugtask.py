@@ -1504,9 +1504,6 @@ class BugTaskSet:
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
-        :param prejoins: A sequence of tuples (table, table_join) which
-            which should be pre-joined in addition to the default prejoins.
-            This parameter has no effect if _noprejoins is True.
         """
         # Prevent circular import problems.
         from lp.registry.model.product import Product
@@ -1518,13 +1515,11 @@ class BugTaskSet:
             resultrow = BugTask
             eager_load = None
         else:
-            requested_joins = kwargs.get('prejoins', [])
             # NB: We could save later work by predicting what sort of
             # targets we might be interested in here, but as at any
             # point we're dealing with relatively few results, this is
             # likely to be a small win.
-            prejoins = [
-                (Bug, Join(Bug, BugTask.bug == Bug.id))] + requested_joins
+            prejoins = [(Bug, Join(Bug, BugTask.bug == Bug.id))]
 
             def eager_load(results):
                 product_ids = set([row[0].productID for row in results])
@@ -1539,10 +1534,6 @@ class BugTaskSet:
                     list(store.find(SourcePackageName,
                         SourcePackageName.id.is_in(pkgname_ids)))
             resultrow = (BugTask, Bug)
-            additional_result_objects = [
-                table for table, join in requested_joins
-                if table not in resultrow]
-            resultrow = resultrow + tuple(additional_result_objects)
         return search_bugs(resultrow, prejoins, eager_load, (params,) + args)
 
     def searchBugIds(self, params):
