@@ -12,13 +12,9 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.bugs.interfaces.bugtrackerperson import (
-    BugTrackerPersonAlreadyExists,
-    IBugTrackerPerson,
-    )
+from lp.bugs.interfaces.bugtrackerperson import IBugTrackerPerson
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase

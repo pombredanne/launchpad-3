@@ -139,9 +139,6 @@ class StubLibrary:
     def lookupBySHA1(self, digest):
         return []
 
-    def add(self, digest, size):
-        return 99
-
     def addAlias(self, fileid, filename, mimetype):
         pass
 

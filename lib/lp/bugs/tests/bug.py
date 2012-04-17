@@ -8,7 +8,6 @@ from datetime import (
     timedelta,
     )
 from operator import attrgetter
-import re
 import textwrap
 
 from BeautifulSoup import BeautifulSoup

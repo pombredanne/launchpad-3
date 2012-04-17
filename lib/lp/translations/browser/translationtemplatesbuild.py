@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'TranslationTemplatesBuildNavigation',
-    'TranslationTemplatesBuildUrl',
     'TranslationTemplatesBuildView',
     ]
 
