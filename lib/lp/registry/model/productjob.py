@@ -289,12 +289,7 @@ class ProductNotificationJob(ProductJobDerived):
             self.email_template_name, self.subject, from_address)
 
 
-class SevenDayCommercialExpirationJob(ProductNotificationJob):
-    """A job that sends an email about an expiring commercial subscription."""
-
-    implements(ISevenDayCommercialExpirationJob)
-    classProvides(ISevenDayCommercialExpirationJobSource)
-    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
+class CommericialExpirationMixin:
 
     _email_template_name = 'product-commercial-subscription-expiration'
     _subject_template = (
@@ -304,24 +299,23 @@ class SevenDayCommercialExpirationJob(ProductNotificationJob):
     def create(cls, product, reviewer):
         """See `ISevenDayCommercialExpirationJobSource`."""
         subject = cls._subject_template % product.name
-        return super(SevenDayCommercialExpirationJob, cls).create(
+        return super(CommericialExpirationMixin, cls).create(
             product, cls._email_template_name, subject, reviewer, True)
 
 
-class ThirtyDayCommercialExpirationJob(ProductNotificationJob):
+class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
+                                      ProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+    implements(ISevenDayCommercialExpirationJob)
+    classProvides(ISevenDayCommercialExpirationJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
+
+
+class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
+                                       ProductNotificationJob):
     """A job that sends an email about an expiring commercial subscription."""
 
     implements(IThirtyDayCommercialExpirationJob)
     classProvides(IThirtyDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
-
-    _email_template_name = 'product-commercial-subscription-expiration'
-    _subject_template = (
-        'The commercial-use subscription for %s in Launchpad is expiring')
-
-    @classmethod
-    def create(cls, product, reviewer):
-        """See `IThirtyDayCommercialExpirationJobSource`."""
-        subject = cls._subject_template % product.name
-        return super(ThirtyDayCommercialExpirationJob, cls).create(
-            product, cls._email_template_name, subject, reviewer, True)
