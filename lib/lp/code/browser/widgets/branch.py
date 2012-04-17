@@ -94,7 +94,7 @@ class BranchPopupWidget(VocabularyPickerWidget):
     def _toFieldValue(self, form_input):
         try:
             return super(BranchPopupWidget, self)._toFieldValue(form_input)
-        except ConversionError, exception:
+        except ConversionError:
             # Save the initial error so we can re-raise it later.
             exc_class, exc_obj, exc_tb = sys.exc_info()
 

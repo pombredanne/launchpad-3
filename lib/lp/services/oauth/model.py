@@ -74,14 +74,14 @@ REQUEST_TOKEN_VALIDITY = 2
 # suggested by Robert, we use a window which is at least twice the size of our
 # hard time out. This is a safe bet since no requests should take more than
 # one hard time out.
-TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
+TIMESTAMP_ACCEPTANCE_WINDOW = 60  # seconds
 # If the timestamp is far in the future because of a client's clock skew,
 # it will effectively invalidate the authentication tokens when the clock is
 # corrected.  To prevent that from becoming too serious a problem, we raise an
 # exception if the timestamp is off by more than this amount from the server's
 # concept of "now".  We also reject timestamps that are too old by the same
 # amount.
-TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
+TIMESTAMP_SKEW_WINDOW = 60 * 60  # seconds, +/-
 
 
 class OAuthBase:
@@ -252,14 +252,14 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         # Determine if the timestamp is too far off from now.
         skew = timedelta(seconds=TIMESTAMP_SKEW_WINDOW)
         now = datetime.now(pytz.UTC)
-        if date < (now-skew) or date > (now+skew):
+        if date < (now - skew) or date > (now + skew):
             raise ClockSkew('Timestamp appears to come from bad system clock')
         # Determine if the nonce was already used for this timestamp.
         store = OAuthNonce.getStore()
         oauth_nonce = store.find(OAuthNonce,
-                                 And(OAuthNonce.access_token==self,
-                                     OAuthNonce.nonce==nonce,
-                                     OAuthNonce.request_timestamp==date)
+                                 And(OAuthNonce.access_token == self,
+                                     OAuthNonce.nonce == nonce,
+                                     OAuthNonce.request_timestamp == date)
                                  ).one()
         if oauth_nonce is not None:
             raise NonceAlreadyUsed('This nonce has been used already.')
@@ -267,8 +267,8 @@ class OAuthAccessToken(OAuthBase, SQLBase):
         # request.
         limit = date + timedelta(seconds=TIMESTAMP_ACCEPTANCE_WINDOW)
         match = store.find(OAuthNonce,
-                           And(OAuthNonce.access_token==self,
-                               OAuthNonce.request_timestamp>limit)
+                           And(OAuthNonce.access_token == self,
+                               OAuthNonce.request_timestamp > limit)
                            ).any()
         if match is not None:
             raise TimestampOrderingError(
@@ -377,6 +377,13 @@ class OAuthRequestToken(OAuthBase, SQLBase):
             date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
+
+        # We want to notify the user that this oauth token has been generated
+        # for them for security reasons.
+        self.person.security_field_changed(
+            "OAuth token generated in Launchpad",
+            "A new OAuth token consumer was enabled in Launchpad.")
+
         self.destroySelf()
         return access_token
 

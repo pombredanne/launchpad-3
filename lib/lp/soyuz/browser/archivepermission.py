@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchivePermissionUrl',
+    'ArchivePermissionURL',
     ]
 
 from zope.interface import implements

@@ -89,7 +89,6 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
 
     def test_unlinking(self):
         component = self._makeComponent(u'Example')
-        distro = getUtility(IDistributionSet).getByName('ubuntu')
         dsp = self._makeUbuntuSourcePackage('example')
         component.distro_source_package = dsp
         form = self._makeForm(None)

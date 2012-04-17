@@ -17,7 +17,6 @@ from bzrlib import (
     urlutils,
     )
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
 from bzrlib.plugins.weave_fmt.repository import (

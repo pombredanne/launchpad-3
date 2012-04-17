@@ -13,7 +13,6 @@ import sys
 
 from twisted.python import log
 
-from lp.services.config import config
 from lp.services.job import runner
 from lp.services.job.runner import JobCronScript
 

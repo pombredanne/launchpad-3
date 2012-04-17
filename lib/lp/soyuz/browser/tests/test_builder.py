@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from testtools.matchers import Equals
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet

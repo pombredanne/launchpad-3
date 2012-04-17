@@ -63,9 +63,9 @@ def path_exists(*path_components):
     return file_exists(os.path.join(*path_components))
 
 
-def name_spph_suite(spph):
-    """Return name of `spph`'s suite."""
-    return spph.distroseries.name + pocketsuffix[spph.pocket]
+def name_pph_suite(pph):
+    """Return name of `pph`'s suite."""
+    return pph.distroseries.name + pocketsuffix[pph.pocket]
 
 
 def get_pub_config(distro):
@@ -401,7 +401,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(spph.distroseries.distribution)
         script.setUp()
         self.assertContentEqual(
-            [name_spph_suite(spph)], script.getDirtySuites(distro))
+            [name_pph_suite(spph)], script.getDirtySuites(distro))
 
     def test_getDirtySuites_returns_suites_with_pending_publications(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -414,7 +414,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         self.assertContentEqual(
-            [name_spph_suite(spph) for spph in spphs],
+            [name_pph_suite(spph) for spph in spphs],
             script.getDirtySuites(distro))
 
     def test_getDirtySuites_ignores_suites_without_pending_publications(self):
@@ -424,6 +424,14 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(spph.distroseries.distribution)
         script.setUp()
         self.assertContentEqual([], script.getDirtySuites(distro))
+
+    def test_getDirtySuites_returns_suites_with_pending_binaries(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distro = bpph.distroseries.distribution
+        script = self.makeScript(bpph.distroseries.distribution)
+        script.setUp()
+        self.assertContentEqual(
+            [name_pph_suite(bpph)], script.getDirtySuites(distro))
 
     def test_getDirtySecuritySuites_returns_security_suites(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -437,7 +445,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         self.assertContentEqual(
-            [name_spph_suite(spph) for spph in spphs],
+            [name_pph_suite(spph) for spph in spphs],
             script.getDirtySecuritySuites(distro))
 
     def test_getDirtySecuritySuites_ignores_non_security_suites(self):

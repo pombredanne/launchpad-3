@@ -31,7 +31,6 @@ from lp.services.sshserver import (
     )
 from lp.services.sshserver.auth import SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
-from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
