@@ -131,7 +131,7 @@ flat_cols = {
     'Bug.id': BugTaskFlat.bug_id,
     'Bug.duplicateof': BugTaskFlat.duplicateof,
     'Bug.owner': BugTaskFlat.bug_owner,
-    'Bug.date_last_updated': Bug.date_last_updated,
+    'Bug.date_last_updated': BugTaskFlat.date_last_updated,
     'BugTask.id': BugTaskFlat.bugtask_id,
     'BugTask.bug': BugTaskFlat.bug,
     'BugTask.bugID': BugTaskFlat.bug_id,
