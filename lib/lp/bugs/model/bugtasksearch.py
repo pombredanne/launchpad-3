@@ -9,8 +9,6 @@ __all__ = [
     'search_bugs',
     ]
 
-from operator import itemgetter
-
 from lazr.enum import BaseItem
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
@@ -94,6 +92,7 @@ from lp.services.searchbuilder import (
 from lp.soyuz.enums import PackagePublishingStatus
 
 
+bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
 orderby_expression = {
@@ -109,17 +108,17 @@ orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, []),
     "status": (BugTask._status, []),
-    "title": (Bug.title, []),
+    "title": (Bug.title, [bug_join]),
     "milestone": (BugTask.milestoneID, []),
     "dateassigned": (BugTask.date_assigned, []),
     "datecreated": (BugTask.datecreated, []),
-    "date_last_updated": (Bug.date_last_updated, []),
+    "date_last_updated": (Bug.date_last_updated, [bug_join]),
     "date_closed": (BugTask.date_closed, []),
-    "number_of_duplicates": (Bug.number_of_duplicates, []),
-    "message_count": (Bug.message_count, []),
-    "users_affected_count": (Bug.users_affected_count, []),
+    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
+    "message_count": (Bug.message_count, [bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [bug_join]),
     "heat": (BugTask.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
     "milestone_name": (
         Milestone.name,
         [
@@ -130,13 +129,13 @@ orderby_expression = {
     "reporter": (
         Reporter.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Reporter, Join(Reporter, Bug.owner == Reporter.id))
             ]),
     "tag": (
         BugTag.tag,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (BugTag,
                 LeftJoin(
                     BugTag,
@@ -152,7 +151,7 @@ orderby_expression = {
     "specification": (
         Specification.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Specification,
                 LeftJoin(
                     Specification,
