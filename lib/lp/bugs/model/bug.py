@@ -1775,8 +1775,10 @@ class Bug(SQLBase):
                     missing_subscribers.add(pillar.owner)
 
         for s in missing_subscribers:
-            subscriptions = get_structural_subscriptions_for_bug(self, s)
-            if subscriptions.is_empty():
+            # Don't subscribe someone if they're already subscribed via a
+            # team.
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
                 self.subscribe(s, who)
 
         self.information_type = information_type

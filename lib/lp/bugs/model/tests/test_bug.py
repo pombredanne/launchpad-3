@@ -581,8 +581,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # marking the bug private will not be subscribed if they're
         # already a member of a team which is a direct subscriber.
         bug = self.factory.makeBug()
-        team = self.factory.makeTeam()
-        person = team.teamowner
+        person = self.factory.makePerson(name='teamowner')
+        team = self.factory.makeTeam(owner=person, name='team')
         with person_logged_in(person):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
@@ -688,14 +688,12 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             expected_subscribers.remove(bugtask_a.pillar.security_contact)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateFalseAndSecurityRelatedTrue(self):
-        # When a bug is marked as private=false and security_related=true, the
-        # direct subscribers should include:
+    def test_transition_to_UNEMBARGOEDSECURITY_information_type(self):
+        # When a security bug is unembargoed, direct subscribers should
+        # include:
         # - the bug reporter
         # - the bugtask pillar security contacts (if set)
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
@@ -707,7 +705,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
+            who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(
                 InformationType.UNEMBARGOEDSECURITY, who)
             subscribers = bug.getDirectSubscribers()
@@ -720,9 +718,9 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             expected_subscribers.remove(default_bugtask.pillar.bug_supervisor)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateFalseAndSecurityRelatedFalse(self):
-        # When a bug is marked as private=false and security_related=false,
-        # any existing subscriptions are left alone.
+    def test_transition_to_PUBLIC_information_type(self):
+        # Subscriptions aren't altered when a bug is transitioned to the
+        # PUBLIC information type.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
