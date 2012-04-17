@@ -99,7 +99,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 
 # This abstracts most of the columns involved in search so we can switch
 # to/from BugTaskFlat easily.
-cols = {
+unflat_cols = {
     'Bug.id': Bug.id,
     'Bug.duplicateof': Bug.duplicateof,
     'Bug.owner': Bug.owner,
@@ -125,6 +125,34 @@ cols = {
     'BugTask.date_closed': BugTask.date_closed,
     'BugTask.datecreated': BugTask.datecreated,
     'BugTask._status': BugTask._status,
+    }
+
+flat_cols = {
+    'Bug.id': BugTaskFlat.bug_id,
+    'Bug.duplicateof': BugTaskFlat.duplicateof,
+    'Bug.owner': BugTaskFlat.bug_owner,
+    'Bug.date_last_updated': Bug.date_last_updated,
+    'BugTask.id': BugTaskFlat.bugtask_id,
+    'BugTask.bug': BugTaskFlat.bug,
+    'BugTask.bugID': BugTaskFlat.bug_id,
+    'BugTask.importance': BugTaskFlat.importance,
+    'BugTask.product': BugTaskFlat.product,
+    'BugTask.productID': BugTaskFlat.product_id,
+    'BugTask.productseries': BugTaskFlat.productseries,
+    'BugTask.productseriesID': BugTaskFlat.productseries_id,
+    'BugTask.distribution': BugTaskFlat.distribution,
+    'BugTask.distributionID': BugTaskFlat.distribution_id,
+    'BugTask.distroseries': BugTaskFlat.distroseries,
+    'BugTask.distroseriesID': BugTaskFlat.distroseries_id,
+    'BugTask.sourcepackagename': BugTaskFlat.sourcepackagename,
+    'BugTask.sourcepackagenameID': BugTaskFlat.sourcepackagename_id,
+    'BugTask.milestone': BugTaskFlat.milestone,
+    'BugTask.milestoneID': BugTaskFlat.milestone_id,
+    'BugTask.assignee': BugTaskFlat.assignee,
+    'BugTask.owner': BugTaskFlat.owner,
+    'BugTask.date_closed': BugTask.date_closed,
+    'BugTask.datecreated': BugTaskFlat.datecreated,
+    'BugTask._status': BugTaskFlat.status,
     }
 
 
@@ -367,6 +395,7 @@ def _build_query(params, use_flat):
         decorator to call on each returned row.
     """
     params = _require_params(params)
+    cols = flat_cols if use_flat else unflat_cols
 
     if use_flat:
         extra_clauses = []
