@@ -15,7 +15,6 @@ __all__ = [
 from sqlobject import (
     ForeignKey,
     IN,
-    StringCol,
     )
 from zope.interface import implements
 

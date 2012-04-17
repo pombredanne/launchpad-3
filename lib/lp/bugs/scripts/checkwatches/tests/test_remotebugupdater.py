@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import transaction
 
 from lp.bugs.externalbugtracker.base import (
