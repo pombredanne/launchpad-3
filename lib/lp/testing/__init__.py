@@ -107,7 +107,6 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from twisted.internet import reactor
 from zope.component import (
     ComponentLookupError,
     getMultiAdapter,
@@ -1535,5 +1534,6 @@ def clean_up_reactor():
     # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
     # calls around.  They need to be updated to use Twisted correctly.
     # For the meantime, just blat the reactor.
+    from twisted.internet import reactor
     for delayed_call in reactor.getDelayedCalls():
         delayed_call.cancel()
