@@ -624,68 +624,63 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         return (bug, bug_owner, naked_bugtask_a, naked_bugtask_b,
                 naked_default_bugtask)
 
-    def test_setPrivateTrueAndSecurityRelatedTrue(self):
-        # When a bug is marked as private=true and security_related=true, the
-        # direct subscribers should include:
+    def test_transition_to_EMBARGOEDSECURITY_information_type(self):
+        # When a bug is marked as EMBARGOEDSECURITY, the direct subscribers
+        # should include:
         # - the bug reporter
         # - the bugtask pillar security contacts (if set)
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         initial_subscribers = set((
-            self.factory.makePerson(), bugtask_a.owner, bug_owner,
-            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+            self.factory.makePerson(name='subscriber'), bugtask_a.owner,
+            bug_owner, bugtask_a.pillar.security_contact,
+            bugtask_a.pillar.driver))
+        initial_subscribers.update(bug.getDirectSubscribers())
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
+            who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(
                 InformationType.EMBARGOEDSECURITY, who=who)
             subscribers = bug.getDirectSubscribers()
+            initial_subscribers.update(bug.getDirectSubscribers())
         expected_subscribers = set((
             bugtask_a.owner,
-            default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
             bug_owner, who))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateTrueAndSecurityRelatedFalse(self):
-        # When a bug is marked as private=true and security_related=false, the
-        # direct subscribers should include:
+    def test_transition_to_USERDATA_information_type(self):
+        # When a bug is marked as USERDATA, the direct subscribers should
+        # include:
         # - the bug reporter
         # - the bugtask pillar bug supervisors (if set)
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(), bug_owner,
+            self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
+            who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(InformationType.USERDATA, who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
             bug_owner, who))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
-            expected_subscribers.remove(bugtask_a.pillar.security_contact)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_UNEMBARGOEDSECURITY_information_type(self):
