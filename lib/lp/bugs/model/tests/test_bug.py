@@ -558,8 +558,8 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             self.assertRaisesWithContent(
-                BugCannotBePrivate, "Can not transition the information "
-                "type to proprietary.", bug.transitionToInformationType,
+                BugCannotBePrivate, "Cannot transition the information type "
+                "to proprietary.", bug.transitionToInformationType,
                 InformationType.PROPRIETARY, bug.owner, True)
 
 
