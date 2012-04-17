@@ -621,10 +621,12 @@ def _build_query(params, use_flat):
                             BugAttachment.type, params.attachmenttype))))
 
     if params.searchtext:
-        extra_clauses.append(_build_search_text_clause(params))
+        extra_clauses.append(_build_search_text_clause(
+            params, use_flat=use_flat))
 
     if params.fast_searchtext:
-        extra_clauses.append(_build_search_text_clause(params, fast=True))
+        extra_clauses.append(_build_search_text_clause(
+            params, fast=True, use_flat=use_flat))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -1028,7 +1030,7 @@ def _require_params(params):
     return params
 
 
-def _build_search_text_clause(params, fast=False):
+def _build_search_text_clause(params, fast=False, use_flat=False):
     """Build the clause for searchtext."""
     if fast:
         assert params.searchtext is None, (
@@ -1039,12 +1041,22 @@ def _build_search_text_clause(params, fast=False):
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
 
-    if params.orderby is None:
-        # Unordered search results aren't useful, so sort by relevance
-        # instead.
-        params.orderby = [SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
+    if use_flat:
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQL("-rank(BugTaskFlat.fti, ftq(?))", params=(searchtext,))]
 
-    return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
+        return SQL("BugTaskFlat.fti @@ ftq(?)", params=(searchtext,))
+    else:
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
+
+        return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
 
 
 def _build_status_clause(col, status):
