@@ -216,13 +216,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.enhanced_private_bug_subscriptions.enabled',
-     'boolean',
-     ('Enables the auto subscribing and unsubscribing of users as a bug '
-      'transitions between public, private and security related states.'),
-     '',
-     '',
-     ''),
     ('disclosure.users_hide_own_bug_comments.enabled',
      'boolean',
      'Allows users in project roles and comment owners to hide bug comments.',
