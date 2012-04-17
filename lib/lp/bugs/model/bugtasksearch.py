@@ -854,7 +854,8 @@ def _build_query(params, use_flat):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
+    clause, decorator = _get_bug_privacy_filter_with_decorator(
+        params.user, use_flat=use_flat)
     if clause:
         extra_clauses.append(SQL(clause))
         decorators.append(decorator)
@@ -1556,7 +1557,8 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def _get_bug_privacy_filter_with_decorator(user, private_only=False):
+def _get_bug_privacy_filter_with_decorator(user, private_only=False,
+                                           use_flat=False):
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
@@ -1567,37 +1569,50 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
         returns BugTask objects.
     """
     if user is None:
-        return "Bug.private IS FALSE", _nocache_bug_decorator
+        if use_flat:
+            return "BugTaskFlat.information_type IN (1, 2)", (
+                _nocache_bug_decorator)
+        else:
+            return "Bug.private IS FALSE", _nocache_bug_decorator
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
-    public_bug_filter = ''
-    if not private_only:
-        public_bug_filter = 'Bug.private IS FALSE OR'
+    if use_flat:
+        public_bug_filter = ''
+        if not private_only:
+            public_bug_filter = 'BugTaskFlat.information_type IN (1, 2) OR '
+        query = (
+            "%s(BugTaskFlat.access_grants && (SELECT array_agg(team) FROM "
+            "teamparticipation WHERE person = %d))"
+            % (public_bug_filter, user.id))
+    else:
+        public_bug_filter = ''
+        if not private_only:
+            public_bug_filter = 'Bug.private IS FALSE OR'
 
-    # A subselect is used here because joining through
-    # TeamParticipation is only relevant to the "user-aware"
-    # part of the WHERE condition (i.e. the bit below.) The
-    # other half of this condition (see code above) does not
-    # use TeamParticipation at all.
-    query = """
-        (%(public_bug_filter)s EXISTS (
-            WITH teams AS (
-                SELECT team from TeamParticipation
-                WHERE person = %(personid)s
-            )
-            SELECT BugSubscription.bug
-            FROM BugSubscription
-            WHERE BugSubscription.person IN (SELECT team FROM teams) AND
-                BugSubscription.bug = Bug.id
-            UNION ALL
-            SELECT BugTask.bug
-            FROM BugTask
-            WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                BugTask.bug = Bug.id
-                ))
-        """ % dict(
-                personid=quote(user.id),
-                public_bug_filter=public_bug_filter)
+        # A subselect is used here because joining through
+        # TeamParticipation is only relevant to the "user-aware"
+        # part of the WHERE condition (i.e. the bit below.) The
+        # other half of this condition (see code above) does not
+        # use TeamParticipation at all.
+        query = """
+            (%(public_bug_filter)s EXISTS (
+                WITH teams AS (
+                    SELECT team from TeamParticipation
+                    WHERE person = %(personid)s
+                )
+                SELECT BugSubscription.bug
+                FROM BugSubscription
+                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
+                    BugSubscription.bug = Bug.id
+                UNION ALL
+                SELECT BugTask.bug
+                FROM BugTask
+                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
+                    BugTask.bug = Bug.id
+                    ))
+            """ % dict(
+                    personid=quote(user.id),
+                    public_bug_filter=public_bug_filter)
     return query, _make_cache_user_can_view_bug(user)
