@@ -720,19 +720,19 @@ class TestCeleryEnabled(TestCaseWithFactory):
     def test_matching_flag(self):
         """A matching flag returns True."""
         self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classses': 'foo bar'}))
+            {'jobs.celery.enabled_classes': 'foo bar'}))
         self.assertTrue(celery_enabled('foo'))
         self.assertTrue(celery_enabled('bar'))
 
     def test_non_matching_flag(self):
         """A non-matching flag returns false."""
         self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classses': 'foo bar'}))
+            {'jobs.celery.enabled_classes': 'foo bar'}))
         self.assertFalse(celery_enabled('baz'))
         self.assertTrue(celery_enabled('bar'))
 
     def test_substring(self):
         """A substring of an enabled class does not match."""
         self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classses': 'foobar'}))
+            {'jobs.celery.enabled_classes': 'foobar'}))
         self.assertFalse(celery_enabled('bar'))

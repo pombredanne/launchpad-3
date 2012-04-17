@@ -265,7 +265,7 @@ If the associated PPA and the `LibraryFileAlias` are public, the +files/
 proxy redirects to the public http url. We'll copy the test sources and
 binaries across to no-priv's public ppa.
 
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(

@@ -115,22 +115,22 @@ class IJob(Interface):
     def getTimeout():
         """Determine how long this job can run before timing out."""
 
-    def start():
+    def start(manage_transaction=False):
         """Mark the job as started."""
 
-    def complete():
+    def complete(manage_transaction=False):
         """Mark the job as completed."""
 
-    def fail():
+    def fail(manage_transaction=False):
         """Indicate that the job has failed permanently.
 
         Only running jobs can fail.
         """
 
-    def queue():
+    def queue(manage_transaction=False, abort_transaction=False):
         """Mark the job as queued for processing."""
 
-    def suspend():
+    def suspend(manage_transaction=False):
         """Mark the job as suspended.
 
         Only waiting jobs can be suspended."""

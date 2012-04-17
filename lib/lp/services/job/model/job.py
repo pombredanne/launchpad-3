@@ -33,7 +33,9 @@ from storm.locals import (
     Int,
     Reference,
     )
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import dbconfig
@@ -187,10 +189,12 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
-        # Commit the transaction to update the DB time.
         if manage_transaction:
+            if abort_transaction:
+                transaction.abort()
+            # Commit the transaction to update the DB time.
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
@@ -253,17 +257,46 @@ class UniversalJobSource:
 
     needs_init = True
 
-    @classmethod
-    def get(cls, job_id):
-        if cls.needs_init:
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-
-        dbconfig.override(
-            dbuser='branchscanner', isolation_level='read_committed')
+    @staticmethod
+    def getDerived(job_id):
+        """Return the derived branch job associated with the job id."""
+        # Avoid circular imports.
         from lp.code.model.branchjob import (
             BranchJob,
             )
-        store = IStore(BranchJob)
-        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        return branch_job.makeDerived()
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob,
+            )
+        store = IStore(Job)
+        for cls in [BranchJob, BranchMergeProposalJob]:
+            base_job = store.find(cls, cls.job == job_id).one()
+            if base_job is not None:
+                break
+        if base_job is None:
+            raise ValueError('No BranchJob with job=%s.' % job_id)
+
+        return base_job.makeDerived(), store
+
+    @staticmethod
+    def clearStore(store):
+        transaction.abort()
+        getUtility(IZStorm).remove(store)
+        store.close()
+
+    @classmethod
+    def switchDBUser(cls, job_id):
+        """Switch to the DB user associated with this Job ID."""
+        cls.clearStore(IStore(Job))
+        derived, store = cls.getDerived(job_id)
+        dbconfig.override(
+            dbuser=derived.config.dbuser, isolation_level='read_committed')
+        cls.clearStore(store)
+
+    @classmethod
+    def get(cls, job_id):
+        transaction.abort()
+        if cls.needs_init:
+            scripts.execute_zcml_for_scripts(use_web_security=False)
+            cls.needs_init = False
+        cls.switchDBUser(job_id)
+        return cls.getDerived(job_id)[0]

@@ -52,7 +52,7 @@ of a user's attributes.
 
 Non administrators cannot access the +review view
 
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> view = create_initialized_view(user, '+review')
     >>> check_permission('launchpad.Admin', view)
     False
@@ -69,7 +69,7 @@ Non-admins cannot access it.
 
 An admin can see a user's account information.
 
-    >>> login_person(admin)
+    >>> ignored = login_person(admin)
     >>> view = create_initialized_view(
     ...     user, '+reviewaccount', principal=admin)
     >>> check_permission('launchpad.Admin', view)

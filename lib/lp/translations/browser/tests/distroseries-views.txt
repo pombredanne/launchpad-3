@@ -83,7 +83,7 @@ translations even when they're hidden.
     >>> membership = getUtility(ITeamMembershipSet).new(
     ...     expert, expert_team, TeamMembershipStatus.APPROVED,
     ...     expert_team)
-    >>> login_person(expert)
+    >>> ignored = login_person(expert)
     >>> check_effect_of_hiding(hoary)
     User can access revealed translations.
     User can access hidden translations.

@@ -227,7 +227,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
                 line = archive_dep % (
                     {'series': distroarchseries.distroseries.name})
                 external_dep_lines.append(line)
-    except StandardError, e:
+    except StandardError:
         # Malformed external dependencies can incapacitate the build farm
         # manager (lp:516169). That's obviously not acceptable.
         # Log the error, and disable the PPA.

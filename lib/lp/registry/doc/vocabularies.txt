@@ -768,7 +768,7 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them.  Notice that the
 PRIVATE_TEAM 'myteam' is not included in the results.
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
@@ -779,11 +779,11 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 Valid teams do not include teams that have been merged.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> login_person(foo_bar)
+    >>> ignored = login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set.merge(
     ...     ephemeral, registry_experts, reviewer=ephemeral.teamowner)
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam', u'simple-team',
@@ -1172,7 +1172,7 @@ They can be looked up by their aliases too.
     >>> login('mark@example.com')
     >>> product_set['firefox'].setAliases(['iceweasel'])
     >>> current_user = launchbag.user
-    >>> login_person(current_user)
+    >>> ignored = login_person(current_user)
     >>> vocab.getTermByToken('iceweasel').token
     'firefox'
 
@@ -1240,7 +1240,7 @@ They can be looked up by their aliases too.
     ...     IDistributionSet)
     >>> login('mark@example.com')
     >>> getUtility(IDistributionSet)['ubuntu'].setAliases(['ubantoo'])
-    >>> login_person(current_user)
+    >>> ignored = login_person(current_user)
     >>> vocab.getTermByToken('ubantoo').token
     'ubuntu'
 

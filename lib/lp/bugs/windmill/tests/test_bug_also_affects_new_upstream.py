@@ -7,10 +7,7 @@ from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.testing.windmill.widgets import (
-    FormPickerWidgetTest,
-    search_picker_widget,
-    )
+from lp.testing.windmill.widgets import search_picker_widget
 
 
 class TestBugAlsoAffects(WindmillTestCase):

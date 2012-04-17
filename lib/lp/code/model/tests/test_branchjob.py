@@ -60,6 +60,7 @@ from lp.code.model.branchjob import (
     RosettaUploadJob,
     )
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.model.tests.test_branch import create_knit
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
@@ -67,18 +68,26 @@ from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    block_on_job,
+    )
 from lp.services.osutils import override_environ
 from lp.services.webapp import canonical_url
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import (
     dbuser,
     switch_dbuser,
     )
 from lp.testing.layers import (
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -1220,6 +1229,38 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([], unfinished_jobs)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_RosettaUploadJob(self):
+        """Ensure RosettaUploadJob can run under Celery."""
+        self.useBzrBranches(direct_database=True)
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob RosettaUploadJob'
+        }))
+        db_branch = self.factory.makeAnyBranch()
+        self.createBzrBranch(db_branch)
+        commit = DirectBranchCommit(db_branch, no_race_check=True)
+        commit.writeFile('foo.pot', 'gibberish')
+        with person_logged_in(db_branch.owner):
+            # wait for branch scan
+            with block_on_job():
+                commit.commit('message')
+                transaction.commit()
+        series = self.factory.makeProductSeries(branch=db_branch)
+        with block_on_job():
+            RosettaUploadJob.create(
+                commit.db_branch, NULL_REVISION,
+                force_translations_upload=True)
+            transaction.commit()
+        queue = getUtility(ITranslationImportQueue)
+        entries = list(queue.getAllEntries(target=series))
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual('foo.pot', entry.path)
 
 
 class TestReclaimBranchSpaceJob(TestCaseWithFactory):

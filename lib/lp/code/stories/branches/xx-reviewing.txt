@@ -10,7 +10,7 @@ team review the proposal on behalf of the team.
     >>> from lp.code.tests.helpers import (
     ...     make_merge_proposal_without_reviewers)
     >>> bmp = make_merge_proposal_without_reviewers(factory)
-    >>> login_person(bmp.registrant)
+    >>> ignored = login_person(bmp.registrant)
     >>> ignored = bmp.nominateReviewer(vikings, bmp.registrant)
     >>> url = canonical_url(bmp)
     >>> logout()

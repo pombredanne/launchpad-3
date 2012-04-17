@@ -111,6 +111,7 @@ from lp.services.config.fixture import (
     ConfigUseFixture,
     )
 from lp.services.database.sqlbase import session_store
+from lp.services.job.tests import celeryd
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
@@ -1857,6 +1858,42 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
+
+
+class CeleryJobLayer(AppServerLayer):
+    """Layer for tests that run jobs via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
+
+
+class CeleryBranchWriteJobLayer(AppServerLayer):
+    """Layer for tests that run jobs which write to branches via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('branch_write_job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):

@@ -138,7 +138,7 @@ expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
-    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext='Fnord')
+    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext=u'Fnord')
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> found_bugtasks.count()
     0
@@ -1135,7 +1135,7 @@ Or we can search a certain milestone (only getting bugs targeted to it).
 We can restrict our search for firefox bugs with a text search.
 
     >>> print_bugtasks(firefox.searchTasks(
-    ...     None, user=None, search_text='instructions'))
+    ...     None, user=None, search_text=u'instructions'))
     5 Mozilla Firefox Firefox install instructions should be complete NEW CRITICAL
 
 Or restrict our search (over the mozilla project this time) to a list of

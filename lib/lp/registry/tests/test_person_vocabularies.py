@@ -27,10 +27,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    DatabaseFunctionalLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -377,3 +374,13 @@ class TestNewPillarShareeVocabulary(VocabularyTestBase,
         self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
         [newsharee] = self.searchVocabulary(product, 'sharee')
         self.assertEqual(newsharee, person2)
+
+    def test_open_teams_excluded(self):
+        # Only closed teams should be available for selection.
+        product = self.factory.makeProduct()
+        self.factory.makeTeam(name='sharee1')
+        closed_team = self.factory.makeTeam(
+            name='sharee2',
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        [newsharee] = self.searchVocabulary(product, 'sharee')
+        self.assertEqual(newsharee, closed_team)
