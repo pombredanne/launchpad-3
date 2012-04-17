@@ -1518,12 +1518,12 @@ class BugTaskSet:
                 load_related(Bug, rows, ['bugID'])
                 load_related(Product, rows, ['productID'])
                 load_related(SourcePackageName, rows, ['sourcepackagenameID'])
-        return search_bugs(BugTask, [], eager_load, (params,) + args)
+        return search_bugs(BugTask, eager_load, (params,) + args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         from lp.bugs.model.bugtasksearch import search_bugs
-        return search_bugs(BugTask.bugID, [], None, [params]).result_set
+        return search_bugs(BugTask.bugID, None, [params]).result_set
 
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
