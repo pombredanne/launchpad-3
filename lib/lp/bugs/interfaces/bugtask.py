@@ -1531,9 +1531,6 @@ class IBugTaskSet(Interface):
 
         :param search_params: a BugTaskSearchParams object
         :param args: any number of BugTaskSearchParams objects
-        :param prejoins: (keyword) A sequence of tuples
-            (table, table_join) which should be pre-joined in addition
-            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the

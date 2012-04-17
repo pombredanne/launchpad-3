@@ -252,7 +252,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    modified_since=None, created_since=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object

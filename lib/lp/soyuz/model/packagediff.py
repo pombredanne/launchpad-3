@@ -67,7 +67,6 @@ def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
         with the second package.
     :type to_files: ``list``
     """
-    compressed_bytes = -1
     [from_dsc] = [name for name in from_files
                   if name.lower().endswith('.dsc')]
     [to_dsc] = [name for name in to_files
@@ -189,9 +188,6 @@ class PackageDiff(SQLBase):
             # Keep track of the files belonging to the respective packages.
             downloaded = dict(zip(directions, ([], [])))
 
-            # Please note that packages may have files in common.
-            files_seen = []
-
             # Make it easy to iterate over packages.
             packages = dict(
                 zip(directions, (self.from_source, self.to_source)))
@@ -295,13 +291,13 @@ class PackageDiffSet:
 
         def preload_hook(rows):
             lfas = load(LibraryFileAlias, (pd.diff_contentID for pd in rows))
-            lfcs = load(LibraryFileContent, (lfa.contentID for lfa in lfas))
+            load(LibraryFileContent, (lfa.contentID for lfa in lfas))
             sprs = load(
                 SourcePackageRelease,
                 itertools.chain.from_iterable(
                     (pd.from_sourceID, pd.to_sourceID) for pd in rows))
             archives = load(Archive, (spr.upload_archiveID for spr in sprs))
-            distros = load(Distribution, (a.distributionID for a in archives))
+            load(Distribution, (a.distributionID for a in archives))
 
         if preload_for_display:
             return DecoratedResultSet(result, pre_iter_hook=preload_hook)

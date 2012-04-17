@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.model.personnotification import PersonNotification
 from lp.registry.scripts.personnotification import PersonNotificationManager
 from lp.services.config import config
 from lp.testing import (
@@ -25,6 +26,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPersonNotification(TestCaseWithFactory):

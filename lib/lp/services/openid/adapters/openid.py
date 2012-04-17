@@ -18,7 +18,6 @@ from zope.interface import (
     implementer,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import IPerson
 from lp.services.database.lpstorm import IStore
