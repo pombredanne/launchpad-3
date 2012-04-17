@@ -382,8 +382,7 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
             'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
 
 
-class SevenDayCommercialExpirationJobTestCase(TestCaseWithFactory):
-    """Test case for the SevenDayCommercialExpirationJob class."""
+class CommericialExpirationMixin:
 
     layer = DatabaseFunctionalLayer
 
@@ -401,15 +400,13 @@ class SevenDayCommercialExpirationJobTestCase(TestCaseWithFactory):
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         self.assertIs(
             True,
-            ISevenDayCommercialExpirationJobSource.providedBy(
-                SevenDayCommercialExpirationJob))
+            self.JOB_SOURCE_INTERFACE.providedBy(self.JOB_CLASS))
         self.assertEqual(
-            ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS,
-            SevenDayCommercialExpirationJob.class_job_type)
-        job = SevenDayCommercialExpirationJob.create(product, reviewer)
-        self.assertIsInstance(job, SevenDayCommercialExpirationJob)
+            self.JOB_CLASS_TYPE, self.JOB_CLASS.class_job_type)
+        job = self.JOB_CLASS.create(product, reviewer)
+        self.assertIsInstance(job, self.JOB_CLASS)
         self.assertIs(
-            True, ISevenDayCommercialExpirationJob.providedBy(job))
+            True, self.JOB_INTERFACE.providedBy(job))
         self.assertEqual(product, job.product)
         self.assertEqual(job.email_template_name, job._email_template_name)
         self.assertEqual(job._subject_template % product.name, job.subject)
@@ -417,36 +414,21 @@ class SevenDayCommercialExpirationJobTestCase(TestCaseWithFactory):
         self.assertEqual(True, job.reply_to_commercial)
 
 
-class ThirtyDayCommercialExpirationJobTestCase(TestCaseWithFactory):
+class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
+                                              TestCaseWithFactory):
     """Test case for the SevenDayCommercialExpirationJob class."""
 
-    layer = DatabaseFunctionalLayer
+    JOB_INTERFACE = ISevenDayCommercialExpirationJob
+    JOB_SOURCE_INTERFACE = ISevenDayCommercialExpirationJobSource
+    JOB_CLASS = SevenDayCommercialExpirationJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
-    def make_notification_data(self):
-        product = self.factory.makeProduct()
-        reviewer = self.factory.makePerson('reviewer@eg.com', name='reviewer')
-        subject = "test subject"
-        email_template_name = 'product-license-dont-know'
-        return product, email_template_name, subject, reviewer
 
-    def test_create(self):
-        # Create an instance of ThirtyDayCommercialExpirationJo that stores
-        # the notification information.
-        product = self.factory.makeProduct()
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        self.assertIs(
-            True,
-            IThirtyDayCommercialExpirationJobSource.providedBy(
-                ThirtyDayCommercialExpirationJob))
-        self.assertEqual(
-            ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS,
-            ThirtyDayCommercialExpirationJob.class_job_type)
-        job = ThirtyDayCommercialExpirationJob.create(product, reviewer)
-        self.assertIsInstance(job, ThirtyDayCommercialExpirationJob)
-        self.assertIs(
-            True, IThirtyDayCommercialExpirationJob.providedBy(job))
-        self.assertEqual(product, job.product)
-        self.assertEqual(job.email_template_name, job._email_template_name)
-        self.assertEqual(job._subject_template % product.name, job.subject)
-        self.assertEqual(reviewer, job.reviewer)
-        self.assertEqual(True, job.reply_to_commercial)
+class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
+                                               TestCaseWithFactory):
+    """Test case for the SevenDayCommercialExpirationJob class."""
+
+    JOB_INTERFACE = IThirtyDayCommercialExpirationJob
+    JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
+    JOB_CLASS = ThirtyDayCommercialExpirationJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS

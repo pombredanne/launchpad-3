@@ -11,6 +11,8 @@ __all__ = [
     'IProductNotificationJobSource',
     'ISevenDayCommercialExpirationJob',
     'ISevenDayCommercialExpirationJobSource',
+    'IThirtyDayCommercialExpirationJob',
+    'IThirtyDayCommercialExpirationJobSource',
     ]
 
 from zope.interface import Attribute
