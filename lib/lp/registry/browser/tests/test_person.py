@@ -7,7 +7,6 @@ import doctest
 from textwrap import dedent
 
 import soupmatchers
-from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
     DocTestMatches,
@@ -20,7 +19,6 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
@@ -37,7 +35,6 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
-from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.verification.interfaces.authtoken import LoginTokenType
@@ -1151,7 +1148,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
     def test_context_description(self):
         # view.context_description returns a string that can be used
