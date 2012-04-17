@@ -230,6 +230,9 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertIs(
             True,
             IProductNotificationJobSource.providedBy(ProductNotificationJob))
+        self.assertEqual(
+            ProductJobType.REVIEWER_NOTIFICATION,
+            ProductNotificationJob.class_job_type)
         job = ProductNotificationJob.create(
             product, email_template_name, subject, reviewer,
             reply_to_commercial=False)
@@ -397,6 +400,9 @@ class SevenDayCommercialExpirationJobTestCase(TestCaseWithFactory):
             True,
             ISevenDayCommercialExpirationJobSource.providedBy(
                 SevenDayCommercialExpirationJob))
+        self.assertEqual(
+            ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS,
+            SevenDayCommercialExpirationJob.class_job_type)
         job = SevenDayCommercialExpirationJob.create(product, reviewer)
         self.assertIsInstance(job, SevenDayCommercialExpirationJob)
         self.assertIs(

@@ -292,7 +292,7 @@ class SevenDayCommercialExpirationJob(ProductNotificationJob):
 
     implements(ISevenDayCommercialExpirationJob)
     classProvides(ISevenDayCommercialExpirationJobSource)
-    class_job_type = ProductJobType.REVIEWER_NOTIFICATION
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
 
     _email_template_name = 'product-commercial-subscription-expiration'
     _subject_template = (
