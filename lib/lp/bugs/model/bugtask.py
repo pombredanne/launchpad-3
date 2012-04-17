@@ -112,6 +112,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -1511,30 +1512,13 @@ class BugTaskSet:
         from lp.bugs.model.bugtasksearch import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
         if _noprejoins:
-            prejoins = []
-            resultrow = BugTask
             eager_load = None
         else:
-            # NB: We could save later work by predicting what sort of
-            # targets we might be interested in here, but as at any
-            # point we're dealing with relatively few results, this is
-            # likely to be a small win.
-            prejoins = [(Bug, Join(Bug, BugTask.bug == Bug.id))]
-
-            def eager_load(results):
-                product_ids = set([row[0].productID for row in results])
-                product_ids.discard(None)
-                pkgname_ids = set(
-                    [row[0].sourcepackagenameID for row in results])
-                pkgname_ids.discard(None)
-                store = IStore(BugTask)
-                if product_ids:
-                    list(store.find(Product, Product.id.is_in(product_ids)))
-                if pkgname_ids:
-                    list(store.find(SourcePackageName,
-                        SourcePackageName.id.is_in(pkgname_ids)))
-            resultrow = (BugTask, Bug)
-        return search_bugs(resultrow, prejoins, eager_load, (params,) + args)
+            def eager_load(rows):
+                load_related(Bug, rows, ['bugID'])
+                load_related(Product, rows, ['productID'])
+                load_related(SourcePackageName, rows, ['sourcepackagenameID'])
+        return search_bugs(BugTask, [], eager_load, (params,) + args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
