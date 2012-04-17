@@ -291,7 +291,6 @@ flat_orderby_expression = {
     "specification": (
         Specification.name,
         [
-            (Bug, Join(Bug, BugTask.bug == BugTaskFlat.bug_id)),
             (Specification,
                 LeftJoin(
                     Specification,
@@ -478,10 +477,7 @@ def _build_query(params, use_flat):
     if use_flat:
         extra_clauses = []
         clauseTables = []
-        join_tables = [
-            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
-            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
-            ]
+        join_tables = []
     else:
         extra_clauses = [Bug.id == BugTask.bugID]
         clauseTables = [BugTask, Bug]
