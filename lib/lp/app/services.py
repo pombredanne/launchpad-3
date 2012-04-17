@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 
 from lp.app.interfaces.services import (
     IService,
@@ -35,3 +36,7 @@ class ServiceFactory(Navigation):
 
     def getService(self, service_name):
         return getUtility(IService, service_name)
+
+    def browserDefault(self, request):
+        # There is no valid traversal to +services.
+        raise NotFound(self, "+services", request)
