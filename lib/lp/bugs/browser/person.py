@@ -360,7 +360,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     view_name = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the open bugs assigned to a person."""
         if context is None:
             context = self.context
@@ -372,8 +372,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['assignee'] = context
 
         sup = super(PersonAssignedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(
-            searchtext, context, extra_params, prejoins)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -418,7 +417,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the open bugs commented on by a person."""
         if context is None:
             context = self.context
@@ -430,8 +429,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_commenter'] = context
 
         sup = super(PersonCommentedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(
-            searchtext, context, extra_params, prejoins)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     @property
     def context_description(self):
@@ -465,7 +463,7 @@ class PersonAffectingBugTaskSearchListingView(
     page_title = 'Bugs affecting'   # The context is added externally.
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the open bugs assigned to a person."""
         if context is None:
             context = self.context
@@ -477,8 +475,7 @@ class PersonAffectingBugTaskSearchListingView(
         extra_params['affected_user'] = context
 
         sup = super(PersonAffectingBugTaskSearchListingView, self)
-        return sup.searchUnbatched(
-            searchtext, context, extra_params, prejoins)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -524,7 +521,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the open bugs related to a person.
 
         :param extra_params: A dict that provides search params added to
@@ -554,8 +551,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
             commenter_params.bug_commenter = context
 
         return context.searchTasks(
-            assignee_params, subscriber_params, owner_params,
-            commenter_params, prejoins=prejoins)
+            assignee_params, subscriber_params, owner_params, commenter_params)
 
     @property
     def context_description(self):
@@ -585,7 +581,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the bugs reported by a person."""
         if context is None:
             context = self.context
@@ -600,8 +596,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_reporter'] = context
 
         sup = super(PersonReportedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(
-            searchtext, context, extra_params, prejoins)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     @property
     def context_description(self):
@@ -643,7 +638,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     view_name = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return the bugs subscribed to by a person."""
         if context is None:
             context = self.context
@@ -655,8 +650,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['subscriber'] = context
 
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(
-            searchtext, context, extra_params, prejoins)
+        return sup.searchUnbatched(searchtext, context, extra_params)
 
     def shouldShowTeamPortlet(self):
         """Should the team subscribed bugs portlet be shown?"""

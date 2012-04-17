@@ -1135,16 +1135,6 @@ class BugTaskViewsTestBase:
         self.assertEqual(
             self.expected_for_search_unbatched, list(view.searchUnbatched()))
 
-    def test_searchUnbatched_with_prejoins(self):
-        view = create_initialized_view(self.person, self.view_name)
-        Store.of(self.subscribed_bug).invalidate()
-        with StormStatementRecorder() as recorder:
-            prejoins = [
-                (Person, LeftJoin(Person, BugTask.owner == Person.id))]
-            bugtasks = view.searchUnbatched(prejoins=prejoins)
-            [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(LessThan(3)))
-
     def test_getMilestoneWidgetValues(self):
         view = create_initialized_view(self.person, self.view_name)
         milestones = [
