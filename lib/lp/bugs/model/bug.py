@@ -1728,7 +1728,7 @@ class Bug(SQLBase):
                                     from_api=False):
         """See `IBug`."""
         bug_before_modification = Snapshot(self, providing=providedBy(self))
-        if information_type == InformationType.PROPRIETARY:
+        if from_api and information_type == InformationType.PROPRIETARY:
             raise BugCannotBePrivate(
                 "Can not transition the information type to proprietary.")
         if self.information_type == information_type:
