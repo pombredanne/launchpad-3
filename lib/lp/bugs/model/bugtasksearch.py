@@ -260,10 +260,8 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
     # DecoratedResultSet will turn it into the actual BugTask.
     # If we're not using BugTaskFlat yet, we should still return
     # the BugTask directly.
-    if use_flat:
-        want = BugTaskFlat.bugtask_id
-    else:
-        want = BugTask
+    want = BugTaskFlat.bugtask_id if use_flat else BugTask
+    start = BugTaskFlat if use_flat else BugTask
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -274,20 +272,15 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         decorators.append(bugtask_decorator)
 
         if has_duplicate_results:
-            origin = _build_origin(
-                join_tables, [], clauseTables,
-                BugTaskFlat if use_flat else BugTask)
-            outer_origin = _build_origin(
-                orderby_joins, prejoins, [],
-                BugTaskFlat if use_flat else BugTask)
+            origin = _build_origin(join_tables, [], clauseTables, start)
+            outer_origin = _build_origin(orderby_joins, prejoins, [], start)
             want_inner = BugTaskFlat.bugtask_id if use_flat else BugTask.id
             subquery = Select(want_inner, where=query, tables=origin)
             result = store.using(*outer_origin).find(
                 want, In(want_inner, subquery))
         else:
             origin = _build_origin(
-                join_tables + orderby_joins, prejoins, clauseTables,
-                BugTaskFlat if use_flat else BugTask)
+                join_tables + orderby_joins, prejoins, clauseTables, start)
             result = store.using(*origin).find(want, query)
     else:
         assert not use_flat
