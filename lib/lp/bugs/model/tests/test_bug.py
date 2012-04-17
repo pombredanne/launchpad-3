@@ -733,7 +733,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             subscribers_after_public)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
-        # The pillar owner is subscribed if the bug supervisor is not set.
+        # The pillar owner is subscribed if the bug supervisor is not set and
+        # the bug is marked as USERDATA.
 
         bug_owner = self.factory.makePerson(name='bugowner')
         bug = self.factory.makeBug(owner=bug_owner)
@@ -747,14 +748,15 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             subscribers)
 
     def test_setPillarOwnerSubscribedIfNoSecurityContact(self):
-        # The pillar owner is subscribed if the security contact is not set.
+        # The pillar owner is subscribed if the security contact is not set
+        # and the bug is marked as EMBARGOEDSECURITY.
 
         bug_owner = self.factory.makePerson(name='bugowner')
         bug = self.factory.makeBug(owner=bug_owner)
         with person_logged_in(bug_owner):
             who = self.factory.makePerson(name='who')
             bug.transitionToInformationType(
-                InformationType.UNEMBARGOEDSECURITY, who)
+                InformationType.EMBARGOEDSECURITY, who)
             subscribers = bug.getDirectSubscribers()
         naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
