@@ -248,7 +248,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         respected.
     """
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
-    if resultrow is not BugTask:
+    if use_flat and resultrow is not BugTask:
         raise AssertionError("Caller wanted %r" % (resultrow,))
 
     store = IStore(BugTask)
@@ -260,7 +260,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
     # DecoratedResultSet will turn it into the actual BugTask.
     # If we're not using BugTaskFlat yet, we should still return
     # the BugTask directly.
-    want = BugTaskFlat.bugtask_id if use_flat else BugTask
+    want = BugTaskFlat.bugtask_id if use_flat else resultrow
     start = BugTaskFlat if use_flat else BugTask
 
     if len(alternatives) == 1:
