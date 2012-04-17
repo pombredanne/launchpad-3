@@ -60,6 +60,7 @@ from lp.registry.tests.distributionmirror_http_server import (
 from lp.services.config import config
 from lp.services.daemons.tachandler import TacTestSetup
 from lp.testing import (
+    clean_up_reactor,
     TestCase,
     TestCaseWithFactory,
     )
@@ -67,14 +68,6 @@ from lp.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
     )
-
-
-def clean_up_reactor():
-    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
-    # calls around.  They need to be updated to use Twisted correctly.
-    # For the meantime, just blat the reactor.
-    for delayed_call in reactor.getDelayedCalls():
-        delayed_call.cancel()
 
 
 class HTTPServerTestSetup(TacTestSetup):

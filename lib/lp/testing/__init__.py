@@ -15,6 +15,7 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'clean_up_reactor',
     'ExpectedException',
     'extract_lp_cache',
     'FakeAdapterMixin',
@@ -106,6 +107,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
+from twisted.internet import reactor
 from zope.component import (
     ComponentLookupError,
     getMultiAdapter,
@@ -1527,3 +1529,11 @@ class FakeAdapterMixin:
             self.addCleanup(
                 site_manager.registerUtility, current_commponent,
                 for_interface, name)
+
+
+def clean_up_reactor():
+    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+    # calls around.  They need to be updated to use Twisted correctly.
+    # For the meantime, just blat the reactor.
+    for delayed_call in reactor.getDelayedCalls():
+        delayed_call.cancel()
