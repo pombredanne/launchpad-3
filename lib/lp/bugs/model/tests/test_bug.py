@@ -708,9 +708,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
             bug_owner))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
-            expected_subscribers.remove(default_bugtask.pillar.bug_supervisor)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
     def test_transition_to_PUBLIC_information_type(self):
