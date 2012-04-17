@@ -8,10 +8,7 @@ from textwrap import dedent
 from zope.security.interfaces import ForbiddenAttribute
 
 from lp.bugs.errors import InvalidDuplicateValue
-from lp.testing import (
-    StormStatementRecorder,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
 

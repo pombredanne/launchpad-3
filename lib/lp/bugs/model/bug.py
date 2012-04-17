@@ -1724,9 +1724,13 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
-    def transitionToInformationType(self, information_type, who):
+    def transitionToInformationType(self, information_type, who,
+                                    from_api=False):
         """See `IBug`."""
         bug_before_modification = Snapshot(self, providing=providedBy(self))
+        if from_api and information_type == InformationType.PROPRIETARY:
+            raise BugCannotBePrivate(
+                "Cannot transition the information type to proprietary.")
         if self.information_type == information_type:
             return False
         if (information_type == InformationType.PROPRIETARY and

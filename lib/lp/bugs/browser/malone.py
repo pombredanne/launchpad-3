@@ -11,7 +11,6 @@ __all__ = [
 
 
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 
 from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet

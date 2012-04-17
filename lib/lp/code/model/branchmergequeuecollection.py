@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'GenericBranchCollection',
+    'GenericBranchMergeQueueCollection',
     ]
 
 from zope.interface import implements
