@@ -34,16 +34,21 @@ Let's create a new LoginToken to confirm an email address for foobar.
     ...     LoginTokenType.VALIDATEEMAIL)
     >>> token.sendEmailValidationRequest()
     >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> to_addrs
-    ['foo.bar2@canonical.com']
+    >>> found = False
+    >>> found_msg = None
+    >>> for from_addr, to_addrs, raw_msg in stub.test_emails:
+    ...     if to_addrs == ['foo.bar2@canonical.com']:
+    ...         found = True
+    ...         found_msg = raw_msg
+    >>> assert found
+    >>> stub.test_emails = []
 
 The email does not have a precedence header because the user implicitly
 requested it to complete his task.
 
     >>> import email
 
-    >>> msg = email.message_from_string(raw_msg)
+    >>> msg = email.message_from_string(found_msg)
     >>> print msg['Precedence']
     None
 
