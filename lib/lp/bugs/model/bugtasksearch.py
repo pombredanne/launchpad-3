@@ -158,7 +158,7 @@ flat_cols = {
 
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
-orderby_expression = {
+unflat_orderby_expression = {
     "task": (BugTask.id, []),
     "id": (BugTask.bugID, []),
     "importance": (BugTask.importance, []),
@@ -235,6 +235,83 @@ orderby_expression = {
         ),
     }
 
+bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
+bugtask_join = (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
+flat_orderby_expression = {
+    "task": (BugTaskFlat.bugtask_id, []),
+    "id": (BugTaskFlat.bug_id, []),
+    "importance": (BugTaskFlat.importance, []),
+    # TODO: sort by their name?
+    "assignee": (
+        Assignee.name,
+        [
+            (Assignee,
+                LeftJoin(Assignee, BugTaskFlat.assignee == Assignee.id))
+            ]),
+    "targetname": (BugTask.targetnamecache, bugtask_join),
+    "status": (BugTaskFlat.status, []),
+    "title": (Bug.title, [bug_join]),
+    "milestone": (BugTaskFlat.milestone_id, []),
+    "dateassigned": (BugTask.date_assigned, [bugtask_join]),
+    "datecreated": (BugTaskFlat.datecreated, []),
+    "date_last_updated": (BugTaskFlat.date_last_updated, []),
+    "date_closed": (BugTask.date_closed, [bugtask_join]),
+    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
+    "message_count": (Bug.message_count, [bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [bug_join]),
+    "heat": (BugTaskFlat.heat, []),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
+    "milestone_name": (
+        Milestone.name,
+        [
+            (Milestone,
+                LeftJoin(Milestone,
+                        BugTaskFlat.milestone_id == Milestone.id))
+            ]),
+    "reporter": (
+        Reporter.name,
+        [
+            (Reporter, Join(Reporter, BugTaskFlat.bug_owner == Reporter.id))
+            ]),
+    "tag": (
+        BugTag.tag,
+        [
+            (BugTag,
+                LeftJoin(
+                    BugTag,
+                    BugTag.bug == BugTaskFlat.bug_id and
+                    # We want at most one tag per bug. Select the
+                    # tag that comes first in alphabetic order.
+                    BugTag.id == Select(
+                        BugTag.id, tables=[BugTag],
+                        where=(BugTag.bugID == BugTaskFlat.bug_id),
+                        order_by=BugTag.tag, limit=1))),
+            ]
+        ),
+    "specification": (
+        Specification.name,
+        [
+            (Bug, Join(Bug, BugTask.bug == BugTaskFlat.bug_id)),
+            (Specification,
+                LeftJoin(
+                    Specification,
+                    # We want at most one specification per bug.
+                    # Select the specification that comes first
+                    # in alphabetic order.
+                    Specification.id == Select(
+                        Specification.id,
+                        tables=[
+                            SpecificationBug,
+                            Join(
+                                Specification,
+                                Specification.id ==
+                                    SpecificationBug.specificationID)],
+                        where=(SpecificationBug.bugID == BugTaskFlat.bug_id),
+                        order_by=Specification.name, limit=1))),
+            ]
+        ),
+    }
+
 
 def search_value_to_storm_where_condition(comp, search_value):
     """Convert a search value to a Storm WHERE condition."""
@@ -275,13 +352,14 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         results of which will be unioned. Only the first ordering is
         respected.
     """
-    store = IStore(BugTask)
-    orderby_expression, orderby_joins = _process_order_by(alternatives[0])
-    decorators = []
-
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
     if resultrow is not BugTask:
         raise AssertionError("Caller wanted %r" % (resultrow,))
+
+    store = IStore(BugTask)
+    orderby_expression, orderby_joins = _process_order_by(
+        alternatives[0], use_flat)
+    decorators = []
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -834,7 +912,7 @@ def _build_query(params, use_flat):
         has_duplicate_results, with_clause)
 
 
-def _process_order_by(params):
+def _process_order_by(params, use_flat):
     """Process the orderby parameter supplied to search().
 
     This method ensures the sort order will be stable, and converting
@@ -855,15 +933,6 @@ def _process_order_by(params):
     # decide whether we need to add the BugTask.bug or BugTask.id
     # columns to make the sort consistent over runs -- which is good
     # for the user and essential for the test suite.
-    unambiguous_cols = set([
-        Bug.date_last_updated,
-        Bug.datecreated,
-        Bug.id,
-        BugTask.bugID,
-        BugTask.date_assigned,
-        BugTask.datecreated,
-        BugTask.id,
-        ])
     # Bug ID is unique within bugs on a product or source package.
     if (params.product or
         (params.distribution and params.sourcepackagename) or
@@ -872,8 +941,33 @@ def _process_order_by(params):
     else:
         in_unique_context = False
 
-    if in_unique_context:
-        unambiguous_cols.add(BugTask.bug)
+    if use_flat:
+        orderby_expression = flat_orderby_expression
+        unambiguous_cols = set([
+            BugTaskFlat.date_last_updated,
+            BugTaskFlat.bug_id,
+            BugTaskFlat.datecreated,
+            BugTaskFlat.bugtask_id,
+            Bug.datecreated,
+            BugTask.date_assigned,
+            ])
+        # XXX: wtf, dupe of bug_id?
+        if in_unique_context:
+            unambiguous_cols.add(BugTaskFlat.bug)
+    else:
+        orderby_expression = unflat_orderby_expression
+        unambiguous_cols = set([
+            Bug.date_last_updated,
+            Bug.datecreated,
+            Bug.id,
+            BugTask.bugID,
+            BugTask.date_assigned,
+            BugTask.datecreated,
+            BugTask.id,
+            ])
+        # XXX: wtf, dupe of bugID?
+        if in_unique_context:
+            unambiguous_cols.add(BugTask.bug)
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
@@ -910,10 +1004,16 @@ def _process_order_by(params):
         orderby_arg.append(order_clause)
 
     if ambiguous:
-        if in_unique_context:
-            orderby_arg.append(BugTask.bugID)
+        if use_flat:
+            if in_unique_context:
+                orderby_arg.append(BugTaskFlat.bug_id)
+            else:
+                orderby_arg.append(BugTaskFlat.bugtask_id)
         else:
-            orderby_arg.append(BugTask.id)
+            if in_unique_context:
+                orderby_arg.append(BugTask.bugID)
+            else:
+                orderby_arg.append(BugTask.id)
 
     return tuple(orderby_arg), extra_joins
 
