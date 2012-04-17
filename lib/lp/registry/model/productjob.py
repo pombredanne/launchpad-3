@@ -33,6 +33,8 @@ from lp.registry.interfaces.productjob import (
     IProductNotificationJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
+    IThirtyDayCommercialExpirationJob,
+    IThirtyDayCommercialExpirationJobSource,
     )
 from lp.registry.model.product import Product
 from lp.services.config import config
@@ -303,4 +305,23 @@ class SevenDayCommercialExpirationJob(ProductNotificationJob):
         """See `ISevenDayCommercialExpirationJobSource`."""
         subject = cls._subject_template % product.name
         return super(SevenDayCommercialExpirationJob, cls).create(
+            product, cls._email_template_name, subject, reviewer, True)
+
+
+class ThirtyDayCommercialExpirationJob(ProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+    implements(IThirtyDayCommercialExpirationJob)
+    classProvides(IThirtyDayCommercialExpirationJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+    _email_template_name = 'product-commercial-subscription-expiration'
+    _subject_template = (
+        'The commercial-use subscription for %s in Launchpad is expiring')
+
+    @classmethod
+    def create(cls, product, reviewer):
+        """See `IThirtyDayCommercialExpirationJobSource`."""
+        subject = cls._subject_template % product.name
+        return super(ThirtyDayCommercialExpirationJob, cls).create(
             product, cls._email_template_name, subject, reviewer, True)
