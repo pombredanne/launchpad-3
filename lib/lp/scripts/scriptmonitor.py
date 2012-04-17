@@ -25,7 +25,7 @@ def check_script(con, log, hostname, scriptname,
         LIMIT 1
         """ % sqlvalues(hostname, scriptname, completed_from, completed_to))
     try:
-        script_id = cur.fetchone()[0]
+        cur.fetchone()[0]
         return None
     except TypeError:
         output = ("The script '%s' didn't run on '%s' between %s and %s"

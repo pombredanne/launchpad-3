@@ -9,8 +9,6 @@ __all__ = [
     'search_bugs',
     ]
 
-from operator import itemgetter
-
 from lazr.enum import BaseItem
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
@@ -125,6 +123,7 @@ cols = {
     }
 
 
+bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
 orderby_expression = {
@@ -140,17 +139,17 @@ orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, []),
     "status": (BugTask._status, []),
-    "title": (Bug.title, []),
+    "title": (Bug.title, [bug_join]),
     "milestone": (BugTask.milestoneID, []),
     "dateassigned": (BugTask.date_assigned, []),
     "datecreated": (BugTask.datecreated, []),
-    "date_last_updated": (Bug.date_last_updated, []),
+    "date_last_updated": (Bug.date_last_updated, [bug_join]),
     "date_closed": (BugTask.date_closed, []),
-    "number_of_duplicates": (Bug.number_of_duplicates, []),
-    "message_count": (Bug.message_count, []),
-    "users_affected_count": (Bug.users_affected_count, []),
+    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
+    "message_count": (Bug.message_count, [bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [bug_join]),
     "heat": (BugTask.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
     "milestone_name": (
         Milestone.name,
         [
@@ -161,13 +160,13 @@ orderby_expression = {
     "reporter": (
         Reporter.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Reporter, Join(Reporter, Bug.owner == Reporter.id))
             ]),
     "tag": (
         BugTag.tag,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (BugTag,
                 LeftJoin(
                     BugTag,
@@ -183,7 +182,7 @@ orderby_expression = {
     "specification": (
         Specification.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Specification,
                 LeftJoin(
                     Specification,
@@ -232,12 +231,10 @@ def search_value_to_storm_where_condition(comp, search_value):
         return comp == None
 
 
-def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
+def search_bugs(resultrow, pre_iter_hook, alternatives):
     """Return a Storm result set for the given search parameters.
 
     :param resultrow: The type of data returned by the query.
-    :param prejoins: A sequence of Storm SQL row instances which are
-        pre-joined.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
     :param alternatives: A sequence of BugTaskSearchParams instances, the
@@ -256,14 +253,13 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         decorators.append(bugtask_decorator)
 
         if has_duplicate_results:
-            origin = _build_origin(join_tables, [], clauseTables)
-            outer_origin = _build_origin(orderby_joins, prejoins, [])
+            origin = _build_origin(join_tables, clauseTables)
+            outer_origin = _build_origin(orderby_joins, [])
             subquery = Select(BugTask.id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
                 resultrow, In(BugTask.id, subquery))
         else:
-            origin = _build_origin(
-                join_tables + orderby_joins, prejoins, clauseTables)
+            origin = _build_origin(join_tables + orderby_joins, clauseTables)
             result = store.using(*origin).find(resultrow, query)
     else:
         results = []
@@ -271,7 +267,7 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
              has_duplicate_results, with_clause] = _build_query(params)
-            origin = _build_origin(join_tables, [], clauseTables)
+            origin = _build_origin(join_tables, clauseTables)
             localstore = store
             if with_clause:
                 localstore = store.with_(with_clause)
@@ -284,12 +280,9 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
 
         resultset = reduce(lambda l, r: l.union(r), results)
         origin = _build_origin(
-            orderby_joins, prejoins, [],
+            orderby_joins, [],
             start_with=Alias(resultset._get_select(), "BugTask"))
         result = store.using(*origin).find(resultrow)
-
-    if prejoins:
-        decorators.insert(0, itemgetter(0))
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
@@ -298,25 +291,20 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         pre_iter_hook=pre_iter_hook)
 
 
-def _build_origin(join_tables, prejoin_tables, clauseTables,
-                start_with=BugTask):
+def _build_origin(join_tables, clauseTables, start_with=BugTask):
     """Build the parameter list for Store.using().
 
     :param join_tables: A sequence of tables that should be joined
         as returned by _build_query(). Each element has the form
         (table, join), where table is the table to join and join
         is a Storm Join or LeftJoin instance.
-    :param prejoin_tables: A sequence of tables that should additionally
-        be joined. Each element has the form (table, join),
-        where table is the table to join and join is a Storm Join
-        or LeftJoin instance.
     :param clauseTables: A sequence of tables that should appear in
         the FROM clause of a query. The join condition is defined in
         the WHERE clause.
 
-    Tables may appear simultaneously in join_tables, prejoin_tables
-    and in clauseTables. This method ensures that each table
-    appears exactly once in the returned sequence.
+    Tables may appear simultaneously in join_tables and in clauseTables.
+    This method ensures that each table appears exactly once in the
+    returned sequence.
     """
     origin = [start_with]
     already_joined = set(origin)
@@ -325,10 +313,6 @@ def _build_origin(join_tables, prejoin_tables, clauseTables,
             origin.append(join)
             if table is not None:
                 already_joined.add(table)
-    for table, join in prejoin_tables:
-        if table not in already_joined:
-            origin.append(join)
-            already_joined.add(table)
     for table in clauseTables:
         if table not in already_joined:
             origin.append(table)

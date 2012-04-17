@@ -105,11 +105,11 @@ def main():
 def process_exists(pid):
     """True if the given process exists."""
     try:
-        pgid = os.getpgid(pid)
+        os.getpgid(pid)
     except OSError, x:
         if x.errno == 3:
             return False
-        log.error("Unknown exception from getpgid - %s", str(x))
+        logging.error("Unknown exception from getpgid - %s", str(x))
     return True
 
 

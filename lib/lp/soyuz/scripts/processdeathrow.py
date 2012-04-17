@@ -69,7 +69,7 @@ class DeathRowProcessor(LaunchpadCronScript):
             "Unpublishing death row for %s." % archive.displayname)
         try:
             death_row.reap(self.options.dry_run)
-        except Exception, e:
+        except Exception:
             self.logger.exception(
                 "Unexpected exception while doing death-row unpublish")
             self.txn.abort()

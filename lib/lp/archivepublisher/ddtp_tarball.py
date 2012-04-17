@@ -15,8 +15,6 @@ __metaclass__ = type
 __all__ = ['process_ddtp_tarball']
 
 import os
-import stat
-import tarfile
 
 from lp.archivepublisher.customupload import CustomUpload
 

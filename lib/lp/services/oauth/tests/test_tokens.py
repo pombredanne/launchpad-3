@@ -13,10 +13,12 @@ from datetime import (
     )
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
 
+from lp.services.mail import stub
 from lp.services.oauth.interfaces import (
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -273,6 +275,13 @@ class TestAccessTokens(TestOAuth):
             self._exchange_request_token_for_access_token())
         verifyObject(IOAuthAccessToken, access_token)
 
+        # Make sure the security notification email went out that the new
+        # token was created.
+        transaction.commit()
+        from_addr, to_addr, msg = stub.test_emails.pop()
+        self.assertIn('OAuth token generated', msg)
+        self.assertIn('@example.com', to_addr[0])
+
     def test_access_token_inherits_data_fields_from_request_token(self):
         request_token, access_token = (
             self._exchange_request_token_for_access_token())
@@ -298,7 +307,6 @@ class TestAccessTokens(TestOAuth):
         request_token.review(
             self.person, OAuthPermission.WRITE_PRIVATE,
             context=context, date_expires=self.in_a_while)
-
         access_token = request_token.createAccessToken()
         self.assertEquals(request_token.context, access_token.context)
         self.assertEquals(

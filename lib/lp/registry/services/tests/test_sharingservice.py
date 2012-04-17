@@ -758,10 +758,7 @@ class TestLaunchpadlib(ApiTestMixin, TestCaseWithFactory):
     def setUp(self):
         super(TestLaunchpadlib, self).setUp()
         self.launchpad = self.factory.makeLaunchpadService(person=self.owner)
-        # XXX 2012-02-23 wallyworld bug 681767
-        # Launchpadlib can't do relative url's
-        self.service = self.launchpad.load(
-            '%s/+services/sharing' % self.launchpad._root_uri)
+        self.service = self.launchpad.load('+services/sharing')
         flag = FeatureFixture(WRITE_FLAG)
         flag.setUp()
         self.addCleanup(flag.cleanUp)

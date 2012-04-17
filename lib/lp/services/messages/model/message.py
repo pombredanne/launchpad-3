@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -84,10 +84,6 @@ from lp.services.messages.interfaces.message import (
     UnknownSender,
     )
 from lp.services.propertycache import cachedproperty
-
-# this is a hard limit on the size of email we will be willing to store in
-# the database.
-MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 
 def utcdatetime_from_field(field_value):
@@ -310,10 +306,7 @@ class MessageSet:
         if not rfc822msgid:
             raise InvalidEmailMessage('Missing Message-Id')
 
-        # make sure we don't process anything too long
-        if len(email_message) > MAX_EMAIL_SIZE:
-            raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
-                rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
+        # Over-long messages are checked for at the handle_on_message level.
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.

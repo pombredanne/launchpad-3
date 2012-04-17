@@ -1724,15 +1724,15 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
-    def transitionToInformationType(self, information_type, who):
+    def transitionToInformationType(self, information_type, who,
+                                    from_api=False):
         """See `IBug`."""
         bug_before_modification = Snapshot(self, providing=providedBy(self))
+        if from_api and information_type == InformationType.PROPRIETARY:
+            raise BugCannotBePrivate(
+                "Cannot transition the information type to proprietary.")
         if self.information_type == information_type:
             return False
-        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
-        f_flag = bool(getFeatureFlag(f_flag_str))
-        if f_flag:
-            self.reconcileSubscribers(information_type, who)
         if (information_type == InformationType.PROPRIETARY and
             len(self.affected_pillars) > 1):
             raise BugCannotBePrivate(
@@ -1740,34 +1740,47 @@ class Bug(SQLBase):
         if information_type in PRIVATE_INFORMATION_TYPES:
             self.who_made_private = who
             self.date_made_private = UTC_NOW
+            missing_subscribers = set([who, self.owner])
         else:
             self.who_made_private = None
             self.date_made_private = None
+            missing_subscribers = set()
         # XXX: This should be a bulk update. RBC 20100827
         # bug=https://bugs.launchpad.net/storm/+bug/625071
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
-        if not f_flag and information_type == InformationType.USERDATA:
-            # If we didn't call reconcileSubscribers(), we may have
-            # bug supervisors who should be on this bug, but aren't.
-            supervisors = set()
-            for bugtask in self.bugtasks:
-                supervisors.add(bugtask.pillar.bug_supervisor)
-            if None in supervisors:
-                supervisors.remove(None)
-            for s in supervisors:
-                if not get_structural_subscriptions_for_bug(self, s):
-                    self.subscribe(s, who)
-        if not f_flag and information_type in SECURITY_INFORMATION_TYPES:
-            # The bug turned out to be security-related, subscribe the
-            # security contact. We do it here only if the feature flag
-            # is not set, otherwise it's done in
-            # reconcileSubscribers().
-            for pillar in self.affected_pillars:
+
+        # There are several people we need to ensure are subscribed.
+        # If the information type is userdata, we need to check for bug
+        # supervisors who aren't subscribed and should be. If there is no
+        # bug supervisor, we need to subscribe the maintainer.
+        pillars = self.affected_pillars
+        if information_type == InformationType.USERDATA:
+            for pillar in pillars:
+                if pillar.bug_supervisor is not None:
+                    missing_subscribers.add(pillar.bug_supervisor)
+                else:
+                    missing_subscribers.add(pillar.owner)
+
+        # If the information type is security related, we need to ensure
+        # the security contacts are subscribed. If there is no security
+        # contact, we need to subscribe the maintainer.
+        if information_type in SECURITY_INFORMATION_TYPES:
+            for pillar in pillars:
                 if pillar.security_contact is not None:
-                    self.subscribe(pillar.security_contact, who)
+                    missing_subscribers.add(pillar.security_contact)
+                else:
+                    missing_subscribers.add(pillar.owner)
+
+        for s in missing_subscribers:
+            # Don't subscribe someone if they're already subscribed via a
+            # team.
+            already_subscribed_teams = self.getSubscribersForPerson(s)
+            if already_subscribed_teams.is_empty():
+                self.subscribe(s, who)
+
         self.information_type = information_type
         # Set the legacy attributes for now.
         self._private = information_type in PRIVATE_INFORMATION_TYPES
@@ -1833,81 +1846,6 @@ class Bug(SQLBase):
                 and pillar.bug_supervisor):
                     bug_supervisors.append(pillar.bug_supervisor)
         return bug_supervisors, security_contacts
-
-    def reconcileSubscribers(self, information_type, who):
-        """ Ensure only appropriate people are subscribed to private bugs.
-
-        When a bug is marked as either private = True or security_related =
-        True, we need to ensure that only people who are authorised to know
-        about the privileged contents of the bug remain directly subscribed
-        to it. So we:
-          1. Get the required subscribers depending on the bug status.
-          2. Get the auto removed subscribers depending on the bug status.
-             eg security contacts when a bug is updated to security related =
-             false.
-          3. Get the allowed subscribers = required subscribers
-                                            + bugtask owners
-          4. Remove any current direct subscribers who are not allowed or are
-             to be auto removed.
-          5. Add any subscribers who are required.
-        """
-        current_direct_subscribers = (
-            self.getSubscriptionInfo().direct_subscribers)
-        required_subscribers = self.getRequiredSubscribers(
-            information_type, who)
-        removed_bug_supervisors, removed_security_contacts = (
-            self.getAutoRemovedSubscribers(information_type))
-        for subscriber in removed_bug_supervisors:
-            recipients = BugNotificationRecipients()
-            recipients.addBugSupervisor(subscriber)
-            notification_text = ("This bug is no longer private so the bug "
-                "supervisor was unsubscribed. They will no longer be "
-                "notified of changes to this bug for privacy related "
-                "reasons, but may receive notifications about this bug from "
-                "other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-        for subscriber in removed_security_contacts:
-            recipients = BugNotificationRecipients()
-            recipients.addSecurityContact(subscriber)
-            notification_text = ("This bug is no longer security related so "
-                "the security contact was unsubscribed. They will no longer "
-                "be notified of changes to this bug for security related "
-                "reasons, but may receive notifications about this bug "
-                "from other subscriptions.")
-            self.unsubscribe(
-                subscriber, who, ignore_permissions=True,
-                send_notification=True,
-                notification_text=notification_text,
-                recipients=recipients)
-
-        # If this bug is for a project that is marked as having private bugs
-        # by default, and the bug is private or security related, we will
-        # unsubscribe any unauthorised direct subscribers.
-        pillar = self.default_bugtask.pillar
-        private_project = IProduct.providedBy(pillar) and pillar.private_bugs
-        privileged_info = information_type != InformationType.PUBLIC
-        if private_project and privileged_info:
-            allowed_subscribers = set()
-            allowed_subscribers.add(self.owner)
-            for bugtask in self.bugtasks:
-                allowed_subscribers.add(bugtask.owner)
-                allowed_subscribers.add(bugtask.pillar.owner)
-                allowed_subscribers.update(set(bugtask.pillar.drivers))
-            allowed_subscribers = required_subscribers.union(
-                allowed_subscribers)
-            subscribers_to_remove = (
-                current_direct_subscribers.difference(allowed_subscribers))
-            for subscriber in subscribers_to_remove:
-                self.unsubscribe(subscriber, who, ignore_permissions=True)
-
-        subscribers_to_add = (
-            required_subscribers.difference(current_direct_subscribers))
-        for subscriber in subscribers_to_add:
-            self.subscribe(subscriber, who)
 
     def getBugTask(self, target):
         """See `IBug`."""

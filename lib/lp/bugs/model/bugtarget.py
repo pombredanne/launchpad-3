@@ -81,7 +81,7 @@ class HasBugsBase:
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, modified_since=None,
-                    created_since=None, prejoins=[]):
+                    created_since=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -97,10 +97,9 @@ class HasBugsBase:
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']
-            del kwargs['prejoins']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params, prejoins=prejoins)
+        return BugTaskSet().search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""

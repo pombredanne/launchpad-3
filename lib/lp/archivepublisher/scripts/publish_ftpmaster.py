@@ -332,7 +332,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         pending_sources = list(archive.getPublishedSources(status=pending))
         pending_binaries = list(archive.getAllPublishedBinaries(
             status=pending))
-        load_related(DistroArchSeries, pending_binaries, 'distroarchseriesID')
+        load_related(
+            DistroArchSeries, pending_binaries, ['distroarchseriesID'])
         return set(
             pub.distroseries.name + pocketsuffix[pub.pocket]
             for pub in pending_sources + pending_binaries)
