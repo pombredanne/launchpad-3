@@ -247,13 +247,14 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         results of which will be unioned. Only the first ordering is
         respected.
     """
-    store = IStore(BugTask)
-    orderby_expression, orderby_joins = _process_order_by(alternatives[0])
-    decorators = []
-
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
     if resultrow is not BugTask:
         raise AssertionError("Caller wanted %r" % (resultrow,))
+
+    store = IStore(BugTask)
+    orderby_expression, orderby_joins = _process_order_by(
+        alternatives[0], use_flat)
+    decorators = []
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -805,7 +806,7 @@ def _build_query(params, use_flat):
         has_duplicate_results, with_clause)
 
 
-def _process_order_by(params):
+def _process_order_by(params, use_flat):
     """Process the orderby parameter supplied to search().
 
     This method ensures the sort order will be stable, and converting
@@ -848,7 +849,13 @@ def _process_order_by(params):
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
-    extra_joins = []
+    if use_flat:
+        extra_joins = [
+            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
+            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
+            ]
+    else:
+        extra_joins = []
     ambiguous = True
     # Sorting by milestone only is a very "coarse" sort order.
     # If no additional sort order is specified, add the bug task
