@@ -78,6 +78,7 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
 from lp.testing import (
+    clean_up_reactor,
     TestCase,
     TestCaseWithFactory,
     )
@@ -1102,6 +1103,11 @@ class TestSlaveConnectionTimeouts(TestCase):
         self.proxy = ProxyWithConnectionTimeout("fake_url")
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
+
+    def tearDown(self):
+        # We need to remove any DelayedCalls that didn't actually get called.
+        clean_up_reactor()
+        super(TestSlaveConnectionTimeouts, self).tearDown()
 
     def test_connection_timeout(self):
         # The default timeout of 30 seconds should not cause a timeout,
