@@ -283,17 +283,18 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
                 join_tables + orderby_joins, prejoins, clauseTables, start)
             result = store.using(*origin).find(want, query)
     else:
-        assert not use_flat
         results = []
 
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(params, False)
-            origin = _build_origin(join_tables, [], clauseTables, BugTask)
+             has_duplicate_results, with_clause] = _build_query(
+                 params, use_flat)
+            origin = _build_origin(join_tables, [], clauseTables, start)
             localstore = store
             if with_clause:
                 localstore = store.with_(with_clause)
-            next_result = localstore.using(*origin).find((BugTask,), query)
+            want_inner = BugTaskFlat if use_flat else BugTask
+            next_result = localstore.using(*origin).find((want_inner,), query)
             results.append(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
@@ -303,8 +304,10 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         resultset = reduce(lambda l, r: l.union(r), results)
         origin = _build_origin(
             orderby_joins, prejoins, [],
-            Alias(resultset._get_select(), "BugTask"))
-        result = store.using(*origin).find(resultrow)
+            Alias(
+                resultset._get_select(),
+                "BugTaskFlat" if use_flat else "BugTask"))
+        result = store.using(*origin).find(want)
 
     if use_flat:
         decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
