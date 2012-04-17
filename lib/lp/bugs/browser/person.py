@@ -21,7 +21,6 @@ import copy
 from operator import itemgetter
 import urllib
 
-from storm.expr import Join
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -32,12 +31,12 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import IPerson
 from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
+from lp.services.database.bulk import load_related
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
@@ -142,12 +141,10 @@ class RelevantMilestonesMixin:
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
-        prejoins = [
-            (Milestone, Join(Milestone, BugTask.milestone == Milestone.id))]
-        milestones = [
-            bugtask.milestone
-            for bugtask in self.searchUnbatched(prejoins=prejoins)]
-        milestones = sorted(milestones, key=milestone_sort_key, reverse=True)
+        tasks = self.searchUnbatched()
+        milestones = sorted(
+            load_related(Milestone, tasks, ['milestoneID']),
+            key=milestone_sort_key, reverse=True)
         return [
             dict(title=milestone.title, value=milestone.id, checked=False)
             for milestone in milestones]
