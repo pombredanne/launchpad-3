@@ -1029,6 +1029,8 @@ def create_lxc(user, lxcname, ssh_key_path):
         ])
     if exit_code:
         raise SetupLXCError('Unable to create the LXC container.')
+    # fstab tweak
+    file_append('/var/lib/lxc/{}/fstab'.format(lxcname), 'none dev/shm tmpfs defaults 0 0\n')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
     user_authorized_keys = os.path.expanduser(
