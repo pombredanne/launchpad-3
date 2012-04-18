@@ -1013,7 +1013,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         IPerson(person.account, None)
         # The should take 2 queries - one for the tasks, one for the related
         # products (eager loaded targets).
-        has_expected_queries = HasQueryCount(Equals(2))
+        has_expected_queries = HasQueryCount(Equals(3))
         # No extra queries should be issued to access a regular attribute
         # on the bug that would normally trigger lazy evaluation for security
         # checking.  Note that the 'id' attribute does not trigger a check.
