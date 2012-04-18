@@ -326,6 +326,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.show_information_type_in_ui.enabled',
+     'boolean',
+     ('If true, displays the information_type directly in the UI when '
+      'filing a bug and changing the information_type.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

@@ -406,6 +406,20 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
+    def test_set_information_type(self):
+        # Test that the bug's information_type can be updated using the
+        # view with the feature flag on.
+        bug = self.factory.makeBug()
+        feature_flag = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            with person_logged_in(bug.owner):
+                create_initialized_view(
+                    bug.default_bugtask, name='+secrecy', form={
+                        'field.information_type': 'User Data',
+                        'field.actions.change': 'Change'})
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.

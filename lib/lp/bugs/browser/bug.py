@@ -861,23 +861,54 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     @property
     def label(self):
-        return 'Bug #%i - Set visibility and security' % self.context.bug.id
+        label = 'Bug #%i - Set ' % self.context.bug.id
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            label += 'Information type'
+        else:
+            label += 'visibility and security'
+        return label
 
     page_title = label
 
-    class schema(Interface):
-        """Schema for editing secrecy info."""
+    @property
+    def field_names(self):
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return ['information_type']
+        else:
+            return ['private', 'security_related']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    class privacy_schema(Interface):
         private_field = copy_field(IBug['private'], readonly=False)
         security_related_field = copy_field(
             IBug['security_related'], readonly=False)
 
+    class information_type_schema(Interface):
+        information_type_field = copy_field(
+            IBug['information_type'], readonly=False,
+            vocabulary='InformationTypeVocabulary')
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return self.information_type_schema
+        else:
+            return self.privacy_schema
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(BugSecrecyEditView, self).setUpFields()
-        bug = self.context.bug
-        if (bug.information_type == InformationType.PROPRIETARY
-            and len(bug.affected_pillars) > 1):
-            self.form_fields = self.form_fields.omit('private')
+        if not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            bug = self.context.bug
+            if (bug.information_type == InformationType.PROPRIETARY
+                and len(bug.affected_pillars) > 1):
+                self.form_fields = self.form_fields.omit('private')
 
     @property
     def next_url(self):
@@ -891,29 +922,32 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        return {'private': self.context.bug.private,
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return {'information_type': self.context.bug.information_type}
+        else:
+            return {
+                'private': self.context.bug.private,
                 'security_related': self.context.bug.security_related}
 
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
-        # We will modify data later, so take a copy now.
         data = dict(data)
-
-        # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use
-        # bug.transitionToInformationType() to ensure auditing information is
-        # recorded.
         bug = self.context.bug
-        private = data.pop('private', bug.private)
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            information_type = data.pop('information_type')
+        else:
+            private = data.pop('private', bug.private)
+            security_related = data.pop('security_related')
+            information_type = convert_to_information_type(
+                private, security_related)
         user_will_be_subscribed = (
-            private and bug.getSubscribersForPerson(self.user).is_empty())
-        security_related = data.pop('security_related')
-        user = getUtility(ILaunchBag).user
-        # This will change when the UI does.
-        information_type = convert_to_information_type(
-            private, security_related)
-        changed = bug.transitionToInformationType(information_type, user)
+            information_type in PRIVATE_INFORMATION_TYPES and
+            bug.getSubscribersForPerson(self.user).is_empty())
+        changed = bug.transitionToInformationType(
+            information_type, self.user)
         if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
         if self.request.is_ajax:

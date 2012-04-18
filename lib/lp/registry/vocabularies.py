@@ -65,6 +65,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -88,7 +89,10 @@ from storm.expr import (
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -2227,6 +2231,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
 
 class InformationTypeVocabulary(SimpleVocabulary):
+
+    classProvides(IEnumeratedType)
 
     def __init__(self):
         types = [
