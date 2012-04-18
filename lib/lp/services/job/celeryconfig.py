@@ -7,7 +7,7 @@ from lp.services.config import config
 
 
 class ConfigurationError(Exception):
-    pass
+    """Errors raised due to misconfiguration."""
 
 
 def check_circular_fallbacks(queue):
@@ -26,40 +26,28 @@ def check_circular_fallbacks(queue):
                 '%s already in %s' % (queue, linked_queues))
 
 
-def configure():
+def configure(argv):
     """Set the Celery parameters.
 
     Doing this in a function is convenient for testing.
     """
-    global BROKER_HOST
-    global BROKER_PORT
-    global BROKER_USER
-    global BROKER_PASSWORD
-    global BROKER_VHOST
-    global CELERY_CREATE_MISSING_QUEUES
-    global CELERY_DEFAULT_EXCHANGE
-    global CELERY_DEFAULT_QUEUE
-    global CELERY_IMPORTS
-    global CELERY_QUEUES
-    global CELERY_RESULT_BACKEND
-    global CELERYD_CONCURRENCY
-    global CELERYD_TASK_SOFT_TIME_LIMIT
-    global FALLBACK
-
-    CELERY_QUEUES = {}
-    for queue_name in config.job_runner_queues:
-        CELERY_QUEUES[queue_name] = {
-            'binding_key': config.job_runner_queues[queue_name],
+    result = {}
+    celery_queues = {}
+    queue_names = config.job_runner_queues.queues
+    queue_names = queue_names.split(' ')
+    for queue_name in queue_names:
+        celery_queues[queue_name] = {
+            'binding_key': queue_name,
             }
         check_circular_fallbacks(queue_name)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-Q',  '--queues')
-    args = parser.parse_known_args(sys.argv)
+    args = parser.parse_known_args(argv)
     queues = args[0].queues
     # A queue must be specified as a command line parameter for each
     # celeryd instance, but this is not required for a Launchpad app server.
-    if 'celeryd' in sys.argv[0]:
+    if 'celeryd' in argv[0]:
         if queues is None or queues == '':
             raise ConfigurationError('A queue must be specified.')
         queues = queues.split(',')
@@ -70,28 +58,31 @@ def configure():
             raise ConfigurationError(
                 'A celeryd instance may serve only one queue.')
         queue = queues[0]
-        if queue not in CELERY_QUEUES:
+        if queue not in celery_queues:
             raise ConfigurationError(
                 'Queue %s is not configured in schema-lazr.conf' % queue)
-        CELERYD_TASK_SOFT_TIME_LIMIT = config[queue].timeout
+        result['CELERYD_TASK_SOFT_TIME_LIMIT'] = config[queue].timeout
         if config[queue].fallback_queue != '':
-            FALLBACK = config[queue].fallback_queue
-        CELERYD_CONCURRENCY = config[queue].concurrency
+            result['FALLBACK'] = config[queue].fallback_queue
+        result['CELERYD_CONCURRENCY'] = config[queue].concurrency
 
     host, port = config.rabbitmq.host.split(':')
-    BROKER_HOST = host
-    BROKER_PORT = port
-    BROKER_USER = config.rabbitmq.userid
-    BROKER_PASSWORD = config.rabbitmq.password
-    BROKER_VHOST = config.rabbitmq.virtual_host
-    CELERY_IMPORTS = ("lp.services.job.celeryjob", )
-    CELERY_RESULT_BACKEND = "amqp"
-    CELERY_DEFAULT_EXCHANGE = "job"
-    CELERY_DEFAULT_QUEUE = "job"
-    CELERY_CREATE_MISSING_QUEUES = False
+
+    result['BROKER_HOST'] = host
+    result['BROKER_PORT'] = port
+    result['BROKER_USER'] = config.rabbitmq.userid
+    result['BROKER_PASSWORD'] = config.rabbitmq.password
+    result['BROKER_VHOST'] = config.rabbitmq.virtual_host
+    result['CELERY_CREATE_MISSING_QUEUES'] = False
+    result['CELERY_DEFAULT_EXCHANGE'] = 'job'
+    result['CELERY_DEFAULT_QUEUE'] = 'job'
+    result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
+    result['CELERY_QUEUES'] = celery_queues
+    result['CELERY_RESULT_BACKEND'] = 'amqp'
+    return result
 
 try:
-    configure()
+    globals().update(configure(getattr(sys, 'argv', [''])))
 except ConfigurationError, error:
     print >>sys.stderr, error
     sys.exit(1)
