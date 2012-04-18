@@ -200,19 +200,21 @@ def search_value_to_storm_where_condition(comp, search_value):
         return comp == None
 
 
-def search_bugs(resultrow, pre_iter_hook, alternatives):
-    """Return a Storm result set for the given search parameters.
+def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
+    """Return a ResultSet of BugTasks for the given search parameters.
 
-    :param resultrow: The type of data returned by the query.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
     :param alternatives: A sequence of BugTaskSearchParams instances, the
         results of which will be unioned. Only the first ordering is
         respected.
+    :param just_bug_ids: Return a ResultSet of bug IDs instead of BugTasks.
     """
     store = IStore(BugTask)
     orderby_expression, orderby_joins = _process_order_by(alternatives[0])
     decorators = []
+
+    want = BugTask.bugID if just_bug_ids else BugTask
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -226,10 +228,10 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
             outer_origin = _build_origin(orderby_joins, [])
             subquery = Select(BugTask.id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
-                resultrow, In(BugTask.id, subquery))
+                want, In(BugTask.id, subquery))
         else:
             origin = _build_origin(join_tables + orderby_joins, clauseTables)
-            result = store.using(*origin).find(resultrow, query)
+            result = store.using(*origin).find(want, query)
     else:
         results = []
 
@@ -251,7 +253,7 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
         origin = _build_origin(
             orderby_joins, [],
             start_with=Alias(resultset._get_select(), "BugTask"))
-        result = store.using(*origin).find(resultrow)
+        result = store.using(*origin).find(want)
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
