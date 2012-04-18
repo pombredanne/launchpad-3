@@ -300,7 +300,8 @@ class CommericialExpirationMixin:
         """See `ISevenDayCommercialExpirationJobSource`."""
         subject = cls._subject_template % product.name
         return super(CommericialExpirationMixin, cls).create(
-            product, cls._email_template_name, subject, reviewer, True)
+            product, cls._email_template_name, subject, reviewer,
+            reply_to_commercial=True)
 
 
 class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
