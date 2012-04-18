@@ -74,3 +74,9 @@ class ISpecificationWorkItem(Interface):
         required=True, description=_(
             "The sequence in which the work items are to be displayed in the "
             "UI."))
+
+    is_complete = Bool(
+        readonly=True,
+        description=_(
+            "True or False depending on whether or not there is more "
+            "work required on this work item."))

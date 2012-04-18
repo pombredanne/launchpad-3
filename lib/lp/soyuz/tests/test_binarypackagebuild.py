@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -83,9 +83,9 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         bq = self.build.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, IBuildPackageJob)
-        self.failUnlessEqual(self.build.is_virtualized, bq.virtualized)
-        self.failIfEqual(None, bq.processor)
-        self.failUnless(bq, self.build.buildqueue_record)
+        self.assertEqual(self.build.is_virtualized, bq.virtualized)
+        self.assertIsNotNone(bq.processor)
+        self.assertEqual(bq, self.build.buildqueue_record)
 
     def test_getBuildCookie(self):
         # A build cookie is made up of the job type and record id.
@@ -93,7 +93,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         Store.of(self.build).flush()
         cookie = self.build.getBuildCookie()
         expected_cookie = "PACKAGEBUILD-%d" % self.build.id
-        self.assertEquals(expected_cookie, cookie)
+        self.assertEqual(expected_cookie, cookie)
 
     def test_estimateDuration(self):
         # Without previous builds, a negligable package size estimate is 60s
@@ -124,7 +124,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # the distribution source package release when the context
         # is not a PPA or a copy archive.
         self.addFakeBuildLog()
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/ubuntutest/+source/'
             'gedit/666/+build/%d/+files/mybuildlog.txt' % (
                 self.build.package_build.build_farm_job.id),
@@ -137,7 +137,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         ppa_owner = self.factory.makePerson(name="joe")
         removeSecurityProxy(self.build).archive = self.factory.makeArchive(
             owner=ppa_owner, name="myppa")
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/~joe/'
             '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
@@ -150,7 +150,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         store = Store.of(build_farm_job)
         store.flush()
 
-        self.failUnlessEqual(self.build, build_farm_job.getSpecificJob())
+        self.assertEqual(self.build, build_farm_job.getSpecificJob())
 
     def test_adapt_from_build_farm_job_prefetching(self):
         # The package_build is prefetched for efficiency.
@@ -173,8 +173,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # If getSpecificJob is called on the binary build it is a noop.
         store = Store.of(self.build)
         store.flush()
-        self.assertStatementCount(
-            0, self.build.getSpecificJob)
+        self.assertStatementCount(0, self.build.getSpecificJob)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the changes file signer.
@@ -182,7 +181,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         class MockChanges:
             signer = "Somebody <somebody@ubuntu.com>"
 
-        self.assertEquals("Somebody <somebody@ubuntu.com>",
+        self.assertEqual("Somebody <somebody@ubuntu.com>",
             self.build.getUploader(MockChanges()))
 
     def test_can_be_cancelled(self):
@@ -301,7 +300,12 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
+        self.assertEqual(depwait_build.dependencies, '')
+
+    def assertRaisesUnparsableDependencies(self, depwait_build, dependencies):
+        depwait_build.dependencies = dependencies
+        self.assertRaises(
+            UnparsableDependencies, depwait_build.updateDependencies)
 
     def testInvalidDependencies(self):
         # Calling `IBinaryPackageBuild.updateDependencies` on a build with
@@ -310,24 +314,16 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
 
         # None is not a valid dependency values.
-        depwait_build.dependencies = None
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, None)
 
         # Missing 'name'.
-        depwait_build.dependencies = u'(>> version)'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, u'(>> version)')
 
         # Missing 'version'.
-        depwait_build.dependencies = u'name (>>)'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        self.assertRaisesUnparsableDependencies(depwait_build, u'name (>>)')
 
-        # Missing comman between dependencies.
-        depwait_build.dependencies = u'name1 name2'
-        self.assertRaises(
-            UnparsableDependencies, depwait_build.updateDependencies)
+        # Missing comma between dependencies.
+        self.assertRaisesUnparsableDependencies(depwait_build, u'name1 name2')
 
     def testBug378828(self):
         # `IBinaryPackageBuild.updateDependencies` copes with the
@@ -344,7 +340,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         self.layer.txn.commit()
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, '')
+        self.assertEqual(depwait_build.dependencies, '')
 
     def testVersionedDependencies(self):
         # `IBinaryPackageBuild.updateDependencies` supports versioned
@@ -357,10 +353,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.dependencies = u'dep-bin (>> 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'dep-bin (>> 666)')
+        self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
         depwait_build.dependencies = u'dep-bin (>= 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
 
     def testVersionedDependencyOnOldPublication(self):
         # `IBinaryPackageBuild.updateDependencies` doesn't just consider
@@ -376,10 +372,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.dependencies = u'dep-bin (= 666)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
         depwait_build.dependencies = u'dep-bin (= 999)'
         depwait_build.updateDependencies()
-        self.assertEquals(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, u'')
 
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
@@ -426,8 +422,7 @@ class TestBuildSet(TestCaseWithFactory):
 
     def test_getByBuildFarmJob_returns_none_when_missing(self):
         sprb = self.factory.makeSourcePackageRecipeBuild()
-        self.assertIs(
-            None,
+        self.assertIsNone(
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
                 sprb.build_farm_job))
 
@@ -598,8 +593,7 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         expected = self.build.can_be_cancelled
         entry_url = api_url(self.build)
         logout()
-        entry = self.webservice.get(
-            entry_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(entry_url, api_version='devel').jsonBody()
         self.assertEqual(expected, entry['can_be_cancelled'])
 
     def test_cancel_is_exported(self):
@@ -607,25 +601,30 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         build_url = api_url(self.build)
         self.build.queueBuild()
         logout()
-        entry = self.webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         response = self.webservice.named_post(
             entry['self_link'], 'cancel', api_version='devel')
         self.assertEqual(200, response.status)
-        entry = self.webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEqual(BuildStatus.CANCELLED.title, entry['buildstate'])
 
     def test_cancel_security(self):
         # Check that unauthorised users cannot call cancel()
         build_url = api_url(self.build)
-        person = self.factory.makePerson()
         webservice = webservice_for_person(
-            person, permission=OAuthPermission.WRITE_PUBLIC)
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
         logout()
 
-        entry = webservice.get(
-            build_url, api_version='devel').jsonBody()
+        entry = webservice.get(build_url, api_version='devel').jsonBody()
         response = webservice.named_post(
             entry['self_link'], 'cancel', api_version='devel')
         self.assertEqual(401, response.status)
+
+    def test_builder_is_exported(self):
+        # The builder property is exported.
+        removeSecurityProxy(self.build).builder = self.factory.makeBuilder()
+        build_url = api_url(self.build)
+        builder_url = api_url(self.build.builder)
+        logout()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
+        self.assertEndsWith(entry['builder_link'], builder_url)

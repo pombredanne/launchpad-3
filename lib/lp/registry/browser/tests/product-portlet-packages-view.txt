@@ -40,7 +40,7 @@ does not happen automatically.
 Let's create a test project.
 
     >>> product = factory.makeProduct(name="bingo")
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -79,7 +79,7 @@ not be suggested.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -95,7 +95,7 @@ for the current Ubuntu series will NOT be suggested.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=warty)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -110,7 +110,7 @@ or PUBLISHED statuses will NOT be suggested.
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
     ...     status=PackagePublishingStatus.DELETED)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -124,7 +124,7 @@ field.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
     ...     status=PackagePublishingStatus.PUBLISHED)
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -159,7 +159,7 @@ series will be suggested.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -175,7 +175,7 @@ If multiple source packages match they will all be displayed.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -211,7 +211,7 @@ package then it will not be shown as one of the suggestions.
     ...     ubuntu.currentseries,
     ...     babingo_spn, product.owner)
     >>> (ubuntu, product, spn) = updateCache()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -240,7 +240,7 @@ year ago.
     >>> print product.date_next_suggest_packaging
     None
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", principal=product.owner)
     >>> view.can_show_portlet
@@ -287,7 +287,7 @@ The +portlet-packages view can create a Packaging link.
     ...     'field.distributionsourcepackage': 'bingo',
     ...     'field.actions.link': 'Set Ubuntu Package Information',
     ...     }
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)
     >>> view.errors

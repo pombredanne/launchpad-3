@@ -54,7 +54,7 @@ regular users, and the project owner all are denied.
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
@@ -542,7 +542,7 @@ access it.
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
@@ -577,7 +577,7 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', project_set)
     True
     >>> check_permission('launchpad.Moderate', project)

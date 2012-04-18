@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,9 +10,6 @@ from datetime import (
 import unittest
 
 import pytz
-from storm.expr import Join
-from storm.store import Store
-from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -26,7 +23,6 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugsummary import BugSummary
-from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -35,8 +31,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.person import Person
-from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -44,14 +38,12 @@ from lp.services.searchbuilder import (
     )
 from lp.testing import (
     person_logged_in,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing.matchers import HasQueryCount
 
 
 class SearchTestBase:
@@ -62,12 +54,6 @@ class SearchTestBase:
     def setUp(self):
         super(SearchTestBase, self).setUp()
         self.bugtask_set = getUtility(IBugTaskSet)
-        # We need a feature flag so that multipillar bugs can be made private.
-        feature_flag = {
-                'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
 
     def assertSearchFinds(self, params, expected_bugtasks):
         # Run a search for the given search parameters and check if
@@ -301,14 +287,14 @@ class SearchTestBase:
         # Full text searches find text indexed by Bug.fti.
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, searchtext='one title')
+            user=None, searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='one title')
+            user=None, fast_searchtext=u'one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
 
     def test_has_no_upstream_bugtask(self):
@@ -644,7 +630,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         # Someone without permission to see deactiveated projects does
         # not see bugtasks for deactivated projects.
         bugtask_set = getUtility(IBugTaskSet)
-        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
+        param = BugTaskSearchParams(user=None, fast_searchtext=u'Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
         self.assertEqual([self.active_bugtask], list(results))
 
@@ -1512,42 +1498,12 @@ class MultipleParams:
 class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
-    def runSearch(self, params, *args, **kw):
+    def runSearch(self, params, *args):
         """Run BugTaskSet.search() and preload bugtask target objects."""
-        return list(self.bugtask_set.search(
-            params, *args, _noprejoins=False, **kw))
+        return list(self.bugtask_set.search(params, *args, _noprejoins=False))
 
     def resultValuesForBugtasks(self, expected_bugtasks):
         return expected_bugtasks
-
-    def test_preload_additional_objects(self):
-        # It is possible to join additional tables in the search query
-        # in order to load related Storm objects during the query.
-        store = Store.of(self.bugtasks[0])
-        store.invalidate()
-
-        # If we do not prejoin the owner, two queries a run
-        # in order to retrieve the owner of the bugtask.
-        with StormStatementRecorder() as recorder:
-            params = self.getBugTaskSearchParams(user=None)
-            found_tasks = self.runSearch(params)
-            found_tasks[0].owner
-            self.assertTrue(len(recorder.statements) > 1)
-
-        # If we join the table person on bugtask.owner == person.id
-        # the owner object is loaded in the query that retrieves the
-        # bugtasks.
-        store.invalidate()
-        with StormStatementRecorder() as recorder:
-            params = self.getBugTaskSearchParams(user=None)
-            found_tasks = self.runSearch(
-                params,
-                prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
-            # More than one query may have been performed
-            search_count = recorder.count
-            # Accessing the owner does not trigger more queries.
-            found_tasks[0].owner
-            self.assertThat(recorder, HasQueryCount(Equals(search_count)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
@@ -1587,9 +1543,8 @@ class TestMilestoneDueDateFiltering(TestCaseWithFactory):
             dateexpected=ten_days_from_now)
         current_milestone_bug = self.factory.makeBug(
             milestone=current_milestone)
-        old_milestone_bug = self.factory.makeBug(milestone=old_milestone)
-        future_milestone_bug = self.factory.makeBug(
-            milestone=future_milestone)
+        self.factory.makeBug(milestone=old_milestone)
+        self.factory.makeBug(milestone=future_milestone)
         # Search for bugs whose milestone.dateexpected is between yesterday
         # and tomorrow.  This will return only the one task targeted to
         # current_milestone.

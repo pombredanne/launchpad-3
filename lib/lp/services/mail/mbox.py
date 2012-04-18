@@ -10,7 +10,6 @@ __metaclass__ = type
 import email
 from email.Utils import make_msgid
 from logging import getLogger
-import mailbox
 
 from zope.app import zapi
 from zope.interface import implements

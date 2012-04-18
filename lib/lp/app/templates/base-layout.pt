@@ -22,6 +22,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
   <head>
+    <meta charset="UTF-8" />
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <link
@@ -61,7 +62,7 @@
     itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
-      ${view/context/fmt:public-private-css}
+      ${view/fmt:public-private-css}
       yui3-skin-sam">
         <script type="text/javascript"
           tal:condition="python: is_lpnet">

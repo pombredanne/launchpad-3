@@ -234,12 +234,12 @@ def create(columns, values, get_objects=False,
     if get_objects or get_primary_keys:
         result = IStore(cls).execute(
             Returning(Insert(
-                db_cols, expr=db_values, primary_columns=primary_key)))
+                db_cols, values=db_values, primary_columns=primary_key)))
         keys = map(itemgetter(0), result) if len(primary_key) == 1 else result
         if get_objects:
             return load(cls, keys)
         else:
             return list(keys)
     else:
-        IStore(cls).execute(Insert(db_cols, expr=db_values))
+        IStore(cls).execute(Insert(db_cols, values=db_values))
         return None

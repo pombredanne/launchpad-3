@@ -150,26 +150,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
 
-    def test_searchUnbatched_can_preload_objects(self):
-        # BugTaskSearchListingView.searchUnbatched() can optionally
-        # preload objects while retrieving the bugtasks.
-        product = self.factory.makeProduct()
-        bugtask_1 = self.factory.makeBug(product=product).default_bugtask
-        bugtask_2 = self.factory.makeBug(product=product).default_bugtask
-        view = create_initialized_view(product, '+bugs')
-        Store.of(product).invalidate()
-        with StormStatementRecorder() as recorder:
-            prejoins = [
-                (Person, LeftJoin(Person, BugTask.owner == Person.id)),
-                ]
-            bugtasks = list(view.searchUnbatched(prejoins=prejoins))
-            self.assertEqual(
-                [bugtask_1, bugtask_2], bugtasks)
-            # If the table prejoin failed, then this will issue two
-            # additional SQL queries
-            [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
-
     def test_search_components_error(self):
         # Searching for using components for bug targets that are not a distro
         # or distroseries will report an error, but not OOPS.  See bug

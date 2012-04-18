@@ -6,7 +6,6 @@ __all__ = ['ArchiveArch', 'ArchiveArchSet']
 
 from storm.expr import (
     And,
-    Join,
     LeftJoin,
     )
 from storm.locals import (

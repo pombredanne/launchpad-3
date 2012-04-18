@@ -57,6 +57,7 @@ from lp.layers import (
     FeedsLayer,
     setFirstLayer,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -138,7 +139,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(85)))
+        self.assertThat(recorder, HasQueryCount(LessThan(86)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -154,7 +155,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                88, self.factory.makePerson())
+                89, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -199,7 +200,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(107)))
+        self.assertThat(recorder, HasQueryCount(LessThan(108)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -1058,33 +1059,28 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
 
 
 class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
-    """ Tests the boolean methods on the view used to indicate whether the
-        Also Affects... links should be allowed or not. Currently these
-        restrictions are only used for private bugs. ie where body.private
-        is true.
-
-        A feature flag is used to turn off the new restrictions. Each test
-        is performed with and without the feature flag.
-    """
+    """Tests the boolean methods on the view used to indicate whether the
+       Also Affects... links should be allowed or not. These restrictions
+       are only used for proprietary bugs. """
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-
     def _createView(self, bug):
         request = LaunchpadTestRequest()
-        bugtasks_and_nominations_view = getMultiAdapter(
+        return getMultiAdapter(
             (bug, request), name="+bugtasks-and-nominations-portal")
-        return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
         # A bug affecting a project cannot also affect another project or
         # package.
-        bug = self.factory.makeBug()
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertFalse(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertFalse(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1092,11 +1088,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # A bug affecting a distro cannot also affect another project but it
         # could affect another package.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1108,12 +1108,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp_name = self.factory.getOrMakeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1449,7 +1452,6 @@ class TestPersonBugs(TestCaseWithFactory):
         """The mustache model should not be added to JSON cache for feeds."""
         cache = getFeedViewCache(self.target, PersonBugsFeed)
         self.assertIsNone(cache.objects.get('mustache_model'))
-
 
 
 class TestDistributionBugs(TestCaseWithFactory):

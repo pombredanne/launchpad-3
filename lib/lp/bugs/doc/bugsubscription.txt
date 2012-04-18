@@ -380,18 +380,7 @@ bug.
     ()
 
 When a bug is marked private, specific people like the bugtask bug supervisors
-will be automatically subscribed, and only specifically allowed existing
-direct subscribers (eg bugtask pillar maintainers) will remain subscribed.
-
-We currently use a feature flag to control who is subscribed when a bug is
-made private and to allow multi-pillar bugs to be private.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.allow_multipillar_private_bugs.enabled': 'on',
-    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
+will be automatically subscribed.
 
     >>> from zope.event import notify
 
@@ -439,26 +428,20 @@ any subscribers not converted to direct subscribers.
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
     Mark Shuttleworth
+    Robert Collins
+    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getIndirectSubscribers())
     Martin Pitt
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
-    Ubuntu Team
 
     >>> print_displayname(linux_source_bug.getAlsoNotifiedSubscribers())
     Martin Pitt
     No Privileges Person
-    Robert Collins
     Sample Person
     Scott James Remnant
-    Ubuntu Team
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()
 
 To find out which email addresses should receive a notification email on
 a bug, and why, IBug.getBugNotificationRecipients() assembles an
@@ -473,8 +456,8 @@ You can query for the addresses and reasons:
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
+     ('robertc@robertcollins.net', 'Subscriber'),
+     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 If IBug.getBugNotificationRecipients() is passed a  BugNotificationLevel
@@ -487,8 +470,8 @@ notification level or higher will be returned.
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
+     ('robertc@robertcollins.net', 'Subscriber'),
+     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 When Sample Person is unsubscribed from linux_source_bug, he is no
@@ -502,8 +485,8 @@ the COMMENTS level...
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
+     ('robertc@robertcollins.net', 'Subscriber'),
+     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 ...but remains included for the level LIFECYCLE.
@@ -516,8 +499,8 @@ the COMMENTS level...
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
      ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
-     ('robertc@robertcollins.net', u'Subscriber (Mozilla Firefox)'),
-     ('support@ubuntu.com', u'Subscriber (Ubuntu) @ubuntu-team'),
+     ('robertc@robertcollins.net', 'Subscriber'),
+     ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Assignee')]
 
 To find out if someone is already directly subscribed to a bug, call

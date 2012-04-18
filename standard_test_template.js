@@ -13,7 +13,7 @@ YUI.add('lp.${LIBRARY}.test', function (Y) {
 
         test_library_exists: function () {
             Y.Assert.isObject(Y.lp.${LIBRARY},
-                "We should be able to locate the lp.${LIBRARY} module");
+                "Could not locate the lp.${LIBRARY} module");
         }
 
     }));

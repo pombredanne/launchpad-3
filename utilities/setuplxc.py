@@ -58,6 +58,7 @@ DHCP_FILE = '/etc/dhcp/dhclient.conf'
 HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
     'python-shell-toolbox']
 HOSTS_FILE = '/etc/hosts'
+MAILNAME_FILE = '/etc/mailname'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
 LP_APACHE_ROOTS = (
     '/var/tmp/bazaar.launchpad.dev/static',
@@ -1028,6 +1029,13 @@ def create_lxc(user, lxcname, ssh_key_path):
         ])
     if exit_code:
         raise SetupLXCError('Unable to create the LXC container.')
+    # XXX 2012-04-18 frankban bug=974584:
+    #     Add a line to the container's fstab to be able to create semaphores
+    #     in lxc. This workaround needs to be removed once the lxc bug is
+    #     resolved for lucid containers too.
+    file_append(
+        '/var/lib/lxc/{}/fstab'.format(lxcname),
+        'none dev/shm tmpfs defaults 0 0\n')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
     user_authorized_keys = os.path.expanduser(
@@ -1111,6 +1119,13 @@ def initialize_lxc(user, dependencies_dir, directory, lxcname, ssh_key_path):
     # ephemeral container
     root_sshcall('mkdir -p /rootfs/usr/lib')
     root_sshcall('ln -s /usr/lib/graphviz /rootfs/usr/lib/graphviz')
+    # XXX: BradCrittenden 2012-04-13 bug=981114: Manually create /etc/mailname
+    # or bzrlib gets upset and returns None,None for whoami causing test
+    # failures.
+    mailname_file = get_container_path(lxcname, MAILNAME_FILE)
+    if not os.path.exists(mailname_file):
+        with open(mailname_file, 'w') as fd:
+            fd.write('localhost')
 
 
 def stop_lxc(lxcname, ssh_key_path):

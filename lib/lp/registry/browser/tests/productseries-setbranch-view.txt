@@ -10,7 +10,7 @@ that exists externally in a variety of version control systems.
     >>> product = factory.makeProduct(name="chevy")
     >>> series = factory.makeProductSeries(name="impala", product=product)
     >>> transaction.commit()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(series, name='+setbranch',
     ...                                principal=product.owner)
     >>> content = find_tag_by_id(view.render(), 'maincontent')

@@ -1646,8 +1646,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true
         # because we indeed need to republish everything.
-        if (self.isUnstable() and
-            publication.pocket != PackagePublishingPocket.RELEASE):
+        pre_release_pockets = (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED,
+            )
+        if self.isUnstable() and publication.pocket not in pre_release_pockets:
             log.error("Tried to publish %s (%s) into a non-release "
                       "pocket on unstable series %s, skipping"
                       % (publication.displayname, publication.id,

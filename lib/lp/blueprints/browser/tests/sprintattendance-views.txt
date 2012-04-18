@@ -107,7 +107,7 @@ The most common kind of attendance is that the user will be physically
 present at the sprint.
 
     >>> person = factory.makePerson(name='brown')
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
@@ -126,7 +126,7 @@ Some users attend the sprint virtually, such as via IRC, VOIP, or by
 using their psychotic powers :).
 
     >>> person = factory.makePerson(name='black')
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',

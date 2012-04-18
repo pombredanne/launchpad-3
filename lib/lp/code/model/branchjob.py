@@ -80,13 +80,16 @@ from lp.code.mail.branch import BranchMailer
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.bzrutils import server
+from lp.codehosting.bzrutils import (
+    read_locked,
+    server,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import (
-    branch_id_to_path,
     get_ro_server,
     get_rw_server,
     )
+from lp.codehosting.vfs.branchfs import get_real_branch_path
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
@@ -297,6 +300,8 @@ class BranchScanJob(BranchJobDerived):
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
 
+    config = config.branchscanner
+
     @classmethod
     def create(cls, branch):
         """See `IBranchScanJobSource`."""
@@ -327,6 +332,10 @@ class BranchUpgradeJob(BranchJobDerived):
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
     user_error_types = (NotBranchError,)
+
+    task_queue = 'branch_write_job'
+
+    config = config.upgrade_branches
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -412,6 +421,8 @@ class RevisionMailJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISION_MAIL
 
+    config = config.sendbranchmail
+
     @classmethod
     def create(cls, branch, revno, from_address, body, subject):
         """See `IRevisionMailJobSource`."""
@@ -456,6 +467,8 @@ class RevisionsAddedJob(BranchJobDerived):
     implements(IRevisionsAddedJob)
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
+
+    config = config.sendbranchmail
 
     @classmethod
     def create(cls, branch, last_scanned_id, last_revision_id,
@@ -518,16 +531,13 @@ class RevisionsAddedJob(BranchJobDerived):
         subscriptions = self.branch.getSubscriptionsByLevel(diff_levels)
         if not subscriptions:
             return
-
-        self.bzr_branch.lock_read()
-        try:
-            for revision, revno in self.iterAddedMainline():
-                assert revno is not None
-                mailer = self.getMailerForRevision(
-                    revision, revno, self.generateDiffs())
-                mailer.sendAll()
-        finally:
-            self.bzr_branch.unlock()
+        with server(get_ro_server(), no_replace=True):
+            with read_locked(self.bzr_branch):
+                for revision, revno in self.iterAddedMainline():
+                    assert revno is not None
+                    mailer = self.getMailerForRevision(
+                        revision, revno, self.generateDiffs())
+                    mailer.sendAll()
 
     def getDiffForRevisions(self, from_revision_id, to_revision_id):
         """Generate the diff between from_revision_id and to_revision_id."""
@@ -717,6 +727,8 @@ class RosettaUploadJob(BranchJobDerived):
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
+    config = config.rosettabranches
+
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
 
@@ -762,7 +774,9 @@ class RosettaUploadJob(BranchJobDerived):
                                        force_translations_upload)
             branch_job = BranchJob(
                 branch, BranchJobType.ROSETTA_UPLOAD, metadata)
-            return cls(branch_job)
+            job = cls(branch_job)
+            job.celeryRunOnCommit()
+            return job
         else:
             return None
 
@@ -888,27 +902,28 @@ class RosettaUploadJob(BranchJobDerived):
 
     def run(self):
         """See `IRosettaUploadJob`."""
-        # This is not called upon job creation because the branch would
-        # neither have been mirrored nor scanned then.
-        self._init_translation_file_lists()
-        # Get the product series that are connected to this branch and
-        # that want to upload translations.
-        productseriesset = getUtility(IProductSeriesSet)
-        productseries = productseriesset.findByTranslationsImportBranch(
-            self.branch, self.force_translations_upload)
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        for series in productseries:
-            approver = TranslationBranchApprover(self.file_names,
-                                                 productseries=series)
-            for iter_info in self._iter_lists_and_uploaders(series):
-                file_names, changed_files, uploader = iter_info
-                for upload_file_name, upload_file_content in changed_files:
-                    if len(upload_file_content) == 0:
-                        continue  # Skip empty files
-                    entry = translation_import_queue.addOrUpdateEntry(
-                        upload_file_name, upload_file_content,
-                        True, uploader, productseries=series)
-                    approver.approve(entry)
+        with server(get_ro_server(), no_replace=True):
+            # This is not called upon job creation because the branch would
+            # neither have been mirrored nor scanned then.
+            self._init_translation_file_lists()
+            # Get the product series that are connected to this branch and
+            # that want to upload translations.
+            productseriesset = getUtility(IProductSeriesSet)
+            productseries = productseriesset.findByTranslationsImportBranch(
+                self.branch, self.force_translations_upload)
+            translation_import_queue = getUtility(ITranslationImportQueue)
+            for series in productseries:
+                approver = TranslationBranchApprover(self.file_names,
+                                                     productseries=series)
+                for iter_info in self._iter_lists_and_uploaders(series):
+                    file_names, changed_files, uploader = iter_info
+                    for upload_file_name, upload_file_content in changed_files:
+                        if len(upload_file_content) == 0:
+                            continue  # Skip empty files
+                        entry = translation_import_queue.addOrUpdateEntry(
+                            upload_file_name, upload_file_content,
+                            True, uploader, productseries=series)
+                        approver.approve(entry)
 
     @staticmethod
     def iterReady():
@@ -948,6 +963,10 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
+    task_queue = 'branch_write_job'
+
+    config = config.reclaimbranchspace
+
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
             'id': self.context.id,
@@ -970,8 +989,6 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        branch_path = os.path.join(
-            config.codehosting.mirrored_branches_root,
-            branch_id_to_path(self.branch_id))
+        branch_path = get_real_branch_path(self.branch_id)
         if os.path.exists(branch_path):
             shutil.rmtree(branch_path)

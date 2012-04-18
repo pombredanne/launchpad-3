@@ -597,7 +597,7 @@ Now add "test@canonical.com" to the techboard team and log in as him.
     >>> ignored = techboard.addMember(
     ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
     ...     force_team_add=True)
-    >>> login_person(person2)
+    >>> ignored = login_person(person2)
 
 Create a new package set.
 

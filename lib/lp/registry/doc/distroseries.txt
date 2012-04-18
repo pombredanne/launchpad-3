@@ -846,7 +846,7 @@ so that he can edit it.
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_driver = factory.makePerson(name='yo-driver')
     >>> youbuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> youbuntu.full_functionality
     False
 
@@ -865,7 +865,7 @@ Owners of derivative distributions, and admins can create series too, but
 they are not automatically set as the series driver because they always
 have permission to edit the series.
 
-    >>> login_person(youbuntu.owner)
+    >>> ignored = login_person(youbuntu.owner)
     >>> yo_series = youbuntu.newSeries(
     ...     name='forest', displayname='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
@@ -879,9 +879,9 @@ Ubuntu is an `IBaseDistribution` which requires special preparation for
 Soyuz and Translations before a series can be created. Ubuntu driver can
 not create series.
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> ubuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
@@ -893,7 +893,7 @@ not create series.
 Owners and admins of base distributions are the only users who can create a
 series.
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> u_series = ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
