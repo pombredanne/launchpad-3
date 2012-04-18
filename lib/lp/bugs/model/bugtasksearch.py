@@ -1609,4 +1609,4 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
             """ % user.id)
     if not private_only:
         query = '%s OR %s' % (public_bug_filter, query)
-    return query, _make_cache_user_can_view_bug(user)
+    return '(%s)' % query, _make_cache_user_can_view_bug(user)
