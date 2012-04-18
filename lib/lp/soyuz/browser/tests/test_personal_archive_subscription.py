@@ -5,16 +5,14 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+
 
 class TestSomething(TestCaseWithFactory):
 
@@ -26,8 +24,7 @@ class TestSomething(TestCaseWithFactory):
         pppa = self.factory.makeArchive(
             owner=owner, private=True, name='pppa')
         with person_logged_in(owner):
-            sub = pppa.newSubscription(subscriber, owner)
+            pppa.newSubscription(subscriber, owner)
         pas = PersonalArchiveSubscription(subscriber, pppa)
         privacy = IPrivacy(pas)
         self.assertTrue(privacy.private)
-        
