@@ -11,7 +11,18 @@
   </tr>
 
   <tr tal:define="security_context view/getMainContext">
+  <tal:information_type tal:condition="view/show_information_type_in_ui">
     <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/information_type|nothing"
+        tal:condition="widget">
+      <label tal:attributes="for widget/name">
+        This bug contains information that is:
+      </label>
+      <input tal:replace="structure widget" />
+    </td>
+  </tal:information_type>
+  <tal:security_related tal:condition="not view/show_information_type_in_ui">
+      <td colspan="2" width="100%"
         tal:define="widget nocall: view/widgets/security_related|nothing"
         tal:condition="widget">
       <table>
@@ -45,7 +56,7 @@
           </tr>
         </tbody>
       </table>
-    </td>
+  </tal:security_related>
   </tr>
   </tbody></table></td></tr>
 </tal:root>
