@@ -394,6 +394,7 @@ class CommericialExpirationMixin:
 
     def make_notification_data(self, licenses=[License.MIT]):
         product = self.factory.makeProduct(licenses=licenses)
+        self.factory.makeCommercialSubscription(product)
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
 
@@ -453,7 +454,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
 
     def test_is_proprietary_open_source(self):
-        product, reviewer = self.make_notification_data()
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertIs(False, job._is_proprietary)
 
@@ -466,7 +467,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     def test_email_template_name(self):
         # Redefine the inherrited test to verify the open source license case.
         # The state of the product's license defines the email_template_name.
-        product, reviewer = self.make_notification_data()
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertEqual(
             'product-commercial-subscription-expired-open-source',
@@ -482,8 +483,20 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             job.email_template_name)
 
     def test_deactivateCommercialFeatures_proprietary(self):
+        # When the project is proprietary, the product is deactivated.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)
         job.deactivateCommercialFeatures()
         self.assertIs(False, product.active)
+
+    def test_deactivateCommercialFeatures_open_source(self):
+        # When the project is open source, the product's commercial features
+        # are deactivated.
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
+        with person_logged_in(product.owner):
+            product.setPrivateBugs(True, product.owner)
+        job = CommercialExpiredJob.create(product, reviewer)
+        job.deactivateCommercialFeatures()
+        self.assertIs(True, product.active)
+        self.assertIs(False, product.private_bugs)

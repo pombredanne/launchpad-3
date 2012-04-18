@@ -22,6 +22,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import IPersonSet
@@ -357,3 +358,5 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         """Deactivate the project or just the commercial features it uses."""
         if self._is_proprietary:
             self.product.active = False
+        else:
+            removeSecurityProxy(self.product).private_bugs = False
