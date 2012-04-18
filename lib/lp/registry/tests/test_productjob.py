@@ -20,6 +20,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import ProductJobType
+from lp.registry.interfaces.product import (
+    License,
+    )
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
@@ -445,3 +448,14 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
+
+    def test_is_proprietary(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        open_product = self.factory.makeProduct(licenses=[License.MIT])
+        open_job = CommercialExpiredJob.create(open_product, reviewer)
+        self.assertIs(False, open_job.is_proprietary)
+        proprietary_product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        proprietary_job = CommercialExpiredJob.create(
+            proprietary_product, reviewer)
+        self.assertIs(True, proprietary_job.is_proprietary)

@@ -25,7 +25,10 @@ from zope.interface import (
 
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
+    )
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
@@ -330,3 +333,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     implements(ICommercialExpiredJob)
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
+
+    @cachedproperty
+    def is_proprietary(self):
+        return License.OTHER_PROPRIETARY in self.product.licenses
