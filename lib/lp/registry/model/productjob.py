@@ -334,10 +334,10 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
 
-    _email_template_name = 'product-commercial-subscription-expired'
+    _email_template_name = None
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
 
-    @cachedproperty
-    def _is_proprietary(self):
-        return License.OTHER_PROPRIETARY in self.product.licenses
+    @staticmethod
+    def is_proprietary(product):
+        return License.OTHER_PROPRIETARY in product.licenses

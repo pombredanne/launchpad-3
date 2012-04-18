@@ -450,14 +450,27 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
 
     def test_is_proprietary_open_source(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
         product = self.factory.makeProduct(licenses=[License.MIT])
-        job = CommercialExpiredJob.create(product, reviewer)
-        self.assertIs(False, job._is_proprietary)
+        self.assertIs(False, CommercialExpiredJob.is_proprietary(product))
 
     def test_is_proprietary_proprietary(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
         product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        job = CommercialExpiredJob.create(product, reviewer)
-        self.assertIs(True, job._is_proprietary)
+        self.assertIs(True, CommercialExpiredJob.is_proprietary(product))
+
+#    def test_email_template_name_open_source(self):
+#        reviewer = getUtility(ILaunchpadCelebrities).janitor
+#        product = self.factory.makeProduct(licenses=[License.MIT])
+#        job = CommercialExpiredJob.create(product, reviewer)
+#        self.assertEqual(
+#            'product-commercial-subscription-expired-open-source',
+#            job._email_template_name)
+
+#    def test_email_template_name_proprietary(self):
+#        reviewer = getUtility(ILaunchpadCelebrities).janitor
+#        product = self.factory.makeProduct(
+#            licenses=[License.OTHER_PROPRIETARY])
+#        job = CommercialExpiredJob.create(product, reviewer)
+#        self.assertEqual(
+#            'product-commercial-subscription-expired-proprietary',
+#            job._email_template_name)
