@@ -453,9 +453,9 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         open_product = self.factory.makeProduct(licenses=[License.MIT])
         open_job = CommercialExpiredJob.create(open_product, reviewer)
-        self.assertIs(False, open_job.is_proprietary)
+        self.assertIs(False, open_job._is_proprietary)
         proprietary_product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
         proprietary_job = CommercialExpiredJob.create(
             proprietary_product, reviewer)
-        self.assertIs(True, proprietary_job.is_proprietary)
+        self.assertIs(True, proprietary_job._is_proprietary)

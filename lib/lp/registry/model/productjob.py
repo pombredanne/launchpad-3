@@ -339,5 +339,5 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
         'The commercial subscription for %s in Launchpad expired')
 
     @cachedproperty
-    def is_proprietary(self):
+    def _is_proprietary(self):
         return License.OTHER_PROPRIETARY in self.product.licenses
