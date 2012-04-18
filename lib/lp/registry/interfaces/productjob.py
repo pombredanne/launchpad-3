@@ -9,12 +9,12 @@ __all__ = [
     'IProductJobSource',
     'IProductNotificationJob',
     'IProductNotificationJobSource',
+    'ICommercialExpiredJob',
+    'ICommercialExpiredJobSource',
     'ISevenDayCommercialExpirationJob',
     'ISevenDayCommercialExpirationJobSource',
     'IThirtyDayCommercialExpirationJob',
     'IThirtyDayCommercialExpirationJobSource',
-    'ICommercialExpiredJob',
-    'ICommercialExpiredJobSource',
     ]
 
 from zope.interface import Attribute
