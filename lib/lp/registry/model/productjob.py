@@ -334,7 +334,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
 
-    _email_template_name = ''  # email_template_name is does not need this.
+    _email_template_name = ''  # email_template_name does not need this.
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
 
