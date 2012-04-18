@@ -158,7 +158,12 @@ class IThirtyDayCommercialExpirationJobSource(IProductNotificationJobSource):
 
 
 class ICommercialExpiredJob(IProductNotificationJob):
-    """A job that sends an email about an expired commercial subscription."""
+    """A job that sends an email about an expired commercial subscription.
+
+    This job is responsible for deactivating the project if it has a
+    proprietary license or deactivating the commercial features if the
+    license is open.
+    """
 
 
 class ICommercialExpiredJobSource(IProductNotificationJobSource):
