@@ -48,7 +48,6 @@ class IndexedBugMessageCanonicalUrlData:
 def message_to_canonical_url_data(message):
     """This factory creates `ICanonicalUrlData` for Message."""
     # Circular imports
-    from lp.bugs.interfaces.bugmessage import IBugMessage
     from lp.answers.interfaces.questionmessage import IQuestionMessage
     if IIndexedMessage.providedBy(message):
         return IndexedBugMessageCanonicalUrlData(message)

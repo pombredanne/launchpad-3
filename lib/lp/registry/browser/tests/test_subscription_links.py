@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import re
 import unittest
 
 from BeautifulSoup import BeautifulSoup

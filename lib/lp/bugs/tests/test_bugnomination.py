@@ -5,31 +5,14 @@
 
 __metaclass__ = type
 
-from itertools import izip
-import re
-
-from testtools.content import (
-    Content,
-    UTF8_TEXT,
-    )
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    Not,
-    )
-
-from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
     login,
     logout,
-    person_logged_in,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import HasQueryCount
 
 
 class CanBeNominatedForTestMixin:

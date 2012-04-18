@@ -6,6 +6,7 @@
 from lazr.restful.interfaces._rest import IHTTPResource
 from zope.component import getUtility
 from zope.interface.declarations import implements
+from zope.publisher.interfaces import NotFound
 
 from lp.app.interfaces.services import (
     IService,
@@ -45,3 +46,15 @@ class TestServiceFactory(TestCaseWithFactory, FakeAdapterMixin):
             'https://launchpad.dev/api/devel/+services/fake')
         self.assertEqual(getUtility(IServiceFactory), context)
         self.assertEqual(fake_service, view)
+
+    def test_invalid_traversal(self):
+        # Test that traversal to +services without a service specified fails.
+        self.assertRaises(
+            NotFound, self.getUserBrowser,
+            'https://launchpad.dev/api/devel/+services')
+
+    def test_invalid_service(self):
+        # Test that traversal an invalid service name fails.
+        self.assertRaises(
+            NotFound, self.getUserBrowser,
+            'https://launchpad.dev/api/devel/+services/invalid')
