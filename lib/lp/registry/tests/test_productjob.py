@@ -449,13 +449,15 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
 
-    def test_is_proprietary(self):
+    def test_is_proprietary_open_source(self):
         reviewer = getUtility(ILaunchpadCelebrities).janitor
-        open_product = self.factory.makeProduct(licenses=[License.MIT])
-        open_job = CommercialExpiredJob.create(open_product, reviewer)
-        self.assertIs(False, open_job._is_proprietary)
-        proprietary_product = self.factory.makeProduct(
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(False, job._is_proprietary)
+
+    def test_is_proprietary_proprietary(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        proprietary_job = CommercialExpiredJob.create(
-            proprietary_product, reviewer)
-        self.assertIs(True, proprietary_job._is_proprietary)
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(True, job._is_proprietary)
