@@ -283,6 +283,7 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
@@ -2671,13 +2672,14 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
-
         if existing_preferred_email is not None:
+            original_recipients = existing_preferred_email.email
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
+        else:
+            original_recipients = None
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
@@ -2685,6 +2687,11 @@ class Person(
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
+        if original_recipients:
+            self.security_field_changed(
+                "Preferred email address changed on Launchpad.",
+                "Your preferred email address is now <%s>." % email.email,
+                original_recipients)
 
     @cachedproperty
     def preferredemail(self):
@@ -3096,6 +3103,22 @@ class Person(
         if feature_flag and self.hasCurrentCommercialSubscription():
             return True
         return False
+
+    def security_field_changed(self, subject, change_description,
+        recipient_emails=None):
+        """See `IPerson`."""
+        tpl_substitutions = dict(
+            field_changed=change_description,
+            )
+        template = get_email_template(
+            'person-details-change.txt', app='registry')
+        body = template % tpl_substitutions
+        from_addr = config.canonical.bounce_address
+        if not recipient_emails:
+            to_addrs = self.preferredemail.email
+        else:
+            to_addrs = recipient_emails
+        simple_sendmail(from_addr, to_addrs, subject, body)
 
     def transitionVisibility(self, visibility, user):
         if self.visibility == visibility:
@@ -4625,6 +4648,14 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    def destroySelf(self):
+        # For security reasons we want to notify the preferred email address
+        # that this sshkey has been removed.
+        self.person.security_field_changed(
+            "SSH Key removed from your Launchpad account.",
+            "The SSH Key %s was removed from your account." % self.comment)
+        super(SSHKey, self).destroySelf()
+
 
 class SSHKeySet:
     implements(ISSHKeySet)
@@ -4651,6 +4682,10 @@ class SSHKeySet:
             keytype = SSHKeyType.DSA
         else:
             raise SSHKeyAdditionError
+
+        person.security_field_changed(
+            "New SSH key added to your account.",
+            "The SSH key '%s' has been added to your account." % comment)
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)
