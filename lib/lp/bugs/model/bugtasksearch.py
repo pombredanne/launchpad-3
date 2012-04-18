@@ -244,9 +244,12 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
         results of which will be unioned. Only the first ordering is
         respected.
     """
+    if resultrow is not BugTask and resultrow is not BugTask.bugID:
+        raise AssertionError(
+            "resultrow must be BugTask or BugTask.bugID, not %r"
+            % (resultrow,))
+
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
-    if use_flat and resultrow is not BugTask:
-        raise AssertionError("Caller wanted %r" % (resultrow,))
 
     store = IStore(BugTask)
     orderby_expression, orderby_joins = _process_order_by(
@@ -257,8 +260,21 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
     # DecoratedResultSet will turn it into the actual BugTask.
     # If we're not using BugTaskFlat yet, we should still return
     # the BugTask directly.
-    want = BugTaskFlat.bugtask_id if use_flat else resultrow
-    start = BugTaskFlat if use_flat else BugTask
+    if use_flat:
+        start = BugTaskFlat
+        if resultrow is BugTask:
+            want = BugTaskFlat.bugtask_id
+            orig_pre_iter_hook = pre_iter_hook
+
+            def pre_iter_hook(rows):
+                rows = load(BugTask, rows)
+                if orig_pre_iter_hook:
+                    orig_pre_iter_hook(rows)
+        else:
+            want = BugTaskFlat.bug_id
+    else:
+        start = BugTask
+        want = resultrow
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -309,16 +325,11 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
     if use_flat:
         decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
 
-    def my_pre_iter_hook(rows):
-        tasks = load(BugTask, rows)
-        if pre_iter_hook:
-            pre_iter_hook(tasks)
-
     result.order_by(orderby_expression)
     return DecoratedResultSet(
         result,
         lambda row: reduce(lambda task, dec: dec(task), decorators, row),
-        pre_iter_hook=my_pre_iter_hook if use_flat else pre_iter_hook)
+        pre_iter_hook=pre_iter_hook)
 
 
 def _build_origin(join_tables, clauseTables, start_with):
