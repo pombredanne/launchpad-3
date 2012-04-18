@@ -1570,39 +1570,34 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
+    if use_flat:
+        public_bug_filter = 'BugTaskFlat.information_type IN (1, 2)'
+    else:
+        public_bug_filter = 'Bug.private IS FALSE'
+
     if user is None:
-        if use_flat:
-            return "BugTaskFlat.information_type IN (1, 2)", (
-                _nocache_bug_decorator)
-        else:
-            return "Bug.private IS FALSE", _nocache_bug_decorator
+        return public_bug_filter, _nocache_bug_decorator
+
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
     if use_flat:
-        public_bug_filter = ''
-        if not private_only:
-            public_bug_filter = 'BugTaskFlat.information_type IN (1, 2) OR '
-        query = (
-            "%s(BugTaskFlat.access_grants && (SELECT array_agg(team) FROM "
-            "teamparticipation WHERE person = %d))"
-            % (public_bug_filter, user.id))
+        query = ("""
+            BugTaskFlat.access_grants && (SELECT array_agg(team) FROM
+            teamparticipation WHERE person = %d)
+            """ % user.id)
     else:
-        public_bug_filter = ''
-        if not private_only:
-            public_bug_filter = 'Bug.private IS FALSE OR'
-
         # A subselect is used here because joining through
         # TeamParticipation is only relevant to the "user-aware"
         # part of the WHERE condition (i.e. the bit below.) The
         # other half of this condition (see code above) does not
         # use TeamParticipation at all.
-        query = """
-            (%(public_bug_filter)s EXISTS (
+        query = ("""
+            EXISTS (
                 WITH teams AS (
                     SELECT team from TeamParticipation
-                    WHERE person = %(personid)s
+                    WHERE person = %d
                 )
                 SELECT BugSubscription.bug
                 FROM BugSubscription
@@ -1613,8 +1608,8 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
                 FROM BugTask
                 WHERE BugTask.assignee IN (SELECT team FROM teams) AND
                     BugTask.bug = Bug.id
-                    ))
-            """ % dict(
-                    personid=quote(user.id),
-                    public_bug_filter=public_bug_filter)
+                )
+            """ % user.id)
+    if not private_only:
+        query = '%s OR %s' % (public_bug_filter, query)
     return query, _make_cache_user_can_view_bug(user)
