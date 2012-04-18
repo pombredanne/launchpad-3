@@ -141,9 +141,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug.setPrivate(True, bug.owner)
         self.assertIsNot(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        # There are two grants--one for the reporter, one for the product
-        # owner or supervisor (if set). There is only one policy, USERDATA.
-        self.assertEqual((2, 1), self.assertMirrored(bug))
+        self.assertEqual((1, 1), self.assertMirrored(bug))
 
     def test_security_related(self):
         # Setting the security_related flag uses EMBARGOEDSECURITY
@@ -155,9 +153,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
             [InformationType.USERDATA],
             self.getPolicyTypesForArtifact(artifact))
         bug.setSecurityRelated(True, bug.owner)
-        # Both the reporter and either the product owner or the product's
-        # security contact have grants. 
-        self.assertEqual((2, 1), self.assertMirrored(bug))
+        self.assertEqual((1, 1), self.assertMirrored(bug))
         self.assertContentEqual(
             [InformationType.EMBARGOEDSECURITY],
             self.getPolicyTypesForArtifact(artifact))
