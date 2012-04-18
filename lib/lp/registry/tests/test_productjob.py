@@ -24,6 +24,8 @@ from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
     IProductNotificationJobSource,
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
@@ -35,6 +37,7 @@ from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
     ProductNotificationJob,
+    CommercialExpiredJob,
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
@@ -432,3 +435,13 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
     JOB_CLASS = ThirtyDayCommercialExpirationJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+
+class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
+                                               TestCaseWithFactory):
+    """Test case for the CommercialExpiredJob class."""
+
+    JOB_INTERFACE = ICommercialExpiredJob
+    JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
+    JOB_CLASS = CommercialExpiredJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED

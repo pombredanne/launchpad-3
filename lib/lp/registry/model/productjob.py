@@ -31,6 +31,8 @@ from lp.registry.interfaces.productjob import (
     IProductJobSource,
     IProductNotificationJob,
     IProductNotificationJobSource,
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
     ISevenDayCommercialExpirationJob,
     ISevenDayCommercialExpirationJobSource,
     IThirtyDayCommercialExpirationJob,
@@ -320,3 +322,11 @@ class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
     implements(IThirtyDayCommercialExpirationJob)
     classProvides(IThirtyDayCommercialExpirationJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+
+class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
+    """A job that sends an email about an expired commercial subscription."""
+
+    implements(ICommercialExpiredJob)
+    classProvides(ICommercialExpiredJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRED
