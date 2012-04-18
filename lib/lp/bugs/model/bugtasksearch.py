@@ -261,6 +261,7 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
             want = BugTaskFlat.bug_id
         else:
             want = BugTaskFlat.bugtask_id
+            decorators.append(lambda id: IStore(BugTask).get(BugTask, id))
             orig_pre_iter_hook = pre_iter_hook
 
             def pre_iter_hook(rows):
@@ -316,9 +317,6 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
                 resultset._get_select(),
                 "BugTaskFlat" if use_flat else "BugTask"))
         result = store.using(*origin).find(want)
-
-    if use_flat:
-        decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
