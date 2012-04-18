@@ -1039,22 +1039,14 @@ def _build_search_text_clause(params, fast=False, use_flat=False):
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
 
-    if use_flat:
-        if params.orderby is None:
-            # Unordered search results aren't useful, so sort by relevance
-            # instead.
-            params.orderby = [
-                SQL("-rank(BugTaskFlat.fti, ftq(?))", params=(searchtext,))]
+    col = 'BugTaskFlat.fti' if use_flat else 'Bug.fti'
 
-        return SQL("BugTaskFlat.fti @@ ftq(?)", params=(searchtext,))
-    else:
-        if params.orderby is None:
-            # Unordered search results aren't useful, so sort by relevance
-            # instead.
-            params.orderby = [
-                SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
+    if params.orderby is None:
+        # Unordered search results aren't useful, so sort by relevance
+        # instead.
+        params.orderby = [SQL("-rank(%s, ftq(?))" % col, params=(searchtext,))]
 
-        return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
+    return SQL("%s @@ ftq(?)" % col, params=(searchtext,))
 
 
 def _build_status_clause(col, status):
