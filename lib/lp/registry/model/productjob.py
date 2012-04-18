@@ -298,7 +298,7 @@ class CommericialExpirationMixin:
 
     _email_template_name = 'product-commercial-subscription-expiration'
     _subject_template = (
-        'The commercial-use subscription for %s in Launchpad is expiring')
+        'The commercial subscription for %s in Launchpad is expiring')
 
     @classmethod
     def create(cls, product, reviewer):
@@ -333,6 +333,10 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     implements(ICommercialExpiredJob)
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
+
+    _email_template_name = 'product-commercial-subscription-expired'
+    _subject_template = (
+        'The commercial subscription for %s in Launchpad expired')
 
     @cachedproperty
     def is_proprietary(self):
