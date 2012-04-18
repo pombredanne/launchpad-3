@@ -245,7 +245,7 @@ flat_orderby_expression = {
             (Assignee,
                 LeftJoin(Assignee, BugTaskFlat.assignee == Assignee.id))
             ]),
-    "targetname": (BugTask.targetnamecache, flat_bugtask_join),
+    "targetname": (BugTask.targetnamecache, [flat_bugtask_join]),
     "status": (BugTaskFlat.status, []),
     "title": (Bug.title, [flat_bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
