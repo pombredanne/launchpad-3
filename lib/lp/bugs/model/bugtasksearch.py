@@ -1584,8 +1584,8 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
 
     if use_flat:
         query = ("""
-            BugTaskFlat.access_grants && (SELECT array_agg(team) FROM
-            teamparticipation WHERE person = %d)
+            BugTaskFlat.access_grants &&
+            (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
             """ % user.id)
     else:
         # A subselect is used here because joining through
