@@ -32,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
@@ -288,7 +289,7 @@ class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
         return convert_storm_clause_to_string(
-            _build_tag_search_clause(tag_spec))
+            _build_tag_search_clause(tag_spec, cols={'Bug.id': Bug.id}))
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
