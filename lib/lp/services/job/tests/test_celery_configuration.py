@@ -18,18 +18,6 @@ def changed_config(changes):
 class TestCeleryConfiguration(TestCase):
     layer = RabbitMQLayer
 
-    def tearDown(self):
-        # celeryconfig.configure() defines celeryconfig.FALLBACK in some
-        # tests but subsequent tests may assume that this variable does
-        # not exist, so remove this variable, if it has been created
-        # by a test.
-        from lp.services.job import celeryconfig
-        try:
-            del celeryconfig.FALLBACK
-        except AttributeError:
-            pass
-        super(TestCeleryConfiguration, self).tearDown()
-
     def check_default_common_parameters(self, config):
         # Tests for default config values that are set for app servers
         # and for celeryd instances.
