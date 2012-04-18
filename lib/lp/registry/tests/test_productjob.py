@@ -392,12 +392,10 @@ class CommericialExpirationMixin:
 
     layer = DatabaseFunctionalLayer
 
-    def make_notification_data(self):
-        product = self.factory.makeProduct()
-        reviewer = self.factory.makePerson('reviewer@eg.com', name='reviewer')
-        subject = "test subject"
-        email_template_name = 'product-license-dont-know'
-        return product, email_template_name, subject, reviewer
+    def make_notification_data(self, licenses=[License.MIT]):
+        product = self.factory.makeProduct(licenses=licenses)
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        return product, reviewer
 
     def test_create(self):
         # Create an instance of an XXXDayCommercialExpirationJon that stores
@@ -414,10 +412,15 @@ class CommericialExpirationMixin:
         self.assertIs(
             True, self.JOB_INTERFACE.providedBy(job))
         self.assertEqual(product, job.product)
-        self.assertEqual(job.email_template_name, job._email_template_name)
         self.assertEqual(job._subject_template % product.name, job.subject)
         self.assertEqual(reviewer, job.reviewer)
         self.assertEqual(True, job.reply_to_commercial)
+
+    def test_email_template_name(self):
+        # The classe defines the email_template_name.
+        product, reviewer = self.make_notification_data()
+        job = self.JOB_CLASS.create(product, reviewer)
+        self.assertEqual(job.email_template_name, job._email_template_name)
 
 
 class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
@@ -449,51 +452,38 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
 
-    def test_create(self):
-        # Create an instance of CommercialExpiredJob that stores
-        # the notification information.
-        product = self.factory.makeProduct()
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        self.assertIs(
-            True,
-            self.JOB_SOURCE_INTERFACE.providedBy(self.JOB_CLASS))
-        self.assertEqual(
-            self.JOB_CLASS_TYPE, self.JOB_CLASS.class_job_type)
-        job = self.JOB_CLASS.create(product, reviewer)
-        self.assertIsInstance(job, self.JOB_CLASS)
-        self.assertIs(
-            True, self.JOB_INTERFACE.providedBy(job))
-        self.assertEqual(product, job.product)
-        self.assertEqual(job._subject_template % product.name, job.subject)
-        self.assertEqual(reviewer, job.reviewer)
-        self.assertEqual(True, job.reply_to_commercial)
-
     def test_is_proprietary_open_source(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        product = self.factory.makeProduct(licenses=[License.MIT])
+        product, reviewer = self.make_notification_data()
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertIs(False, job._is_proprietary)
 
     def test_is_proprietary_proprietary(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        product = self.factory.makeProduct(
+        product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertIs(True, job._is_proprietary)
 
-    def test_email_template_name_open_source(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        product = self.factory.makeProduct(licenses=[License.MIT])
+    def test_email_template_name(self):
+        # Redefine the inherrited test to verify the open source license case.
+        # The state of the product's license defines the email_template_name.
+        product, reviewer = self.make_notification_data()
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertEqual(
             'product-commercial-subscription-expired-open-source',
             job.email_template_name)
 
     def test_email_template_name_proprietary(self):
-        reviewer = getUtility(ILaunchpadCelebrities).janitor
-        product = self.factory.makeProduct(
+        # The state of the product's license defines the email_template_name.
+        product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertEqual(
             'product-commercial-subscription-expired-proprietary',
             job.email_template_name)
+
+    def test_deactivateCommercialFeatures_proprietary(self):
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        job.deactivateCommercialFeatures()
+        self.assertIs(False, product.active)

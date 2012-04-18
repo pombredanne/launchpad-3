@@ -334,16 +334,26 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
 
-    _email_template_name = ''
+    _email_template_name = ''  # email_template_name is does not need this.
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
 
     @property
     def _is_proprietary(self):
+        """Does the product have a proprietary license?"""
         return License.OTHER_PROPRIETARY in self.product.licenses
 
     @property
     def email_template_name(self):
+        """See `IProductNotificationJob`.
+
+        The email template is determined by the product's licenses.
+        """
         if self._is_proprietary:
             return 'product-commercial-subscription-expired-proprietary'
         return 'product-commercial-subscription-expired-open-source'
+
+    def deactivateCommercialFeatures(self):
+        """Deactivate the project or just the commercial features it uses."""
+        if self._is_proprietary:
+            self.product.active = False
