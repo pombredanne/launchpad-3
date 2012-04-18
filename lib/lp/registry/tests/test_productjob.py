@@ -400,7 +400,7 @@ class CommericialExpirationMixin:
         return product, email_template_name, subject, reviewer
 
     def test_create(self):
-        # Create an instance of SevenDayCommercialExpirationJo that stores
+        # Create an instance of an XXXDayCommercialExpirationJon that stores
         # the notification information.
         product = self.factory.makeProduct()
         reviewer = getUtility(ILaunchpadCelebrities).janitor
@@ -440,8 +440,8 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
 
 
-class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
-                                               TestCaseWithFactory):
+class CommercialExpiredJobTestCase(CommericialExpirationMixin,
+                                   TestCaseWithFactory):
     """Test case for the CommercialExpiredJob class."""
 
     JOB_INTERFACE = ICommercialExpiredJob
@@ -449,28 +449,51 @@ class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
     JOB_CLASS = CommercialExpiredJob
     JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
 
+    def test_create(self):
+        # Create an instance of CommercialExpiredJob that stores
+        # the notification information.
+        product = self.factory.makeProduct()
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        self.assertIs(
+            True,
+            self.JOB_SOURCE_INTERFACE.providedBy(self.JOB_CLASS))
+        self.assertEqual(
+            self.JOB_CLASS_TYPE, self.JOB_CLASS.class_job_type)
+        job = self.JOB_CLASS.create(product, reviewer)
+        self.assertIsInstance(job, self.JOB_CLASS)
+        self.assertIs(
+            True, self.JOB_INTERFACE.providedBy(job))
+        self.assertEqual(product, job.product)
+        self.assertEqual(job._subject_template % product.name, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(True, job.reply_to_commercial)
+
     def test_is_proprietary_open_source(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
         product = self.factory.makeProduct(licenses=[License.MIT])
-        self.assertIs(False, CommercialExpiredJob.is_proprietary(product))
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(False, job._is_proprietary)
 
     def test_is_proprietary_proprietary(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
         product = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
-        self.assertIs(True, CommercialExpiredJob.is_proprietary(product))
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(True, job._is_proprietary)
 
-#    def test_email_template_name_open_source(self):
-#        reviewer = getUtility(ILaunchpadCelebrities).janitor
-#        product = self.factory.makeProduct(licenses=[License.MIT])
-#        job = CommercialExpiredJob.create(product, reviewer)
-#        self.assertEqual(
-#            'product-commercial-subscription-expired-open-source',
-#            job._email_template_name)
+    def test_email_template_name_open_source(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        product = self.factory.makeProduct(licenses=[License.MIT])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertEqual(
+            'product-commercial-subscription-expired-open-source',
+            job.email_template_name)
 
-#    def test_email_template_name_proprietary(self):
-#        reviewer = getUtility(ILaunchpadCelebrities).janitor
-#        product = self.factory.makeProduct(
-#            licenses=[License.OTHER_PROPRIETARY])
-#        job = CommercialExpiredJob.create(product, reviewer)
-#        self.assertEqual(
-#            'product-commercial-subscription-expired-proprietary',
-#            job._email_template_name)
+    def test_email_template_name_proprietary(self):
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        product = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertEqual(
+            'product-commercial-subscription-expired-proprietary',
+            job.email_template_name)

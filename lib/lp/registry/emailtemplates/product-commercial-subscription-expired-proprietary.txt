@@ -9,10 +9,6 @@ Other/Proprietary and requires a commercial subscription to use
 Launchpad's services. If you wish to reactivate the project contact us
 at commercial@launchpad.net to discuss your options.
 
-Commercial features were deactivated. Things that are private will
-remain private! New bugs and branches are public by default. Private
-branches cannot be linked to project series.
-
 A commercial subscription allows you to host your commercial project
 on Launchpad in the same way as any other project. Project's with a
 commercial subscription may have private-by-default bugs, and you

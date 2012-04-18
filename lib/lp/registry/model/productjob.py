@@ -302,7 +302,7 @@ class CommericialExpirationMixin:
 
     @classmethod
     def create(cls, product, reviewer):
-        """See `ISevenDayCommercialExpirationJobSource`."""
+        """Create a job."""
         subject = cls._subject_template % product.name
         return super(CommericialExpirationMixin, cls).create(
             product, cls._email_template_name, subject, reviewer,
@@ -334,10 +334,16 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     classProvides(ICommercialExpiredJobSource)
     class_job_type = ProductJobType.COMMERCIAL_EXPIRED
 
-    _email_template_name = None
+    _email_template_name = ''
     _subject_template = (
         'The commercial subscription for %s in Launchpad expired')
 
-    @staticmethod
-    def is_proprietary(product):
-        return License.OTHER_PROPRIETARY in product.licenses
+    @property
+    def _is_proprietary(self):
+        return License.OTHER_PROPRIETARY in self.product.licenses
+
+    @property
+    def email_template_name(self):
+        if self._is_proprietary:
+            return 'product-commercial-subscription-expired-proprietary'
+        return 'product-commercial-subscription-expired-open-source'
