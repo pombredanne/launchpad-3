@@ -310,9 +310,9 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
         decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
 
     def my_pre_iter_hook(rows):
-        load(BugTask, rows)
+        tasks = load(BugTask, rows)
         if pre_iter_hook:
-            pre_iter_hook(rows)
+            pre_iter_hook(tasks)
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
