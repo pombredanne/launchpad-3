@@ -234,21 +234,16 @@ def search_value_to_storm_where_condition(comp, search_value):
         return comp == None
 
 
-def search_bugs(resultrow, pre_iter_hook, alternatives):
-    """Return a Storm result set for the given search parameters.
+def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
+    """Return a ResultSet of BugTasks for the given search parameters.
 
-    :param resultrow: The type of data returned by the query.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
     :param alternatives: A sequence of BugTaskSearchParams instances, the
         results of which will be unioned. Only the first ordering is
         respected.
+    :param just_bug_ids: Return a ResultSet of bug IDs instead of BugTasks.
     """
-    if resultrow is not BugTask and resultrow is not BugTask.bugID:
-        raise AssertionError(
-            "resultrow must be BugTask or BugTask.bugID, not %r"
-            % (resultrow,))
-
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
 
     store = IStore(BugTask)
@@ -262,7 +257,9 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
     # the BugTask directly.
     if use_flat:
         start = BugTaskFlat
-        if resultrow is BugTask:
+        if just_bug_ids:
+            want = BugTaskFlat.bug_id
+        else:
             want = BugTaskFlat.bugtask_id
             orig_pre_iter_hook = pre_iter_hook
 
@@ -270,11 +267,9 @@ def search_bugs(resultrow, pre_iter_hook, alternatives):
                 rows = load(BugTask, rows)
                 if orig_pre_iter_hook:
                     orig_pre_iter_hook(rows)
-        else:
-            want = BugTaskFlat.bug_id
     else:
         start = BugTask
-        want = resultrow
+        want = BugTask.bugID if just_bug_ids else BugTask
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
