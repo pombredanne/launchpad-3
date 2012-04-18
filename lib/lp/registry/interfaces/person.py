@@ -1811,6 +1811,17 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    def security_field_changed(subject, change_description,
+        recipient_emails=None):
+        """Trigger email when a secured field like preferredemail changes.
+        
+        :param recipient_emails: If supplied custom email addresses to notify.
+            This is used when a new preferred email address is set.
+        :param subject: The subject to use.
+        :param change_description: A textual description to use when notifying
+            about the change.
+        """
+
 
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""

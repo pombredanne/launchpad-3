@@ -73,6 +73,8 @@
             interface="lp.app.interfaces.services.IServiceFactory"/>
         <allow
             interface="zope.publisher.interfaces.IPublishTraverse"/>
+        <allow
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
     </securedutility>
     <securedutility
         class="lp.services.webservice.services.ServicesLink"

@@ -8,7 +8,7 @@
 __metaclass__ = type
 __all__ = [
     'TestSourcePackageReleaseFiles',
-    'test_suite',
+    'TestSourcePackageReleaseView',
     ]
 
 from zope.security.proxy import removeSecurityProxy

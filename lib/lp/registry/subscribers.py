@@ -14,7 +14,10 @@ import textwrap
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonViewRestricted,
+    )
 from lp.registry.interfaces.product import License
 from lp.services.config import config
 from lp.services.mail.helpers import get_email_template

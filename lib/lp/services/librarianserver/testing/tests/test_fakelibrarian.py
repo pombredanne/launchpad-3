@@ -129,7 +129,6 @@ class LibraryAccessScenarioMixin:
 
     def test_deleted_alias_has_no_url(self):
         name, text, alias = self._storeFile()
-        librarian = getUtility(ILibrarianClient)
 
         self.assertNotEqual(None, alias.getURL())
         removeSecurityProxy(alias).content = None

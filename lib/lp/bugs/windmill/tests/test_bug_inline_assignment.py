@@ -4,13 +4,9 @@
 import transaction
 
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.services.webapp import canonical_url
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
-from lp.testing.windmill.constants import (
-    FOR_ELEMENT,
-    SLEEP,
-    )
+from lp.testing.windmill.constants import FOR_ELEMENT
 
 
 ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +

@@ -1454,4 +1454,4 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
         # 9. One to get all sourcepackagenames;
         # 10. One to get all distroseries of a bug's distro. (See comment on
         # getAssignedBugTasksDueBefore() to understand why it's needed)
-        self.assertThat(recorder, HasQueryCount(Equals(10)))
+        self.assertThat(recorder, HasQueryCount(Equals(11)))

@@ -5,11 +5,9 @@ __metaclass__ = type
 
 __all__ = [
     'get_bug_privacy_filter',
-    'orderby_expression',
+    'unflat_orderby_expression',
     'search_bugs',
     ]
-
-from operator import itemgetter
 
 from lazr.enum import BaseItem
 from sqlobject.sqlbuilder import SQLConstant
@@ -156,6 +154,7 @@ flat_cols = {
     }
 
 
+bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
 unflat_orderby_expression = {
@@ -171,17 +170,17 @@ unflat_orderby_expression = {
             ]),
     "targetname": (BugTask.targetnamecache, []),
     "status": (BugTask._status, []),
-    "title": (Bug.title, []),
+    "title": (Bug.title, [bug_join]),
     "milestone": (BugTask.milestoneID, []),
     "dateassigned": (BugTask.date_assigned, []),
     "datecreated": (BugTask.datecreated, []),
-    "date_last_updated": (Bug.date_last_updated, []),
+    "date_last_updated": (Bug.date_last_updated, [bug_join]),
     "date_closed": (BugTask.date_closed, []),
-    "number_of_duplicates": (Bug.number_of_duplicates, []),
-    "message_count": (Bug.message_count, []),
-    "users_affected_count": (Bug.users_affected_count, []),
+    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
+    "message_count": (Bug.message_count, [bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [bug_join]),
     "heat": (BugTask.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, []),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
     "milestone_name": (
         Milestone.name,
         [
@@ -192,13 +191,13 @@ unflat_orderby_expression = {
     "reporter": (
         Reporter.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Reporter, Join(Reporter, Bug.owner == Reporter.id))
             ]),
     "tag": (
         BugTag.tag,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (BugTag,
                 LeftJoin(
                     BugTag,
@@ -214,7 +213,7 @@ unflat_orderby_expression = {
     "specification": (
         Specification.name,
         [
-            (Bug, Join(Bug, BugTask.bug == Bug.id)),
+            bug_join,
             (Specification,
                 LeftJoin(
                     Specification,
@@ -235,8 +234,9 @@ unflat_orderby_expression = {
         ),
     }
 
-bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
-bugtask_join = (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
+flat_bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
+flat_bugtask_join = (
+    BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
 flat_orderby_expression = {
     "task": (BugTaskFlat.bugtask_id, []),
     "id": (BugTaskFlat.bug_id, []),
@@ -248,19 +248,19 @@ flat_orderby_expression = {
             (Assignee,
                 LeftJoin(Assignee, BugTaskFlat.assignee == Assignee.id))
             ]),
-    "targetname": (BugTask.targetnamecache, bugtask_join),
+    "targetname": (BugTask.targetnamecache, flat_bugtask_join),
     "status": (BugTaskFlat.status, []),
-    "title": (Bug.title, [bug_join]),
+    "title": (Bug.title, [flat_bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
-    "dateassigned": (BugTask.date_assigned, [bugtask_join]),
+    "dateassigned": (BugTask.date_assigned, [flat_bugtask_join]),
     "datecreated": (BugTaskFlat.datecreated, []),
     "date_last_updated": (BugTaskFlat.date_last_updated, []),
-    "date_closed": (BugTask.date_closed, [bugtask_join]),
-    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
-    "message_count": (Bug.message_count, [bug_join]),
-    "users_affected_count": (Bug.users_affected_count, [bug_join]),
+    "date_closed": (BugTask.date_closed, [flat_bugtask_join]),
+    "number_of_duplicates": (Bug.number_of_duplicates, [flat_bug_join]),
+    "message_count": (Bug.message_count, [flat_bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [flat_bug_join]),
     "heat": (BugTaskFlat.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [flat_bug_join]),
     "milestone_name": (
         Milestone.name,
         [
@@ -339,26 +339,43 @@ def search_value_to_storm_where_condition(comp, search_value):
         return comp == None
 
 
-def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
-    """Return a Storm result set for the given search parameters.
+def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
+    """Return a ResultSet of BugTasks for the given search parameters.
 
-    :param resultrow: The type of data returned by the query.
-    :param prejoins: A sequence of Storm SQL row instances which are
-        pre-joined.
     :param pre_iter_hook: An optional pre-iteration hook used for eager
         loading bug targets for list views.
     :param alternatives: A sequence of BugTaskSearchParams instances, the
         results of which will be unioned. Only the first ordering is
         respected.
+    :param just_bug_ids: Return a ResultSet of bug IDs instead of BugTasks.
     """
     use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
-    if resultrow is not BugTask:
-        raise AssertionError("Caller wanted %r" % (resultrow,))
 
     store = IStore(BugTask)
     orderby_expression, orderby_joins = _process_order_by(
         alternatives[0], use_flat)
     decorators = []
+
+    # If we are to use BugTaskFlat, we just return the ID. The
+    # DecoratedResultSet will turn it into the actual BugTask.
+    # If we're not using BugTaskFlat yet, we should still return
+    # the BugTask directly.
+    if use_flat:
+        start = BugTaskFlat
+        if just_bug_ids:
+            want = BugTaskFlat.bug_id
+        else:
+            want = BugTaskFlat.bugtask_id
+            decorators.append(lambda id: IStore(BugTask).get(BugTask, id))
+            orig_pre_iter_hook = pre_iter_hook
+
+            def pre_iter_hook(rows):
+                rows = load(BugTask, rows)
+                if orig_pre_iter_hook:
+                    orig_pre_iter_hook(rows)
+    else:
+        start = BugTask
+        want = BugTask.bugID if just_bug_ids else BugTask
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
@@ -369,34 +386,29 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
         decorators.append(bugtask_decorator)
 
         if has_duplicate_results:
-            assert not use_flat
-            origin = _build_origin(join_tables, [], clauseTables, BugTask)
-            outer_origin = _build_origin(
-                orderby_joins, prejoins, [], BugTask)
-            subquery = Select(BugTask.id, where=query, tables=origin)
+            origin = _build_origin(join_tables, clauseTables, start)
+            outer_origin = _build_origin(orderby_joins, [], start)
+            want_inner = BugTaskFlat.bugtask_id if use_flat else BugTask.id
+            subquery = Select(want_inner, where=query, tables=origin)
             result = store.using(*outer_origin).find(
-                resultrow, In(BugTask.id, subquery))
+                want, In(want_inner, subquery))
         else:
-            if use_flat:
-                want = BugTaskFlat.bugtask_id
-            else:
-                want = BugTask
             origin = _build_origin(
-                join_tables + orderby_joins, prejoins, clauseTables,
-                BugTaskFlat if use_flat else BugTask)
+                join_tables + orderby_joins, clauseTables, start)
             result = store.using(*origin).find(want, query)
     else:
-        assert not use_flat
         results = []
 
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(params, False)
-            origin = _build_origin(join_tables, [], clauseTables, BugTask)
+             has_duplicate_results, with_clause] = _build_query(
+                 params, use_flat)
+            origin = _build_origin(join_tables, clauseTables, start)
             localstore = store
             if with_clause:
                 localstore = store.with_(with_clause)
-            next_result = localstore.using(*origin).find((BugTask,), query)
+            want_inner = BugTaskFlat if use_flat else BugTask
+            next_result = localstore.using(*origin).find((want_inner,), query)
             results.append(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
@@ -405,46 +417,33 @@ def search_bugs(resultrow, prejoins, pre_iter_hook, alternatives):
 
         resultset = reduce(lambda l, r: l.union(r), results)
         origin = _build_origin(
-            orderby_joins, prejoins, [],
-            Alias(resultset._get_select(), "BugTask"))
-        result = store.using(*origin).find(resultrow)
-
-    if use_flat:
-        decorators.insert(0, lambda id: IStore(BugTask).get(BugTask, id))
-
-    if prejoins:
-        decorators.insert(0, itemgetter(0))
-
-    def my_pre_iter_hook(rows):
-        load(BugTask, rows)
-        if pre_iter_hook:
-            pre_iter_hook(rows)
+            orderby_joins, [],
+            Alias(
+                resultset._get_select(),
+                "BugTaskFlat" if use_flat else "BugTask"))
+        result = store.using(*origin).find(want)
 
     result.order_by(orderby_expression)
     return DecoratedResultSet(
         result,
         lambda row: reduce(lambda task, dec: dec(task), decorators, row),
-        pre_iter_hook=my_pre_iter_hook if use_flat else pre_iter_hook)
+        pre_iter_hook=pre_iter_hook)
 
 
-def _build_origin(join_tables, prejoin_tables, clauseTables, start_with):
+def _build_origin(join_tables, clauseTables, start_with):
     """Build the parameter list for Store.using().
 
     :param join_tables: A sequence of tables that should be joined
         as returned by _build_query(). Each element has the form
         (table, join), where table is the table to join and join
         is a Storm Join or LeftJoin instance.
-    :param prejoin_tables: A sequence of tables that should additionally
-        be joined. Each element has the form (table, join),
-        where table is the table to join and join is a Storm Join
-        or LeftJoin instance.
     :param clauseTables: A sequence of tables that should appear in
         the FROM clause of a query. The join condition is defined in
         the WHERE clause.
 
-    Tables may appear simultaneously in join_tables, prejoin_tables
-    and in clauseTables. This method ensures that each table
-    appears exactly once in the returned sequence.
+    Tables may appear simultaneously in join_tables and in clauseTables.
+    This method ensures that each table appears exactly once in the
+    returned sequence.
     """
     origin = [start_with]
     already_joined = set(origin)
@@ -453,10 +452,6 @@ def _build_origin(join_tables, prejoin_tables, clauseTables, start_with):
             origin.append(join)
             if table is not None:
                 already_joined.add(table)
-    for table, join in prejoin_tables:
-        if table not in already_joined:
-            origin.append(join)
-            already_joined.add(table)
     for table in clauseTables:
         if table not in already_joined:
             origin.append(table)
@@ -970,7 +965,13 @@ def _process_order_by(params, use_flat):
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
-    extra_joins = []
+    if use_flat:
+        extra_joins = [
+            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
+            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
+            ]
+    else:
+        extra_joins = []
     ambiguous = True
     # Sorting by milestone only is a very "coarse" sort order.
     # If no additional sort order is specified, add the bug task
