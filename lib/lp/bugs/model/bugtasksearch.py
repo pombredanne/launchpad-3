@@ -939,17 +939,19 @@ def _process_order_by(params, use_flat):
         orderby_expression = flat_orderby_expression
         unambiguous_cols = set([
             BugTaskFlat.date_last_updated,
-            BugTaskFlat.bug_id,
             BugTaskFlat.datecreated,
             BugTaskFlat.bugtask_id,
             Bug.datecreated,
             BugTask.date_assigned,
             ])
-        # XXX: wtf, dupe of bug_id?
         if in_unique_context:
             unambiguous_cols.add(BugTaskFlat.bug)
     else:
         orderby_expression = unflat_orderby_expression
+        # Bug.id and BugTask.bugID shouldn't really be here; they're
+        # ambiguous in a distribution or distroseries context. They're
+        # omitted from the new BugTaskFlat path, but kept in the legacy
+        # code in case it affects index selection.
         unambiguous_cols = set([
             Bug.date_last_updated,
             Bug.datecreated,
@@ -959,7 +961,6 @@ def _process_order_by(params, use_flat):
             BugTask.datecreated,
             BugTask.id,
             ])
-        # XXX: wtf, dupe of bugID?
         if in_unique_context:
             unambiguous_cols.add(BugTask.bug)
 
