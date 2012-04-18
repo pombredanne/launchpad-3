@@ -21,7 +21,6 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     rename_parameters_as,
-    REQUEST_USER,
     )
 from lazr.restful.interface import copy_field
 from zope.interface import (

@@ -102,7 +102,6 @@ class TestCommandSpawner(TestCase):
     def test_start_runs_its_command(self):
         spawner, process = self._makeSpawnerAndProcess()
         spawner.start("/bin/true")
-        spawn_calls = spawner._spawn.calls
         self.assertEqual([("/bin/true", )], spawner._spawn.extract_args())
 
     def test_output_is_nonblocking(self):

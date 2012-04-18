@@ -153,7 +153,6 @@ class HasAnnouncements:
         """See IHasAnnouncements."""
 
         # Create the SQL query.
-        clauseTables = []
         query = '1=1 '
         # Filter for published news items if necessary.
         if published_only:
