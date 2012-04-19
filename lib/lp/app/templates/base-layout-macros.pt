@@ -143,8 +143,7 @@
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
       revno modules/lp.app.versioninfo/revno | string:unknown;
-      devmode modules/lp.services.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/lp.services.config/config/google/maps_api_key};">
+      devmode modules/lp.services.config/config/devmode;">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
