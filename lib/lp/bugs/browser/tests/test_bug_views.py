@@ -406,6 +406,39 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
+    def test_set_information_type(self):
+        # Test that the bug's information_type can be updated using the
+        # view with the feature flag on.
+        bug = self.factory.makeBug()
+        feature_flag = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            with person_logged_in(bug.owner):
+                view = create_initialized_view(
+                    bug.default_bugtask, name='+secrecy', form={
+                        'field.information_type': 'USERDATA',
+                        'field.actions.change': 'Change'})
+        self.assertEqual([], view.errors)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_information_type_vocabulary(self):
+        # Test that the view creates the vocabulary correctly.
+        bug = self.factory.makeBug()
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.proprietary_information_type.disabled': 'on',
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        with FeatureFixture(feature_flags):
+            with person_logged_in(bug.owner):
+                view = create_initialized_view(
+                    bug.default_bugtask, name='+secrecy',
+                    principal=bug.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        self.assertEqual(u'Private', soup.find('label', text="Private"))
+        self.assertIs(None, soup.find('label', text="User Data"))
+        self.assertIs(None, soup.find('label', text="Proprietary"))
+
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
     """ Test for rendering BugTextView with private team artifacts.
