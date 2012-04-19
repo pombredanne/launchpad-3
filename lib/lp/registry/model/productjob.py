@@ -6,7 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'ProductJob',
+    'CommercialExpiredJob',
     'SevenDayCommercialExpirationJob',
+    'ThirtyDayCommercialExpirationJob',
     ]
 
 from lazr.delegates import delegates
