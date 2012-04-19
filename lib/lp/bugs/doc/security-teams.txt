@@ -280,7 +280,7 @@ subscribed when moving it to the new project.
 
 
 When a bug becomes security-related, the security contacts for the pillars it
-affects are subscribed to it. 
+affects are subscribed to it.
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent

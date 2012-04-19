@@ -156,7 +156,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
             self.getPolicyTypesForArtifact(artifact))
         bug.setSecurityRelated(True, bug.owner)
         # Both the reporter and either the product owner or the product's
-        # security contact have grants. 
+        # security contact have grants.
         self.assertEqual((2, 1), self.assertMirrored(bug))
         self.assertContentEqual(
             [InformationType.EMBARGOEDSECURITY],

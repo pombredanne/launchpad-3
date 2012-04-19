@@ -729,8 +729,6 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
-    >>> #bug_three.unsubscribe(sample_person, sample_person)
-
 
 The X-Launchpad-Bug-Private header
 ----------------------------------

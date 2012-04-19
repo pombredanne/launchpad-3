@@ -1104,11 +1104,11 @@ class TestBugChanges(TestCaseWithFactory):
         old_product = self.factory.makeProduct()
         new_product = self.factory.makeProduct()
         subscriber = self.factory.makePerson()
-        new_product.addBugSubscription(subscriber,subscriber)
+        new_product.addBugSubscription(subscriber, subscriber)
         bug = self.factory.makeBug(product=old_product, private=True)
         bug.default_bugtask.transitionToTarget(new_product)
-        self.assertNotIn(subscriber, bug.getDirectSubscribers()) 
-        self.assertNotIn(subscriber, bug.getIndirectSubscribers()) 
+        self.assertNotIn(subscriber, bug.getDirectSubscribers())
+        self.assertNotIn(subscriber, bug.getIndirectSubscribers())
 
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task records an entry in
