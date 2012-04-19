@@ -217,7 +217,7 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.bugs.model.bugtasksearch import unflat_orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
 from lp.registry.enums import InformationType
@@ -2802,7 +2802,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                orderby_expression[orderby_col]
+                unflat_orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
@@ -3036,7 +3036,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: Text that must occur in the bug report. If
@@ -3055,7 +3055,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
         try:
-            tasks = context.searchTasks(search_params, prejoins=prejoins)
+            tasks = context.searchTasks(search_params)
         except ValueError as e:
             self.request.response.addErrorNotification(str(e))
             self.request.response.redirect(canonical_url(
