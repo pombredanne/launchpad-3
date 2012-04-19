@@ -433,7 +433,7 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
 
     def test_filebug_set_information_type(self):
         # When we specify the bug's information_type, it is set.
-        bug = self.filebug_via_view(information_type='Embargoed Security')
+        bug = self.filebug_via_view(information_type='EMBARGOEDSECURITY')
         self.assertEqual(
             InformationType.EMBARGOEDSECURITY, bug.information_type)
 
