@@ -1996,6 +1996,10 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     schema = Interface
 
     @property
+    def is_private_team(self):
+        return self.context.visibility == PersonVisibility.PRIVATE
+
+    @property
     def label(self):
         return 'Leave ' + cgi.escape(self.context.displayname)
 
@@ -2005,12 +2009,22 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    next_url = cancel_url
+    @property
+    def next_url(self):
+        if self.is_private_team:
+            return canonical_url(self.user)
+        else:
+            return self.cancel_url
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
+            if self.is_private_team:
+                self.request.response.addNotification(
+                    "You are no longer a member of private team %s "
+                    "and are not authorised to view the team."
+                        % self.context.displayname)
 
 
 class TeamReassignmentView(ObjectReassignmentView):
