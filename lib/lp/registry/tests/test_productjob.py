@@ -394,7 +394,9 @@ class CommericialExpirationMixin:
 
     def make_notification_data(self, licenses=[License.MIT]):
         product = self.factory.makeProduct(licenses=licenses)
-        self.factory.makeCommercialSubscription(product)
+        if License.OTHER_PROPRIETARY not in product.licenses:
+            # The proprietary project was automatically given a CS.
+            self.factory.makeCommercialSubscription(product)
         reviewer = getUtility(ILaunchpadCelebrities).janitor
         return product, reviewer
 
@@ -431,6 +433,19 @@ class CommericialExpirationMixin:
         iso_date = commercial_subscription.date_expires.date().isoformat()
         self.assertEqual(
             iso_date, job.message_data['commercial_use_expiration'])
+
+    def test_run(self):
+        # Smoke test that run() can make the email from the template and data.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        commercial_subscription = product.commercial_subscription
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertIn(iso_date, notifications[0].get_payload())
 
 
 class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
@@ -520,7 +535,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
 
-    def test_run(self):
+    def test_run_deactivation_performed(self):
         # An email is sent and the deactivation steps are performed.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
