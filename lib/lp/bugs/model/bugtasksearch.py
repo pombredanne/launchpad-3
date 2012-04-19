@@ -62,6 +62,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -1568,7 +1569,9 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
         returns BugTask objects.
     """
     if use_flat:
-        public_bug_filter = 'BugTaskFlat.information_type IN (1, 2)'
+        public_bug_filter = (
+            'BugTaskFlat.information_type IN %s'
+            % sqlvalues(PUBLIC_INFORMATION_TYPES))
     else:
         public_bug_filter = 'Bug.private IS FALSE'
 
