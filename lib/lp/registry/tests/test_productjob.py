@@ -519,7 +519,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)
-        job.deactivateCommercialFeatures()
+        job._deactivateCommercialFeatures()
         self.assertIs(False, product.active)
 
     def test_deactivateCommercialFeatures_open_source(self):
@@ -537,7 +537,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             private_series = product.newSeries(
                 product.owner, 'special', 'testing', branch=private_branch)
         job = CommercialExpiredJob.create(product, reviewer)
-        job.deactivateCommercialFeatures()
+        job._deactivateCommercialFeatures()
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
         self.assertEqual(public_branch, public_series.branch)

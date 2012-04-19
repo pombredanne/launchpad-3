@@ -368,7 +368,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
             return 'product-commercial-subscription-expired-proprietary'
         return 'product-commercial-subscription-expired-open-source'
 
-    def deactivateCommercialFeatures(self):
+    def _deactivateCommercialFeatures(self):
         """Deactivate the project or just the commercial features it uses."""
         if self._is_proprietary:
             self.product.active = False
@@ -385,4 +385,4 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
             # created. Nothing needs to be done.
             return
         super(CommercialExpiredJob, self).run()
-        self.deactivateCommercialFeatures()
+        self._deactivateCommercialFeatures()
