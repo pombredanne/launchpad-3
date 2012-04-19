@@ -35,10 +35,10 @@ from pytz import timezone
 from simplejson import dumps
 from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
-from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
+from zope.formlib.form import Fields
 from zope.interface import (
     alsoProvides,
     implements,
@@ -251,20 +251,19 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     schema = IBug
 
     @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
+
+    @property
     def field_names(self):
         """Return the list of field names to display."""
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
+        if self.show_information_type_in_ui:
             return ['information_type']
         else:
             return ['security_related']
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
-
-    @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled'))
 
     def initialize(self):
         super(FileBugReportingGuidelines, self).initialize()
@@ -278,30 +277,30 @@ class FileBugReportingGuidelines(LaunchpadFormView):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
+        if self.show_information_type_in_ui:
             information_type_field = copy_field(
-                IBug['information_type'], readonly=False,
-                vocabulary='InformationTypeVocabulary')
+                IBug['information_type'], readonly=False)
+                #vocabulary='InformationTypeVocabulary')
             self.form_fields = self.form_fields.omit('information_type')
-            self.form_fields += formlib.form.Fields(information_type_field)
+            self.form_fields += Fields(information_type_field)
         else:
             security_related_field = copy_field(
                 IBug['security_related'], readonly=False)
             self.form_fields = self.form_fields.omit('security_related')
-            self.form_fields += formlib.form.Fields(security_related_field)
+            self.form_fields += Fields(security_related_field)
 
     @property
     def initial_values(self):
         """See `LaunchpadFormView`."""
-        if bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled')):
+        if self.show_information_type_in_ui:
             value = InformationType.PUBLIC
             if (
                 self.context and IProduct.providedBy(self.context) and
                 self.context.private_bugs):
                 value = InformationType.USERDATA
             return {'information_type': value}
+        else:
+            return {}
 
     @property
     def bug_reporting_guidelines(self):
@@ -578,7 +577,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             required=True, default=False)
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
-        self.form_fields += formlib.form.Fields(subscribe_field)
+        self.form_fields += Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -630,7 +629,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # enters a package name but then selects "I don't know".
         if self.request.form.get("packagename_option") == "none":
             packagename = None
-    
+
         if not bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
             # If the old UI is enabled, security bugs are always embargoed
