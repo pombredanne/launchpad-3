@@ -309,6 +309,18 @@ class CommericialExpirationMixin:
             product, cls._email_template_name, subject, reviewer,
             reply_to_commercial=True)
 
+    @cachedproperty
+    def message_data(self):
+        """See `IProductNotificationJob`."""
+        data = super(CommericialExpirationMixin, self).message_data
+        commercial_subscription = self.product.commercial_subscription
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        extra_data = {
+            'commercial_use_expiration': iso_date,
+            }
+        data.update(extra_data)
+        return data
+
 
 class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
                                       ProductNotificationJob):
@@ -363,3 +375,8 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
             for series in self.product.series:
                 if series.branch.private:
                     removeSecurityProxy(series).branch = None
+
+    def run(self):
+        """See `ProductNotificationJob`."""
+        super(CommercialExpiredJob, self).run()
+        self.deactivateCommercialFeatures()

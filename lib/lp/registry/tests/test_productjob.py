@@ -423,6 +423,15 @@ class CommericialExpirationMixin:
         job = self.JOB_CLASS.create(product, reviewer)
         self.assertEqual(job.email_template_name, job._email_template_name)
 
+    def test_message_data(self):
+        # The commerical expiration data is added.
+        product, reviewer = self.make_notification_data()
+        job = self.JOB_CLASS.create(product, reviewer)
+        commercial_subscription = product.commercial_subscription
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        self.assertEqual(
+            iso_date, job.message_data['commercial_use_expiration'])
+
 
 class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
                                               TestCaseWithFactory):
@@ -510,3 +519,11 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertIs(False, product.private_bugs)
         self.assertEqual(public_branch, public_series.branch)
         self.assertIs(None, private_series.branch)
+
+    def test_run(self):
+        # An email is sent and the deactivation steps are performed.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        job.run()
+        self.assertIs(False, product.active)
