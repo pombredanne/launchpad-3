@@ -65,6 +65,20 @@ class Array(ComparableExpr):
         self.args = args
 
 
+class TryAdvisoryLock(NamedFunc):
+
+    __slots__ = ()
+
+    name = 'PG_TRY_ADVISORY_LOCK'
+
+
+class AdvisoryUnlock(NamedFunc):
+
+    __slots__ = ()
+
+    name = 'PG_ADVISORY_UNLOCK'
+
+
 @compile.when(Array)
 def compile_array(compile, array, state):
     state.push("context", EXPR)
