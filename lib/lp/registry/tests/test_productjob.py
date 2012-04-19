@@ -403,7 +403,7 @@ class CommericialExpirationMixin:
         return product, reviewer
 
     def test_create(self):
-        # Create an instance of an XXXDayCommercialExpirationJon that stores
+        # Create an instance of an commercial expiration job that stores
         # the notification information.
         product = self.factory.makeProduct()
         reviewer = getUtility(ILaunchpadCelebrities).janitor
@@ -422,13 +422,13 @@ class CommericialExpirationMixin:
         self.assertEqual(True, job.reply_to_commercial)
 
     def test_email_template_name(self):
-        # The classe defines the email_template_name.
+        # The class defines the email_template_name.
         product, reviewer = self.make_notification_data()
         job = self.JOB_CLASS.create(product, reviewer)
         self.assertEqual(job.email_template_name, job._email_template_name)
 
     def test_message_data(self):
-        # The commerical expiration data is added.
+        # The commercial expiration data is added.
         product, reviewer = self.make_notification_data()
         job = self.JOB_CLASS.create(product, reviewer)
         commercial_subscription = product.commercial_subscription
@@ -497,7 +497,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertIs(True, job._is_proprietary)
 
     def test_email_template_name(self):
-        # Redefine the inherrited test to verify the open source license case.
+        # Redefine the inherited test to verify the open source license case.
         # The state of the product's license defines the email_template_name.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         job = CommercialExpiredJob.create(product, reviewer)
