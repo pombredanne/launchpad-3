@@ -494,9 +494,19 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         # When the project is open source, the product's commercial features
         # are deactivated.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
+        public_branch = self.factory.makeBranch(
+            owner=product.owner, product=product)
+        private_branch = self.factory.makeBranch(
+            owner=product.owner, product=product, private=True)
         with person_logged_in(product.owner):
             product.setPrivateBugs(True, product.owner)
+            public_series = product.development_focus
+            public_series.branch = public_branch
+            private_series = product.newSeries(
+                product.owner, 'special', 'testing', branch=private_branch)
         job = CommercialExpiredJob.create(product, reviewer)
         job.deactivateCommercialFeatures()
         self.assertIs(True, product.active)
         self.assertIs(False, product.private_bugs)
+        self.assertEqual(public_branch, public_series.branch)
+        self.assertIs(None, private_series.branch)

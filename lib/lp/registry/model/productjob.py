@@ -360,3 +360,6 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
             self.product.active = False
         else:
             removeSecurityProxy(self.product).private_bugs = False
+            for series in self.product.series:
+                if series.branch.private:
+                    removeSecurityProxy(series).branch = None
