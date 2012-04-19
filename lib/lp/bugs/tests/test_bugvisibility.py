@@ -3,11 +3,17 @@
 
 """Tests for visibility of a bug."""
 
+from contextlib import contextmanager
+
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
