@@ -756,9 +756,8 @@ Predictably, private bugs are sent with a slightly different header:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
     test@canonical.com ['yes']
+
 
 The X-Launchpad-Bug-Security-Vulnerability header
 -------------------------------------------------
@@ -773,8 +772,6 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['no']
-    mark@example.com ['no']
     test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
@@ -789,8 +786,6 @@ simple "yes":
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
     test@canonical.com ['yes']
 
 

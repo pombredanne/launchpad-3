@@ -31,6 +31,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -118,18 +119,6 @@ class SearchTestBase:
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
-        self.assertSearchFinds(params, self.bugtasks)
-
-    def test_private_bug_in_search_result_assignees(self):
-        # Private bugs are included in search results for the assignee.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
-        bugtask = self.bugtasks[-1]
-        user = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        with person_logged_in(admin):
-            bugtask.transitionToAssignee(user)
-        params = self.getBugTaskSearchParams(user=user)
         self.assertSearchFinds(params, self.bugtasks)
 
     def test_search_by_bug_reporter(self):
@@ -1528,6 +1517,31 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
+class UsingFlat:
+    """Use BugTaskFlat for searching."""
+
+    def setUp(self):
+        super(UsingFlat, self).setUp()
+        self.useFixture(
+            FeatureFixture({'bugs.bugtaskflat.search.enabled': 'on'}))
+
+
+class UsingLegacy:
+    """Use Bug and BugTask directly for searching."""
+
+    def test_private_bug_in_search_result_assignees(self):
+        # Private bugs are included in search results for the assignee.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        with person_logged_in(admin):
+            bugtask.transitionToAssignee(user)
+        params = self.getBugTaskSearchParams(user=user)
+        self.assertSearchFinds(params, self.bugtasks)
+
+
 class TestMilestoneDueDateFiltering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -1563,17 +1577,20 @@ def test_suite():
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
-            class_name = 'Test%s%s' % (
-                bug_target_search_type_class.__name__,
-                target_mixin.__name__)
-            class_bases = (
-                target_mixin, bug_target_search_type_class,
-                SearchTestBase, TestCaseWithFactory)
-            # Dynamically build a test class from the target mixin class,
-            # from the search type mixin class, from the mixin class
-            # having all tests and from a unit test base class.
-            test_class = type(class_name, class_bases, {})
-            # Add the new unit test class to the suite.
-            suite.addTest(loader.loadTestsFromTestCase(test_class))
+            for feature_mixin in (UsingLegacy, UsingFlat):
+                class_name = 'Test%s%s%s' % (
+                    bug_target_search_type_class.__name__,
+                    target_mixin.__name__,
+                    feature_mixin.__name__)
+                mixins = [
+                    target_mixin, bug_target_search_type_class, feature_mixin]
+                class_bases = (
+                    tuple(mixins) + (SearchTestBase, TestCaseWithFactory))
+                # Dynamically build a test class from the target mixin class,
+                # from the search type mixin class, from the mixin class
+                # having all tests and from a unit test base class.
+                test_class = type(class_name, class_bases, {})
+                # Add the new unit test class to the suite.
+                suite.addTest(loader.loadTestsFromTestCase(test_class))
     suite.addTest(loader.loadTestsFromName(__name__))
     return suite

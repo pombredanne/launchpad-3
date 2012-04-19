@@ -1487,6 +1487,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         displayname=TextLine(required=False),
         description=TextLine(required=False),
         private=Bool(required=False),
+        commercial=Bool(required=False),
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
