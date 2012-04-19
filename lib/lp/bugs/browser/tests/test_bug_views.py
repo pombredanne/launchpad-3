@@ -414,10 +414,11 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             'disclosure.show_information_type_in_ui.enabled': 'on'}
         with FeatureFixture(feature_flag):
             with person_logged_in(bug.owner):
-                create_initialized_view(
+                view = create_initialized_view(
                     bug.default_bugtask, name='+secrecy', form={
-                        'field.information_type': 'User Data',
+                        'field.information_type': 'USERDATA',
                         'field.actions.change': 'Change'})
+        self.assertEqual([], view.errors)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
 
 
