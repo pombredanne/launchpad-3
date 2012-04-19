@@ -1995,9 +1995,9 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     schema = Interface
 
-    def __init__(self, context, request):
-        super(TeamLeaveView, self).__init__(context, request)
-        self._next_url = self.cancel_url
+    @property
+    def is_private_team(self):
+        return self.context.visibility == PersonVisibility.PRIVATE
 
     @property
     def label(self):
@@ -2011,18 +2011,20 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
 
     @property
     def next_url(self):
-        return  self._next_url
+        if self.is_private_team:
+            return canonical_url(self.user)
+        else:
+            return self.cancel_url
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
-            if self.context.visibility == PersonVisibility.PRIVATE:
+            if self.is_private_team:
                 self.request.response.addNotification(
                     "You are no longer a member of private team %s "
                     "and are not authorised to view the team."
                         % self.context.displayname)
-                self._next_url = canonical_url(self.user)
 
 
 class TeamReassignmentView(ObjectReassignmentView):
