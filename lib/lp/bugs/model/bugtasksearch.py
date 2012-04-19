@@ -5,7 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_bug_privacy_filter',
-    'orderby_expression',
+    'unflat_orderby_expression',
     'search_bugs',
     ]
 
@@ -62,6 +62,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.registry.enums import PUBLIC_INFORMATION_TYPES
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
@@ -75,10 +76,7 @@ from lp.registry.model.product import Product
 from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
     Array,
     NullCount,
@@ -97,7 +95,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 
 # This abstracts most of the columns involved in search so we can switch
 # to/from BugTaskFlat easily.
-cols = {
+unflat_cols = {
     'Bug.id': Bug.id,
     'Bug.duplicateof': Bug.duplicateof,
     'Bug.owner': Bug.owner,
@@ -125,11 +123,39 @@ cols = {
     'BugTask._status': BugTask._status,
     }
 
+flat_cols = {
+    'Bug.id': BugTaskFlat.bug_id,
+    'Bug.duplicateof': BugTaskFlat.duplicateof,
+    'Bug.owner': BugTaskFlat.bug_owner,
+    'Bug.date_last_updated': BugTaskFlat.date_last_updated,
+    'BugTask.id': BugTaskFlat.bugtask_id,
+    'BugTask.bug': BugTaskFlat.bug,
+    'BugTask.bugID': BugTaskFlat.bug_id,
+    'BugTask.importance': BugTaskFlat.importance,
+    'BugTask.product': BugTaskFlat.product,
+    'BugTask.productID': BugTaskFlat.product_id,
+    'BugTask.productseries': BugTaskFlat.productseries,
+    'BugTask.productseriesID': BugTaskFlat.productseries_id,
+    'BugTask.distribution': BugTaskFlat.distribution,
+    'BugTask.distributionID': BugTaskFlat.distribution_id,
+    'BugTask.distroseries': BugTaskFlat.distroseries,
+    'BugTask.distroseriesID': BugTaskFlat.distroseries_id,
+    'BugTask.sourcepackagename': BugTaskFlat.sourcepackagename,
+    'BugTask.sourcepackagenameID': BugTaskFlat.sourcepackagename_id,
+    'BugTask.milestone': BugTaskFlat.milestone,
+    'BugTask.milestoneID': BugTaskFlat.milestone_id,
+    'BugTask.assignee': BugTaskFlat.assignee,
+    'BugTask.owner': BugTaskFlat.owner,
+    'BugTask.date_closed': BugTask.date_closed,
+    'BugTask.datecreated': BugTaskFlat.datecreated,
+    'BugTask._status': BugTaskFlat.status,
+    }
+
 
 bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
-orderby_expression = {
+unflat_orderby_expression = {
     "task": (BugTask.id, []),
     "id": (BugTask.bugID, []),
     "importance": (BugTask.importance, []),
@@ -201,6 +227,83 @@ orderby_expression = {
                                 Specification.id ==
                                     SpecificationBug.specificationID)],
                         where=(SpecificationBug.bugID == Bug.id),
+                        order_by=Specification.name, limit=1))),
+            ]
+        ),
+    }
+
+flat_bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
+flat_bugtask_join = (
+    BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
+flat_orderby_expression = {
+    "task": (BugTaskFlat.bugtask_id, []),
+    "id": (BugTaskFlat.bug_id, []),
+    "importance": (BugTaskFlat.importance, []),
+    # TODO: sort by their name?
+    "assignee": (
+        Assignee.name,
+        [
+            (Assignee,
+                LeftJoin(Assignee, BugTaskFlat.assignee == Assignee.id))
+            ]),
+    "targetname": (BugTask.targetnamecache, [flat_bugtask_join]),
+    "status": (BugTaskFlat.status, []),
+    "title": (Bug.title, [flat_bug_join]),
+    "milestone": (BugTaskFlat.milestone_id, []),
+    "dateassigned": (BugTask.date_assigned, [flat_bugtask_join]),
+    "datecreated": (BugTaskFlat.datecreated, []),
+    "date_last_updated": (BugTaskFlat.date_last_updated, []),
+    "date_closed": (BugTask.date_closed, [flat_bugtask_join]),
+    "number_of_duplicates": (Bug.number_of_duplicates, [flat_bug_join]),
+    "message_count": (Bug.message_count, [flat_bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [flat_bug_join]),
+    "heat": (BugTaskFlat.heat, []),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [flat_bug_join]),
+    "milestone_name": (
+        Milestone.name,
+        [
+            (Milestone,
+                LeftJoin(Milestone,
+                        BugTaskFlat.milestone_id == Milestone.id))
+            ]),
+    "reporter": (
+        Reporter.name,
+        [
+            (Reporter, Join(Reporter, BugTaskFlat.bug_owner == Reporter.id))
+            ]),
+    "tag": (
+        BugTag.tag,
+        [
+            (BugTag,
+                LeftJoin(
+                    BugTag,
+                    BugTag.bug == BugTaskFlat.bug_id and
+                    # We want at most one tag per bug. Select the
+                    # tag that comes first in alphabetic order.
+                    BugTag.id == Select(
+                        BugTag.id, tables=[BugTag],
+                        where=(BugTag.bugID == BugTaskFlat.bug_id),
+                        order_by=BugTag.tag, limit=1))),
+            ]
+        ),
+    "specification": (
+        Specification.name,
+        [
+            (Specification,
+                LeftJoin(
+                    Specification,
+                    # We want at most one specification per bug.
+                    # Select the specification that comes first
+                    # in alphabetic order.
+                    Specification.id == Select(
+                        Specification.id,
+                        tables=[
+                            SpecificationBug,
+                            Join(
+                                Specification,
+                                Specification.id ==
+                                    SpecificationBug.specificationID)],
+                        where=(SpecificationBug.bugID == BugTaskFlat.bug_id),
                         order_by=Specification.name, limit=1))),
             ]
         ),
@@ -362,14 +465,12 @@ def _build_query(params, use_flat):
         decorator to call on each returned row.
     """
     params = _require_params(params)
+    cols = flat_cols if use_flat else unflat_cols
 
     if use_flat:
         extra_clauses = []
         clauseTables = []
-        join_tables = [
-            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
-            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
-            ]
+        join_tables = []
     else:
         extra_clauses = [Bug.id == BugTask.bugID]
         clauseTables = [BugTask, Bug]
@@ -509,10 +610,12 @@ def _build_query(params, use_flat):
                             BugAttachment.type, params.attachmenttype))))
 
     if params.searchtext:
-        extra_clauses.append(_build_search_text_clause(params))
+        extra_clauses.append(_build_search_text_clause(
+            params, use_flat=use_flat))
 
     if params.fast_searchtext:
-        extra_clauses.append(_build_search_text_clause(params, fast=True))
+        extra_clauses.append(_build_search_text_clause(
+            params, fast=True, use_flat=use_flat))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -742,7 +845,8 @@ def _build_query(params, use_flat):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
+    clause, decorator = _get_bug_privacy_filter_with_decorator(
+        params.user, use_flat=use_flat)
     if clause:
         extra_clauses.append(SQL(clause))
         decorators.append(decorator)
@@ -821,15 +925,6 @@ def _process_order_by(params, use_flat):
     # decide whether we need to add the BugTask.bug or BugTask.id
     # columns to make the sort consistent over runs -- which is good
     # for the user and essential for the test suite.
-    unambiguous_cols = set([
-        Bug.date_last_updated,
-        Bug.datecreated,
-        Bug.id,
-        BugTask.bugID,
-        BugTask.date_assigned,
-        BugTask.datecreated,
-        BugTask.id,
-        ])
     # Bug ID is unique within bugs on a product or source package.
     if (params.product or
         (params.distribution and params.sourcepackagename) or
@@ -838,8 +933,34 @@ def _process_order_by(params, use_flat):
     else:
         in_unique_context = False
 
-    if in_unique_context:
-        unambiguous_cols.add(BugTask.bug)
+    if use_flat:
+        orderby_expression = flat_orderby_expression
+        unambiguous_cols = set([
+            BugTaskFlat.date_last_updated,
+            BugTaskFlat.datecreated,
+            BugTaskFlat.bugtask_id,
+            Bug.datecreated,
+            BugTask.date_assigned,
+            ])
+        if in_unique_context:
+            unambiguous_cols.add(BugTaskFlat.bug)
+    else:
+        orderby_expression = unflat_orderby_expression
+        # Bug.id and BugTask.bugID shouldn't really be here; they're
+        # ambiguous in a distribution or distroseries context. They're
+        # omitted from the new BugTaskFlat path, but kept in the legacy
+        # code in case it affects index selection.
+        unambiguous_cols = set([
+            Bug.date_last_updated,
+            Bug.datecreated,
+            Bug.id,
+            BugTask.bugID,
+            BugTask.date_assigned,
+            BugTask.datecreated,
+            BugTask.id,
+            ])
+        if in_unique_context:
+            unambiguous_cols.add(BugTask.bug)
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
@@ -882,10 +1003,16 @@ def _process_order_by(params, use_flat):
         orderby_arg.append(order_clause)
 
     if ambiguous:
-        if in_unique_context:
-            orderby_arg.append(BugTask.bugID)
+        if use_flat:
+            if in_unique_context:
+                orderby_arg.append(BugTaskFlat.bug_id)
+            else:
+                orderby_arg.append(BugTaskFlat.bugtask_id)
         else:
-            orderby_arg.append(BugTask.id)
+            if in_unique_context:
+                orderby_arg.append(BugTask.bugID)
+            else:
+                orderby_arg.append(BugTask.id)
 
     return tuple(orderby_arg), extra_joins
 
@@ -899,7 +1026,7 @@ def _require_params(params):
     return params
 
 
-def _build_search_text_clause(params, fast=False):
+def _build_search_text_clause(params, fast=False, use_flat=False):
     """Build the clause for searchtext."""
     if fast:
         assert params.searchtext is None, (
@@ -910,12 +1037,14 @@ def _build_search_text_clause(params, fast=False):
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
 
+    col = 'BugTaskFlat.fti' if use_flat else 'Bug.fti'
+
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
-        params.orderby = [SQL("-rank(Bug.fti, ftq(?))", params=(searchtext,))]
+        params.orderby = [SQL("-rank(%s, ftq(?))" % col, params=(searchtext,))]
 
-    return SQL("Bug.fti @@ ftq(?)", params=(searchtext,))
+    return SQL("%s @@ ftq(?)" % col, params=(searchtext,))
 
 
 def _build_status_clause(col, status):
@@ -1428,7 +1557,8 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def _get_bug_privacy_filter_with_decorator(user, private_only=False):
+def _get_bug_privacy_filter_with_decorator(user, private_only=False,
+                                           use_flat=False):
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
@@ -1438,38 +1568,48 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False):
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
+    if use_flat:
+        public_bug_filter = (
+            'BugTaskFlat.information_type IN %s'
+            % sqlvalues(PUBLIC_INFORMATION_TYPES))
+    else:
+        public_bug_filter = 'Bug.private IS FALSE'
+
     if user is None:
-        return "Bug.private IS FALSE", _nocache_bug_decorator
+        return public_bug_filter, _nocache_bug_decorator
+
     admin_team = getUtility(ILaunchpadCelebrities).admin
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
-    public_bug_filter = ''
+    if use_flat:
+        query = ("""
+            BugTaskFlat.access_grants &&
+            (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
+            """ % user.id)
+    else:
+        # A subselect is used here because joining through
+        # TeamParticipation is only relevant to the "user-aware"
+        # part of the WHERE condition (i.e. the bit below.) The
+        # other half of this condition (see code above) does not
+        # use TeamParticipation at all.
+        query = ("""
+            EXISTS (
+                WITH teams AS (
+                    SELECT team from TeamParticipation
+                    WHERE person = %d
+                )
+                SELECT BugSubscription.bug
+                FROM BugSubscription
+                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
+                    BugSubscription.bug = Bug.id
+                UNION ALL
+                SELECT BugTask.bug
+                FROM BugTask
+                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
+                    BugTask.bug = Bug.id
+                )
+            """ % user.id)
     if not private_only:
-        public_bug_filter = 'Bug.private IS FALSE OR'
-
-    # A subselect is used here because joining through
-    # TeamParticipation is only relevant to the "user-aware"
-    # part of the WHERE condition (i.e. the bit below.) The
-    # other half of this condition (see code above) does not
-    # use TeamParticipation at all.
-    query = """
-        (%(public_bug_filter)s EXISTS (
-            WITH teams AS (
-                SELECT team from TeamParticipation
-                WHERE person = %(personid)s
-            )
-            SELECT BugSubscription.bug
-            FROM BugSubscription
-            WHERE BugSubscription.person IN (SELECT team FROM teams) AND
-                BugSubscription.bug = Bug.id
-            UNION ALL
-            SELECT BugTask.bug
-            FROM BugTask
-            WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                BugTask.bug = Bug.id
-                ))
-        """ % dict(
-                personid=quote(user.id),
-                public_bug_filter=public_bug_filter)
-    return query, _make_cache_user_can_view_bug(user)
+        query = '%s OR %s' % (public_bug_filter, query)
+    return '(%s)' % query, _make_cache_user_can_view_bug(user)
