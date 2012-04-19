@@ -623,6 +623,7 @@ class BugView(LaunchpadView, BugViewMixin):
             return 'Private'
         return title
 
+
 class BugActivity(BugView):
 
     page_title = 'Activity log'
@@ -881,24 +882,23 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
-    class privacy_schema(Interface):
-        private_field = copy_field(IBug['private'], readonly=False)
-        security_related_field = copy_field(
-            IBug['security_related'], readonly=False)
-
-    class information_type_schema(Interface):
-        information_type_field = copy_field(
-            IBug['information_type'], readonly=False,
-            vocabulary=InformationTypeVocabulary())
-
     @property
     def schema(self):
         """Schema for editing the information type of a `IBug`."""
+        class privacy_schema(Interface):
+            private_field = copy_field(IBug['private'], readonly=False)
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
         if bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
-            return self.information_type_schema
+            return information_type_schema
         else:
-            return self.privacy_schema
+            return privacy_schema
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
