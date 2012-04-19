@@ -392,6 +392,8 @@ class CommericialExpirationMixin:
 
     layer = DatabaseFunctionalLayer
 
+    EXPIRE_SUBSCRIPTION = False
+
     def make_notification_data(self, licenses=[License.MIT]):
         product = self.factory.makeProduct(licenses=licenses)
         if License.OTHER_PROPRIETARY not in product.licenses:
@@ -438,9 +440,14 @@ class CommericialExpirationMixin:
         # Smoke test that run() can make the email from the template and data.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
-        job = CommercialExpiredJob.create(product, reviewer)
         commercial_subscription = product.commercial_subscription
+        if self.EXPIRE_SUBSCRIPTION:
+            expired_date = (
+                commercial_subscription.date_expires - timedelta(days=365))
+            removeSecurityProxy(
+                commercial_subscription).date_expires = expired_date
         iso_date = commercial_subscription.date_expires.date().isoformat()
+        job = self.JOB_CLASS.create(product, reviewer)
         pop_notifications()
         job.run()
         notifications = pop_notifications()
@@ -472,6 +479,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
                                    TestCaseWithFactory):
     """Test case for the CommercialExpiredJob class."""
 
+    EXPIRE_SUBSCRIPTION = True
     JOB_INTERFACE = ICommercialExpiredJob
     JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
     JOB_CLASS = CommercialExpiredJob
@@ -539,6 +547,22 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         # An email is sent and the deactivation steps are performed.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
+        expired_date = (
+            product.commercial_subscription.date_expires - timedelta(days=365))
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = expired_date
         job = CommercialExpiredJob.create(product, reviewer)
         job.run()
         self.assertIs(False, product.active)
+
+    def test_run_deactivation_aborted(self):
+        # The deactivation steps and email are aborted if the commercial
+        # subscription was renewed after the job was created.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
+        self.assertIs(True, product.active)

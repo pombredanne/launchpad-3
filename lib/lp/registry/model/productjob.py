@@ -378,5 +378,9 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
 
     def run(self):
         """See `ProductNotificationJob`."""
+        if self.product.has_current_commercial_subscription:
+            # The commercial subscription was renewed after this job was
+            # created. Nothing needs to be done.
+            return
         super(CommercialExpiredJob, self).run()
         self.deactivateCommercialFeatures()
