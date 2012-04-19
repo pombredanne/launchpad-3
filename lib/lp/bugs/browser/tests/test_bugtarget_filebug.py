@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 
+from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.schema.interfaces import (
     TooLong,
@@ -442,6 +443,24 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
         # products with private_bugs=True.
         bug = self.filebug_via_view(private_bugs=True)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_filebug_information_type_vocabulary(self):
+        # The vocabulary for information_type when filing a bug is created
+        # correctly.
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.proprietary_information_type.disabled': 'on',
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        product = self.factory.makeProduct(official_malone=True)
+        with FeatureFixture(feature_flags):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', principal=product.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        self.assertEqual(u'Private', soup.find('label', text="Private"))
+        self.assertIs(None, soup.find('label', text="User Data"))
+        self.assertIs(None, soup.find('label', text="Proprietary"))
 
 
 class TestFileBugSourcePackage(TestCaseWithFactory):
