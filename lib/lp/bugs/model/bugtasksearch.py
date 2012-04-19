@@ -492,6 +492,7 @@ def _build_query(params, use_flat):
         cols['BugTask.assignee']: params.assignee,
         cols['BugTask.sourcepackagename']: params.sourcepackagename,
         cols['BugTask.owner']: params.owner,
+        cols['BugTask.date_closed']: params.date_closed,
     }
 
     # Loop through the standard, "normal" arguments and build the
@@ -515,11 +516,10 @@ def _build_query(params, use_flat):
         if where_cond is not None:
             extra_clauses.append(where_cond)
 
-    if params.date_closed is not None:
-        extra_clauses.append(search_value_to_storm_where_condition(
-            cols['BugTask.date_closed'], params.date_closed))
-        if use_flat:
-            join_tables.append(flat_bugtask_join)
+    # All the standard args filter on BugTaskFlat, except for
+    # date_closed which isn't denormalised (yet?).
+    if params.date_closed is not None and use_flat:
+        join_tables.append(flat_bugtask_join)
 
     if params.status is not None:
         extra_clauses.append(
