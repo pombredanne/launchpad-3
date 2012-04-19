@@ -69,7 +69,7 @@ class SearchTestBase:
                 subscriber, subscribed_by=subscriber)
 
 
-class OnceSearchTestBase(SearchTestBase):
+class OnceTests:
     """A mixin class with tests that don't need to be run for all targets."""
 
     def test_private_bug_in_search_result_anonymous_users(self):
@@ -441,8 +441,8 @@ class OnceSearchTestBase(SearchTestBase):
         self.assertSearchFinds(params, expected)
 
 
-class PerTargetSearchTestBase(SearchTestBase):
-    """A mixin class with tests that should be run for each target."""
+class TargetTests:
+    """Tests which are useful for every target."""
 
     def test_aggregate_by_target(self):
         # BugTaskSet.search supports returning the counts for each target (as
@@ -1590,7 +1590,8 @@ def test_suite():
             mixins = [bug_target_search_type_class, feature_mixin]
             class_bases = (
                 tuple(mixins)
-                + (ProductTarget, SearchTestBase, TestCaseWithFactory))
+                + (ProductTarget, OnceTests, SearchTestBase,
+                   TestCaseWithFactory))
             test_class = type(class_name, class_bases, {})
             suite.addTest(loader.loadTestsFromTestCase(test_class))
 
@@ -1603,7 +1604,7 @@ def test_suite():
                     target_mixin, bug_target_search_type_class, feature_mixin]
                 class_bases = (
                     tuple(mixins)
-                    + (PerTargetSearchTestBase, TestCaseWithFactory))
+                    + (TargetTests, SearchTestBase, TestCaseWithFactory))
                 # Dynamically build a test class from the target mixin class,
                 # from the search type mixin class, from the mixin class
                 # having all tests and from a unit test base class.
