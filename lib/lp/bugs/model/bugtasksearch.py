@@ -492,7 +492,6 @@ def _build_query(params, use_flat):
         cols['BugTask.assignee']: params.assignee,
         cols['BugTask.sourcepackagename']: params.sourcepackagename,
         cols['BugTask.owner']: params.owner,
-        cols['BugTask.date_closed']: params.date_closed,
     }
 
     # Loop through the standard, "normal" arguments and build the
@@ -515,6 +514,12 @@ def _build_query(params, use_flat):
         where_cond = search_value_to_storm_where_condition(col, arg_value)
         if where_cond is not None:
             extra_clauses.append(where_cond)
+
+    if params.date_closed is not None:
+        extra_clauses.append(search_value_to_storm_where_condition(
+            cols['BugTask.date_closed'], params.date_closed))
+        if use_flat:
+            join_tables.append(flat_bugtask_join)
 
     if params.status is not None:
         extra_clauses.append(
@@ -608,6 +613,8 @@ def _build_query(params, use_flat):
                         BugAttachment.bugID, tables=[BugAttachment],
                         where=search_value_to_storm_where_condition(
                             BugAttachment.type, params.attachmenttype))))
+        if use_flat:
+            join_tables.append(flat_bug_join)
 
     if params.searchtext:
         extra_clauses.append(_build_search_text_clause(
@@ -964,13 +971,7 @@ def _process_order_by(params, use_flat):
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
-    if use_flat:
-        extra_joins = [
-            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
-            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
-            ]
-    else:
-        extra_joins = []
+    extra_joins = []
     ambiguous = True
     # Sorting by milestone only is a very "coarse" sort order.
     # If no additional sort order is specified, add the bug task
