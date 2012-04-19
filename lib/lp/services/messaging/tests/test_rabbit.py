@@ -9,6 +9,10 @@ from functools import partial
 from itertools import count
 import thread
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from testtools.testcase import ExpectedException
 import transaction
 from transaction._transaction import Status as TransactionStatus
@@ -362,6 +366,25 @@ class TestRabbitQueue(RabbitTestCase):
         consumer = RabbitQueue(global_session, next(queue_names))
         routing_key = RabbitRoutingKey(global_session, next(key_names))
         routing_key.associateConsumerNow(consumer)
+        self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
+
+    def test_complex_objcts(self):
+        # Test that objects using custom json encoders and decoders are able to
+        # be sent and received. We'll use a lazr.enum since the lazr.json
+        # library supports those out-of-the-box.
+        consumer = RabbitQueue(global_session, next(queue_names))
+        routing_key = RabbitRoutingKey(global_session, next(key_names))
+        routing_key.associateConsumerNow(consumer)
+
+        class SomeEnumType(DBEnumeratedType):
+            A = DBItem(1, "A", "Item A")
+            B = DBItem(2, "B", "Item B")
+
+        for sent in [SomeEnumType.A, SomeEnumType.B]:
+            routing_key.sendNow(sent)
+            self.assertEqual(sent, consumer.receive(timeout=2))
+
+        # All the messages received were consumed.
         self.assertRaises(QueueEmpty, consumer.receive, timeout=2)
 
     def test_does_not_connect_session_immediately(self):

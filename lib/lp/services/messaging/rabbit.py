@@ -19,6 +19,10 @@ import threading
 import time
 
 from amqplib import client_0_8 as amqp
+from lazr.json import (
+    custom_type_decoder,
+    CustomTypeEncoder,
+    )
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implements
@@ -247,7 +251,7 @@ class RabbitRoutingKey(RabbitMessageBase):
 
     def sendNow(self, data):
         """Immediately send a message to the broker."""
-        json_data = json.dumps(data)
+        json_data = json.dumps(data, cls=CustomTypeEncoder)
         msg = amqp.Message(json_data)
         self.channel.basic_publish(
             exchange=self.session.exchange,
@@ -280,7 +284,8 @@ class RabbitQueue(RabbitMessageBase):
                     time.sleep(0.1)
                 else:
                     self.channel.basic_ack(message.delivery_tag)
-                    return json.loads(message.body)
+                    return json.loads(
+                        message.body, object_hook=custom_type_decoder)
             except amqp.AMQPChannelException, error:
                 if error.amqp_reply_code == 404:
                     raise QueueNotFound()

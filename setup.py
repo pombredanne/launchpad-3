@@ -45,6 +45,7 @@ setup(
         'lazr.config',
         'lazr.delegates',
         'lazr.enum',
+        'lazr.json',
         'lazr.lifecycle',
         'lazr.restful',
         'lazr.jobrunner',
