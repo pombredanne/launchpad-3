@@ -1,9 +1,10 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 
+from zope.component import getUtility
 from zope.schema.interfaces import (
     TooLong,
     TooShort,
@@ -14,12 +15,18 @@ from lp.bugs.browser.bugtarget import (
     FileBugInlineFormView,
     FileBugViewBase,
     )
-from lp.bugs.interfaces.bug import IBugAddForm
+from lp.bugs.interfaces.bug import (
+    IBugAddForm,
+    IBugSet,
+    )
 from lp.bugs.publisher import BugsLayer
+from lp.registry.enums import InformationType
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -396,6 +403,45 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
             "source": product.displayname, "content": u"Include bug details",
             }]
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
+
+    def filebug_via_view(self, private_bugs=False, information_type=None):
+        feature_flag = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        form = {
+            'field.title': 'A bug',
+            'field.comment': 'A comment',
+            'field.actions.submit_bug': 'Submit Bug Request',
+        }
+        if information_type:
+            form['field.information_type'] = information_type
+        product = self.factory.makeProduct(official_malone=True)
+        if private_bugs:
+            removeSecurityProxy(product).private_bugs = True
+        with FeatureFixture(feature_flag):
+            with person_logged_in(product.owner):
+                view = create_initialized_view(
+                    product, '+filebug', form=form, principal=product.owner)
+                bug_url = view.request.response.getHeader('Location')
+                bug_number = bug_url.split('/')[-1]
+                return getUtility(IBugSet).getByNameOrID(bug_number)
+
+    def test_filebug_default_information_type(self):
+        # If we don't specify the bug's information_type, it is PUBLIC for
+        # products with private_bugs=False.
+        bug = self.filebug_via_view()
+        self.assertEqual(InformationType.PUBLIC, bug.information_type)
+
+    def test_filebug_set_information_type(self):
+        # When we specify the bug's information_type, it is set.
+        bug = self.filebug_via_view(information_type='Embargoed Security')
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug.information_type)
+
+    def test_filebug_information_type_with_private_bugs(self):
+        # If we don't specify the bug's information_type, it is USERDATA for
+        # products with private_bugs=True.
+        bug = self.filebug_via_view(private_bugs=True)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
 
 
 class TestFileBugSourcePackage(TestCaseWithFactory):
