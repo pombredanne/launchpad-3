@@ -121,18 +121,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(user=admin)
         self.assertSearchFinds(params, self.bugtasks)
 
-    def test_private_bug_in_search_result_assignees(self):
-        # Private bugs are included in search results for the assignee.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
-        bugtask = self.bugtasks[-1]
-        user = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        with person_logged_in(admin):
-            bugtask.transitionToAssignee(user)
-        params = self.getBugTaskSearchParams(user=user)
-        self.assertSearchFinds(params, self.bugtasks)
-
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
         bugtask = self.bugtasks[0]
@@ -1538,6 +1526,22 @@ class UsingFlat:
             FeatureFixture({'bugs.bugtaskflat.search.enabled': 'on'}))
 
 
+class UsingLegacy:
+    """Use Bug and BugTask directly for searching."""
+
+    def test_private_bug_in_search_result_assignees(self):
+        # Private bugs are included in search results for the assignee.
+        with person_logged_in(self.owner):
+            self.bugtasks[-1].bug.setPrivate(True, self.owner)
+        bugtask = self.bugtasks[-1]
+        user = self.factory.makePerson()
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        with person_logged_in(admin):
+            bugtask.transitionToAssignee(user)
+        params = self.getBugTaskSearchParams(user=user)
+        self.assertSearchFinds(params, self.bugtasks)
+
+
 class TestMilestoneDueDateFiltering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -1573,14 +1577,13 @@ def test_suite():
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
-            for feature_mixin in (None, UsingFlat):
+            for feature_mixin in (UsingLegacy, UsingFlat):
                 class_name = 'Test%s%s%s' % (
                     bug_target_search_type_class.__name__,
                     target_mixin.__name__,
-                    feature_mixin.__name__ if feature_mixin else '')
-                mixins = [target_mixin, bug_target_search_type_class]
-                if feature_mixin:
-                    mixins.append(feature_mixin)
+                    feature_mixin.__name__)
+                mixins = [
+                    target_mixin, bug_target_search_type_class, feature_mixin]
                 class_bases = (
                     tuple(mixins) + (SearchTestBase, TestCaseWithFactory))
                 # Dynamically build a test class from the target mixin class,
