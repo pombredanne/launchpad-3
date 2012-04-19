@@ -214,7 +214,7 @@ class IBugPublic(IPrivacy):
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=False, readonly=True,
+            required=True, readonly=True, default=InformationType.PUBLIC,
             description=_(
                 'The type of information contained in this bug report.')))
 
