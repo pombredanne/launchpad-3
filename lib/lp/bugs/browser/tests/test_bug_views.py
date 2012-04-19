@@ -434,9 +434,10 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                     bug.default_bugtask, name='+secrecy',
                     principal=bug.owner)
                 html = view.render()
-        self.assertIn('Private', html)
-        self.assertNotIn('User Data', html)
-        self.assertNotIn('Proprietary', html)
+                soup = BeautifulSoup(html)
+        self.assertEqual(u'Private', soup.find('label', text="Private"))
+        self.assertIs(None, soup.find('label', text="User Data"))
+        self.assertIs(None, soup.find('label', text="Proprietary"))
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
