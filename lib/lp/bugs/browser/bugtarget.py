@@ -130,7 +130,10 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    ValidPersonOrTeamVocabulary,
+    )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
@@ -279,8 +282,8 @@ class FileBugReportingGuidelines(LaunchpadFormView):
 
         if self.show_information_type_in_ui:
             information_type_field = copy_field(
-                IBug['information_type'], readonly=False)
-                #vocabulary='InformationTypeVocabulary')
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
             self.form_fields = self.form_fields.omit('information_type')
             self.form_fields += Fields(information_type_field)
         else:
