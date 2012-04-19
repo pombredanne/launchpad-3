@@ -31,6 +31,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
     any,
@@ -1528,6 +1529,15 @@ class QueryBugIDs:
         return [bugtask.bug.id for bugtask in expected_bugtasks]
 
 
+class UsingFlat:
+    """Use BugTaskFlat for searching."""
+
+    def setUp(self):
+        super(UsingFlat, self).setUp()
+        self.useFixture(
+            FeatureFixture({'bugs.bugtaskflat.search.enabled': 'on'}))
+
+
 class TestMilestoneDueDateFiltering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -1563,17 +1573,21 @@ def test_suite():
     for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
-            class_name = 'Test%s%s' % (
-                bug_target_search_type_class.__name__,
-                target_mixin.__name__)
-            class_bases = (
-                target_mixin, bug_target_search_type_class,
-                SearchTestBase, TestCaseWithFactory)
-            # Dynamically build a test class from the target mixin class,
-            # from the search type mixin class, from the mixin class
-            # having all tests and from a unit test base class.
-            test_class = type(class_name, class_bases, {})
-            # Add the new unit test class to the suite.
-            suite.addTest(loader.loadTestsFromTestCase(test_class))
+            for feature_mixin in (None, UsingFlat):
+                class_name = 'Test%s%s%s' % (
+                    bug_target_search_type_class.__name__,
+                    target_mixin.__name__,
+                    feature_mixin.__name__ if feature_mixin else '')
+                mixins = [target_mixin, bug_target_search_type_class]
+                if feature_mixin:
+                    mixins.append(feature_mixin)
+                class_bases = (
+                    tuple(mixins) + (SearchTestBase, TestCaseWithFactory))
+                # Dynamically build a test class from the target mixin class,
+                # from the search type mixin class, from the mixin class
+                # having all tests and from a unit test base class.
+                test_class = type(class_name, class_bases, {})
+                # Add the new unit test class to the suite.
+                suite.addTest(loader.loadTestsFromTestCase(test_class))
     suite.addTest(loader.loadTestsFromName(__name__))
     return suite
