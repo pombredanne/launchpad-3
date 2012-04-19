@@ -606,6 +606,8 @@ def _build_query(params, use_flat):
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
             extra_clauses.append(Bug.latest_patch_uploaded != None)
+            if use_flat:
+                join_tables.append(flat_bug_join)
         else:
             extra_clauses.append(
                 cols['Bug.id'].is_in(
@@ -613,8 +615,6 @@ def _build_query(params, use_flat):
                         BugAttachment.bugID, tables=[BugAttachment],
                         where=search_value_to_storm_where_condition(
                             BugAttachment.type, params.attachmenttype))))
-        if use_flat:
-            join_tables.append(flat_bug_join)
 
     if params.searchtext:
         extra_clauses.append(_build_search_text_clause(
