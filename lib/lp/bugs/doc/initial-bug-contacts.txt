@@ -283,6 +283,7 @@ contact address. Let's add such a team as a subscriber.
 
 The Ubuntu Gnome team was subscribed to the bug:
 
+    >>> stub.test_emails = []
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
     [u'Dafydd Harries', u'Foo Bar', u'Mark Shuttleworth',
      u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team',
