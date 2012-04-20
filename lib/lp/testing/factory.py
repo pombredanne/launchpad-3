@@ -4418,6 +4418,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCommercialSubscription(self, product, expired=False):
         """Create a commercial subscription for the given product."""
+        if CommercialSubscription.selectOneBy(product=product) is not None:
+            raise AssertionError(
+                "The product under test already has a CommercialSubscription.")
         if expired:
             expiry = datetime.now(pytz.UTC) - timedelta(days=1)
         else:

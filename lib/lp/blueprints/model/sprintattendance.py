@@ -11,7 +11,6 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
-    Store,
     )
 from zope.interface import implements
 

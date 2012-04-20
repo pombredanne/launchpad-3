@@ -21,7 +21,6 @@ from zope.component import getUtility
 from lp.app.validators.name import invalid_name_pattern
 from lp.app.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose

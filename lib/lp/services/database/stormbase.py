@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 from storm.base import Storm
-from zope.component import getUtility
 
 from lp.services.propertycache import clear_property_cache
 

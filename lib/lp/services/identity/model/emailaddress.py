@@ -19,6 +19,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+
 from zope.interface import implements
 
 from lp.app.validators.email import valid_email

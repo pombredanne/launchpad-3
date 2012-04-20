@@ -82,10 +82,13 @@ simple_sendmail_from_person uses the Person's preferred email address:
     ...     body=u'Content')
 
     >>> transaction.commit()
-    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg['From']
-    'Sample Person <testing@canonical.com>'
+    >>> found = False
+    >>> for from_addr, to_addr, raw_message in stub.test_emails:
+    ...     msg = email.message_from_string(raw_message)
+    ...     if msg['From'] == 'Sample Person <testing@canonical.com>':
+    ...         found = True
+    >>> assert found
+    >>> stub.test_emails = []
 
 
 To make a header appear more than once in the sent message (e.g.

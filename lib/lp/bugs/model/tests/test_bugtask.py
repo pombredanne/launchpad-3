@@ -32,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
@@ -288,7 +289,7 @@ class TestBugTaskTagSearchClauses(TestCase):
 
     def searchClause(self, tag_spec):
         return convert_storm_clause_to_string(
-            _build_tag_search_clause(tag_spec))
+            _build_tag_search_clause(tag_spec, cols={'Bug.id': Bug.id}))
 
     def assertEqualIgnoringWhitespace(self, expected, observed):
         return self.assertEqual(
@@ -1013,7 +1014,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         IPerson(person.account, None)
         # The should take 2 queries - one for the tasks, one for the related
         # products (eager loaded targets).
-        has_expected_queries = HasQueryCount(Equals(2))
+        has_expected_queries = HasQueryCount(Equals(3))
         # No extra queries should be issued to access a regular attribute
         # on the bug that would normally trigger lazy evaluation for security
         # checking.  Note that the 'id' attribute does not trigger a check.
