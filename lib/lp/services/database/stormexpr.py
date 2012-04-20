@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'AdvisoryUnlock',
     'Array',
     'Concatenate',
     'CountDistinct',
     'Greatest',
     'NullCount',
+    'TryAdvisoryLock',
     ]
 
 from storm.expr import (
