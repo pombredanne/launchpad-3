@@ -7,13 +7,17 @@ from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
+    #layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestPublicBugVisibility, self).setUp()
