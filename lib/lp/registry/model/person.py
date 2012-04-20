@@ -1505,6 +1505,7 @@ class Person(
                AND(WorkItem.assignee == None,
                    Specification.assigneeID.is_in(self.participant_ids))))
         result = store.using(*origin).find(WorkItem, query)
+
         def eager_load(workitems):
             specs = bulk.load_related(
                 Specification, workitems, ['specification_id'])
@@ -2980,7 +2981,7 @@ class Person(
         # creation ought to be passed through.
         errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
-           raise PPACreationError(errors)
+            raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,

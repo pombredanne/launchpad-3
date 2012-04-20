@@ -493,16 +493,6 @@ class TestTeamAddView(TestCaseWithFactory):
         self.assertIn(
             'visibility', [field.__name__ for field in view.form_fields])
 
-    def test_random_does_not_see_visibility_field(self):
-        personset = getUtility(IPersonSet)
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            view = create_initialized_view(
-                personset, name=self.view_name, principal=person)
-            self.assertNotIn(
-                'visibility',
-                [field.__name__ for field in view.form_fields])
-
     def test_person_with_cs_sees_visibility_field(self):
         personset = getUtility(IPersonSet)
         team = self.factory.makeTeam(

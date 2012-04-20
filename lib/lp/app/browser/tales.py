@@ -71,7 +71,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     urlappend,

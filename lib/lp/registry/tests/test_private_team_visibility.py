@@ -284,7 +284,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Subscribe the private team to the spec.
         login_person(spec.owner)
         spec.subscribe(self.priv_team, spec.owner)
-        self._check_permission(some_person)
+        self._check_permission(some_person, True)
 
     def _test_team_subscribed_to_bug(self, private=True):
         # Users can see teams subscribed to bugs.
@@ -307,7 +307,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
         # The team is now visible.
-        self._check_permission(some_person)
+        self._check_permission(some_person, True)
 
     def test_team_subscribed_to_public_bug(self):
         self._test_team_subscribed_to_bug(private=False)
@@ -336,7 +336,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
         # The team is now visible.
-        self._check_permission(some_person)
+        self._check_permission(some_person, True)
 
     def test_team_assigned_to_public_bug(self):
         self._test_team_assigned_to_bug(private=False)
