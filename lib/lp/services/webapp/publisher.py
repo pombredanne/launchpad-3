@@ -933,10 +933,16 @@ class Navigation:
                         else:
                             # Circular import; breaks make.
                             from lp.services.webapp.breadcrumb import Breadcrumb
+
+                            stepthrough_page = queryMultiAdapter(
+                                (self.context, self.request), name=name)
+                            stepthrough_text = stepthrough_page.page_title
+                            stepthrough_url = canonical_url(
+                                self.context, view_name=name)
                             stepthrough_breadcrumb = Breadcrumb(
                                 context=self.context,
-                                url='http://example.com',
-                                text='some text')
+                                url=stepthrough_url,
+                                text=stepthrough_text)
                             self.request.traversed_objects.append(
                                 stepthrough_breadcrumb)
                         return self._handle_next_object(nextobj, request,
