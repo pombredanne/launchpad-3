@@ -31,6 +31,16 @@ from lp.translations.interfaces.translations import (
     )
 
 
+def filter_out_disconnection_oopses(oopses):
+    """Remove the bug 884036-related oopses from a set of oopses.
+
+    :return: All non-DisconnectionError or AssertionError oopses.
+    """
+    unwanted_types = ('AssertionError', 'DisconnectionError')
+    return [
+        oops for oops in oopses if oops['type'] not in unwanted_types]
+
+
 class TestRosettaBranchesScript(TestCaseWithFactory):
     """Testing the rosetta-bazaar cronscript."""
 
@@ -101,10 +111,11 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         # connection is *not normal*. So when both tests are run, we see 8 of
         # these oopses (4 pairs of 2); when run alone we don't.
         self.oops_capture.sync()
+        oopses = filter_out_disconnection_oopses(self.oopses)
         self.assertThat(
-            len(self.oopses), MatchesAny(Equals(1), Equals(9)),
-            "Unexpected number of OOPSes %r" % self.oopses)
-        oops_report = self.oopses[-1]
+            len(oopses), MatchesAny(Equals(1), Equals(9)),
+            "Unexpected number of OOPSes %r" % oopses)
+        oops_report = oopses[-1]
         self.assertIn(
             'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
         self.assertEqual('NoSuchRevision', oops_report['type'])
