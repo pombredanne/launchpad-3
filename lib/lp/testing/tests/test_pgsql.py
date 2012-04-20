@@ -193,3 +193,8 @@ class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
         # Fail if we got a diffent sequence value at some point
         for v in sequence_values:
             self.failUnlessEqual(v, sequence_values[0])
+
+        # The database still exists because, after the last commit,
+        # ConnectionWrapper.committed was set to False.
+        # Drop the database here to avoid test ordering issues.
+        fixture.dropDb()
