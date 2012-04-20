@@ -6,6 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'ProductJob',
+    'CommercialExpiredJob',
+    'SevenDayCommercialExpirationJob',
+    'ThirtyDayCommercialExpirationJob',
     ]
 
 from lazr.delegates import delegates
@@ -21,15 +24,25 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import ProductJobType
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
+    )
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
     IProductNotificationJob,
     IProductNotificationJobSource,
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
+    ISevenDayCommercialExpirationJob,
+    ISevenDayCommercialExpirationJobSource,
+    IThirtyDayCommercialExpirationJob,
+    IThirtyDayCommercialExpirationJobSource,
     )
 from lp.registry.model.product import Product
 from lp.services.config import config
@@ -282,3 +295,95 @@ class ProductNotificationJob(ProductJobDerived):
             'Launchpad', config.canonical.noreply_from_address)
         self.sendEmailToMaintainer(
             self.email_template_name, self.subject, from_address)
+
+
+class CommericialExpirationMixin:
+
+    _email_template_name = 'product-commercial-subscription-expiration'
+    _subject_template = (
+        'The commercial subscription for %s in Launchpad is expiring')
+
+    @classmethod
+    def create(cls, product, reviewer):
+        """Create a job."""
+        subject = cls._subject_template % product.name
+        return super(CommericialExpirationMixin, cls).create(
+            product, cls._email_template_name, subject, reviewer,
+            reply_to_commercial=True)
+
+    @cachedproperty
+    def message_data(self):
+        """See `IProductNotificationJob`."""
+        data = super(CommericialExpirationMixin, self).message_data
+        commercial_subscription = self.product.commercial_subscription
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        extra_data = {
+            'commercial_use_expiration': iso_date,
+            }
+        data.update(extra_data)
+        return data
+
+
+class SevenDayCommercialExpirationJob(CommericialExpirationMixin,
+                                      ProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+    implements(ISevenDayCommercialExpirationJob)
+    classProvides(ISevenDayCommercialExpirationJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
+
+
+class ThirtyDayCommercialExpirationJob(CommericialExpirationMixin,
+                                       ProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+    implements(IThirtyDayCommercialExpirationJob)
+    classProvides(IThirtyDayCommercialExpirationJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+
+class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
+    """A job that sends an email about an expired commercial subscription."""
+
+    implements(ICommercialExpiredJob)
+    classProvides(ICommercialExpiredJobSource)
+    class_job_type = ProductJobType.COMMERCIAL_EXPIRED
+
+    _email_template_name = ''  # email_template_name does not need this.
+    _subject_template = (
+        'The commercial subscription for %s in Launchpad expired')
+
+    @property
+    def _is_proprietary(self):
+        """Does the product have a proprietary license?"""
+        return License.OTHER_PROPRIETARY in self.product.licenses
+
+    @property
+    def email_template_name(self):
+        """See `IProductNotificationJob`.
+
+        The email template is determined by the product's licenses.
+        """
+        if self._is_proprietary:
+            return 'product-commercial-subscription-expired-proprietary'
+        else:
+            return 'product-commercial-subscription-expired-open-source'
+
+    def _deactivateCommercialFeatures(self):
+        """Deactivate the project or just the commercial features it uses."""
+        if self._is_proprietary:
+            self.product.active = False
+        else:
+            removeSecurityProxy(self.product).private_bugs = False
+            for series in self.product.series:
+                if series.branch.private:
+                    removeSecurityProxy(series).branch = None
+
+    def run(self):
+        """See `ProductNotificationJob`."""
+        if self.product.has_current_commercial_subscription:
+            # The commercial subscription was renewed after this job was
+            # created. Nothing needs to be done.
+            return
+        super(CommercialExpiredJob, self).run()
+        self._deactivateCommercialFeatures()
