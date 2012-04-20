@@ -163,7 +163,6 @@ from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
-from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -961,12 +960,6 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # participation check. For the bug query, we first filter on team
             # association (subscribed to, assigned to etc) and then on user
             # visibility.
-
-            # The extra checks may be expensive so we'll use a feature flag.
-            extra_checks_enabled = bool(getFeatureFlag(
-                'disclosure.extra_private_team_LimitedView_security.enabled'))
-            if not extra_checks_enabled:
-                return False
 
             store = IStore(Person)
             team_bugs_visible_select = """

@@ -1320,13 +1320,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report_visibility_leak(self):
-        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
-            request = get_current_browser_request()
-            try:
-                raise MixedVisibilityError()
-            except MixedVisibilityError:
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
+        request = get_current_browser_request()
+        try:
+            raise MixedVisibilityError()
+        except MixedVisibilityError:
+            getUtility(IErrorReportingUtility).raising(
+                sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
