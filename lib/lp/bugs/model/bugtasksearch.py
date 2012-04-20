@@ -516,6 +516,11 @@ def _build_query(params, use_flat):
         if where_cond is not None:
             extra_clauses.append(where_cond)
 
+    # All the standard args filter on BugTaskFlat, except for
+    # date_closed which isn't denormalised (yet?).
+    if params.date_closed is not None and use_flat:
+        join_tables.append(flat_bugtask_join)
+
     if params.status is not None:
         extra_clauses.append(
             _build_status_clause(cols['BugTask._status'], params.status))
@@ -601,6 +606,8 @@ def _build_query(params, use_flat):
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
             extra_clauses.append(Bug.latest_patch_uploaded != None)
+            if use_flat:
+                join_tables.append(flat_bug_join)
         else:
             extra_clauses.append(
                 cols['Bug.id'].is_in(
@@ -964,13 +971,7 @@ def _process_order_by(params, use_flat):
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
-    if use_flat:
-        extra_joins = [
-            (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id)),
-            (BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id)),
-            ]
-    else:
-        extra_joins = []
+    extra_joins = []
     ambiguous = True
     # Sorting by milestone only is a very "coarse" sort order.
     # If no additional sort order is specified, add the bug task
