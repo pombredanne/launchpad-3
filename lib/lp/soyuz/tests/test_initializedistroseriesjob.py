@@ -10,6 +10,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
 from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.distributionjob import (
@@ -26,9 +28,13 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    celebrity_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -231,21 +237,22 @@ def create_child(factory):
     # Since the LFA needs to be in the librarian, commit.
     transaction.commit()
     parent_das.addOrUpdateChroot(lf)
-    parent_das.supports_virtualized = True
-    parent.nominatedarchindep = parent_das
-    publisher = SoyuzTestPublisher()
-    publisher.prepareBreezyAutotest()
-    packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
-    for package in packages.keys():
-        publisher.getPubBinaries(
-            distroseries=parent, binaryname=package,
-            version=packages[package],
-            status=PackagePublishingStatus.PUBLISHED)
-    test1 = getUtility(IPackagesetSet).new(
-        u'test1', u'test 1 packageset', parent.owner,
-        distroseries=parent)
-    test1_packageset_id = str(test1.id)
-    test1.addSources('udev')
+    with celebrity_logged_in('admin'):
+        parent_das.supports_virtualized = True
+        parent.nominatedarchindep = parent_das
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
+        for package in packages.keys():
+            publisher.getPubBinaries(
+                distroseries=parent, binaryname=package,
+                version=packages[package],
+                status=PackagePublishingStatus.PUBLISHED)
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', parent.owner,
+            distroseries=parent)
+        test1_packageset_id = str(test1.id)
+        test1.addSources('udev')
     parent.updatePackageCount()
     child = factory.makeDistroSeries()
     getUtility(ISourcePackageFormatSelectionSet).add(
@@ -345,3 +352,23 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     def test_cronscript(self):
         run_script(
             'cronscripts/run_jobs.py', ['-v', 'initializedistroseries'])
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_job(self):
+        """Job runs successfully via Celery."""
+        fixture = FeatureFixture({
+            'jobs.celery.enabled_classes': 'InitializeDistroSeriesJob',
+        })
+        self.useFixture(fixture)
+        parent, child, test1 = create_child(self.factory)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        with block_on_job():
+            job_source.create(child, [parent.id])
+            transaction.commit()
+        child.updatePackageCount()
+        self.assertEqual(parent.sourcecount, child.sourcecount)
+        self.assertEqual(parent.binarycount, child.binarycount)
