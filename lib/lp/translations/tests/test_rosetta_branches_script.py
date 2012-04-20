@@ -105,15 +105,16 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         queue = getUtility(ITranslationImportQueue)
         self.assertEqual(0, queue.countEntries())
 
-        # XXX: Robert Collins - bug 884036 - test_rosetta_branches_script does
-        # a commit() which resets the test db out from under the running slave
-        # appserver, requests to it then (correctly) log oopses as a DB
-        # connection is *not normal*. So when both tests are run, we see 8 of
-        # these oopses (4 pairs of 2); when run alone we don't.
         self.oops_capture.sync()
+        # XXX 2012-04-20 bug=884036 gmb:
+        #     This filter_out_disconnection_oopses() call is here to
+        #     stop the above bug from biting us in parallel test runs.
+        #     We filter out all OOPSes related to the fact that the DB
+        #     connection gets reset from under the running slave during
+        #     these test runs.
         oopses = filter_out_disconnection_oopses(self.oopses)
         self.assertThat(
-            len(oopses), MatchesAny(Equals(1), Equals(9)),
+            len(oopses), Equals(1),
             "Unexpected number of OOPSes %r" % oopses)
         oops_report = oopses[-1]
         self.assertIn(
