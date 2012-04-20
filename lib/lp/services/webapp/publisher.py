@@ -905,6 +905,7 @@ class Navigation:
                     nextobj = handler(self)
                 except NotFoundError:
                     nextobj = None
+
                 return self._handle_next_object(nextobj, request, name)
 
         # Next, see if we have at least two path steps in total to traverse;
@@ -929,6 +930,15 @@ class Navigation:
                             nextobj = handler(self, nextstep)
                         except NotFoundError:
                             nextobj = None
+                        else:
+                            # Circular import; breaks make.
+                            from lp.services.webapp.breadcrumb import Breadcrumb
+                            stepthrough_breadcrumb = Breadcrumb(
+                                context=self.context,
+                                url='http://example.com',
+                                text='some text')
+                            self.request.traversed_objects.append(
+                                stepthrough_breadcrumb)
                         return self._handle_next_object(nextobj, request,
                             nextstep)
 
