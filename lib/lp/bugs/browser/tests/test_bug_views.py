@@ -357,13 +357,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # subscription information resulting from the update to the bug
         # privacy as well as information used to populate the updated
         # subscribers list.
-        feature_flag = {
-            'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-
         person = self.factory.makePerson()
         bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
