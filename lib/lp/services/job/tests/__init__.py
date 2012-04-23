@@ -58,11 +58,10 @@ def block_on_job(test_case=None):
         yield
     try:
         responses[-1].wait(30)
-    except:
-        if test_case is not None:
+    finally:
+        if test_case is not None and responses[-1].traceback is not None:
             test_case.addDetail(
                 'Worker traceback', text_content(responses[-1].traceback))
-        raise
 
 
 def pop_remote_notifications():
