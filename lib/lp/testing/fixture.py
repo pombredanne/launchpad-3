@@ -131,7 +131,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         """Simply return to simulate an error starting PGBouncer."""
         if not notreally:
             super(PGBouncerFixture, self).start()
-        retries = 10
+        retries = 60
         for i in itertools.count(1):
             if self.is_running:
                 return

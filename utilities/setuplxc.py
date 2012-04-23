@@ -71,9 +71,14 @@ LP_CHECKOUT = 'devel'
 LP_DEB_DEPENDENCIES = (
     'bzr launchpad-developer-dependencies apache2 '
     'apache2-mpm-worker libapache2-mod-wsgi')
+## LP_REPOSITORIES = (
+##     'http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel',
+##     'lp:launchpad',
+##     )
+# DO NOT COMMIT
 LP_REPOSITORIES = (
-    'http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel',
-    'lp:launchpad',
+    'http://bazaar.launchpad.net/~bac/launchpad/bug-974617-2',
+    'lp:~bac/launchpad/bug-974617-2',
     )
 LP_SOURCE_DEPS = (
     'http://bazaar.launchpad.net/~launchpad/lp-source-dependencies/trunk')
