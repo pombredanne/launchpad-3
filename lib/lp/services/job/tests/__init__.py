@@ -13,6 +13,8 @@ __all__ = [
 
 from contextlib import contextmanager
 
+from testtools.content import text_content
+
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -51,10 +53,16 @@ def monitor_celery():
 
 
 @contextmanager
-def block_on_job():
+def block_on_job(test_case=None):
     with monitor_celery() as responses:
         yield
-    responses[-1].wait(30)
+    try:
+        responses[-1].wait(30)
+    except:
+        if test_case is not None:
+            test_case.addDetail(
+                'Worker traceback', text_content(responses[-1].traceback))
+        raise
 
 
 def pop_remote_notifications():
