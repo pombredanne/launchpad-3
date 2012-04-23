@@ -10,39 +10,51 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- YUI and test setup -->
       <script type="text/javascript"
-              src="../../../../../../build/js/yui/yui/yui.js">
+              src="../../../../../build/js/yui/yui/yui.js">
       </script>
       <link rel="stylesheet"
-      href="../../../../../../build/js/yui/console/assets/console-core.css" />
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
       <link rel="stylesheet"
-      href="../../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      href="../../../../../build/js/yui/console/assets/skins/sam/console.css" />
       <link rel="stylesheet"
-      href="../../../../../../build/js/yui/test/assets/skins/sam/test.css" />
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
 
       <script type="text/javascript"
-              src="../../../../../../build/js/lp/app/testing/testrunner.js"></script>
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
 
-      <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
       <!-- Dependencies -->
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/testing/mockio.js"></script>
+          src="../../../../../build/js/lp/app/testing/mockio.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/client.js"></script>
+          src="../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/extras/extras.js"></script>
+          src="../../../../../build/js/lp/app/extras/extras.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/anim/anim.js"></script>
+          src="../../../../../build/js/lp/app/anim/anim.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+          src="../../../../../build/js/lp/app/effects/effects.js"></script>
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/app/privacy.js"></script>
+          src="../../../../../build/js/lp/app/lazr/lazr.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/privacy.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/expander.js"></script>
+      <!-- <script type="text/javascript"
+          src="../../../../../build/js/lp/app/subscribers/subscribers_list.js"></script> -->
       <script type="text/javascript"
-          src="../../../../../../build/js/lp/bugs/bugtask_index.js"></script>
+          src="../../../../../build/js/lp/app/errors.js"></script>
+      <!-- <script type="text/javascript"
+          src="../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/bugs/subscription.js"></script> -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/bugs/bugtask_index.js"></script>
 
       <!-- The module under test. -->
       <script type="text/javascript" src="../information_type_choice.js"></script>
@@ -58,8 +70,10 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <ul id="suites">
             <li>lp.bugs.information_type_choice.test</li>
         </ul>
-        <div id="privacy-text">
-            This report contains information that is <strong id="information-type">Public</strong><a class="sprite edit" id="privacy-link" href="#"></a>
+        <div id="privacy">
+            <div id="privacy-text">
+                This report contains information that is <strong id="information-type">Public</strong><a class="sprite edit" id="privacy-link" href="#">edit</a>
+            </div>
         </div>
     </body>
 </html>

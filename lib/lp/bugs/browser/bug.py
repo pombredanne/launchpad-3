@@ -872,7 +872,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         label = 'Bug #%i - Set ' % self.context.bug.id
         if bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
-            label += 'Information type'
+            label += 'information type'
         else:
             label += 'visibility and security'
         return label
