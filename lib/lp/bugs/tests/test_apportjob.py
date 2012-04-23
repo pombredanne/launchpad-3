@@ -27,7 +27,9 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugDataParser,
     )
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import block_on_job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.tests import run_script
 from lp.services.temporaryblobstorage.interfaces import (
@@ -39,6 +41,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
+    CeleryJobLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -92,12 +95,8 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         super(ProcessApportBlobJobTestCase, self).setUp()
 
         # Create a BLOB using existing testing data.
-        testfiles = os.path.join(config.root, 'lib/lp/bugs/tests/testfiles')
-        blob_file = open(
-            os.path.join(testfiles, 'extra_filebug_data.msg'))
-        blob_data = blob_file.read()
 
-        self.blob = self.factory.makeBlob(blob_data)
+        self.blob = self.factory.makeBlob(blob_file='extra_filebug_data.msg')
         transaction.commit()  # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
@@ -308,6 +307,29 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # processed_data dict.
         processed_data = job.metadata.get('processed_data', None)
         self._assertFileBugDataMatchesDict(filebug_data, processed_data)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_run(self):
+        # IProcessApportBlobJobSource.run() extracts salient data from an
+        # Apport BLOB and stores it in the job's metadata attribute.
+        blob = self.factory.makeBlob(blob_file='extra_filebug_data.msg')
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'ProcessApportBlobJob'}))
+        with block_on_job(self):
+            job = getUtility(IProcessApportBlobJobSource).create(blob)
+            transaction.commit()
+
+        # Once the job has been run, its metadata will contain a dict
+        # called processed_data, which will contain the data parsed from
+        # the BLOB.
+        processed_data = job.metadata.get('processed_data', None)
+        self.assertNotEqual(
+            None, processed_data,
+            "processed_data should not be None after the job has run.")
 
 
 class TestTemporaryBlobStorageAddView(TestCaseWithFactory):

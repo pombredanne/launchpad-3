@@ -269,6 +269,7 @@ class UniversalJobSource:
     def getUserAndBaseJob(cls, job_id):
         """Return the derived branch job associated with the job id."""
         # Avoid circular imports.
+        from lp.bugs.model.apportjob import ApportJob
         from lp.code.model.branchjob import (
             BranchJob,
             )
@@ -279,7 +280,8 @@ class UniversalJobSource:
         dbconfig.override(
             dbuser=config.launchpad.dbuser, isolation_level='read_committed')
 
-        for baseclass in [BranchJob, BranchMergeProposalJob, DistributionJob]:
+        for baseclass in [
+            ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob]:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
             if derived is not None:
                 cls.clearStore(store)

@@ -4232,8 +4232,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.getUniqueString(), self.getUniqueString())
         return getUtility(ISSHKeySet).new(person, public_key)
 
-    def makeBlob(self, blob=None, expires=None):
+    def makeBlob(self, blob=None, expires=None, blob_file=None):
         """Create a new TemporaryFileStorage BLOB."""
+        if blob_file is not None:
+            blob_path = os.path.join(
+                config.root, 'lib/lp/bugs/tests/testfiles', blob_file)
+            blob_file = open(blob_path)
+            blob = blob_file.read()
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
