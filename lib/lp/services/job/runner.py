@@ -244,8 +244,11 @@ class BaseJobRunner(LazrJobRunner):
             return False
         return True
 
-    def runJob(self, job):
-        super(BaseJobRunner, self).runJob(IRunnableJob(job))
+    def runJob(self, job, fallback):
+        super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
+
+    def retryErrorTypes(self, job):
+        return removeSecurityProxy(job).retry_error_types
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.

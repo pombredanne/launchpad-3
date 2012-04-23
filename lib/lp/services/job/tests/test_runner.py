@@ -149,7 +149,7 @@ class TestJobRunner(TestCaseWithFactory):
         """Ensure status is set to completed when a job runs to completion."""
         job_1, job_2 = self.makeTwoJobs()
         runner = JobRunner(job_1)
-        runner.runJob(job_1)
+        runner.runJob(job_1, None)
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
 
@@ -305,7 +305,7 @@ class TestJobRunner(TestCaseWithFactory):
         """When a job fails, the failure needs to be recorded."""
         job = RaisingJob('boom')
         runner = JobRunner([job])
-        self.assertRaises(RaisingJobException, runner.runJob, job)
+        self.assertRaises(RaisingJobException, runner.runJob, job, None)
         # Abort the transaction to confirm that the update of the job status
         # has been committed.
         transaction.abort()
@@ -330,7 +330,7 @@ class TestJobRunner(TestCaseWithFactory):
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
         with self.expectedLog('Scheduling retry due to RetryError'):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -338,11 +338,11 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runJob_exceeding_max_retries(self):
         """If a job exceeds maximum retries, it should raise normally."""
         job = RaisingRetryJob('completion')
-        JobRunner([job]).runJob(job)
+        JobRunner([job]).runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         runner = JobRunner([job])
         with ExpectedException(RetryError, ''):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -370,7 +370,7 @@ class TestJobRunner(TestCaseWithFactory):
         job = NullJob('suspended')
         job.run = FakeMethod(failure=SuspendJobException())
         runner = JobRunner([job])
-        runner.runJob(job)
+        runner.runJob(job, None)
 
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
