@@ -9,6 +9,12 @@ __all__ = [
     'IProductJobSource',
     'IProductNotificationJob',
     'IProductNotificationJobSource',
+    'ICommercialExpiredJob',
+    'ICommercialExpiredJobSource',
+    'ISevenDayCommercialExpirationJob',
+    'ISevenDayCommercialExpirationJobSource',
+    'IThirtyDayCommercialExpirationJob',
+    'IThirtyDayCommercialExpirationJobSource',
     ]
 
 from zope.interface import Attribute
@@ -118,4 +124,54 @@ class IProductNotificationJobSource(IProductJobSource):
         :param reviewer: The user or agent sending the email.
         :param reply_to_commercial: Set the reply_to property to the
             commercial email address.
+        """
+
+
+class ISevenDayCommercialExpirationJob(IProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+
+class ISevenDayCommercialExpirationJobSource(IProductNotificationJobSource):
+    """An interface for creating `ISevenDayCommercialExpirationJob`s."""
+
+    def create(product, reviewer):
+        """Create a new `ISevenDayCommercialExpirationJob`.
+
+        :param product: An IProduct.
+        :param reviewer: The user or agent sending the email.
+        """
+
+
+class IThirtyDayCommercialExpirationJob(IProductNotificationJob):
+    """A job that sends an email about an expiring commercial subscription."""
+
+
+class IThirtyDayCommercialExpirationJobSource(IProductNotificationJobSource):
+    """An interface for creating `IThirtyDayCommercialExpirationJob`s."""
+
+    def create(product, reviewer):
+        """Create a new `IThirtyDayCommercialExpirationJob`.
+
+        :param product: An IProduct.
+        :param reviewer: The user or agent sending the email.
+        """
+
+
+class ICommercialExpiredJob(IProductNotificationJob):
+    """A job that sends an email about an expired commercial subscription.
+
+    This job is responsible for deactivating the project if it has a
+    proprietary license or deactivating the commercial features if the
+    license is open.
+    """
+
+
+class ICommercialExpiredJobSource(IProductNotificationJobSource):
+    """An interface for creating `IThirtyDayCommercialExpirationJob`s."""
+
+    def create(product, reviewer):
+        """Create a new `ICommercialExpiredJob`.
+
+        :param product: An IProduct.
+        :param reviewer: The user or agent sending the email.
         """

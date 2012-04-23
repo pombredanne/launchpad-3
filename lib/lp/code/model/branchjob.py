@@ -96,6 +96,11 @@ from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.database.locking import (
+    AdvisoryLockHeld,
+    LockType,
+    try_advisory_lock,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
@@ -300,6 +305,10 @@ class BranchScanJob(BranchJobDerived):
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
 
+    max_retries = 5
+
+    retry_error_types = (AdvisoryLockHeld,)
+
     config = config.branchscanner
 
     @classmethod
@@ -312,8 +321,11 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJob`."""
         from lp.services.scripts import log
         with server(get_ro_server(), no_replace=True):
-            bzrsync = BzrSync(self.branch, log)
-            bzrsync.syncBranchAndClose()
+            lock = try_advisory_lock(
+                LockType.BRANCH_SCAN, self.branch.id, Store.of(self.branch))
+            with lock:
+                bzrsync = BzrSync(self.branch, log)
+                bzrsync.syncBranchAndClose()
 
     @classmethod
     @contextlib.contextmanager

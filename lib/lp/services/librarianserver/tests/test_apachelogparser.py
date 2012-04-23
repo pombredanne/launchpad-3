@@ -106,7 +106,6 @@ class TestLibrarianLogFileParsing(TestCase):
             self.logger.getLogBuffer().strip(),
             'INFO Parsed 1 lines resulting in 1 download stats.')
 
-        date = datetime(2008, 6, 13)
         self.assertEqual(downloads,
             {'15018215': {datetime(2008, 6, 13): {'US': 1}}})
 

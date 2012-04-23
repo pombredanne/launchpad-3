@@ -1098,6 +1098,18 @@ class TestBugChanges(TestCaseWithFactory):
             expected_notification=expected_notification,
             bug=source_package_bug)
 
+    def test_private_bug_target_change_doesnt_add_everyone(self):
+        # Retargeting a private bug doesn't add all subscribers for the
+        # target.
+        old_product = self.factory.makeProduct()
+        new_product = self.factory.makeProduct()
+        subscriber = self.factory.makePerson()
+        new_product.addBugSubscription(subscriber, subscriber)
+        bug = self.factory.makeBug(product=old_product, private=True)
+        bug.default_bugtask.transitionToTarget(new_product)
+        self.assertNotIn(subscriber, bug.getDirectSubscribers())
+        self.assertNotIn(subscriber, bug.getIndirectSubscribers())
+
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task records an entry in
         # BugActivity and BugNotification.

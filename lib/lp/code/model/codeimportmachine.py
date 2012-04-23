@@ -28,7 +28,6 @@ from lp.code.interfaces.codeimportmachine import (
     ICodeImportMachine,
     ICodeImportMachineSet,
     )
-from lp.services.config import config
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,

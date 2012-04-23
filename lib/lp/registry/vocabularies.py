@@ -65,6 +65,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -2227,6 +2228,8 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
 
 class InformationTypeVocabulary(SimpleVocabulary):
+
+    implements(IEnumeratedType)
 
     def __init__(self):
         types = [

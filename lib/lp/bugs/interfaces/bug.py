@@ -214,7 +214,7 @@ class IBugPublic(IPrivacy):
     information_type = exported(
         Choice(
             title=_('Information Type'), vocabulary=InformationType,
-            required=False, readonly=True,
+            required=True, readonly=True, default=InformationType.PUBLIC,
             description=_(
                 'The type of information contained in this bug report.')))
 
@@ -892,10 +892,10 @@ class IBugEdit(Interface):
     @operation_parameters(
         information_type=copy_field(IBugPublic['information_type']),
         )
-    @call_with(who=REQUEST_USER)
+    @call_with(who=REQUEST_USER, from_api=True)
     @export_write_operation()
     @operation_for_version("devel")
-    def transitionToInformationType(information_type, who):
+    def transitionToInformationType(information_type, who, from_api=False):
         """Set the information type for this bug.
 
         :information_type: The `InformationType` to transition to.

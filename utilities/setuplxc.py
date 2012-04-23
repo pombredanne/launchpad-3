@@ -55,8 +55,10 @@ APT_REPOSITORIES = (
     )
 DEPENDENCIES_DIR = '~/dependencies'
 DHCP_FILE = '/etc/dhcp/dhclient.conf'
-HOST_PACKAGES = ['ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
-    'python-shell-toolbox']
+HOST_PACKAGES = [
+    'ssh', 'lxc', 'libvirt-bin', 'bzr', 'testrepository',
+    'python-shelltoolbox', 'subunit',
+    ]
 HOSTS_FILE = '/etc/hosts'
 MAILNAME_FILE = '/etc/mailname'
 LP_APACHE_MODULES = 'proxy proxy_http rewrite ssl deflate headers'
@@ -1029,6 +1031,13 @@ def create_lxc(user, lxcname, ssh_key_path):
         ])
     if exit_code:
         raise SetupLXCError('Unable to create the LXC container.')
+    # XXX 2012-04-18 frankban bug=974584:
+    #     Add a line to the container's fstab to be able to create semaphores
+    #     in lxc. This workaround needs to be removed once the lxc bug is
+    #     resolved for lucid containers too.
+    file_append(
+        '/var/lib/lxc/{}/fstab'.format(lxcname),
+        'none dev/shm tmpfs defaults 0 0\n')
     subprocess.call(['lxc-start', '-n', lxcname, '-d'])
     # Set up root ssh key.
     user_authorized_keys = os.path.expanduser(
