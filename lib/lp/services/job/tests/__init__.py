@@ -15,6 +15,7 @@ from contextlib import contextmanager
 
 from testtools.content import text_content
 
+from lp.testing.fixture import CaptureOops
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -54,14 +55,20 @@ def monitor_celery():
 
 @contextmanager
 def block_on_job(test_case=None):
-    with monitor_celery() as responses:
-        yield
-    try:
-        responses[-1].wait(30)
-    finally:
-        if test_case is not None and responses[-1].traceback is not None:
-            test_case.addDetail(
-                'Worker traceback', text_content(responses[-1].traceback))
+    with CaptureOops() as capture:
+        with monitor_celery() as responses:
+            yield
+        try:
+            responses[-1].wait(30)
+        finally:
+            if test_case is not None and responses[-1].traceback is not None:
+                test_case.addDetail(
+                    'Worker traceback', text_content(responses[-1].traceback))
+        if test_case is not None:
+            capture.sync()
+            for oops in capture.oopses:
+                test_case.addDetail(
+                    'oops', text_content(str(oops)))
 
 
 def pop_remote_notifications():
