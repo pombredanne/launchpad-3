@@ -4237,8 +4237,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if blob_file is not None:
             blob_path = os.path.join(
                 config.root, 'lib/lp/bugs/tests/testfiles', blob_file)
-            blob_file = open(blob_path)
-            blob = blob_file.read()
+            blob = open(blob_path).read()
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
