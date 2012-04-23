@@ -74,7 +74,7 @@ class _TestResultsMixin:
         # Only check for the presence of setup's configuration step; more
         # detailed checking is needlessly brittle.
 
-        # A windmill test is required to ensure that the call actually
+        # A yuixhr test is required to ensure that the call actually
         # succeeded, by checking the link class for 'js-action'.
         setup = ('{content_box: "#structural-subscription-content-box"});')
         self.assertTrue(setup in self.contents)
