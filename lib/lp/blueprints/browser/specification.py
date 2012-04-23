@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationEditStatusView',
     'SpecificationEditView',
     'SpecificationEditWhiteboardView',
+    'SpecificationEditWorkItemsView',
     'SpecificationGoalDecideView',
     'SpecificationGoalProposeView',
     'SpecificationLinkBranchView',
@@ -44,6 +45,8 @@ from subprocess import (
     Popen,
     )
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -57,11 +60,13 @@ from zope.app.form.browser import (
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import (
     implementer,
     Interface,
+    providedBy,
     )
 from zope.schema import (
     Bool,
@@ -72,22 +77,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
+from lp import _
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
@@ -123,7 +113,23 @@ from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
+from lp.services.config import config
+from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class INewSpecification(Interface):
@@ -194,23 +200,24 @@ class NewSpecificationView(LaunchpadFormView):
 
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
         self.transform(data)
         spec = getUtility(ISpecificationSet).new(
-            owner = self.user,
-            name = data.get('name'),
-            title = data.get('title'),
-            specurl = data.get('specurl'),
-            summary = data.get('summary'),
-            product = data.get('product'),
-            drafter = data.get('drafter'),
-            assignee = data.get('assignee'),
-            approver = data.get('approver'),
-            distribution = data.get('distribution'),
-            definition_status = data.get('definition_status'))
+            owner=self.user,
+            name=data.get('name'),
+            title=data.get('title'),
+            specurl=data.get('specurl'),
+            summary=data.get('summary'),
+            product=data.get('product'),
+            drafter=data.get('drafter'),
+            assignee=data.get('assignee'),
+            approver=data.get('approver'),
+            distribution=data.get('distribution'),
+            definition_status=data.get('definition_status'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
@@ -410,7 +417,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal',
+             'whiteboard', 'proposegoal', 'workitems',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
@@ -520,6 +527,11 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
+    def workitems(self):
+        text = 'Edit work items'
+        return Link('+workitems', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
         if self.context.linked_branches.count() > 0:
             text = 'Link to another branch'
@@ -561,6 +573,10 @@ class SpecificationView(SpecificationSimpleView):
     @property
     def page_title(self):
         return self.label
+
+    @property
+    def page_description(self):
+        return self.context.summary
 
     def initialize(self):
         # The review that the user requested on this spec, if any.
@@ -643,6 +659,14 @@ class SpecificationView(SpecificationSimpleView):
             hide_empty=False)
 
     @property
+    def workitems_text_widget(self):
+        """The Work Items text as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['workitems_text'], title="Work Items",
+            edit_view='+workitems', edit_title='Edit work items',
+            hide_empty=False)
+
+    @property
     def direction_widget(self):
         return BooleanChoiceWidget(
             self.context, ISpecification['direction_approved'],
@@ -671,6 +695,12 @@ class SpecificationEditSchema(ISpecification):
             "The state of progress being made on the actual "
             "implementation or delivery of this feature."))
 
+    workitems_text = WorkItemsText(
+        title=_('Work Items'), required=True,
+        description=_(
+            "Work items for this specification input in a text format. "
+            "Your changes will override the current work items."))
+
 
 class SpecificationEditView(LaunchpadEditFormView):
 
@@ -679,7 +709,7 @@ class SpecificationEditView(LaunchpadEditFormView):
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
-    custom_widget('specurl', TextWidget, width=60)
+    custom_widget('specurl', TextWidget, displayWidth=60)
 
     @property
     def adapters(self):
@@ -703,6 +733,20 @@ class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
     custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditWorkItemsView(SpecificationEditView):
+    label = 'Edit specification work items'
+    field_names = ['workitems_text']
+    custom_widget('workitems_text', TextAreaWidget, height=15)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        old_spec = Snapshot(self.context, providing=providedBy(self.context))
+        self.context.setWorkItems(data['workitems_text'])
+        notify(ObjectModifiedEvent(
+            self.context, old_spec, edited_fields=['workitems_text']))
+        self.next_url = canonical_url(self.context)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):

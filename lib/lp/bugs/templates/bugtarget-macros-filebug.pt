@@ -327,6 +327,65 @@
   </tr>
 </metal:bug_reporting_guidelines>
 
+<metal:privacy define-macro="bug-reporting-privacy">
+    <tal:private condition="view/isPrivate">
+        <script type="text/javascript">
+            LPJS.use('lp.app.privacy',  function(Y) {
+                Y.on('domready', function() {
+                   var cfg = {
+                        notification_text: "This report will be private. "
+                            + "You can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.privacy.display_privacy_notification();
+                });
+            });
+        </script>
+    </tal:private>
+    <tal:flip-privacy>
+        <script type="text/javascript">
+            LPJS.use('node-event-delegate', 'lp.app.privacy', function(Y) {
+                var setup_information_type = function() {
+                    var itypes_table = Y.one('.radio-button-widget');
+                    itypes_table.delegate('click', function() {
+                        var private_type = (Y.Array.indexOf(
+                            LP.cache.private_types, this.get('value')) >= 0);
+                        if (private_type) {
+                            Y.lp.app.privacy.display_privacy_notification();
+                        } else {
+                            Y.lp.app.privacy.hide_privacy_notification();
+                        }
+                        }, "input[name='field.information_type']");
+                };
+                var setup_security_related = function() {
+                    var cfg = {
+                      notification_text: "This report will be private "
+                          + "because it is a security vulnerability. You "
+                          + "can disclose it later."
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    var sec = Y.one('[id="field.security_related"]');
+                    sec.on('change', function() {
+                      var checked = sec.get('checked');
+                      if (checked) {
+                          Y.lp.app.privacy.display_privacy_notification();
+                      } else {
+                          Y.lp.app.privacy.hide_privacy_notification();
+                      }
+                    });
+                };
+                Y.on('domready', function() {
+                    if (LP.cache.show_information_type_in_ui) {
+                        setup_information_type();
+                    } else {
+                        setup_security_related();
+                    }
+                });
+            });
+        </script>
+    </tal:flip-privacy>
+</metal:privacy>
+
 <metal:similar-bugs define-macro="display-similar-bugs">
   <tal:results-intro-with-summary condition="view/show_summary_in_results">
     <p id="filebug-query-heading">
@@ -452,7 +511,7 @@
       because in that situation we're showing the form after an error
       message and in that context the message makes no sense.
     </tal:comment>
-    <p style="margin-top: 1em" tal:condition="view/contextUsesMalone">
+    <p tal:condition="view/contextUsesMalone">
       <input id="bug-not-already-reported" type="button"
              name="field.bug_already_reported_as"
              value="No, I need to report a new bug" />

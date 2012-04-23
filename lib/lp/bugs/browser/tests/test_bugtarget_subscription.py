@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugtarget import TargetSubscriptionView
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_view
 
 

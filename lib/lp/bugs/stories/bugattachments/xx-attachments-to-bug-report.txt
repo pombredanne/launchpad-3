@@ -22,8 +22,8 @@ If we add an attachment to the bug report...
 
     >>> import StringIO
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.testing import login, logout
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login("test@canonical.com")
     >>> bug_11 = getUtility(IBugSet).get(11)
@@ -72,7 +72,7 @@ Patch attachments are shown before non-patch attachments
     >>> logout()
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> print extract_text(browser.contents)
-    Bug #11 in Jokosher...
+    Bug #11 ...
     ...Patches...
     ...a patch...
     ...Bug attachments...

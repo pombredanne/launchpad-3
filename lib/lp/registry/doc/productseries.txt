@@ -7,13 +7,13 @@ translations, version control, etc. We call these entities
 ProductSeries.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.productseries import IProductSeries
     >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
 
@@ -73,7 +73,7 @@ owner or driver can call Product.newSeries().
     ...
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> emacs_series = firefox.newSeries(
     ...     firefox.owner , 'emacs', summary,
     ...     releasefileglob='ftp://gnu.org/emacs*.gz')
@@ -90,7 +90,7 @@ When a driver creates a series, he is also the driver of the new series
 to make him the release manager.
 
     >>> firefox.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
     >>> print emacs2.driver.name
     driver
@@ -112,9 +112,9 @@ Let's check that the new series is properly associated to its product.
 
 A driver for an IProduct or IProjectGroup cannot modify a product series.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> print emacs_series.owner.name
     name12
     >>> print emacs_series.driver
@@ -125,9 +125,9 @@ A driver for an IProduct or IProjectGroup cannot modify a product series.
 A person appointed to the series driver has the release manager role and can
 edit a product series.
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> emacs_series.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> check_permission('launchpad.Edit', emacs_series)
     True
 
@@ -196,7 +196,7 @@ is informational.
 We will create two specs for onezero and use them to demonstrate the
 filtering.
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> from lp.blueprints.model.specification import Specification
     >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
@@ -223,7 +223,7 @@ them informational.
     >>> b.declineBy(b.owner)
     >>> shim = b.updateLifecycleStatus(b.owner)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 If we ask for ALL specs we should see them both.
@@ -359,7 +359,7 @@ We test these rules below. We will create the project, product and
 series directly so that we don't have to deal with security permissions
 checks when setting and resetting the driver attributes.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> mark = getUtility(IPersonSet).getByName('mark')

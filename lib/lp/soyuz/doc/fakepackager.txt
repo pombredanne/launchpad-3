@@ -4,7 +4,7 @@ FakePackager allows us to easily create minimal debian packages to be
 used in tests.
 
     >>> import os
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
+    >>> from lp.soyuz.tests.fakepackager import FakePackager
 
 
 == Setup and reset ==
@@ -20,7 +20,7 @@ directory we call 'sandbox'. It's where the packages will get created.
     >>> os.path.exists(packager.sandbox_path)
     True
 
-Source 'name' and 'version' and 'gpg_key_id' are set according the
+Source 'name' and 'version' and 'gpg_key_id' are set according to the
 give arguments passed in the initialization.
 
     >>> print packager.name
@@ -128,8 +128,7 @@ The error was raised because no signing key was set.
     None
 
 A GPG key can only be set on initialization so we will have to create a
-new packager passing a filename available in our test_keys directory
-(see launchpad/ftests/keys_for_tests.py)
+new packager passing a filename available in our test_keys directory.
 
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
@@ -160,7 +159,7 @@ basically checking we pass the right arguments to it.
     >>> content = open(changesfile_path).read()
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
@@ -225,7 +224,7 @@ In order to upload packages we have to be logged in as an administrator.
 It also requires the public test gpg keys to be imported in the
 database.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 The default upload target is ubuntu/hoary and since we will deal with
@@ -234,7 +233,7 @@ enable uploads for it.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.component import IComponentSet
 

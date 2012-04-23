@@ -41,13 +41,12 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -56,6 +55,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationLifecycleStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -63,6 +63,9 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
+    )
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItem,
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
@@ -76,7 +79,10 @@ from lp.services.fields import (
     PublicPersonChoice,
     Summary,
     Title,
+    WorkItemsText,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 
 
 class SpecNameField(ContentNameField):
@@ -288,11 +294,22 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
+    work_items = List(
+        description=_("All non-deleted work items for this spec, sorted by "
+                      "their 'sequence'"),
+        value_type=Reference(schema=ISpecificationWorkItem), readonly=True)
     whiteboard = exported(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
+        as_of="devel")
+    workitems_text = exported(
+        WorkItemsText(
+            title=_('Work Items'), required=False, readonly=True,
+            description=_(
+                "Work items for this specification input in a text format. "
+                "Your changes will override the current work items.")),
         as_of="devel")
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
@@ -569,6 +586,25 @@ class ISpecificationEditRestricted(Interface):
     def setImplementationStatus(implementation_status, user):
         """Mutator for implementation_status that calls updateLifeCycle."""
 
+    def newWorkItem(title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
+        """Create a new SpecificationWorkItem."""
+
+    def updateWorkItems(new_work_items):
+        """Update the existing work items to match the given ones.
+
+        First, for every existing work item that is not present on the new
+        list, mark it as deleted. Then, for every tuple in the given list,
+        lookup an existing work item with the same title and update its
+        status, assignee, milestone and sequence (position on the work-items
+        list). If there's no existing work items with that title, we create a
+        new one.
+
+        :param new_work_items: A list of dictionaries containing the following
+            keys: title, status, assignee and milestone.
+        """
+
     def setTarget(target):
         """Set this specification's target.
 
@@ -587,6 +623,16 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
+
+    @mutator_for(ISpecificationPublic['workitems_text'])
+    @operation_parameters(new_work_items=WorkItemsText())
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setWorkItems(new_work_items):
+        """Set work items on this specification.
+
+        :param new_work_items: Work items to set.
+        """
 
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
@@ -666,6 +712,7 @@ class ISpecificationDelta(Interface):
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
     whiteboard = Attribute("The spec whiteboard or None.")
+    workitems_text = Attribute("The spec work items as text or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distroseries = Attribute("The series to which this is targeted.")

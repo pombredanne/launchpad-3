@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -33,36 +33,21 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import (
-    action,
-    canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadView,
-    Navigation,
-    redirection,
-    StandardLaunchpadFacets,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
-from lp.app.browser.tales import CustomizableFormatter
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
 from lp.app.browser.stringformatter import (
     extract_bug_numbers,
     extract_email_addresses,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -80,7 +65,24 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.soyuz.browser.sourcepackagerelease import linkify_changelog
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (

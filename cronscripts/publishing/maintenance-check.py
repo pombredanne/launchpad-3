@@ -2,25 +2,53 @@
 #
 # python port of the nice maintainace-check script by  Nick Barcet
 #
-# taken from:
-#  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
-# (where it will vanish once taken here)
 
-# this warning filter is only needed on older versions of python-apt,
-# once the machine runs lucid it can be removed
-import warnings
-warnings.filterwarnings("ignore", "apt API not stable yet")
-import apt
-warnings.resetwarnings()
-
-import apt_pkg
 import logging
+from optparse import OptionParser
 import os
 import sys
 import urllib2
 import urlparse
 
-from optparse import OptionParser
+import apt
+import apt_pkg
+
+
+class UbuntuMaintenance(object):
+    """ Represents the support timeframe for a regular ubuntu release """
+
+    # architectures that are full supported (including LTS time)
+    PRIMARY_ARCHES = [
+        "i386",
+        "amd64",
+        ]
+
+    # architectures we support (but not for LTS time)
+    SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
+
+    # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
+    SERVER_SEEDS = [
+        "server-ship",
+        "supported-server",
+        ]
+    DESKTOP_SEEDS = [
+        "ship",
+        "supported-desktop",
+        "supported-desktop-extra",
+        ]
+    SUPPORTED_SEEDS = ["all"]
+
+    # normal support timeframe
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("18m", SUPPORTED_SEEDS),
+        ]
+
+    # distro names that we check the seeds for
+    DISTRO_NAMES = [
+        "ubuntu",
+        ]
+
 
 # This is fun! We have a bunch of cases for 10.04 LTS
 #
@@ -30,41 +58,45 @@ from optparse import OptionParser
 #    considered *but* only follow SUPPORT_TIMEFRAME
 #  - anything that is in armel follows SUPPORT_TIMEFRAME
 #
+class LucidUbuntuMaintenance(UbuntuMaintenance):
+    """ Represents the support timeframe for a 10.04 (lucid) LTS release,
+        the exact rules differ from LTS release to LTS release
+    """
 
-# codename of the lts releases
-LTS_RELEASES = ["dapper", "hardy", "lucid"]
+    # lts support timeframe, order is important, least supported must be last
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("5y",  UbuntuMaintenance.SERVER_SEEDS),
+        ("3y",  UbuntuMaintenance.DESKTOP_SEEDS),
+        ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
+        ]
 
-# architectures that are full supported (including LTS time)
-PRIMARY_ARCHES = ["i386", "amd64"]
+    # on a LTS this is significant, it defines what names get LTS support
+    DISTRO_NAMES = [
+        "ubuntu",
+        "kubuntu",
+        ]
 
-# architectures we support (but not for LTS time)
-SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 
-# what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-SERVER_SEEDS = ["supported-server", "server-ship"]
-DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
-SUPPORTED_SEEDS = ["all"]
+class PreciseUbuntuMaintenance(UbuntuMaintenance):
+    """ The support timeframe for the 12.04 (precise) LTS release.
+        This changes the timeframe for desktop packages from 3y to 5y
+    """
 
-# normal support timeframe
-# time, seeds, arches
-SUPPORT_TIMEFRAME = [
-    ("18m", SUPPORTED_SEEDS),
-]
+    # lts support timeframe, order is important, least supported must be last
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("5y", UbuntuMaintenance.SERVER_SEEDS),
+        ("5y", UbuntuMaintenance.DESKTOP_SEEDS),
+        ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
+        ]
 
-# lts support timeframe
-# time, seeds, arches
-SUPPORT_TIMEFRAME_LTS = [
-    ("5y", SERVER_SEEDS),
-    ("3y", DESKTOP_SEEDS),
-    ("18m", SUPPORTED_SEEDS),
-]
+    # on a LTS this is significant, it defines what names get LTS support
+    DISTRO_NAMES = [
+        "ubuntu",
+        "kubuntu",
+        ]
 
-# distro names and if they get LTS support (order is important)
-DISTRO_NAMES_AND_LTS_SUPPORT = [
-    ("ubuntu", True),
-    ("kubuntu", True),
-    ("netbook", False),
-    ]
 
 # Names of the distribution releases that are not supported by this
 # tool. All later versions are supported.
@@ -82,14 +114,15 @@ UNSUPPORTED_DISTRO_RELEASED = [
 
 # germinate output base directory
 BASE_URL = os.environ.get(
-    "MAINTENANCE_CHECK_BASE_URL", 
+    "MAINTENANCE_CHECK_BASE_URL",
     "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
 HINTS_DIR_URL = os.environ.get(
-    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
-    "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
+    "MAINTENANCE_CHECK_HINTS_DIR_URL",
+    "http://people.canonical.com/"
+        "~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
@@ -107,9 +140,9 @@ def get_binaries_for_source_pkg(srcname):
     :return: A list of binary package names.
     """
     pkgnames = set()
-    recs = apt_pkg.GetPkgSrcRecords()
-    while recs.Lookup(srcname):
-        for binary in recs.Binaries:
+    recs = apt_pkg.SourceRecords()
+    while recs.lookup(srcname):
+        for binary in recs.binaries:
             pkgnames.add(binary)
     return pkgnames
 
@@ -168,7 +201,7 @@ def create_and_update_deb_src_source_list(distroseries):
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     try:
-        cache.update(apt.progress.FetchProgress())
+        cache.update()
     except SystemError:
         logging.exception("cache.update() failed")
 
@@ -188,12 +221,12 @@ def get_structure(distroname, version):
 
 
 def expand_seeds(structure, seedname):
-    """ Expand seed by its dependencies using the strucure file.
+    """Expand seed by its dependencies using the strucure file.
 
     :param structure: The content of the STRUCTURE file as string list.
     :param seedname: The name of the seed as string that needs to be expanded.
-    :return: a set() for the seed dependencies (excluding the original
-             seedname)
+    :return: A set() for the seed dependencies (excluding the original
+        seedname).
     """
     seeds = []
     for line in structure:
@@ -206,31 +239,31 @@ def expand_seeds(structure, seedname):
 
 def get_packages_for_seeds(name, distro, seeds):
     """
-    get packages for the given name (e.g. ubuntu) and distro release
+    Get packages for the given name (e.g. ubuntu) and distro release
     (e.g. lucid) that are in the given list of seeds
-    returns a set() of package names
+    returns a set() of package names.
     """
     pkgs_in_seeds = {}
-    for bseed in seeds:
-        for seed in [bseed]: #, bseed+".build-depends", bseed+".seed"]:
-            pkgs_in_seeds[seed] = set()
-            seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
-            logging.debug("looking for '%s'" % seedurl)
-            try:
-                f = urllib2.urlopen(seedurl)
-                for line in f:
-                    # ignore lines that are not a package name (headers etc)
-                    if line[0] < 'a' or line[0] > 'z':
-                        continue
-                    # lines are (package,source,why,maintainer,size,inst-size)
-                    if options.source_packages:
-                        pkgname = line.split("|")[1]
-                    else:
-                        pkgname = line.split("|")[0]
-                    pkgs_in_seeds[seed].add(pkgname.strip())
-                f.close()
-            except Exception, e:
-                logging.error("seed %s failed (%s)" % (seedurl, e))
+    for seed in seeds:
+        pkgs_in_seeds[seed] = set()
+        seedurl = "%s/%s.%s/%s" % (BASE_URL, name, distro, seed)
+        logging.debug("looking for '%s'", seedurl)
+        try:
+            f = urllib2.urlopen(seedurl)
+            for line in f:
+                # Ignore lines that are not package names (headers etc).
+                if line[0] < 'a' or line[0] > 'z':
+                    continue
+                # Each line contains these fields:
+                # (package, source, why, maintainer, size, inst-size)
+                if options.source_packages:
+                    pkgname = line.split("|")[1]
+                else:
+                    pkgname = line.split("|")[0]
+                pkgs_in_seeds[seed].add(pkgname.strip())
+            f.close()
+        except Exception as e:
+            logging.error("seed %s failed (%s)" % (seedurl, e))
     return pkgs_in_seeds
 
 
@@ -292,7 +325,6 @@ def get_packages_support_time(structure, name, pkg_support_time,
                     pkg_support_time[pkg] += " (%s)" % ", ".join(
                         what_seeds(pkg, pkgs_in_seeds))
 
-
     return pkg_support_time
 
 
@@ -318,6 +350,12 @@ if __name__ == "__main__":
     else:
         distro = "lucid"
 
+    # maintenance class to use
+    klass = globals().get("%sUbuntuMaintenance" % distro.capitalize())
+    if klass is None:
+        klass = UbuntuMaintenance
+    ubuntu_maintenance = klass()
+
     # make sure our deb-src information is up-to-date
     create_and_update_deb_src_source_list(distro)
 
@@ -332,7 +370,7 @@ if __name__ == "__main__":
 
     # go over the distros we need to check
     pkg_support_time = {}
-    for (name, lts_supported) in DISTRO_NAMES_AND_LTS_SUPPORT:
+    for name in ubuntu_maintenance.DISTRO_NAMES:
 
         # get basic structure file
         try:
@@ -342,26 +380,25 @@ if __name__ == "__main__":
             continue
 
         # get dicts of pkgname -> support timeframe string
-        support_timeframe = SUPPORT_TIMEFRAME
-        if lts_supported and distro in LTS_RELEASES:
-            support_timeframe = SUPPORT_TIMEFRAME_LTS
-        else:
-            support_timeframe = SUPPORT_TIMEFRAME
+        support_timeframe = ubuntu_maintenance.SUPPORT_TIMEFRAME
         get_packages_support_time(
             structure, name, pkg_support_time, support_timeframe)
 
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
-    for arch in PRIMARY_ARCHES:
-        rootdir="./aptroot.%s" % distro
-        apt_pkg.Config.Set("APT::Architecture", arch)
+    for arch in ubuntu_maintenance.PRIMARY_ARCHES:
+        rootdir = "./aptroot.%s" % distro
+        apt_pkg.config.set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         try:
-            cache.update(apt.progress.FetchProgress())
+            cache.update()
         except SystemError:
             logging.exception("cache.update() failed")
-        cache.open(apt.progress.OpProgress())
+        cache.open()
         for pkg in cache:
+            # ignore multiarch package names
+            if ":" in pkg.name:
+                continue
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]
                 logging.warn(
@@ -410,12 +447,12 @@ if __name__ == "__main__":
             # go over the supported arches, they are divided in
             # first-class (PRIMARY) and second-class with different
             # support levels
-            for arch in SUPPORTED_ARCHES:
+            for arch in ubuntu_maintenance.SUPPORTED_ARCHES:
                 # ensure we do not overwrite arch-specific overwrites
                 pkgname_and_arch = "%s/%s" % (pkgname, arch)
                 if pkgname_and_arch in pkg_support_time:
                     break
-                if arch in PRIMARY_ARCHES:
+                if arch in ubuntu_maintenance.PRIMARY_ARCHES:
                     # arch with full LTS support
                     print "%s %s %s" % (
                         pkgname_and_arch, SUPPORT_TAG,
@@ -425,4 +462,4 @@ if __name__ == "__main__":
                     # support_timeframe
                     print "%s %s %s" % (
                         pkgname_and_arch, SUPPORT_TAG,
-                        SUPPORT_TIMEFRAME[0][0])
+                        ubuntu_maintenance.SUPPORT_TIMEFRAME[-1][0])

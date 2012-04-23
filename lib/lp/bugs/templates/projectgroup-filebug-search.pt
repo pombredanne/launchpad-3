@@ -6,11 +6,8 @@
         metal:use-macro="view/macro:page/main_only">
 
   <metal:block fill-slot="head_epilogue">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:content="string:var yui_base='${yui}';"></script>
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
       function(Y) {
       Y.on('domready', function() {
       Y.lp.bugs.filebug_dupefinder.setup_dupes();
@@ -21,20 +18,7 @@
       });
       });
     </script>
-    <tal:private condition="view/isPrivate">
-        <script type="text/javascript">
-            LPS.use('lp.app.privacy',  function(Y) {
-                Y.on('domready', function() {
-                    var cfg = {
-                        notification_text: "This report till be private, "
-                            + "though you can disclose it later."
-                    };
-                    Y.lp.app.privacy.setup_privacy_notification(cfg);
-                    Y.lp.app.privacy.display_privacy_notification();
-                });
-            });
-        </script>
-    </tal:private>
+    <metal:privacy use-macro="view/@@+filebug-macros/bug-reporting-privacy"/>
   </metal:block>
 
   <div metal:fill-slot="heading">

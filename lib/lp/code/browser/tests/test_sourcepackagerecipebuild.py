@@ -14,15 +14,9 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tags_by_class,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp import canonical_url
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -31,6 +25,12 @@ from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -59,7 +59,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         super(TestSourcePackageRecipeBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test')
+            displayname='Master Chef', name='chef')
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')

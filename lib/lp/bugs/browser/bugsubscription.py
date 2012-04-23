@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -31,25 +31,16 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import (
-    check_permission,
-    precache_permission_for_objects,
-    )
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.errors import SubscriptionPrivacyViolation
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
@@ -58,6 +49,15 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.menu import structured
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -81,7 +81,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
         except SubscriptionPrivacyViolation as error:
             self.setFieldError('person', unicode(error))
         else:
-            if person.isTeam():
+            if person.is_team:
                 message = '%s team has been subscribed to this bug.'
             else:
                 message = '%s has been subscribed to this bug.'
@@ -159,6 +159,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    page_title = 'Subscription options'
 
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.
@@ -555,6 +556,8 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
             # If we have made it to here then the logged in user can see the
             # bug, hence they can see any subscribers.
+            # The security adaptor will do the job also but we don't want or
+            # need the expense of running several complex SQL queries.
             precache_permission_for_objects(
                         self.request, 'launchpad.LimitedView', [person])
             subscriber = {
@@ -582,7 +585,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
 
         others = list(bug.getIndirectSubscribers())
         # If we have made it to here then the logged in user can see the
-        # bug, hence they can see any subscribers.
+        # bug, hence they can see any indirect subscribers.
         include_private = self.user is not None
         if include_private:
             precache_permission_for_objects(

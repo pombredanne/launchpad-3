@@ -11,15 +11,10 @@ __all__ = [
     'SpecificationDependencyTreeView',
     ]
 
+from lazr.restful.interface import copy_field
 from zope.interface import Interface
 
-from lazr.restful.interface import copy_field
-
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -27,6 +22,10 @@ from lp.app.browser.launchpadform import (
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
     )
 
 

@@ -12,10 +12,10 @@ import os
 
 import pytz
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,

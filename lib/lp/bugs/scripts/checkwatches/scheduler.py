@@ -10,11 +10,11 @@ __all__ = [
 
 import transaction
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.bugs.interfaces.bugwatch import BUG_WATCH_ACTIVITY_SUCCESS_STATUSES
 from lp.bugs.model.bugwatch import BugWatch
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.looptuner import TunableLoop
 
 # The maximum additional delay in days that a watch may have placed upon
 # it.

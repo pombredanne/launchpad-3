@@ -10,7 +10,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
@@ -20,6 +19,7 @@ from lp.services.mail.sendmail import (
     append_footer,
     format_address,
     )
+from lp.services.webapp import canonical_url
 
 
 def send(comment, event):

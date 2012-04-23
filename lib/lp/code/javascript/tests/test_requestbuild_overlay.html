@@ -1,67 +1,93 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
+<!--
+Copyright 2012 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <html>
   <head>
-  <title>Launchpad lp.code.requestbuild_overlay module</title>
+      <title>Test requestbuild_overlay</title>
 
-  <!-- YUI and test setup -->
-  <script type="text/javascript"
-          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
-  </script>
-  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
-  <script type="text/javascript">
-    // The code expects this to be present.
-    var LP = {
-        cache: {},
-        links: {}
-    };
-  </script>
-  <script type="text/javascript"
-          src="../../../app/javascript/testing/testrunner.js"></script>
-  <script type="text/javascript"
-          src="../../../app/javascript/testing/mockio.js"></script>
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      <link rel="stylesheet"
+      href="../../../../../build/js/yui/test/assets/skins/sam/test.css" />
 
- <script type="text/javascript"
-          src="../../../app/javascript/client.js"></script>
- <script type="text/javascript"
-          src="../../../app/javascript/extras/extras.js"></script>
-  <script type="text/javascript"
-          src="../../../app/javascript/anim/anim.js"></script>
-  <script type="text/javascript"
-          src="../../../app/javascript/overlay/overlay.js"></script>
-  <script type="text/javascript"
-          src="../../../app/javascript/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
+              src="../../../../../build/js/lp/app/testing/testrunner.js"></script>
 
-  <!-- The module under test -->
-  <script type="text/javascript" src="../requestbuild_overlay.js"></script>
+      <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
 
-  <!-- The test suite -->
-  <script type="text/javascript" src="test_requestbuild_overlay.js"></script>
-</head>
-<body class="yui3-skin-sam">
-<div id="testbed"></div>
-<script type="text/x-template" id="builds-target-template">
-  <table>
-    <tr class="package-build" id="build-1"></tr>
-    <tr class="package-build" id="build-2"></tr>
-    </table>
-</script>
-<script type="text/x-template" id="requestbuilds-form-template">
-  <div class="form" id="launchpad-form-widgets">
-    <select id="field.archive" name="field.archive" size="1" >
-      <option selected="selected" value="mark/ppa">
-        PPA for Mark Shuttleworth</option>
-    </select>
-    <input name="field.archive-empty-marker" type="hidden" value="1" />
-    <label for="field.distroseries.0">
-      <input checked="checked" type="checkbox"
-           id="field.distroseries.0" name="field.distroseries" value="3" />
-      Hoary</label>
-    <label for="field.distroseries.">
-      <input checked="checked" type="checkbox"
-           id="field.distroseries.1" name="field.distroseries" value="1" />
-      Warty</label>
-    <input name="field.distroseries-empty-marker" type="hidden" value="1" />
-  </div>
-</script>
-</body>
+      <!-- Dependencies -->
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/client.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/extras/extras.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/anim/anim.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/testing/mockio.js"></script>
+
+
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../requestbuild_overlay.js"></script>
+
+      <!-- Any css assert for this module. -->
+      <!-- <link rel="stylesheet" href="../assets/requestbuild_overlay-core.css" /> -->
+
+      <!-- The test suite. -->
+      <script type="text/javascript" src="test_requestbuild_overlay.js"></script>
+
+      <script type="text/javascript">
+          // The code expects this to be present.
+          var LP = {
+              cache: {},
+              links: {}
+          };
+      </script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <!-- <li>lp.large_indicator.test</li> -->
+            <li>lp.requestbuild_overlay.test</li>
+        </ul>
+
+        <div id="testbed"></div>
+        <script type="text/x-template" id="builds-target-template">
+          <table>
+            <tr class="package-build" id="build-1"></tr>
+            <tr class="package-build" id="build-2"></tr>
+            </table>
+        </script>
+        <script type="text/x-template" id="requestbuilds-form-template">
+          <div class="form" id="launchpad-form-widgets">
+            <select id="field.archive" name="field.archive" size="1" >
+              <option selected="selected" value="mark/ppa">
+                PPA for Mark Shuttleworth</option>
+            </select>
+            <input name="field.archive-empty-marker" type="hidden" value="1" />
+            <label for="field.distroseries.0">
+              <input checked="checked" type="checkbox"
+                   id="field.distroseries.0" name="field.distroseries" value="3" />
+              Hoary</label>
+            <label for="field.distroseries.">
+              <input checked="checked" type="checkbox"
+                   id="field.distroseries.1" name="field.distroseries" value="1" />
+              Warty</label>
+            <input name="field.distroseries-empty-marker" type="hidden" value="1" />
+          </div>
+        </script>
+
+    </body>
 </html>

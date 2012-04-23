@@ -54,24 +54,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import browserLanguages
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -137,6 +120,23 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -225,7 +225,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     """The get involved menu."""
     usedfor = IProductSeriesInvolved
     links = [
-        'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
+        'report_bug', 'help_translate', 'register_blueprint']
 
     @property
     def view(self):
@@ -235,20 +235,12 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     def pillar(self):
         return self.view.context.product
 
-    def submit_code(self):
-        target = canonical_url(
-            self.pillar, view_name='+addbranch', rootsite='code')
-        enabled = self.view.codehosting_usage == ServiceUsage.LAUNCHPAD
-        return Link(
-            target, 'Submit code', icon='code', enabled=enabled)
-
 
 class ProductSeriesInvolvementView(PillarView):
     """Encourage configuration of involvement links for project series."""
 
     implements(IProductSeriesInvolved)
     has_involvement = True
-    visible_disabled_link_names = ['submit_code']
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
@@ -458,7 +450,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     def browserLanguages(self):
         """The languages the user's browser requested."""
-        return browserLanguages(self.request)
+        return browser_languages(self.request)
 
     @property
     def request_import_link(self):
@@ -809,16 +801,12 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
 
 
 LINK_LP_BZR = 'link-lp-bzr'
-CREATE_NEW = 'create-new'
 IMPORT_EXTERNAL = 'import-external'
 
 
 BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
     SimpleTerm(LINK_LP_BZR, LINK_LP_BZR,
                _("Link to a Bazaar branch already on Launchpad")),
-    SimpleTerm(CREATE_NEW, CREATE_NEW,
-               _("Create a new, empty branch in Launchpad and "
-                 "link to this series")),
     SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
                _("Import a branch hosted somewhere else")),
     ))
@@ -934,10 +922,9 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         vocab = widget.vocabulary
 
         (self.branch_type_link,
-         self.branch_type_create,
          self.branch_type_import) = [
             render_radio_widget_part(widget, value, current_value)
-            for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
+            for value in (LINK_LP_BZR, IMPORT_EXTERNAL)]
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
@@ -945,10 +932,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'branch_location',
                 'The branch location must be set.')
-
-    def _validateCreateNew(self, data):
-        """Validate data for create new case."""
-        self._validateBranch(data)
 
     def _validateImportExternal(self, data):
         """Validate data for import external case."""
@@ -1026,10 +1009,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             # Mark other widgets as non-required.
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
                                'branch_name', 'branch_owner'], False)
-        elif branch_type == CREATE_NEW:
-            self._setRequired(
-                ['branch_location', 'repo_url', 'rcs_type', 'cvs_module'],
-                False)
         elif branch_type == IMPORT_EXTERNAL:
             rcs_type = data.get('rcs_type')
 
@@ -1057,8 +1036,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
             self._validateLinkLpBzr(data)
-        elif branch_type == CREATE_NEW:
-            self._validateCreateNew(data)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
 
@@ -1085,16 +1062,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             branch_name = data.get('branch_name')
             branch_owner = data.get('branch_owner')
 
-            # Create a new branch.
-            if branch_type == CREATE_NEW:
-                branch = self._createBzrBranch(branch_name, branch_owner)
-                if branch is not None:
-                    self.context.branch = branch
-                    self.request.response.addInfoNotification(
-                        'New branch created and linked to the series.')
-
             # Import or mirror an external branch.
-            elif branch_type == IMPORT_EXTERNAL:
+            if branch_type == IMPORT_EXTERNAL:
                 # Either create an externally hosted bzr branch
                 # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')
@@ -1205,7 +1174,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    custom_widget('name', TextWidget, width=20)
+    custom_widget('name', TextWidget, displayWidth=20)
 
     @property
     def label(self):
@@ -1240,7 +1209,7 @@ class ProductSeriesRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s' % (self.context.product.name, self.context.name)
+        return '%s-%s.rdf' % (self.context.product.name, self.context.name)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

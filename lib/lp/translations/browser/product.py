@@ -11,20 +11,20 @@ __all__ = [
     'ProductView',
     ]
 
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.app.enums import service_uses_launchpad
 from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import NavigationMenu
 from lp.translations.browser.translations import TranslationsMixin
 
 

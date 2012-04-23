@@ -5,10 +5,12 @@ The Person class is what we use to represent Launchpad users, teams and
 some people which have done work on the free software community but are
 not Launchpad users.
 
+    >>> from lp.services.mail import stub
+    >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
     ...     IPerson,
@@ -22,14 +24,14 @@ Any Person object (either a person or a team) implements IPerson...
 
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
-    >>> foobar.isTeam()
+    >>> foobar.is_team
     False
 
     >>> verifyObject(IPerson, foobar)
     True
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.isTeam()
+    >>> ubuntu_team.is_team
     True
 
     >>> verifyObject(IPerson, ubuntu_team)
@@ -66,7 +68,7 @@ The IPersonSet utility
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> verifyObject(IPersonSet, personset)
     True
@@ -84,7 +86,7 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     EmailAddressStatus)
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
@@ -108,7 +110,7 @@ caused the entry to be created.
 Since this person has chosen to hide his email addresses they won't be
 visible to other users which are not admins.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login('randomuser@randomhost.com')
     >>> check_permission('launchpad.View', email)
     True
@@ -132,9 +134,6 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email.accountID == p.accountID
-    True
-
     >>> p.setPreferredEmail(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
@@ -142,13 +141,10 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.database.account import Account
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.services.identity.model.account import Account
+    >>> from lp.services.database.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
-    >>> account.activate(
-    ...     "Activated by doc test.",
-    ...     password=p.password,
-    ...     preferred_email=email)
+    >>> account.reactivate("Activated by doc test.")
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -158,7 +154,7 @@ to the person, and it updates the email address's status.
 
     >>> emailset = getUtility(IEmailAddressSet)
     >>> validated_email = emailset.new(
-    ...     'validated@canonical.com', p, account=p.account)
+    ...     'validated@canonical.com', p)
     >>> validated_email.status
     <DBItem EmailAddressStatus.NEW...
 
@@ -168,16 +164,22 @@ to the person, and it updates the email address's status.
     <DBItem EmailAddressStatus.VALIDATED...
 
 The user can add a new address and set it as the preferred address. The
-setPreferredEmail() method updated the address's status.
+setPreferredEmail() method updated the address's status. This will generate a
+security email notification to the original preferred email address.
 
     >>> preferred_email = emailset.new(
-    ...     'preferred@canonical.com', p, account=p.account)
+    ...     'preferred@canonical.com', p)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.NEW...
 
+    >>> login('validated@canonical.com')
     >>> p.setPreferredEmail(preferred_email)
     >>> preferred_email.status
     <DBItem EmailAddressStatus.PREFERRED...
+    >>> transaction.commit()
+    >>> efrom, eto, emsg = stub.test_emails.pop()
+    >>> eto
+    ['randomuser@randomhost.com']
 
     >>> login(ANONYMOUS)
 
@@ -259,7 +261,7 @@ account into an IPerson.
 
 We can't adapt an account which has no person associated with, though.
 
-    >>> from canonical.launchpad.interfaces.account import (
+    >>> from lp.services.identity.interfaces.account import (
     ...     AccountCreationRationale, IAccountSet)
     >>> personless_account = getUtility(IAccountSet).new(
     ...     AccountCreationRationale.UNKNOWN, 'Display name')
@@ -278,7 +280,7 @@ IPerson objects associated to the accounts we adapt.
 Up to now there was no browser request we could use, so no caching was
 done.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
     >>> print request.annotations.get('launchpad.person_to_account_cache')
     None
@@ -359,7 +361,6 @@ Non-administrators may not change a person's standing.
     ...
     Unauthorized: ...
 
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -388,19 +389,19 @@ Teams
 
 As we said above, the Person class is overloaded to represent teams so
 we may have Person objects which are, in fact, teams. To find out
-whether a given object is a person or a team we can use the isTeam()
-method of IPerson or check if the object provides the ITeam interface.
+whether a given object is a person or a team we can use the is_team
+property of IPerson or check if the object provides the ITeam interface.
 
     >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
-    >>> ddaa.isTeam()
+    >>> ddaa.is_team
     False
 
     >>> ITeam.providedBy(ddaa)
     False
 
     >>> landscape_devs = personset.getByName('landscape-developers')
-    >>> landscape_devs.isTeam()
+    >>> landscape_devs.is_team
     True
 
     >>> ITeam.providedBy(landscape_devs)
@@ -442,7 +443,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -466,7 +467,7 @@ entries into teams.
     ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
     ...     comment='when the ed package was imported into Ubuntu Feisty')
     >>> transaction.commit()
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     False
 
     >>> not_a_person.is_valid_person
@@ -479,11 +480,10 @@ entries into teams.
     # notifications are sent when we add the owner as a member of
     # the team.
 
-    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
     >>> not_a_person.convertToTeam(team_owner=ddaa)
-    >>> not_a_person.isTeam()
+    >>> not_a_person.is_team
     True
 
     >>> ITeam.providedBy(not_a_person)
@@ -491,9 +491,6 @@ entries into teams.
 
     >>> verifyObject(ITeam, not_a_person)
     True
-
-    >>> print removeSecurityProxy(not_a_person).password
-    None
 
 The team owner is also added as an administrator of its team.
 
@@ -644,7 +641,7 @@ team will go to that address.
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
 
-    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> from lp.services.mail.helpers import get_contact_email_addresses
     >>> get_contact_email_addresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
@@ -697,6 +694,7 @@ Private teams can be subscribed to bugs.
     >>> private_team = factory.makeTeam(salgado, name='private-team',
     ...     displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
+    >>> private_team_owner = private_team.teamowner
     >>> bug_subscription = BugSubscription(bug=bug, person=private_team,
     ...     subscribed_by=guadamen)
 
@@ -807,7 +805,7 @@ Anonymous users cannot see non-public teams, such as 'private-team'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login_person(private_team.teamowner)
+    >>> ignored = login_person(private_team_owner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
@@ -858,7 +856,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from lp.services.identity.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()
@@ -1097,9 +1095,8 @@ The method does not return inactive projects.
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> derby.active = False
     >>> for project in mark.getOwnedProjects():
@@ -1269,7 +1266,7 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,31 +6,29 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
-
+from lazr.restful.fields import Reference
+from zope.app.form.browser.interfaces import IBrowserWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.interface import (
     implements,
     Interface,
     )
-from zope.app.form.browser.interfaces import IBrowserWidget
-from zope.app.form.interfaces import IInputWidget
 
-from lazr.restful.fields import Reference
-
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.validators import LaunchpadValidationError
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
-    DistributionVocabulary,
     DistributionSourcePackageVocabulary,
+    DistributionVocabulary,
     ProductVocabulary,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class IThing(Interface):
@@ -185,11 +183,29 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertFalse(self.widget.hasValidInput())
 
-    def test_getInputValue_package(self):
+    def test_getInputValue_package_spn(self):
         # The field value is the package when the package radio button
-        # is selected and the package sub field has valid input.
+        # is selected and the package sub field has official spn.
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
+
+    def test_getInputValue_package_spn_dsp_picker_feature_flag(self):
+        # The field value is the package when the package radio button
+        # is selected and the package sub field has a official dsp.
+        self.widget.request = LaunchpadTestRequest(form=self.form)
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            self.widget.setUpSubWidgets()
+            self.assertEqual(self.package, self.widget.getInputValue())
+
+    def test_getInputValue_package_dsp_dsp_picker_feature_flag(self):
+        # The field value is the package when the package radio button
+        # is selected and the package sub field has valid input.
+        form = self.form
+        form['field.target.package'] = 'fnord/snarf'
+        self.widget.request = LaunchpadTestRequest(form=form)
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            self.widget.setUpSubWidgets()
+            self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_invalid(self):
         # An error is raised when the package is not published in the distro.
@@ -197,7 +213,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         form['field.target.package'] = 'non-existent'
         self.widget.request = LaunchpadTestRequest(form=form)
         message = (
-            "There is no package name 'non-existent' published in Fnord")
+            "There is no package named 'non-existent' published in Fnord.")
         self.assertRaisesWithContent(
             LaunchpadValidationError, message, self.widget.getInputValue)
         self.assertEqual(message, self.widget.error())

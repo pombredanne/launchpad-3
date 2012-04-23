@@ -12,8 +12,15 @@ from optparse import OptionParser
 import sys
 
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.scripts import logger_options, logger
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.services.scripts import (
+    logger,
+    logger_options,
+    )
+
 
 mapping = {
     # u'\u2022': u' ',  # space represented as a dot.

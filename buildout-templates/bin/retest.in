@@ -28,8 +28,7 @@ import fileinput
 import os
 import re
 import sys
-from itertools import takewhile
-from pprint import pprint
+from itertools import takewhile, imap
 
 ${python-relative-path-setup}
 
@@ -38,6 +37,14 @@ TEST = "${buildout:directory/bin/test}"
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
+
+# Regular expression to remove terminal color escapes.
+COLOR_RE = re.compile("\x1b[[][0-9;]+m")
+
+
+def decolorize(text):
+    """Remove all ANSI terminal color escapes from `text`."""
+    return COLOR_RE.sub("", text)
 
 
 def get_test_name(test):
@@ -50,6 +57,8 @@ def get_test_name(test):
     match = STORY_RE.match(test)
     if match:
         return match.group(1)
+    else:
+        return test
 
 
 def gen_test_lines(lines):
@@ -80,16 +89,18 @@ def extract_tests(lines):
 def run_tests(tests):
     """Given a set of tests, run them as one group."""
     print "Running tests:"
-    pprint(sorted(tests))
-    args = ['-vv']
+    for test in tests:
+        print "  %s" % test
+    args = ['-vvc'] if sys.stdout.isatty() else ['-vv']
     for test in tests:
         args.append('-t')
-        args.append(test)
+        args.append(re.escape(test))
     os.execl(TEST, TEST, *args)
 
 
 if __name__ == '__main__':
-    tests = extract_tests(fileinput.input())
+    lines = imap(decolorize, fileinput.input())
+    tests = extract_tests(lines)
     if len(tests) >= 1:
         run_tests(tests)
     else:

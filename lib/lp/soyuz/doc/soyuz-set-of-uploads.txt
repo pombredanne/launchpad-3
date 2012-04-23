@@ -68,7 +68,7 @@ relevant launchpad person.
 
 Import public keyring into current LPDB.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Having set up that infrastructure we need to prepare a breezy distroseries
@@ -79,7 +79,7 @@ for the ubuntutest distribution.
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> ubuntu = Distribution.byName('ubuntu')
@@ -101,7 +101,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
     >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -125,11 +125,12 @@ We need a way to count the items in a queue directory
 And then we need a way to process the uploads from the queue
 
     >>> import logging
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.scripts.soyuz_process_upload import (
     ...     ProcessUpload)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
     ...     """Simulate process-upload.py script run.
     ...
@@ -145,8 +146,7 @@ And then we need a way to process the uploads from the queue
     ...         args.extend(["-s", series])
     ...     # Run script under 'uploader' DB user.  The dbuser argument to the
     ...     # script constructor is ignored, so we must change DB users here.
-    ...     LaunchpadZopelessLayer.txn.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+    ...     switch_dbuser(config.uploader.dbuser)
     ...     process = ProcessUpload(
     ...         'process-upload', dbuser='ignored', test_args=args)
     ...     process.logger = FakeLogger()
@@ -154,12 +154,12 @@ And then we need a way to process the uploads from the queue
     ...         process.logger.setLevel(loglevel)
     ...     process.txn = LaunchpadZopelessLayer.txn
     ...     process.main()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     switch_dbuser('launchpad')
 
 And we need a way to process the accepted queue
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import (
+    >>> from lp.testing import (
     ...     login,
     ...     )
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -198,7 +198,7 @@ given upload into the published state, so here's a very simplistic publisher
     ...     SourcePackagePublishingHistory as SPPH,
     ...     BinaryPackagePublishingHistory as BPPH)
     >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> def simple_publish(distro):
     ...     srcs_to_publish = SPPH.select("""
     ...         SourcePackagePublishingHistory.distroseries = DistroSeries.id
@@ -265,7 +265,10 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     if loglevel is None or loglevel <= logging.INFO:
     ...         print "Upload complete."
 
-    >>> from lp.testing.mail_helpers import pop_notifications
+    >>> from lp.testing.mail_helpers import (
+    ...     pop_notifications,
+    ...     sort_addresses,
+    ...     )
     >>> def read_email():
     ...     """Pop all emails from the test mailbox, and summarize them.
     ...
@@ -274,7 +277,7 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     line.
     ...     """
     ...     for message in pop_notifications(commit=False):
-    ...         print "To:", message['to']
+    ...         print "To:", sort_addresses(message['to'])
     ...         print "Subject:", message['subject']
     ...         print message.get_payload()[0].as_string()
     ...         print ''
@@ -305,8 +308,8 @@ to a different 'bar_1.0.orig.tar.gz'.
 
     >>> read_email()
     To:
-	Foo Bar <foo.bar@canonical.com>,
-	Daniel Silverstone <daniel.silverstone@canonical.com>
+	Daniel Silverstone <daniel.silverstone@canonical.com>,
+	Foo Bar <foo.bar@canonical.com>
     Subject: bar_1.0-3_source.changes rejected
     ...
 
@@ -642,7 +645,7 @@ Upload the i386 binary:
 
 Should still just have one build, and it should now be FULLYBUILT.
 
-    >>> from canonical.database.sqlbase import clear_current_connection_cache
+    >>> from lp.services.database.sqlbase import clear_current_connection_cache
     >>> clear_current_connection_cache()
 
     >>> builds = list(BinaryPackageBuild.selectBy(
@@ -669,7 +672,7 @@ First a couple helpers.
 
     >>> import os
     >>> import stat
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
 
     >>> def run_publish_distro(careful=False, careful_publishing=False):
     ...     """Run publish-distro on ubuntutest with given extra args.

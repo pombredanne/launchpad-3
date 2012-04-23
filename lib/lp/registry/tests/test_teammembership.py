@@ -22,24 +22,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    flush_database_caches,
-    flush_database_updates,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.testing.systemdocs import (
-    default_optionflags,
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -59,9 +41,17 @@ from lp.registry.model.teammembership import (
 from lp.registry.scripts.teamparticipation import (
     check_teamparticipation_circular,
     check_teamparticipation_consistency,
-    check_teamparticipation_self,
     ConsistencyError,
     fetch_team_participation_info,
+    fix_teamparticipation_consistency,
+    )
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_caches,
+    flush_database_updates,
+    sqlvalues,
     )
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -74,14 +64,25 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
+from lp.testing.systemdocs import (
+    default_optionflags,
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 class TestTeamMembershipSetScripts(TestCaseWithFactory):
     """Separate Testcase to separate out examples required dbuser switches.
 
-    This uses the LaunchpadZoplelessLayer to provide layer.switchDbUser
+    This uses the LaunchpadZopelessLayer to provide switch_dbuser.
     """
 
     layer = LaunchpadZopelessLayer
@@ -1066,6 +1067,7 @@ class TestCheckTeamParticipationScript(TestCase):
             self.addDetail("stdout", text_content(out))
         if err != "":
             self.addDetail("stderr", text_content(err))
+        DatabaseLayer.force_dirty_database()
         return process.poll(), out, err
 
     def test_no_output_if_no_invalid_entries(self):
@@ -1120,8 +1122,6 @@ class TestCheckTeamParticipationScript(TestCase):
             re.search('missing TeamParticipation entries for zzzzz', err))
         self.failUnless(
             re.search('spurious TeamParticipation entries for zzzzz', err))
-        self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', err))
 
     def test_report_circular_team_references(self):
         """The script reports circular references between teams.
@@ -1157,32 +1157,58 @@ class TestCheckTeamParticipationScript(TestCase):
         self.assertEqual(0, len(out))
         self.failUnless(re.search('Circular references found', err))
 
-    def test_report_spurious_participants_of_people(self):
+    # A script to create two new people, where both participate in the first,
+    # and first is missing a self-participation.
+    script_create_inconsistent_participation = """
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6969, 'bobby', 'Dazzler', 1);
+        INSERT INTO
+            Person (id, name, displayname, creation_rationale)
+            VALUES (6970, 'nobby', 'Jazzler', 1);
+        INSERT INTO
+            TeamParticipation (person, team)
+            VALUES (6970, 6969);
+        DELETE FROM
+            TeamParticipation
+            WHERE person = 6969
+              AND team = 6969;
+        """
+
+    def test_check_teamparticipation_consistency(self):
         """The script reports spurious participants of people.
 
         Teams can have multiple participants, but only the person should be a
         paricipant of him/herself.
         """
-        # Create two new people and make both participate in the first.
-        cursor().execute("""
-            INSERT INTO
-                Person (id, name, displayname, creation_rationale)
-                VALUES (6969, 'bobby', 'Dazzler', 1);
-            INSERT INTO
-                Person (id, name, displayname, creation_rationale)
-                VALUES (6970, 'nobby', 'Jazzler', 1);
-            INSERT INTO
-                TeamParticipation (person, team)
-                VALUES (6970, 6969);
-            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        cursor().execute(self.script_create_inconsistent_participation)
         transaction.commit()
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         errors = check_teamparticipation_consistency(
             logger, fetch_team_participation_info(logger))
-        self.assertEqual(
-            [ConsistencyError("spurious", 6969, [6970])],
-            errors)
+        errors_expected = [
+            ConsistencyError("spurious", 6969, [6970]),
+            ConsistencyError("missing", 6969, [6969]),
+            ]
+        self.assertContentEqual(errors_expected, errors)
+
+    def test_fix_teamparticipation_consistency(self):
+        """
+        `fix_teamparticipation_consistency` takes an iterable of
+        `ConsistencyError`s and attempts to repair the data.
+        """
+        cursor().execute(self.script_create_inconsistent_participation)
+        transaction.commit()
+        logger = BufferLogger()
+        self.addDetail("log", logger.content)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertNotEqual([], errors)
+        fix_teamparticipation_consistency(logger, errors)
+        errors = check_teamparticipation_consistency(
+            logger, fetch_team_participation_info(logger))
+        self.assertEqual([], errors)
 
     def test_load_and_save_team_participation(self):
         """The script can load and save participation info."""
@@ -1232,11 +1258,10 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         with StormStatementRecorder() as recorder:
-            check_teamparticipation_self(logger)
             check_teamparticipation_circular(logger)
             check_teamparticipation_consistency(
                 logger, fetch_team_participation_info(logger))
-        self.assertThat(recorder, HasQueryCount(Equals(6)))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
 
 def test_suite():

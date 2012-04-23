@@ -10,7 +10,7 @@ Example:
     % LPCONFIG=development bin/py utilities/create-lp-wadl-and-apidoc.py \\
       "lib/canonical/launchpad/apidoc/wadl-development-%(version)s.xml"
 """
-import _pythonpath  # Not lint, actually needed.
+import _pythonpath
 
 from multiprocessing import Process
 import optparse
@@ -19,17 +19,17 @@ import sys
 
 import bzrlib
 from bzrlib.branch import Branch
+from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import getUtility
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
-from canonical.launchpad.rest.wadl import (
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.webservice.wadl import (
     generate_html,
     generate_json,
     generate_wadl,
     )
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.systemhomes import WebServiceApplication
-from lazr.restful.interfaces import IWebServiceConfiguration
+from lp.systemhomes import WebServiceApplication
 
 
 def write(filename, content, timestamp):

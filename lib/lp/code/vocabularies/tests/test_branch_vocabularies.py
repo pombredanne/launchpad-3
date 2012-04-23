@@ -9,19 +9,19 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.interfaces.product import IProductSet
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BranchVocabTestCase(TestCase):

@@ -6,11 +6,11 @@ The CommercialSubscription class is used to track whether a project,
 which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.commercialsubscription import (
     ...     ICommercialSubscription)
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from lp.testing import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
 
 An open source project should not have a commercial subscription,
@@ -25,7 +25,7 @@ Redeem a voucher and check that the commercial_subscription
 attribute is correct.
 
     >>> owner = bzr.owner
-    >>> owner.isTeam()
+    >>> owner.is_team
     False
     >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
     >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
@@ -37,7 +37,7 @@ attribute is correct.
 
 Commercial subscriptions have zope.Public permissions for reading.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login(ANONYMOUS)
     >>> check_permission('zope.Public', bzr.commercial_subscription)
     True
@@ -54,7 +54,7 @@ regular users, and the project owner all are denied.
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
@@ -306,25 +306,6 @@ is reviewed, but not approved requires a commercial subscription.
     >>> bzr.qualifies_for_free_hosting
     False
 
-If the licenses or license_info attributes are changed, the
-project_reviewed and license_approved attributes are reset to false.
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.license_info = 'foo'
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.licenses = [License.BSD]
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
 When the products license is OTHER_OPEN_SOURCE or the license_info
 attribute contains a description of another license, the product
 requires approval for free hosting. The qualifies_for_free_hosting
@@ -371,7 +352,7 @@ be reviewed. You can search by text in the Product table's full text index
 as well as the license_info field. The results are ordered by date ceated
 then display name.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
     >>> flush_database_updates()
@@ -560,9 +541,8 @@ access it.
     >>> registry_member = factory.makePerson()
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
-    >>> logout()
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
@@ -597,7 +577,7 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', project_set)
     True
     >>> check_permission('launchpad.Moderate', project)

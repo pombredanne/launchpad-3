@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Long-poll infrastructure."""
@@ -39,7 +39,7 @@ def subscribe(target, event_name=u"", request=None):
 def emit(source, event_name=u"", **data):
     """Convenience method to emit a message for an event.
 
-    :param source: Something that can be be adapted to `ILongPollEvent`.
+    :param source: Something that can be adapted to `ILongPollEvent`.
     :param event_name: The name of the event to subscribe to. This is used to
         look up a named adapter from `target` to `ILongPollEvent`.
     :param data: See `ILongPollEvent.emit`.

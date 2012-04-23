@@ -12,7 +12,9 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.scripts.language_pack import export_language_pack
 
 

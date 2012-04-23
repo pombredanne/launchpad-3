@@ -4,7 +4,6 @@
 from doctest import DocTestSuite
 from unittest import TestLoader
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
@@ -20,6 +19,7 @@ from lp.soyuz.scripts.gina.packages import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class FakePackagesMap:

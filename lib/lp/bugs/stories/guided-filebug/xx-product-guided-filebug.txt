@@ -165,7 +165,5 @@ user to the bug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
 
-    >>> user_browser.title
-    "Bug #... in Mozilla Firefox: ...Frankenzombulon reanimated..."
-
-
+    >>> print user_browser.title
+    Bug #...Frankenzombulon reanimated... : Bugs : Mozilla Firefox

@@ -5,11 +5,8 @@
 
 __metaclass__ = type
 
-import unittest
-
 import transaction
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.base import (
     UnknownRemoteImportanceError,
     UnknownRemoteStatusError,
@@ -24,6 +21,7 @@ from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class StatusConvertingExternalBugTracker(TestExternalBugTracker):

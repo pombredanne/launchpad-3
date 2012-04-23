@@ -38,7 +38,7 @@ uploaded files in.
 Now let's copy the files into separate upload directories, as if they'd
 been uploaded over FTP.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.archiveuploader.tagfiles import parse_tagfile
     >>> import glob
     >>> test_files_dir = os.path.join(config.root,
@@ -156,8 +156,8 @@ policy in process-upload.py.
 So, load the GPG key:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
+    >>> from lp.testing.gpgkeys import gpgkeysdir
     >>> gpg_handler = getUtility(IGPGHandler)
     >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
     >>> key_data = open(key_path).read()
@@ -170,7 +170,7 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
+    >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
     >>> from lp.registry.interfaces.gpg import (
     ...     GPGKeyAlgorithm,
@@ -392,7 +392,7 @@ Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
@@ -451,15 +451,6 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     >>> stdout, stderr = process.communicate()
     >>> print stdout
     <BLANKLINE>
-    >>> print stderr
-    DEBUG Enabled by DEFAULT section
-    INFO  Creating lockfile: ...
-    DEBUG     Distribution: ubuntutest
-    ...
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library
-    DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
-    ...
 
     >>> transaction.commit()
 
@@ -541,16 +532,6 @@ Check careful publishing took place, as requested with -C. In careful
 publishing mode, publish-distro will attempt to publish files which are
 already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
-
-    >>> print stderr
-    DEBUG Enabled by DEFAULT section
-    INFO  Creating lockfile: ...
-    DEBUG     Distribution: ubuntutest
-    ...
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
-    DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
-    ...
 
 Check the publishing history again
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,9 +8,10 @@ __all__ = [
     'BinaryPackageView',
     ]
 
-from apt_pkg import ParseDepends
+from apt_pkg import parse_depends
 
-from canonical.launchpad.webapp import Navigation
+from lp.services.webapp import Navigation
+from lp.services.webapp.publisher import LaunchpadView
 from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 
@@ -19,12 +20,8 @@ class BinaryPackageReleaseNavigation(Navigation):
     usedfor = IBinaryPackageRelease
 
 
-class BinaryPackageView:
+class BinaryPackageView(LaunchpadView):
     """View class for BinaryPackage"""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def _relationship_parser(self, content):
         """Wrap the relationship_builder for BinaryPackages.
@@ -33,7 +30,7 @@ class BinaryPackageView:
         IDistroArchSeries.getBinaryPackage as 'getter'.
         """
         getter = self.context.build.distro_arch_series.getBinaryPackage
-        parser = ParseDepends
+        parser = parse_depends
         return relationship_builder(content, parser=parser, getter=getter)
 
     def depends(self):

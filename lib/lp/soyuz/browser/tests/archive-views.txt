@@ -317,7 +317,7 @@ to reload the view.
 
     >>> login('celso.providelo@canonical.com')
     >>> view = create_initialized_view(cprov.archive, name="+index")
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> view.filtered_sources[1].datepublished = UTC_NOW
     >>> login(ANONYMOUS)
@@ -1362,7 +1362,7 @@ the public Ubuntu-team PPA, which is empty.
 The action is performed as a delayed-copy, and the user is informed of
 it via a page notification.
 
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
     >>> for notification in view.request.response.notifications:
     ...     print extract_text(notification.message)
     Packages copied to PPA for Ubuntu Team:

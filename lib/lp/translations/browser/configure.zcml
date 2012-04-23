@@ -10,11 +10,11 @@
     i18n_domain="launchpad">
 <facet facet="translations">
     <browser:url
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         path_expression="string:translations"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         name="+index"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:navigation
@@ -22,7 +22,7 @@
         classes="
             RosettaApplicationNavigation"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+        for="lp.translations.interfaces.translations.IRosettaApplication"
         permission="zope.Public"
         class="lp.translations.browser.translations.RosettaApplicationView"
         layer="lp.translations.publisher.TranslationsLayer">
@@ -40,7 +40,7 @@
             template="../templates/rosetta-portlet-groups.pt"/>
     </browser:pages>
     <browser:page
-      for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+      for="lp.translations.interfaces.translations.IRosettaApplication"
       permission="zope.Public"
       class="lp.translations.browser.translations.TranslatableProductsView"
       layer="lp.translations.publisher.TranslationsLayer"
@@ -126,7 +126,7 @@
         <browser:url
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             path_expression="string:+imports"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.translations.interfaces.translationimportqueue.ITranslationImportQueue"
             name="+index"
@@ -320,7 +320,7 @@
         <browser:url
             for="lp.services.worlddata.interfaces.language.ILanguageSet"
             path_expression="string:+languages"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations"/>
         <browser:page
             for="lp.services.worlddata.interfaces.language.ILanguageSet"
@@ -483,7 +483,7 @@
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
             path_expression="string:+groups"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="translations" />
         <browser:defaultView
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"

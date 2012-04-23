@@ -20,8 +20,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeries,
@@ -167,9 +167,8 @@ Not found as empty list:
 See distroseries-publishing-lookups.txt for more information.
 
 canUploadToPocket method helps us to decide if an upload is allowed or
-not, according the distroseries status and the upload target pocket.
+not, according to the distroseries status and the upload target pocket.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> hoary = ubuntu['hoary']
@@ -204,6 +203,16 @@ the upload will have to wait for manual approval anyway:
     >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
     True
 
+The PROPOSED pocket is also special.  Pre-release, it may be used for
+staging uploads on their way into the RELEASE pocket; post-release, it may
+be used for staging uploads on their way into the UPDATES pocket.
+
+    >>> warty.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
+    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
+    >>> hoary.canUploadToPocket(PackagePublishingPocket.PROPOSED)
+    True
 
 Package searching
 -----------------
@@ -332,8 +341,8 @@ again" type set of assertions.
 
 Check if the attributes of an DRSPR instance for the just initialized
 distroseries are sane. A DRSPR instance should filter attributes of
-a SPR according the distroseries in question (practically according
-what is published in this distrorelelase)
+a SPR according to the distroseries in question (practically according
+what is published in this distrorelease)
 
 Since the initialize-from-parent procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting
@@ -448,7 +457,7 @@ Packages that need linking and packagings that need upstream information
 
 The distroseries getPrioritizedUnlinkedSourcePackages() method returns
 a prioritized list of `ISourcePackage` objects that need a packaging link to
-an `IProductSeries` to provide the the upstream information to share bugs,
+an `IProductSeries` to provide the upstream information to share bugs,
 translations, and code. Each item in the list is a dict with the 'package',
 total_bugs, and total_messages (translatable messages).
 
@@ -606,7 +615,7 @@ Supersede previous netapplet publication:
     >>> print last_published.status.name
     SUPERSEDED
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> from lp.services.database.sqlbase import get_transaction_timestamp
     >>> last_published.datesuperseded == get_transaction_timestamp()
     True
 
@@ -837,7 +846,7 @@ so that he can edit it.
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_driver = factory.makePerson(name='yo-driver')
     >>> youbuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> youbuntu.full_functionality
     False
 
@@ -856,7 +865,7 @@ Owners of derivative distributions, and admins can create series too, but
 they are not automatically set as the series driver because they always
 have permission to edit the series.
 
-    >>> login_person(youbuntu.owner)
+    >>> ignored = login_person(youbuntu.owner)
     >>> yo_series = youbuntu.newSeries(
     ...     name='forest', displayname='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
@@ -870,9 +879,9 @@ Ubuntu is an `IBaseDistribution` which requires special preparation for
 Soyuz and Translations before a series can be created. Ubuntu driver can
 not create series.
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> ubuntu.driver = yo_driver
-    >>> login_person(yo_driver)
+    >>> ignored = login_person(yo_driver)
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
@@ -884,7 +893,7 @@ not create series.
 Owners and admins of base distributions are the only users who can create a
 series.
 
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> u_series = ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bazaar plugin to run the smart server on Launchpad.
@@ -28,8 +28,6 @@ import tempfile
 import threading
 import time
 
-from bzrlib.commands import Command, register_command
-from bzrlib.option import Option
 from bzrlib import (
     commands,
     errors,
@@ -38,9 +36,18 @@ from bzrlib import (
     trace,
     ui,
     )
-
-from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport
+from bzrlib.commands import (
+    Command,
+    register_command,
+    )
+from bzrlib.option import (
+    Option,
+    RegistryOption,
+    )
+from bzrlib.transport import (
+    get_transport,
+    transport_server_registry,
+    )
 
 
 class cmd_launchpad_server(Command):
@@ -51,47 +58,41 @@ class cmd_launchpad_server(Command):
     aliases = ['lp-serve']
 
     takes_options = [
-        Option('inet',
-               help='serve on stdin/out for use from inetd or sshd'),
-        Option('port',
-               help='listen for connections on nominated port of the form '
-                    '[hostname:]portnumber. Passing 0 as the port number will'
-                    ' result in a dynamically allocated port. Default port is'
-                    ' 4155.',
-               type=str),
-        Option('upload-directory',
-               help='upload branches to this directory. Defaults to '
-                    'config.codehosting.hosted_branches_root.',
-               type=unicode),
-        Option('mirror-directory',
-               help='serve branches from this directory. Defaults to '
-                    'config.codehosting.mirrored_branches_root.'),
-        Option('codehosting-endpoint',
-               help='the url of the internal XML-RPC server. Defaults to '
-                    'config.codehosting.codehosting_endpoint.',
-               type=unicode),
+        Option(
+            'inet',
+            help="serve on stdin/out for use from inetd or sshd"),
+        Option(
+            'port',
+            help=(
+                "listen for connections on nominated port of the form "
+                "[hostname:]portnumber. Passing 0 as the port number will "
+                "result in a dynamically allocated port. Default port is "
+                " 4155."),
+            type=str),
+        Option(
+            'upload-directory',
+            help=(
+                "upload branches to this directory. Defaults to "
+                "config.codehosting.hosted_branches_root."),
+            type=unicode),
+        Option(
+            'mirror-directory',
+            help=(
+                "serve branches from this directory. Defaults to "
+                "config.codehosting.mirrored_branches_root.")),
+        Option(
+            'codehosting-endpoint',
+            help=(
+                "the url of the internal XML-RPC server. Defaults to "
+                "config.codehosting.codehosting_endpoint."),
+            type=unicode),
+        RegistryOption(
+            'protocol', help="Protocol to serve.",
+            lazy_registry=('bzrlib.transport', 'transport_server_registry'),
+            value_switches=True),
         ]
 
     takes_args = ['user_id']
-
-    def get_smart_server(self, transport, port, inet):
-        """Construct a smart server."""
-        if inet:
-            smart_server = medium.SmartServerPipeStreamMedium(
-                sys.stdin, sys.stdout, transport)
-        else:
-            host = medium.BZR_DEFAULT_INTERFACE
-            if port is None:
-                port = medium.BZR_DEFAULT_PORT
-            else:
-                if ':' in port:
-                    host, port = port.split(':')
-                port = int(port)
-            smart_server = server.SmartTCPServer(
-                transport, host=host, port=port)
-            print 'listening on port: ', smart_server.port
-            sys.stdout.flush()
-        return smart_server
 
     def run_server(self, smart_server):
         """Run the given smart server."""
@@ -106,27 +107,49 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
+    def get_host_and_port(self, port):
+        """Return the host and port to run the smart server on.
+
+        If 'port' is None, None will be returned for the host and port.
+
+        If 'port' has a colon in it, the string before the colon will be
+        interpreted as the host.
+
+        :param port: A string of the port to run the server on.
+        :return: A tuple of (host, port), where 'host' is a host name or IP,
+            and port is an integer TCP/IP port.
+        """
+        host = None
+        if port is not None:
+            if ':' in port:
+                host, port = port.split(':')
+            port = int(port)
+        return host, port
+
     def run(self, user_id, port=None, branch_directory=None,
-            codehosting_endpoint_url=None, inet=False):
+            codehosting_endpoint_url=None, inet=False, protocol=None):
         from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server, hooks
         install_oops_handler(user_id)
         four_gig = int(4e9)
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
         seen_new_branch = hooks.SetProcTitleHook()
+        if protocol is None:
+            protocol = transport_server_registry.get()
         lp_server = get_lp_server(
             int(user_id), codehosting_endpoint_url, branch_directory,
             seen_new_branch.seen)
         lp_server.start_server()
-
-        old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
+            old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
             lp_transport = get_transport(lp_server.get_url())
-            smart_server = self.get_smart_server(lp_transport, port, inet)
+            host, port = self.get_host_and_port(port)
             lockdir._DEFAULT_TIMEOUT_SECONDS = 0
-            self.run_server(smart_server)
+            try:
+                protocol(lp_transport, host, port, inet)
+            finally:
+                lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
         finally:
-            lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
             lp_server.stop_server()
 
 
@@ -155,9 +178,9 @@ class LPForkingService(object):
         "fork-env <command>\n<env>\nend\n": Request a new subprocess to be
             started.  <command> is the bzr command to be run, such as "rocks"
             or "lp-serve --inet 12".
-            The immediate response will be the path-on-disk to a directory full
-            of named pipes (fifos) that will be the stdout/stderr/stdin (named
-            accordingly) of the new process.
+            The immediate response will be the path-on-disk to a directory
+            full of named pipes (fifos) that will be the stdout/stderr/stdin
+            (named accordingly) of the new process.
             If a client holds the socket open, when the child process exits,
             the exit status (as given by 'wait()') will be written to the
             socket.
@@ -169,8 +192,8 @@ class LPForkingService(object):
             that should be reset.
 
             fork-env allows you to supply environment variables such as
-            "BZR_EMAIL: joe@foo.com" which will be set in os.environ before the
-            command is run.
+            "BZR_EMAIL: joe@foo.com" which will be set in os.environ before
+            the command is run.
     """
 
     # Design decisions. These are bits where we could have chosen a different
@@ -206,16 +229,16 @@ class LPForkingService(object):
     #       There are several actions that are done when we get a new request.
     #       We have to create the fifos on disk, fork a new child, connect the
     #       child to those handles, and inform the client of the new path (not
-    #       necessarily in that order.) It makes sense to wait to send the path
-    #       message until after the fifos have been created. That way the
+    #       necessarily in that order.) It makes sense to wait to send the
+    #       path message until after the fifos have been created. That way the
     #       client can just try to open them immediately, and the
     #       client-and-child will be synchronized by the open() calls.
     #       However, should the client be the one doing the mkfifo, should the
-    #       server? Who should be sending the message? Should we fork after the
-    #       mkfifo or before.
+    #       server? Who should be sending the message? Should we fork after
+    #       the mkfifo or before?
     #       The current thoughts:
-    #           1) Try to do work in the child when possible. This should allow
-    #              for 'scaling' because the server is single-threaded.
+    #           1) Try to do work in the child when possible. This should
+    #              allow for 'scaling' because the server is single-threaded.
     #           2) We create the directory itself in the server, because that
     #              allows the server to monitor whether the client failed to
     #              clean up after itself or not.
@@ -223,20 +246,20 @@ class LPForkingService(object):
     #              the message back.
     # [Decision #4]
     #   Exit information
-    #       Inform the client that the child has exited on the socket they used
-    #       to request the fork.
-    #       1) Arguably they could see that stdout and stderr have been closed,
-    #          and thus stop reading. In testing, I wrote a client which uses
-    #          select.poll() over stdin/stdout/stderr and used that to ferry
-    #          the content to the appropriate local handle. However for the
-    #          FIFOs, when the remote end closed, I wouldn't see any
+    #       Inform the client that the child has exited on the socket they
+    #       used to request the fork.
+    #       1) Arguably they could see that stdout and stderr have been
+    #          closed, and thus stop reading. In testing, I wrote a client
+    #          which uses select.poll() over stdin/stdout/stderr and used that
+    #          to ferry the content to the appropriate local handle. However
+    #          for the FIFOs, when the remote end closed, I wouldn't see any
     #          corresponding information on the local end. There obviously
     #          wasn't any data to be read, so they wouldn't show up as
     #          'readable' (for me to try to read, and get 0 bytes, indicating
-    #          it was closed). I also wasn't seeing POLLHUP, which seemed to be
-    #          the correct indicator.  As such, we decided to inform the client
-    #          on the socket that they originally made the fork request, rather
-    #          than just closing the socket immediately.
+    #          it was closed). I also wasn't seeing POLLHUP, which seemed to
+    #          be the correct indicator.  As such, we decided to inform the
+    #          client on the socket that they originally made the fork
+    #          request, rather than just closing the socket immediately.
     #       2) We could have had the forking server close the socket, and only
     #          the child hold the socket open. When the child exits, then the
     #          OS naturally closes the socket.
@@ -252,36 +275,37 @@ class LPForkingService(object):
     # [Decision #5]
     #   cleanup once connected
     #       The child process blocks during 'open()' waiting for the client to
-    #       connect to its fifos. Once the client has connected, the child then
-    #       deletes the temporary directory and the fifos from disk. This means
-    #       that there isn't much left for diagnosis, but it also means that
-    #       the client won't leave garbage around if it crashes, etc.
+    #       connect to its fifos. Once the client has connected, the child
+    #       then deletes the temporary directory and the fifos from disk. This
+    #       means that there isn't much left for diagnosis, but it also means
+    #       that the client won't leave garbage around if it crashes, etc.
     #       Note that the forking service itself still monitors the paths
     #       created, and will delete garbage if it sees that a child failed to
     #       do so.
     # [Decision #6]
     #   os._exit(retcode) in the child
     #       Calling sys.exit(retcode) raises an exception, which then bubbles
-    #       up the stack and runs exit functions (and finally statements). When
-    #       I tried using it originally, I would see the current child bubble
-    #       all the way up the stack (through the server code that it fork()
-    #       through), and then get to main() returning code 0. The process
-    #       would still exit nonzero. My guess is that something in the atexit
-    #       functions was failing, but that it was happening after logging, etc
-    #       had been shut down.
+    #       up the stack and runs exit functions (and finally statements).
+    #       When I tried using it originally, I would see the current child
+    #       bubble all the way up the stack (through the server code that it
+    #       fork() through), and then get to main() returning code 0. The
+    #       process would still exit nonzero. My guess is that something in
+    #       the atexit functions was failing, but that it was happening after
+    #       logging, etc had been shut down.
     #       Any global state from the child process should be flushed before
-    #       run_bzr_* has exited (which we *do* wait for), and any other global
-    #       state is probably a remnant from the service process. Which will be
-    #       cleaned up by the service itself, rather than the child.
+    #       run_bzr_* has exited (which we *do* wait for), and any other
+    #       global state is probably a remnant from the service process. Which
+    #       will be cleaned up by the service itself, rather than the child.
     #       There is some concern that log files may not get flushed, so we
     #       currently call sys.exitfunc() first. The main problem is that I
-    #       don't know any way to *remove* a function registered via 'atexit()'
-    #       so if the forking service has some state, we my try to clean it up
-    #       incorrectly.
+    #       don't know any way to *remove* a function registered via
+    #       'atexit()' so if the forking service has some state, we my try to
+    #       clean it up incorrectly.
     #       Note that the bzr script itself uses sys.exitfunc(); os._exit() in
-    #       the 'bzr' main script, as the teardown time of all the python state
-    #       was quite noticeable in real-world runtime. As such, bzrlib should
-    #       be pretty safe, or it would have been failing for people already.
+    #       the 'bzr' main script, as the teardown time of all the python
+    #       state was quite noticeable in real-world runtime. As such, bzrlib
+    #       should be pretty safe, or it would have been failing for people
+    #       already.
     # [Decision #7]
     #   prefork vs max children vs ?
     #       For simplicity it seemed easiest to just fork when requested. Over
@@ -305,17 +329,23 @@ class LPForkingService(object):
     #       much as we know about what went wrong.
 
     DEFAULT_PATH = '/var/run/launchpad_forking_service.sock'
-    DEFAULT_PERMISSIONS = 00660 # Permissions on the master socket (rw-rw----)
-    WAIT_FOR_CHILDREN_TIMEOUT = 5*60 # Wait no more than 5 min for children
+
+    # Permissions on the master socket (rw-rw----)
+    DEFAULT_PERMISSIONS = 00660
+
+    # Wait no more than 5 minutes for children.
+    WAIT_FOR_CHILDREN_TIMEOUT = 5 * 60
+
     SOCKET_TIMEOUT = 1.0
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
-    WAIT_FOR_REQUEST_TIMEOUT = 1.0 # No request should take longer than this to
-                                   # be read
-    CHILD_CONNECT_TIMEOUT = 120   # If we get a fork() request, but nobody
-                                  # connects just exit
-                                  # On a heavily loaded server, it could take a
-                                  # couple secs, but it should never take
-                                  # minutes
+
+    # No request should take longer than this to be read.
+    WAIT_FOR_REQUEST_TIMEOUT = 1.0
+
+    # If we get a fork() request, but nobody connects, just exit.
+    # On a heavily loaded server it could take a few seconds, but it
+    # should never take minutes.
+    CHILD_CONNECT_TIMEOUT = 120
 
     _fork_function = os.fork
 
@@ -334,7 +364,8 @@ class LPForkingService(object):
         self._child_connect_timeout = self.CHILD_CONNECT_TIMEOUT
 
     def _create_master_socket(self):
-        self._server_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._server_socket = socket.socket(
+            socket.AF_UNIX, socket.SOCK_STREAM)
         self._server_socket.bind(self.master_socket_path)
         if self._perms is not None:
             os.chmod(self.master_socket_path, self._perms)
@@ -346,22 +377,21 @@ class LPForkingService(object):
         self._server_socket.close()
         try:
             os.remove(self.master_socket_path)
-        except (OSError, IOError), e:
+        except (OSError, IOError):
             # If we don't delete it, then we get 'address already in
-            # use' failures
-            trace.mutter('failed to cleanup: %s'
-                         % (self.master_socket_path,))
+            # use' failures.
+            trace.mutter('failed to cleanup: %s' % (self.master_socket_path,))
 
     def _handle_sigchld(self, signum, frm):
-        # We don't actually do anything here, we just want an interrupt (EINTR)
-        # on socket.accept() when SIGCHLD occurs.
+        # We don't actually do anything here, we just want an interrupt
+        # (EINTR) on socket.accept() when SIGCHLD occurs.
         pass
 
     def _handle_sigterm(self, signum, frm):
         # Unregister this as the default handler, 2 SIGTERMs will exit us.
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
-        # SIGTERM should also generate EINTR on our wait loop, so this should
-        # be enough
+        # SIGTERM should also generate EINTR on our wait loop, so this
+        # should be enough.
         self._should_terminate.set()
 
     def _register_signals(self):
@@ -401,12 +431,12 @@ class LPForkingService(object):
     def _open_handles(self, base_path):
         """Open the given file handles.
 
-        This will attempt to open all of these file handles, but will not block
-        while opening them, timing out after self._child_connect_timeout
+        This will attempt to open all of these file handles, but will not
+        block while opening them, timing out after self._child_connect_timeout
         seconds.
 
-        :param base_path: The directory where all FIFOs are located
-        :return: (stdin_fid, stdout_fid, stderr_fid)
+        :param base_path: The directory where all FIFOs are located.
+        :return: (stdin_fid, stdout_fid, stderr_fid).
         """
         stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
         # These open calls will block until another process connects (which
@@ -420,7 +450,7 @@ class LPForkingService(object):
         for path, flags in to_open:
             try:
                 fids.append(os.open(path, flags))
-            except OSError, e:
+            except OSError:
                 # In production code, signal.alarm will generally just kill
                 # us. But if something installs a signal handler for SIGALRM,
                 # do what we can to die gracefully.
@@ -441,11 +471,12 @@ class LPForkingService(object):
     def _cleanup_fifos(self, base_path):
         """Remove the FIFO objects and directory from disk."""
         stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
-        # Now that we've opened the handles, delete everything so that we don't
-        # leave garbage around. Because the open() is done in blocking mode, we
-        # know that someone has already connected to them, and we don't want
-        # anyone else getting confused and connecting.
-        # See [Decision #5]
+        # Now that we've opened the handles, delete everything so that
+        # we don't leave garbage around.  Because the open() is done in
+        # blocking mode, we know that someone has already connected to
+        # them, and we don't want anyone else getting confused and
+        # connecting.
+        # See [Decision #5].
         os.remove(stdin_path)
         os.remove(stdout_path)
         os.remove(stderr_path)
@@ -453,10 +484,11 @@ class LPForkingService(object):
 
     def _bind_child_file_descriptors(self, base_path):
         # Note: by this point bzrlib has opened stderr for logging
-        #       (as part of starting the service process in the first place).
-        #       As such, it has a stream handler that writes to stderr. logging
-        #       tries to flush and close that, but the file is already closed.
-        #       This just supresses that exception
+        # (as part of starting the service process in the first place).
+        # As such, it has a stream handler that writes to stderr.
+        # logging tries to flush and close that, but the file is already
+        # closed.
+        # This just supresses that exception.
         stdin_fid, stdout_fid, stderr_fid = self._open_handles(base_path)
         logging.raiseExceptions = False
         sys.stdin.close()
@@ -480,7 +512,7 @@ class LPForkingService(object):
 
     def become_child(self, command_argv, path):
         """We are in the spawned child code, do our magic voodoo."""
-        retcode = 127 # Failed in a bad way, poor cleanup, etc.
+        retcode = 127  # Failed in a bad way, poor cleanup, etc.
         try:
             # Stop tracking new signals
             self._unregister_signals()
@@ -491,23 +523,24 @@ class LPForkingService(object):
             self._bind_child_file_descriptors(path)
             retcode = self._run_child_command(command_argv)
         finally:
-            # We force os._exit() here, because we don't want to unwind the
-            # stack, which has complex results. (We can get it to unwind back
-            # to the cmd_launchpad_forking_service code, and even back to
-            # main() reporting thereturn code, but after that, suddenly the
-            # return code changes from a '0' to a '1', with no logging of info.
+            # We force os._exit() here, because we don't want to unwind
+            # the stack, which has complex results. (We can get it to
+            # unwind back to the cmd_launchpad_forking_service code, and
+            # even back to main() reporting thereturn code, but after
+            # that, suddenly the return code changes from a '0' to a
+            # '1', with no logging of info.
             os._exit(retcode)
 
     def _run_child_command(self, command_argv):
         # This is the point where we would actually want to do something with
         # our life
-        # TODO: We may want to consider special-casing the 'lp-serve' command.
-        #       As that is the primary use-case for this service, it might be
-        #       interesting to have an already-instantiated instance, where we
-        #       can just pop on an extra argument and be ready to go. However,
-        #       that would probably only really be measurable if we prefork. As
-        #       it looks like ~200ms is 'fork()' time, but only 50ms is
-        #       run-the-command time.
+        # TODO: We may want to consider special-casing the 'lp-serve'
+        # command.  As that is the primary use-case for this service, it
+        # might be interesting to have an already-instantiated instance,
+        # where we can just pop on an extra argument and be ready to go.
+        # However, that would probably only really be measurable if we
+        # prefork. As it looks like ~200ms is 'fork()' time, but only
+        # 50ms is run-the-command time.
         retcode = commands.run_bzr_catch_errors(command_argv)
         self._close_child_file_descriptors()
         trace.mutter('%d finished %r'
@@ -549,9 +582,9 @@ class LPForkingService(object):
     def fork_one_request(self, conn, client_addr, command_argv, env):
         """Fork myself and serve a request."""
         temp_name = tempfile.mkdtemp(prefix='lp-forking-service-child-')
-        # Now that we've set everything up, send the response to the client we
-        # create them first, so the client can start trying to connect to them,
-        # while we fork and have the child do the same.
+        # Now that we've set everything up, send the response to the
+        # client we create them first, so the client can start trying to
+        # connect to them, while we fork and have the child do the same.
         self._children_spawned += 1
         pid = self._fork_function()
         if pid == 0:
@@ -598,10 +631,10 @@ class LPForkingService(object):
             try:
                 conn, client_addr = self._server_socket.accept()
             except self._socket_timeout:
-                pass # run shutdown and children checks
+                pass  # Run shutdown and children checks.
             except self._socket_error, e:
                 if e.args[0] == errno.EINTR:
-                    pass # run shutdown and children checks
+                    pass  # Run shutdown and children checks.
                 elif e.args[0] != errno.EBADF:
                     # We can get EBADF here while we are shutting down
                     # So we just ignore it for now
@@ -611,24 +644,26 @@ class LPForkingService(object):
                     trace.warning("listening socket error: %s", e)
             else:
                 self.log(client_addr, 'connected')
-                # TODO: We should probably trap exceptions coming out of this
-                #       and log them, so that we don't kill the service because
-                #       of an unhandled error
-                # Note: settimeout is used so that a malformed request doesn't
-                #       cause us to hang forever. Note that the particular
-                #       implementation means that a malicious client could
-                #       probably send us one byte every Xms, and we would just
-                #       keep trying to read it. However, as a local service, we
-                #       aren't worrying about it.
+                # TODO: We should probably trap exceptions coming out of
+                # this and log them, so that we don't kill the service
+                # because of an unhandled error.
+                # Note: settimeout is used so that a malformed request
+                # doesn't cause us to hang forever.  Also note that the
+                # particular implementation means that a malicious
+                # client could probably send us one byte every once in a
+                # while, and we would just keep trying to read it.
+                # However, as a local service, we aren't worrying about
+                # it.
                 conn.settimeout(self.WAIT_FOR_REQUEST_TIMEOUT)
                 try:
                     self.serve_one_connection(conn, client_addr)
-                except self._socket_timeout, e:
+                except self._socket_timeout as e:
                     trace.log_exception_quietly()
-                    self.log(client_addr, 'request timeout failure: %s' % (e,))
+                    self.log(
+                        client_addr, 'request timeout failure: %s' % (e,))
                     conn.sendall('FAILURE\nrequest timed out\n')
                     conn.close()
-                except Exception, e:
+                except Exception as e:
                     trace.log_exception_quietly()
                     self.log(client_addr, 'trapped a failure while handling'
                                           ' connection: %s' % (e,))
@@ -752,7 +787,7 @@ class LPForkingService(object):
             command, env = request[9:].split('\n', 1)
         else:
             command = request[5:].strip()
-            env = 'end\n' # No env set
+            env = 'end\n'  # No env set.
         try:
             command_argv = self.command_to_argv(command)
             env = self.parse_env(env)
@@ -814,12 +849,12 @@ class LPForkingService(object):
 class cmd_launchpad_forking_service(Command):
     """Launch a long-running process, where you can ask for new processes.
 
-    The process will block on a given AF_UNIX socket waiting for requests to be
-    made.  When a request is made, it will fork itself and redirect
+    The process will block on a given AF_UNIX socket waiting for requests to
+    be made.  When a request is made, it will fork itself and redirect
     stdout/in/err to fifos on the filesystem, and start running the requested
-    command. The caller will be informed where those file handles can be found.
-    Thus it only makes sense that the process connecting to the port must be on
-    the same system.
+    command.  The caller will be informed where those file handles can be
+    found.  Thus it only makes sense that the process connecting to the port
+    must be on the same system.
     """
 
     aliases = ['lp-service']
@@ -844,7 +879,6 @@ class cmd_launchpad_forking_service(Command):
                 __import__(pyname)
             except ImportError, e:
                 trace.mutter('failed to preload %s: %s' % (pyname, e))
-
 
     def _daemonize(self, pid_filename):
         """Turn this process into a child-of-init daemon.
@@ -935,11 +969,11 @@ class cmd_launchpad_replay(Command):
 
 register_command(cmd_launchpad_replay)
 
-# This list was generated by run lsprofing a spawned child, and looking for
-# <module ...> times, which indicate an import occured. Other possibilities are
-# to just run "bzr lp-serve --profile-imports" manually, and observe what was
-# expensive to import. It doesn't seem very easy to get this right
-# automatically.
+# This list was generated by "run lsprof"ing a spawned child, and
+# looking for <module ...> times, which indicate that an import
+# occurred.  Another option is to run "bzr lp-serve --profile-imports"
+# manually, and observe what was expensive to import.  It doesn't seem
+# very easy to get this right automatically.
 libraries_to_preload = [
     'bzrlib.errors',
     'bzrlib.repofmt.groupcompress_repo',

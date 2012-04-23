@@ -11,7 +11,6 @@ import xmlrpclib
 
 import transaction
 
-from canonical.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker.base import UnparsableBugData
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.testing import (
@@ -19,6 +18,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import ZopelessLayer
 
 
 class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):

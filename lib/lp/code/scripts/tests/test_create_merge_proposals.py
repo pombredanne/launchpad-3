@@ -1,24 +1,22 @@
 #! /usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the create_merge_proposals script"""
 
 from cStringIO import StringIO
 
-from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
+from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestCreateMergeProposals(TestCaseWithFactory):
@@ -38,10 +36,12 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
-        self.assertEqual(
-            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
-            'INFO    Running CreateMergeProposalJob (ID %d) in status Waiting\n'
-            'INFO    Ran 1 CreateMergeProposalJobs.\n' % job.job.id, stderr)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "INFO    Creating lockfile: "
+            "/var/lock/launchpad-create_merge_proposals.lock\n"
+            "INFO    Running <.*CreateMergeProposalJob object at .*?> "
+            "\(ID %s\) in status Waiting\n"
+            "INFO    Ran 1 CreateMergeProposalJobs.\n" % job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
 
@@ -67,8 +67,9 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
-            'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
+            "INFO    Creating lockfile: "
+            "/var/lock/launchpad-create_merge_proposals.lock\n"
+            "INFO    Ran 1 CreateMergeProposalJobs.\n", stderr)
         self.assertEqual('', stdout)
         bmp = branch.landing_candidates[0]
         local_source = bmp.source_branch.getBzrBranch()

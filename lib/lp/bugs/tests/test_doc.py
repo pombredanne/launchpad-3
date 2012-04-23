@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -9,31 +9,29 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.code.tests.test_doc import branchscannerSetUp
-from lp.services.mail.tests.test_doc import (
-    ProcessMailLayer,
-    )
+from lp.services.config import config
+from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,
     uploadQueueSetUp,
+    )
+from lp.testing import (
+    login,
+    logout,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.pages import PageTestSuite
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
     )
 
 
@@ -49,7 +47,7 @@ def lobotomizeSteveASetUp(test):
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    switch_dbuser(config.checkwatches.dbuser)
 
 
 def branchscannerBugsSetUp(test):
@@ -60,7 +58,7 @@ def branchscannerBugsSetUp(test):
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
+    switch_dbuser(config.malone.bugnotification_dbuser)
     setUp(test)
 
 
@@ -70,7 +68,7 @@ def bugNotificationSendingTearDown(test):
 
 def cveSetUp(test):
     lobotomize_stevea()
-    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
+    switch_dbuser(config.cveupdater.dbuser)
     setUp(test)
 
 
@@ -83,7 +81,7 @@ def uploaderBugsSetUp(test):
     """
     lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
     setUp(test)
     test.globs['test_dbuser'] = test_dbuser
 
@@ -105,14 +103,13 @@ def noPrivSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['commit'] = commit
     login('test@canonical.com')
 
 
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+    switch_dbuser(config.updateremoteproduct.dbuser)
 
 
 def updateRemoteProductTeardown(test):

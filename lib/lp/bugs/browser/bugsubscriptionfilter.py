@@ -11,22 +11,22 @@ __all__ = [
 
 from zope.app.form.browser import TextWidget
 
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.browser.widgets.bug import BugTagsFrozenSetWidget
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 def bug_notification_level_description_mapping(displayname):
@@ -119,8 +119,9 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
     custom_widget("importances", LabeledMultiCheckBoxWidget)
     custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
 
-    target = None # Define in concrete subclass to be the target of the
+    # Define in concrete subclass to be the target of the
     # structural subscription that we are modifying.
+    target = None
 
     # This is used by the AdvancedSubscriptionMixin.
     current_user_subscription = None

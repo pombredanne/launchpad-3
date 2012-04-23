@@ -8,7 +8,6 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,
@@ -17,6 +16,7 @@ from lp.archivepublisher.htaccess import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestHtpasswdGeneration(TestCaseWithFactory):

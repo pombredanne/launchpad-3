@@ -29,24 +29,15 @@ from storm.expr import (
     Join,
     LeftJoin,
     )
-from storm.store import Store
 from storm.locals import (
     Int,
     Reference,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from lp.services.messages.model.message import Message
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
     IBugNotificationFilter,
@@ -60,7 +51,14 @@ from lp.bugs.model.bugsubscriptionfilter import (
     )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.database import bulk
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import Message
 
 
 class BugNotification(SQLBase):
@@ -182,28 +180,19 @@ class BugNotificationSet:
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.
         store.flush()
-        sql_values = []
-        for recipient in recipients:
-            reason_body, reason_header = recipients.getReason(recipient)
-            sql_values.append('(%s, %s, %s, %s)' % sqlvalues(
-                bug_notification, recipient, reason_header, reason_body))
 
-        # We add all the recipients in a single SQL statement to make
-        # this a bit more efficient for bugs with many subscribers.
-        if len(sql_values) > 0:
-            store.execute("""
-                INSERT INTO BugNotificationRecipient
-                  (bug_notification, person, reason_header, reason_body)
-                VALUES %s;""" % ', '.join(sql_values))
-
-            if len(recipients.subscription_filters) > 0:
-                filter_link_sql = [
-                    "(%s, %s)" % sqlvalues(bug_notification, filter.id)
-                    for filter in recipients.subscription_filters]
-                store.execute("""
-                    INSERT INTO BugNotificationFilter
-                      (bug_notification, bug_subscription_filter)
-                    VALUES %s;""" % ", ".join(filter_link_sql))
+        bulk.create(
+            (BugNotificationRecipient.bug_notification,
+             BugNotificationRecipient.person,
+             BugNotificationRecipient.reason_body,
+             BugNotificationRecipient.reason_header),
+            [(bug_notification, recipient) + recipients.getReason(recipient)
+             for recipient in recipients])
+        bulk.create(
+            (BugNotificationFilter.bug_notification,
+             BugNotificationFilter.bug_subscription_filter),
+            [(bug_notification, filter)
+             for filter in recipients.subscription_filters])
 
         return bug_notification
 

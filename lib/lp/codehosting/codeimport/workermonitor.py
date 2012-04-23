@@ -22,15 +22,15 @@ from twisted.python import failure
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
-from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
+from lp.services.config import config
+from lp.services.librarian.interfaces.client import IFileUploadClient
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout,
     )
+from lp.services.webapp import errorlog
+from lp.xmlrpc.faults import NoSuchCodeImportJob
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):

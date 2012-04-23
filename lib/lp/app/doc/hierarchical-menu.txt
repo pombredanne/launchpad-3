@@ -22,8 +22,8 @@ First, we need a hierarchy of objects to build upon:
     >>> class ICooker(Interface):
     ...     """A cooker."""
 
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-    >>> from canonical.launchpad.webapp.url import urlappend
+    >>> from lp.services.webapp.interfaces import ICanonicalUrlData
+    >>> from lp.services.webapp.url import urlappend
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
@@ -67,7 +67,7 @@ adapted to IBreadcrumb, then it is added to the breadcrumbs list.
 We'll add the objects to the request's list of traversed objects so
 the hierarchy will discover them.
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> from lp.testing.menu import make_fake_request
     >>> request = make_fake_request(
     ...     'http://launchpad.dev/joy-of-cooking/spam',
     ...     [root, cookbook, recipe])
@@ -84,7 +84,7 @@ IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
     >>> from lp.app.browser.launchpad import Hierarchy
-    >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    >>> from lp.services.webapp.breadcrumb import Breadcrumb
 
     # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
     # have to create fake views and other stuff to test breadcrumbs here. The
@@ -100,7 +100,7 @@ breadcrumbs starting with the breadcrumb closest to the hierarchy root.
     ...     def text(self):
     ...         return self.context.name.capitalize().replace('-', ' ')
 
-    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
+    >>> from lp.services.webapp.interfaces import IBreadcrumb
 
     >>> provideAdapter(TextualBreadcrumb, [ICookbook], IBreadcrumb)
     >>> provideAdapter(TextualBreadcrumb, [IRecipe], IBreadcrumb)
@@ -173,10 +173,10 @@ Building IBreadcrumb objects
 The construction of breadcrumb objects is handled by an IBreadcrumb adapter,
 which adapts a context object and produces an IBreadcrumb object for that
 context.  The default adapter provides the url attribute, but the breadcrumb's
-text must be overriden in subclasses.
+text must be overridden in subclasses.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
+    >>> from lp.services.webapp.interfaces import IBreadcrumb
     >>> breadcrumb = Breadcrumb(cookbook)
     >>> verifyObject(IBreadcrumb, breadcrumb)
     True
@@ -229,9 +229,9 @@ The Hierarchy object is responsible for rendering the HTML for the
 location bar.
 
     >>> from BeautifulSoup import BeautifulSoup
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from lp.testing.pages import extract_text
 
-    # Borrowed from launchpad.testing.pages.print_location()
+    # Borrowed from lp.testing.pages.print_location()
     >>> def print_hierarchy(html):
     ...     soup = BeautifulSoup(html)
     ...     hierarchy = soup.find(attrs={'class': 'breadcrumbs'}).findAll(

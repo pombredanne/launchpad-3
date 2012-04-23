@@ -6,7 +6,7 @@
 """Custom authentication for the SSH server.
 
 Launchpad's SSH server authenticates users against a XML-RPC service (see
-`canonical.launchpad.interfaces.authserver.IAuthServer` and
+`lp.services.authserver.interfaces.IAuthServer` and
 `PublicKeyFromLaunchpadChecker`) and provides richer error messages in the
 case of failed authentication (see `SSHUserAuthServer`).
 """
@@ -40,11 +40,11 @@ from twisted.python import failure
 from zope.event import notify
 from zope.interface import implements
 
-from canonical.launchpad.xmlrpc import faults
 from lp.services.sshserver import events
 from lp.services.sshserver.session import PatchedSSHSession
 from lp.services.sshserver.sftp import FileTransferServer
 from lp.services.twistedsupport.xmlrpc import trap_fault
+from lp.xmlrpc import faults
 
 
 class LaunchpadAvatar(avatar.ConchUser):

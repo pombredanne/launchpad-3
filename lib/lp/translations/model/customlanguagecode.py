@@ -18,8 +18,8 @@ from sqlobject import (
 from storm.expr import And
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 
 

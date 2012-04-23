@@ -162,7 +162,7 @@ of this source in the context distribution are listed.
 
     >>> anon_browser.getLink('See full publishing history').click()
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
     Publishing history : 1.0 : ...testing-dspr... package : ubuntutest
 
@@ -248,7 +248,7 @@ package caches (see doc/package-cache.txt).
 
     # Update the binary package caches to include the testing publication.
     >>> from zope.component import getUtility
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.services.log.logger import BufferLogger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.model.distroseriespackagecache import (

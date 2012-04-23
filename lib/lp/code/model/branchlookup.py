@@ -14,7 +14,11 @@ from lazr.uri import (
     URI,
     )
 from sqlobject import SQLObjectNotFound
-from storm.expr import Join
+from storm.expr import (
+    And,
+    Join,
+    Select,
+    )
 from zope.component import (
     adapts,
     getUtility,
@@ -22,17 +26,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.validators.name import valid_name
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -71,7 +64,18 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
 from lp.services.utils import iter_split
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 def adapt(provided, interface):
@@ -391,14 +395,14 @@ class BranchLookup:
             Branch,
             Join(Person, Branch.owner == Person.id),
             Join(SourcePackageName,
-                 Branch.sourcepackagename == SourcePackageName.id),
-            Join(DistroSeries,
-                 Branch.distroseries == DistroSeries.id),
-            Join(Distribution,
-                 DistroSeries.distribution == Distribution.id)]
+                 Branch.sourcepackagename == SourcePackageName.id)]
         result = store.using(*origin).find(
-            Branch, Person.name == owner, Distribution.name == distribution,
-            DistroSeries.name == distroseries,
+            Branch, Person.name == owner,
+            Branch.distroseriesID == Select(
+                DistroSeries.id, And(
+                    DistroSeries.distribution == Distribution.id,
+                    DistroSeries.name == distroseries,
+                    Distribution.name == distribution)),
             SourcePackageName.name == sourcepackagename,
             Branch.name == branch)
         branch = result.one()

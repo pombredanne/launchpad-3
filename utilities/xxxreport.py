@@ -18,7 +18,7 @@ from textwrap import dedent
 import time
 
 from bzrlib import bzrdir
-from bzrlib.errors import (NotBranchError)
+from bzrlib.errors import NotBranchError
 
 
 excluded_dir_re = re.compile(r'.*(not-used|lib/mailman)')
@@ -219,8 +219,7 @@ class HTMLReport(Report):
     bug_link_re = re.compile(r'\b(bugs?:?) #?(\d+)', re.IGNORECASE)
 
     report_top = """\
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
 <html>
   <head>
     <title>XXX Comment report for Launchpad</title>

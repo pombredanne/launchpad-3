@@ -11,9 +11,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.scripts import log
-from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
@@ -28,6 +25,7 @@ from lp.answers.model.questionjob import (
     QuestionEmailJob,
     QuestionJob,
     )
+from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
@@ -35,12 +33,14 @@ from lp.services.mail.sendmail import (
     format_address,
     format_address_for_person,
     )
+from lp.services.scripts import log
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class QuestionJobTestCase(TestCaseWithFactory):

@@ -7,7 +7,7 @@
 
 This report spits out whatever we consider useful for checking up on and
 diagnosing replication. This report will grow over time, and maybe some
-bits of this will move to seperate monitoring systems or reports.
+bits of this will move to separate monitoring systems or reports.
 
 See the Slony-I documentation for more discussion on the data presented
 by this report.
@@ -16,20 +16,20 @@ by this report.
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
+
 from cgi import escape as html_escape
 from cStringIO import StringIO
 from optparse import OptionParser
 import sys
 
-import _pythonpath
-import replication.helpers
-
-from canonical.database.sqlbase import (
+from lp.services.database.sqlbase import (
     connect,
     quote_identifier,
     sqlvalues,
     )
-from canonical.launchpad.scripts import db_options
+from lp.services.scripts import db_options
+import replication.helpers
 
 
 class Table:

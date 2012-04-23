@@ -5,7 +5,6 @@
 
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.packageset import (
@@ -13,6 +12,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPackagesetSet(TestCaseWithFactory):

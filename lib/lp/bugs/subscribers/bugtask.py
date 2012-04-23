@@ -8,8 +8,6 @@ __all__ = [
     ]
 
 
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.subscribers.bug import (
     add_bug_change_notifications,
@@ -17,6 +15,8 @@ from lp.bugs.subscribers.bug import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.webapp.publisher import canonical_url
 
 
 @block_implicit_flushes

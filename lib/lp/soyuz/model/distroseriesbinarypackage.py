@@ -12,7 +12,7 @@ from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

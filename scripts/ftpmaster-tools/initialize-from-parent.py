@@ -10,10 +10,13 @@ import _pythonpath
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
+from lp.services.config import config
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
     InitializeDistroSeries,
@@ -34,7 +37,7 @@ class InitializeFromParentScript(LaunchpadScript):
             metavar="DISTRO", default="ubuntu", help="Distribution name")
         self.parser.add_option(
             "-a", "--arches", dest="arches",
-            help="A comma-seperated list of arches to limit the child "
+            help="A comma-separated list of arches to limit the child "
             "distroseries to inheriting")
 
     def main(self):

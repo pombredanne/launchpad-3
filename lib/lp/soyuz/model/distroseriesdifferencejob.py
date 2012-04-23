@@ -8,18 +8,12 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
-import simplejson
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -27,6 +21,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
@@ -74,28 +73,6 @@ def create_job(derived_series, sourcepackagename, parent_series):
     return DistroSeriesDifferenceJob(job)
 
 
-def compose_job_insertion_tuple(derived_series, parent_series,
-                                sourcepackagename_id, job_id):
-    """Compose tuple for insertion into `DistributionJob`.
-
-    :param derived_series: Derived `DistroSeries`.
-    :param parent_series: Parent `DistroSeries`.
-    :param sourcepackagename_id: ID of `SourcePackageName`.
-    :param job_id: associated `Job` id.
-    :return: A tuple of: derived distribution id, derived distroseries id,
-        job type, job id, JSON data map.
-    """
-    json = simplejson.dumps(
-        make_metadata(sourcepackagename_id, parent_series.id))
-    return (
-        derived_series.distribution.id,
-        derived_series.id,
-        DistributionJobType.DISTROSERIESDIFFERENCE,
-        job_id,
-        json,
-        )
-
-
 def create_multiple_jobs(derived_series, parent_series):
     """Create `DistroSeriesDifferenceJob`s between parent and derived series.
 
@@ -120,20 +97,15 @@ def create_multiple_jobs(derived_series, parent_series):
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
-
-    job_tuples = [
-        quote(compose_job_insertion_tuple(
-            derived_series, parent_series, sourcepackagename, job_id))
-        for job_id, sourcepackagename in zip(job_ids, sourcepackagenames)]
-
-    store = IStore(DistributionJob)
-    result = store.execute("""
-        INSERT INTO DistributionJob (
-            distribution, distroseries, job_type, job, json_data)
-        VALUES %s
-        RETURNING id
-        """ % ", ".join(job_tuples))
-    return [job_id for job_id, in result]
+    return bulk.create(
+            (DistributionJob.distribution, DistributionJob.distroseries,
+             DistributionJob.job_type, DistributionJob.job_id,
+             DistributionJob.metadata),
+            [(derived_series.distribution, derived_series,
+              DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
+              make_metadata(spn_id, parent_series.id))
+             for job_id, spn_id in zip(job_ids, sourcepackagenames)],
+            get_primary_keys=True)
 
 
 def find_waiting_jobs(derived_series, sourcepackagename, parent_series):

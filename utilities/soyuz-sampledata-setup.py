@@ -22,29 +22,31 @@ __metaclass__ = type
 
 import _pythonpath
 
-import re
 import os
+import re
 import subprocess
 import sys
 from textwrap import dedent
-import transaction
 
+from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.proxy import removeSecurityProxy
 
-from storm.store import Store
-
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR)
-
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.services.scripts.base import LaunchpadScript
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    SLAVE_FLAVOR,
+    )
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -52,8 +54,8 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 

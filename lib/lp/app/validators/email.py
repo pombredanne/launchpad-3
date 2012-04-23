@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import re
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 
 

@@ -15,15 +15,15 @@ from sqlobject import (
 from zope.interface import implements
 from zope.schema import Int
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.errors import (
     ClaimReviewFailed,
     ReviewNotPending,
     UserHasExistingReview,
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeReviewVoteReference(SQLBase):

@@ -10,7 +10,7 @@ You can read more about MO file format on:
 http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#MO-Files
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from lp.services.helpers import string_to_tarfile
     >>> from lp.translations.interfaces.translationexporter import (
     ...     ITranslationFormatExporter)
     >>> from lp.translations.utilities.gettext_mo_exporter import (

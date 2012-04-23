@@ -30,15 +30,15 @@ from zope.security.management import (
     thread_local as zope_security_thread_local,
     )
 
-from canonical.launchpad.webapp.interaction import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.utils import decorate_with
+from lp.services.webapp.interaction import (
     ANONYMOUS,
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.utils import decorate_with
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -59,7 +59,7 @@ def _test_login_impl(participation):
 def login(email, participation=None):
     """Simulates a login, using the specified email.
 
-    If the canonical.launchpad.ftests.ANONYMOUS constant is supplied
+    If the lp.testing.ANONYMOUS constant is supplied
     as the email, you'll be logged in as the anonymous user.
 
     You can optionally pass in a participation to be used.  If no
@@ -69,6 +69,8 @@ def login(email, participation=None):
     setPrincipal(), otherwise it must allow setting its principal attribute.
     """
 
+    if not isinstance(email, basestring):
+        raise ValueError("Expected email parameter to be a string.")
     participation = _test_login_impl(participation)
     setupInteractionByEmail(email, participation)
 
@@ -82,6 +84,7 @@ def login_person(person, participation=None):
             raise ValueError("Got team, expected person: %r" % (person,))
     participation = _test_login_impl(participation)
     setupInteractionForPerson(person, participation)
+    return person
 
 
 def login_team(team, participation=None):
@@ -129,7 +132,7 @@ def logout():
     """Tear down after login(...), ending the current interaction.
 
     Note that this is done automatically in
-    canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
+    LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
     endInteraction()
@@ -138,9 +141,9 @@ def logout():
 def _with_login(login_method, identifier):
     """Make a context manager that runs with a particular log in."""
     interaction = queryInteraction()
-    login_method(identifier)
+    person = login_method(identifier)
     try:
-        yield
+        yield person
     finally:
         if interaction is None:
             logout()

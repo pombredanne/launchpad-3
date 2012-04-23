@@ -13,10 +13,12 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.helpers import filenameToContentType
+from lp.services.helpers import filenameToContentType
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class LibrarianUploader(LaunchpadScript):

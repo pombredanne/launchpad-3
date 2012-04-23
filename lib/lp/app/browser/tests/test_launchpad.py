@@ -5,23 +5,18 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.webapp import (
-    canonical_url,
+from lp.app.browser.launchpad import (
+    iter_view_registrations,
+    LaunchpadRootNavigation,
     )
-from canonical.launchpad.webapp.interfaces import (
-    BrowserNotificationLevel,
-    ILaunchpadRoot,
-    )
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.launchpad import LaunchpadRootNavigation
 from lp.app.errors import GoneError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
@@ -29,12 +24,24 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    ILaunchpadRoot,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.url import urlappend
 from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
     )
 from lp.testing.publication import test_traverse
 from lp.testing.views import create_view
@@ -424,3 +431,37 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
+
+
+class ExceptionHierarchyTestCase(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_exception(self):
+        view = create_view(IndexError('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_zope_exception(self):
+        view = create_view(Unauthorized('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_launchapd_exception(self):
+        view = create_view(NotFound(None, 'test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+
+class TestIterViewRegistrations(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_iter_view_registrations(self):
+        """iter_view_registrations provides only registrations of class."""
+        macros = getMultiAdapter(
+            (object(), LaunchpadTestRequest()), name='+base-layout-macros')
+        names = set(
+            reg.name for reg in iter_view_registrations(macros.__class__))
+        self.assertIn('+base-layout-macros', names)
+        self.assertNotIn('+related-pages', names)

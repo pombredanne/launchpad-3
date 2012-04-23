@@ -31,9 +31,9 @@ from zope.traversing.interfaces import (
     TraversalError,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.config import config
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.utils import (
@@ -153,7 +153,7 @@ def add_word_breaks(word):
     while pos < len(word):
         chunk, pos = next_word_chunk(word, pos, 7, 15)
         broken.append(chunk)
-    return '<wbr></wbr>'.join(broken)
+    return '<wbr />'.join(broken)
 
 
 break_text_pat = re.compile(r'''
@@ -718,7 +718,7 @@ class FormattersAPI:
             return line[:-4]
 
         for line in self.text_to_html().split('\n'):
-            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+            if 'Desired=<wbr />Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
                 # quote matching rules. We do not assume lines that start
                 # with a pipe are quoted passages. dpkg output is often

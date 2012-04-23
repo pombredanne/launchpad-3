@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `CustomUploads`."""
@@ -57,7 +57,7 @@ class TestCustomUpload(unittest.TestCase):
         self.assertEntries(['1.0', '1.1', '1.2', '1.3'])
 
         # `fixCurrentSymlink` will keep only the latest 3 and create a
-        # 'current' symbolic link the the highest one.
+        # 'current' symbolic link the highest one.
         custom_processor.fixCurrentSymlink()
         self.assertEntries(['1.1', '1.2', '1.3', 'current'])
         self.assertEqual(

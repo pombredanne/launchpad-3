@@ -13,7 +13,7 @@ First we create a private PPA for Joe.
     >>> joe = factory.makePerson(name="joe", displayname="Joe Smith")
     >>> joe_private_ppa = factory.makeArchive(
     ...     owner=joe, private=True, name='ppa')
-    >>> logout()
+
 
 == Creating new tokens ==
 
@@ -25,14 +25,14 @@ Create Brad, and his team:
 
     >>> login("admin@canonical.com")
     >>> bradsmith = factory.makePerson(
-    ...     name="bradsmith", displayname="Brad Smith", password="test",
+    ...     name="bradsmith", displayname="Brad Smith",
     ...     email="brad@example.com")
     >>> teambrad = factory.makeTeam(
     ...     owner=bradsmith, displayname="Team Brad", name='teambrad')
 
 Create a subscription for Team Brad to joe's archive:
 
-    >>> login_person(joe)
+    >>> ignored = login_person(joe)
     >>> subscription_to_joe_private_ppa = joe_private_ppa.newSubscription(
     ...     teambrad, joe)
     >>> login("brad@example.com")
@@ -64,7 +64,7 @@ It is not possible to create a second token when one already exists:
 
 So deactivate the old token so that we can create a new token:
 
-    >>> login_person(bradsmith)
+    >>> ignored = login_person(bradsmith)
     >>> token_with_random_string.deactivate()
     >>> login("brad@example.com")
 
@@ -158,7 +158,7 @@ IArchive launchpad.Append (as for creating new tokens) or an admin.
     ...
     Unauthorized:...
 
-    >>> login_person(joe)
+    >>> ignored = login_person(joe)
     >>> new_token.deactivate()
 
 Deactivating sets the date_deactivated value.

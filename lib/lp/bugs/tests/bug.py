@@ -8,7 +8,6 @@ from datetime import (
     timedelta,
     )
 from operator import attrgetter
-import re
 import textwrap
 
 from BeautifulSoup import BeautifulSoup
@@ -16,14 +15,6 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    print_table,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -38,6 +29,14 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    print_table,
+    )
 
 
 def print_direct_subscribers(bug_page):
@@ -140,13 +139,8 @@ def extract_bugtasks(text, show_heat=None):
     for tr in table('tr'):
         if tr.td is not None:
             row_text = extract_text(tr)
-            if show_heat:
-                for img in tr.findAll('img'):
-                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
-                    if mo:
-                        flames = int(mo.group(1))
-                        heat_text = flames * '*' + (4 - flames) * '-'
-                        row_text += '\n' + heat_text
+            if row_text.rsplit('\n')[-1].strip().isdigit() and not show_heat:
+                row_text = row_text[:row_text.rfind('\n')].rstrip()
             rows.append(row_text)
     return rows
 
@@ -302,12 +296,8 @@ def print_bugfilters_portlet_unfilled(browser, target):
     browser.open(
         'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
     table = BeautifulSoup(browser.contents).find('table', 'bug-links')
-    tbody_info, tbody_links = table('tbody')
+    [tbody_info] = table('tbody')
     print_table(tbody_info)
-    for link in tbody_links('a'):
-        text = extract_text(link)
-        if len(text) > 0:
-            print "%s\n  --> %s" % (text, link['href'])
 
 
 def print_bugfilters_portlet_filled(browser, target):

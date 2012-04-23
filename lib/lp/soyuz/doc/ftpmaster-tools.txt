@@ -4,7 +4,7 @@ This test commits to the test database in subprocesses and so needs to
 force the DatabaseLayer to fully tear down and restore the database
 after this test.
 
-  >>> from canonical.testing.layers import DatabaseLayer
+  >>> from lp.testing.layers import DatabaseLayer
   >>> DatabaseLayer.force_dirty_database()
 
 Queue Tool is a script designed to handle queue content.
@@ -14,7 +14,7 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import subprocess
   >>> import os
   >>> import sys
-  >>> from canonical.config import config
+  >>> from lp.services.config import config
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",

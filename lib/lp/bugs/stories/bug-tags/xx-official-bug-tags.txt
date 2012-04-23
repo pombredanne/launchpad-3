@@ -1,4 +1,5 @@
-= Official Bug Tags =
+fficial Bug Tags
+=================
 
 Project admins can manage the official bug tags by following a link
 from the main bug page.
@@ -55,15 +56,14 @@ administrators but not for ordinary users.
 The link is also available for the bug supervisor.
 
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login(ADMIN_EMAIL)
-    >>> supervisor = factory.makePerson(password='g00dpassword')
+    >>> supervisor = factory.makePerson()
     >>> youbuntu = factory.makeProduct(name='youbuntu',
     ...     bug_supervisor=supervisor,
     ...     official_malone=True)
     >>> bug_super_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...         supervisor.preferredemail.email)
+    ...     auth='Basic %s:test' % supervisor.preferredemail.email)
     >>> logout()
     >>> bug_super_browser.open(
     ...     'http://bugs.launchpad.dev/youbuntu')
@@ -82,12 +82,13 @@ The bug supervisor can also set the tags for the product.
     >>> print bug_super_browser.getControl('Official Bug Tags').value
     bar foo
 
-== Official Tags on Bug Pages ==
+Official Tags on Bug Pages
+--------------------------
 
 Official tags are displayed using a different style from unofficial ones.
 They are grouped together at the beginning of the list.
 
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
     >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
     >>> login('foo.bar@canonical.com')
@@ -108,9 +109,11 @@ They are grouped together at the beginning of the list.
     unofficial-tag delta
 
 
-== Entering Official Tags ==
+Entering Official Tags
+----------------------
 
-=== Available Official Tags in Javascript ===
+Available Official Tags in Javascript
+.....................................
 
 The list of available official tags is present on the page as a Javascript
 variable. This list is used to initialize the tag entry widget. The list

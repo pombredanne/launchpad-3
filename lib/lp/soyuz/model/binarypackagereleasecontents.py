@@ -19,7 +19,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.database.lpstorm import IMasterStore
 from lp.soyuz.interfaces.binarypackagepath import IBinaryPackagePathSet
 from lp.soyuz.interfaces.binarypackagereleasecontents import (
     IBinaryPackageReleaseContents,

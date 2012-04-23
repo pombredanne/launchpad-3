@@ -169,7 +169,7 @@
       </dd>
     </dl>
 
-    <dl tal:condition="context/time_zone">
+    <dl id="timezone" tal:condition="context/time_zone">
       <dt>Time zone:
         <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
       </dt>

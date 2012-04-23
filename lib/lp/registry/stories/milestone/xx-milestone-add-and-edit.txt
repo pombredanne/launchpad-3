@@ -73,7 +73,7 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Subscribe to Bugs in Mozilla Firefox 1.0
+    Subscribe : 1.0 : Mozilla Firefox
 
 But we can't subscribe to project milestones, since they are not real objects.
 
@@ -129,7 +129,7 @@ Person reads that they will be deleted too.
 Sample Person chooses the delete button, then reads that the action is
 successful.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> MemcachedLayer.purge()
     >>> driver_browser.getControl('Delete Milestone').click()

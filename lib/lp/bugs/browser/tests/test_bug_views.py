@@ -1,44 +1,44 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Bug Views."""
 
 __metaclass__ = type
 
-import simplejson
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
 from BeautifulSoup import BeautifulSoup
-
-from testtools.matchers import (
-    MatchesAll,
-    Contains,
-    Not,
-    )
-
+import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
     )
+from testtools.matchers import (
+    Contains,
+    MatchesAll,
+    Not,
+    )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.testing.layers import DatabaseFunctionalLayer
-
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -69,7 +69,7 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     """ Tests the rendering of the Also Affects links on the bug index view.
 
     The links are rendered with a css class 'private-disallow' if they are
-    not valid for private bugs.
+    not valid for proprietary bugs.
     """
 
     layer = DatabaseFunctionalLayer
@@ -77,9 +77,11 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     def test_also_affects_links_product_bug(self):
         # We expect that both Also Affects links (for project and distro) are
         # disallowed.
-        bug = self.factory.makeBug()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
+        browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
             browser.contents, 'also-affects-product')
         self.assertIn(
@@ -92,9 +94,12 @@ class TestAlsoAffectsLinks(BrowserTestCase):
     def test_also_affects_links_distro_bug(self):
         # We expect that only the Also Affects Project link is disallowed.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro,
+            information_type=InformationType.PROPRIETARY, owner=owner)
         url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
+        browser = self.getUserBrowser(url, user=owner)
         also_affects = find_tag_by_id(
             browser.contents, 'also-affects-product')
         self.assertIn(
@@ -317,11 +322,11 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # blocked from doing so.
         view = self.createInitializedSecrecyView()
         bug = view.context.bug
+        task = removeSecurityProxy(bug).default_bugtask
         self.assertEqual(1, len(view.request.response.notifications))
         notification = view.request.response.notifications[0].message
-        mute_url = canonical_url(bug.default_bugtask, view_name='+mute')
-        subscribe_url = canonical_url(
-            bug.default_bugtask, view_name='+subscribe')
+        mute_url = canonical_url(task, view_name='+mute')
+        subscribe_url = canonical_url(task, view_name='+subscribe')
         self.assertIn(mute_url, notification)
         self.assertIn(subscribe_url, notification)
 
@@ -352,13 +357,6 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         # subscription information resulting from the update to the bug
         # privacy as well as information used to populate the updated
         # subscribers list.
-        feature_flag = {
-            'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'
-            }
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
-
         person = self.factory.makePerson()
         bug = self.factory.makeBug(owner=person)
         with person_logged_in(person):
@@ -387,7 +385,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             'Discussion', subscription_data['bug_notification_level'])
 
         [subscriber_data] = result_data['subscription_data']
-        subscriber = removeSecurityProxy(bug.default_bugtask).pillar.owner
+        subscriber = removeSecurityProxy(bug).default_bugtask.pillar.owner
         self.assertEqual(
             subscriber.name, subscriber_data['subscriber']['name'])
         self.assertEqual('Discussion', subscriber_data['subscription_level'])
@@ -401,22 +399,38 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         with person_logged_in(owner):
             self.assertTrue(bug.security_related)
 
-    def test_hide_private_option_for_multipillar_bugs(self):
-        # A multi-pillar bug cannot be made private, so hide the form field.
+    def test_set_information_type(self):
+        # Test that the bug's information_type can be updated using the
+        # view with the feature flag on.
         bug = self.factory.makeBug()
-        product = self.factory.makeProduct()
-        self.factory.makeBugTask(bug=bug, target=product)
-        view = create_initialized_view(bug.default_bugtask, '+secrecy')
-        self.assertIsNone(find_tag_by_id(view.render(), 'field.private'))
-
-        # Some teams though need multi-pillar private bugs.
         feature_flag = {
-            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
-            }
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
         with FeatureFixture(feature_flag):
-            view = create_initialized_view(bug.default_bugtask, '+secrecy')
-            self.assertIsNotNone(
-                find_tag_by_id(view.render(), 'field.private'))
+            with person_logged_in(bug.owner):
+                view = create_initialized_view(
+                    bug.default_bugtask, name='+secrecy', form={
+                        'field.information_type': 'USERDATA',
+                        'field.actions.change': 'Change'})
+        self.assertEqual([], view.errors)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_information_type_vocabulary(self):
+        # Test that the view creates the vocabulary correctly.
+        bug = self.factory.makeBug()
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.proprietary_information_type.disabled': 'on',
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        with FeatureFixture(feature_flags):
+            with person_logged_in(bug.owner):
+                view = create_initialized_view(
+                    bug.default_bugtask, name='+secrecy',
+                    principal=bug.owner)
+                html = view.render()
+                soup = BeautifulSoup(html)
+        self.assertEqual(u'Private', soup.find('label', text="Private"))
+        self.assertIs(None, soup.find('label', text="User Data"))
+        self.assertIs(None, soup.find('label', text="Proprietary"))
 
 
 class TestBugTextViewPrivateTeams(TestCaseWithFactory):
@@ -491,3 +505,36 @@ class TestBugCanonicalUrl(BrowserTestCase):
                 'link rel=canonical',
                 'link',
                 dict(rel='canonical', href=expected_url))))
+
+
+class TestBugMessageAddFormView(TestCaseWithFactory):
+    """Tests for the add message to bug view."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_whitespaces_message(self):
+        # Ensure that a message only containing whitespaces is not
+        # considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            }
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        expected_error = u'Either a comment or attachment must be provided.'
+        self.assertEquals(view.errors[0], expected_error)
+
+    def test_whitespaces_message_with_attached_file(self):
+        # If the message only contains whitespaces but a file
+        # is attached then the request has to be considered valid.
+        bug = self.factory.makeBug()
+        form = {
+            'field.comment': u' ',
+            'field.actions.save': u'Post Comment',
+            'field.filecontent': self.factory.makeFakeFileUpload(),
+            'field.patch.used': u'',
+            }
+        login_person(self.factory.makePerson())
+        view = create_initialized_view(
+            bug.default_bugtask, '+addcomment', form=form)
+        self.assertEqual(0, len(view.errors))

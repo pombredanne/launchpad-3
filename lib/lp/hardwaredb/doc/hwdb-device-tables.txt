@@ -22,15 +22,14 @@ row with the same name raises an IntegrityError error.
 
     >>> from storm.store import Store
     >>> store = Store.of(intel_name)
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> vendor_name_set.create('Intel')
     <HWVendorName ...
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -42,8 +41,7 @@ cannot insert another name like "INTEL" or "intel".
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -52,8 +50,7 @@ cannot insert another name like "INTEL" or "intel".
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -72,8 +69,7 @@ diacritical marks too...
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -90,8 +86,7 @@ diacritical marks too...
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -108,8 +103,7 @@ diacritical marks too...
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorname__lc_vendor_name__idx"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -174,8 +168,7 @@ The tuple (bus, vendor id, vendor name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwvendorid__bus_vendor_id__vendor_name__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -832,8 +825,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdevice__bus_vendor_id__bus_product_id__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -845,8 +837,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1036,7 +1027,12 @@ We'll switch the DB user from hwdb-submission-processor to the ordinary
 Launchpad user, because the former has no access to the table
 distribution, which we want to access in this test.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.testing.dbuser import (
+    ...     lp_dbuser,
+    ...     switch_dbuser,
+    ...     )
+
+    >>> switch_dbuser('launchpad')
     >>> sata_controller = device_set.getByDeviceID(
     ...     bus=HWBus.PCI, vendor_id='0x10de', product_id='0x045d')
     >>> for submission in sata_controller.getSubmissions():
@@ -1120,7 +1116,7 @@ We can also search for submissions from a particular user.
 
     >>> import transaction
     >>> transaction.abort()
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> switch_dbuser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
 HWDeviceDriverLink (see below) with this device.
@@ -1171,8 +1167,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1250,8 +1245,7 @@ The tuple (driver name, package name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdriver__package_name__name__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1261,8 +1255,7 @@ The tuple (driver name, package name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdriver__package_name__name__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1423,7 +1416,7 @@ HWDriverSet.getByID() returns None if no record with the passed ID exists.
     None
 
     >>> transaction.abort()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
 We can search all the submissions related to a driver.
 
@@ -1472,7 +1465,7 @@ And We can search for submissions from a particular user.
     0
 
     >>> transaction.abort()
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> switch_dbuser('hwdb-submission-processor')
 
 
 Driver names and package names
@@ -1482,7 +1475,7 @@ The same driver names can appear multiple times in HWDriver.
 HWDriverSet.all_driver_names() returns a list of distinct driver
 names used in the table HWDriver.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> for driver_name in driver_set.all_driver_names():
     ...     print driver_name.name
     ahci
@@ -1510,7 +1503,7 @@ is not included.
     linux-image-2.6.24-19-generic
     linux-image-generic
 
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> switch_dbuser('hwdb-submission-processor')
 
 
 HWDeviceDriverLink
@@ -1600,8 +1593,7 @@ The tuple (device, driver) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdevicedriverlink__device__driver__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1610,8 +1602,7 @@ The tuple (device, driver) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key... violates unique
-    constraint "hwdevicedriverlink__device__key"
+    IntegrityError: ...
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
@@ -1715,13 +1706,13 @@ broken device class data, we can remove it by calling
 IHWDevice.removeDeviceClass().
 
     >>> LaunchpadZopelessLayer.txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> optic_pro_ut12.removeDeviceClass(main_class=0x07, sub_class=0x01)
     >>> for device_class in optic_pro_ut12.classes:
     ...     print device_class.main_class, device_class.sub_class
     16 0
 
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> switch_dbuser('hwdb-submission-processor')
 
 
 HWSubmissionDevice
@@ -1910,14 +1901,11 @@ Let's now create another HWDB submission, and let's add
 HWSubmissionDevice entries for the disk and the new submission, both
 for the "plain" disk and for the disk driven by the sd driver.
 
-    >>> LaunchpadZopelessLayer.txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> # Set the emailaddress and hence the owner to a non-default
-    >>> # value so that we have submissions with different owners.
-    >>> submission = factory.makeHWSubmission(
-    ...     emailaddress='foo.bar@canonical.com')
-    >>> LaunchpadZopelessLayer.txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> with lp_dbuser():
+    ...     # Set the emailaddress and hence the owner to a non-default
+    ...     # value so that we have submissions with different owners.
+    ...     submission = factory.makeHWSubmission(
+    ...         emailaddress='foo.bar@canonical.com')
     >>> first_device = factory.makeHWSubmissionDevice(
     ...     submission, ide_disk, None, None, 1)
     >>> driver = getUtility(IHWDriverSet).getOrCreate(
@@ -1990,7 +1978,7 @@ distribution. The device from the new submission we just created is
 not counted here, because we created the new submission for a new
 distribution.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> print submission_device_set.numDevicesInSubmissions(
     ...     bus=HWBus.IDE, vendor_id='SEAGATE', product_id='ST3250820NS     ',
     ...     distro_target=ubuntu)
@@ -2362,7 +2350,7 @@ Foo Bar.
 Instead of passing a seqence of bug IDs, we can also specify one or
 more bug tags.
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams,
     ...     IBugTaskSet,
@@ -2434,12 +2422,10 @@ Owners of private submissions are only included if the optional parameter
 
     >>> private_submission = factory.makeHWSubmission(
     ...     emailaddress='no-priv@canonical.com', private=True)
-    >>> LaunchpadZopelessLayer.txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    >>> switch_dbuser('hwdb-submission-processor')
     >>> first_device = factory.makeHWSubmissionDevice(
     ...     private_submission, ide_disk, None, None, 1)
-    >>> LaunchpadZopelessLayer.txn.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> bug_one.subscribe(no_priv, subscribed_by=no_priv)
     <lp.bugs.model.bugsubscription.BugSubscription ...>

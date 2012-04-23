@@ -6,15 +6,26 @@
 """Tests that get run automatically on a merge."""
 import _pythonpath
 
-import sys, time
-import os, errno
-import tabnanny
-from StringIO import StringIO
-import psycopg2
-from subprocess import Popen, PIPE, STDOUT
-from signal import SIGKILL, SIGTERM, SIGINT, SIGHUP
+import errno
+import os
 import select
+from signal import (
+    SIGHUP,
+    SIGINT,
+    SIGKILL,
+    SIGTERM,
+    )
+from StringIO import StringIO
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+import sys
+import tabnanny
+import time
 
+import psycopg2
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.

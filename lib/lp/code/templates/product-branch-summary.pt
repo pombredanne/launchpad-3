@@ -48,7 +48,7 @@
       from it.
     </p>
     <p tal:condition="view/branch/branch_type/enumvalue:IMPORTED">
-      Launchpad imports the master branch and you can create branches from 
+      Launchpad imports the master branch and you can create branches from
       it.
     </p>
 
@@ -59,7 +59,7 @@
 
   <tal:no-branches condition="not: view/branch_count">
     There are no branches for <tal:project-name replace="context/displayname"/>
-    in Launchpad. 
+    in Launchpad.
     <tal:can-configure condition="view/can_configure_branches">
       You can change this by:
 
@@ -82,7 +82,7 @@
   <tal:has-branches condition="view/branch_count">
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
-         tal:define="config modules/canonical.config/config;
+         tal:define="config modules/lp.services.config/config;
                      dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
@@ -93,17 +93,32 @@
         get a copy of the development focus branch
       </tal:not-browseable>
        using the command:<br/>
-      <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
+      <tt class="command">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
-
   </tal:has-branches>
+
+  <tal:has-user condition="view/user">
+    <p id="push-instructions"
+      tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
+      You can push the branch directly to Launchpad with the command:<br />
+      <tt class="command">
+        bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/<tal:series replace="context/name"/>
+      </tt>
+      <tal:no-keys condition="not:view/user/sshkeys">
+        <br/>To authenticate with the Launchpad branch upload service,
+        you need to
+        <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+          register a SSH key</a>.
+      </tal:no-keys>
+    </p>
+  </tal:has-user>
 
   <div tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
     <div
        tal:condition="not: context/codehosting_usage/enumvalue:LAUNCHPAD"
        tal:define="configure_codehosting view/configure_codehosting |
        nothing">
-      <p style="margin-top: 10px;">
+      <p>
         <a class="sprite maybe"
            href="https://help.launchpad.net/Code">Getting started
           with code hosting in Launchpad</a>.</p>
@@ -123,7 +138,7 @@
 
   <p tal:condition="view/latest_release_with_download_files">
     <img src="/@@/download"/> There are
-    <a tal:define="rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+    <a tal:define="rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
       tal:attributes="href string:${rooturl}${context/name}/+download">download files</a>
     available for <tal:project-name replace="context/displayname"/>.
   </p>

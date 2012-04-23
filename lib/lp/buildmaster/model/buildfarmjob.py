@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -11,8 +11,6 @@ __all__ = [
 
 
 import hashlib
-from itertools import groupby
-from operator import attrgetter
 
 from lazr.delegates import delegates
 import pytz
@@ -43,17 +41,6 @@ from zope.interface import (
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -70,7 +57,17 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class BuildFarmJobOld:
@@ -100,6 +97,10 @@ class BuildFarmJobOld:
         raise NotImplementedError
 
     def getByJob(self, job):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getByJobs(self, job):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
@@ -163,11 +164,27 @@ class BuildFarmJobOldDerived:
         """
         raise NotImplementedError
 
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        """Preload the build farm jobs to which the given jobs will delegate.
+
+        """
+        pass
+
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJobOld`.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_ids = [job.id for job in jobs]
+        return store.find(
+            cls, cls.job_id.is_in(job_ids))
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -398,34 +415,6 @@ class BuildFarmJobDerived:
 
 class BuildFarmJobSet:
     implements(IBuildFarmJobSet)
-
-    def getSpecificJobs(self, jobs):
-        """See `IBuildFarmJobSet`."""
-        # Adapt a list of jobs based on their job type.
-        builds = []
-        key = attrgetter('job_type.name')
-        sorted_jobs = sorted(jobs, key=key)
-        job_builds = {}
-        for job_type_name, grouped_jobs in groupby(sorted_jobs, key=key):
-            # Fetch the jobs in batches grouped by their job type.
-            source = getUtility(
-                ISpecificBuildFarmJobSource, job_type_name)
-            builds = [build for build
-                in source.getByBuildFarmJobs(list(grouped_jobs))
-                if build is not None]
-            is_binary_package_build = IBinaryPackageBuildSet.providedBy(
-                source)
-            for build in builds:
-                if is_binary_package_build:
-                    job_builds[build.package_build.build_farm_job.id] = build
-                else:
-                    job_builds[build.build_farm_job.id] = build
-        # Return the corresponding builds.
-        try:
-            return [job_builds[job.id] for job in jobs]
-        except KeyError:
-            raise InconsistentBuildFarmJobError(
-                "Could not find all the related specific jobs.")
 
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""

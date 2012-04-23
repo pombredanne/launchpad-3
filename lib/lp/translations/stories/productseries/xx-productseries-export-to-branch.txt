@@ -8,7 +8,7 @@ branch.
     >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)
-    >>> owner = factory.makePerson(email='x@example.com', password='****')
+    >>> owner = factory.makePerson(email='x@example.com')
     >>> product = factory.makeProduct(owner=owner,
     ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> productseries = product.getSeries('trunk')
@@ -16,7 +16,6 @@ branch.
     >>> branch_name = branch.name
     >>> foreign_branch = factory.makeBranch(product=product)
     >>> foreign_name = foreign_branch.name
-    >>> logout()
 
     >>> def set_translations_branch(browser, branch_name):
     ...     """Set translations branch.
@@ -46,8 +45,9 @@ settings page.
     ...         productseries.product.name)
     >>> settings_page = productseries_url + '/+translations-settings'
     >>> link_page = productseries_url + '/+link-translations-branch'
+    >>> logout()
 
-    >>> owner_browser = setupBrowser(auth='Basic x@example.com:****')
+    >>> owner_browser = setupBrowser(auth='Basic x@example.com:test')
     >>> owner_browser.open(settings_page)
 
 The settings page currently shows that no branch has been selected.

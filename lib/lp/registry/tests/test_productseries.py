@@ -9,13 +9,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.productseries import (
@@ -23,9 +16,16 @@ from lp.registry.interfaces.productseries import (
     IProductSeriesSet,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
+    login,
     TestCaseWithFactory,
     WebServiceTestCase,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (

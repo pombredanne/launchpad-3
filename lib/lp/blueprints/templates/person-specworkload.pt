@@ -16,7 +16,7 @@
     is its creator.
   </p>
 
-  <tal:team_definition define="is_team context/isTeam" >
+  <tal:team_definition define="is_team context/is_team" >
 
     <tal:is_not_team condition="not: is_team">
       <div tal:replace="structure context/@@+table-specworkload" />

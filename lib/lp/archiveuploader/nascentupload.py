@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -23,7 +23,6 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -33,6 +32,7 @@ from lp.archiveuploader.nascentuploadfile import (
     DdebBinaryUploadFile,
     DebBinaryUploadFile,
     SourceUploadFile,
+    UdebBinaryUploadFile,
     UploadError,
     UploadWarning,
     )
@@ -41,6 +41,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
@@ -348,9 +349,11 @@ class NascentUpload:
                     unmatched_ddebs[ddeb_key] = uploaded_file
 
         for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+            is_deb = isinstance(uploaded_file, DebBinaryUploadFile)
+            is_udeb = isinstance(uploaded_file, UdebBinaryUploadFile)
+            is_ddeb = isinstance(uploaded_file, DdebBinaryUploadFile)
+            # We need exactly a DEB or UDEB, not a DDEB.
+            if (is_deb or is_udeb) and not is_ddeb:
                 try:
                     matching_ddeb = unmatched_ddebs.pop(
                         (uploaded_file.package + '-dbgsym',
@@ -652,7 +655,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than the one in archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
+        if apt_pkg.version_compare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -906,10 +909,10 @@ class NascentUpload:
             # state.
             pass
 
-        changes_file_object = open(self.changes.filepath, "r")
-        self.queue_root.notify(summary_text=self.rejection_message,
-            changes_file_object=changes_file_object, logger=self.logger)
-        changes_file_object.close()
+        with open(self.changes.filepath, "r") as changes_file_object:
+            self.queue_root.notify(
+                summary_text=self.rejection_message,
+                changes_file_object=changes_file_object, logger=self.logger)
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""

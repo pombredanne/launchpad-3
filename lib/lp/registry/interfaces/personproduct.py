@@ -13,9 +13,7 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import (
-    TextLine,
-)
+from zope.schema import TextLine
 
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.registry.interfaces.person import IPerson

@@ -52,15 +52,3 @@ listings and homepages:
   >>> print extract_text(portlet)
   Series-targeted bugs
   1.0   1
-
-  >>> anon_browser.open("http://bugs.launchpad.dev/firefox/+bugs-index")
-  >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
-  >>> print extract_text(portlet)
-  Series-targeted bugs
-  1.0   1
-
-  >>> anon_browser.open("http://bugs.launchpad.dev/firefox/1.0/+bugs-index")
-  >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
-  >>> print extract_text(portlet)
-  Series-targeted bugs
-  1.0   1

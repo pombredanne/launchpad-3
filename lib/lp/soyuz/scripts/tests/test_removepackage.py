@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional Tests for PackageRemover script class.
@@ -16,24 +16,20 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.ftpmaster import (
-    PackageRemover,
-    SoyuzScriptError,
-    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
+from lp.soyuz.scripts.packageremover import PackageRemover
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestRemovePackageScript(unittest.TestCase):
@@ -395,7 +391,7 @@ class TestPackageRemover(unittest.TestCase):
         the same result than not passing any component filter, because
         all test publications are in main component.
         """
-        source = self.test_publisher.getPubSource(sourcename='foo')
+        self.test_publisher.getPubSource(sourcename='foo')
 
         self.layer.commit()
 
@@ -418,7 +414,7 @@ class TestPackageRemover(unittest.TestCase):
         `SoyuzScriptError` because the selected publications are in main
         component.
         """
-        source = self.test_publisher.getPubSource(sourcename='foo')
+        self.test_publisher.getPubSource(sourcename='foo')
 
         remover = self.getRemover(component='multiverse')
         self.assertRaises(SoyuzScriptError, remover.mainTask)

@@ -29,8 +29,7 @@ those.
     >>> affluenza = factory.makeProduct(name='affluenza')
     >>> bugB = factory.makeBug(product=affluenza,
     ...     title='A terrible affliction')
-    >>> subscriber = factory.makePerson(name='webster',
-    ...     password='g00dpassword')
+    >>> subscriber = factory.makePerson(name='webster')
     >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
@@ -59,8 +58,7 @@ He chooses to view the bug about Scofflaw.
 
     >>> login('foo.bar@canonical.com')
     >>> subscriber_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...         subscriber.preferredemail.email)
+    ...     auth='Basic %s:test' % subscriber.preferredemail.email)
     >>> logout()
     >>> subscriber_browser.open(
     ...     'http://bugs.launchpad.dev/~webster/+subscriptions')
@@ -79,7 +77,7 @@ subscribed to the bug.  He clicks cancel which takes him back to his
     >>> cancel_link = subscriber_browser.getLink('Cancel')
     >>> cancel_link.click()
     >>> print subscriber_browser.title
-    Subscriptions : Webster
+    Subscriptions : Bugs : Webster
 
 He chooses to unsubscribe from the bug about Affluenza.
 
@@ -89,7 +87,7 @@ He chooses to unsubscribe from the bug about Affluenza.
     ...     "unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
-    Subscriptions : Webster
+    Subscriptions : Bugs : Webster
 
 Webster can see that the bug about Affluenza is no longer listed in his direct
 bug subscriptions.
@@ -120,7 +118,7 @@ Webster chooses to review the subscriptions for his team America.
     >>> subscriber_browser.open(
     ...     'https://bugs.launchpad.dev/~america/+subscriptions')
     >>> print subscriber_browser.title
-    Subscriptions : “America” team
+    Subscriptions : Bugs ...
 
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'bug_subscriptions'))
@@ -261,13 +259,11 @@ filters are shown with a message stating that there is no filtering.
     >>> from lp.testing import celebrity_logged_in, person_logged_in
 
     >>> with celebrity_logged_in("admin"):
-    ...     nigel = factory.makePerson(
-    ...         name="nigel", displayname="Nigel",
-    ...         password="g00dpassword")
+    ...     nigel = factory.makePerson(name="nigel", displayname="Nigel")
     >>> with person_logged_in(nigel):
     ...     nigel_subscription = scofflaw.addBugSubscription(nigel, nigel)
     ...     nigel_browser = setupBrowser(
-    ...         auth='Basic %s:g00dpassword' % nigel.preferredemail.email)
+    ...         auth='Basic %s:test' % nigel.preferredemail.email)
 
     >>> def show_nigels_subscriptions():
     ...     nigel_browser.open(

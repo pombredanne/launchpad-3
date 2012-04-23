@@ -21,7 +21,7 @@ from lazr.enum import (
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 
 
 class FAQSort(EnumeratedType):

@@ -13,11 +13,11 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import validate_person
+from lp.services.database.sqlbase import SQLBase
 
 
 class SpecificationSubscription(SQLBase):
@@ -30,7 +30,7 @@ class SpecificationSubscription(SQLBase):
         foreignKey='Specification', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
     def canBeUnsubscribedByUser(self, user):

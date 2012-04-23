@@ -46,9 +46,11 @@
         value="Search projects"
         />
     </form>
-    <script type="text/javascript"><!--
-        setFocusByName('text');
-        // --></script>
+    <script type="text/javascript">
+        LPJS.use('lp', function (Y) {
+            setFocusByName('text');
+        });
+    </script>
 
   <tal:searching condition="view/search_requested">
 
@@ -127,31 +129,6 @@
       href="/rosetta/+addquestion">ask the Translations staff</a>.
     </p>
 
-    <div class="left">
-
-      <div class="portlet">
-
-        <h2>Latest teams registered</h2>
-
-        <table>
-          <tbody>
-            <tr tal:repeat="team context/people/latest_teams">
-              <td><a tal:replace="structure team/fmt:link">A-Team</a>
-                  registered
-                  <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:displaydate">
-                    2007-09-17
-                  </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <div class="right">
-
       <div class="portlet">
         <h2>Latest projects registered</h2>
         <table>
@@ -165,7 +142,6 @@
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
-    </div>
   </tal:no_search>
 </div>
 </body>

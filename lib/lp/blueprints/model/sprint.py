@@ -19,19 +19,12 @@ from storm.locals import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    quote,
-    SQLBase,
-    )
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    ILaunchpadCelebrities,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -50,6 +43,13 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.model.hasdrivers import HasDriversMixin
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
 
 
 class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):

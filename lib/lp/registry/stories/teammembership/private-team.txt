@@ -16,7 +16,7 @@ admins and members of that team can see the team.
     ...     visibility=PersonVisibility.PRIVATE)
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> ignored = priv_team.addMember(cprov, reviewer=owner)
     >>> logout()
 
@@ -25,7 +25,7 @@ admins and members of that team can see the team.
     'Private Team in Launchpad'
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open('http://launchpad.dev/~private-team')
     >>> cprov_browser.title
     'Private Team in Launchpad'

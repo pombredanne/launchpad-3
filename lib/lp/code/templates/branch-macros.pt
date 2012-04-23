@@ -79,7 +79,7 @@
         <div tal:repeat="spec_link mergeproposal/source_branch/spec_links">
           <img src="/@@/blueprint"
                tal:replace="structure spec_link/specification/image:icon" />
-          <a tal:attributes="href spec_link/specification/fmt:url"
+          <a tal:attributes="href spec_link/specification/fmt:url:blueprints"
              tal:content="spec_link/specification/title" />
         </div>
 
@@ -106,7 +106,7 @@
            tal:define="show_edit show_edit|nothing;"
            tal:attributes="id string:buglink-${bugtask/bug/id}"
            class="bug-branch-summary">
-        <td tal:content="structure bugtask/fmt:link" class="first"/>
+        <td tal:content="structure bugtask/fmt:link:bugs" class="first"/>
         <td>
           <span tal:content="bugtask/importance/title"
                 tal:attributes="class string:importance${bugtask/importance/name}"
@@ -147,15 +147,9 @@
                      spec spec_branch/specification;
                      ">
       <div class="spec-branch-summary">
-      <tal:link replace="structure spec/fmt:link" />
+      <tal:link replace="structure spec/fmt:link:blueprints" />
       (<span tal:attributes="class string:specpriority${spec/priority/name}"
              tal:content="spec/priority/title">High</span>)
-       <tal:show-edit condition="show_edit|nothing">
-         -
-         <a tal:attributes="href spec_branch/fmt:url;
-                            onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
-         edit <img src="/@@/bug-status-expand"/></a>
-       </tal:show-edit>
        </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:specbranch${spec_branch/id}"
@@ -284,7 +278,7 @@
           <dl>
               <tal:bug repeat="bugtask linked_bugtasks">
                 <dd class="subordinate revision-comment">
-                  <tal:bug-link replace="structure bugtask/fmt:link"/>
+                  <tal:bug-link replace="structure bugtask/fmt:link:bugs"/>
                 </dd>
               </tal:bug>
           </dl>

@@ -7,7 +7,7 @@ means a file files that relates to the bug in some other way, like a log
 file or a screenshot.
 
 Let's look at a bug that has no attachments:
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> from lp.services.messages.interfaces.message import IMessageSet
@@ -28,7 +28,7 @@ ObjectCreatedEvent in order to trigger email notifications:
 
     >>> from StringIO import StringIO
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> def attachment_added(attachment, event):
     ...     print "Attachment added: %r" % attachment.libraryfile.filename
@@ -117,7 +117,7 @@ The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> login('test@canonical.com')
     >>> filecontent = StringIO('')
@@ -173,7 +173,7 @@ upload it:
 If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> max_attachment_size = """
     ...     [launchpad]
     ...     max_attachment_size: 0
@@ -400,7 +400,7 @@ We can search for attachment of a specific types:
     >>> bugs[0].id
     4
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> attachmenttype = any(*BugAttachmentType.items)
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
     >>> bugtasks = bugtaskset.search(params)
@@ -423,7 +423,7 @@ There are no patches attached to any bugs:
 
 Let's make our attachment a patch and search again:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('test@canonical.com')
     >>> attachment.type = BugAttachmentType.PATCH
     >>> flush_database_updates()
@@ -537,7 +537,7 @@ LibraryFileAlias.restricted and Bug.private. See also the section
 "Adding bug attachments to private bugs" below.
 
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
 
     >>> file_content = "Hello, world"
@@ -616,7 +616,7 @@ If an attachment is added to a private bug, the "restricted" flag of
 its Librarian file is set.
 
     >>> private_bug_owner = factory.makePerson()
-    >>> login_person(private_bug_owner)
+    >>> ignored = login_person(private_bug_owner)
     >>> private_bug = factory.makeBug(private=True, owner=private_bug_owner)
     >>> private_attachment = private_bug.addAttachment(
     ...     owner=private_bug_owner, data="secret", filename="baz.txt",

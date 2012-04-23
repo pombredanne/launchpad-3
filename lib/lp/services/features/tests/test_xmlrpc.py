@@ -7,9 +7,8 @@ __metaclass__ = type
 
 import xmlrpclib
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.config import config
 from lp.services import features
+from lp.services.config import config
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.features.scopes import (
@@ -23,6 +22,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.xmlrpc import XMLRPCTestTransport
 
 

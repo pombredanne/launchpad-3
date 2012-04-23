@@ -134,7 +134,8 @@ page that lists PPA packages in batches.
     ...
     Name      Uploaded to           Version  When        Failures
     iceweasel PPA for Mark...Warty  1.0      2006-04-11  None
-
+    1...1 of 1 result
+    ...
 
 Private PPA packages
 --------------------
@@ -165,8 +166,8 @@ Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
@@ -289,7 +290,7 @@ his private one:
 It will now disppear from the listings because it's not published in any
 public archives.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge()
 
     >>> user_browser.open("http://launchpad.dev/~cprov/+related-software")
@@ -374,7 +375,7 @@ Then delete the 'source2' package.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Source and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar:
     source2 666 in breezy-autotest
     Deletion comment: Bug 184490
 

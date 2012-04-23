@@ -14,7 +14,7 @@ First, No Privileges Person will create a new team and its mailing list.
 
 Give the mailing list a welcome message.
 
-    >>> from canonical.testing.layers import BaseLayer
+    >>> from lp.testing.layers import BaseLayer
     >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('%s/~itest-one/+mailinglist' % root_url)

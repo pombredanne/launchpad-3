@@ -41,16 +41,19 @@ import _pythonpath
 
 from zope.interface import implementedBy
 from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation)
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    )
 from zope.interface.verify import verifyClass
 
-import canonical.launchpad.database
+
+all_model_names = 'Some miracle process'
 
 def check_content_classes():
     classes_checked = 0
     classes_with_failures = 1
-    for class_name in dir(canonical.launchpad.database):
-        klass = getattr(canonical.launchpad.database, class_name)
+    for class_name in dir(all_model_names):
+        klass = getattr(all_model_names, class_name)
         # Skip names that don't implement anything.
         if getattr(klass, '__implemented__', None) is None:
             continue

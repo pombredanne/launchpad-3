@@ -22,12 +22,13 @@ The package uploads are associated with specific releases of the
 package, but the bugs they reference may be filed on the generic
 distribution package.
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.testing.dbuser import switch_dbuser
+
     >>> login('no-priv@canonical.com')
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
@@ -83,16 +84,14 @@ Now we can make a bug and a package upload for pmount.
     >>> queue_item = add_package_upload(pmount_release, pmount_bug_id)
 
     # Need to commit the transaction so that the changes file can be
-    # downloaded from the Librarian.
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
+    # downloaded from the Librarian.  switch_dbuser takes care of this.
+    >>> switch_dbuser(test_dbuser)
 
 Right after the queue items have been processed by the publishing
 scripts, close_bugs_for_queue_item() is called with the id of each queue item
 that has been published. Passing a queue item with a Launchpad-bugs-fixed
 header will close the specified bug.
 
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> def print_single_task_status(bug_id):
@@ -112,8 +111,7 @@ header will close the specified bug.
 The changelog associated with the SourcePackageRelease is automatically
 added as a comment from the janitor.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> last_comment = pmount_bug.messages[-1]
     >>> print pmount_release.creator.displayname
@@ -194,11 +192,9 @@ call close_bugs_for_queue_item() and then check the status again.
     ...     print "Before:"
     ...     for bug_id in bug_id_list:
     ...         print print_single_task_status(bug_id)
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    ...     switch_dbuser(test_dbuser)
     ...     close_bugs_for_queue_item(queue_item)
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     switch_dbuser('launchpad')
     ...     print "After:"
     ...     for bug_id in bug_id_list:
     ...         print print_single_task_status(bug_id)
@@ -291,8 +287,7 @@ process-accepted.py
 The closing of bugs are done in process-accepted.py, right after the
 queue items have been processed.
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
     >>> queue_item = add_package_upload(pmount_release, fixing_text)
     >>> queue_item.setAccepted()
@@ -316,13 +311,12 @@ queue items have been processed.
     >>> print_single_task_status(another_pmount_bug_id)
     'CONFIRMED'
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
     >>> import os.path
     >>> import subprocess
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> script = os.path.join(config.root, "scripts/process-accepted.py")
     >>> process = subprocess.Popen(
     ...     [sys.executable, script, "ubuntu"],

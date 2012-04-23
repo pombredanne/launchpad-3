@@ -64,6 +64,13 @@
         Related software and packages
       </a>
     </li>
+    <li
+      tal:define="link context/menu:overview/upcomingwork"
+      tal:condition="link/enabled">
+      <a class="sprite info" tal:attributes="href link/fmt:url">
+        Upcoming work assigned to members of this team
+      </a>
+    </li>
   </ul>
 
   <div class="yui-g">

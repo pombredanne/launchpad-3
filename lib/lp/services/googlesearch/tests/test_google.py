@@ -11,11 +11,11 @@ from urllib2 import (
     URLError,
     )
 
-from canonical.lazr.timeout import TimeoutError
-from canonical.testing.layers import FunctionalLayer
 from lp.services.googlesearch import GoogleSearchService
 from lp.services.googlesearch.interfaces import GoogleResponseError
+from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
+from lp.testing.layers import FunctionalLayer
 
 
 @contextmanager
@@ -29,7 +29,7 @@ def urlfetch_exception(test_error, *args):
     def raise_exception(url):
         raise test_error(*args)
 
-    from canonical.lazr import timeout
+    from lp.services import timeout
     original_urlfetch = timeout.urlfetch
     timeout.urlfetch = raise_exception
     try:

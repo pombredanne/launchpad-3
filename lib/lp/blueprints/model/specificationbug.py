@@ -11,8 +11,8 @@ from lazr.restful.interfaces import IJSONPublishable
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.specificationbug import ISpecificationBug
+from lp.services.database.sqlbase import SQLBase
 
 
 class SpecificationBug(SQLBase):

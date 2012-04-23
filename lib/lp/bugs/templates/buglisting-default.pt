@@ -1,72 +1,76 @@
 <html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
-  i18n:domain="malone"
+xmlns="http://www.w3.org/1999/xhtml"
+xmlns:tal="http://xml.zope.org/namespaces/tal"
+xmlns:metal="http://xml.zope.org/namespaces/metal"
+xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+metal:use-macro="view/macro:page/main_side"
+i18n:domain="malone"
 >
 
 <metal:block fill-slot="head_epilogue">
-  <meta condition="not: view/should_show_bug_information"
-        name="robots" content="noindex,nofollow" />
+<meta tal:condition="not: view/should_show_bug_information"
+    name="robots" content="noindex,nofollow" />
 
-    <tal:comment replace="nothing">
-        The javascript below should only be executed (or indeed even exist)
-        when the bug subscription links exist. They don't exist on the
-        advanced search form, so we don't show the js for that case.
-    </tal:comment>
-    <script type="text/javascript"
-      tal:condition="not: view/shouldShowAdvancedForm">
-    LPS.use('lp.registry.structural_subscription', function(Y) {
+<tal:comment replace="nothing">
+    The javascript below should only be executed (or indeed even exist)
+    when the bug subscription links exist. They don't exist on the
+    advanced search form, so we don't show the js for that case.
+</tal:comment>
+<script type="text/javascript"
+  tal:condition="not: view/shouldShowAdvancedForm">
+    LPJS.use('lp.registry.structural_subscription', function(Y) {
         Y.on('domready', function() {
             Y.lp.registry.structural_subscription.setup(
                 {content_box: "#structural-subscription-content-box"});
         });
     });
   </script>
-  <script type="text/javascript"
-    tal:define="
-      show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
-      advanced_search view/shouldShowAdvancedForm"
-    tal:condition="python: show_new_listings and not advanced_search">
-    LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
-      function(Y) {
-        Y.on('domready', function() {
-            var navigator = Y.lp.bugs.buglisting.ListingNavigator.from_page();
-            var orderby = new Y.lp.ordering.OrderByBar({
-                srcNode: Y.one('#bugs-orderby'),
-                sort_keys: [
-                    ['id', 'Bug number'],
-                    ['title', 'Bug title'],
-                    ['importance', 'Importance'],
-                    ['status', 'Status'],
-                    ['heat', 'Bug heat']
-                ],
-                active: 'importance',
-                sort_order: 'desc',
-                config_slot: true
-            });
-            orderby.render();
-            Y.on('orderbybar:sort', function(e) {
-                navigator.first_batch(e);
-            });
-            var config_node = orderby.get('config_node');
-            var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
-                srcNode: config_node
-            });
-            list_util.render();
-            Y.on('buglisting-config-util:fields-changed', function(e) {
-                navigator.change_fields(list_util.get('field_visibility'));
-            });
-        });
-    });
-  </script>
+  <metal:activate-listing use-macro="context/@@+bugtask-macros-tableview/activate_listing_js" />
 </metal:block>
 
 <body>
 
   <div metal:fill-slot="main">
+    <div
+      tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+      class="top-portlet">
+      <p id="no-malone"
+        tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
+        <strong tal:condition="view/can_have_external_bugtracker">
+          <tal:displayname replace="context/displayname" />
+          must be configured in order for Launchpad to forward bugs to
+          the project's developers.
+        </strong>
+        <strong tal:condition="not: view/can_have_external_bugtracker">
+          <tal:displayname replace="context/displayname" />
+          does not use Launchpad for bug tracking.
+        </strong>
+      </p>
+
+      <p tal:condition="view/external_bugtracker"
+        id="bugtracker">
+        <strong>Bugs are tracked in
+          <tal:bugtracker replace="structure view/bugtracker" />.
+        </strong>
+      </p>
+
+      <a id="getting-started-help"
+         class="sprite maybe"
+         href="https://help.launchpad.net/Bugs">
+        Getting started with bug tracking in Launchpad</a>.
+
+      <p tal:condition="context/required:launchpad.Edit"
+         tal:define="configure_bugtracker context/menu:overview/configure_bugtracker | nothing"
+         id="no-malone-edit"
+         >
+        <a tal:condition="configure_bugtracker"
+          tal:replace="structure configure_bugtracker/fmt:link"/>
+        <a class="sprite edit"
+          tal:condition="not: configure_bugtracker"
+          tal:attributes="href string:${context/fmt:url/+edit}">
+          Enable bug tracking.</a>
+      </p>
+    </div>
     <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
          class="top-portlet">
       <tal:is_project_group condition="view/_projectContext">
@@ -118,32 +122,77 @@
       </div>
 
     </div>
-    <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"
-          class="top-portlet">
-      <p>
-        <strong>
-          <tal:displayname replace="context/displayname" />
-          does not use Launchpad for bug tracking.
-        </strong>
-      </p>
-      <p id="getting-started-help">
-        <a class="sprite maybe"
-          href="https://help.launchpad.net/Bugs">Getting started
-        with bug tracking in Launchpad</a>.
-      </p>
-    </div>
   </div>
 
   <tal:side metal:fill-slot="side">
     <div id="bug-portlets" tal:condition="view/should_show_bug_information">
-      <div id="involvement" class="portlet involvement">
-        <ul>
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
           <li style="border: 0">
             <a href="+filebug" class="menu-link-filebug sprite bugs">
               Report a bug
             </a>
           </li>
+          <li tal:condition="view/addquestion_url">
+            <a tal:attributes="href view/addquestion_url"
+               class="menu-link-filebug sprite answers">
+              Ask a question
+            </a>
+          </li>
         </ul>
+
+      </div>
+      <div class="portlet">
+        <ul tal:define="menu context/menu:bugs">
+          <li tal:condition="menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/subscribe_to_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="menu/edit_bug_mail/enabled|nothing">
+            <a tal:replace="structure menu/edit_bug_mail/fmt:link" />
+          </li>
+        </ul>
+      </div>
+      <div class="portlet" tal:condition="view/show_config_portlet">
+        <ul tal:define="menu context/menu:bugs">
+          <li tal:condition="menu/configure_bugtracker/enabled|nothing">
+            <a tal:replace="structure menu/configure_bugtracker/fmt:link" />
+          </li>
+        </ul>
+        <dl tal:define="bug_supervisor context/bug_supervisor"
+            id="bug-supervisor">
+          <dt>Bug supervisor:</dt>
+          <dd>
+            <tal:none condition="not:bug_supervisor">None set</tal:none>
+            <a tal:condition="bug_supervisor"
+               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+            <tal:edit-bug-supervisor
+                condition="context/menu:bugs/bugsupervisor|nothing">
+              <a tal:define="link context/menu:bugs/bugsupervisor"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-bug-supervisor>
+          </dd>
+        </dl>
+        <dl tal:define="securitycontact context/security_contact">
+          <dt id="bug-security">Security contact:</dt>
+          <dd>
+            <tal:none condition="not:securitycontact">None set</tal:none>
+            <a tal:condition="securitycontact"
+               tal:replace="structure securitycontact/fmt:link">
+              Billy Anderson
+            </a>
+            <tal:edit-securitycontact
+                condition="context/menu:bugs/securitycontact|nothing">
+              <a tal:define="link context/menu:bugs/securitycontact"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-securitycontact>
+          </dd>
+        </dl>
       </div>
       <tal:menu replace="structure view/@@+related-pages" />
       <tal:do_not_show_portlets_advanced_form

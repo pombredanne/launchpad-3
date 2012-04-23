@@ -63,7 +63,7 @@ That will send an email to the address given, with a link to finish the
 claiming process.
 
     >>> from lp.services.mail import stub
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> from_addr, to_addr, msg = stub.test_emails.pop()
     >>> to_addr

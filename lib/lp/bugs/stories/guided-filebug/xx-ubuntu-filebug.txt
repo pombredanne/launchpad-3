@@ -7,7 +7,7 @@ from the web interface.
 We set the `ubuntu_disable_filebug` flag to true, and set the URL to redirect
 to a local page (the default configuration is for a page on the Ubuntu wiki).
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... ubuntu_disable_filebug: true
@@ -71,6 +71,14 @@ Filing bugs with Apport also allows us to get to the bug filing interface.
     ...     extra_filebug_data, 'not/important', 'not.important')
     >>> anon_browser.getControl(name='FORM_SUBMIT').click()
     >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+    >>> from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+    >>> login('foo.bar@canonical.com')
+    >>> job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+    ...     blob_token)
+    >>> job.job.start()
+    >>> job.run()
+    >>> job.job.complete()
+    >>> logout()
     >>> filebug_url = (
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)

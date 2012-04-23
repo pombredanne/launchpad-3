@@ -41,7 +41,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries

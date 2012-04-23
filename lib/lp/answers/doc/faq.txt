@@ -11,7 +11,7 @@ are associated to distributions or products. The IFAQTarget interface is
 provided by objects that can host FAQs.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
     >>> from lp.answers.interfaces.faqtarget import IFAQTarget
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -35,7 +35,7 @@ contacts.)
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> sample_person = getUtility(ILaunchBag).user
     >>> print firefox.owner.displayname
     Sample Person
@@ -44,8 +44,7 @@ contacts.)
     ...     sample_person, 'How can I see the Fnords?',
     ...     "Install the Fnords highlighter extension and see the Fnords!")
 
-(The complete description of IFAQTarget is available in
-lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
+(The complete description of IFAQTarget is available in faqtarget.txt)
 
 
 IFAQTarget adapters
@@ -115,8 +114,7 @@ for FAQs. It is provided by product, distribution, and projects.
     >>> verifyObject(IFAQCollection, firefox)
     True
 
-(The complete description of IFAQCollection is available in
-lib/canonical/launchpad/interfaces/ftests/faqcollection.txt)
+(The complete description of IFAQCollection is available in faqcollection.txt)
 
 
 IFAQ
@@ -177,7 +175,7 @@ IFAQ permissions
 
 Only the project owners or answer contacts can edit an IFAQ.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.Edit', firefox_faq)
@@ -202,7 +200,7 @@ Answer contacts can also edit FAQs:
     >>> firefox.addAnswerContact(no_priv, no_priv)
     True
 
-    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> from lp.services.webapp.authorization import clear_cache
     >>> clear_cache()
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
@@ -240,8 +238,7 @@ The searchFAQs() method can be used to find FAQs by keywords or owner.
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
         or view Flash/Java web pages (Ubuntu)
 
-(See lib/canonical/launchpad/interfaces/ftests/faqcollection.txt for the
-full interface description.)
+(See faqcollection.txt for the full interface description.)
 
 
 Linking a FAQ to a question

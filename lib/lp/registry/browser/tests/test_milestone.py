@@ -10,12 +10,12 @@ from textwrap import dedent
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -27,6 +27,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     HasQueryCount,
@@ -44,8 +45,8 @@ class TestMilestoneViews(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
         self.series = (
             self.factory.makeProductSeries(product=self.product))
-        owner = self.product.owner
-        login_person(owner)
+        self.owner = self.product.owner
+        login_person(self.owner)
 
     def test_add_milestone(self):
         form = {
@@ -64,7 +65,7 @@ class TestMilestoneViews(TestCaseWithFactory):
             }
         view = create_initialized_view(
             self.series, '+addmilestone', form=form)
-        # It's important to make sure no errors occured, but
+        # It's important to make sure no errors occured,
         # but also confirm that the milestone was created.
         self.assertEqual([], view.errors)
         self.assertEqual('1.1', self.product.milestones[0].name)
@@ -82,6 +83,63 @@ class TestMilestoneViews(TestCaseWithFactory):
             "Date could not be formatted. Provide a date formatted "
             "like YYYY-MM-DD format. The year must be after 1900.")
         self.assertEqual(expected_msg, error_msg)
+
+    def test_add_milestone_with_tags(self):
+        tags = u'zed alpha'
+        form = {
+            'field.name': '1.1',
+            'field.tags': tags,
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(
+            self.series, '+addmilestone', form=form)
+        self.assertEqual([], view.errors)
+        expected = sorted(tags.split())
+        self.assertEqual(expected, self.product.milestones[0].getTags())
+
+
+class TestMilestoneEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(
+            name='orig-name', product=self.product)
+        self.owner = self.product.owner
+        login_person(self.owner)
+
+    def test_edit_milestone_with_tags(self):
+        orig_tags = u'b a c'
+        self.milestone.setTags(orig_tags.split(), self.owner)
+        new_tags = u'z a B'
+        form = {
+            'field.name': 'new-name',
+            'field.tags': new_tags,
+            'field.actions.update': 'Update',
+            }
+        view = create_initialized_view(
+            self.milestone, '+edit', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual('new-name', self.milestone.name)
+        expected = sorted(new_tags.lower().split())
+        self.assertEqual(expected, self.milestone.getTags())
+
+    def test_edit_milestone_clear_tags(self):
+        orig_tags = u'b a c'
+        self.milestone.setTags(orig_tags.split(), self.owner)
+        form = {
+            'field.name': 'new-name',
+            'field.tags': '',
+            'field.actions.update': 'Update',
+            }
+        view = create_initialized_view(
+            self.milestone, '+edit', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual('new-name', self.milestone.name)
+        expected = []
+        self.assertEqual(expected, self.milestone.getTags())
 
 
 class TestMilestoneMemcache(MemcacheTestCase):
@@ -224,15 +282,18 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     def test_bugtasks_queries(self):
         # The view.bugtasks attribute will make several queries:
-        #  1. Load bugtasks and bugs.
-        #  2. Loads the target (sourcepackagename / product)
-        #  3. Load assignees (Person, Account, and EmailAddress).
-        #  4. Load links to specifications.
-        #  5. Load links to branches.
-        #  6. Loads milestones
+        #  1. Load bugtasks
+        #  2. Load bugs.
+        #  3. Loads the target (sourcepackagename / product)
+        #  4. Load assignees (Person, Account, and EmailAddress).
+        #  5. Load links to specifications.
+        #  6. Load links to branches.
+        #  7. Loads milestones
+        #  8. Loads tags
+        #  9. All related people
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=7)
+            self.milestone, bugtask_count, query_limit=10)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -264,7 +325,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # shortcuts avoiding queries : test the worst case.
         subscribed_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         with person_logged_in(subscribed_team.teamowner):
             subscribed_team.addMember(viewer, subscribed_team.teamowner)
         bug1.subscribe(subscribed_team, product.owner)
@@ -272,7 +333,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         milestone_url = canonical_url(milestone)
         browser = self.getUserBrowser(user=viewer)
         # Seed the cookie cache and any other cross-request state we may gain
-        # in future.  See canonical.launchpad.webapp.serssion: _get_secret.
+        # in future.  See lp.services.webapp.serssion: _get_secret.
         browser.open(milestone_url)
         collector = QueryCollector()
         collector.register()
@@ -345,16 +406,19 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         logout()
 
     def test_bugtasks_queries(self):
-        # The view.bugtasks attribute will make five queries:
+        # The view.bugtasks attribute will make several queries:
         #  1. For each project in the group load all the dev focus series ids.
-        #  2. Load bugtasks and bugs.
-        #  3. Load assignees (Person, Account, and EmailAddress).
-        #  4. Load links to specifications.
-        #  5. Load links to branches.
-        #  6. Loads milestones.
+        #  2. Load bugtasks.
+        #  3. Load bugs.
+        #  4. Load assignees (Person, Account, and EmailAddress).
+        #  5. Load links to specifications.
+        #  6. Load links to branches.
+        #  7. Loads milestones.
+        #  8. Loads tags.
+        #  9. All related people.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=7)
+            self.milestone, bugtask_count, query_limit=10)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -430,3 +494,73 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
         self.assertThat(self.milestone, browses_under_limit)
+
+
+class TestMilestoneTagView(TestQueryCountBase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMilestoneTagView, self).setUp()
+        self.tags = [u'tag1']
+        self.owner = self.factory.makePerson()
+        self.project_group = self.factory.makeProject(owner=self.owner)
+        self.product = self.factory.makeProduct(
+            name="product1",
+            owner=self.owner,
+            project=self.project_group)
+        self.milestone = self.factory.makeMilestone(product=self.product)
+        with person_logged_in(self.owner):
+            self.milestone.setTags(self.tags, self.owner)
+        self.milestonetag = ProjectGroupMilestoneTag(
+            target=self.project_group, tags=self.tags)
+
+    def add_bug(self, count):
+        with person_logged_in(self.owner):
+            for n in range(count):
+                self.factory.makeBug(
+                    product=self.product, owner=self.owner,
+                    milestone=self.milestone)
+
+    def _make_form(self, tags):
+        return {
+            u'field.actions.search': u'Search',
+            u'field.tags': u' '.join(tags),
+            }
+
+    def _url_tail(self, url, separator='/'):
+        return url.rsplit(separator, 1)[1],
+
+    def test_view_properties(self):
+        # Ensure that the view is correctly initialized.
+        view = create_initialized_view(self.milestonetag, '+index')
+        self.assertEqual(self.milestonetag, view.context)
+        self.assertEqual(self.milestonetag.title, view.page_title)
+        self.assertContentEqual(self.tags, view.context.tags)
+
+    def test_view_form_redirect(self):
+        # Ensure a correct redirection is performed when tags are searched.
+        tags = [u'tag1', u'tag2']
+        form = self._make_form(tags)
+        view = create_initialized_view(self.milestonetag, '+index', form=form)
+        self.assertEqual(302, view.request.response.getStatus())
+        new_milestonetag = ProjectGroupMilestoneTag(
+            target=self.project_group, tags=tags)
+        self.assertEqual(
+            self._url_tail(canonical_url(new_milestonetag)),
+            self._url_tail(view.request.response.getHeader('Location')))
+
+    def test_view_form_error(self):
+        # Ensure the form correctly handles invalid submissions.
+        tags = [u'tag1', u't']  # One char tag is not valid.
+        form = self._make_form(tags)
+        view = create_initialized_view(self.milestonetag, '+index', form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual('tags', view.errors[0].field_name)
+
+    def test_bugtask_query_count(self):
+        # Ensure that a correct number of queries is executed for
+        # bugtasks retrieval.
+        bugtask_count = 10
+        self.assert_bugtasks_query_count(
+            self.milestonetag, bugtask_count, query_limit=11)

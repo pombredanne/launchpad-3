@@ -49,7 +49,7 @@ has been linked to the ProductSeries yet.
 When a branch is linked to the ProductSeries using this view, a new
 BranchJob to upload translation files to rosetta is created.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.browser.productseries import (
     ...     ProductSeriesLinkBranchView)
     >>> branch = makeScannedProductBranch(productseries)

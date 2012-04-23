@@ -9,12 +9,14 @@ Setup
 
 Create a builder working on a TranslationTemplatesBuild for a branch.
 
+    >>> from testtools.monkey import patch
     >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.model.builder import BuilderSlave
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
     >>> from lp.testing.fakemethod import FakeMethod
@@ -28,7 +30,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> login(ANONYMOUS)
     >>> owner_email = factory.getUniqueString() + '@example.com'
-    >>> owner = factory.makePerson(email=owner_email, password='test')
+    >>> owner = factory.makePerson(email=owner_email)
 
     >>> productseries = factory.makeProductSeries(owner=owner)
     >>> product = productseries.product
@@ -51,7 +53,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     ...     fake_chroot)
 
     >>> builder = factory.makeBuilder(vm_host=factory.getUniqueString())
-    >>> builder.setSlaveForTesting(FakeSlave())
+    >>> _ = patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(FakeSlave()))
     >>> buildqueue.markAsBuilding(builder)
 
     >>> builder_page = canonical_url(builder)
@@ -69,6 +71,7 @@ Show summary
 The job's summary shows that what type of job this is.  It also links
 to the branch.
 
+    >>> user_browser.mech_browser.set_handle_equiv(False)
     >>> user_browser.open(builder_page)
     >>> print extract_text(find_build_summary(user_browser))
     Working on TranslationTemplatesBuildJob for branch ...
@@ -159,3 +162,5 @@ build history.
     ...
     Translation template build for lp://dev/qblark
     Build started ... and finished ... taking 5 minutes
+    1 ... 1 of 1 result
+    ...

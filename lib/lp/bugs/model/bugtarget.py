@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,7 +9,6 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
-    'HasBugHeatMixin',
     'OfficialBugTag',
     'OfficialBugTagTargetMixin',
     ]
@@ -17,29 +16,12 @@ __all__ = [
 from storm.locals import (
     Int,
     Reference,
-    SQL,
     Storm,
     Unicode,
     )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IMasterStore,
-    )
-from canonical.launchpad.searchbuilder import (
-    any,
-    not_equals,
-    NULL,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator,
@@ -52,14 +34,22 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from lp.services.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class HasBugsBase:
@@ -91,7 +81,7 @@ class HasBugsBase:
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, modified_since=None,
-                    created_since=None, prejoins=[]):
+                    created_since=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -107,10 +97,9 @@ class HasBugsBase:
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']
-            del kwargs['prejoins']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params, prejoins=prejoins)
+        return BugTaskSet().search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -225,88 +214,6 @@ class BugTargetBase(HasBugsBase):
         return get_bug_tags_open_count(
             self.getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
-
-
-class HasBugHeatMixin:
-    """Standard functionality for objects implementing IHasBugHeat."""
-
-    def setMaxBugHeat(self, heat):
-        """See `IHasBugHeat`."""
-        if (IDistribution.providedBy(self)
-            or IProduct.providedBy(self)
-            or IProjectGroup.providedBy(self)
-            or IDistributionSourcePackage.providedBy(self)):
-            # Only objects that don't delegate have a setter.
-            self.max_bug_heat = heat
-        else:
-            raise NotImplementedError
-
-    def recalculateBugHeatCache(self):
-        """See `IHasBugHeat`.
-
-        DistributionSourcePackage overrides this method.
-        """
-        if IProductSeries.providedBy(self):
-            return self.product.recalculateBugHeatCache()
-        if IDistroSeries.providedBy(self):
-            return self.distribution.recalculateBugHeatCache()
-        if ISourcePackage.providedBy(self):
-            # Should only happen for nominations, so we can safely skip
-            # recalculating max_heat.
-            return
-
-        # XXX: deryck The queries here are a source of pain and have
-        # been changed a couple times looking for the best
-        # performaning version.  Use caution and have EXPLAIN ANALYZE
-        # data ready when changing these.
-        if IDistribution.providedBy(self):
-            sql = ["""SELECT Bug.heat
-                      FROM Bug, Bugtask
-                      WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distribution = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
-                   """SELECT Bug.heat
-                      FROM Bug, Bugtask, DistroSeries
-                      WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.distroseries = DistroSeries.id
-                      AND Bugtask.distroseries IS NOT NULL
-                      AND DistroSeries.distribution = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
-        elif IProduct.providedBy(self):
-            sql = ["""SELECT Bug.heat
-                      FROM Bug, Bugtask
-                      WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
-                   """SELECT Bug.heat
-                      FROM Bug, Bugtask, ProductSeries
-                      WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.productseries IS NOT NULL
-                      AND Bugtask.productseries = ProductSeries.id
-                      AND ProductSeries.product = %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
-        elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT Bug.heat
-                      FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id
-                      AND Bugtask.product = Product.id
-                      AND Product.project IS NOT NULL
-                      AND Product.project =  %s
-                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
-        else:
-            raise NotImplementedError
-
-        # Use Storm's lazy expression values
-        # <https://storm.canonical.com/Tutorial#Expression_values>
-        expr = SQL(
-            "(SELECT COALESCE(MAX(heat), 0) FROM (%s) AS geoff)" % (
-                " UNION ALL ".join("(%s)" % query for query in sql)))
-        self.setMaxBugHeat(expr)
-
-        # If the product is part of a project group we calculate the maximum
-        # heat for the project group too.
-        if IProduct.providedBy(self) and self.project is not None:
-            self.project.recalculateBugHeatCache()
 
 
 class OfficialBugTagTargetMixin:

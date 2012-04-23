@@ -82,7 +82,7 @@ The Ubuntu distro is owned by the Ubuntu team, ubuntu-team. jdub is a
 member, and therefore should be able to edit any spec attached to it
 (but not specs attached to mozilla-firefox).
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> print ubuntu.owner.name
     ubuntu-team
 
@@ -105,7 +105,7 @@ SpecificationSet implements the ISpecificationSet interface
     >>> specset.has_any_specifications
     True
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(ISpecificationSet, specset)
     True
 
@@ -233,7 +233,7 @@ specifications:
 
 Specs from inactive products are filtered out.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('mark@example.com')
 
     # Unlink the source packages so the project can be deactivated.

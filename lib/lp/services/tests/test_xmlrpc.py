@@ -7,12 +7,12 @@ __metaclass__ = type
 
 import httplib
 
-from canonical.testing.layers import BaseLayer
 from lp.services.xmlrpc import (
     HTTP,
     Transport,
     )
 from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 
 class DummyConnectionClass:

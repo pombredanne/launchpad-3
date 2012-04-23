@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -30,8 +30,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
     determine_source_file_type,
@@ -47,6 +45,8 @@ from lp.archiveuploader.utils import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import filechunks
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
@@ -58,7 +58,7 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import SourceFileMixin
 
 
-apt_pkg.InitSystem()
+apt_pkg.init_system()
 
 
 class UploadError(Exception):
@@ -86,13 +86,12 @@ class TarFileDateChecker:
         self.future_files = {}
         self.ancient_files = {}
 
-    def callback(self, kind, name, link, mode, uid, gid, size, mtime,
-                 major, minor):
-        """Callback designed to cope with apt_inst.debExtract.
+    def callback(self, member, data):
+        """Callback designed to cope with apt_inst.TarFile.go.
 
         It check and store timestamp details of the extracted DEB.
         """
-        self.check_cutoff(name, mtime)
+        self.check_cutoff(member.name, member.mtime)
 
     def check_cutoff(self, name, mtime):
         """Check the timestamp details of the supplied file.
@@ -304,7 +303,7 @@ class PackageUploadFile(NascentUploadFile):
 
         They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
-        Even if they might be overriden in the future.
+        Even if they might be overridden in the future.
         """
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
@@ -529,28 +528,27 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 yield error
 
     def extractAndParseControl(self):
-        """Extract and parse tcontrol information."""
-        deb_file = open(self.filepath, "r")
+        """Extract and parse control information."""
         try:
-            control_file = apt_inst.debExtractControl(deb_file)
-            control_lines = apt_pkg.ParseSection(control_file)
+            deb_file = apt_inst.DebFile(self.filepath)
+            control_file = deb_file.control.extractdata("control")
+            control_lines = apt_pkg.TagSection(control_file)
         except (SystemExit, KeyboardInterrupt):
             raise
         except:
-            deb_file.close()
             yield UploadError(
-                "%s: debExtractControl() raised %s, giving up."
+                "%s: extracting control file raised %s, giving up."
                  % (self.filename, sys.exc_type))
             return
 
         for mandatory_field in self.mandatory_fields:
-            if control_lines.Find(mandatory_field) is None:
+            if control_lines.find(mandatory_field) is None:
                 yield UploadError(
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
         control = {}
         for key in control_lines.keys():
-            control[key] = control_lines.Find(key)
+            control[key] = control_lines.find(key)
         self.parseControl(control)
 
     def parseControl(self, control):
@@ -581,7 +579,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         # Since DDEBs are generated after the original DEBs are processed
         # and considered by `dpkg-genchanges` they are only half-incorporated
-        # the the binary upload changes file. DDEBs are only listed in the
+        # the binary upload changes file. DDEBs are only listed in the
         # Files/Checksums-Sha1/ChecksumsSha256 sections and missing from
         # Binary/Description.
         if not self.filename.endswith('.ddeb'):
@@ -713,12 +711,12 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "data.tar.bz2, data.tar.lzma or data.tar.xz." %
                 (self.filename, data_tar))
 
-        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
-        XZ_REQUIRED_DPKG_VER = '1.15.6'
+        # xz-compressed debs must pre-depend on dpkg >= 1.15.6~.
+        XZ_REQUIRED_DPKG_VER = '1.15.6~'
         if data_tar == "data.tar.xz":
             parsed_deps = []
             try:
-                parsed_deps = apt_pkg.ParseDepends(
+                parsed_deps = apt_pkg.parse_depends(
                     self.control['Pre-Depends'])
             except (ValueError, TypeError):
                 yield UploadError(
@@ -739,7 +737,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     # VersionCompare returns values similar to cmp;
                     # negative if first < second, zero if first ==
                     # second and positive if first > second.
-                    if apt_pkg.VersionCompare(
+                    if apt_pkg.version_compare(
                         version, XZ_REQUIRED_DPKG_VER) >= 0:
                         # Pre-Depends dpkg is fine.
                         return
@@ -765,49 +763,34 @@ class BaseBinaryUploadFile(PackageUploadFile):
         tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
         tar_checker.reset()
         try:
-            deb_file = open(self.filepath, "rb")
-            apt_inst.debExtract(deb_file, tar_checker.callback,
-                                "control.tar.gz")
-            # Only one of these files is present in the archive, so loop
-            # until we find one of them, otherwise fail.
-            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
-                          "data.tar.xz")
-            for file in data_files:
-                deb_file.seek(0)
-                try:
-                    apt_inst.debExtract(deb_file, tar_checker.callback, file)
-                except SystemError:
-                    continue
-                else:
-                    deb_file.close()
+            deb_file = apt_inst.DebFile(self.filepath)
+        except SystemError, error:
+            # We get an error from the constructor if the .deb does not
+            # contain all the expected top-level members (debian-binary,
+            # control.tar.gz, and data.tar.*).
+            yield UploadError(error)
+        try:
+            deb_file.control.go(tar_checker.callback)
+            deb_file.data.go(tar_checker.callback)
+            future_files = tar_checker.future_files.keys()
+            if future_files:
+                first_file = future_files[0]
+                timestamp = time.ctime(tar_checker.future_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far into the future (e.g. %s [%s])."
+                     % (self.filename, len(future_files), first_file,
+                        timestamp))
 
-                    future_files = tar_checker.future_files.keys()
-                    if future_files:
-                        first_file = future_files[0]
-                        timestamp = time.ctime(
-                            tar_checker.future_files[first_file])
-                        yield UploadError(
-                            "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
-                             % (self.filename, len(future_files), first_file,
-                                timestamp))
-
-                    ancient_files = tar_checker.ancient_files.keys()
-                    if ancient_files:
-                        first_file = ancient_files[0]
-                        timestamp = time.ctime(
-                            tar_checker.ancient_files[first_file])
-                        yield UploadError(
-                            "%s: has %s file(s) with a time stamp too "
-                            "far in the past (e.g. %s [%s])."
-                             % (self.filename, len(ancient_files), first_file,
-                                timestamp))
-                    return
-
-            deb_file.close()
-            yield UploadError(
-                "Could not find data tarball in %s" % self.filename)
-
+            ancient_files = tar_checker.ancient_files.keys()
+            if ancient_files:
+                first_file = ancient_files[0]
+                timestamp = time.ctime(tar_checker.ancient_files[first_file])
+                yield UploadError(
+                    "%s: has %s file(s) with a time stamp too "
+                    "far in the past (e.g. %s [%s])."
+                     % (self.filename, len(ancient_files), first_file,
+                        timestamp))
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception, error:

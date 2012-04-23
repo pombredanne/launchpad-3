@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.services.database.lpstorm import IStore
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugSubscriptionFilterTag(TestCaseWithFactory):
@@ -53,7 +53,7 @@ class TestBugSubscriptionFilterTag(TestCaseWithFactory):
     def test_qualified_tag(self):
         """
         `BugSubscriptionFilterTag.qualified_tag` returns a tag with a
-        preceeding hyphen if `include` is `False`.
+        preceding hyphen if `include` is `False`.
         """
         bug_sub_filter_tag = BugSubscriptionFilterTag()
         bug_sub_filter_tag.tag = u"foo"

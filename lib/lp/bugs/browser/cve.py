@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'CveContextMenu',
+    'CveIndexView',
     'CveLinkView',
     'CveSetContextMenu',
     'CveSetNavigation',
@@ -16,23 +17,24 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import (
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.validators.cve import valid_cve
+from lp.bugs.browser.buglinktarget import BugLinksListingView
+from lp.bugs.interfaces.cve import (
+    ICve,
+    ICveSet,
+    )
+from lp.services.webapp import (
     canonical_url,
     ContextMenu,
     GetitemNavigation,
     LaunchpadView,
     Link,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from lp.app.browser.launchpadform import (
-    action,
-    LaunchpadFormView,
-    )
-from lp.app.validators.cve import valid_cve
-from lp.bugs.interfaces.cve import (
-    ICve,
-    ICveSet,
-    )
+from lp.services.webapp.batching import BatchNavigator
 
 
 class CveSetNavigation(GetitemNavigation):
@@ -68,6 +70,14 @@ class CveSetContextMenu(ContextMenu):
         text = 'Find CVEs'
         summary = 'Find CVEs in Launchpad'
         return Link('', text, summary)
+
+
+class CveIndexView(BugLinksListingView):
+    """CVE index page."""
+
+    @property
+    def page_title(self):
+        return self.context.displayname
 
 
 class CveLinkView(LaunchpadFormView):

@@ -7,16 +7,16 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.bazaar import BazaarApplicationView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):

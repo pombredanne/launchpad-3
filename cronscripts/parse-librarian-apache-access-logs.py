@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse librarian apache logs to find out download counts for each file.
@@ -19,15 +19,16 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from storm.sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from storm.sqlobject import SQLObjectNotFound
-
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.scripts.librarian_apache_log_parser import (
-    DBUSER, get_library_file_id)
 from lp.services.apachelogparser.script import ParseApacheLogs
+from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarianserver.apachelogparser import (
+    DBUSER,
+    get_library_file_id,
+    )
 
 
 class ParseLibrarianApacheLogs(ParseApacheLogs):

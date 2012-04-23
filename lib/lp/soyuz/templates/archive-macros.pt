@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-LPS.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
+LPJS.use('node', 'io-base', 'lp.anim', 'lp.soyuz.base',
         'lp.app.widgets.expander', function(Y) {
 
 
@@ -130,7 +130,7 @@ div.package-details {
       <thead>
         <tr class="archive_package_row">
         <th colspan="2">Source</th>
-        <th tal:condition="context/owner/isTeam">Uploader</th>
+        <th tal:condition="context/owner/is_team">Uploader</th>
         <th>Published</th>
         <th>Status</th>
         <th>Series</th>

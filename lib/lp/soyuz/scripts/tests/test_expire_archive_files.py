@@ -11,14 +11,15 @@ from datetime import (
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts.expire_archive_files import ArchiveExpirer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class ArchiveExpiryTestBase(TestCaseWithFactory):
@@ -30,7 +31,7 @@ class ArchiveExpiryTestBase(TestCaseWithFactory):
         """Set up some test publications."""
         super(ArchiveExpiryTestBase, self).setUp()
         # Configure the test publisher.
-        self.layer.switchDbUser("launchpad")
+        switch_dbuser("launchpad")
         self.stp = SoyuzTestPublisher()
         self.stp.prepareBreezyAutotest()
 
@@ -52,8 +53,7 @@ class ArchiveExpiryTestBase(TestCaseWithFactory):
     def runScript(self):
         """Run the expiry script and return."""
         script = self.getScript()
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
 
     def _setUpExpirablePublications(self, archive=None):
@@ -203,7 +203,7 @@ class ArchiveExpiryCommonTests(object):
         # will remove the test publications we just created.
         self.layer.txn.commit()
         script = self.getScript(['--dry-run'])
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
         self.assertSourceNotExpired(source)
         self.assertBinaryNotExpired(binary)
@@ -238,8 +238,7 @@ class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
             archive=self.archive)
         script = self.getScript()
         script.blacklist = [self.archive.owner.name, ]
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
         self.assertSourceNotExpired(source)
         self.assertBinaryNotExpired(binary)

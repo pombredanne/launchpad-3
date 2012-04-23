@@ -6,15 +6,16 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
+from lp.app.enums import ServiceUsage
+from lp.services.config import config
 from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model import pofilestatsjob
@@ -45,7 +46,27 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
-        job.run()
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
+        # Now that the job ran, the statistics have been updated.
+        self.assertEqual(pofile.potemplate.messageCount(), 1)
+
+    def test_run_with_product(self):
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        productseries = self.factory.makeProductSeries(product=product)
+        potemplate = self.factory.makePOTemplate(productseries=productseries)
+        pofile = self.factory.makePOFile('en', potemplate)
+        # Create a message so we have something to have statistics about.
+        singular = self.factory.getUniqueString()
+        self.factory.makePOTMsgSet(pofile.potemplate, singular)
+        # The statistics are still at 0, even though there is a message.
+        self.assertEqual(potemplate.messageCount(), 0)
+        job = pofilestatsjob.schedule(pofile.id)
+        # Just scheduling the job doesn't update the statistics.
+        self.assertEqual(pofile.potemplate.messageCount(), 0)
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
 
@@ -72,3 +93,100 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # is added.
         pofilestatsjob.schedule(pofile.id)
         self.assertIs(len(list(POFileStatsJob.iterReady())), 2)
+
+    def assertJobUpdatesStats(self, pofile1, pofile2):
+        # Create a single POTMsgSet and add it to only one of the POTemplates.
+        self.factory.makeSuggestion(pofile1)
+        self.factory.makeSuggestion(pofile2)
+        # The statistics start at 0.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
+        job = pofilestatsjob.schedule(pofile1.id)
+        # Just scheduling the job doesn't update the statistics.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
+        with dbuser(config.pofile_stats.dbuser):
+            job.run()
+        # Now that the job ran, the statistics for the POFile have been
+        # updated.
+        self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 1))
+        # The statistics for the other POFile is also updated as a result of
+        # running the job for the other POFile because they share
+        # translations.
+        self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 1))
+
+    def test_run_with_project_shared_template(self):
+        # Create a product with two series and sharing POTemplates
+        # in different series ('devel' and 'stable').
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        devel = self.factory.makeProductSeries(
+            name='devel', product=product)
+        stable = self.factory.makeProductSeries(
+            name='stable', product=product)
+
+        # POTemplate is a 'sharing' one if it has the same name ('messages').
+        template1 = self.factory.makePOTemplate(devel, name='messages')
+        template2 = self.factory.makePOTemplate(stable, name='messages')
+
+        self.factory.makeLanguage('en-tt')
+        pofile1 = self.factory.makePOFile('en-tt', template1)
+        pofile2 = self.factory.makePOFile('en-tt', template2)
+
+        self.assertJobUpdatesStats(pofile1, pofile2)
+
+    def test_run_with_product_and_distro_translation_sharing(self):
+        language = self.factory.makeLanguage('en-tt')
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        distroseries.distribution.translation_focus = distroseries
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        productseries = self.factory.makeProductSeries()
+        sourcepackage.setPackaging(
+            productseries, self.factory.makePerson())
+
+        # Create template ready for sharing on the Ubuntu side.
+        template1 = self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            name='messages')
+        pofile1 = self.factory.makePOFile(
+            language=language, potemplate=template1)
+
+        # Create template ready for sharing on the upstream side.
+        template2 = self.factory.makePOTemplate(
+            productseries=productseries, name='messages')
+        pofile2 = template2.getPOFileByLang(language.code)
+
+        self.assertJobUpdatesStats(pofile1, pofile2)
+
+    def test_run_with_distro_translation_sharing(self):
+        language = self.factory.makeLanguage('en-tt')
+        distroseries1 = self.factory.makeUbuntuDistroSeries()
+        distroseries1.distribution.translation_focus = distroseries1
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackage(
+            distroseries=distroseries1,
+            sourcepackagename=sourcepackagename)
+        distroseries2 = self.factory.makeUbuntuDistroSeries()
+        distroseries2.distribution.translation_focus = distroseries2
+        self.factory.makeSourcePackage(
+            distroseries=distroseries2,
+            sourcepackagename=sourcepackagename)
+
+        template1 = self.factory.makePOTemplate(
+            distroseries=distroseries1,
+            sourcepackagename=sourcepackagename,
+            name='messages')
+        pofile1 = self.factory.makePOFile(
+            language=language, potemplate=template1)
+
+        template2 = self.factory.makePOTemplate(
+            distroseries=distroseries2,
+            sourcepackagename=sourcepackagename,
+            name='messages')
+        pofile2 = template2.getPOFileByLang(language.code)
+
+        self.assertJobUpdatesStats(pofile1, pofile2)

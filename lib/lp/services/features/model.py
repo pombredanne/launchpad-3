@@ -12,7 +12,6 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
-
 from storm.locals import (
     DateTime,
     Int,
@@ -22,8 +21,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,

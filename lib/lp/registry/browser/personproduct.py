@@ -14,15 +14,15 @@ __all__ = [
 from zope.component import queryAdapter
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.launchpad.webapp import (
+from lp.app.errors import NotFoundError
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.registry.interfaces.personproduct import IPersonProduct
+from lp.services.webapp import (
     Link,
     Navigation,
     StandardLaunchpadFacets,
     )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.app.errors import NotFoundError
-from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.registry.interfaces.personproduct import IPersonProduct
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
 class PersonProductNavigation(Navigation):

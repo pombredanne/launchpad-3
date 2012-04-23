@@ -9,13 +9,15 @@ Sample Person will now add a couple email addresses to his account.
 
     >>> from lp.services.mail import stub
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> orig_email = 'test@canonical.com'
+    >>> browser = setupBrowser(auth='Basic %s:test' % orig_email)
     >>> browser.open('http://launchpad.dev/~name12')
     >>> browser.getLink(url='+editemails').click()
     >>> browser.url
     'http://launchpad.dev/~name12/+editemails'
 
-    >>> browser.getControl('Add a new address').value = 'test2@canonical.com'
+    >>> new_email = 'test2@canonical.com'
+    >>> browser.getControl('Add a new address').value = new_email
     >>> browser.getControl('Add', index=1).click()
 
     >>> browser.url
@@ -24,8 +26,18 @@ Sample Person will now add a couple email addresses to his account.
     ...     print msg
     A confirmation message has been sent to...
 
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> assert not stub.test_emails
+There should be an email for the new address and one for the original
+preferred email address that the change was made to their account. Order gets
+mixed up so you have to check both spots.
+
+    >>> to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
+    >>> assert len(to_addrs) == 2
+    >>> if orig_email in to_addrs[0][0]:
+    ...     assert new_email in to_addrs[1][0]
+    ... else:
+    ...     assert new_email in to_addrs[0][0]
+    ...     assert orig_email in to_addrs[1][0]
+    >>> stub.test_emails = []
 
 Trying to add the same email again (while it's unconfirmed) will only cause
 a new email to be sent with a new link. The links in the old and new email are
@@ -42,16 +54,24 @@ them.
     A confirmation message has been sent to...
 
     # Extract the link (from the email we just sent) the user will have to
-    # use to finish the registration process.
-    >>> from canonical.launchpad.ftests.logintoken import (
+    # use to finish the registration process. There will be two emails so we
+    # must check them both in order to make sure it's sent.
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> def check_tokenemail_and_reset():
+    ...     found, url, toaddr = False, None, None
+    ...     for from_addr, to_addrs, raw_msg in stub.test_emails:
+    ...         if 'token' in raw_msg:
+    ...             found = True
+    ...             url = get_token_url_from_email(raw_msg)
+    ...             toaddr = to_addrs
+    ...     assert found
+    ...     return url, toaddr
+    >>> token_url, toaddrs = check_tokenemail_and_reset()
     >>> token_url
     'http://launchpad.dev/token/...'
-    >>> to_addrs
+    >>> toaddrs
     ['test2@canonical.com']
-    >>> assert not stub.test_emails
 
 Follow the token link, to confirm the new email address.
 
@@ -69,7 +89,7 @@ Follow the token link, to confirm the new email address.
 Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.getLink(url='+editemails').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
@@ -103,13 +123,11 @@ that it's already registered.
 
     # Extract the link (from the email we just sent) the user will have to
     # use to finish the registration process.
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> token_url, toaddrs = check_tokenemail_and_reset()
     >>> token_url
     'http://launchpad.dev/token/...'
-    >>> to_addrs
+    >>> toaddrs
     ['sample@ubuntu.com']
-    >>> assert not stub.test_emails
 
 Follow the token link, to confirm the new email address.
 

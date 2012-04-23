@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,15 +21,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.testing.server import fillLibrarianFile
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -41,6 +32,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_caches
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarianserver.testing.server import fillLibrarianFile
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError
@@ -87,6 +82,12 @@ from lp.testing import (
     ExpectedException,
     StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
@@ -1336,11 +1337,19 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertComponentSectionAndPriority(
             ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
+    def _setup_archive(self):
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        return nobby, archive, source
+
     def test_existing_publication_overrides_pockets(self):
         # When we copy source/binaries from one pocket to another, the
         # overrides are unchanged from the source publication overrides.
-        nobby = self.createNobby(('i386', 'hppa'))
-        archive = self.test_publisher.ubuntutest.main_archive
+        nobby, archive, _ = self._setup_archive()
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-1', architecturehintlist='any',
             distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
@@ -1389,8 +1398,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             archive=archive, version='1.0-2', architecturehintlist='any')
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
@@ -1409,8 +1417,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             self.factory.makeSection())
         getUtility(ISourcePackageFormatSelectionSet).add(
             dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
-        self.layer.txn.commit()
-        self.layer.switchDbUser('archivepublisher')
+        switch_dbuser('archivepublisher')
         [copied_source] = do_copy(
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
@@ -1422,17 +1429,14 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_copy_ppa_generates_notification(self):
         # When a copy into a PPA is performed, a notification is sent.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby, archive, source = self._setup_archive()
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
         source.sourcepackagerelease.changelog = changelog
-        transaction.commit()  # Librarian.
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        transaction.commit()
+        person = self.factory.makePerson(name='archiver')
         target_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest)
+            distribution=self.test_publisher.ubuntutest,
+            owner=person, name='ppa')
         [copied_source] = do_copy(
             [source], target_archive, nobby, source.pocket, False,
             person=target_archive.owner, check_permissions=False,
@@ -1451,8 +1455,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
               * 1.0-2.
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)
@@ -1499,6 +1503,46 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEqual(expected_text, body)
         self.assertEqual(expected_text, body)
 
+    def test_sponsored_copy_notification(self):
+        # If it's a sponsored copy then the From: address on the
+        # notification is changed to the sponsored person and the
+        # SPPH.creator is set to the same person.
+        nobby, archive, source = self._setup_archive()
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        nobby.changeslist = 'nobby-changes@example.com'
+        sponsored_person = self.factory.makePerson(
+            displayname="Sponsored", email="sponsored@example.com")
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+                    person=source.sourcepackagerelease.creator,
+                    check_permissions=False, send_email=True,
+                    sponsored=sponsored_person)
+        [notification, announcement] = pop_notifications()
+        self.assertEquals(
+            'Sponsored <sponsored@example.com>', announcement['From'])
+        self.assertEqual(sponsored_person, copied_source.creator)
+
+    def test_sponsored_copy_sponsor_field(self):
+        # If it's a sponsored copy then the SPPH's sponsored field is set to
+        # the user who sponsored the copy.
+        nobby, archive, source = self._setup_archive()
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        sponsored_person = self.factory.makePerson(
+            displayname="Sponsored", email="sponsored@example.com")
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+                    person=source.sourcepackagerelease.creator,
+                    check_permissions=False, send_email=True,
+                    sponsored=sponsored_person)
+        self.assertEqual(source.sourcepackagerelease.creator,
+            copied_source.sponsor)
+
     def test_copy_notification_contains_aggregate_change_log(self):
         # When copying a package that generates a notification,
         # the changelog should contain all of the changelog_entry texts for
@@ -1540,14 +1584,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_generates_rejection_email(self):
         # When a copy into a primary archive fails, we expect a rejection
         # email if the send_email parameter is True.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        transaction.commit()  # Librarian.
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         # Ensure the same source is already in the destination so that we
         # get a rejection.
         self.test_publisher.getPubSource(
@@ -1575,15 +1612,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertIn(expected_text, notification.as_string())
 
     def test_copy_does_not_generate_notification(self):
-        # When notify = False is passed to do_copy, no notification is
+        # When send_email = False is passed to do_copy, no notification is
         # generated.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest)
         [copied_source] = do_copy(
@@ -1618,13 +1649,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_sets_creator(self):
         # The creator for the copied SPPH is the person passed
         # to do_copy.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby, archive, source = self._setup_archive()
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest)
         [copied_source] = do_copy(
@@ -1635,6 +1660,20 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEqual(
             target_archive.owner,
             copied_source.creator)
+
+    def test_unsponsored_copy_does_not_set_sponsor(self):
+        # If the copy is not sponsored, SPPH.sponsor is none
+        nobby, archive, source = self._setup_archive()
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+
+        self.assertEqual(
+            copied_source.sponsor,
+            None)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
@@ -1697,14 +1736,13 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
     def do_delayed_copy(self, source):
         """Execute and return the delayed copy."""
 
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         delayed_copy = _do_delayed_copy(
             source, self.copy_archive, self.copy_series, self.copy_pocket,
             True)
 
-        self.layer.txn.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         return delayed_copy
 
     def test_do_delayed_copy_simple(self):
@@ -1965,7 +2003,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
 
         # Run test cases in the production context.
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
@@ -3326,14 +3364,11 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test2_tar = test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
         test2_source.sourcepackagerelease.addFile(test2_tar)
-        # Commit to ensure librarian files are written.
-        self.layer.txn.commit()
-        # And set test1 source tarball to be expired
-        self.layer.switchDbUser('librarian')
+        # Set test1 source tarball to be expired.
+        switch_dbuser('librarian')
         naked_test1 = removeSecurityProxy(test1_tar)
         naked_test1.content = None
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         checker = CopyChecker(dest_ppa, include_binaries=False)
         self.assertIs(

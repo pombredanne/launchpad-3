@@ -23,7 +23,7 @@ send notifications to that team.  The possible contact methods are:
 
 As we can see, the landscape-developers team has no contact address.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
@@ -52,7 +52,7 @@ user to go through the email address confirmation process.
 
     # Extract the link (from the email we just sent) the user will have to
     # use to finish the registration process.
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_email)
     >>> token_url = get_token_url_from_email(raw_msg)
     >>> token_url

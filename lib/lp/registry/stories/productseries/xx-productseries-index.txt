@@ -145,13 +145,3 @@ There is a section that lists related links to this series
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
     >>> anon_browser.getLink('View downloads for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+download'>
-
-The involvement portlet has links to various actions, including
-submitting a new branch.
-
-    >>> user_browser.open('http://launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Submit code')
-    <Link ... url='http://code.launchpad.dev/evolution/+addbranch'>
-    >>> user_browser.getLink('Submit code').click()
-    >>> print user_browser.title
-    Register a branch : Code : Evolution

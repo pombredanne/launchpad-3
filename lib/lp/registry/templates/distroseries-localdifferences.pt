@@ -60,7 +60,7 @@
       </span>
       <div metal:fill-slot="buttons">
         <script type="text/javascript">
-          LPS.use(
+          LPJS.use(
             'node', 'event', 'lp.registry.distroseriesdifferences_details',
             'lp.app.confirmationoverlay',function(Y) {
             Y.on('domready', function() {
@@ -101,6 +101,15 @@
                             id upgrade/__name__;" />
         </div>
       </div>
+
+      <metal:bottom fill-slot="extra_bottom">
+        <tal:sponsored-person
+            define="widget nocall:view/widgets/sponsored_person;
+                    sync view/actions/byname/field.actions.sync|nothing"
+            condition="python:sync and sync.available()">
+          <metal:widget-div use-macro="widget/@@launchpad_form/widget_div" />
+        </tal:sponsored-person>
+      </metal:bottom>
 
       <div metal:fill-slot="widgets">
         <tal:navigation_top
@@ -181,7 +190,7 @@
                    class="parent-version">
                    <tal:replace
                         replace="difference/parent_source_version"/></a>
-                <span class="discreet">
+                <span class="lesser">
                   (<a tal:define="changelog_url python:view.parent_changelog_url(difference)"
                       tal:attributes="href changelog_url">changelog</a>)
                 </span>
@@ -226,7 +235,7 @@
                                 creator parent_source_pub/sourcepackagerelease/creator"
                         condition="python: uploader not in (None, creator)">
                       <br />
-                      <span class="discreet nowrap">
+                      <span class="lesser nowrap">
                         (uploaded by <a tal:attributes="href uploader/fmt:url"
                          tal:content="uploader/fmt:displayname" />)
                       </span>
@@ -248,7 +257,7 @@
                                 creator source_pub/sourcepackagerelease/creator"
                         condition="python: uploader not in (None, creator)">
                       <br />
-                      <span class="discreet nowrap">
+                      <span class="lesser nowrap">
                         (uploaded by <a tal:attributes="href uploader/fmt:url"
                          tal:content="uploader/fmt:displayname" />)
                       </span>
@@ -286,14 +295,14 @@
       </div>
     </div>
 <script type="text/javascript">
-LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
+LPJS.use('lp.registry.distroseriesdifferences_details', function(Y) {
   Y.on('domready', function() {
     Y.lp.registry.distroseriesdifferences_details.setup();
   });
 });
 </script>
 <script type="text/javascript">
-  LPS.use("lp.registry.distroseries.differences", function(Y) {
+  LPJS.use("lp.registry.distroseries.differences", function(Y) {
     Y.on("domready", function() {
       var form = Y.one("form#distroseries-localdiff-search-filter");
       var differences = Y.lp.registry.distroseries.differences;

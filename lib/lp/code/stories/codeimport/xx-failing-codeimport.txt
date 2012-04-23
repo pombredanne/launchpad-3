@@ -4,9 +4,9 @@ Imports that have failed more than the configured
 'consecutive_failure_limit' times in a row are no longer attempted.
 
     >>> login('admin@canonical.com')
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_finished_import)
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
     >>> product = factory.makeProduct(name='imported')
     >>> owner = factory.makePerson(name='import-owner')

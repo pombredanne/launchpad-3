@@ -19,7 +19,6 @@ from subprocess import (
     )
 import sys
 
-
 # This script lives in the 'utilites' directory.
 UTILITIES_DIR = os.path.dirname(__file__)
 CURRENT_YEAR = date.today().year

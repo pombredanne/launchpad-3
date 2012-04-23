@@ -45,7 +45,7 @@
       if (size != NaN && size >= 1) {
           timeline_url += "size=" + size + "&";
       }
-      LPS.use('node', function(Y) {
+      LPJS.use('node', function(Y) {
           if (Y.UA.ie) {
               return;
           }

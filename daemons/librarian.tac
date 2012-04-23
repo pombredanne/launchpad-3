@@ -8,20 +8,31 @@ import os
 import signal
 
 from meliae import scanner
-
-from twisted.application import service, strports
+from twisted.application import (
+    service,
+    strports,
+    )
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.scripts.twistd import ServerOptions
 from twisted.web import server
 
-from canonical.config import config, dbconfig
-from canonical.launchpad.daemons import readyservice
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-
-from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
-from canonical.librarian.libraryprotocol import FileUploadFactory
-from canonical.librarian import storage, db
-from canonical.librarian import web as fatweb
+from lp.services.config import (
+    config,
+    dbconfig,
+    )
+from lp.services.daemons import readyservice
+from lp.services.librarian.interfaces.client import (
+    DUMP_FILE,
+    SIGDUMPMEM,
+    )
+from lp.services.librarianserver import (
+    db,
+    storage,
+    web as fatweb,
+    )
+from lp.services.librarianserver.libraryprotocol import FileUploadFactory
+from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
@@ -91,7 +102,10 @@ else:
     setUpListener(uploadPort, webPort, restricted=True)
 
 # Log OOPS reports
-set_up_oops_reporting('librarian', 'librarian')
+options = ServerOptions()
+options.parseOptions()
+logfile = options.get("logfile")
+set_up_oops_reporting('librarian', 'librarian', logfile)
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

@@ -24,7 +24,7 @@ The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
     >>> from lp.app.enums import ServiceUsage
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> product.answers_usage = ServiceUsage.LAUNCHPAD
     >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
@@ -48,24 +48,6 @@ rendering links:
     http://bugs.launchpad.dev/app/simple/+filebug
     http://translations.launchpad.dev/app/simple
     http://blueprints.launchpad.dev/app/simple/+addspec
-    >>> for link in view.visible_disabled_links:
-    ...     print link.url
-    http://code.launchpad.dev/app/+addbranch
-
-Setting a branch for the series should enable the +addbranch link.
-
-    >>> series.branch = factory.makeBranch()
-    >>> view = create_view(series, '+get-involved')
-    >>> print view.codehosting_usage.name
-    LAUNCHPAD
-    >>> for link in view.enabled_links:
-    ...     print link.url
-    http://bugs.launchpad.dev/app/simple/+filebug
-    http://translations.launchpad.dev/app/simple
-    http://code.launchpad.dev/app/+addbranch
-    http://blueprints.launchpad.dev/app/simple/+addspec
-    >>> for link in view.visible_disabled_links:
-    ...     print link.url
 
 
 ProductSeries view
@@ -75,14 +57,14 @@ The default view for the productseries includes a script that augments the
 'Create milestone' link to show a formoverlay to create a milestone and
 update the milestones and releases table.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> login('foo.bar@canonical.com')
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        LPS.use(... 'lp.registry.milestoneoverlay',
+        LPJS.use(... 'lp.registry.milestoneoverlay',
                       'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
@@ -99,7 +81,7 @@ update the milestones and releases table.
 If the Create milestone link is not enabled, the script is not present.
 
     >>> a_user = factory.makePerson(name="hedgehog")
-    >>> login_person(a_user)
+    >>> ignored = login_person(a_user)
     >>> view = create_view(series, '+index', principal=a_user)
     >>> content = view.render()
     >>> print find_tag_by_id(content, 'milestone-script')
@@ -111,7 +93,7 @@ The view also sets the class of the milestone and releases table which can
 be removed by the in-page script. If the product series has no milestones,
 the class table is 'listing unseen'.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> print view.milestone_table_class
     listing unseen
@@ -151,7 +133,6 @@ The view provides access to the latest release if it has one.
     None
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> #login_person(firefox.owner)
     >>> series_with_downloads = firefox.getSeries('trunk')
     >>> view = create_initialized_view(series_with_downloads, name='+index')
     >>> print view.latest_release_with_download_files.version
@@ -190,7 +171,7 @@ Administer Productseries
 The productseries +review view allows an admin to administer the name and
 parent project.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('admin@canonical.com')
     >>> view = create_initialized_view(series, '+review')
@@ -215,7 +196,7 @@ The view provides a cancel_url and a next_url.
 
 Users without edit permission cannot access the view.
 
-    >>> login_person(a_user)
+    >>> ignored = login_person(a_user)
     >>> view = create_view(series, name='+review')
     >>> check_permission('launchpad.Admin', view)
     False
@@ -255,12 +236,12 @@ mistake.
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit', date_created=test_date)
-    >>> login_person(celebrities.admin.teamowner)
+    >>> ignored = login_person(celebrities.admin.teamowner)
     >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
 Users without edit permission cannot access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> login('no-priv@canonical.com')
     >>> view = create_view(productseries, name='+delete')
@@ -269,14 +250,14 @@ Users without edit permission cannot access the view.
 
 The project owner can access the view.
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_view(productseries, name='+delete')
     >>> check_permission('launchpad.Edit', view)
     True
 
 Registry experts can also access the view.
 
-    >>> login_person(celebrities.registry_experts.teamowner)
+    >>> ignored = login_person(celebrities.registry_experts.teamowner)
     >>> check_permission('launchpad.Edit', view)
     True
 

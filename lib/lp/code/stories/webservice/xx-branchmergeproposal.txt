@@ -2,13 +2,13 @@
 
 Branch merge proposals can be created through the API.
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> login('admin@canonical.com')
     >>> target = factory.makeBranch()
 
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
+    >>> from lp.services.webapp.servers import WebServiceTestRequest
     >>> request = WebServiceTestRequest(version="beta")
     >>> request.processInputs()
 
@@ -338,6 +338,7 @@ merge would look like if the source branch was merged into the target branch.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 
@@ -375,6 +376,7 @@ It is possible that the diff will be empty.
     HTTP/1.1 200 Ok
     ...
     Content-Type: application/json
+    ...
     Vary: ...
     ...
 

@@ -13,7 +13,7 @@
   <tal:uses_launchpad_bugtracker
      condition="context/distribution/bug_tracking_usage/enumvalue:LAUNCHPAD">
     <script type="text/javascript">
-      LPS.use('lp.registry.structural_subscription', function(Y) {
+      LPJS.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
           Y.on('domready', function() {
             module.setup({content_box: "#structural-subscription-content-box"});
@@ -90,7 +90,7 @@
             </dd>
           </dl>
         </div>
-        <p style="font-size: 80%;">
+        <p class="lesser">
           <sup>*</sup>actual publishing details may vary in this distribution, these are just the package defaults.
         </p>
       </div><!--portlet-->
@@ -236,7 +236,7 @@
       </p>
     </div>
 <script type="text/javascript">
-LPS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
 
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.

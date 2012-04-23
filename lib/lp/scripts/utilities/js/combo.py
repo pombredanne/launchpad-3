@@ -1,8 +1,11 @@
-import os
 import cgi
+import os
 import urlparse
 
-from jsbuild import CSSComboFile, JSComboFile
+from jsbuild import (
+    CSSComboFile,
+    JSComboFile,
+    )
 
 
 def parse_url(url):

@@ -64,7 +64,7 @@ to sign each email, we'll create a class which fakes a signed email:
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
@@ -86,7 +86,6 @@ bug got submitted correctly:
 
     >>> process_email(submit_mail)
 
-    >>> from canonical.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
@@ -193,19 +192,16 @@ package:
 It's possible to file a bug on more than product/package at once:
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> from lp.testing.dbuser import lp_dbuser
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -272,7 +268,7 @@ includes commands, the email has to be OpenPGP-signed.
     ... """
 
     >>> process_email(comment_mail)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
@@ -314,7 +310,7 @@ For that you can send mails to edit@malone-domain.
     ... """
 
     >>> process_email(edit_mail)
-    >>> commit()
+    >>> transaction.commit()
 
 No comments were added to the bugs:
 
@@ -343,7 +339,7 @@ them what happened.
     ... """
 
     >>> process_email(edit_mail)
-    >>> commit()
+    >>> transaction.commit()
 
 This time, neither bug four or five were updated.
 
@@ -355,7 +351,7 @@ This time, neither bug four or five were updated.
 And the person sending the email has received an error message.
 
     >>> def print_latest_email():
-    ...     commit()
+    ...     transaction.commit()
     ...     if not stub.test_emails:
     ...         raise AssertionError("No emails queued!")
     ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
@@ -426,7 +422,7 @@ Now we send a comment containing commands.
     ... /Sample Person
     ... """
     >>> process_email(comment_mail)
-    >>> commit()
+    >>> transaction.commit()
 
 The Malone handler saw that this email was signed, but since
 IWeaklyAuthenticatedPrincipal was provided by the current principal, no
@@ -465,7 +461,7 @@ The same will happen if we send the same email without signing it:
     ...     msg, msg['To'],
     ...     )
     True
-    >>> commit()
+    >>> transaction.commit()
 
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
     Traceback (most recent call last):
@@ -502,7 +498,7 @@ to the bug:
     ... /Sample Person
     ... """
     >>> process_email(comment_mail)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test3>')[0]
     >>> bug_one = bugset.get(1)
@@ -535,7 +531,7 @@ to edit bug 4:
     ...     handler.process(
     ...         msg, msg['To'],
     ...         )
-    ...     commit()
+    ...     transaction.commit()
 
     >>> def submit_commands(bug, *commands):
     ...     msg = construct_command_email(bug, *commands)
@@ -630,13 +626,18 @@ otherwise permission to complete the operation will be denied.)
 
     >>> subscription = bug_four.subscribe(bug_four.owner, bug_four.owner)
 
+We will also add an attachment to the bug.
+
+    >>> bug_attachment = bug_four.addAttachment(
+    ...     bug_four.owner, 'Attachment', 'No comment', 'test.txt')
+
     >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private
     True
 
 We flush the database caches to ensure that the timestamp is set:
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 A timestamp and the user that sets the bug private is also recorded:
@@ -645,11 +646,15 @@ A timestamp and the user that sets the bug private is also recorded:
     datetime.datetime(...)
     >>> bug_four.who_made_private.name
     u'name12'
+    >>> bug_attachment.libraryfile.restricted
+    True
 
 The bug report can also be made public:
 
     >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
+    False
+    >>> bug_attachment.libraryfile.restricted
     False
 
 The timestamp and user are cleared:
@@ -708,7 +713,7 @@ Switching off the security flag won't make the bug public, though.
     True
     >>> bug_four.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> commit()
+    >>> transaction.commit()
 
 Specifying something else than 'yes' or 'no' produces an error:
 
@@ -1034,7 +1039,7 @@ If the CVE sequence can't be found, an error message is sent to the
 user.
 
     >>> bug = new_firefox_bug()
-    >>> commit()
+    >>> transaction.commit()
     >>> submit_commands(bug, 'cve no-such-cve')
     >>> bug.cves.count()
     0
@@ -1157,7 +1162,7 @@ permissions also elicits an error message:
 
     >>> login(sampledata.USER_EMAIL)
     >>> bug = new_firefox_bug()
-    >>> commit()
+    >>> transaction.commit()
 
     >>> login('no-priv@canonical.com')
     >>> for bugtask in bug.bugtasks:
@@ -1194,7 +1199,6 @@ nominate bugs for a release.
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu = removeSecurityProxy(ubuntu)
     >>> ubuntu.bug_supervisor = sample_person
-    >>> logout()
 
     >>> login(sampledata.USER_EMAIL)
 
@@ -1391,7 +1395,6 @@ will be created if one doesn't exist.
     >>> evolution = getUtility(IProductSet).getByName("evolution")
     >>> evolution = removeSecurityProxy(evolution)
     >>> evolution.bug_supervisor = no_priv
-    >>> logout()
 
     >>> login('no-priv@canonical.com')
     >>> bug = new_firefox_bug()
@@ -1442,7 +1445,7 @@ Bug supervisors can set some restricted statuses:
     ...     login('foo.bar@canonical.com')
     ...     upstream_task.pillar.setBugSupervisor(email_user, email_user)
 
-    >>> login_person(email_user)
+    >>> ignored = login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
     >>> print upstream_task.status.title
@@ -1492,7 +1495,7 @@ Everyone else gets an explanatory error message:
 Let's take a look at all the other error messages that the sub
 commands can produce.
 
-    >>> login_person(email_user)
+    >>> ignored = login_person(email_user)
 
 Invalid status:
 
@@ -1602,7 +1605,7 @@ An email can contain multiple commands, even for different bugs.
     ...         bugtask.importance.title)
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bugtask_modified_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified_event)
@@ -2034,7 +2037,7 @@ error, so let's create one.
 Now we can send an error mail, passing the created message to
 send_process_error_notification().
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from lp.services.mail.notification import (
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
@@ -2042,7 +2045,7 @@ send_process_error_notification().
 
 The To and Subject headers got set to the values we provided:
 
-    >>> commit()
+    >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['To']
@@ -2100,12 +2103,14 @@ the original message.
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
     ...     test_msg, failing_command=['foo bar'],
     ...     max_return_size=max_return_size)
-    >>> commit()
+    >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
     >>> msg = original_msg.get_payload()[0]
-    >>> # Fudge due to new line added to the payload.
+
+Fudge due to new line added to the payload.
+
     >>> len(str(msg)) <= (max_return_size + 1)
     True
 
@@ -2220,7 +2225,7 @@ email has other two commands - 'security maybe', which is guaranteed to
 fail, and 'status triaged' which is OK. 'security' commands cause the
 entire email to not to be processed, though.
 
-    >>> commit()
+    >>> transaction.commit()
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: %s@bugs.canonical.com
     ... Date: Thu Apr 3 11:53:23 BST 2008
@@ -2369,10 +2374,10 @@ Email attachments are stored as bug attachments (provided that they match the
 criteria described below).
 
     >>> def print_attachments(attachments):
-    ...     if attachments.count() == 0:
+    ...     if len(list(attachments)) == 0:
     ...         print "No attachments"
     ...         return
-    ...     commit()
+    ...     transaction.commit()
     ...     for attachment in attachments:
     ...         lib = attachment.libraryfile
     ...         print lib.__class__.__name__, lib.filename, lib.mimetype,
@@ -2978,7 +2983,7 @@ set the datecreated field of the bug's initial message (see bug
     >>> bug_with_watch = firefox.createBug(CreateBugParams(
     ...     no_priv, 'New Bug with watch',
     ...     msg=initial_bug_message, datecreated=creation_date))
-    >>> commit()
+    >>> transaction.commit()
 
     >>> with lp_dbuser():
     ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -3038,7 +3043,7 @@ been submitted.
     ...     }
 
     >>> process_email(reply_mail)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> [reply_message] = list(bug_with_watch.messages)[-1:]
     >>> print reply_message.rfc822msgid
@@ -3102,7 +3107,7 @@ to the bug and will not have its bugwatch field set.
     ...     }
 
     >>> process_email(reply_mail)
-    >>> commit()
+    >>> transaction.commit()
 
     >>> [reply_message] = list(bug_with_watch.messages)[-1:]
 

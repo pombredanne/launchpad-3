@@ -94,7 +94,7 @@ class ProcessUpload(LaunchpadCronScript):
 
     @property
     def lockfilename(self):
-        """Return specific lockfilename according the policy used.
+        """Return specific lockfilename according to the policy used.
 
         Each different p-u policy requires and uses a different lockfile.
         This is because they are run by different users and are independent

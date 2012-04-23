@@ -88,7 +88,7 @@ Since we only have 2 package sets at this point only these will be shown.
 In a next step we will associate source package names with the package sets
 just created.
 
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -597,7 +597,7 @@ Now add "test@canonical.com" to the techboard team and log in as him.
     >>> ignored = techboard.addMember(
     ...     person2, reviewer=person2, status=TeamMembershipStatus.APPROVED,
     ...     force_team_add=True)
-    >>> login_person(person2)
+    >>> ignored = login_person(person2)
 
 Create a new package set.
 

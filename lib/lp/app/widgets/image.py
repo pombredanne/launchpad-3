@@ -25,15 +25,15 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAlias,
-    ILibraryFileAliasSet,
-    )
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp import _
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.services.fields import KEEP_SAME_IMAGE
+from lp.services.librarian.interfaces import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    )
+from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class LaunchpadFileWidget(FileWidget):

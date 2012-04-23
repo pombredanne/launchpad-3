@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IWebServiceClientRequest
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import Equals
@@ -12,36 +13,31 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubscribersWithDetails,
     BugSubscriptionAddView,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.deprecated import LaunchpadFormHarness
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
-
-
-ON = 'on'
-OFF = None
 
 
 class BugsubscriptionPrivacyTests(TestCaseWithFactory):
@@ -52,7 +48,7 @@ class BugsubscriptionPrivacyTests(TestCaseWithFactory):
         super(BugsubscriptionPrivacyTests, self).setUp()
         self.user = self.factory.makePerson()
         self.bug = self.factory.makeBug(owner=self.user)
-        removeSecurityProxy(self.bug).private = True
+        removeSecurityProxy(self.bug).setPrivate(True, self.user)
 
     def _assert_subscription_fails(self, team):
         with person_logged_in(self.user):
@@ -629,7 +625,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         direct_subscriber = self.factory.makeTeam(
             name='team', displayname='Team Name', owner=teamowner,
             visibility=PersonVisibility.PRIVATE)
-        with person_logged_in(direct_subscriber.teamowner):
+        with person_logged_in(teamowner):
             bug.subscribe(direct_subscriber, direct_subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
 

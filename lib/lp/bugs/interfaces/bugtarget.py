@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -12,7 +12,6 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
-    'IHasBugHeat',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
@@ -52,7 +51,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
@@ -253,7 +252,7 @@ class IHasBugs(Interface):
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
                     linked_blueprints=None, structural_subscriber=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    modified_since=None, created_since=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -334,8 +333,7 @@ class IBugTarget(IHasBugs):
     def createBug(bug_params):
         """Create a new bug on this target.
 
-        bug_params is an instance of
-        canonical.launchpad.interfaces.CreateBugParams.
+        bug_params is an instance of `CreateBugParams`.
         """
 
 # We assign the schema for an `IBugTask` attribute here
@@ -343,24 +341,6 @@ class IBugTarget(IHasBugs):
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
-
-
-class IHasBugHeat(Interface):
-    """An entity which has bug heat."""
-
-    max_bug_heat = Attribute(
-        "The current highest bug heat value for this entity.")
-
-    def setMaxBugHeat(heat):
-        """Set the max_bug_heat for this context."""
-
-    def recalculateBugHeatCache():
-        """Recalculate and set the various bug heat values for this context.
-
-        Several different objects cache max_bug_heat.
-        When DistributionSourcePackage is the target, the total_bug_heat
-        and bug_count are also cached.
-        """
 
 
 class BugDistroSeriesTargetDetails:

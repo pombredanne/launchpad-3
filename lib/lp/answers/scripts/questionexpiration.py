@@ -9,14 +9,14 @@ from logging import getLogger
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.interaction import (
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.config import config
+from lp.services.webapp.interaction import (
     endInteraction,
     setupInteraction,
     )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 
 
 class QuestionJanitor:

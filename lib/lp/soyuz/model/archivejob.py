@@ -18,16 +18,16 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
     IArchiveJob,
@@ -108,7 +108,7 @@ class ArchiveJobDerived(BaseRunnableJob):
         """Get a job by id.
 
         :return: the ArchiveJob with the specified id, as the current
-                 BugJobDerived subclass.
+                 ArchiveJobDerived subclass.
         :raises: SQLObjectNotFound if there is no job with the specified id,
                  or its job_type does not match the desired subclass.
         """
@@ -121,7 +121,7 @@ class ArchiveJobDerived(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready BugJobs."""
+        """Iterate through all ready ArchiveJobs."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             ArchiveJob,

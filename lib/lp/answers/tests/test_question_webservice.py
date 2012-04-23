@@ -11,12 +11,6 @@ from simplejson import dumps
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    FunctionalLayer,
-    )
 from lp.answers.errors import (
     AddAnswerContactError,
     FAQTargetError,
@@ -27,16 +21,21 @@ from lp.answers.errors import (
     QuestionTargetError,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing.pages import LaunchpadWebServiceCaller
 from lp.testing.views import create_webservice_error_view
 
 

@@ -5,7 +5,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_ids, parse_links, validate_feed)
 
 == Create some specific branches to use for this test ==
@@ -33,7 +33,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> make_branch(mike, product2, 'fourth')
     >>> make_branch(mary, product1, 'fifth')
     >>> make_branch(mary, product2, 'sixth')
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

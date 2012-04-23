@@ -7,9 +7,6 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -23,11 +20,14 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import IPrimaryContext
 from lp.testing import (
     person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class BaseBranchTargetTests:

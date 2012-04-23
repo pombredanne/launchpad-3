@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
@@ -15,6 +14,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
 
@@ -29,9 +29,9 @@ class TestProductSeriesHelp(TestCaseWithFactory):
         product = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=product)
         person = product.owner
-        self.factory.makeSSHKey(person=person)
         branch_url = "lp:~%s/%s/%s" % (person.name, product.name, series.name)
         with person_logged_in(person):
+            self.factory.makeSSHKey(person=person)
             view = create_initialized_view(series, '+code-summary')
             self.assertThat(view(), Contains(branch_url))
 

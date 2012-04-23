@@ -10,21 +10,22 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.launchpad.ftests import (
+from lp.services.config import config
+from lp.testing import (
     ANONYMOUS,
     login,
     logout,
     )
-from canonical.launchpad.testing.systemdocs import (
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     setUp,
     tearDown,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 
@@ -38,7 +39,7 @@ def buildmasterSetUp(test):
     login(ANONYMOUS)
     setGlobs(test)
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    switch_dbuser(test_dbuser)
 
 
 def buildmasterTearDown(test):
@@ -82,7 +83,7 @@ def test_suite():
 
     for filename in sorted(filenames):
         test = LayeredDocFileSuite(
-            "../doc/" +filename, setUp=buildmasterSetUp,
+            "../doc/" + filename, setUp=buildmasterSetUp,
             tearDown=buildmasterTearDown,
             stdout_logging_level=logging.WARNING,
             layer=LaunchpadZopelessLayer)

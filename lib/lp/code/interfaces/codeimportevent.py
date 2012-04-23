@@ -22,7 +22,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.enums import CodeImportEventType
 from lp.services.fields import PublicPersonChoice
 

@@ -13,11 +13,10 @@
     padding-right: 0.5em;
     padding-bottom: 0.5em;
     text-align: right;
-    font-size: smaller;
   }
     </style>
     <script type="text/javascript">
-        LPS.use('base', 'node', 'event',
+        LPJS.use('base', 'node', 'event',
                 'lp.comments.hide', 'lp.answers.subscribers',
             function(Y) {
         Y.on('domready', function() {

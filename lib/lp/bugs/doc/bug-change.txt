@@ -3,7 +3,7 @@
 The base class for BugChanges doesn't actually implement anything.
 
     >>> import pytz
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from datetime import datetime
     >>> from lp.bugs.adapters.bugchange import BugChangeBase
     >>> from lp.bugs.interfaces.bugchange import IBugChange
@@ -141,7 +141,7 @@ bug's target for Meta data changes, but not for lifecycle changes.
 
 
     >>> from lp.testing import person_logged_in
-    >>> from lp.bugs.enum import BugNotificationLevel
+    >>> from lp.bugs.enums import BugNotificationLevel
     >>> lifecycle_subscriber = factory.makePerson(
     ...         displayname='Lifecycle subscriber')
     >>> metadata_subscriber = factory.makePerson(
@@ -215,8 +215,6 @@ get_bug_change_class will also work for BugTasks.
 
     >>> get_bug_change_class(example_bug.bugtasks[0], 'importance')
     <class '...BugTaskImportanceChange'>
-
-See component/ftests/test_bugchange.py for some sanity checks.
 
 
 === AttributeChange ===

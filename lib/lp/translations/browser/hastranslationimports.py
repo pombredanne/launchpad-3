@@ -25,10 +25,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.vocabulary import ForgivingSimpleVocabulary
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -40,6 +37,9 @@ from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
+from lp.services.webapp.vocabulary import ForgivingSimpleVocabulary
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,

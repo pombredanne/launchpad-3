@@ -9,11 +9,10 @@ from textwrap import dedent
 from testtools.matchers import MatchesRegex
 import transaction
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import ZopelessAppServerLayer
-from lp.translations.model.translationpackagingjob import (
-    TranslationSplitJob)
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
+from lp.translations.model.translationpackagingjob import TranslationSplitJob
 from lp.translations.tests.test_translationpackagingjob import (
     make_translation_merge_job,
     )
@@ -34,10 +33,10 @@ class TestMergeTranslations(TestCaseWithFactory):
         matcher = MatchesRegex(dedent("""\
             INFO    Creating lockfile: /var/lock/launchpad-jobcronscript.lock
             INFO    Running synchronously.
-            INFO    Running TranslationMergeJob \(ID .*\) in status Waiting
+            INFO    Running <.*?TranslationMergeJob.*?> \(ID .*\) in status Waiting
             INFO    Merging .* and .* in Ubuntu Distroseries.*
             INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.
-            INFO    Running TranslationSplitJob \(ID .*\) in status Waiting
+            INFO    Running <.*?TranslationSplitJob.*?> \(ID .*\) in status Waiting
             INFO    Splitting .* and .* in Ubuntu Distroseries.*
             INFO    1 entries split.
             INFO    Ran 1 TranslationMergeJob jobs.

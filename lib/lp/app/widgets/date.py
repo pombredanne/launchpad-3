@@ -39,14 +39,14 @@ from zope.datetime import (
     parse,
     )
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.validators import LaunchpadValidationError
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class DateTimeWidget(TextWidget):
     """A date and time selection widget with popup selector.
 
-      >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+      >>> from lp.services.webapp.servers import LaunchpadTestRequest
       >>> from zope.schema import Field
       >>> field = Field(__name__='foo', title=u'Foo')
       >>> widget = DateTimeWidget(field, LaunchpadTestRequest())

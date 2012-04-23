@@ -18,12 +18,6 @@ from bzrlib.patches import (
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
     IDiff,
@@ -35,10 +29,16 @@ from lp.code.model.diff import (
     PreviewDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.services.webapp import canonical_url
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 

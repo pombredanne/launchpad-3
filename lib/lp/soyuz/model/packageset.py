@@ -17,11 +17,6 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
@@ -29,6 +24,11 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet,
     )
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.helpers import ensure_unicode
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
     IPackageset,

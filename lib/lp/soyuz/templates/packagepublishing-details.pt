@@ -70,11 +70,4 @@
     </li>
 
   </ul>
-
-  <tal:ppa condition="context/archive/is_ppa">
-    <p tal:condition="view/isRemoved">
-      Removed files can still be downloaded from the Librarian; see below.
-    </p>
-  </tal:ppa>
-
 </tal:root>

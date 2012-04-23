@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
@@ -6,30 +6,32 @@
 import datetime
 import logging
 import os
-import pytz
 
+import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.utils import copy_and_close
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.services.config import config
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -78,7 +80,7 @@ class MakeBehaviorMixin(object):
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = WaitingSlave()
         behavior._builder = removeSecurityProxy(self.factory.makeBuilder())
-        behavior._builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
@@ -106,15 +108,20 @@ class TestTranslationTemplatesBuildBehavior(
         super(TestTranslationTemplatesBuildBehavior, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    def _becomeBuilddMaster(self):
-        """Log into the database as the buildd master."""
-        transaction.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
-
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
         return getUtility(IBuildQueueSet).getByJob(job.id)
+
+    def test_dispatchBuildToSlave_no_chroot_fails(self):
+        # dispatchBuildToSlave will fail if the chroot does not exist.
+        behavior = self.makeBehavior(use_fake_chroot=False)
+        buildqueue_item = self._getBuildQueueItem(behavior)
+
+        switch_dbuser(config.builddmaster.dbuser)
+        self.assertRaises(
+            CannotBuild, behavior.dispatchBuildToSlave, buildqueue_item,
+            logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
@@ -123,7 +130,7 @@ class TestTranslationTemplatesBuildBehavior(
         behavior = self.makeBehavior()
         buildqueue_item = self._getBuildQueueItem(behavior)
 
-        self._becomeBuilddMaster()
+        switch_dbuser(config.builddmaster.dbuser)
         d = behavior.dispatchBuildToSlave(buildqueue_item, logging)
 
         def got_dispatch((status, info)):

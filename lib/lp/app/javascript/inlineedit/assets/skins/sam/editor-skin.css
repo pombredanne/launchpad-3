@@ -38,6 +38,10 @@
     width: 60px;
 }
 
+.yui3-ieditor-singleline textarea {
+    width: 100%;
+}
+
 .yui3-skin-sam .yui3-ieditor-multiline .yui3-ieditor-btns {
     text-align: right;
     width: 100%;
@@ -141,15 +145,19 @@
 }
 
 .lazr-multiline-edit .yui3-ieditor-input {
-    padding: 3px 9px 14px 17px;
+    padding: 3px 9px 0px 17px;
     border:0;
     border: 1px solid #d6d6d6;
     border-left: 2px groove #D6D6D6;
     border-top: 2px groove #D6D6D6;
     position: relative;
     left: 5px;
-    top: -6px;
+    top: 29px;
     line-height: 1.2em;
+}
+
+.lazr-multiline-edit .yui3-ieditor-input textarea {
+    max-width: 45em;
 }
 
 .yui3-editable_text-edit_mode .lazr-multiline-edit .yui3-ieditor-input {

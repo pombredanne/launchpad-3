@@ -12,16 +12,12 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.propertycache import get_property_cache
+from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.adapters.notification import (
     assemble_body,
     calculate_subject,
@@ -44,6 +40,10 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.testing.mail_helpers import pop_notifications
 
@@ -195,7 +195,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         removeSecurityProxy(
             bpr.build.source_package_release).changelog = changelog
         self.layer.txn.commit()
-        archive = self.factory.makeArchive()
+        person = self.factory.makePerson(name='archiver')
+        archive = self.factory.makeArchive(owner=person, name='ppa')
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
@@ -218,8 +219,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             If you don't understand why your files were rejected please send an email
             to launchpad-users@lists.launchpad.net for help (requires membership).
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)

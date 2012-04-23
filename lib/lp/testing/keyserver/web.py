@@ -38,10 +38,9 @@ import os
 from time import sleep
 
 from twisted.web.resource import Resource
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import (
+from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     MoreThanOneGPGKeyFound,

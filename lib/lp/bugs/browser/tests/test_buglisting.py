@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import os
+
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -16,18 +17,11 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    find_tags_by_class,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -35,10 +29,17 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -148,26 +149,6 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertIs(None,
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
-
-    def test_searchUnbatched_can_preload_objects(self):
-        # BugTaskSearchListingView.searchUnbatched() can optionally
-        # preload objects while retrieving the bugtasks.
-        product = self.factory.makeProduct()
-        bugtask_1 = self.factory.makeBug(product=product).default_bugtask
-        bugtask_2 = self.factory.makeBug(product=product).default_bugtask
-        view = create_initialized_view(product, '+bugs')
-        Store.of(product).invalidate()
-        with StormStatementRecorder() as recorder:
-            prejoins = [
-                (Person, LeftJoin(Person, BugTask.owner == Person.id)),
-                ]
-            bugtasks = list(view.searchUnbatched(prejoins=prejoins))
-            self.assertEqual(
-                [bugtask_1, bugtask_2], bugtasks)
-            # If the table prejoin failed, then this will issue two
-            # additional SQL queries
-            [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_search_components_error(self):
         # Searching for using components for bug targets that are not a distro
@@ -466,6 +447,18 @@ class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
             bug_target, rootsite='answers', view_name='+addquestion')
         self.assertEqual(url, view.addquestion_url)
 
+    def test_upstream_project(self):
+        # BugTaskSearchListingView.upstream_project and
+        # BugTaskSearchListingView.upstream_launchpad_project are
+        # None for all bug targets except SourcePackages
+        # and DistributionSourcePackages.
+        bug_target = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertIs(None, view.upstream_project)
+        self.assertIs(None, view.upstream_launchpad_project)
+
 
 class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
 
@@ -488,6 +481,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(upstream_project, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         content = find_tag_by_id(view.render(), 'also-in-upstream')
         link = canonical_url(upstream_project, rootsite='bugs')
         self.assertEqual(link, content.a['href'])
@@ -500,6 +494,7 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(upstream_project, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
 
     def test_package_without_upstream_project(self):
@@ -511,7 +506,24 @@ class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
         view = create_initialized_view(
             bug_target, '+bugs', principal=observer)
         self.assertEqual(None, view.upstream_launchpad_project)
+        self.assertEqual(None, view.upstream_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
+
+    def test_filter_by_upstream_target(self):
+        # If an upstream target is specified is the query parameters,
+        # the corresponding flag in BugTaskSearchParams is set.
+        upstream_project = self._makeBugTargetProduct(
+            bug_tracker='launchpad', packaging=True)
+        bug_target = self._getBugTarget(
+            upstream_project.distrosourcepackages[0])
+        form = {
+            'search': 'Search',
+            'advanced': 1,
+            'field.upstream_target': upstream_project.name,
+            }
+        view = create_initialized_view(bug_target, '+bugs', form=form)
+        search_params = view.buildSearchParams()
+        self.assertEqual(upstream_project, search_params.upstream_target)
 
 
 class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):

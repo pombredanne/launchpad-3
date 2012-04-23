@@ -17,12 +17,6 @@ lp/archiveuploader
 lp/archivepublisher
 lp/app
 lp/answers
-canonical/testing
-canonical/lp
 canonical/librarian
 canonical/lazr
-canonical/launchpad/webapp
 canonical/launchpad
-canonical/database/testing
-canonical/database
-canonical/config

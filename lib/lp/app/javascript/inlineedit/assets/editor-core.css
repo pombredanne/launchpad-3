@@ -4,15 +4,23 @@
 .yui3-ieditor-errors-hidden,
 .yui3-editable_text-hidden,
 .yui3-editable_text-edit_mode .yui3-editable_text-trigger,
-.yui3-editable_text-edit_mode .yui3-editable_text-text
-{ display: none; }
+.yui3-editable_text-edit_mode .yui3-editable_text-text {
+    display: none;
+}
 
 /* By default, input elements don't inherit these properties, but
  * in an inline editing context, it makes sense to do so.
  */
-.yui3-ieditor-input {
+.yui3-ieditor-input textarea {
+    background-color: #fafafa;
+    border: 0;
     color: inherit;
     font: inherit;
+    line-height: inherit;
+}
+
+.yui3-ieditor-input textarea:focus {
+    outline: none;
 }
 
 /* Konqueror doesn't render the multiline editor's button if there's
@@ -22,7 +30,7 @@
  *
  * Browsers should ignore the content attribute for :link and :visited
  * pseudo-classes, but Konqueror doesn't.  Setting non-empty text
- * content here tricks it into rendering the button.  
+ * content here tricks it into rendering the button.
  *
  * Other things we tried instead of this hack:
  *  - Insert an HTML comment in the <a>.  No effect.

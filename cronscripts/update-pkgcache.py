@@ -16,7 +16,8 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 
 

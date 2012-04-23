@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -58,29 +58,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData,
-    IStructuredString,
-    )
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
+from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -108,13 +89,38 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.person import Person
 from lp.services.browser_helpers import (
     get_plural_text,
     get_user_agent_distroseries,
     )
-from lp.services.database.bulk import load
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import english_list
+from lp.services.job.model.job import Job
+from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
+from lp.services.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -499,7 +505,7 @@ class ArchiveMenuMixin:
     def delete(self):
         """Display a delete menu option for non-copy archives."""
         text = 'Delete packages'
-        link = Link('+delete-packages', text, icon='edit')
+        link = Link('+delete-packages', text, icon='trash-icon')
 
         # This link should not be available for copy archives or
         # archives without any sources.
@@ -514,7 +520,7 @@ class ArchiveMenuMixin:
     def copy(self):
         """Display a copy menu option for non-copy archives."""
         text = 'Copy packages'
-        link = Link('+copy-packages', text, icon='edit')
+        link = Link('+copy-packages', text, icon='package-sync')
 
         # This link should not be available for copy archives.
         if self.context.is_copy:
@@ -1028,6 +1034,33 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # context and view menues.
         return self.context.is_copy
 
+    @cachedproperty
+    def package_copy_jobs(self):
+        """Return incomplete PCJs targeted at this archive."""
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        ppcjs = job_source.getIncompleteJobsForArchive(self.context)
+
+        # Convert PPCJ into PCJ.
+        # removeSecurityProxy is only used to fetch pcjs objects and preload
+        # related objects.
+        pcjs = [removeSecurityProxy(ppcj).context for ppcj in ppcjs]
+        # Pre-load related Jobs.
+        jobs = load_related(Job, pcjs, ['job_id'])
+        # Pre-load related requesters.
+        load_related(Person, jobs, ['requester_id'])
+        # Pre-load related source archives.
+        load_related(Archive, pcjs, ['source_archive_id'])
+
+        return ppcjs
+
+    @cachedproperty
+    def has_pending_copy_jobs(self):
+        return self.package_copy_jobs.any()
+
+    @cachedproperty
+    def has_append_perm(self):
+        return check_permission('launchpad.Append', self.context)
+
 
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
@@ -1178,20 +1211,15 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         publishing_set.requestDeletion(selected_sources, self.user, comment)
 
         # Present a page notification describing the action.
-        messages = []
-        messages.append(
-            '<p>Source and binaries deleted by %s request:'
-            % self.user.displayname)
+        messages = [structured(
+            '<p>Source and binaries deleted by %s:', self.user.displayname)]
         for source in selected_sources:
-            messages.append('<br/>%s' % source.displayname)
-        messages.append('</p>')
-        # Replace the 'comment' content added by the user via structured(),
-        # so it will be quoted appropriately.
-        messages.append("<p>Deletion comment: %(comment)s</p>")
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(
-            structured(notification, comment=comment))
+            messages.append(structured('<br/>%s', source.displayname))
+        messages.append(structured(
+            '</p>\n<p>Deletion comment: %s</p>', comment))
+        notification = structured(
+            '\n'.join([msg.escapedtext for msg in messages]))
+        self.request.response.addNotification(notification)
 
         self.setNextURL()
 
@@ -1266,7 +1294,7 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
-                        check_permissions=True):
+                        check_permissions=True, sponsored=None):
     """Schedule jobs to copy packages later.
 
     :return: A `structured` with human-readable feedback about the
@@ -1288,7 +1316,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
             copy_policy=PackageCopyPolicy.INSECURE,
-            requester=person)
+            requester=person, sponsored=sponsored)
 
     return copy_asynchronously_message(len(source_pubs))
 
@@ -1352,7 +1380,8 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True, force_async=False):
+                check_permissions=True, force_async=False,
+                sponsored_person=None):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1378,9 +1407,13 @@ class PackageCopyingMixin:
             requester's permissions to copy should be checked.
         :param force_async: Force the copy to create package copy jobs and
             perform the copy asynchronously.
+        :param sponsored_person: An IPerson representing the person being
+            sponsored (for asynchronous copies only).
 
         :return: True if the copying worked, False otherwise.
         """
+        assert force_async or not sponsored_person, (
+            "sponsored must be None for sync copies")
         try:
             if (force_async == False and
                     self.canCopySynchronously(source_pubs)):
@@ -1394,7 +1427,8 @@ class PackageCopyingMixin:
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,
                     dest_display_name=dest_display_name, person=person,
-                    check_permissions=check_permissions)
+                    check_permissions=check_permissions,
+                    sponsored=sponsored_person)
         except CannotCopy, error:
             self.setFieldError(
                 sources_field_name, render_cannotcopy_as_html(error))

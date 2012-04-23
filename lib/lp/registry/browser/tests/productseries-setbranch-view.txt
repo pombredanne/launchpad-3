@@ -6,20 +6,26 @@ this series.  The branch can be one that already exists in Launchpad,
 or a new branch in Launchpad can be defined, or it can be a repository
 that exists externally in a variety of version control systems.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
     >>> product = factory.makeProduct(name="chevy")
     >>> series = factory.makeProductSeries(name="impala", product=product)
     >>> transaction.commit()
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> view = create_initialized_view(series, name='+setbranch',
     ...                                principal=product.owner)
-    >>> print find_tag_by_id(view.render(), 'maincontent')
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print content
     <div...
     ...Link to a Bazaar branch already on Launchpad...
-    ...Create a new, empty branch in Launchpad and link to this series...
     ...Import a branch hosted somewhere else...
     ...Branch name:...
     ...Branch owner:...
+
+The user can see instructions to push a branch.
+
+    >>> instructions = find_tag_by_id(content, 'push-instructions')
+    >>> 'bzr push lp:~' in str(instructions)
+    True
 
 
 Linking to an existing branch
@@ -81,72 +87,6 @@ show the branch location pre-populated with the existing value.
     ...                                principal=product.owner, form=form)
     >>> print view.widgets.get('branch_location')._getFormValue().unique_name
     ~person.../chevy/impala-branch
-
-
-Creating a new branch
----------------------
-
-When creating a new branch the branch name and owner must be specified.
-
-    >>> series = factory.makeProductSeries(name="camaro", product=product)
-    >>> transaction.commit()
-
-    >>> form = {
-    ...     'field.branch_type': 'create-new',
-    ...     'field.actions.update': 'Update',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     series, name='+setbranch', principal=product.owner, form=form)
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    >>> for error in view.errors:
-    ...     print error
-    The branch name must be set.
-    The branch owner must be set.
-
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
-    >>> form = {
-    ...     'field.branch_type': 'create-new',
-    ...     'field.branch_name': 'camaro-branch',
-    ...     'field.branch_owner': product.owner.name,
-    ...     'field.actions.update': 'Update',
-    ...     }
-
-    >>> view = create_initialized_view(
-    ...     series, name='+setbranch', principal=product.owner, form=form)
-    >>> print view.errors_in_action
-    False
-    >>> print view.next_url
-    http://launchpad.dev/chevy/camaro
-    >>> for error in view.errors:
-    ...     print error
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    New branch created and linked to the series.
-    >>> print series.branch.name
-    camaro-branch
-
-Using a branch name that already exists results in an error.
-
-    >>> form = {
-    ...     'field.branch_type': 'create-new',
-    ...     'field.branch_name': 'camaro-branch',
-    ...     'field.branch_owner': product.owner.name,
-    ...     'field.actions.update': 'Update',
-    ...     }
-
-    >>> view = create_initialized_view(
-    ...     series, name='+setbranch', principal=product.owner, form=form)
-    >>> print view.errors_in_action
-    True
-    >>> print view.next_url
-    None
-    >>> for error in view.errors:
-    ...     print error
-    You already have a branch for <em>Chevy</em> called <em>camaro-branch</em>.
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
 
 
 Import a branch hosted elsewhere

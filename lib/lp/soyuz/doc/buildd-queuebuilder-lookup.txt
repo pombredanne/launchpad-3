@@ -17,7 +17,7 @@ returned by the method depending on the archive state.
 First, we will create some functions to help creating and inspecting
 publications for a given distroseries:
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> from lp.registry.interfaces.distribution import IDistributionSet

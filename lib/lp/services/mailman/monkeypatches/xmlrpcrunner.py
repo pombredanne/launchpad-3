@@ -38,7 +38,7 @@ from Mailman.Queue.sbcache import get_switchboard
 
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.errorlog import ErrorReportingUtility
 from lp.services.xmlrpc import Transport
 
 
@@ -57,12 +57,6 @@ def get_mailing_list_api_proxy():
         mm_cfg.XMLRPC_URL, transport=Transport(timeout=mm_cfg.XMLRPC_TIMEOUT))
 
 
-class MailmanErrorUtility(ErrorReportingUtility):
-    """An error utility that for the MailMan xmlrpc process."""
-
-    _default_config_section = 'mailman'
-
-
 def log_exception(message, *args):
     """Write the current exception traceback into the Mailman log file.
 
@@ -73,7 +67,8 @@ def log_exception(message, *args):
         may be a format string.
     :param args: Optional arguments to be interpolated into a format string.
     """
-    error_utility = MailmanErrorUtility()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure(section_name='mailman')
     error_utility.raising(sys.exc_info())
     out_file = StringIO()
     traceback.print_exc(file=out_file)
@@ -169,7 +164,8 @@ class XMLRPCRunner(Runner):
     def _log(self, exc):
         """Log the exception in a log file and as an OOPS."""
         Runner._log(self, exc)
-        error_utility = MailmanErrorUtility()
+        error_utility = ErrorReportingUtility()
+        error_utility.configure(section_name='mailman')
         error_utility.raising(sys.exc_info())
 
     def _check_list_actions(self):

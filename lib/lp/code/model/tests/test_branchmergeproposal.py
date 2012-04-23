@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -23,18 +23,10 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     BranchVisibilityRule,
     CodeReviewNotificationLevel,
@@ -75,7 +67,10 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.database.constants import UTC_NOW
 from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.webapp import canonical_url
+from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -89,6 +84,12 @@ from lp.testing import (
 from lp.testing.factory import (
     GPGSigningContext,
     LaunchpadObjectFactory,
+    )
+from lp.testing.gpgkeys import import_secret_test_key
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 
 
@@ -1282,10 +1283,11 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         with person_logged_in(person):
             private_bug = self.factory.makeBug(private=True, owner=person)
             bmp.source_branch.linkBug(private_bug, person)
+            private_tasks = private_bug.bugtasks
         self.assertEqual(
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
         all_bugtasks = list(bug.bugtasks)
-        all_bugtasks.extend(private_bug.bugtasks)
+        all_bugtasks.extend(private_tasks)
         self.assertEqual(
             all_bugtasks, list(bmp.getRelatedBugTasks(person)))
 
@@ -1484,6 +1486,57 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             review_type='Specific')
         # Note we're using the reference from the first call
         self.assertEqual('specific', reference.review_type)
+
+    def _check_mp_branch_visibility(self, branch, reviewer):
+        # The reviewer is subscribed to the branch and can see it.
+        sub = branch.getSubscription(reviewer)
+        self.assertEqual(
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            sub.notification_level)
+        self.assertEqual(
+            BranchSubscriptionDiffSize.NODIFF,
+            sub.max_diff_lines)
+        self.assertEqual(
+            CodeReviewNotificationLevel.FULL,
+            sub.review_level)
+        # The reviewer can see the branch.
+        self.assertTrue(branch.visibleByUser(reviewer))
+        if branch.stacked_on is not None:
+            self._check_mp_branch_visibility(branch.stacked_on, reviewer)
+
+    def _test_nominate_grants_visibility(self, reviewer):
+        """Nominated reviewers can see the source and target branches."""
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        # We make a source branch stacked on a private one.
+        base_branch = self.factory.makeBranch(
+            owner=owner, private=True, product=product)
+        source_branch = self.factory.makeBranch(
+            stacked_on=base_branch, product=product)
+        target_branch = self.factory.makeBranch(owner=owner, product=product)
+        target_branch.product.setBranchVisibilityTeamPolicy(
+            owner, BranchVisibilityRule.PRIVATE)
+        login_person(owner)
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            source_branch=source_branch,
+            target_branch=target_branch)
+        target_branch.setPrivate(True, owner)
+        # The reviewer can't see the source or target branches.
+        self.assertFalse(source_branch.visibleByUser(reviewer))
+        self.assertFalse(target_branch.visibleByUser(reviewer))
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner)
+        for branch in [source_branch, target_branch]:
+            self._check_mp_branch_visibility(branch, reviewer)
+
+    def test_nominate_person_grants_visibility(self):
+        reviewer = self.factory.makePerson()
+        self._test_nominate_grants_visibility(reviewer)
+
+    def test_nominate_team_grants_visibility(self):
+        reviewer = self.factory.makeTeam()
+        self._test_nominate_grants_visibility(reviewer)
 
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -1775,7 +1828,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             "+from storm.locals import Int, Reference\n"
             " from sqlobject import ForeignKey, IntCol\n"
             "\n"
-            " from canonical.config import config\n")
+            " from lp.services.config import config\n")
         diff_stat = {'sample': (1, 1)}
         login_person(merge_proposal.registrant)
         merge_proposal.updatePreviewDiff(
@@ -1801,10 +1854,8 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
         # show that we are not reusing the objects.
-        preview_diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff).id
-        diff_id = removeSecurityProxy(
-            merge_proposal.preview_diff).diff_id
+        preview_diff_id = removeSecurityProxy(merge_proposal.preview_diff).id
+        diff_id = removeSecurityProxy(merge_proposal.preview_diff).diff_id
         diff_text, diff_stat = self._updatePreviewDiff(merge_proposal)
         self.assertEqual(diff_text, merge_proposal.preview_diff.text)
         self.assertEqual(diff_stat, merge_proposal.preview_diff.diffstat)

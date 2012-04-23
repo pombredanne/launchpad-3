@@ -5,27 +5,40 @@
     <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
       Edit
     </button>
+
+    <a tal:condition="view/help_link"
+       tal:attributes="href view/help_link"
+       target="help"
+       class="sprite maybe">&nbsp;
+       <span class="invisible-link">Driver help</span>
+    </a>
+
     <noscript tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
          class="sprite edit"></a>
+      <a tal:condition="view/help_link"
+         tal:attributes="href view/help_link"
+         target="help"
+         class="sprite maybe">&nbsp;
+         <span class="invisible-link">Driver help</span>
+      </a>
     </noscript>
     <div class="yui3-activator-message-box yui3-activator-hidden"></div>
 </span>
+
 <script tal:condition="view/can_write"
         tal:content="structure string:
-LPS.use('lp.app.picker', function(Y) {
-    if (Y.UA.ie) {
-        return;
-    }
-
+LPJS.use('lp.app.picker', 'lp.client', function(Y) {
+    var picker_config = ${view/json_config}
+    picker_config.validate_callback = Y.lp.app.picker.public_private_warning;
     Y.on('load', function(e) {
       Y.lp.app.picker.addPickerPatcher(
         ${view/json_vocabulary_name},
         ${view/json_resource_uri},
         ${view/json_attribute},
         ${view/json_content_box_id},
-        ${view/json_config});
+        picker_config);
       }, window);
 });
 "/>

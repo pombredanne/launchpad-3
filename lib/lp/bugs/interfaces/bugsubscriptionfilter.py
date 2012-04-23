@@ -30,15 +30,13 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from lp.bugs.enum import BugNotificationLevel
+from lp import _
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    )
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.services.fields import (
     PersonChoice,
     SearchTag,

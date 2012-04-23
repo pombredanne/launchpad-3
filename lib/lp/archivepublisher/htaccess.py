@@ -17,12 +17,13 @@ __all__ = [
 
 
 import crypt
+from operator import attrgetter
 import os
 
-from operator import attrgetter
 from zope.component import getUtility
 
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+
 
 HTACCESS_TEMPLATE = """
 AuthType           Basic

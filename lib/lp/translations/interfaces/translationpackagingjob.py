@@ -1,6 +1,4 @@
-from lp.services.job.interfaces.job import (
-    IJobSource,
-    )
+from lp.services.job.interfaces.job import IJobSource
 
 
 class ITranslationPackagingJobSource(IJobSource):

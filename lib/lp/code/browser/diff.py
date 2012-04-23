@@ -9,13 +9,13 @@ __all__ = [
     ]
 
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.webapp import Navigation
-from canonical.launchpad.webapp.publisher import canonical_url
+from lp import _
 from lp.app.browser.tales import ObjectFormatterAPI
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.services.browser_helpers import get_plural_text
+from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.webapp import Navigation
+from lp.services.webapp.publisher import canonical_url
 
 
 class PreviewDiffNavigation(Navigation, FileNavigationMixin):

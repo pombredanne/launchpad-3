@@ -6,7 +6,7 @@ form will suggest translations from this alternative language as well as those
 in the form's main language.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import extract_url_parameter
+    >>> from lp.testing.pages import extract_url_parameter
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
 
     >>> login(ANONYMOUS)
@@ -49,7 +49,7 @@ since that is the one language we always translate from, never to.
 The same goes for a user who has no preferred languages set.
 
     >>> user_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> user_browser.open(translate_page)
     >>> get_alternative_languages_widget(user_browser).displayOptions[:4]
     ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']

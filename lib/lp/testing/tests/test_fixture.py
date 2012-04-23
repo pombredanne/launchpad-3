@@ -22,29 +22,29 @@ from zope.interface import (
     )
 from zope.sendmail.interfaces import IMailDelivery
 
-from canonical.config import (
+from lp.registry.model.person import Person
+from lp.services.config import (
     config,
     dbconfig,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.errorlog import (
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.messaging import rabbit
+from lp.services.webapp.errorlog import (
     globalErrorUtility,
     notify_publisher,
     )
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseLayer,
-    LaunchpadZopelessLayer,
-    LaunchpadLayer,
-    )
-from lp.registry.model.person import Person
-from lp.services.messaging import rabbit
 from lp.testing import TestCase
 from lp.testing.fixture import (
     CaptureOops,
     PGBouncerFixture,
     ZopeAdapterFixture,
     ZopeUtilityFixture,
+    )
+from lp.testing.layers import (
+    BaseLayer,
+    DatabaseLayer,
+    LaunchpadLayer,
+    LaunchpadZopelessLayer,
     )
 
 

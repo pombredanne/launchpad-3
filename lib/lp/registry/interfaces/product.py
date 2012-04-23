@@ -39,7 +39,10 @@ from lazr.restful.declarations import (
     export_factory_operation,
     export_operation_as,
     export_read_operation,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -51,6 +54,7 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -68,17 +72,14 @@ from zope.schema import (
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    )
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -92,6 +93,7 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetPublic,
     IOfficialBugTagTargetRestricted,
     )
+from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
@@ -615,10 +617,10 @@ class IProductPublic(
         description=_("Whether or not this project's attributes are "
                       "updated automatically."))
 
-    private_bugs = Bool(title=_('Private bugs'),
+    private_bugs = exported(Bool(title=_('Private bugs'), readonly=True,
                         description=_(
                             "Whether or not bugs reported into this project "
-                            "are private by default."))
+                            "are private by default.")))
     licenses = exported(
         Set(title=_('Licenses'),
             value_type=Choice(vocabulary=License)))
@@ -727,6 +729,9 @@ class IProductPublic(
                     "Whether the project's licensing requires a new "
                     "commercial subscription to use launchpad.")))
 
+    has_current_commercial_subscription = Attribute("""
+        Whether the project has a current commercial subscription.""")
+
     license_status = Attribute("""
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
@@ -741,6 +746,24 @@ class IProductPublic(
         _("Series that are active and/or have been packaged."))
 
     packagings = Attribute(_("All the packagings for the project."))
+
+    def checkPrivateBugsTransitionAllowed(private_bugs, user):
+        """Can the private_bugs attribute be changed to the value by the user?
+
+        Generally, the permission is restricted to ~registry or ~admin or
+        bug supervisors.
+        In addition, a valid commercial subscription is required to turn on
+        private bugs when being done by a bug supervisor. However, no
+        commercial subscription is required to turn off private bugs.
+        """
+
+    @mutator_for(private_bugs)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(private_bugs=copy_field(private_bugs))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setPrivateBugs(private_bugs, user):
+        """Mutator for private_bugs that checks entitlement."""
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.

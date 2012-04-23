@@ -7,44 +7,98 @@ __metaclass__ = type
 
 __all__ = [
     'InvolvedMenu',
-    'PillarView',
     'PillarBugsMenu',
+    'PillarView',
+    'PillarNavigationMixin',
+    'PillarPersonSharingView',
+    'PillarSharingView',
     ]
 
 
 from operator import attrgetter
 
+from lazr.restful import ResourceJSONEncoder
+from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.utils import get_current_web_service_request
+import simplejson
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.interfaces import Unauthorized
+from zope.traversing.browser.absoluteurl import absoluteURL
 
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.publisher import (
-    LaunchpadView,
-    nearest,
-    )
+from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.tales import MenuAPI
+from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.pillar import PillarPerson
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    nearest,
+    stepthrough,
+    )
+
+
+class PillarPersonBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IPillarPerson`."""
+
+    @property
+    def text(self):
+        return "Sharing details for %s" % self.context.person.displayname
+
+
+class PillarNavigationMixin:
+
+    @stepthrough('+sharing')
+    def traverse_details(self, name):
+        """Traverse to the sharing details for a given person."""
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        return PillarPerson.create(self.context, person)
 
 
 class IInvolved(Interface):
@@ -55,8 +109,7 @@ class InvolvedMenu(NavigationMenu):
     """The get involved menu."""
     usedfor = IInvolved
     links = [
-        'report_bug', 'ask_question', 'help_translate', 'submit_code',
-        'register_blueprint']
+        'report_bug', 'ask_question', 'help_translate', 'register_blueprint']
 
     @property
     def pillar(self):
@@ -76,18 +129,6 @@ class InvolvedMenu(NavigationMenu):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
             enabled=service_uses_launchpad(self.pillar.translations_usage))
-
-    def submit_code(self):
-        if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD,
-                ServiceUsage.EXTERNAL,
-                ]:
-            enabled = True
-        else:
-            enabled = False
-        return Link(
-            '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=enabled)
 
     def register_blueprint(self):
         return Link(
@@ -217,3 +258,221 @@ class PillarBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+
+class PillarSharingView(LaunchpadView):
+
+    page_title = "Sharing"
+    label = "Sharing information"
+
+    sharing_vocabulary_name = 'NewPillarSharee'
+
+    related_features = (
+        'disclosure.enhanced_sharing.enabled',
+        'disclosure.enhanced_sharing.writable',
+        )
+
+    _batch_navigator = None
+
+    def _getSharingService(self):
+        return getUtility(IService, 'sharing')
+
+    @property
+    def information_types(self):
+        return self._getSharingService().getInformationTypes(self.context)
+
+    @property
+    def sharing_permissions(self):
+        return self._getSharingService().getSharingPermissions()
+
+    @cachedproperty
+    def sharing_vocabulary(self):
+        registry = getVocabularyRegistry()
+        return registry.get(
+            self.context, self.sharing_vocabulary_name)
+
+    @cachedproperty
+    def sharing_vocabulary_filters(self):
+        return vocabulary_filters(self.sharing_vocabulary)
+
+    @property
+    def sharing_picker_config(self):
+        return dict(
+            vocabulary=self.sharing_vocabulary_name,
+            vocabulary_filters=self.sharing_vocabulary_filters,
+            header=self.sharing_vocabulary.displayname,
+            steptitle=self.sharing_vocabulary.step_title)
+
+    @property
+    def json_sharing_picker_config(self):
+        return simplejson.dumps(
+            self.sharing_picker_config, cls=ResourceJSONEncoder)
+
+    def _getBatchNavigator(self, sharees):
+        """Return the batch navigator to be used to batch the sharees."""
+        return BatchNavigator(
+            sharees, self.request,
+            hide_counts=True,
+            size=config.launchpad.default_batch_size,
+            range_factory=StormRangeFactory(sharees))
+
+    def sharees(self):
+        """An `IBatchNavigator` for sharees."""
+        if self._batch_navigator is None:
+            unbatchedSharees = self.unbatched_sharees()
+            self._batch_navigator = self._getBatchNavigator(unbatchedSharees)
+        return self._batch_navigator
+
+    def unbatched_sharees(self):
+        """All the sharees for a pillar."""
+        return self._getSharingService().getPillarSharees(self.context)
+
+    def initialize(self):
+        super(PillarSharingView, self).initialize()
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        enabled = bool(getFeatureFlag(enabled_readonly_flag))
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        if not enabled and not write_flag_enabled:
+            raise Unauthorized("This feature is not yet available.")
+        cache = IJSONRequestCache(self.request)
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.context))
+        cache.objects['information_types'] = self.information_types
+        cache.objects['sharing_permissions'] = self.sharing_permissions
+
+        view_names = set(reg.name for reg
+            in iter_view_registrations(self.__class__))
+        if len(view_names) != 1:
+            raise AssertionError("Ambiguous view name.")
+        cache.objects['view_name'] = view_names.pop()
+        batch_navigator = self.sharees()
+        cache.objects['sharee_data'] = (
+            self._getSharingService().jsonShareeData(batch_navigator.batch))
+
+        def _getBatchInfo(batch):
+            if batch is None:
+                return None
+            return {'memo': batch.range_memo,
+                    'start': batch.startNumber() - 1}
+
+        next_batch = batch_navigator.batch.nextBatch()
+        cache.objects['next'] = _getBatchInfo(next_batch)
+        prev_batch = batch_navigator.batch.prevBatch()
+        cache.objects['prev'] = _getBatchInfo(prev_batch)
+        cache.objects['total'] = batch_navigator.batch.total()
+        cache.objects['forwards'] = batch_navigator.batch.range_forwards
+        last_batch = batch_navigator.batch.lastBatch()
+        cache.objects['last_start'] = last_batch.startNumber() - 1
+        cache.objects.update(_getBatchInfo(batch_navigator.batch))
+
+
+class PillarPersonSharingView(LaunchpadView):
+
+    page_title = "Person or team"
+    label = "Information shared with person or team"
+
+    def initialize(self):
+        enabled_flag = 'disclosure.enhanced_sharing_details.enabled'
+        enabled = bool(getFeatureFlag(enabled_flag))
+        if not enabled:
+            raise Unauthorized("This feature is not yet available.")
+
+        self.pillar = self.context.pillar
+        self.person = self.context.person
+
+        self.label = "Information shared with %s" % self.person.displayname
+        self.page_title = "%s" % self.person.displayname
+        self.sharing_service = getUtility(IService, 'sharing')
+
+        self._loadSharedArtifacts()
+
+        cache = IJSONRequestCache(self.request)
+        request = get_current_web_service_request()
+        branch_data = self._build_branch_template_data(self.branches, request)
+        bug_data = self._build_bug_template_data(self.bugs, request)
+        sharee_data = {
+            'displayname': self.person.displayname,
+            'self_link': absoluteURL(self.person, request)
+        }
+        pillar_data = {
+            'self_link': absoluteURL(self.pillar, request)
+        }
+        cache.objects['sharee'] = sharee_data
+        cache.objects['pillar'] = pillar_data
+        cache.objects['bugs'] = bug_data
+        cache.objects['branches'] = branch_data
+        enabled_writable_flag = (
+            'disclosure.enhanced_sharing.writable')
+        write_flag_enabled = bool(getFeatureFlag(enabled_writable_flag))
+        cache.objects['sharing_write_enabled'] = (write_flag_enabled
+            and check_permission('launchpad.Edit', self.pillar))
+
+    def _getSafeBugs(self, bugs):
+        """Uses the bugsearch tools to safely get the list of bugs the user is
+        allowed to see."""
+        if bugs == set([]):
+            return []
+        params = []
+        for b in bugs:
+            param = BugTaskSearchParams(user=self.user, bug=b)
+            if IProduct.providedBy(self.pillar):
+                param.setProduct(self.pillar)
+            elif IDistribution.providedBy(self.pillar):
+                param.setDistribution(self.pillar)
+            params.append(param)
+
+        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:])
+        return list(safe_bugs)
+
+    def _loadSharedArtifacts(self):
+        # As a concrete can by linked via more than one policy, we use sets to
+        # filter out dupes.
+        bugs = set()
+        branches = set()
+        for artifact in self.sharing_service.getSharedArtifacts(
+                            self.pillar, self.person):
+            concrete = artifact.concrete_artifact
+            if IBug.providedBy(concrete):
+                bugs.add(concrete)
+            elif IBranch.providedBy(concrete):
+                branches.add(concrete)
+
+        # For security reasons, the bugs have to be refetched by ID through
+        # the normal querying mechanism. This prevents bugs the user shouldn't
+        # be able to see from being displayed.
+        self.bugs = self._getSafeBugs(bugs)
+        self.branches = branches
+        self.shared_bugs_count = len(self.bugs)
+        self.shared_branches_count = len(self.branches)
+
+    def _build_branch_template_data(self, branches, request):
+        branch_data = []
+        for branch in branches:
+            # At the moment, all branches displayed on the sharing details
+            # page are private.
+            information_type = InformationType.USERDATA.title
+            branch_data.append(dict(
+                self_link=absoluteURL(branch, request),
+                web_link=canonical_url(branch, path_only_if_possible=True),
+                branch_name=branch.unique_name,
+                branch_id=branch.id,
+                information_type=information_type))
+        return branch_data
+
+    def _build_bug_template_data(self, bugtasks, request):
+        bug_data = []
+        for bugtask in bugtasks:
+            web_link = canonical_url(bugtask, path_only_if_possible=True)
+            self_link = absoluteURL(bugtask.bug, request)
+            importance = bugtask.importance.title.lower()
+            information_type = bugtask.bug.information_type.title
+            bug_data.append(dict(
+                self_link=self_link,
+                web_link=web_link,
+                bug_summary=bugtask.bug.title,
+                bug_id=bugtask.bug.id,
+                bug_importance=importance,
+                information_type=information_type))
+        return bug_data

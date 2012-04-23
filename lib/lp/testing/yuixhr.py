@@ -13,7 +13,6 @@ __all__ = [
 
 from fnmatch import fnmatchcase
 import os
-import simplejson
 import sys
 from textwrap import dedent
 import traceback
@@ -21,6 +20,7 @@ import unittest
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.utils import get_current_browser_request
+import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
@@ -28,26 +28,28 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.http import IResult
 from zope.security.checker import (
     NamesChecker,
-    ProxyFactory)
+    ProxyFactory,
+    )
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import IClientIdManager
 
-from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility,
+from lp.app.versioninfo import revno
+from lp.services.config import config
+from lp.services.webapp.interfaces import (
     IOpenLaunchBag,
+    IPlacelessAuthUtility,
     )
-from canonical.launchpad.webapp.login import logInPrincipal
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.testing.layers import (
+from lp.services.webapp.login import logInPrincipal
+from lp.services.webapp.publisher import LaunchpadView
+from lp.testing import AbstractYUITestCase
+from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
-    LibrarianLayer,
     LayerProcessController,
+    LibrarianLayer,
     YUIAppServerLayer,
     )
-from lp.app.versioninfo import revno
-from lp.testing import AbstractYUITestCase
+
 
 EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)
 
@@ -109,7 +111,7 @@ def login_as_person(person):
     request = get_current_browser_request()
     assert request is not None, "We do not have a browser request."
     authutil = getUtility(IPlacelessAuthUtility)
-    principal = authutil.getPrincipalByLogin(email, want_password=False)
+    principal = authutil.getPrincipalByLogin(email)
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(email)
     logInPrincipal(request, principal, email)
@@ -155,46 +157,101 @@ class YUITestFixtureControllerView(LaunchpadView):
     """Dynamically loads YUI test along their fixtures run over an app server.
     """
 
+    COMBOFILE = 'COMBOFILE'
     JAVASCRIPT = 'JAVASCRIPT'
     HTML = 'HTML'
     SETUP = 'SETUP'
     TEARDOWN = 'TEARDOWN'
     INDEX = 'INDEX'
 
+    yui_block_no_combo = dedent("""\
+        <script type="text/javascript"
+            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
+
+        <script type="text/javascript">
+            YUI.GlobalConfig = {
+                fetchCSS: false,
+                timeout: 50,
+                ignore: [
+                    'yui2-yahoo', 'yui2-event', 'yui2-dom',
+                    'yui2-calendar','yui2-dom-event'
+                ]
+            }
+       </script>
+    """)
+
+    yui_block_combo = dedent("""\
+       <script type="text/javascript"
+           src="/+yuitest/build/js/yui/yui/yui-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/yui/loader/loader-min.js"></script>
+       <script type="text/javascript"
+           src="/+yuitest/build/js/lp/meta.js"></script>
+       <script type="text/javascript">
+            YUI.GlobalConfig = {
+                combine: false,
+                base: '/+yuitest/build/js/yui/',
+                debug: true,
+                fetchCSS: false,
+                groups: {
+                    lp: {
+                        combine: false,
+                        base: '/+yuitest/build/js/lp/',
+                        root: 'lp/',
+                        debug: true,
+                        filter: 'raw',
+                        // comes from including lp/meta.js
+                        modules: LP_MODULES,
+                        fetchCSS: false
+                    },
+                    yui2: {
+                        combine: true,
+                        base: '/+yuitest/build/js/yui2/',
+                        fetchCSS: false,
+                        modules: {
+                            'yui2-yahoo': {
+                                path: 'yahoo/yahoo.js'
+                            },
+                            'yui2-event': {
+                                path: 'event/event.js'
+                            },
+                            'yui2-dom': {
+                                path: 'dom/dom.js'
+                            },
+                            'yui2-calendar': {
+                                path: 'calendar/calendar.js'
+                            },
+                            'yui2-dom-event': {
+                                path: 'yahoo-dom-event/yahoo-dom-event.js'
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    """)
+
     page_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
-          <title>Test</title>
-          <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-          <link rel="stylesheet"
-            href="/+icing/yui/assets/skins/sam/skin.css"/>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
-          <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
-          <style>
-          /* Taken and customized from testlogger.css */
-          .yui-console-entry-src { display:none; }
-          .yui-console-entry.yui-console-entry-pass .yui-console-entry-cat {
-            background-color: green;
-            font-weight: bold;
-            color: white;
-          }
-          .yui-console-entry.yui-console-entry-fail .yui-console-entry-cat {
-            background-color: red;
-            font-weight: bold;
-            color: white;
-          }
-          .yui-console-entry.yui-console-entry-ignore .yui-console-entry-cat {
-            background-color: #666;
-            font-weight: bold;
-            color: white;
-          }
-          </style>
-          <script type="text/javascript" src="%(test_module)s"></script>
-        </head>
+            <title>Test</title>
+            %(javascript_block)s
+            <script type="text/javascript">
+              // we need this to create a single YUI instance all events and
+              // code talks across. All instances of YUI().use should be
+              // based off of LPJS instead.
+              LPJS = new YUI();
+            </script>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/console/assets/console-core.css"/>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/console/assets/skins/sam/console.css"/>
+            <link rel="stylesheet"
+              href="/+yuitest/build/js/yui/test/assets/skins/sam/test.css"/>
+            <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
+            <script type="text/javascript" src="%(test_module)s"></script>
+          </head>
         <body class="yui3-skin-sam">
           <div id="log"></div>
           <p>Want to re-run your test?</p>
@@ -213,15 +270,12 @@ class YUITestFixtureControllerView(LaunchpadView):
         """)
 
     index_template = dedent("""\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-          "http://www.w3.org/TR/html4/strict.dtd">
+        <!DOCTYPE html>
         <html>
           <head>
           <title>YUI XHR Tests</title>
           <script type="text/javascript"
             src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-          <link type="text/css" rel="stylesheet" media="screen, print"
-                href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
@@ -257,23 +311,29 @@ class YUITestFixtureControllerView(LaunchpadView):
             self.action = self.INDEX
             return
         path, ext = os.path.splitext(self.traversed_path)
-        full_path = os.path.join(config.root, 'lib', path)
-        if not os.path.exists(full_path + '.py'):
-            raise NotFound(self, full_path + '.py', self.request)
-        if not os.path.exists(full_path + '.js'):
-            raise NotFound(self, full_path + '.js', self.request)
-
-        if ext == '.js':
-            self.action = self.JAVASCRIPT
+        # We need to route requests with build/js in them to the combo loader
+        # js files so we can load those to bootstap.
+        if path.startswith('build/js'):
+            self.action = self.COMBOFILE
         else:
-            if self.request.method == 'GET':
-                self.action = self.HTML
+            full_path = os.path.join(config.root, 'lib', path)
+
+            if not os.path.exists(full_path + '.py'):
+                raise NotFound(self, full_path + '.py', self.request)
+            if not os.path.exists(full_path + '.js'):
+                raise NotFound(self, full_path + '.js', self.request)
+
+            if ext == '.js':
+                self.action = self.JAVASCRIPT
             else:
-                self.fixtures = self.request.form['fixtures'].split(',')
-                if self.request.form['action'] == 'setup':
-                    self.action = self.SETUP
+                if self.request.method == 'GET':
+                    self.action = self.HTML
                 else:
-                    self.action = self.TEARDOWN
+                    self.fixtures = self.request.form['fixtures'].split(',')
+                    if self.request.form['action'] == 'setup':
+                        self.action = self.SETUP
+                    else:
+                        self.action = self.TEARDOWN
 
     # The following two zope methods publishTraverse and browserDefault
     # allow this view class to take control of traversal from this point
@@ -345,6 +405,16 @@ class YUITestFixtureControllerView(LaunchpadView):
             'revno': revno,
             'tests': '\n'.join(test_lines)}
 
+    def renderCOMBOFILE(self):
+        """We need to serve the combo files out of the build directory."""
+        self.request.response.setHeader('Cache-Control', 'no-cache')
+        if self.traversed_path.endswith('js'):
+            self.request.response.setHeader('Content-Type', 'text/javascript')
+        elif self.traversed_path.endswith('css'):
+            self.request.response.setHeader('Content-Type', 'text/css')
+        return open(
+            os.path.join(config.root, self.traversed_path))
+
     def renderJAVASCRIPT(self):
         self.request.response.setHeader('Content-Type', 'text/javascript')
         self.request.response.setHeader('Cache-Control', 'no-cache')
@@ -363,7 +433,8 @@ class YUITestFixtureControllerView(LaunchpadView):
                 reload(module)
         return self.page_template % dict(
             test_module='/+yuitest/%s.js' % self.traversed_path,
-            revno=revno)
+            revno=revno,
+            javascript_block=self.renderYUI())
 
     def renderSETUP(self):
         data = {}
@@ -408,6 +479,20 @@ class YUITestFixtureControllerView(LaunchpadView):
             self.request.response.setHeader('Content-Length', 1)
             result = CloseDbResult()
         return result
+
+    def renderYUI(self):
+        """Render out which YUI block we need based on the combo loader
+
+        If the combo loader is enabled, we need that setup and config and not
+        to load launchpad.js, else we need launchpad.js for things to run.
+
+        """
+        if self.request.features.getFlag('js.combo_loader.enabled'):
+            return self.yui_block_combo % dict(
+                revno=revno,
+                combo_url=self.combo_url)
+        else:
+            return self.yui_block_no_combo % dict(revno=revno)
 
     def render(self):
         return getattr(self, 'render' + self.action)()

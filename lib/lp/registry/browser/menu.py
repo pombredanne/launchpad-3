@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.menu import (
+from lp.services.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,

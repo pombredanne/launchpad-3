@@ -15,9 +15,7 @@
     </style>
 
     <script type="text/javascript">
-      registerLaunchpadFunction(insertAllExpansionButtons);
-
-      LPS.use('lp.translations.pofile', function(Y) {
+      LPJS.use('lp.translations.pofile', function(Y) {
         Y.on('domready', Y.lp.translations.pofile.initializePOFile);
       });
 

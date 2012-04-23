@@ -39,15 +39,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -74,6 +65,15 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
+    )
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
     )
 from lp.services.database.stormexpr import Greatest
 from lp.services.propertycache import (

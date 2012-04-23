@@ -3,18 +3,21 @@
 
 """Tests for visibility of a bug."""
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
+    #layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestPublicBugVisibility, self).setUp()
@@ -83,15 +86,3 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
     def test_publicBugAnonUser(self):
         # Since the bug is private, the anonymous user cannot see it.
         self.assertFalse(self.bug.userCanView(None))
-
-
-class TestPrivateBugVisibilityWithCTE(TestPrivateBugVisibility):
-    """Test visibility for private bugs, without the TeamParticipation CTE.
-
-    The flag exists only as an emergency performance switch.
-    """
-
-    def setUp(self):
-        super(TestPrivateBugVisibilityWithCTE, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'disclosure.private_bug_visibility_cte.enabled': 'on'}))

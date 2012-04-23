@@ -5,10 +5,10 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
     )

@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = [
     "check_teamparticipation_circular",
     "check_teamparticipation_consistency",
-    "check_teamparticipation_self",
     "fetch_team_participation_info",
+    "fix_teamparticipation_consistency",
     ]
 
 from collections import (
@@ -26,42 +26,34 @@ from itertools import (
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp.interfaces import (
+from lp.registry.interfaces.teammembership import ACTIVE_STATES
+from lp.services.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
+    MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
-from lp.registry.interfaces.teammembership import ACTIVE_STATES
-from lp.services.scripts.base import LaunchpadScriptFailure
 
 
-def get_store():
+def get_master_store():
+    """Return a master store.
+
+    Errors in `TeamPartipation` must be fixed in the master.
+    """
+    return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+
+def get_slave_store():
     """Return a slave store.
 
     Errors in `TeamPartipation` can be detected using a replicated copy.
     """
     return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-
-
-def check_teamparticipation_self(log):
-    """Check self-participation.
-
-    All people and teams should participate in themselves.
-    """
-    query = """
-        SELECT id, name
-          FROM Person
-         WHERE id NOT IN (
-            SELECT person FROM TeamParticipation
-             WHERE person = team)
-           AND merged IS NULL
-        """
-    non_self_participants = list(get_store().execute(query))
-    if len(non_self_participants) > 0:
-        log.warn(
-            "Some people/teams are not members of themselves: %s",
-            non_self_participants)
 
 
 def check_teamparticipation_circular(log):
@@ -77,7 +69,7 @@ def check_teamparticipation_circular(log):
            AND tp.person = tp2.team
            AND tp.id != tp2.id;
         """
-    circular_references = list(get_store().execute(query))
+    circular_references = list(get_slave_store().execute(query))
     if len(circular_references) > 0:
         raise LaunchpadScriptFailure(
             "Circular references found: %s" % circular_references)
@@ -117,7 +109,7 @@ def execute_long_query(store, log, interval, query):
 
 def fetch_team_participation_info(log):
     """Fetch people, teams, memberships and participations."""
-    slurp = partial(execute_long_query, get_store(), log, 10000)
+    slurp = partial(execute_long_query, get_slave_store(), log, 10000)
 
     people = dict(
         slurp(
@@ -209,3 +201,47 @@ def check_teamparticipation_consistency(log, info):
             get_repr(error.team), error.type, people_repr)
 
     return errors
+
+
+def fix_teamparticipation_consistency(log, errors):
+    """Fix missing or spurious participations.
+
+    This function does not consult `TeamMembership` at all, so it /may/
+    introduce another participation inconsistency if the records that are the
+    subject of the given errors have been modified since being checked.
+
+    :param errors: An iterable of `ConsistencyError` tuples.
+    """
+    sql_missing = (
+        """
+        INSERT INTO TeamParticipation (team, person)
+        SELECT %(team)s, %(person)s
+        EXCEPT
+        SELECT team, person
+          FROM TeamParticipation
+         WHERE team = %(team)s
+           AND person = %(person)s
+        """)
+    sql_spurious = (
+        """
+        DELETE FROM TeamParticipation
+         WHERE team = %(team)s
+           AND person IN %(people)s
+        """)
+    store = get_master_store()
+    for error in errors:
+        if error.type == "missing":
+            for person in error.people:
+                statement = sql_missing % sqlvalues(
+                    team=error.team, person=person)
+                log.debug(statement)
+                store.execute(statement)
+                transaction.commit()
+        elif error.type == "spurious":
+            statement = sql_spurious % sqlvalues(
+                team=error.team, people=error.people)
+            log.debug(statement)
+            store.execute(statement)
+            transaction.commit()
+        else:
+            log.warn("Unrecognized error: %r", error)

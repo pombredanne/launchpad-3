@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -10,7 +10,6 @@ __all__ = [
     "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
-    "BugTargetBugsView",
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
@@ -25,20 +24,21 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
-from operator import itemgetter
 import httplib
+from operator import itemgetter
 import urllib
 from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from pytz import timezone
 from simplejson import dumps
 from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
-from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
+from zope.formlib.form import Fields
 from zope.interface import (
     alsoProvides,
     implements,
@@ -46,33 +46,11 @@ from zope.interface import (
     )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import (
-    Bool,
-    Choice,
-    )
+from zope.schema import Choice
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
-    BugFeedLink,
-    BugTargetLatestBugsFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    urlappend,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -81,7 +59,6 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -90,16 +67,15 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     ILaunchpadUsage,
-    IServiceUsage,
     )
 from lp.app.validators.name import valid_name_pattern
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
     ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
@@ -107,7 +83,6 @@ from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
     )
-from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -123,8 +98,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -138,7 +111,15 @@ from lp.bugs.model.structuralsubscription import (
 from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
-from lp.registry.browser.product import ProductConfigureBase
+from lp.registry.browser.product import (
+    ProductConfigureBase,
+    ProductPrivateBugsMixin,
+    )
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -149,9 +130,25 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    ValidPersonOrTeamVocabulary,
+    )
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.menu import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
@@ -164,6 +161,8 @@ class IProductBugConfiguration(Interface):
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
     security_contact = copy_field(IHasSecurityContact['security_contact'])
+    private_bugs = copy_field(
+        IProduct['private_bugs'], readonly=False)
     official_malone = copy_field(ILaunchpadUsage['official_malone'])
     enable_bug_expiration = copy_field(
         ILaunchpadUsage['enable_bug_expiration'])
@@ -184,7 +183,9 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
+class ProductConfigureBugTrackerView(BugRoleMixin,
+                                     ProductPrivateBugsMixin,
+                                     ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
@@ -205,6 +206,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
             "bug_reporting_guidelines",
             "bug_reported_acknowledgement",
             "enable_bugfiling_duplicate_search",
+            "private_bugs"
             ]
         if check_permission("launchpad.Edit", self.context):
             field_names.extend(["bug_supervisor", "security_contact"])
@@ -213,6 +215,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
+        super(ProductConfigureBugTrackerView, self).validate(data)
         if check_permission("launchpad.Edit", self.context):
             self.validateBugSupervisor(data)
             self.validateSecurityContact(data)
@@ -241,7 +244,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 class FileBugReportingGuidelines(LaunchpadFormView):
     """Provides access to common bug reporting attributes.
 
-    Attributes provided are: security_related and bug_reporting_guidelines.
+    Attributes provided are: information_type and bug_reporting_guidelines.
 
     This view is a superclass of `FileBugViewBase` so that non-ajax browsers
     can load the file bug form, and it is also invoked directly via an XHR
@@ -251,21 +254,56 @@ class FileBugReportingGuidelines(LaunchpadFormView):
     schema = IBug
 
     @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
+
+    @property
     def field_names(self):
         """Return the list of field names to display."""
-        return ['security_related']
+        if self.show_information_type_in_ui:
+            return ['information_type']
+        else:
+            return ['security_related']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    def initialize(self):
+        super(FileBugReportingGuidelines, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['private_types'] = [
+            type.name for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['show_information_type_in_ui'] = (
+            self.show_information_type_in_ui)
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugReportingGuidelines, self).setUpFields()
 
-        security_related_field = Bool(
-            __name__='security_related',
-            title=_("This bug is a security vulnerability"),
-            required=False, default=False)
+        if self.show_information_type_in_ui:
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+            self.form_fields = self.form_fields.omit('information_type')
+            self.form_fields += Fields(information_type_field)
+        else:
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+            self.form_fields = self.form_fields.omit('security_related')
+            self.form_fields += Fields(security_related_field)
 
-        self.form_fields = self.form_fields.omit('security_related')
-        self.form_fields += formlib.form.Fields(security_related_field)
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        if self.show_information_type_in_ui:
+            value = InformationType.PUBLIC
+            if (
+                self.context and IProduct.providedBy(self.context) and
+                self.context.private_bugs):
+                value = InformationType.USERDATA
+            return {'information_type': value}
+        else:
+            return {}
 
     @property
     def bug_reporting_guidelines(self):
@@ -386,9 +424,15 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as', 'filecontent', 'patch',
-                       'attachment_description', 'subscribe_to_existing_bug']
+        field_names = ['title', 'comment', 'tags']
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            field_names.append('information_type')
+        else:
+            field_names.append('security_related')
+        field_names.extend([
+            'bug_already_reported_as', 'filecontent', 'patch',
+            'attachment_description', 'subscribe_to_existing_bug'])
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -404,8 +448,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # selected project supports them.
         include_extra_fields = IProjectGroup.providedBy(context)
         if not include_extra_fields:
-            include_extra_fields = BugTask.userHasPrivilegesContext(
-                context, self.user)
+            include_extra_fields = (
+                BugTask.userHasBugSupervisorPrivilegesContext(
+                    context, self.user))
 
         if include_extra_fields:
             field_names.extend(
@@ -535,7 +580,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             required=True, default=False)
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
-        self.form_fields += formlib.form.Fields(subscribe_field)
+        self.form_fields += Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -564,7 +609,12 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        security_related = data.get("security_related", False)
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            information_type = data.get(
+                "information_type", InformationType.PUBLIC)
+        else:
+            security_related = data.get("security_related", False)
         distribution = data.get(
             "distribution", getUtility(ILaunchBag).distribution)
 
@@ -583,12 +633,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        # Security bugs are always private when filed, but can be disclosed
-        # after they've been reported.
-        if security_related:
-            private = True
-        else:
-            private = False
+        if not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            if security_related:
+                information_type = InformationType.EMBARGOEDSECURITY
+            else:
+                information_type = InformationType.PUBLIC
 
         linkified_ack = structured(FormattersAPI(
             self.getAcknowledgementMessage(self.context)).text_to_html(
@@ -596,7 +648,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
-            security_related=security_related, private=private,
+            information_type=information_type,
             tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
@@ -625,11 +677,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
-        if extra_data.private:
-            params.private = extra_data.private
+        if (not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')) and
+            extra_data.private):
+            if params.information_type == InformationType.PUBLIC:
+                params.information_type = InformationType.USERDATA
 
         # Apply any extra options given by privileged users.
-        if BugTask.userHasPrivilegesContext(context, self.user):
+        if BugTask.userHasBugSupervisorPrivilegesContext(context, self.user):
             if 'assignee' in data:
                 params.assignee = data['assignee']
             if 'status' in data:
@@ -716,14 +771,14 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.security_related:
+        if bug.information_type in SECURITY_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.'))
-        if bug.private and not bug.security_related:
+        elif bug.information_type in PRIVATE_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'This bug report has been marked private '
@@ -777,7 +832,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     def inline_filebug_form_url(self):
         """Return the URL to the inline filebug form.
 
-        If a token was passed to this view, it will be be passed through
+        If a token was passed to this view, it will be passed through
         to the inline bug filing form via the returned URL.
         """
         url = canonical_url(self.context, view_name='+filebug-inline-form')
@@ -1073,6 +1128,13 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             self.request.response.redirect(
                 config.malone.ubuntu_bug_filing_url)
 
+    @property
+    def page_title(self):
+        if IMaloneApplication.providedBy(self.context):
+            return 'Report a bug'
+        else:
+            return 'Report a bug about %s' % self.context.title
+
     @safe_action
     @action("Continue", name="projectgroupsearch",
             validator="validate_search")
@@ -1169,7 +1231,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def inline_filebug_form_url(self):
         """Return the URL to the inline filebug form.
 
-        If a token was passed to this view, it will be be passed through
+        If a token was passed to this view, it will be passed through
         to the inline bug filing form via the returned URL.
 
         The URL returned will be the URL of the first of the current
@@ -1225,7 +1287,8 @@ class BugTargetBugListingView(LaunchpadView):
         elif IProduct(self.context, None):
             milestone_resultset = self.context.milestones
         else:
-            raise AssertionError("milestones_list called with illegal context")
+            raise AssertionError(
+                "milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1299,112 +1362,6 @@ class BugTargetBugListingView(LaunchpadView):
         return milestone_buglistings
 
 
-class BugCountDataItem:
-    """Data about bug count for a status."""
-
-    def __init__(self, label, count, color):
-        self.label = label
-        self.count = count
-        if color.startswith('#'):
-            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
-        else:
-            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
-
-
-class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
-    """View for the Bugs front page."""
-
-    # We have a custom searchtext widget here so that we can set the
-    # width of the search box properly.
-    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
-
-    # Only include <link> tags for bug feeds when using this view.
-    feed_types = (
-        BugFeedLink,
-        BugTargetLatestBugsFeedLink,
-        )
-
-    # XXX: Bjorn Tillenius 2007-02-13:
-    #      These colors should be changed. It's the same colors that are used
-    #      to color statuses in buglistings using CSS, but there should be one
-    #      unique color for each status in the pie chart
-    status_color = {
-        BugTaskStatus.NEW: '#993300',
-        BugTaskStatus.INCOMPLETE: 'red',
-        BugTaskStatus.CONFIRMED: 'orange',
-        BugTaskStatus.TRIAGED: 'black',
-        BugTaskStatus.INPROGRESS: 'blue',
-        BugTaskStatus.FIXCOMMITTED: 'green',
-        BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.INVALID: 'yellow',
-        BugTaskStatus.UNKNOWN: 'purple',
-    }
-
-    override_title_breadcrumbs = True
-
-    @property
-    def label(self):
-        """The display label for the view."""
-        return 'Bugs in %s' % self.context.title
-
-    def initialize(self):
-        super(BugTargetBugsView, self).initialize()
-        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
-        if IDistroSeries.providedBy(self.context):
-            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        expose_structural_subscription_data_to_js(
-            self.context, self.request, self.user)
-
-    @property
-    def can_have_external_bugtracker(self):
-        return (IProduct.providedBy(self.context)
-                or IProductSeries.providedBy(self.context))
-
-    @property
-    def bug_tracking_usage(self):
-        """Whether the context tracks bugs in launchpad.
-
-        :returns: ServiceUsage enum value
-        """
-        service_usage = IServiceUsage(self.context)
-        return service_usage.bug_tracking_usage
-
-    @property
-    def bugtracker(self):
-        """Description of the context's bugtracker.
-
-        :returns: str which may contain HTML.
-        """
-        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
-            return 'Launchpad'
-        elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
-        else:
-            return 'None specified'
-
-    @cachedproperty
-    def hot_bugs_info(self):
-        """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
-        has_more_bugs = False
-        params = BugTaskSearchParams(
-            orderby=['-heat', 'task'], omit_dupes=True,
-            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # Use 4x as many tasks as bugs that are needed to improve performance.
-        bugtasks = self.context.searchTasks(params)[:40]
-        hot_bugtasks = []
-        hot_bugs = []
-        for task in bugtasks:
-            # Use hot_bugs list to ensure a bug is only listed once.
-            if task.bug not in hot_bugs:
-                if len(hot_bugtasks) < 10:
-                    hot_bugtasks.append(task)
-                    hot_bugs.append(task.bug)
-                else:
-                    has_more_bugs = True
-                    break
-        return {'has_more_bugs': has_more_bugs, 'bugtasks': hot_bugtasks}
-
-
 class BugTargetBugTagsView(LaunchpadView):
     """Helper methods for rendering the bug tags portlet."""
 
@@ -1419,7 +1376,6 @@ class BugTargetBugTagsView(LaunchpadView):
         official_tags = self.context.official_bug_tags
         tags = self.context.getUsedBugTagsWithOpenCounts(
             self.user, 10, official_tags)
-        max_count = float(max([1] + tags.values()))
 
         return sorted(
             [dict(

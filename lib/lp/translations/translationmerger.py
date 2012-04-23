@@ -18,20 +18,20 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.scripts.logger import (
-    DEBUG2,
-    log,
-    )
-from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
+from lp.services.database.lpstorm import IStore
+from lp.services.orderingcheck import OrderingCheck
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
+    )
+from lp.services.scripts.logger import (
+    DEBUG2,
+    log,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide

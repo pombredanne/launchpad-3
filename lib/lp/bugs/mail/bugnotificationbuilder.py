@@ -17,10 +17,10 @@ import rfc822
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.config import config
+from lp.services.helpers import shortlist
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail.sendmail import format_address
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -28,8 +28,6 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
@@ -48,6 +46,7 @@ from lp.bugs.interfaces.bugtask import (
     IllegalTarget,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -77,6 +76,8 @@ from lp.services.mail.interfaces import (
     IBugTaskEmailCommand,
     )
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
@@ -184,10 +185,13 @@ class PrivateEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            if context.security_related:
-                # BugSet.createBug() requires new security bugs to be private.
-                private = True
-            context.private = private
+            if private and (
+                context.information_type == InformationType.PUBLIC):
+                context.information_type = InformationType.USERDATA
+            elif (
+                context.information_type !=
+                InformationType.EMBARGOEDSECURITY):
+                context.information_type = InformationType.PUBLIC
             return context, current_event
 
         # Snapshot.
@@ -240,10 +244,8 @@ class SecurityEmailCommand(EmailCommand):
                 stop_processing=True)
 
         if isinstance(context, CreateBugParams):
-            context.security_related = security_related
             if security_related:
-                # BugSet.createBug() requires new security bugs to be private.
-                context.private = True
+                context.information_type = InformationType.EMBARGOEDSECURITY
             return context, current_event
 
         # Take a snapshot.

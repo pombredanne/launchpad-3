@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ApportJobs."""
@@ -12,17 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager,
-    )
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.bugs.interfaces.apportjob import (
     ApportJobType,
     IApportJob,
@@ -37,10 +26,21 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.scripts.tests import run_script
+from lp.services.temporaryblobstorage.interfaces import (
+    ITemporaryStorageManager,
+    )
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_initialized_view
 
@@ -126,7 +126,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             data_dict['hwdb_submission_keys'],
             "Values for hwdb_submission_keys do not match")
 
-        # The attachments list of of the data_dict dict will be of
+        # The attachments list of the data_dict dict will be of
         # the same length as the attachments list in the filebug_data
         # object.
         self.assertEqual(

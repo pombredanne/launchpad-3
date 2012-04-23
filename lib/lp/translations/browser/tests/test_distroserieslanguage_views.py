@@ -8,13 +8,13 @@ from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import HasQueryCount
 from lp.translations.browser.serieslanguage import DistroSeriesLanguageView
 from lp.translations.interfaces.translator import ITranslatorSet

@@ -5,7 +5,7 @@
 Run the doctests.
 """
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,10 +23,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.webapp.interfaces import (
-    IAlwaysSubmittedWidget,
-    IMultiLineWidgetLayout,
-    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -40,6 +36,10 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.services.features import getFeatureFlag
+from lp.services.webapp.interfaces import (
+    IAlwaysSubmittedWidget,
+    IMultiLineWidgetLayout,
+    )
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
@@ -135,21 +135,22 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     " Launchpad" % entered_name)
 
             if self.package_widget.hasInput():
+                if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                    self.package_widget.vocabulary.setDistribution(
+                        distribution)
                 try:
                     package_name = self.package_widget.getInputValue()
                 except ConversionError:
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                          % (entered_name, distribution.displayname))
                 if package_name is None:
                     return distribution
                 try:
-                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-                        vocab = self.package_widget.context.vocabulary
-                        name = package_name.name
-                        dsp = vocab.getTermByToken(name).value
+                    if IDistributionSourcePackage.providedBy(package_name):
+                        dsp = package_name
                     else:
                         source_name = (
                             distribution.guessPublishedSourcePackageName(
@@ -157,7 +158,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         dsp = distribution.getSourcePackage(source_name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no package name '%s' published in %s"
+                        "There is no package named '%s' published in %s."
                         % (package_name.name, distribution.displayname))
                 return dsp
             else:

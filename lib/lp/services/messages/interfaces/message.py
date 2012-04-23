@@ -45,10 +45,10 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.app.errors import NotFoundError
 from lp.services.job.interfaces.job import IJob
+from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class IMessage(Interface):
@@ -85,7 +85,7 @@ class IMessage(Interface):
                     schema=ILibraryFileAlias, required=False, readonly=True)
     bugs = CollectionField(
         title=_('Bug List'),
-        value_type=Reference(schema=Interface)) # Redefined in bug.py
+        value_type=Reference(schema=Interface))  # Redefined in bug.py
 
     chunks = Attribute(_('Message pieces'))
 
@@ -94,15 +94,8 @@ class IMessage(Interface):
                      'unicode string.')),
         exported_as='content')
 
-    followup_title = TextLine(
-        title=_('Candidate title for a followup message.'),
-        readonly=True)
     title = TextLine(
         title=_('The message title, usually just the subject.'),
-        readonly=True)
-    has_new_title = Bool(
-        title=_("Whether or not the title of this message "
-                "is different to that of its parent."),
         readonly=True)
     visible = Bool(title=u"This message is visible or not.", required=False,
         default=True)

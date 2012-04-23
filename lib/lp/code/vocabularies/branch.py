@@ -16,13 +16,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator,
-    IHugeVocabulary,
-    SQLObjectVocabularyBase,
-    )
-
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -30,6 +23,12 @@ from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    SQLObjectVocabularyBase,
+    )
 
 
 class BranchVocabularyBase(SQLObjectVocabularyBase):

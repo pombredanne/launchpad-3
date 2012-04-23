@@ -10,7 +10,7 @@ DistributionSourcePackages.
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -217,8 +217,7 @@ method.
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along with the rationale for contacting them.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     INotificationRecipientSet)
+    >>> from lp.services.mail.interfaces import INotificationRecipientSet
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> def print_reason(subscribers):

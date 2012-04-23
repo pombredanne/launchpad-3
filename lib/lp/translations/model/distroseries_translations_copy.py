@@ -7,8 +7,8 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-from canonical.database.multitablecopy import MultiTableCopy
-from canonical.database.sqlbase import (
+from lp.services.database.multitablecopy import MultiTableCopy
+from lp.services.database.sqlbase import (
     cursor,
     quote,
     )

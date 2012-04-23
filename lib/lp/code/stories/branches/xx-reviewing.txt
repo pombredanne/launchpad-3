@@ -5,13 +5,12 @@ A frequent use case is when a team is asked to review, and a member of that
 team review the proposal on behalf of the team.
 
     >>> login(ANONYMOUS)
-    >>> eric = factory.makePerson(
-    ...     name='eric', email='eric@example.com', password='test')
+    >>> eric = factory.makePerson(name='eric', email='eric@example.com')
     >>> vikings = factory.makeTeam(owner=eric, name='vikings')
     >>> from lp.code.tests.helpers import (
     ...     make_merge_proposal_without_reviewers)
     >>> bmp = make_merge_proposal_without_reviewers(factory)
-    >>> login_person(bmp.registrant)
+    >>> ignored = login_person(bmp.registrant)
     >>> ignored = bmp.nominateReviewer(vikings, bmp.registrant)
     >>> url = canonical_url(bmp)
     >>> logout()

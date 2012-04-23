@@ -25,10 +25,10 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_entry,
-    operation_returns_collection_of,
     operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
     )
 from lazr.restful.fields import (
     Reference,
@@ -46,16 +46,16 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
     Title,
     )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildDaemonError(Exception):
@@ -192,9 +192,6 @@ class IBuilder(IHasOwner):
 
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
-
-    def setSlaveForTesting(proxy):
-        """Sets the RPC proxy through which to operate the build slave."""
 
     def verifySlaveBuildCookie(slave_build_id):
         """Verify that a slave's build cookie is consistent.
@@ -337,11 +334,9 @@ class IBuilder(IHasOwner):
             or immediately if it's a non-virtual slave.
         """
 
-    def findAndStartJob(buildd_slave=None):
+    def findAndStartJob():
         """Find a job to run and send it to the buildd slave.
 
-        :param buildd_slave: An optional buildd slave that this builder should
-            talk to.
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """

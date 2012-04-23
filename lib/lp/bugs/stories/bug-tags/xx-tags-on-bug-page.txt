@@ -93,7 +93,7 @@ Using official tags for the first time does not require confirmation.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -102,7 +102,7 @@ Using official tags for the first time does not require confirmation.
     >>> firefox.official_bug_tags = [u'an-official-tag']
     >>> transaction.commit()
     >>> logout()
-    
+
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> user_browser.getControl('Tags').value = 'an-official-tag'
     >>> user_browser.getControl('Change').click()

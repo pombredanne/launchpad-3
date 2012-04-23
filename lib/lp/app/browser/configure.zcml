@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,15 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        />
+    <browser:navigation
+        module="lp.app.browser.launchpad"
+        classes="LaunchpadRootNavigation"
+        layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        />
     <browser:page
         for="*"
         name="+base-layout-macros"
@@ -25,7 +34,7 @@
     <browser:page
         for="*"
         name="launchpad_form"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
+        layer="lp.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-form.pt"
         class="lp.app.browser.launchpad.Macro"
@@ -33,7 +42,7 @@
     <browser:page
         for="*"
         name="launchpad_widget_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
+        layer="lp.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-widget-macros.pt"
         class="lp.app.browser.launchpad.Macro"
@@ -62,17 +71,25 @@
         permission="zope.Public"
         />
 
+    <browser:page
+        for="Exception"
+        name="+hierarchy"
+        class="lp.app.browser.launchpad.ExceptionHierarchy"
+        template="../templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
+
     <!-- batching -->
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
-        class="canonical.launchpad.webapp.batching.UpperBatchNavigationView"
+        for="lp.services.webapp.interfaces.IBatchNavigator"
+        class="lp.services.webapp.batching.UpperBatchNavigationView"
         name="+navigation-links-upper"
         template="../templates/batchnavigator-navigation-links.pt"
         permission="zope.Public" />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
-        class="canonical.launchpad.webapp.batching.LowerBatchNavigationView"
+        for="lp.services.webapp.interfaces.IBatchNavigator"
+        class="lp.services.webapp.batching.LowerBatchNavigationView"
         name="+navigation-links-lower"
         template="../templates/batchnavigator-navigation-links.pt"
         permission="zope.Public" />
@@ -81,7 +98,7 @@
         The root object is not ever published itself.  Only its views are.
         -->
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.app.browser.root.LaunchpadRootIndexView"
         name="index.html"
         template="../templates/root-index.pt"
@@ -89,7 +106,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.featuredproject.FeaturedProjectsView"
         name="+featuredprojects"
         template="../templates/root-featuredprojects.pt"
@@ -97,7 +114,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
         name="+search"
         class="lp.app.browser.root.LaunchpadSearchView"
         template="../templates/launchpad-search.pt"
@@ -126,29 +143,12 @@
     <!-- icing resources -->
 
     <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+icing"
       class="lp.app.browser.launchpad.IcingFolder"
       attribute="__call__"
       permission="zope.Public"
       />
-
-    <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+icing-contrib"
-      class="lp.app.browser.launchpad.IcingContribFolder"
-      attribute="__call__"
-      permission="zope.Public"
-      />
-
-    <!-- A page to list all the icons in LP -->
-    <browser:page
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        name="+graphics"
-        class="lp.app.browser.launchpad.LaunchpadGraphics"
-        template="../templates/launchpad-graphics.pt"
-        permission="zope.Public"
-        />
 
     <facet facet="overview">
       <!-- Common menus -->
@@ -158,12 +158,12 @@
           />
 
       <browser:defaultView
-          for="canonical.launchpad.webapp.interfaces.ILink"
+          for="lp.services.webapp.interfaces.ILink"
           name="+link"
           />
 
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILink"
+          for="lp.services.webapp.interfaces.ILink"
           name="+link"
           class="lp.app.browser.launchpad.LinkView"
           template="../templates/launchpad-link.pt"
@@ -171,7 +171,7 @@
           />
 
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILink"
+          for="lp.services.webapp.interfaces.ILink"
           name="+inline"
           class="lp.app.browser.launchpad.LinkView"
           template="../templates/launchpad-inline-link.pt"
@@ -179,7 +179,7 @@
           />
 
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILink"
+          for="lp.services.webapp.interfaces.ILink"
           name="+inline-icon"
           class="lp.app.browser.launchpad.LinkView"
           template="../templates/launchpad-inline-icon-link.pt"
@@ -190,7 +190,7 @@
            the view class, only Launchpad developers have access to the
            page -->
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+          for="lp.services.webapp.interfaces.ILaunchpadRoot"
           name="+soft-timeout"
           class="lp.app.browser.launchpad.SoftTimeoutView"
           attribute="__call__"
@@ -221,32 +221,32 @@
            look like, and it's here so that someone grepping zcml files for its
            name will find it.
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-          class="canonical.launchpad.webapp.login.BasicLoginPage"
+          for="lp.services.webapp.interfaces.ILaunchpadApplication"
+          class="lp.services.webapp.login.BasicLoginPage"
           name="+basiclogin"
           permission="zope.Public" />
       -->
 
-      <class class="canonical.launchpad.webapp.login.BasicLoginPage">
+      <class class="lp.services.webapp.login.BasicLoginPage">
         <allow attributes="__call__" />
         <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
       </class>
 
       <subscriber
           for="zope.processlifetime.ProcessStarting"
-          handler="canonical.launchpad.webapp.login.register_basiclogin"
+          handler="lp.services.webapp.login.register_basiclogin"
           />
 
       <!-- OpenID RP views -->
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-          class="canonical.launchpad.webapp.login.OpenIDLogin"
+          for="lp.services.webapp.interfaces.ILaunchpadApplication"
+          class="lp.services.webapp.login.OpenIDLogin"
           permission="zope.Public"
           name="+login"
           />
       <browser:page
-          for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-          class="canonical.launchpad.webapp.login.OpenIDCallbackView"
+          for="lp.services.webapp.interfaces.ILaunchpadApplication"
+          class="lp.services.webapp.login.OpenIDCallbackView"
           permission="zope.Public"
           name="+openid-callback"
           />
@@ -254,7 +254,7 @@
       <browser:page
           for="*"
           attribute="logout"
-          class="canonical.launchpad.webapp.login.CookieLogoutPage"
+          class="lp.services.webapp.login.CookieLogoutPage"
           permission="zope.Public"
           name="+logout"
           />
@@ -275,7 +275,17 @@
       name="index.html"
       template="../templates/oops.pt"
       permission="zope.Public"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
+      class="lp.services.webapp.error.SystemErrorView"
+      />
+
+  <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
+       with a minimalist template. -->
+  <browser:page
+      for="lp.services.webapp.interfaces.ILaunchpadProtocolError"
+      class="lp.services.webapp.error.ProtocolErrorView"
+      template="../templates/protocol-error.pt"
+      name="index.html"
+      permission="zope.Public"
       />
 
   <!-- Unauthorized -->
@@ -283,7 +293,7 @@
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
-      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      class="lp.services.webapp.login.UnauthorizedView"
       attribute="__call__"
       />
 
@@ -293,7 +303,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-notfound.pt"
-      class="canonical.launchpad.webapp.error.NotFoundView"
+      class="lp.services.webapp.error.NotFoundView"
       />
 
   <!-- Gone -->
@@ -302,25 +312,25 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-gone.pt"
-      class="canonical.launchpad.webapp.error.GoneView"
+      class="lp.services.webapp.error.GoneView"
       />
 
   <!-- RequestExpired -->
   <browser:page
-      for="canonical.database.interfaces.IRequestExpired"
+      for="lp.services.database.interfaces.IRequestExpired"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.RequestExpiredView"
+      class="lp.services.webapp.error.RequestExpiredView"
       />
 
   <!-- TimeoutError -->
   <browser:page
-      for="canonical.lazr.timeout.TimeoutError"
+      for="lp.services.timeout.TimeoutError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.RequestExpiredView"
+      class="lp.services.webapp.error.RequestExpiredView"
       />
 
   <!-- UnexpectedFormData -->
@@ -329,25 +339,25 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
+      class="lp.services.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- OffsiteFormPostError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.OffsiteFormPostError"
+      for="lp.services.webapp.interfaces.OffsiteFormPostError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
+      class="lp.services.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- NoReferrerError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.NoReferrerError"
+      for="lp.services.webapp.interfaces.NoReferrerError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-noreferrer.pt"
-      class="canonical.launchpad.webapp.error.NoReferrerErrorView"
+      class="lp.services.webapp.error.NoReferrerErrorView"
       />
 
   <!-- DeliveryFailure -->
@@ -356,7 +366,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-discoveryfailure.pt"
-      class="canonical.launchpad.webapp.error.OpenIdDiscoveryFailureView"
+      class="lp.services.webapp.error.OpenIdDiscoveryFailureView"
       />
 
   <!-- DisconnectionError -->
@@ -365,7 +375,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-databaseunavailable.pt"
-      class="canonical.launchpad.webapp.error.DisconnectionErrorView"
+      class="lp.services.webapp.error.DisconnectionErrorView"
       />
 
   <!-- OperationalError -->
@@ -374,16 +384,16 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-databaseunavailable.pt"
-      class="canonical.launchpad.webapp.error.OperationalErrorView"
+      class="lp.services.webapp.error.OperationalErrorView"
       />
 
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
+      for="lp.services.webapp.interfaces.UnsafeFormGetSubmissionError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
-      class="canonical.launchpad.webapp.error.UnexpectedFormDataView"
+      class="lp.services.webapp.error.UnexpectedFormDataView"
       />
 
   <!-- InvalidBatchSizeError -->
@@ -392,7 +402,7 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-invalidbatchsize.pt"
-      class="canonical.launchpad.webapp.error.InvalidBatchSizeView"
+      class="lp.services.webapp.error.InvalidBatchSizeView"
       />
 
   <!-- TranslationUnavailable -->
@@ -401,16 +411,16 @@
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-translationunavailable.pt"
-      class="canonical.launchpad.webapp.error.TranslationUnavailableView"
+      class="lp.services.webapp.error.TranslationUnavailableView"
       />
 
   <!-- ReadOnlyModeViolation -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ReadOnlyModeViolation"
+      for="lp.services.webapp.interfaces.ReadOnlyModeViolation"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-readonlyfailure.pt"
-      class="canonical.launchpad.webapp.error.ReadOnlyErrorView"
+      class="lp.services.webapp.error.ReadOnlyErrorView"
       />
 
   <!-- Vocabularies -->
@@ -601,13 +611,6 @@
       for="lp.soyuz.interfaces.archive.IPPA"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.PPAFormatterAPI"
-      name="fmt"
-      />
-
-  <adapter
-      for="dict"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.PageTemplateContextsAPI"
       name="fmt"
       />
 
@@ -859,7 +862,7 @@
       name="fmt"
       />
   <adapter
-      for="canonical.launchpad.webapp.interfaces.ILink"
+      for="lp.services.webapp.interfaces.ILink"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.LinkFormatterAPI"
       name="fmt"
@@ -928,13 +931,13 @@
   <!-- Marketing Microsite Home Page -->
   <browser:page
       name="+tour"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       class="lp.app.browser.launchpad.LaunchpadTourFolder"
       attribute="__call__"
       permission="zope.Public"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       name="+about"
       new_name="+tour/index"
       rootsite="mainsite"
@@ -942,14 +945,14 @@
 
   <!-- Marketing material for Answers. -->
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.answers.publisher.AnswersLayer"
       name="+about"
       new_name="+tour/community-support"
       rootsite="mainsite"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.answers.publisher.AnswersLayer"
       name="+faq"
       new_name="+tour/community-support"
@@ -959,20 +962,20 @@
       name="+tour"
       new_name="+tour/community-support"
       rootsite="mainsite"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.answers.publisher.AnswersLayer"
       />
 
   <!-- Marketing material for Blueprints. -->
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.blueprints.publisher.BlueprintsLayer"
       name="+about"
       new_name="+tour/feature-tracking"
       rootsite="mainsite"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.blueprints.publisher.BlueprintsLayer"
       name="+faq"
       new_name="+tour/feature-tracking"
@@ -980,7 +983,7 @@
       />
   <browser:renamed-page
       name="+tour"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.blueprints.publisher.BlueprintsLayer"
       new_name="+tour/feature-tracking"
       rootsite="mainsite"
@@ -988,14 +991,14 @@
 
   <!-- Marketing material for Bugs. -->
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.bugs.publisher.BugsLayer"
       name="+about"
       new_name="+tour/bugs"
       rootsite="mainsite"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.bugs.publisher.BugsLayer"
       name="+faq"
       new_name="+tour/bugs"
@@ -1003,7 +1006,7 @@
       />
   <browser:renamed-page
       name="+tour"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.bugs.publisher.BugsLayer"
       new_name="+tour/bugs"
       rootsite="mainsite"
@@ -1011,14 +1014,14 @@
 
   <!-- Marketing material for Code. -->
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       name="+about"
       new_name="+tour/branch-hosting-tracking"
       rootsite="mainsite"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       name="+faq"
       new_name="+tour/branch-hosting-tracking"
@@ -1026,7 +1029,7 @@
       />
   <browser:renamed-page
       name="+tour"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.code.publisher.CodeLayer"
       new_name="+tour/branch-hosting-tracking"
       rootsite="mainsite"
@@ -1035,14 +1038,14 @@
 
   <!-- Marketing material for Translations. -->
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.translations.publisher.TranslationsLayer"
       name="+about"
       new_name="+tour/translation"
       rootsite="mainsite"
       />
   <browser:renamed-page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.translations.publisher.TranslationsLayer"
       name="+faq"
       new_name="+tour/translation"
@@ -1050,7 +1053,7 @@
       />
   <browser:renamed-page
       name="+tour"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      for="lp.services.webapp.interfaces.ILaunchpadApplication"
       layer="lp.translations.publisher.TranslationsLayer"
       new_name="+tour/translation"
       rootsite="mainsite"
@@ -1064,5 +1067,83 @@
       factory="lp.app.browser.webservice.reference_xhtml_representation"/>
   <adapter
       factory="lp.app.browser.webservice.text_xhtml_representation"/>
+
+    <!-- The following directives set up root front pages for the different
+         virtual host layers.  The directives come in pairs.
+         The separate registration for the resources namespace (@@) is needed
+         because otherwise the lookup for /@@/ will fail because the
+         layer-specific defaultView directive also registers the
+         default view name as an unnamed adapter.
+         -->
+      -->
+    <!-- virtual host: blueprints -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="specs"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
+        />
+
+    <!-- virtual host: code -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="+code"
+        layer="lp.code.publisher.CodeLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.code.publisher.CodeLayer"
+        />
+
+    <!-- virtual host: translations -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="translations"
+        layer="lp.translations.publisher.TranslationsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.translations.publisher.TranslationsLayer"
+        />
+
+    <!-- virtual host: bugs -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="bugs"
+        layer="lp.bugs.publisher.BugsLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.bugs.publisher.BugsLayer"
+        />
+
+    <!-- virtual host: answers -->
+    <browser:defaultView
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        name="questions"
+        layer="lp.answers.publisher.AnswersLayer"
+        />
+    <browser:page
+        name=""
+        for="lp.services.webapp.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="lp.answers.publisher.AnswersLayer"
+        />
 
 </configure>

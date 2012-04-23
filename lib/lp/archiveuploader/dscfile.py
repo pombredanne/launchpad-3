@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -29,11 +29,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
@@ -65,6 +60,11 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.encoding import guess as guess_encoding
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -199,6 +199,10 @@ class SignableTagFile:
             raise UploadError(str(error))
 
         person = getUtility(IPersonSet).getByEmail(email)
+        if person and person.private:
+            # Private teams can not be maintainers.
+            raise UploadError("Invalid Maintainer.")
+
         if person is None and self.policy.create_people:
             package = self._dict['Source']
             version = self._dict['Version']
@@ -287,7 +291,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.format is None:
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
-
 
     #
     # Useful properties.
@@ -383,7 +386,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field produced by a broken version "
                         "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
-                    apt_pkg.ParseSrcDepends(field)
+                    apt_pkg.parse_src_depends(field)
                 except (SystemExit, KeyboardInterrupt):
                     raise
                 except Exception, error:
@@ -508,9 +511,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             else:
                 # try to check dsc-mentioned file against its copy already
                 # in librarian, if it's new (aka not found in librarian)
-                # dismiss. It prevent us to have scary duplicated filenames
-                # in Librarian and missapplied files in archive, fixes
-                # bug # 38636 and friends.
+                # dismiss. It prevents us from having scary duplicated
+                # filenames in Librarian and misapplied files in archive,
+                # fixes bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "

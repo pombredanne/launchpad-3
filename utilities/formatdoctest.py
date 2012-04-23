@@ -13,7 +13,10 @@ __metatype__ = type
 
 import compiler
 from difflib import unified_diff
-from doctest import DocTestParser, Example
+from doctest import (
+    DocTestParser,
+    Example,
+    )
 from optparse import OptionParser
 import re
 import sys

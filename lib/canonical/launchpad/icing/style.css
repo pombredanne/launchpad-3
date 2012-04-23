@@ -27,7 +27,7 @@
  */
 div#edit-description,
 div#edit-commit_message {
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Ubuntu Mono', monospace;
     margin: 1em 0;
     }
 
@@ -69,10 +69,11 @@ form.primary.search {
 }
 
 div#bugs-search-form.dynamic_bug_listing {
-    background: #EEE;
-    padding: 2px 15px;
-    border-radius: 10px;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    padding: 3px 0;
+    border-width: 1px 0;
+    border-style: solid;
+    border-color: #EBEBEB;
 }
 
 form.primary.search.dynamic_bug_listing {
@@ -253,7 +254,7 @@ a.bg-image {
   border-top: 1px solid #ddd;
 }
 .from-superseded {background-color: #ffffcc;}
-.adminHiddenComment {background-color:yellow;}
+.adminHiddenComment {background-color:gray;}
 
 /* --- Overview --- */
 
@@ -460,11 +461,8 @@ div.logtail {
     padding: 5px;
     border: solid gray;
     border-width: 1px;
-    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
-    -khtml-border-radius: 5px;
+    font-family: 'Ubuntu Mono', monospace;
+    border-radius: 5px;
 }
 
 div.logtail p {
@@ -530,9 +528,7 @@ table.code th, table.code td {
   padding-right: 1em;
   padding-top: 0.2em;
   padding-bottom: 0.2em;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
 .pending-update h3 {
@@ -673,67 +669,6 @@ div#current_user_subscription {
 /* This lets us have a link that spans lines. */
 div#current_user_subscription a.sprite {
   display: inline;
-}
-
-/* Rules for CustomBugListings bug search result lists. */
-div#client-listing {
-    float: left;
-    color: #666;
-    }
-div.buglisting-row {
-    float: left;
-    margin-top: 5px;
-    border-bottom: 1px solid #EEE;
-    min-width: 585px;
-    width: 100%;
-    padding-bottom: 5px;
-    }
-div.buglisting-col1 {
-    width: 100px;
-    float: left;
-    padding-bottom: 8px;
-    }
-div.buglisting-col2 {
-    width: 70%;
-    float: left;
-    }
-div.buglisting-col3 {
-    width: 10%;
-    float: right;
-    }
-div#client-listing .importance {
-    height: 1.5em;
-    width: 65px;
-    font-size: .8em;
-    border-radius: 2px;
-    text-transform: uppercase;
-    line-height: 12px;
-    margin: 5px 50px 2px 0;
-    text-align: center;
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .buglisting-col2 {
-    position: relative;
-    top: 2px;
-    }
-div#client-listing .bug-related-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .bug-heat-icons {
-    float: right;
-    margin: 3px 0 3px 0;
-    }
-div#client-listing .status {
-    position: relative;
-    left: 10px;
-    }
-div#client-listing .field {
-    display: inline-block;
-    min-width: 120px;
-    line-height: 16px;
-    margin-right: 5px;
 }
 
 /* Tags portlet */
@@ -957,13 +892,6 @@ div.popupTitle {
   font-weight: bold;
 }
 
-/* From nice_pre in tales.py */
-pre.wrap {
-  white-space: -moz-pre-wrap;
-  white-space: -o-pre-wrap;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
 
 /* Don't add styles here.
 A chronologically-ordered style sheet is hard to maintain and debug.

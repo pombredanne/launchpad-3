@@ -47,15 +47,15 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.browser import Browser
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper
 from lp.services.mailman.testing.layers import MailmanLayer
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    )
+from lp.testing.browser import Browser
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -87,9 +87,8 @@ def review_list(list_name, status='approve'):
         # The watch timed out.
         print result
         return None
-    login('foo.bar@canonical.com')
-    mailing_list = getUtility(IMailingListSet).get(list_name)
-    logout()
+    with celebrity_logged_in('admin'):
+        mailing_list = getUtility(IMailingListSet).get(list_name)
     return mailing_list
 
 
@@ -131,42 +130,41 @@ def subscribe(first_name, team_name, use_alt_address=False):
     """Do everything you need to subscribe a person to a mailing list."""
     # Create the person if she does not already exist, and join her to the
     # team.
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    person = person_set.getByName(first_name.lower())
-    if person is None:
-        person = LaunchpadObjectFactory().makePersonByName(first_name)
-    team = getUtility(IPersonSet).getByName(team_name)
-    person.join(team)
-    # Subscribe her to the list.
-    mailing_list = getUtility(IMailingListSet).get(team_name)
-    if use_alt_address:
-        alternative_email = mailinglists_helper.get_alternative_email(person)
-        mailing_list.subscribe(person, alternative_email)
-    else:
-        mailing_list.subscribe(person)
+    with celebrity_logged_in('admin'):
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByName(first_name.lower())
+        if person is None:
+            person = LaunchpadObjectFactory().makePersonByName(first_name)
+        team = getUtility(IPersonSet).getByName(team_name)
+        person.join(team)
+        # Subscribe her to the list.
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        if use_alt_address:
+            alternative_email = mailinglists_helper.get_alternative_email(
+                person)
+            mailing_list.subscribe(person, alternative_email)
+        else:
+            mailing_list.subscribe(person)
     transaction.commit()
-    logout()
     return ensure_membership(team_name, person)
 
 
 def unsubscribe(first_name, team_name):
     """Unsubscribe the named person from the team's mailing list."""
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    person = person_set.getByName(first_name.lower())
-    assert person is not None, 'No such person: %s' % first_name
-    mailing_list = getUtility(IMailingListSet).get(team_name)
-    mailing_list.unsubscribe(person)
-    transaction.commit()
-    # Unsubscribing does not make the person a non-member, but it does disable
-    # all their addresses.
-    addresses = [
-        removeSecurityProxy(email).email
-        for email in person.validatedemails
-        ]
-    addresses.append(removeSecurityProxy(person.preferredemail).email)
-    logout()
+    with celebrity_logged_in('admin'):
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByName(first_name.lower())
+        assert person is not None, 'No such person: %s' % first_name
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        mailing_list.unsubscribe(person)
+        transaction.commit()
+        # Unsubscribing does not make the person a non-member, but it
+        # does disable all their addresses.
+        addresses = [
+            removeSecurityProxy(email).email
+            for email in person.validatedemails
+            ]
+        addresses.append(removeSecurityProxy(person.preferredemail).email)
     return ensure_addresses_are_disabled(team_name, *addresses)
 
 
@@ -269,11 +267,12 @@ def _membership_test(team_name, people, predicate):
         if isinstance(person, basestring):
             member_addresses.add(person)
         else:
-            for email in person.validatedemails:
-                member_addresses.add(removeSecurityProxy(email).email)
-            # Also add the preferred address.
-            preferred = removeSecurityProxy(person.preferredemail).email
-            member_addresses.add(preferred)
+            with person_logged_in(person):
+                for email in person.validatedemails:
+                    member_addresses.add(email.email)
+                # Also add the preferred address.
+                preferred = removeSecurityProxy(person.preferredemail).email
+                member_addresses.add(preferred)
     assert len(member_addresses) > 0, 'No valid addresses found'
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL

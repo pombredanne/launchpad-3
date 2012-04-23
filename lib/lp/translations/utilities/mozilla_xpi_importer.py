@@ -14,7 +14,7 @@ import textwrap
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )

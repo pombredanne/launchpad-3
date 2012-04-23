@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 
+import logging
+
 from lp.services.features.rulesource import (
     NullFeatureRuleSource,
     StormFeatureRuleSource,
@@ -19,6 +21,8 @@ from lp.services.features.rulesource import (
 __metaclass__ = type
 
 
+logger = logging.getLogger('lp.services.features')
+
 value_domain_info = sorted([
     ('boolean',
      'Any non-empty value is true; an empty value is false.'),
@@ -27,14 +31,20 @@ value_domain_info = sorted([
     ('int',
      "An integer."),
     ('space delimited',
-     'Space-delimited strings.')
+     'Space-delimited strings.'),
+    ('datetime',
+     'ISO 8601 datetime'),
     ])
 
 # Data for generating web-visible feature flag documentation.
 #
 # Entries for each flag are:
-# flag name, value domain, prose documentation, default behaviour, title,
-# URL to a page with more information about the feature.
+# 1. flag name
+# 2. value domain
+# 3. prose documentation
+# 4. default behaviour
+# 5. title
+# 6. URL to a page with more information about the feature.
 #
 # Value domain as in value_domain_info above.
 #
@@ -53,6 +63,12 @@ flag_info = sorted([
      '',
      '',
      'https://bugs.launchpad.net/launchpad/+bug/678090'),
+    ('bugs.bugtaskflat.search.enabled',
+     'boolean',
+     'Use BugTaskFlat for bug searches.',
+     '',
+     '',
+     ''),
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
@@ -71,6 +87,20 @@ flag_info = sorted([
      '',
      'Listing pre-fetching',
      'https://bugs.launchpad.net/launchpad/+bug/888756'),
+    ('bugs.heat_updates.cutoff',
+     'timestamp',
+     ('Set the oldest that a bug\'s heat can be before it is '
+      'considered outdated.'),
+     '',
+     '',
+     ''),
+    ('bugs.statistics_portlet.hide_fixed_elsewhere_count',
+     'boolean',
+     ('Hides the "Bugs fixed elsewhere" count in the bug target statistics '
+      'portlet.'),
+     '',
+     '',
+     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
@@ -101,15 +131,27 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('mail.dkim_authentication.disabled',
+    ('jobs.celery.enabled_classes',
+     'space delimited',
+     'Names of Job classes that should be run via celery',
+     'No jobs run via celery',
+     'Celery-enabled job classes',
+     'https://dev.launchpad.net/CeleryJobRunner'),
+    ('js.combo_loader.enabled',
      'boolean',
-     'Disable DKIM authentication checks on incoming mail.',
+     'Determines if we use a js combo loader or not.',
      '',
      '',
      ''),
-    ('malone.disable_targetnamesearch',
+    ('js.yui-version',
+     'space delimited',
+     'Allows us to change the YUI version we run against, e.g. yui-3.4.',
+     'As speficied in versions.cfg',
+     '',
+     ''),
+    ('mail.dkim_authentication.disabled',
      'boolean',
-     'If true, disables consultation of target names during bug text search.',
+     'Disable DKIM authentication checks on incoming mail.',
      '',
      '',
      ''),
@@ -180,35 +222,16 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_bug_visibility_rules.enabled',
-     'boolean',
-     ('Enables the application of additional privacy filter terms in bug '
-      'queries to allow defined project roles to see private bugs.'),
-     '',
-     '',
-     ''),
-    ('disclosure.enhanced_private_bug_subscriptions.enabled',
-     'boolean',
-     ('Enables the auto subscribing and unsubscribing of users as a bug '
-      'transitions between public, private and security related states.'),
-     '',
-     '',
-     ''),
-    ('disclosure.delete_bugtask.enabled',
-     'boolean',
-     'Enables bugtasks to be deleted by authorised users.',
-     '',
-     '',
-     ''),
-    ('disclosure.allow_multipillar_private_bugs.enabled',
-     'boolean',
-     'Allows private bugs to have more than one bug task.',
-     '',
-     '',
-     ''),
     ('disclosure.users_hide_own_bug_comments.enabled',
      'boolean',
      'Allows users in project roles and comment owners to hide bug comments.',
+     '',
+     '',
+     ''),
+    ('disclosure.extra_private_team_LimitedView_security.enabled',
+     'boolean',
+     ('Enables additional checks to be done to determine whether a user has '
+      'launchpad.LimitedView permission on a private team.'),
      '',
      '',
      ''),
@@ -246,6 +269,73 @@ flag_info = sorted([
      'boolean',
      ('Enables soft OOPSes for code that is mixing visibility rules, such '
       'as disclosing private teams, so the data can be analyzed.'),
+     '',
+     '',
+     ''),
+    ('disclosure.show_visibility_for_team_add.enabled',
+     'boolean',
+     ('If true, will show the visibility field for IPersonSet:+newteam if '
+      'the user has a current commercial subscription.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_choice_popup.enabled',
+     'boolean',
+     ('If true, will include any available descriptive text with each choice '
+      'item in the selection popup.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.enabled',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'for the new disclosure data model to view but not write data.'),
+     '',
+     'Sharing overview',
+     ''),
+    ('disclosure.enhanced_sharing_details.enabled',
+     'boolean',
+     ('If true, enables the details page for viewing the `Some` things that'
+      'shared with a user or team.'),
+     '',
+     '',
+     ''),
+    ('disclosure.enhanced_sharing.writable',
+     'boolean',
+     ('If true, will allow the use of the new sharing view and apis used '
+      'to edit the new disclosure data model.'),
+     '',
+     'Sharing management',
+     ''),
+    ('garbo.workitem_migrator.enabled',
+     'boolean',
+     ('If true, garbo will try to migrate work items from the whiteboard of '
+      'specifications.'),
+     '',
+     '',
+     ''),
+    ('registry.upcoming_work_view.enabled',
+     'boolean',
+     ('If true, the new upcoming work view of teams is available.'),
+     '',
+     '',
+     ''),
+    ('disclosure.proprietary_information_type.disabled',
+     'boolean',
+     'If true, disables the PROPRIETARY information_type for bugs.',
+     '',
+     '',
+     ''),
+    ('disclosure.display_userdata_as_private.enabled',
+     'boolean',
+     'If true, displays the USERDATA information_type as Private.',
+     '',
+     '',
+     ''),
+    ('disclosure.show_information_type_in_ui.enabled',
+     'boolean',
+     ('If true, displays the information_type directly in the UI when '
+      'filing a bug and changing the information_type.'),
      '',
      '',
      ''),
@@ -356,8 +446,19 @@ class FeatureController():
         if flag in self._rules:
             for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
+                    self._debugMessage(
+                        'feature match flag=%r value=%r scope=%r' %
+                        (flag, value, scope))
                     return (value, scope)
+            else:
+                self._debugMessage('no rules matched for %r' % flag)
+        else:
+            self._debugMessage('no rules relevant to %r' % flag)
         return (None, None)
+
+    def _debugMessage(self, message):
+        logger.debug(message)
+        # The OOPS machinery can also grab it out of the request if needed.
 
     def currentScope(self, flag):
         """The name of the scope of the matching rule with the highest

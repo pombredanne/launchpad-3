@@ -16,6 +16,6 @@ from lp.translations.scripts.remove_translations import RemoveTranslations
 
 if __name__ == '__main__':
     script = RemoveTranslations(
-        'canonical.launchpad.scripts.remove-translations',
+        'lp.services.scripts.remove-translations',
         dbuser='rosettaadmin')
     script.run()

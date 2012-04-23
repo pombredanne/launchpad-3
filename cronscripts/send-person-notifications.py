@@ -15,10 +15,9 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.config import config
-
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.registry.scripts.personnotification import PersonNotificationManager
+from lp.services.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class SendPersonNotifications(LaunchpadCronScript):

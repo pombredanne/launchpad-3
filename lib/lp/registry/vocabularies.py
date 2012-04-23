@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -27,6 +27,7 @@ __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
     'AllUserTeamsParticipationVocabulary',
+    'AllUserTeamsParticipationPlusSelfVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
@@ -38,8 +39,10 @@ __all__ = [
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
+    'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
+    'NewPillarShareeVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
@@ -62,6 +65,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -97,44 +101,11 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.database.sqlbase import (
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    ILaunchBag,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.launchpad.webapp.publisher import nearest
-from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator,
-    CountableIterator,
-    FilteredVocabularyBase,
-    IHugeVocabulary,
-    NamedSQLObjectHugeVocabulary,
-    NamedSQLObjectVocabulary,
-    SQLObjectVocabularyBase,
-    VocabularyFilter,
-    )
-from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -168,7 +139,6 @@ from lp.registry.interfaces.pillar import (
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
-    License,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -197,9 +167,42 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.features import getFeatureFlag
+from lp.services.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.webapp.publisher import nearest
+from lp.services.webapp.vocabulary import (
+    BatchedCountableIterator,
+    CountableIterator,
+    FilteredVocabularyBase,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    VocabularyFilter,
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -362,9 +365,11 @@ def project_products_vocabulary_factory(context):
 
 
 class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
-    """Describes the teams in which the current user participates."""
+    """Describes the public teams in which the current user participates."""
     _table = Person
     _orderBy = 'displayname'
+
+    INCLUDE_PRIVATE_TEAM = False
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -378,7 +383,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if team.visibility == PersonVisibility.PUBLIC:
+                if (team.visibility == PersonVisibility.PUBLIC
+                    or self.INCLUDE_PRIVATE_TEAM):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -1040,6 +1046,36 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
+class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
+    """The set of people and teams with whom to share information.
+
+    A person or team is eligible for sharing with if they are not already an
+    existing sharee for the pillar.
+    """
+
+    displayname = 'Grant access to project artifacts'
+    step_title = 'Search for user or exclusive team with whom to share'
+
+    def __init__(self, context):
+        assert IPillar.providedBy(context)
+        super(NewPillarShareeVocabulary, self).__init__(context)
+        aps = getUtility(IAccessPolicySource)
+        access_policies = aps.findByPillar([self.context])
+        self.policy_ids = [policy.id for policy in access_policies]
+
+    @property
+    def extra_clause(self):
+        clause = SQL("""
+            Person.id NOT IN (
+                SELECT grantee FROM AccessPolicyGrantFlat
+                WHERE policy in %s
+                )
+            """ % sqlvalues(self.policy_ids))
+        return And(
+            clause,
+            super(NewPillarShareeVocabulary, self).extra_clause)
+
+
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
 
@@ -1145,7 +1181,7 @@ class UserTeamsParticipationPlusSelfVocabulary(
     UserTeamsParticipationVocabulary):
     """A vocabulary containing the public teams that the logged
     in user participates in, along with the logged in user themselves.
-    """    """All `IProduct` objects vocabulary."""
+    """
 
     def __iter__(self):
         logged_in_user = getUtility(ILaunchBag).user
@@ -1161,6 +1197,18 @@ class UserTeamsParticipationPlusSelfVocabulary(
             return self.getTerm(logged_in_user)
         super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
         return super_class.getTermByToken(token)
+
+
+class AllUserTeamsParticipationPlusSelfVocabulary(
+    UserTeamsParticipationPlusSelfVocabulary):
+    """All public and private teams participates in and himself.
+
+    This redefines UserTeamsParticipationVocabulary to include private teams
+    and it includes the logged in user from
+    UserTeamsParticipationPlusSelfVocabulary.
+    """
+
+    INCLUDE_PRIVATE_TEAM = True
 
 
 class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
@@ -1198,7 +1246,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         productseries = productrelease.productseries
         product = productseries.product
 
-        # NB: We use '/' as the seperator because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s/%s' % (
                     product.name, productseries.name, productrelease.version)
@@ -1258,7 +1306,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        # NB: We use '/' as the seperator because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
         return SimpleTerm(
@@ -1482,10 +1530,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
-    A commercial project is one that does not qualify for free hosting.  For
-    normal users only commercial projects for which the user is the
-    maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.Moderate permission, all commercial projects are returned.
+    A commercial project is an active project that can have a commercial
+    subscription to grant access to proprietary features. The vocabulary
+    contains the active projects the user maintains, or all active project
+    if the user is a registry expert.
     """
 
     implements(IHugeVocabulary)
@@ -1499,12 +1547,14 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         """The vocabulary's display nane."""
         return 'Select a commercial project'
 
-    def _filter_projs(self, projects):
-        """Filter the list of all projects to just the commercial ones."""
-        return [
-            project for project in sorted(projects,
-                                          key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting]
+    @cachedproperty
+    def product_set(self):
+        return getUtility(IProductSet)
+
+    @cachedproperty
+    def is_commercial_admin(self):
+        """Is the user a commercial admin?"""
+        return check_permission('launchpad.Commercial', self.product_set)
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1513,57 +1563,47 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         user = self.context
         if user is None:
             return self.emptySelectResults()
-        product_set = getUtility(IProductSet)
-        if check_permission('launchpad.Moderate', product_set):
-            projects = product_set.forReview(
-                search_text=query, licenses=[License.OTHER_PROPRIETARY],
-                active=True)
+        if self.is_commercial_admin:
+            projects = self.product_set.search(query)
         else:
             projects = user.getOwnedProjects(match_name=query)
-            projects = self._filter_projs(projects)
         return projects
 
     def toTerm(self, project):
         """Return the term for this object."""
-        if project.commercial_subscription is None:
-            sub_status = "(unsubscribed)"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                project.commercial_subscription.date_expires)
-            sub_status = "(expires %s)" % date_formatter.displaydate()
-        return SimpleTerm(project,
-                          project.name,
-                          '%s %s' % (project.title, sub_status))
+        return SimpleTerm(project, project.name, project.displayname)
 
     def getTermByToken(self, token):
         """Return the term for the given token."""
-        search_results = self._doSearch(token)
-        for search_result in search_results:
-            if search_result.name == token:
-                return self.toTerm(search_result)
+        if self.is_commercial_admin:
+            project = self.product_set.getByName(token)
+            if project is not None and project.active:
+                return self.toTerm(project)
+        else:
+            search_results = self._doSearch(token)
+            for search_result in search_results:
+                if search_result.name == token:
+                    return self.toTerm(search_result)
         raise LookupError(token)
 
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
-        if type(results) is list:
-            num = len(results)
-        else:
-            num = results.count()
+        num = results.count()
         return CountableIterator(num, results, self.toTerm)
-
-    def _commercial_projects(self):
-        """Return the list of commercial projects owned by this user."""
-        return self._filter_projs(self._doSearch())
 
     def __iter__(self):
         """See `IVocabulary`."""
-        for proj in self._commercial_projects():
+        for proj in self._doSearch():
             yield self.toTerm(proj)
 
-    def __contains__(self, obj):
+    def __contains__(self, project):
         """See `IVocabulary`."""
-        return obj in self._filter_projs([obj])
+        if not project.active:
+            return False
+        if self.is_commercial_admin:
+            return True
+        return self.context.inTeam(project.owner)
 
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):
@@ -2072,6 +2112,10 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
     def __len__(self):
         pass
 
+    def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
+        self.distribution = distribution
+
     def getDistributionAndPackageName(self, text):
         "Return the distribution and package name from the parsed text."
         # Match the toTerm() format, but also use it to select a distribution.
@@ -2145,25 +2189,27 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SELECT dsp.id, dsps.name, dsps.binpkgnames, rank
             FROM DistributionSourcePackage dsp
                 JOIN (
-                SELECT DISTINCT ON (dspc.sourcepackagename)
-                    dspc.sourcepackagename, dspc.name, dspc.binpkgnames,
-                    CASE WHEN dspc.name = ? THEN 100
-                        WHEN dspc.binpkgnames SIMILAR TO
-                            '(^| )' || ? || '( |$)' THEN 75
-                        WHEN dspc.name SIMILAR TO
-                            '(^|.*-)' || ? || '(-|$)' THEN 50
-                        WHEN dspc.binpkgnames SIMILAR TO
-                            '(^|.*-)' || ? || '(-| |$)' THEN 25
+                SELECT DISTINCT ON (spn.id)
+                    spn.id, spn.name, dspc.binpkgnames,
+                    CASE WHEN spn.name = ? THEN 100
+                        WHEN dspc.binpkgnames
+                            ~ ('(^| )' || ? || '( |$)') THEN 75
+                        WHEN spn.name
+                            ~ ('(^|.*-)' || ? || '(-|$)') THEN 50
+                        WHEN dspc.binpkgnames
+                            ~ ('(^|.*-)' || ? || '(-| |$)') THEN 25
                         ELSE 1
                         END AS rank
-                FROM DistributionSourcePackageCache dspc
-                    JOIN Archive a ON dspc.archive = a.id AND a.purpose IN (
-                        ?, ?)
+                FROM SourcePackageName spn
+                    LEFT JOIN DistributionSourcePackageCache dspc
+                        ON dspc.sourcepackagename = spn.id
+                    LEFT JOIN Archive a ON dspc.archive = a.id
+                        AND a.purpose IN (?, ?)
                 WHERE
-                    dspc.name like '%%' || ? || '%%'
+                    spn.name like '%%' || ? || '%%'
                     OR dspc.binpkgnames like '%%' || ? || '%%'
                 LIMIT ?
-                ) dsps ON dsp.sourcepackagename = dsps.sourcepackagename
+                ) dsps ON dsp.sourcepackagename = dsps.id
             WHERE
                 dsp.distribution = ?
             ORDER BY rank DESC
@@ -2179,3 +2225,33 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SQL('DistributionSourcePackage.id = SearchableDSP.id'))
 
         return CountableIterator(dsps.count(), dsps, self.toTerm)
+
+
+class InformationTypeVocabulary(SimpleVocabulary):
+
+    implements(IEnumeratedType)
+
+    def __init__(self):
+        types = [
+            InformationType.PUBLIC,
+            InformationType.UNEMBARGOEDSECURITY,
+            InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA]
+        proprietary_disabled = bool(getFeatureFlag(
+            'disclosure.proprietary_information_type.disabled'))
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if not proprietary_disabled:
+            types.append(InformationType.PROPRIETARY)
+        terms = []
+        for type in types:
+            title = type.title
+            description = type.description
+            if type == InformationType.USERDATA and show_userdata_as_private:
+                title = 'Private'
+                description = (
+                    description.replace('user data', 'private information'))
+            term = SimpleTerm(type, type.name, title)
+            term.description = description
+            terms.append(term)
+        super(InformationTypeVocabulary, self).__init__(terms)

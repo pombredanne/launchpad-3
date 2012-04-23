@@ -5,7 +5,7 @@ An Archive models a Debian Archive, providing operations like
 publication lookups and the complete publishing-pipeline from database
 records to disk, including configuration and indexes.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
@@ -261,8 +261,6 @@ Valid names work as expected.
     >>> rebuild_archive.name = 'there-we-go'
     >>> print rebuild_archive.name
     there-we-go
-
-    >>> login(ANONYMOUS)
 
 Please note that copy archive displayname doesn't follow the name change.
 
@@ -756,7 +754,7 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet,
     ...     )
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
@@ -904,7 +902,7 @@ binary is also DELETED.
 Flush the database caches to invalidate old caches from the
 corresponding publishing Postgres views.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 
@@ -1043,7 +1041,7 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 
@@ -1348,7 +1346,10 @@ distribution, person name and the PPA name. This method is used in
 Iteration over the own utility is performed against all archives,
 including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
-    >>> archive_purposes = [archive.purpose.name for archive in archive_set]
+    >>> from lp.testing import celebrity_logged_in
+    >>> with celebrity_logged_in('admin'):
+    ...     archive_purposes = [
+    ...         archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
     18
 
@@ -1517,7 +1518,7 @@ first PPA that the person created.
 
     >>> ppa_owner = factory.makePerson(
     ...     name="ppa-owner", displayname="PPA Owner")
-    >>> login_person(ppa_owner)
+    >>> ignored = login_person(ppa_owner)
 
 If no PPAs match the search criteria, and a name is not given, then
 None is returned.
@@ -1631,9 +1632,11 @@ they exist should never leak. If we copy the package to Celso's private
 PPA the list is not updated.  The same happens for uploaded sources, since
 they are essentially another source publication in this context.
 
-    >>> copy = cprov_cdrkit.copyTo(
-    ...     ubuntu['hoary'], PackagePublishingPocket.RELEASE,
-    ...     cprov_private_ppa)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(cprov):
+    ...     copy = cprov_cdrkit.copyTo(
+    ...         ubuntu['hoary'], PackagePublishingPocket.RELEASE,
+    ...         cprov_private_ppa)
 
     >>> print_latest_uploads()
     cdrkit 1.0 in hoary PENDING mark
@@ -2067,7 +2070,7 @@ You'll get the same error if you use a component object that's not main.
 As important as the right to upload packages to Joe's PPA, Carlos
 also got the corresponding permissions on it.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> login("carlos@canonical.com")
 
     >>> check_permission('launchpad.View', joes_ppa)
@@ -2102,7 +2105,7 @@ to it.
     >>> check_permission('launchpad.Append', joes_ppa)
     False
 
-    >>> login_person(joes_ppa.owner)
+    >>> ignored = login_person(joes_ppa.owner)
     >>> check_permission('launchpad.Append', joes_ppa)
     False
 
@@ -2341,6 +2344,25 @@ all result in a NotFound exception:
     Traceback (most recent call last):
     ...
     NoSuchDistroSeries: No such distribution series: 'badseries'.
+
+If a package exists in multiple distroseries, we can use the `from_series`
+parameter to select the distroseries to synchronise from:
+
+    >>> test_publisher.addFakeChroots(breezy_autotest)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.0",
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package-multiseries", version="1.1",
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> mark.archive.syncSources(
+    ...     ["package-multiseries"], cprov.archive, "release",
+    ...     from_series="hoary", person=mark)
+    >>> mark_multiseries = mark.archive.getPublishedSources(
+    ...     name="package-multiseries").one()
+    >>> print mark_multiseries.sourcepackagerelease.version
+    1.0
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be

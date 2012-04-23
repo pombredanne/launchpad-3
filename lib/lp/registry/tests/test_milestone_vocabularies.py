@@ -9,11 +9,6 @@ from unittest import TestCase
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -21,7 +16,12 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.testing import (
+    login,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestMilestoneVocabulary(TestCase):

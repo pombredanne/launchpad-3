@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.enums import TeamBranchVisibilityRule
 from lp.services.fields import PersonChoice
 
@@ -53,7 +53,7 @@ class IHasBranchVisibilityPolicy(Interface):
         through team membership.
 
         If there are a number of rules that apply for the owner of the branch
-        then the most restrictive rule is retuned.
+        then the most restrictive rule is returned.
         """
 
     def isUsingInheritedBranchVisibilityPolicy():

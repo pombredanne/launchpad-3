@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -23,6 +23,7 @@ from contrib.glock import (
     GlobalLock,
     LockAlreadyAcquired,
     )
+import iso8601
 from psycopg2 import IntegrityError
 import pytz
 from storm.expr import In
@@ -31,37 +32,19 @@ from storm.locals import (
     Min,
     SQL,
     )
+from storm.store import EmptyResultSet
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    cursor,
-    session_store,
-    sqlvalues,
-    )
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.logintoken import LoginToken
-from canonical.launchpad.database.oauth import OAuthNonce
-from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.utilities.looptuner import TunableLoop
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.workitemmigration import extractWorkItemsFromWhiteboard
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -76,8 +59,32 @@ from lp.code.model.revision import (
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
+from lp.services.config import config
+from lp.services.database import postgresql
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.sqlbase import (
+    cursor,
+    quote_like,
+    session_store,
+    sqlvalues,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
+    make_script_feature_controller,
+    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
+from lp.services.looptuner import TunableLoop
+from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.oauth.model import OAuthNonce
+from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -85,9 +92,11 @@ from lp.services.scripts.base import (
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
+from lp.services.verification.model.logintoken import LoginToken
+from lp.services.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
     )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
@@ -311,6 +320,22 @@ class OAuthNoncePruner(BulkPruner):
         SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
+
+
+class UnlinkedAccountPruner(BulkPruner):
+    """Remove Account records not linked to a Person."""
+    target_table_class = Account
+    # We join with EmailAddress to ensure we only attempt removal after
+    # the EmailAddress rows have been removed by
+    # AccountOnlyEmailAddressPruner. We join with Person to work around
+    # records with bad crosslinks. These bad crosslinks will be fixed by
+    # dropping the EmailAddress.account column.
+    ids_to_prune_query = """
+        SELECT Account.id
+        FROM Account
+        LEFT OUTER JOIN Person ON Account.id = Person.account
+        WHERE Person.id IS NULL
         """
 
 
@@ -678,7 +703,7 @@ class PersonPruner(TunableLoop):
                     AND Person.id IN (%s)
                 """ % people_ids)
             self.store.execute("""
-                UPDATE EmailAddress SET person=NULL
+                DELETE FROM EmailAddress
                 WHERE person IN (%s)
                 """ % people_ids)
             # This cascade deletes any PersonSettings records.
@@ -763,22 +788,24 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 5000
 
-    def __init__(self, log, abort_time=None, max_heat_age=None):
+    def __init__(self, log, abort_time=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
         self.total_processed = 0
         self.is_done = False
         self.offset = 0
-        if max_heat_age is None:
-            max_heat_age = config.calculate_bug_heat.max_heat_age
-        self.max_heat_age = max_heat_age
 
         self.store = IMasterStore(Bug)
 
     @property
     def _outdated_bugs(self):
+        try:
+            last_updated_cutoff = iso8601.parse_date(
+                getFeatureFlag('bugs.heat_updates.cutoff'))
+        except iso8601.ParseError:
+            return EmptyResultSet()
         outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)
+            last_updated_cutoff)
         # We remove the security proxy so that we can access the set()
         # method of the result set.
         return removeSecurityProxy(outdated_bugs)
@@ -965,83 +992,138 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         transaction.commit()
 
 
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class SourcePackagePublishingHistorySPNPopulator(TunableLoop):
-    """Populate the new sourcepackagename column of SPPH."""
+class SpecificationWorkitemMigrator(TunableLoop):
+    """Migrate work-items from Specification.whiteboard to
+    SpecificationWorkItem.
 
-    done = False
-    maximum_chunk_size = 5000
+    Migrating work items from the whiteboard is an all-or-nothing thing; if we
+    encounter any errors when parsing the whiteboard of a spec, we abort the
+    transaction and leave its whiteboard unchanged.
 
-    SPPH = SourcePackagePublishingHistory
+    On a test with production data, only 100 whiteboards (out of almost 2500)
+    could not be migrated. On 24 of those the assignee in at least one work
+    item is not valid, on 33 the status of a work item is not valid and on 42
+    one or more milestones are not valid.
+    """
 
-    def getStore(self):
-        return IMasterStore(self.SPPH)
+    maximum_chunk_size = 500
+    offset = 0
+    projects_to_migrate = [
+        'linaro-graphics-misc', 'linaro-powerdebug', 'linaro-mm-sig',
+        'linaro-patchmetrics', 'linaro-android-mirror', 'u-boot-linaro',
+        'lava-dashboard-tool', 'lava-celery', 'smartt', 'linaro-power-kernel',
+        'linaro-django-xmlrpc', 'linaro-multimedia-testcontent',
+        'linaro-status-website', 'linaro-octo-armhf', 'svammel', 'libmatrix',
+        'glproxy', 'lava-test', 'cbuild', 'linaro-ci',
+        'linaro-multimedia-ucm', 'linaro-ubuntu',
+        'linaro-android-infrastructure', 'linaro-wordpress-registration-form',
+        'linux-linaro', 'lava-server', 'linaro-android-build-tools',
+        'linaro-graphics-dashboard', 'linaro-fetch-image', 'unity-gles',
+        'lava-kernel-ci-views', 'cortex-strings', 'glmark2-extra',
+        'lava-dashboard', 'linaro-multimedia-speex', 'glcompbench',
+        'igloocommunity', 'linaro-validation-misc', 'linaro-websites',
+        'linaro-graphics-tests', 'linaro-android',
+        'jenkins-plugin-shell-status', 'binutils-linaro',
+        'linaro-multimedia-project', 'lava-qatracker',
+        'linaro-toolchain-binaries', 'linaro-image-tools',
+        'linaro-toolchain-misc', 'qemu-linaro', 'linaro-toolchain-benchmarks',
+        'lava-dispatcher', 'gdb-linaro', 'lava-android-test', 'libjpeg-turbo',
+        'lava-scheduler-tool', 'glmark2', 'linaro-infrastructure-misc',
+        'lava-lab', 'linaro-android-frontend', 'linaro-powertop',
+        'linaro-license-protection', 'gcc-linaro', 'lava-scheduler',
+        'linaro-offspring', 'linaro-python-dashboard-bundle',
+        'linaro-power-qa', 'lava-tool', 'linaro']
 
-    def findSPPHs(self):
-        SPPH = self.SPPH
-        return self.getStore().find(SPPH.id, SPPH.sourcepackagename == None)
+    def __init__(self, log, abort_time=None):
+        super(SpecificationWorkitemMigrator, self).__init__(
+            log, abort_time=abort_time)
+
+        if not getFeatureFlag('garbo.workitem_migrator.enabled'):
+            self.log.info(
+                "Not migrating work items. Change the "
+                "garbo.workitem_migrator.enabled feature flag if you want "
+                "to enable this.")
+            # This will cause isDone() to return True, thus skipping the work
+            # item migration.
+            self.total = 0
+            return
+
+        query = ("product in (select id from product where name in %s)"
+            % ",".join(sqlvalues(self.projects_to_migrate)))
+        # Get only the specs which contain "work items" in their whiteboard
+        # and which don't have any SpecificationWorkItems.
+        query += " and whiteboard ilike '%%' || %s || '%%'" % quote_like(
+            'work items')
+        query += (" and id not in (select distinct specification from "
+                  "SpecificationWorkItem)")
+        self.specs = IMasterStore(Specification).find(Specification, query)
+        self.total = self.specs.count()
+        self.log.info(
+            "Migrating work items from the whiteboard of %d specs"
+            % self.total)
+
+    def getNextBatch(self, chunk_size):
+        end_at = self.offset + int(chunk_size)
+        return self.specs[self.offset:end_at]
 
     def isDone(self):
         """See `TunableLoop`."""
-        return self.done
+        return self.offset >= self.total
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
-        spphs = list(self.findSPPHs()[:chunk_size])
-        self.log.info("Populating %d SPPH(s).", len(spphs))
-        if len(spphs) == 0:
-            self.log.info("Finished populating SPPHs.  Remove the populator.")
-            self.done = True
-            return
-        self.getStore().execute("""
-            UPDATE SourcePackagePublishingHistory AS SPPH
-            SET sourcepackagename = SPR.sourcepackagename
-            FROM SourcePackageRelease AS SPR
-            WHERE
-                SPR.id = SPPH.sourcepackagerelease AND
-                SPPH.sourcepackagename IS NULL AND
-                SPPH.id IN %s
-            """ % sqlvalues(spphs))
-        transaction.commit()
+        for spec in self.getNextBatch(chunk_size):
+            try:
+                work_items = extractWorkItemsFromWhiteboard(spec)
+            except Exception, e:
+                self.log.info(
+                    "Failed to parse whiteboard of %s: %s" % (
+                        spec, unicode(e)))
+                transaction.abort()
+                continue
+
+            if len(work_items) > 0:
+                self.log.info(
+                    "Migrated %d work items from the whiteboard of %s" % (
+                        len(work_items), spec))
+                transaction.commit()
+            else:
+                self.log.info(
+                    "No work items found on the whiteboard of %s" % spec)
+        self.offset += chunk_size
 
 
-# XXX: StevenK 2011-09-14 bug=849683: This can be removed when done.
-class BinaryPackagePublishingHistoryBPNPopulator(TunableLoop):
-    """Populate the new binarypackagename column of BPPH."""
+class BugTaskFlattener(TunableLoop):
+    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
 
-    done = False
     maximum_chunk_size = 5000
 
-    BPPH = BinaryPackagePublishingHistory
+    def __init__(self, log, abort_time=None):
+        super(BugTaskFlattener, self).__init__(log, abort_time)
+        watermark = getUtility(IMemcacheClient).get(
+            '%s:bugtask-flattener' % config.instance_name)
+        self.start_at = watermark or 0
 
-    def getStore(self):
-        return IMasterStore(self.BPPH)
-
-    def findBPPHs(self):
-        BPPH = self.BPPH
-        return self.getStore().find(BPPH.id, BPPH.binarypackagename == None)
+    def findTaskIDs(self):
+        return IMasterStore(BugTask).find(
+            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
     def isDone(self):
-        """See `TunableLoop`."""
-        return self.done
+        return self.findTaskIDs().is_empty()
 
     def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        bpphs = list(self.findBPPHs()[:chunk_size])
-        self.log.info("Populating %d BPPH(s).", len(bpphs))
-        if len(bpphs) == 0:
-            self.log.info("Finished populating BPPHs.  Remove the populator.")
-            self.done = True
-            return
-        self.getStore().execute("""
-            UPDATE BinaryPackagePublishingHistory AS BPPH
-            SET binarypackagename = BPR.binarypackagename
-            FROM BinaryPackageRelease AS BPR
-            WHERE
-                BPR.id = BPPH.binarypackagerelease AND
-                BPPH.binarypackagename IS NULL AND
-                BPPH.id IN %s
-            """ % sqlvalues(bpphs))
+        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
+        list(IMasterStore(BugTask).using(BugTask).find(
+            SQL('bugtask_flatten(BugTask.id, false)'),
+            BugTask.id.is_in(ids)))
+
+        self.start_at = ids[-1] + 1
+        result = getUtility(IMemcacheClient).set(
+            '%s:bugtask-flattener' % config.instance_name,
+            self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+
         transaction.commit()
 
 
@@ -1183,6 +1265,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         """
         self.logger.debug(
             "Worker thread %s running.", threading.currentThread().name)
+        install_feature_controller(make_script_feature_controller(self.name))
         self.login()
 
         while True:
@@ -1203,7 +1286,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_logger = self.get_loop_logger(loop_name)
 
-            # Aquire a lock for the task. Multiple garbo processes
+            # Acquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
                 LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
@@ -1211,7 +1294,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
-                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+                loop_logger.debug("Acquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
@@ -1273,6 +1356,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
+        SpecificationWorkitemMigrator,
         ]
     experimental_tunable_loops = []
 
@@ -1294,8 +1378,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        SourcePackagePublishingHistorySPNPopulator,
-        BinaryPackagePublishingHistoryBPNPopulator,
+        BugTaskFlattener,
         ]
     experimental_tunable_loops = []
 
@@ -1328,6 +1411,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
+        UnlinkedAccountPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

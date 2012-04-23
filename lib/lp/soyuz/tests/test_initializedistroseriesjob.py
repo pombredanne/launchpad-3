@@ -7,14 +7,10 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
@@ -31,6 +27,11 @@ from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
@@ -276,7 +277,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     def test_job(self):
         parent, child = self._create_child()
         job = self.job_source.create(child, [parent.id])
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         job.run()
         child.updatePackageCount()
@@ -289,7 +290,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         job = self.job_source.create(
             child, [parent.id], packagesets=(self.test1_packageset_id,),
             arches=(arch,), rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
 
         job.run()
         child.updatePackageCount()
@@ -306,7 +307,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             child, [parent.id], archindep_archtag=None, packagesets=None,
             arches=None, overlays=None, overlay_pockets=None,
             overlay_components=None, rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
         job.run()
         child.updatePackageCount()
 
@@ -318,7 +319,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             child, [parent.id], archindep_archtag=None, packagesets=None,
             arches=None, overlays=None, overlay_pockets=None,
             overlay_components=None, rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
         job.run()
 
         self.assertEqual(
@@ -333,7 +334,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             child, [parent.id], archindep_archtag='amd64', packagesets=None,
             arches=None, overlays=None, overlay_pockets=None,
             overlay_components=None, rebuild=True)
-        self.layer.switchDbUser('initializedistroseries')
+        switch_dbuser('initializedistroseries')
         job.run()
 
         self.assertEqual(

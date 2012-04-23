@@ -16,7 +16,7 @@ upload the same sampledata tarball twice, one public and one restricted
     >>> tarball_size = len(tarball.read())
     >>> tarball.seek(0)
 
-    >>> from canonical.launchpad.interfaces.librarian import (
+    >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> public_translation = getUtility(ILibraryFileAliasSet).create(
     ...     name='test.tar.gz',

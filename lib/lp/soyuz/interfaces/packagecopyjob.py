@@ -28,8 +28,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
@@ -126,7 +127,8 @@ class IPlainPackageCopyJobSource(IJobSource):
     def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None,
+               sponsored=None):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -142,6 +144,8 @@ class IPlainPackageCopyJobSource(IJobSource):
             that is to be copied.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param requester: The user requesting the copy.
+        :param sponsored: The user who is being sponsored to make the copy.
+            The person who is making this request then becomes the sponsor.
         """
 
     def createMultiple(target_distroseries, copy_tasks, requester,
@@ -178,6 +182,15 @@ class IPlainPackageCopyJobSource(IJobSource):
             `DistroSeriesDifference.parent_source_version`.
         """
 
+    def getIncompleteJobsForArchive(archive):
+        """Find incomplete jobs for each package in `archive`.
+
+        Incomplete jobs are ones in status WAITING, RUNNING or FAILED.
+
+        :param archive: The target `IArchive` for the job.
+        :return: An iterable of `PackageCopyJob`.
+        """
+
 
 class IPlainPackageCopyJob(IRunnableJob):
     """A no-frills job to copy packages between `IArchive`s."""
@@ -186,12 +199,22 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
 
+    error_message = Int(
+        title=_("Error message"), required=True, readonly=True)
+
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
 
+    sponsored = Reference(
+        schema=IPerson, title=_('Sponsored Person'),
+        required=False, readonly=True)
+
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
+
+    def setErrorMessage(message):
+        """Set the error message."""
 
     def getSourceOverride():
         """Get an `ISourceOverride` from the metadata."""

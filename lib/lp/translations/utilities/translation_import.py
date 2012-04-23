@@ -19,22 +19,22 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    )
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
-from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.config import config
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    )
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp import canonical_url
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationexporter import (

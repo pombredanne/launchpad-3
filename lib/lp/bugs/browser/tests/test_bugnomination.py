@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug nomination views."""
@@ -11,19 +11,19 @@ import soupmatchers
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
 
@@ -88,8 +88,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_distribution_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a distro series.
-        person = self.factory.makePerson(
-            name='main-person-test', password='test')
+        person = self.factory.makePerson(name='main-person-test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
         self._makeBugSupervisorTeam(person, owner, distro)
@@ -108,8 +107,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_source_package_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a source package distro series.
-        person = self.factory.makePerson(
-            name='main-person-test', password='test')
+        person = self.factory.makePerson(name='main-person-test')
         distro = self.factory.makeDistribution()
         owner = distro.owner
         self._makeBugSupervisorTeam(person, owner, distro)
@@ -132,8 +130,7 @@ class TestBugNominationView(TestCaseWithFactory):
     def test_bug_supervisor_nominate_product_does_not_error(self):
         # A bug supervisor should not receive error notifications
         # from the BugNominationView for a product series.
-        person = self.factory.makePerson(
-            name='main-person-test-product', password='test')
+        person = self.factory.makePerson(name='main-person-test-product')
         product = self.factory.makeProduct()
         owner = product.owner
         self._makeBugSupervisorTeam(person, owner, product)
@@ -147,6 +144,25 @@ class TestBugNominationView(TestCaseWithFactory):
         login_person(person)
         view = create_initialized_view(series_bugtask, name='+nominate')
         self.assertEqual(0, len(view.request.notifications))
+
+    def test_series_targets_allow_nomination(self):
+        # When a bug is already nominated for a series, the view checks
+        # for bug supervisor permission on the series correctly.
+        person = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        self._makeBugSupervisorTeam(
+            person, dsp.distribution.owner, dsp.distribution)
+        bug = self.factory.makeBug(
+            distribution=dsp.distribution,
+            sourcepackagename=dsp.sourcepackagename)
+        with person_logged_in(dsp.distribution.owner):
+            nomination = bug.addNomination(dsp.distribution.owner, series)
+            nomination.approve(person)
+        series_bugtask = bug.bugtasks[1]
+        with person_logged_in(person):
+            view = create_initialized_view(series_bugtask, name='+nominate')
+            self.assertEqual(0, len(view.request.notifications))
 
 
 class TestBugEditLinks(TestCaseWithFactory):

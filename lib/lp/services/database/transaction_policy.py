@@ -12,13 +12,13 @@ from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp.interfaces import (
+from lp.services.database.isolation import TransactionInProgress
+from lp.services.database.sqlbase import quote
+from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from lp.services.database.isolation import TransactionInProgress
 
 
 class DatabaseTransactionPolicy:

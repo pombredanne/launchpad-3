@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditStatusView',
@@ -48,6 +47,7 @@ from lazr.restful.interface import (
 from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
+import simplejson
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
@@ -74,31 +74,7 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad import (
-    _,
-    searchbuilder,
-    )
-from canonical.launchpad.browser.feeds import (
-    BranchFeedLink,
-    FeedsMixin,
-    )
-from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    NavigationMenu,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -106,9 +82,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import (
-    EnumChoiceWidget,
-    )
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -128,7 +102,6 @@ from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
     RevisionControlSystems,
-    UICreatableBranchType,
     )
 from lp.code.errors import (
     BranchCreationForbidden,
@@ -141,20 +114,45 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.branch import (
     IBranch,
+    IBranchSet,
     user_has_special_branch_access,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services import searchbuilder
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.feeds.browser import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
+from lp.services.helpers import (
+    english_list,
+    truncate_text,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.menu import structured
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -442,6 +440,13 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def initialize(self):
         self.branch = self.context
         self.notices = []
+        # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = [self.branch.owner]
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", authorised_people)
         # Replace our context with a decorated branch, if it is not already
         # decorated.
         if not isinstance(self.context, DecoratedBranch):
@@ -1143,77 +1148,6 @@ class BranchReviewerEditView(BranchEditFormView):
         return {'reviewer': self.context.code_reviewer}
 
 
-class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
-
-    class schema(Interface):
-        use_template(
-            IBranch, include=['owner', 'name', 'lifecycle_status'])
-
-    for_input = True
-    field_names = ['owner', 'name', 'lifecycle_status']
-
-    branch = None
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-
-    initial_focus_widget = 'name'
-
-    @property
-    def page_title(self):
-        return 'Register a branch'
-
-    @property
-    def initial_values(self):
-        return {
-            'owner': self.default_owner,
-            'branch_type': UICreatableBranchType.MIRRORED}
-
-    @property
-    def target(self):
-        """The branch target for the context."""
-        return IBranchTarget(self.context)
-
-    @property
-    def default_owner(self):
-        """The default owner of branches in this context.
-
-        If the context is a person, then it's the context. If the context is
-        not a person, then the default owner is the currently logged-in user.
-        """
-        return IPerson(self.context, self.user)
-
-    @action('Register Branch', name='add')
-    def add_action(self, action, data):
-        """Handle a request to create a new branch for this product."""
-        try:
-            namespace = self.target.getNamespace(data['owner'])
-            self.branch = namespace.createBranch(
-                branch_type=BranchType.HOSTED,
-                name=data['name'],
-                registrant=self.user,
-                url=None,
-                lifecycle_status=data['lifecycle_status'])
-        except BranchCreationForbidden:
-            self.addError(
-                "You are not allowed to create branches in %s." %
-                self.context.displayname)
-        except BranchExists, e:
-            self._setBranchExists(e.existing_branch)
-        else:
-            self.next_url = canonical_url(self.branch)
-
-    def validate(self, data):
-        owner = data['owner']
-
-        if not self.user.inTeam(owner):
-            self.setFieldError(
-                'owner',
-                'You are not a member of %s' % owner.displayname)
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-
 class BranchSubscriptionsView(LaunchpadView):
     """The view for the branch subscriptions portlet.
 
@@ -1308,7 +1242,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose branch for merging'
 
@@ -1322,7 +1256,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
-    @action('Propose Merge', name='register')
+    @action('Propose Merge', name='register',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def register_action(self, action, data):
         """Register the new branch merge proposal."""
 
@@ -1339,6 +1274,21 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         if reviewer is not None:
             review_requests.append((reviewer, review_type))
 
+        branch_names = [branch.unique_name
+                        for branch in [source_branch, target_branch]]
+        visibility_info = getUtility(IBranchSet).getBranchVisibilityInfo(
+            self.user, reviewer, branch_names)
+        visible_branches = list(visibility_info['visible_branches'])
+        if self.request.is_ajax and len(visible_branches) < 2:
+            self.request.response.setStatus(400, "Branch Visibility")
+            self.request.response.setHeader(
+                'Content-Type', 'application/json')
+            return simplejson.dumps({
+                'person_name': visibility_info['person_name'],
+                'branches_to_check': branch_names,
+                'visible_branches': visible_branches,
+            })
+
         try:
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
@@ -1347,7 +1297,22 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
-            self.next_url = canonical_url(proposal)
+            if len(visible_branches) < 2:
+                invisible_branches = [branch.unique_name
+                            for branch in [source_branch, target_branch]
+                            if branch.unique_name not in visible_branches]
+                self.request.response.addNotification(
+                    'To ensure visibility, %s is now subscribed to: %s'
+                    % (visibility_info['person_name'],
+                       english_list(invisible_branches)))
+            # Success so we do a client redirect to the new mp page.
+            if self.request.is_ajax:
+                self.request.response.setStatus(201)
+                self.request.response.setHeader(
+                    'Location', canonical_url(proposal))
+                return None
+            else:
+                self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
 

@@ -12,9 +12,6 @@ from xmlrpclib import ProtocolError
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
@@ -29,9 +26,7 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase,
-    )
+from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.bugs.scripts.checkwatches.core import (
     CheckwatchesMaster,
     LOGIN,
@@ -45,11 +40,15 @@ from lp.bugs.tests.externalbugtracker import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
+    login,
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):
@@ -303,11 +302,10 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         # subscribers from a bug watch.
         question.subscribe(
             getUtility(ILaunchpadCelebrities).launchpad_developers)
-        transaction.commit()
 
         # We now need to switch to the checkwatches DB user so that
         # we're testing with the correct set of permissions.
-        self.layer.switchDbUser(config.checkwatches.dbuser)
+        switch_dbuser(config.checkwatches.dbuser)
 
         # For test_can_update_bug_with_questions we also need a bug
         # watch and by extension a bug tracker.

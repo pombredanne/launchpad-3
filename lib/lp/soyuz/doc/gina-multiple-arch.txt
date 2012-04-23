@@ -3,7 +3,7 @@ Gina over Multiple Architectures (and Pockets, and Components)
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -36,7 +36,7 @@ Create a distribution series and an arch series for dapper:
     >>> hoary = ubuntu.getSeries("hoary")
 
     # Only the distro owner or admins can create a series.
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> dapper = ubuntu.newSeries("dapper", "Dapper Dragoon", "My title",
     ...                           "My summary", "My description", "5.10",
     ...                           hoary, celebs.launchpad_developers)

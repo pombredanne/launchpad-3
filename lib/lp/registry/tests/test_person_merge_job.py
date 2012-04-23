@@ -12,26 +12,26 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterObject,
-    IStore,
-    )
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts import log
-from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
+from lp.services.database.lpstorm import (
+    IMasterObject,
+    IStore,
+    )
+from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.scripts import log
 from lp.testing import (
-    run_script,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestPersonMergeJob(TestCaseWithFactory):

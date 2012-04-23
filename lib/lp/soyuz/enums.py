@@ -33,7 +33,6 @@ from lazr.enum import (
     DBItem,
     )
 
-
 # Regexes that match bug numbers for closing in change logs.
 re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)

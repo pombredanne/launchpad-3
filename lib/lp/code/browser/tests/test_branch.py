@@ -1,39 +1,24 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    )
+from datetime import datetime
 from textwrap import dedent
 
+from BeautifulSoup import BeautifulSoup
 import pytz
+from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    setupBrowser,
-    )
 from lp.app.interfaces.headings import IRootContext
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.code.browser.branch import (
-    BranchAddView,
     BranchMirrorStatusView,
     BranchReviewerEditView,
     BranchView,
@@ -45,11 +30,15 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     BranchVisibilityRule,
     )
-from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.registry.interfaces.person import PersonVisibility
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.helpers import truncate_text
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login,
@@ -58,9 +47,19 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,
     Contains,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    setupBrowser,
+    setupBrowserForUser,
     )
 from lp.testing.views import create_initialized_view
 
@@ -118,14 +117,12 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsBranchOwner(self):
         # A branch location with a defined private host is visible to the
         # owner.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the owner.
-        logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
         view.initialize()
@@ -137,16 +134,13 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsOtherLoggedInUser(self):
         # A branch location with a defined private host is hidden from other
         # users.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
-        other = self.factory.makePerson(
-            email="other@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
+        other = self.factory.makePerson(email="other@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the other person.
-        logout()
         login('other@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
         view.initialize()
@@ -190,29 +184,6 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(
             "This is a short error message.",
             branch_view.mirror_status_message)
-
-    def testBranchAddRequests(self):
-        """Registering a branch that requests a mirror."""
-        arbitrary_person = self.factory.makePerson()
-        arbitrary_product = self.factory.makeProduct()
-        login_person(arbitrary_person)
-        try:
-            add_view = BranchAddView(arbitrary_person, self.request)
-            add_view.initialize()
-            data = {
-                'branch_type': BranchType.HOSTED,
-                'name': 'some-branch',
-                'title': 'Branch Title',
-                'summary': '',
-                'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
-                'whiteboard': '',
-                'owner': arbitrary_person,
-                'author': arbitrary_person,
-                'product': arbitrary_product,
-                }
-            add_view.add_action.success(data)
-        finally:
-            logout()
 
     def testShowMergeLinksOnManyBranchProject(self):
         # The merge links are shown on projects that have multiple branches.
@@ -543,34 +514,136 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(linked_bug_urls[1], links[4]['href'])
 
 
-class TestBranchAddView(TestCaseWithFactory):
-    """Test the BranchAddView view."""
+class TestBranchViewPrivateArtifacts(BrowserTestCase):
+    """ Tests that branches with private team artifacts can be viewed.
+
+    A Branch may be associated with a private team as follows:
+    - the owner is a private team
+    - a subscriber is a private team
+    - a reviewer is a private team
+
+    A logged in user who is not authorised to see the private team(s) still
+    needs to be able to view the branch. The private team will be rendered in
+    the normal way, displaying the team name and Launchpad URL.
+    """
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestBranchAddView, self).setUp()
-        self.person = self.factory.makePerson()
-        login_person(self.person)
-        self.request = LaunchpadTestRequest()
+    def _getBrowser(self, user=None):
+        if user is None:
+            browser = setupBrowser()
+            logout()
+            return browser
+        else:
+            login_person(user)
+            return setupBrowserForUser(user=user)
 
-    def tearDown(self):
-        logout()
-        super(TestBranchAddView, self).tearDown()
+    def test_view_branch_with_private_owner(self):
+        # A branch with a private owner is rendered.
+        private_owner = self.factory.makeTeam(
+            displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch(owner=private_owner)
+        # Ensure the branch owner is rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNotNone(soup.find('a', text="PrivateTeam"))
 
-    def get_view(self, context):
-        view = BranchAddView(context, self.request)
-        view.initialize()
-        return view
+    def test_view_private_branch_with_private_owner(self):
+        # A private branch with a private owner is rendered.
+        private_owner = self.factory.makeTeam(
+            displayname="PrivateTeam", visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch(owner=private_owner)
+        # Ensure the branch owner is rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        # Subscribe the user so they can see the branch.
+        with person_logged_in(private_owner):
+            self.factory.makeBranchSubscription(branch, user, private_owner)
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNotNone(soup.find('a', text="PrivateTeam"))
 
-    def test_target_person(self):
-        add_view = self.get_view(self.person)
-        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+    def test_anonymous_view_branch_with_private_owner(self):
+        # A branch with a private owner is not rendered for anon users.
+        private_owner = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch(owner=private_owner)
+        # Viewing the branch results in an error.
+        url = canonical_url(branch, rootsite='code')
+        browser = self._getBrowser()
+        self.assertRaises(NotFound, browser.open, url)
 
-    def test_target_product(self):
+    def test_view_branch_with_private_subscriber(self):
+        # A branch with a private subscriber is rendered.
+        private_subscriber = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self.factory.makeBranchSubscription(
+                branch, private_subscriber, branch.owner)
+        # Ensure the branch subscriber is rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNotNone(
+            soup.find('div', attrs={'id': 'subscriber-privateteam'}))
+
+    def test_anonymous_view_branch_with_private_subscriber(self):
+        # Private branch subscribers are not rendered for anon users.
+        private_subscriber = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self.factory.makeBranchSubscription(
+                branch, private_subscriber, branch.owner)
+        # Viewing the branch doesn't show the private subscriber.
+        url = canonical_url(branch, rootsite='code')
+        browser = self._getBrowser()
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        self.assertIsNone(
+            soup.find('div', attrs={'id': 'subscriber-privateteam'}))
+
+    def _createPrivateMergeProposalVotes(self):
+        private_reviewer = self.factory.makeTeam(
+            name="privateteam", visibility=PersonVisibility.PRIVATE)
         product = self.factory.makeProduct()
-        add_view = self.get_view(product)
-        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+        branch = self.factory.makeProductBranch(product=product)
+        target_branch = self.factory.makeProductBranch(product=product)
+        with person_logged_in(branch.owner):
+            self.factory.makeBranchMergeProposal(
+                source_branch=branch, target_branch=target_branch,
+                reviewer=private_reviewer)
+        return branch
+
+    def test_view_branch_with_private_reviewer(self):
+        # A branch with a private reviewer is rendered.
+        branch = self._createPrivateMergeProposalVotes()
+        # Ensure the branch reviewers are rendered.
+        url = canonical_url(branch, rootsite='code')
+        user = self.factory.makePerson()
+        browser = self._getBrowser(user)
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        reviews_list = soup.find('dl', attrs={'class': 'reviews'})
+        self.assertIsNotNone(reviews_list.find('a', text='Privateteam'))
+
+    def test_anonymous_view_branch_with_private_reviewer(self):
+        # A branch with a private reviewer is rendered.
+        branch = self._createPrivateMergeProposalVotes()
+        # Viewing the branch doesn't show the private reviewers.
+        url = canonical_url(branch, rootsite='code')
+        browser = self._getBrowser()
+        browser.open(url)
+        soup = BeautifulSoup(browser.contents)
+        reviews_list = soup.find('dl', attrs={'class': 'reviews'})
+        self.assertIsNone(reviews_list.find('a', text='Privateteam'))
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
@@ -799,6 +872,25 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+    def test_private_owner_is_ok(self):
+        # A branch's owner can be changed to a private team permitted by the
+        # visibility policy.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        team = self.factory.makeTeam(
+            owner=person, displayname="Private team",
+            visibility=PersonVisibility.PRIVATE)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").displayValue = ["Private team"]
+        browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEquals(team, branch.owner)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

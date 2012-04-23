@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ISpecificationTarget browser views."""
@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HasSpecificationsMenuMixin',
     'HasSpecificationsView',
-    'RegisterABlueprintButtonView',
+    'RegisterABlueprintButtonPortlet',
     'SpecificationAssignmentsView',
     'SpecificationDocumentationView',
     ]
@@ -25,22 +25,12 @@ from zope.component import (
     queryMultiAdapter,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    )
+from lp import _
 from lp.app.enums import service_uses_launchpad
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    IPrivacy,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationSort,
@@ -57,7 +47,20 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     )
 from lp.registry.interfaces.role import IHasDrivers
+from lp.services.config import config
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 
 
 class HasSpecificationsMenuMixin:
@@ -342,6 +345,10 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def specs(self):
+        if (IPrivacy.providedBy(self.context)
+                and self.context.private
+                and not check_permission('launchpad.View', self.context)):
+            return []
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
 
@@ -424,7 +431,7 @@ class SpecificationDocumentationView(HasSpecificationsView):
                           self.context.displayname)
 
 
-class RegisterABlueprintButtonView:
+class RegisterABlueprintButtonPortlet:
     """View that renders a button to register a blueprint on its context."""
 
     @cachedproperty

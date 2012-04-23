@@ -29,16 +29,7 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    Navigation,
-    stepto,
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -79,6 +70,15 @@ from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
 
 
 class CodeImportSetNavigation(Navigation):
@@ -110,6 +110,8 @@ class CodeImportSetView(LaunchpadView):
 
     We present the CodeImportSet as a list of all imports.
     """
+
+    page_title = 'Code Imports'
 
     def initialize(self):
         """See `LaunchpadView.initialize`."""
@@ -273,7 +275,7 @@ class NewCodeImportForm(Interface):
     bzr_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_("The URL of the Bazaar branch."),
-        allowed_schemes=["http", "https", "bzr"],
+        allowed_schemes=["http", "https", "bzr", "ftp"],
         allow_userinfo=True,
         allow_port=True,
         allow_query=False,     # Query makes no sense in Bazaar

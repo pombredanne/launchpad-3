@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -10,15 +10,6 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    logout,
-    )
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
@@ -26,7 +17,17 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import DoesNotSnapshot
 
 
@@ -57,7 +58,7 @@ class MilestoneTest(unittest.TestCase):
     def testMilestoneSetGetIDs(self):
         """Test of MilestoneSet.getByIds()"""
         milestone_set = getUtility(IMilestoneSet)
-        milestones = milestone_set.getByIds([1,3])
+        milestones = milestone_set.getByIds([1, 3])
         ids = sorted(map(attrgetter('id'), milestones))
         self.assertEqual([1, 3], ids)
 
@@ -128,3 +129,49 @@ class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
     def test_projectgroup(self):
         projectgroup = self.factory.makeProject()
         self.check_skipped(projectgroup)
+
+
+class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
+    """Test cases for retrieving bugtasks and specifications for a milestone.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(MilestoneBugTaskSpecificationTest, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.product = self.factory.makeProduct(name="product1")
+        self.milestone = self.factory.makeMilestone(product=self.product)
+
+    def _make_bug(self, **kwargs):
+        milestone = kwargs.pop('milestone', None)
+        bugtask = self.factory.makeBugTask(**kwargs)
+        bugtask.milestone = milestone
+        return bugtask
+
+    def _create_items(self, num, factory, **kwargs):
+        items = []
+        with person_logged_in(self.owner):
+            for n in xrange(num):
+                items.append(factory(**kwargs))
+        return items
+
+    def test_bugtask_retrieval(self):
+        # Ensure that all bugtasks on a milestone can be retrieved.
+        bugtasks = self._create_items(
+            5, self._make_bug,
+            milestone=self.milestone,
+            owner=self.owner,
+            target=self.product,
+            )
+        self.assertContentEqual(bugtasks, self.milestone.bugtasks(self.owner))
+
+    def test_specification_retrieval(self):
+        # Ensure that all specifications on a milestone can be retrieved.
+        specifications = self._create_items(
+            5, self.factory.makeSpecification,
+            milestone=self.milestone,
+            owner=self.owner,
+            product=self.product,
+            )
+        self.assertContentEqual(specifications, self.milestone.specifications)

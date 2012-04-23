@@ -20,17 +20,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
-from canonical.launchpad.webapp import urlsplit
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -53,10 +42,20 @@ from lp.bugs.model.bugwatch import (
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import BugWatchActivityPruner
+from lp.services.database.constants import UTC_NOW
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import urlsplit
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -583,8 +582,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # the given bug watches.
         error = BugWatchActivityStatus.PRIVATE_REMOTE_BUG
         getUtility(IBugWatchSet).bulkAddActivity(
-            self.bug_watches, error, "Forbidden", "OOPS-1234")
-        self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
+            self.bug_watches, error, "OOPS-1234")
+        self._checkActivityForBugWatches(error, None, "OOPS-1234")
 
     def test_bulkAddActivity_with_id_list(self):
         # The ids of bug watches can be passed in.
@@ -643,9 +642,8 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
         for i in range(5):
             self.bug_watch.addActivity(message="Activity %s" % i)
-        transaction.commit()
 
-        self.layer.switchDbUser('garbo')
+        switch_dbuser('garbo')
         self.pruner = BugWatchActivityPruner(BufferLogger())
         self.addCleanup(self.pruner.cleanUp)
 

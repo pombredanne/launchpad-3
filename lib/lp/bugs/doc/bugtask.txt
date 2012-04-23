@@ -23,7 +23,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
 To create a bug task, you have to be logged in:
 
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from lp.testing import login, ANONYMOUS
     >>> login('foo.bar@canonical.com')
 
 There are three kinds of bug tasks. We need to pass the bug task creation
@@ -296,7 +296,7 @@ IProduct.developmentfocus. The following attributes are synced:
 We'll open a bug on just the distribution, and also a bug on a specific
 package.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> launchbag = getUtility(ILaunchBag)
     >>> params = CreateBugParams(
@@ -737,7 +737,7 @@ entitled _Privacy and Team Awareness_):
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 If we now login as someone who was neither implicitly nor explicitly
@@ -761,7 +761,7 @@ able to access or set properties of the bugtask.
 The private bugs will be invisible to No Privileges Person in the search
 results:
 
-    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.services.searchbuilder import any
     >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
@@ -773,14 +773,6 @@ results:
     >>> bug_ids = [bt.bug.id for bt in bugtasks]
     >>> print sorted(bug_ids)
     [1, 4, 5]
-
-Likewise when the No Privileges Person tries to do a search on tasks
-maintained by Foo Bar.
-
-    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     foobar, user=mr_no_privs)
-    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
-    [2]
 
 
 Open bugtask count for a given list of projects
@@ -868,16 +860,6 @@ the private bug.
     [1, 4, 5, 6]
 
 
-If we query for all bugtasks reported on all packages/products that
-Sample Person maintains, we'll see that bug 1 is there (we'll not see it
-if we query logged in as a user who can't see that bug).
-
-    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     sample_person, user=foobar)
-    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7, 13, 15, 15]
-
-
 Privacy and Launchpad Admins
 ----------------------------
 
@@ -896,15 +878,6 @@ administrator.
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
-
-If, still logged in as Daniel Debonzi, we query for all bugtasks
-reported on packages/products for which Sample Person is the maintainer,
-we'll also see bug 1 again in the results, even though it's private.
-
-    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     sample_person, user=debonzi)
-    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7, 13, 15, 15]
 
 Trying to retrieve the bug directly will work fine:
 
@@ -1025,7 +998,7 @@ is used here.
     # XXX Guilherme Salgado 2005-11-07:
     # If we don't call flush_database_caches() here, we won't see the
     # changes made by the cronscript in objects we already have cached.
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> transaction.commit()
 
@@ -1178,6 +1151,21 @@ multiple bug tasks in one go.
      has_branch: True
      has_patch: False
      has_specification: False
+
+
+Bugtask Tags
+------------
+
+List of bugtasks often need to display related tags.  Since tags are
+related to bugtasks via bugs, BugTaskSet has a method getBugTaskTags
+that can calculate the tags in one query.
+
+    >>> some_bugtask.bug.tags = [u'foo', u'bar']
+    >>> another_bugtask.bug.tags = [u'baz', u'bop']
+    >>> tags_by_task = getUtility(IBugTaskSet).getBugTaskTags([
+    ...     some_bugtask, another_bugtask])
+    >>> print tags_by_task
+    {3: [u'bar', u'foo'], 6: [u'baz', u'bop']}
 
 
 Similar bugs

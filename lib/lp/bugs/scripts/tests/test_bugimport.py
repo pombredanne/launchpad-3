@@ -1,9 +1,10 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
 
 import os
 import re
-import unittest
 
 import pytz
 from testtools.content import text_content
@@ -12,14 +13,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -46,15 +39,20 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.person import generate_nick
+from lp.services.config import config
+from lp.services.database.sqlbase import cursor
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.testing import (
+    login,
+    logout,
     run_process,
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class UtilsTestCase(unittest.TestCase):
+class UtilsTestCase(TestCase):
     """Tests for the various utility functions used by the importer."""
 
     def test_parse_date(self):
@@ -284,7 +282,7 @@ class GetPersonTestCase(TestCaseWithFactory):
         transaction.commit()
         self.failIf(person.account is None, 'Person must have an account.')
         email = getUtility(IEmailAddressSet).new(
-            'foo@preferred.com', person, account=person.account)
+            'foo@preferred.com', person)
         person.setPreferredEmail(email)
         transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
@@ -299,36 +297,8 @@ class GetPersonTestCase(TestCaseWithFactory):
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
-    def test_person_from_account(self):
-        # If an Account record exists for a user's email address, but
-        # no Person record is linked to it, the bug importer creates a
-        # Person and links the three piece of information together.
-        account = self.factory.makeAccount("Sam")
-        personnode = ET.fromstring(
-            '<person xmlns="https://launchpad.net/xmlns/2006/bugs" />')
-        personnode.set('name', generate_nick(account.preferredemail.email))
-        personnode.set('email', account.preferredemail.email)
-        personnode.text = account.displayname
 
-        product = getUtility(IProductSet).getByName('netapplet')
-        importer = bugimport.BugImporter(
-            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
-        person = importer.getPerson(personnode)
-
-        # The person returned is associated with the account.
-        self.failUnlessEqual(account.id, person.accountID)
-        # The creation comment and rationale are set correctly.
-        self.failUnlessEqual(
-            'when importing bugs for %s' % product.displayname,
-            person.creation_comment)
-        self.failUnlessEqual(
-            PersonCreationRationale.BUGIMPORT,
-            person.creation_rationale)
-        # The person's email addresses are hidden by default.
-        self.failUnless(person.hide_email_addresses)
-
-
-class GetMilestoneTestCase(unittest.TestCase):
+class GetMilestoneTestCase(TestCase):
     """Tests for the BugImporter.getMilestone() method."""
     layer = LaunchpadZopelessLayer
 
@@ -483,14 +453,16 @@ public_security_bug = '''\
 </bug>'''
 
 
-class ImportBugTestCase(unittest.TestCase):
+class ImportBugTestCase(TestCase):
     """Test importing of a bug from XML"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(ImportBugTestCase, self).setUp()
         login('bug-importer@launchpad.net')
 
     def tearDown(self):
+        super(ImportBugTestCase, self).tearDown()
         logout()
 
     def assertNoPendingNotifications(self, bug):
@@ -562,7 +534,7 @@ class ImportBugTestCase(unittest.TestCase):
             message1.datecreated.isoformat(), '2004-10-12T12:00:00+00:00')
         self.assertEqual(message1.subject, 'A test bug')
         self.assertEqual(message1.text_contents, 'Original description')
-        self.assertEqual(message1.bugattachments.count(), 1)
+        self.assertEqual(len(message1.bugattachments), 1)
         attachment = message1.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
@@ -588,7 +560,7 @@ class ImportBugTestCase(unittest.TestCase):
             message3.text_contents,
             'A comment from mark about CVE-2005-2730\n\n'
             ' * list item 1\n * list item 2\n\nAnother paragraph')
-        self.assertEqual(message3.bugattachments.count(), 2)
+        self.assertEqual(len(message3.bugattachments), 2)
         # grab the attachments in the appropriate order
         [attachment1, attachment2] = list(message3.bugattachments)
         if attachment1.type == BugAttachmentType.PATCH:
@@ -613,7 +585,7 @@ class ImportBugTestCase(unittest.TestCase):
             message4.datecreated.isoformat(), '2005-01-01T14:00:00+00:00')
         self.assertEqual(message4.subject, 'Re: A test bug')
         self.assertEqual(message4.text_contents, '<empty comment>')
-        self.assertEqual(message4.bugattachments.count(), 0)
+        self.assertEqual(len(message4.bugattachments), 0)
 
         # Message 5:
         self.assertEqual(
@@ -622,7 +594,7 @@ class ImportBugTestCase(unittest.TestCase):
             message5.datecreated.isoformat(), '2005-01-01T15:00:00+00:00')
         self.assertEqual(message5.subject, 'Re: A test bug')
         self.assertEqual(message5.text_contents, '')
-        self.assertEqual(message5.bugattachments.count(), 1)
+        self.assertEqual(len(message5.bugattachments), 1)
         attachment = message5.bugattachments[0]
         self.assertEqual(attachment.type, BugAttachmentType.UNSPECIFIED)
         self.assertEqual(attachment.title, 'Hello')
@@ -683,6 +655,19 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bug101, None)
         self.assertEqual(bug101.private, False)
         self.assertEqual(bug101.security_related, True)
+
+    def test_public_bug_product_private_bugs(self):
+        # Test that if we import a public bug into a product with 
+        # private_bugs, the bug is private.
+        product = getUtility(IProductSet).getByName('netapplet')
+        removeSecurityProxy(product).private_bugs = True
+        importer = bugimport.BugImporter(
+            product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
+        bugnode = ET.fromstring(public_security_bug)
+        bug101 = importer.importBug(bugnode)
+        self.assertIsNot(None, bug101)
+        self.assertTrue(bug101.private)
+        self.assertTrue(bug101.security_related)
 
 
 class BugImportCacheTestCase(TestCase):
@@ -1028,7 +1013,7 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
             unmodified_remote_ids, server_time, self.bugtracker)
 
 
-class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
+class CheckwatchesErrorRecoveryTestCase(TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """

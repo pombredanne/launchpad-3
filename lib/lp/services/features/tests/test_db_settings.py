@@ -6,12 +6,14 @@
 
 __metaclass__ = type
 
-from canonical.testing import layers
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    layers,
+    TestCase,
+    )
 
 
 class TestFeatureModel(TestCase):

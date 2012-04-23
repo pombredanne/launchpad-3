@@ -11,14 +11,14 @@ This test will check the upload of dist-upgrade tarballs
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 Login as an admin.
 
     >>> login('foo.bar@canonical.com')
 
-First, test the rejection of a missapplied changesfile name:
+First, test the rejection of a misapplied changesfile name:
 
     >>> sync_policy = getPolicy(
     ...     name='sync', distro='ubuntutest', distroseries=None)
@@ -75,7 +75,7 @@ And all things worked.
 
 We need to commit the transaction to be able to use the librarian files.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
-Bug 3989 -- StuarBishop 20060713
+Bug 3989 -- StuartBishop 20060713
 
     >>> flush_database_updates()
     >>> transaction.commit()
@@ -85,7 +85,7 @@ Let's check how queue tool handles dist_upgrader uploads:
     >>> import subprocess
     >>> import os
     >>> import sys
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
 
     >>> script = os.path.join(
     ...     config.root, "scripts", "ftpmaster-tools", "queue")
@@ -111,8 +111,8 @@ be rejecting from unapproved or new, fix bug #54649):
     ...
 
 
-Accepting from rejected queue (ressurecting an reject upload is also
-very unlikely, however it's only for testing purpose, fix #54649):
+Accepting from rejected queue (resurrecting an reject upload is also
+very unlikely, however it's only for testing purposes, fix #54649):
 
     >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
     ...                             "-s", "breezy-autotest", "accept", "dist",
@@ -280,7 +280,7 @@ Remove the directory to keep the test working.
 Dist Upgrader to PPA
 --------------------
 
-Custom uploads for PPAs should works as expected, i.e, publish its
+Custom uploads for PPAs should work as expected, i.e, publish its
 files in the respective PPA location.
 
     >>> from lp.registry.interfaces.person import IPersonSet

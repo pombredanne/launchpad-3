@@ -73,7 +73,7 @@ For a team, the 'Workload' link first shows the specifications that
 are part of the workload for the team.  It then shows the workloads
 for each member of the team, using batching.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> browser.open('http://blueprints.launchpad.dev/~admins')
     >>> print backslashreplace(browser.title)
     Blueprints : \u201cLaunchpad Administrators\u201d team

@@ -44,15 +44,15 @@ Given a private PPA for Celso,
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
 
 and a client of Celso's who has a launchpad name of 'joesmith'
 
     >>> login('foo.bar@canonical.com')
-    >>> client = factory.makePerson(name="joesmith", displayname="Joe Smith",
-    ...     password="test", email="joe@example.com")
+    >>> client = factory.makePerson(
+    ...     name="joesmith", displayname="Joe Smith", email="joe@example.com")
     >>> logout()
 
 When Celso fills in the form with 'joesmith' as the subscriber, a blank
@@ -108,6 +108,7 @@ new subscriber.
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    Launchpad developer access.
     ...
 
@@ -148,6 +149,7 @@ about the update.
     http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
+    Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    a different description
     ...
     >>> for msg in get_feedback_messages(cprov_browser.contents):
@@ -275,7 +277,6 @@ a user Mark who is a member of the Launchpad team,
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> launchpad = getUtility(IPersonSet).getByName('launchpad')
     >>> ignore = private_ppa.newSubscription(launchpad, cprov)
-    >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> mark = getUtility(IPersonSet).getByName('mark')

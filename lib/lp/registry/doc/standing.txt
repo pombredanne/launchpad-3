@@ -53,8 +53,9 @@ are not a member of, their message gets held for moderator approval.
 
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.config import config
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.log.logger import DevNullLogger
     >>> class TestableScript(UpdatePersonalStanding):
     ...     """A testable version of `UpdatePersonalStanding`."""
@@ -63,16 +64,12 @@ are not a member of, their message gets held for moderator approval.
     ...         # Simulate Mailman acting changed state.
     ...         flush_database_updates()
     ...         mailinglists_helper.mailman.act()
-    ...         # Commit the in-progress transaction, since switching
-    ...         # database users does an abort.
-    ...         LaunchpadZopelessLayer.txn.commit()
     ...         launchpad_dbuser = config.launchpad.dbuser
-    ...         LaunchpadZopelessLayer.switchDbUser(
-    ...             config.standingupdater.dbuser)
+    ...         switch_dbuser(config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
     ...         self.logger = DevNullLogger()
     ...         results = super(TestableScript, self).main()
-    ...         LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
+    ...         switch_dbuser(launchpad_dbuser)
     ...         return results
     >>> script = TestableScript('update-standing', test_args=[])
 
@@ -220,7 +217,7 @@ operation is completely identical.
 For example, it will correctly update Robert's standing, but leave Carlos's
 standing untouched.
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
 
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> mark.personal_standing = PersonalStanding.UNKNOWN

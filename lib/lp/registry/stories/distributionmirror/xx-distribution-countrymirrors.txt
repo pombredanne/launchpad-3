@@ -39,7 +39,7 @@ canonical mirror.
 
 Note that unofficial mirrors are not included in the listings.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.interfaces.distributionmirror import MirrorStatus
     >>> from lp.registry.model.distributionmirror import DistributionMirrorSet
     >>> mirror = DistributionMirrorSet().getByHttpUrl(

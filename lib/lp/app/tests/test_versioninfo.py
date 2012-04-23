@@ -7,8 +7,8 @@ import os.path
 import subprocess
 import unittest
 
-from canonical.config import TREE_ROOT
 from lp.app.versioninfo import revno
+from lp.services.config import TREE_ROOT
 
 
 class TestVersionInfo(unittest.TestCase):

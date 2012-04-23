@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,11 +18,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.services.database.bulk import load_related
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -36,7 +38,6 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
-
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
@@ -62,6 +63,14 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
         We override this to provide a delegate specific to package builds."""
         self.build_farm_job = BuildFarmBuildJob(self.build)
+
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        return list(IStore(BinaryPackageBuild).find(
+            BinaryPackageBuild,
+            [BuildPackageJob.job_id.is_in([job.id for job in jobs]),
+             BuildPackageJob.build_id == BinaryPackageBuild.id]))
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -156,6 +165,14 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
+
+    @classmethod
+    def preloadJobsData(cls, jobs):
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.services.job.model.job import Job
+        load_related(Job, jobs, ['job_id'])
+        builds = load_related(BinaryPackageBuild, jobs, ['build_id'])
+        getUtility(IBinaryPackageBuildSet).preloadBuildsData(list(builds))
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):

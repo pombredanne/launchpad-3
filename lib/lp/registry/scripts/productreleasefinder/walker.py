@@ -32,8 +32,8 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.launchpad.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
+from lp.services.webapp.url import urlappend
 
 
 class WalkerError(Exception):
@@ -136,7 +136,7 @@ class WalkerBase:
 
             try:
                 (dirnames, filenames) = self.list(sub_dir)
-            except WalkerError, exc:
+            except WalkerError:
                 self.log.info('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
@@ -339,7 +339,7 @@ class HTTPWalker(WalkerBase):
 
         self.log.debug("Checking if %s is a directory" % path)
         try:
-            response = self.request("HEAD", path)
+            self.request("HEAD", path)
             return False
         except urllib2.HTTPError, exc:
             if exc.code != 301:

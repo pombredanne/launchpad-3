@@ -12,21 +12,17 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.scripts.tests import run_script
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.database import bulk
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.scripts.tests import run_script
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -46,6 +42,11 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     may_require_job,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 def find_dsd_for(dsp, package):
@@ -679,14 +680,12 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             source_package_name)
 
     def runJob(self, job):
-        transaction.commit()
-        self.layer.switchDbUser('distroseriesdifferencejob')
+        switch_dbuser('distroseriesdifferencejob')
         dsdjob = DistroSeriesDifferenceJob(job)
         dsdjob.start()
         dsdjob.run()
         dsdjob.complete()
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
     def test_parent_gets_newer(self):
         # When a new source package is uploaded to the parent distroseries,
@@ -940,9 +939,8 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         packages = dict(
             (user, self.factory.makeSourcePackageName())
             for user in script_users)
-        transaction.commit()
         for user in script_users:
-            self.layer.switchDbUser(user)
+            switch_dbuser(user)
             try:
                 create_job(derived, packages[user], parent)
             except ProgrammingError, e:
@@ -958,9 +956,8 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         # Check that DB users can query derived series.
         script_users = ['queued']
         dsp = self.factory.makeDistroSeriesParent()
-        transaction.commit()
         for user in script_users:
-            self.layer.switchDbUser(user)
+            switch_dbuser(user)
             list(dsp.parent_series.getDerivedSeries())
 
     def test_passesPackagesetFilter(self):
@@ -973,9 +970,8 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         dsdj = create_job(
             dsp.derived_series, spph.sourcepackagerelease.sourcepackagename,
             dsp.parent_series)
-        transaction.commit()
 
-        self.layer.switchDbUser('distroseriesdifferencejob')
+        switch_dbuser('distroseriesdifferencejob')
 
         dsdj.passesPackagesetFilter()
 

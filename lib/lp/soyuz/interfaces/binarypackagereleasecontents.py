@@ -13,7 +13,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 
-from canonical.launchpad import _
+from lp import _
 from lp.soyuz.interfaces.binarypackagepath import IBinaryPackagePath
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 

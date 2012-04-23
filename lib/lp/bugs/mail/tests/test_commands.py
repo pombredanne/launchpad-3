@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lazr.lifecycle.interfaces import (
@@ -6,10 +6,6 @@ from lazr.lifecycle.interfaces import (
     IObjectModifiedEvent,
     )
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
@@ -23,6 +19,7 @@ from lp.bugs.mail.commands import (
     TagEmailCommand,
     UnsubscribeEmailCommand,
     )
+from lp.registry.enums import InformationType
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -32,6 +29,10 @@ from lp.testing import (
     login_person,
     normalize_whitespace,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -285,15 +286,16 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         # Test that attempts to invalidly add a new bug task results in the
         # expected error message.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(private=True, product=product)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.PROPRIETARY)
         self.factory.makeProduct(name='fnord')
         login_celebrity('admin')
         login_person(bug.owner)
         command = AffectsEmailCommand('affects', ['fnord'])
         error = self.assertRaises(
             EmailProcessingError, command.execute, bug, None)
-        reason = ("This private bug already affects %s. "
-                    "Private bugs cannot affect multiple projects." %
+        reason = ("This proprietary bug already affects %s. "
+                    "Proprietary bugs cannot affect multiple projects." %
                     product.displayname)
         self.assertEqual(
             normalize_whitespace(
@@ -364,7 +366,8 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.USERDATA, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
     def test_execute_bug_params_with_security(self):
@@ -372,12 +375,14 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         user = self.factory.makePerson()
         login_person(user)
         bug_params = CreateBugParams(
-            title='bug title', owner=user, security_related='yes')
+            title='bug title', owner=user,
+            information_type=InformationType.EMBARGOEDSECURITY)
         command = PrivateEmailCommand('private', ['no'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -402,8 +407,8 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.security_related)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 

@@ -78,8 +78,8 @@ def exit_with_atexit_handlers(*ignored):
     sys.exit(-1 * signal.SIGTERM)
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
-# Tell canonical.config to use the testrunner config instance.
-from canonical.config import config
+# Tell lp.services.config to use the testrunner config instance.
+from lp.services.config import config
 config.setInstance('testrunner')
 config.generate_overrides()
 
@@ -88,8 +88,8 @@ config.generate_overrides()
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != BUILD_DIR]
 
 # Turn on psycopg debugging wrapper
-#import canonical.database.debug
-#canonical.database.debug.install()
+#import lp.services.database.debug
+#lp.services.database.debug.install()
 
 # Unset the http_proxy environment variable, because we're going to make
 # requests to localhost and we don't wand this to be proxied.
@@ -194,7 +194,7 @@ def listdir(path):
 os.listdir = listdir
 
 
-from canonical.testing.customresult import filter_tests, patch_find_tests
+from lp.services.testing.customresult import filter_tests, patch_find_tests
 
 
 if __name__ == '__main__':
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     # thunk across to parallel support if needed.
     if '--parallel' in sys.argv and '--list-tests' not in sys.argv:
         # thunk over to parallel testing.
-        from canonical.testing.parallel import main
+        from lp.services.testing.parallel import main
         sys.exit(main(sys.argv))
 
     def load_list(option, opt_str, list_name, parser):
@@ -246,7 +246,7 @@ if __name__ == '__main__':
             options.parser.defaults[name] = value
 
     # Turn on Layer profiling if requested.
-    from canonical.testing import profiled
+    from lp.services.testing import profiled
     if local_options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 

@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
+    login,
     login_celebrity,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugIndexedMessages(TestCaseWithFactory):

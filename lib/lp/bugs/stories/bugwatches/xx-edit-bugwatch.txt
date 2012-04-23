@@ -64,7 +64,7 @@ Next check column.
     >>> from datetime import datetime
     >>> from pytz import utc
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> login('foo.bar@canonical.com')
@@ -292,15 +292,14 @@ It also appears for Launchpad Developers.
 
     >>> login(ADMIN_EMAIL)
     >>> admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-    >>> new_lp_developer = factory.makePerson(password='newpassword')
+    >>> new_lp_developer = factory.makePerson()
     >>> launchpad_developers = getUtility(
     ...     ILaunchpadCelebrities).launchpad_developers
     >>> dev_added = launchpad_developers.addMember(
     ...     new_lp_developer, admin_user)
 
     >>> lp_dev_browser = setupBrowser(
-    ...     auth='Basic %s:newpassword' %
-    ...         new_lp_developer.preferredemail.email)
+    ...     auth='Basic %s:test' % new_lp_developer.preferredemail.email)
     >>> logout()
 
     >>> lp_dev_browser.open(watch_url)

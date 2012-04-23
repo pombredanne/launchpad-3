@@ -26,24 +26,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import (
-    AnnouncementsFeedLink,
-    FeedsMixin,
-    RootAnnouncementsFeedLink,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -52,12 +35,29 @@ from lp.app.browser.launchpadform import (
 from lp.app.validators.url import valid_webref
 from lp.app.widgets.announcementdate import AnnouncementDateWidget
 from lp.registry.interfaces.announcement import IAnnouncement
+from lp.services.config import config
+from lp.services.feeds.browser import (
+    AnnouncementsFeedLink,
+    FeedsMixin,
+    RootAnnouncementsFeedLink,
+    )
 from lp.services.fields import (
     AnnouncementDate,
     Summary,
     Title,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 class AnnouncementMenuMixin:

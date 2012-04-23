@@ -313,7 +313,7 @@ it.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> registry_member = factory.makePerson(
-    ...     name='reggie', email='reggie@example.com', password='test')
+    ...     name='reggie', email='reggie@example.com')
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)

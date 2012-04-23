@@ -21,7 +21,7 @@ with less than 10 projects is considered not have many projects.
     ...         product.project = projectgroup
 
     >>> owner = projectgroup.owner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> add_daughter(projectgroup, 'a')
     >>> projectgroup.products.count()
     1
@@ -49,7 +49,7 @@ The index page of a project only shows the application portlets that it
 officially supports. The mothership projectgroup does not officially
 support any applications.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> product = projectgroup.products[1]
     >>> question = factory.makeQuestion(target=product)

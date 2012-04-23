@@ -7,13 +7,17 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
+from lp.registry.interfaces.codeofconduct import (
+    ICodeOfConductSet,
+    ISignedCodeOfConductSet,
+    )
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.testing import (
+    BrowserTestCase,
     login_celebrity,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -147,3 +151,20 @@ class TestSignedCodeOfConductDeactiveView(SignCodeOfConductTestCase):
 
     def test_admincomment_required(self):
         self.verify_admincomment_required('Deactivate', '+deactivate')
+
+
+class TestCodeOfConductBrowser(BrowserTestCase):
+    """Test the download view for the CoC."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_response(self):
+        """Ensure the headers and body are as expected."""
+        coc = getUtility(ICodeOfConductSet)['1.1']
+        content = coc.content
+        browser = self.getViewBrowser(coc, '+download')
+        self.assertEqual(content, browser.contents)
+        self.assertEqual(str(len(content)), browser.headers['Content-length'])
+        disposition = 'attachment; filename="UbuntuCodeofConduct-1.1.txt"'
+        self.assertEqual(disposition, browser.headers['Content-disposition'])
+        self.assertEqual('text/plain', browser.headers['Content-type'])

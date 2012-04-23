@@ -17,10 +17,10 @@ from time import strptime
 import pytz
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,

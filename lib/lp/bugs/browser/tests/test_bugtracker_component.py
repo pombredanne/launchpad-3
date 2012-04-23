@@ -7,13 +7,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 
@@ -89,7 +89,6 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
 
     def test_unlinking(self):
         component = self._makeComponent(u'Example')
-        distro = getUtility(IDistributionSet).getByName('ubuntu')
         dsp = self._makeUbuntuSourcePackage('example')
         component.distro_source_package = dsp
         form = self._makeForm(None)

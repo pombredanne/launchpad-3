@@ -7,16 +7,17 @@ Run the doctests and pagetests.
 
 import os
 
-from canonical.launchpad.testing.systemdocs import (
+from lp.services.testing import build_test_suite
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +25,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 def hwdbDeviceTablesSetup(test):
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
+    switch_dbuser('hwdb-submission-processor')
 
 
 special = {

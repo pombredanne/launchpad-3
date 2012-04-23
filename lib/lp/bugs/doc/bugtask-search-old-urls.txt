@@ -8,7 +8,7 @@ opportunity to update bookmarks and so forth.
 
     >>> from lp.bugs.browser.bugtask import (
     ...     BugTaskSearchListingView, rewrite_old_bugtask_status_query_string)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

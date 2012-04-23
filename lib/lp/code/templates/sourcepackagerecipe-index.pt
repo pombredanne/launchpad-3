@@ -13,7 +13,7 @@
       padding-left: 2em;
     }
     div#edit-recipe_text, div#edit-description {
-      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      font-family: "Ubuntu Mono",monospace;
       margin: 1em 0;
     }
     div#edit-recipe_text.yui3-editable_text-content,
@@ -149,7 +149,7 @@
   </div>
 
   <script type="text/javascript">
-    LPS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
+    LPJS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
 
         Y.on('lp:context:deb_version_template:changed', function(e) {
             Y.lp.ui.update_field('#debian-version dd', e.new_value);

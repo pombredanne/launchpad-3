@@ -1,6 +1,10 @@
 form {
     margin-bottom: 1em;
     }
+form.inline {
+    display: inline;
+    margin: 0;
+    }
 form h1 {
     margin-bottom: 1em;
     }
@@ -43,6 +47,7 @@ textarea {
     display: block;
     width: 90%;
     max-width: 60em;
+    padding: 2px;
     }
 button {
     padding: 0;
@@ -53,6 +58,9 @@ button.overlay-close-button {
     height: 15px;
     display: block;
     margin-top: 4px;
+    }
+.selection-choices {
+    margin: 0.75em 0 0 1em
     }
 .fieldRequired, .fieldOptional {
     color: #999;
@@ -161,37 +169,39 @@ table.form td td {
     color: #666;
     font-weight: bold;
     }
-fieldset.collapsible {
+.collapsible {
     /* Collapsible sections
        Some page sections are hidden by default, expanded by clicking a link.
        see lp.js:activate_collapsibles() */
     border: none;
     margin: 0;
+    }
+fieldset.collapsible {
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
-fieldset.collapsible h2 {
+.collapsible h2 {
     margin-top: 0;
-}
-fieldset .collapsed {
+    }
+.collapsible .collapsed {
     display: none;
     }
-fieldset .expanded {
+.collapsible .expanded {
     display: block;
     }
-fieldset.collapsible legend {
+.collapsible > :first-child {
     font-weight: normal;
     }
-.collapsible legend a, .collapsible legend a:hover {
+.collapsible > :first-child, .collapsible :first-child a:hover {
     text-decoration: none;
+    }
+.collapsible > :first-child a span {
+    text-decoration: underline;
     }
 img.collapseIcon {
     text-decoration: none;
     vertical-align: middle;
     }
-.collapsible legend a span {
-    text-decoration: underline;
-    }
-.collapsed {
+.collapsible .collapsed {
     border: none;
     margin-bottom: 0;
     }
@@ -224,15 +234,24 @@ h1 .yui3-ieditor-errors {
     font-size: 12px;
     line-height: 30px;
     }
+.step-links {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-right: 10em;
+    text-align: right;
+    }
+.step-links button.next {
+    padding-top: 10px;
+    }
+.step-links .prev {
+    margin-right: 2em;
+    }
 .lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
-.lazr-multiline-edit textarea {
-    max-width: inherit;
-    }
 .lazr-multiline-edit .clearfix h3 {
     /* Undo the damage done by lazr. */
-    font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
     line-height: 12px;
     }
 .widget-hd.js-action {
@@ -357,9 +376,7 @@ table.form .error {
     position: relative;
     }
 .important-notice-balloon {
-    -moz-border-radius: 5px;
-    -o-border-radius: 5px;
-    -webkit-border-radius: 5px;
+    border-radius: 5px;
     background-color: #ededed;
     padding: 1em;
     border: 1px solid #000;

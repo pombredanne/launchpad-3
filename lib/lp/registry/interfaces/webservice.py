@@ -29,6 +29,8 @@ __all__ = [
     'IProductSet',
     'IProjectGroup',
     'IProjectGroupSet',
+    'IServiceFactory',
+    'ISharingService',
     'ISSHKey',
     'ISourcePackage',
     'ISourcePackageName',
@@ -38,6 +40,10 @@ __all__ = [
     'IWikiName',
     ]
 
+# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
+# import bugs.  Break this up into a per-package thing.
+from lp import _schema_circular_imports
+from lp.app.interfaces.services import IServiceFactory
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -91,12 +97,12 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
+from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-from canonical.launchpad.interfaces import _schema_circular_imports
+
+
 _schema_circular_imports

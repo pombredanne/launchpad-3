@@ -8,17 +8,13 @@ __all__ = [
     'TranslatorRemoveView',
     ]
 
-import cgi
-
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.menu import structured
 from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,

@@ -154,7 +154,7 @@ be a supported language for Thunderbird Questions, which allows us to
 test the supported languages behaviour for non-English languages. Dafydd
 speaks Japanese, so we will use him.
 
-    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> print daf_browser.title
     Language preferences...

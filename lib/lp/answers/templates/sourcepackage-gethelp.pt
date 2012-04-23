@@ -19,7 +19,7 @@
   <p>
     You can post questions directly to the <a
     tal:attributes="href
-        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
+        modules/lp.services.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
     answer</a> tracker.
   </p>
     <ul class="horizontal">

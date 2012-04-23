@@ -24,12 +24,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.mailnotification import (
-    send_process_error_notification,
-    )
-from canonical.launchpad.webapp import urlparse
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.bzr import get_branch_formats
 from lp.code.enums import (
     BranchType,
@@ -68,8 +62,12 @@ from lp.services.mail.interfaces import (
     EmailProcessingError,
     IMailHandler,
     )
+from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.webapp import urlparse
+from lp.services.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
@@ -7,11 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'AnswersVHostBreadcrumb',
-    'AskAQuestionButtonView',
+    'AskAQuestionButtonPortlet',
     'ManageAnswerContactView',
     'SearchQuestionsView',
     'QuestionCollectionByLanguageView',
-    'QuestionCollectionLatestQuestionsView',
+    'QuestionCollectionLatestQuestionsPortlet',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
     'QuestionCollectionOpenCountView',
@@ -24,14 +24,13 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from simplejson import dumps
 from urllib import urlencode
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
     )
-
+from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.component import (
@@ -51,24 +50,7 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import (
-    browserLanguages,
-    is_english_variant,
-    preferred_or_request_languages,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    Link,
-    stepthrough,
-    stepto,
-    urlappend,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp import _
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -96,10 +78,27 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.fields import PublicPersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import structured
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.worlddata.helpers import (
+    browser_languages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
-class AskAQuestionButtonView:
+class AskAQuestionButtonPortlet:
     """View that renders a button to ask a question on its context."""
 
     def __call__(self):
@@ -155,7 +154,7 @@ class UserSupportLanguagesMixin:
         return languages
 
 
-class QuestionCollectionLatestQuestionsView:
+class QuestionCollectionLatestQuestionsPortlet:
     """View used to display the latest questions on a question target."""
 
     @property
@@ -280,7 +279,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         # Make sure that the default filter is displayed
-        # correctly in the widgets when not overriden by the user
+        # correctly in the widgets when not overridden by the user
         for name, value in self.getDefaultFilter().items():
             widget = self.widgets.get(name)
             if widget and not widget.hasValidInput():
@@ -431,6 +430,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         and that language is among the user's languages, we do not render
         the language control because there are no choices to be made.
         """
+        if not check_permission('launchpad.View', self.context):
+            return False
         languages = list(self.context_question_languages)
         if len(languages) == 0:
             return False
@@ -795,7 +796,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         response = self.request.response
         english = getUtility(ILaunchpadCelebrities).english
-        if person_or_team.isTeam():
+        if person_or_team.is_team:
             person_or_team.addLanguage(english)
             team_mapping = {'name': person_or_team.name,
                             'displayname': person_or_team.displayname}
@@ -805,8 +806,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                       mapping=team_mapping)
             response.addNotification(structured(msgid))
         else:
-            if len(browserLanguages(self.request)) > 0:
-                languages = browserLanguages(self.request)
+            if len(browser_languages(self.request)) > 0:
+                languages = browser_languages(self.request)
             else:
                 languages = [english]
             for language in languages:

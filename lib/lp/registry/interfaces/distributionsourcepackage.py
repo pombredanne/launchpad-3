@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -30,7 +30,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -106,14 +106,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "The development version of this source package. 'None' if there is "
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
-
-    total_bug_heat = Attribute(
-        "Sum of the bug heat for all the bugs matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
-    max_bug_heat = Attribute(
-        "Maximum bug heat for a single bug matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
 
     bug_count = Attribute(
         "Number of bugs matching the distribution and sourcepackagename "

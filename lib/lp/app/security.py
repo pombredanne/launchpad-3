@@ -11,13 +11,16 @@ __all__ = [
     'DelegatedAuthorization',
     ]
 
+from itertools import (
+    izip,
+    repeat,
+    )
+
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.security.permission import checkPermission
 
 from lp.app.interfaces.security import IAuthorization
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IPersonRoles
 
 
 class AuthorizationBase:
@@ -80,19 +83,6 @@ class AuthorizationBase:
         else:
             return next_adapter.checkAuthenticated(user)
 
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        :return: True or False.
-        """
-        # For backward compatibility, delegate to one of
-        # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account, None)
-        if person is None:
-            return self.checkUnauthenticated()
-        else:
-            return self.checkAuthenticated(IPersonRoles(person))
-
 
 class AnonymousAuthorization(AuthorizationBase):
     """Allow any authenticated and unauthenticated user access."""
@@ -127,19 +117,10 @@ class DelegatedAuthorization(AuthorizationBase):
                 "Either set forwarded_object or override iter_objects.")
         yield self.forwarded_object
 
-    def iter_adapters(self):
-        return (
-            queryAdapter(obj, IAuthorization, self.permission)
-            for obj in self.iter_objects())
-
     def checkAuthenticated(self, user):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkAuthenticated(user):
-                return False
-        return True
+        """See `IAuthorization`."""
+        return izip(self.iter_objects(), repeat(self.permission))
 
     def checkUnauthenticated(self):
-        for adapter in self.iter_adapters():
-            if adapter is None or not adapter.checkUnauthenticated():
-                return False
-        return True
+        """See `IAuthorization`."""
+        return izip(self.iter_objects(), repeat(self.permission))

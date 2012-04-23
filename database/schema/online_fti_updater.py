@@ -12,8 +12,10 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
-from fti import ALL_FTI
 import psycopg
+
+from fti import ALL_FTI
+
 
 def main():
     con = psycopg.connect("dbname=launchpad_prod user=postgres")

@@ -27,12 +27,10 @@
     <td tal:condition="not:data/indent_task">
       <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
         <span class="yui3-activator-data-box">
-          <span title="This project&rsquo;s license has not been specified.">
             <a tal:attributes="href data/target_link;
                                title data/target_link_title;
                                class context/target/image:sprite_css"
                tal:content="context/bugtargetdisplayname" />
-          </span>
         </span>
         <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
           Edit
@@ -48,7 +46,7 @@
 
     <tal:conjoined-task condition="data/is_conjoined_slave">
     <td colspan="5" style="vertical-align: middle">
-      <span class="discreet lesser" style="font-size: 100%">
+      <span class="lesser">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
           Hoary

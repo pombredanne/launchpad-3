@@ -34,29 +34,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
-    BrowserNotificationLevel,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.url import urlappend
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
@@ -66,7 +43,7 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -74,6 +51,9 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -81,6 +61,17 @@ from lp.services.features import (
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interaction import get_current_principal
+from lp.services.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 from lp.soyuz.browser.archive import copy_asynchronously_message
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -116,10 +107,19 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import (
     DocTestMatches,
     EqualsIgnoringWhitespace,
     HasQueryCount,
+    )
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
 
@@ -1520,7 +1520,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_diff_row_links_to_parent_changelog(self):
         # After the parent's version, there should be text "(changelog)"
         # linked to the parent distro source package +changelog page.  The
-        # text is styled with "discreet".
+        # text is styled with "lesser".
         set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
@@ -1528,7 +1528,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
 
-        changelog_span = row.findAll('span', {'class': 'discreet'})
+        changelog_span = row.findAll('span', {'class': 'lesser'})
         self.assertEqual(1, len(changelog_span))
         link = changelog_span[0].a
         self.assertEqual("changelog", link.string)
@@ -1870,12 +1870,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                   difference_type=None, distribution=None):
         # Helper to create a derived series with fixed names and proper
         # source package format selection along with a DSD.
-        parent_series = self.factory.makeDistroSeries(name='warty')
+        parent_series = self.factory.makeDistroSeries()
         if distribution == None:
-            distribution = self.factory.makeDistribution('deribuntu')
+            distribution = self.factory.makeDistribution()
         derived_series = self.factory.makeDistroSeries(
-            distribution=distribution,
-            name='derilucid')
+            distribution=distribution)
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
@@ -2115,14 +2114,18 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs',
-                        query_string=''):
+                        query_string='', sponsored=None):
         # A helper to get the POST'ed sync view.
         with person_logged_in(person):
+            form = {
+                'field.selected_differences': sync_differences,
+                'field.actions.sync': 'Sync',
+                }
+            if sponsored is not None:
+                form['field.sponsored_person'] = sponsored.name
             view = create_initialized_view(
                 derived_series, view_name,
-                method='POST', form={
-                    'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync'},
+                method='POST', form=form,
                 query_string=query_string)
             return view
 
@@ -2205,6 +2208,26 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertTrue(
             "Signer is not permitted to upload to the "
             "component" in view.errors[0])
+
+    def test_sync_with_sponsoring(self):
+        # The requesting user can set a sponsored person on the sync. We
+        # need to make sure the sponsored person ends up on the copy job
+        # metadata.
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
+            'my-src-name')
+        set_derived_series_sync_feature_flag(self)
+        person, _ = self.makePersonWithComponentPermission(
+            derived_series.main_archive,
+            derived_series.getSourcePackage(
+                sp_name).latest_published_component)
+        sponsored_person = self.factory.makePerson()
+        self._syncAndGetView(
+            derived_series, person, [diff_id],
+            sponsored=sponsored_person)
+
+        pcj = PlainPackageCopyJob.getActiveJobs(
+            derived_series.main_archive).one()
+        self.assertEqual(pcj.sponsored, sponsored_person)
 
     def assertPackageCopied(self, series, src_name, version, view):
         # Helper to check that a package has been copied by virtue of

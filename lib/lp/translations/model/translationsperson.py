@@ -22,7 +22,6 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
@@ -32,6 +31,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.sqlbase import sqlvalues
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
@@ -128,7 +128,7 @@ class TranslationsPerson:
 
     def getReviewableTranslationFiles(self, no_older_than=None):
         """See `ITranslationsPerson`."""
-        if self.person.isTeam():
+        if self.person.is_team:
             # A team as such does not work on translations.  Skip the
             # search for ones the team has worked on.
             return []
@@ -178,7 +178,7 @@ class TranslationsPerson:
         :param languages: Optional set of languages to restrict search to.
         :return: An unsorted query yielding `POFile`s.
         """
-        if self.person.isTeam():
+        if self.person.is_team:
             return []
 
         tables = self._composePOFileReviewerJoins(

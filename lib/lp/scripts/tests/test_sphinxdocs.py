@@ -9,7 +9,7 @@ import os
 
 import sphinx
 
-from canonical.config import config
+from lp.services.config import config
 from lp.services.utils import run_capturing_output
 from lp.testing import TestCase
 

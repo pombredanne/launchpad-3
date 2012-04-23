@@ -117,7 +117,7 @@ User accept a bug task:
 
 Driver accept a bug task:
 
-    >>> login_person(bugtask.target.owner)
+    >>> ignored = login_person(bugtask.target.owner)
     >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)

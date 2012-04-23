@@ -6,7 +6,7 @@ Distributions and products can define official bug tags.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.webapp.interfaces import (
+    >>> from lp.services.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.bugs.model.bugtarget import OfficialBugTag
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -43,8 +43,7 @@ But bug tags must be unique for each product and distribution.
     <lp.bugs.model.bugtarget.OfficialBugTag object at...
     >>> store.flush()
     Traceback (most recent call last):
-    IntegrityError: duplicate key value violates unique constraint
-    "officialbugtag__distribution__tag__key"
+    IntegrityError: ...
 
     >>> import transaction
     >>> transaction.abort()
@@ -161,7 +160,7 @@ Any existing tags missing from the list are removed.
 
 The list is publicly readable.
 
-    >>> logout()
+    >>> login(ANONYMOUS)
     >>> ubuntu.official_bug_tags
     [u'foo']
 
@@ -178,7 +177,7 @@ The same is available for products.
 
     >>> login('test@canonical.com')
     >>> firefox.official_bug_tags = [u'foo', u'bar']
-    >>> logout()
+    >>> login(ANONYMOUS)
     >>> firefox.official_bug_tags
     [u'bar', u'foo']
 
@@ -199,7 +198,7 @@ their parent distribution.
     >>> ubuntu.getSeries(
     ...     'hoary').getSourcePackage('alsa-utils').official_bug_tags
     [u'foo']
-    >>> logout()
+    >>> login(ANONYMOUS)
 
     >>> ubuntu.getSourcePackage('alsa-utils').official_bug_tags
     [u'foo']
@@ -215,12 +214,11 @@ Project group gets the union of all the tags available for its products.
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> thunderbird.official_bug_tags = [u'baz']
-    >>> logout()
     >>> login('no-priv@canonical.com')
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> list(mozilla.official_bug_tags)
     [u'bar', u'baz', u'foo']
-    >>> logout()
+    >>> login(ANONYMOUS)
 
 Milestone gets the tags of the relevant product.
 

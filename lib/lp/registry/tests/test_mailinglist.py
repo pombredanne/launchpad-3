@@ -8,20 +8,20 @@ from textwrap import dedent
 
 from zope.component import getUtility
 
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
-from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

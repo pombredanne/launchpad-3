@@ -13,15 +13,15 @@ from BeautifulSoup import (
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
@@ -108,3 +108,23 @@ class TestLaunchpadRootNavigation(TestCaseWithFactory):
         self.assertEqual(
             'https://help.launchpad.net/Feedback',
             request.response.getHeader('location'))
+
+
+class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_has_logo_without_watermark(self):
+        root = getUtility(ILaunchpadRoot)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(root, 'index.html', principal=user)
+        # Replace the blog posts so the view does not make a network request.
+        view.getRecentBlogPosts = lambda: []
+        markup = BeautifulSoup(
+            view(), parseOnlyThese=SoupStrainer(id='document'))
+        self.assertIs(False, view.has_watermark)
+        self.assertIs(None, markup.find(True, id='watermark'))
+        logo = markup.find(True, id='launchpad-logo-and-name')
+        self.assertIsNot(None, logo)
+        self.assertEqual('/@@/launchpad-logo-and-name.png', logo['src'])

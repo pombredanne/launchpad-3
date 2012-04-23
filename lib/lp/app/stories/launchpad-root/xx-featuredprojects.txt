@@ -78,7 +78,7 @@ No Privilege persons is denied access to this page:
 Administrators can add a project. Here Foo Bar adds apache as a featured
 project:
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
     >>> MemcachedLayer.purge() # Featured projects list is cached.
 
     >>> admin_browser.getControl('Add project').value = 'apache'

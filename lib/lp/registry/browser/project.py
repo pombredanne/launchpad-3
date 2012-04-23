@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
@@ -30,6 +30,7 @@ __all__ = [
     'ProjectView',
     ]
 
+
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -42,23 +43,7 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    StandardLaunchpadFacets,
-    stepthrough,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp import _
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,
@@ -70,9 +55,16 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
+from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import (
     add_subscribe_link,
@@ -84,16 +76,12 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
+from lp.registry.browser.milestone import validate_tags
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.product import (
     ProductAddView,
     ProjectAddStepOne,
     ProjectAddStepTwo,
-    )
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import (
@@ -101,11 +89,28 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
+from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import NavigationMenu
 
 
 class ProjectNavigation(Navigation,
@@ -127,6 +132,12 @@ class ProjectNavigation(Navigation,
     @stepthrough('+series')
     def traverse_series(self, series_name):
         return self.context.getSeries(series_name)
+
+    @stepthrough('+tags')
+    def traverse_tags(self, name):
+        tags = name.split(u',')
+        if validate_tags(tags):
+            return ProjectGroupMilestoneTag(self.context, tags)
 
 
 class ProjectSetNavigation(Navigation):
@@ -346,7 +357,27 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
+
     implements(IProjectGroupActionMenu)
+
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProjectGroup['owner'],
+            format_link(self.context.owner, empty_value="Not yet selected"),
+            header='Change maintainer', edit_view='+reassign',
+            step_title='Select a new maintainer',
+            null_display_value="Not yet selected")
+
+    @property
+    def driver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProjectGroup['driver'],
+            format_link(self.context.driver, empty_value="Not yet selected"),
+            header='Change driver', edit_view='+driver',
+            step_title='Select a new driver',
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
 
     def initialize(self):
         super(ProjectView, self).initialize()
@@ -365,6 +396,11 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
         template may want to plan for a long list.
         """
         return self.context.products.count() > 10
+
+    @property
+    def project_group_milestone_tag(self):
+        """Return a ProjectGroupMilestoneTag based on this project."""
+        return ProjectGroupMilestoneTag(self.context, [])
 
 
 class ProjectEditView(LaunchpadEditFormView):

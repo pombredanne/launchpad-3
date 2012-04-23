@@ -6,9 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.answers.karma import assignKarmaUsingQuestionContext
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.sqlbase import block_implicit_flushes
 
 
 @block_implicit_flushes

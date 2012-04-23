@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,16 +8,18 @@ __all__ = [
     ]
 
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.config import config
 from lp.services.mail.basemailer import (
     BaseMailer,
     RecipientReason,
     )
+from lp.services.webapp import canonical_url
 
 
 class SourcePackageRecipeBuildMailer(BaseMailer):
+
+    app = 'code'
 
     @classmethod
     def forStatus(cls, build):

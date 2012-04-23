@@ -43,9 +43,9 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp import _
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import StrippedTextLine
 
 

@@ -24,21 +24,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
-from canonical.launchpad.webapp import (
-    canonical_url,
-    LaunchpadView,
-    urlparse,
-    )
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.lazr.feed import (
-    FeedBase,
-    FeedEntry,
-    FeedPerson,
-    FeedTypedData,
-    MINUTES,
-    )
-from canonical.lazr.interfaces import IFeedPerson
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -49,7 +34,22 @@ from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.config import config
+from lp.services.feeds.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    MINUTES,
+    )
+from lp.services.feeds.interfaces.feed import IFeedPerson
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlparse,
+    )
+from lp.services.webapp.interfaces import ILaunchpadRoot
 
 
 def revision_feed_id(revision):

@@ -4,6 +4,7 @@
 """Webservice unit tests related to Launchpad Bug messages."""
 from lp.services.features.testing import FeatureFixture
 
+
 __metaclass__ = type
 
 import transaction
@@ -13,7 +14,7 @@ from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (

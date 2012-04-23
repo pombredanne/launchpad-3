@@ -27,7 +27,7 @@ else:
         sys.exit(2)
 
 icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
-combined_image_file = os.path.join(icing, 'icon-sprites')
+combined_image_file = os.path.join(icing, 'icon-sprites.png')
 positioning_file = os.path.join(icing, 'icon-sprites.positioning')
 css_template_file = os.path.join(icing, 'sprite.css.in')
 css_file = os.path.join(icing, 'build/sprite.css')
@@ -42,6 +42,6 @@ if command == 'create-image':
     sprite_util.savePositioning(positioning_file)
 elif command == 'create-css':
     sprite_util.loadPositioning(positioning_file)
-    # The icing/icon-sprites file is relative to the css file
+    # The icing/icon-sprites.png file is relative to the css file
     # in the icing/build/ directory.
-    sprite_util.saveConvertedCSS(css_file, '../icon-sprites')
+    sprite_util.saveConvertedCSS(css_file, '../icon-sprites.png')

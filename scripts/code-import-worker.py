@@ -23,14 +23,19 @@ import sys
 
 from bzrlib.transport import get_transport
 
-from canonical.config import config
-from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BzrImportWorker, BzrSvnImportWorker, CSCVSImportWorker,
-    CodeImportBranchOpenPolicy, CodeImportSourceDetails, GitImportWorker,
-    HgImportWorker, get_default_bazaar_branch_store)
+    BzrImportWorker,
+    BzrSvnImportWorker,
+    CodeImportBranchOpenPolicy,
+    CodeImportSourceDetails,
+    CSCVSImportWorker,
+    get_default_bazaar_branch_store,
+    GitImportWorker,
+    HgImportWorker,
+    )
 from lp.codehosting.safe_open import AcceptAnythingPolicy
-from canonical.launchpad import scripts
+from lp.services import scripts
+from lp.services.config import config
 
 
 opener_policies = {
@@ -69,16 +74,12 @@ class CodeImportWorker:
         force_bzr_to_use_urllib()
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
-            load_optional_plugin('git')
             import_worker_cls = GitImportWorker
         elif source_details.rcstype == 'bzr-svn':
-            load_optional_plugin('svn')
             import_worker_cls = BzrSvnImportWorker
         elif source_details.rcstype == 'hg':
-            load_optional_plugin('hg')
             import_worker_cls = HgImportWorker
         elif source_details.rcstype == 'bzr':
-            load_optional_plugin('loom')
             import_worker_cls = BzrImportWorker
         elif source_details.rcstype in ['cvs', 'svn']:
             import_worker_cls = CSCVSImportWorker

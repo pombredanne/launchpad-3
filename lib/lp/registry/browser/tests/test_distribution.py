@@ -10,14 +10,14 @@ from testtools.matchers import (
     Not,
     )
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp import canonical_url
 from lp.testing import (
     login_celebrity,
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

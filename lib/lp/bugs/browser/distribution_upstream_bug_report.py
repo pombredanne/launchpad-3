@@ -11,14 +11,14 @@ __all__ = [
 
 from operator import attrgetter
 
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
-from canonical.launchpad.webapp.url import urlappend
 from lp.app.enums import ServiceUsage
 from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.url import urlappend
 
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.
@@ -283,6 +283,10 @@ class DistributionUpstreamBugReport(LaunchpadView):
     arrow_up = "/@@/arrowUp"
     arrow_down = "/@@/arrowDown"
     arrow_blank = "/@@/arrowBlank"
+
+    @property
+    def page_title(self):
+        return 'Upstream Bug Report for %s' % self.context.title
 
     @property
     def sort_order(self):

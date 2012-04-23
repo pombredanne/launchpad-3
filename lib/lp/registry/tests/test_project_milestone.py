@@ -8,18 +8,10 @@ __metaclass__ = type
 from datetime import datetime
 import unittest
 
+from lazr.restfulclient.errors import ClientError
+import pytz
 from storm.store import Store
 from zope.component import getUtility
-import pytz
-
-from canonical.launchpad.ftests import (
-    login,
-    )
-from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
-    DatabaseFunctionalLayer,
-    )
-from lazr.restfulclient.errors import ClientError
 
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
@@ -38,7 +30,12 @@ from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.milestone import MultipleProductReleases
 from lp.testing import (
     launchpadlib_for,
+    login,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 

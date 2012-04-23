@@ -20,7 +20,7 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
 
     <script type="text/javascript">
-      LPS.use('node', 'lp.app.calendar', function(Y) {
+      LPJS.use('node', 'lp.app.calendar', function(Y) {
           // Ensure that when the picker is used the radio button switches
           // from 'Never' to 'On' and the expiry field is enabled.
           Y.on("available", function(e) {
@@ -109,18 +109,12 @@
           <tr>
             <th>Administrator:</th>
             <td>
-              <tal:can-change condition="view/allowChangeAdmin">
-                <input tal:attributes="checked view/adminIsSelected"
-                       type="radio" value="yes" name="admin" id="admin"/>
-                <label for="admin">Yes</label>
-                <input tal:attributes="checked view/adminIsNotSelected"
-                       type="radio" value="no" name="admin" id="notadmin"/>
-                <label for="notadmin">No</label>
-              </tal:can-change>
-              <tal:cant-change condition="not: view/allowChangeAdmin">
-                <span tal:condition="view/isAdmin">Yes</span>
-                <span tal:condition="not: view/isAdmin">No</span>
-              </tal:cant-change>
+              <input tal:attributes="checked view/adminIsSelected"
+                      type="radio" value="yes" name="admin" id="admin"/>
+              <label for="admin">Yes</label>
+              <input tal:attributes="checked view/adminIsNotSelected"
+                      type="radio" value="no" name="admin" id="notadmin"/>
+              <label for="notadmin">No</label>
             </td>
           </tr>
 

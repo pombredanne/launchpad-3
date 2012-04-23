@@ -3,20 +3,24 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import os
-import grp
-import pwd
-import sys
 import errno
+import grp
+import os
+import pwd
 import socket
-import tempfile
 import subprocess
+import sys
+import tempfile
 
-from canonical.config import config
-from lp.services.mailman.config import (
-    configure_prefix, configure_siteowner)
-from lp.services.mailman.monkeypatches import monkey_patch
 from lazr.config import as_username_groupname
+
+from lp.services.config import config
+from lp.services.mailman.config import (
+    configure_prefix,
+    configure_siteowner,
+    )
+from lp.services.mailman.monkeypatches import monkey_patch
+
 
 basepath = [part for part in sys.path if part]
 

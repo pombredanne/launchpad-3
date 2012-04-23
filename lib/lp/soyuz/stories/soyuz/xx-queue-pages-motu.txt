@@ -70,7 +70,7 @@ Let's change the components on some uploads so that the user has
 permission to manipulate them.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
@@ -97,7 +97,7 @@ permission to manipulate them.
     ...     binary.component = universe
     >>> import transaction
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
 

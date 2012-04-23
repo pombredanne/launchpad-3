@@ -87,9 +87,9 @@ the clear text instructions contain the expected URLs pointing to more help.
 Import the secret keys needed for this test:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> from lp.services.gpg.interfaces import IGPGHandler
 
-    >>> from canonical.launchpad.ftests import (
+    >>> from lp.testing.gpgkeys import (
     ...     import_secret_test_key, decrypt_content)
 
 
@@ -97,7 +97,6 @@ Import the secret keys needed for this test:
 
     >>> login(ANONYMOUS)
     >>> key = import_secret_test_key('test@canonical.com.sec')
-    >>> logout()
 
 'cipher_body' is a message encrypted with the just-imported
 1024D/DFD20543 OpenPGP key, we need to access the current IGpghandler
@@ -107,12 +106,13 @@ instance to access this key and decrypt the message.
 
 Extract the token URL from the email:
 
-    >>> from canonical.launchpad.ftests.logintoken import (
+    >>> from lp.services.verification.tests.logintoken import (
     ...     get_token_url_from_string)
     >>> token_url = get_token_url_from_string(body)
 
 Go to the link sent by email, to validate the email address.
 
+    >>> logout()
     >>> browser.open(token_url)
 
 Get redirected to +validategpg, and confirm token:
@@ -140,7 +140,7 @@ Make sure that UIDs were properly processed; in particular, check that
 "sample.revoked@canonical.com", the revoked UID in the key, wasn't
 added as an email address:
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
@@ -220,7 +220,7 @@ token to a fixed value:
     >>> nothing, token_value = token_url.split('http://launchpad.dev/token/')
 
     >>> import pytz, datetime
-    >>> from canonical.launchpad.database.logintoken import LoginToken
+    >>> from lp.services.verification.model.logintoken import LoginToken
     >>> logintoken = LoginToken.selectOneBy(token=token_value)
     >>> logintoken.date_created = datetime.datetime(
     ...     2005,04,01, 12,00,00, tzinfo=pytz.timezone('UTC'))
@@ -518,7 +518,6 @@ Now he'll request his key to be reactivated.
 Get the token from the body of the email sent.
 
     >>> import email, re
-    >>> from canonical.launchpad.ftests import decrypt_content
     >>> from lp.services.mail import stub
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_msg)
@@ -652,7 +651,7 @@ Test if the advertisement email was sent:
   ...         del browser.mech_browser.addheaders[pos]
   ...         break
   >>> browser.addHeader(
-  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:zeca')
+  ...   'Authorization', 'Basic guilherme.salgado@canonical.com:test')
 
   Check if we can see the Code of conduct page
 

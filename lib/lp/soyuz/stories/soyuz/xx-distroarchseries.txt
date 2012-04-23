@@ -54,10 +54,12 @@ More details are available by clicking on the binary package name.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
-    First &#149; Previous &#149; Next &#149; Last
+    First &bull; Previous &bull; Next &bull; Last
     mozilla-firefox: Mozilla Firefox Web Browser
     mozilla-firefox-data: Mozilla Firefox Data
     mozilla-firefox: ff from iceweasel
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
 
 A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
@@ -154,7 +156,7 @@ This change also affects the way distroarchseries are listed in the
 distroseries page. We will use a small helper function to extract the
 current distroseries architecture list.
 
-    >>> from canonical.testing.layers import MemcachedLayer
+    >>> from lp.testing.layers import MemcachedLayer
 
     >>> def check_arch_list(distroseries='warty'):
     ...     MemcachedLayer.purge()

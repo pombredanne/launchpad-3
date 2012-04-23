@@ -189,7 +189,7 @@ automatically.
 
 ==== HWDB submission keys ====
 
-The HWDB-Submission key is turned into a list of of strings, available
+The HWDB-Submission key is turned into a list of strings, available
 through the hwdb_submission_keys attribute.
 
     >>> data = FileBugData()

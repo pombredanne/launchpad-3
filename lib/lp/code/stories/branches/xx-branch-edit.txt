@@ -331,7 +331,7 @@ well have an owner that is different to the editor.
     ...     name='official-owner', displayname='Jane Doe')
     >>> branch = make_official_package_branch(factory, owner=owner)
     >>> editor = factory.makePerson(
-    ...     name='editor', email='editor@example.com', password='test')
+    ...     name='editor', email='editor@example.com')
     >>> archive = branch.distroseries.distribution.main_archive
     >>> spn = branch.sourcepackage.sourcepackagename
     >>> from lp.soyuz.interfaces.archivepermission import (

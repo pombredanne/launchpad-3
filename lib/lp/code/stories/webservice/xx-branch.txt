@@ -100,7 +100,7 @@ time goes on.
     ...     feature_branch_spec.name])
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> service = webservice_for_person(eric)
     >>> fooix_trunk = webservice.get(branch_url).jsonBody()
     >>> from lazr.restful.testing.webservice import pprint_entry

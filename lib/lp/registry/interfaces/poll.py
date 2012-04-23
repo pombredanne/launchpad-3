@@ -45,7 +45,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.person import ITeam
 from lp.services.fields import ContentNameField

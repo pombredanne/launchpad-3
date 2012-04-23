@@ -424,8 +424,8 @@ The first and second restrictions both apply to the GNOME Bugzilla:
     Please note, this bug tracker cannot be deleted because:
       This is the bug tracker for The GNOME Project and The GNOME Terminal
       Emulator.
-      There are linked bug watches and only members of Launchpad
-        Administrators and Registry Administrators can delete them en masse.
+      There are linked bug watches and only members of ...Launchpad
+        Administrators...
 
     >>> user_browser.getControl('Delete')
     Traceback (most recent call last):
@@ -448,10 +448,8 @@ Tracker:
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bugtracker-delete-not-possible-reasons'))
     Please note, this bug tracker cannot be deleted because:
-      There are linked bug watches and only members of Launchpad
-        Administrators and Registry Administrators can delete them en masse.
-      Bug comments have been imported via this bug tracker.
-      This bug tracker is protected from deletion.
+      There are linked bug watches and only members of ...Launchpad
+        Administrators...
 
     >>> user_browser.getControl('Delete')
     Traceback (most recent call last):

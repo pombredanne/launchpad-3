@@ -9,14 +9,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.enums import PackagePublishingPriority
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.scripts.changeoverride import (
     ArchiveOverriderError,
@@ -24,6 +23,7 @@ from lp.soyuz.scripts.changeoverride import (
     )
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestChangeOverride(unittest.TestCase):

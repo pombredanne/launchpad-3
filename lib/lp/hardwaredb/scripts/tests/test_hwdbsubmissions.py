@@ -5,19 +5,20 @@
 
 __metaclass__ = type
 
-from storm.store import Store
 from tempfile import mktemp
 
-from canonical.launchpad.ftests.script import run_script
-from canonical.testing.layers import LaunchpadScriptLayer
+from storm.store import Store
+import transaction
+
 from lp.hardwaredb.interfaces.hwdb import HWSubmissionProcessingStatus
 from lp.hardwaredb.scripts.hwdbsubmissions import (
     ProcessingLoopForPendingSubmissions,
     ProcessingLoopForReprocessingBadSubmissions,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadScriptLayer
 from lp.testing.matchers import Contains
-import transaction
+from lp.testing.script import run_script
 
 
 class TestProcessingLoops(TestCaseWithFactory):

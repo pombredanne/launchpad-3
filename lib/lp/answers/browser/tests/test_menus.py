@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.browser.question import (
     QuestionEditMenu,
     QuestionExtrasMenu,
@@ -15,6 +14,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.menu import check_menu_links
 
 

@@ -8,14 +8,13 @@ __metaclass__ = type
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.subscribers.bugactivity import what_changed
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestWhatChanged(TestCaseWithFactory):

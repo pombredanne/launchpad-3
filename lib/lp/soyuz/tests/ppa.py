@@ -8,11 +8,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database.constants import UTC_NOW
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackagePublishingStatus,

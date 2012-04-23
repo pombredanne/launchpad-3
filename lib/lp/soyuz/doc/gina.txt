@@ -7,7 +7,7 @@ quiet mode over it.
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from lp.soyuz.interfaces.publishing import active_publishing_status
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
@@ -44,7 +44,7 @@ Create a distribution release and an arch release for breezy:
     >>> hoary = ubuntu.getSeries("hoary")
 
     # Only the distro owner and admins can create a new series.
-    >>> login_person(ubuntu.owner.activemembers[0])
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> breezy = ubuntu.newSeries(
     ...     "breezy", "Breezy Badger", "My title",
     ...     "My summary", "My description", "5.10",
@@ -280,6 +280,8 @@ only imported one:
     -----END PGP SIGNATURE-----
     >>> print cap.maintainer.displayname
     Michael Vogt
+    >>> print cap.dsc_binaries
+    libcap-dev, libcap-bin, libcap1
 
 Test ubuntu-meta in breezy, which was forcefully imported.
 
@@ -574,7 +576,7 @@ Check that the overrides we did were correctly issued. We can't use
 selectOneBy because, of course, there may be multiple rows published for that
 package -- that's what overrides actually do.
 
-    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.services.database.sqlbase import sqlvalues
     >>> x11_pub = SSPPH.select("""
     ...     sourcepackagerelease = %s AND
     ...     distroseries = %s AND

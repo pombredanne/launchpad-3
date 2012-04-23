@@ -11,15 +11,14 @@ import shutil
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
@@ -38,6 +37,8 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Provides
 
 
@@ -220,8 +221,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Make sure no announcement email was sent at this point.
         self.assertEquals(len(stub.test_emails), 0)
 
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
 
         logger = BufferLogger()
         # realiseUpload() assumes a umask of 022, which is normally true in
@@ -262,7 +262,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'http://launchpad.dev/ubuntutest/breezy-autotest/+source/'
             'foocomm/1.0-2\n')
 
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
 
         # One source and 2 binaries are pending publication. They all were
         # overridden to multiverse and had their files moved to the public

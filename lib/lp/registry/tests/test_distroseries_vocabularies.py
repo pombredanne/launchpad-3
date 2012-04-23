@@ -22,18 +22,18 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.vocabularies import (
     DistroSeriesDerivationVocabulary,
     DistroSeriesDifferencesVocabulary,
     )
+from lp.services.database.sqlbase import flush_database_caches
+from lp.services.webapp.vocabulary import IHugeVocabulary
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,

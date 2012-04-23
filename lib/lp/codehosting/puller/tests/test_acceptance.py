@@ -22,18 +22,19 @@ from bzrlib.urlutils import (
     local_path_from_url,
     )
 from bzrlib.workingtree import WorkingTree
+from fixtures import TempDir
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing.layers import ZopelessAppServerLayer
 
 
 class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
@@ -126,8 +127,11 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
+        tempdir = self.useFixture(TempDir()).path
+        logfile = os.path.join(tempdir, "supermirror_test.log")
         command = [
-            '%s/bin/py' % config.root, self._puller_script, '-q'] + list(args)
+            '%s/bin/py' % config.root, self._puller_script, '--log-file',
+            logfile, '-q'] + list(args)
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 

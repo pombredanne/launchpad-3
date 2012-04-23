@@ -7,7 +7,7 @@ and they are usually translated differently.
 
 == Helper imports ==
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.translations.model.potemplate import POTemplateSubset

@@ -33,16 +33,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -59,6 +50,15 @@ from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFileAddForm,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
     )
 
 
@@ -263,7 +263,7 @@ class ProductReleaseRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s-%s' % (
+        return '%s-%s-%s.rdf' % (
             self.context.product.name,
             self.context.productseries.name,
             self.context.version)
@@ -273,7 +273,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
-    custom_widget('description', TextWidget, width=62)
+    custom_widget('description', TextWidget, displayWidth=60)
 
     @property
     def label(self):

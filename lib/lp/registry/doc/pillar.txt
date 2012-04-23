@@ -143,7 +143,7 @@ Sample Person has edit rights on firefox, but he'd need admin rights
 to be able to set its aliases.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> check_permission('launchpad.Edit', firefox)
     True
     >>> firefox.setAliases(['iceweasel'])

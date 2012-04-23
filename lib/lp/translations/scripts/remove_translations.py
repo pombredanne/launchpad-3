@@ -18,8 +18,8 @@ from optparse import (
 
 from zope.component import getUtility
 
-from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import (
+from lp.services.database.postgresql import drop_tables
+from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,
     )

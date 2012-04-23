@@ -4,16 +4,15 @@
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
-
-from canonical.launchpad.interfaces.lpstorm import IStore
-from debian.deb822 import Changes
 from optparse import OptionValueError
+
+from debian.deb822 import Changes
 from testtools.matchers import LessThan
 import transaction
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
@@ -28,6 +27,8 @@ from lp.soyuz.scripts.processaccepted import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessAccepted(TestCaseWithFactory):
@@ -81,8 +82,7 @@ class TestProcessAccepted(TestCaseWithFactory):
             distribution=self.distro)
         self.createWaitingAcceptancePackage(distroseries=other_distroseries)
         script = self.getScript([])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
 
         # The other source should be published now.
@@ -119,8 +119,7 @@ class TestProcessAccepted(TestCaseWithFactory):
 
         # Accept the packages.
         script = self.getScript(['--copy-archives'])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         script.main()
 
         # Packages in main archive should not be accepted and published.
@@ -164,8 +163,7 @@ class TestProcessAccepted(TestCaseWithFactory):
                     done_count)
 
         script = self.getScript([])
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         synch = UploadCheckingSynchronizer()
         transaction.manager.registerSynch(synch)
         script.main()

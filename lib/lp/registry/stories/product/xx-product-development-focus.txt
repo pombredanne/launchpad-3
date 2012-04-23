@@ -11,10 +11,8 @@ section on the product overview page.
 
     >>> from lp.testing import login, logout
     >>> login('admin@canonical.com')
-    >>> eric = factory.makePerson(
-    ...     name='eric', email='eric@example.com', password='test')
-    >>> fooix = factory.makeProduct(
-    ...     name='fooix', owner=eric)
+    >>> eric = factory.makePerson(name='eric', email='eric@example.com')
+    >>> fooix = factory.makeProduct(name='fooix', owner=eric)
     >>> branch = factory.makeBranch(owner=eric, product=fooix, name='trunk')
     >>> # Make revisions for the branch so it has a codebrowse link.
     >>> factory.makeRevisionsForBranch(branch)

@@ -1,4 +1,5 @@
-= Creating Specification Branch Links =
+Creating Specification Branch Links
+===================================
 
 Blueprints (aka Specifications) and branches can be linked to show
 intention of the branch to implement the blueprint.
@@ -6,7 +7,8 @@ intention of the branch to implement the blueprint.
 Blueprints and branches can be linked together from either the
 default blueprint page or the default branch page.
 
-== From the branch page ==
+From the branch page
+--------------------
 
 There is a "Link to a blueprint" item in the actions menu that is visible
 to everybody but which links to a page restricted with the
@@ -44,10 +46,11 @@ product's blueprints.
     >>> browser.getControl('Blueprint').value = ['canvas']
     >>> browser.getControl('Continue').click()
     >>> printSpecBranchLinks(browser)
-    Support &lt;canvas&gt; Objects edit
+    Support &lt;canvas&gt; Objects
 
 
-== From the blueprint page ==
+From the blueprint page
+-----------------------
 
 The main blueprint page has an action 'Link a related branch'.  This allows
 the user to specify a branch to link to the blueprint.
@@ -88,7 +91,8 @@ Again, attempting to link to the same branch gives an error.
     >>> browser.getLink('Cancel').click()
 
 
-== Deleting a Branch Link ==
+Deleting a Branch Link
+----------------------
 
 Users can delete the branch link from the branch link page:
 
@@ -106,23 +110,3 @@ The branch is now no longer listed in the portlet:
     ...     'linked_branches'))
     Related branches
     Link a related branch
-
-
-== Inline editing from the branch page ==
-
-The main branch page has some javascript to show a form to edit
-the spec-branch link.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/firefox/main')
-    >>> printSpecBranchLinks(browser)
-    Support &lt;canvas&gt; Objects edit
-
-Clicking on the edit link shows the form.  Unfortunately the
-testbrowser cannot handle javascript.  In these situations
-clicking on edit takes the user to the normal edit page for
-the spec-branch link.
-
-    >>> browser.getLink('edit').click()
-    >>> print browser.title
-    Support <canvas> Objects...

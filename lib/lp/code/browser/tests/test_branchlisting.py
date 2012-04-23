@@ -20,15 +20,6 @@ from storm.expr import (
 from testtools.matchers import Not
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
@@ -42,6 +33,7 @@ from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.person import (
+    IPerson,
     IPersonSet,
     PersonVisibility,
     )
@@ -50,6 +42,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -60,7 +54,16 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import DocTestMatches
+from lp.testing.pages import (
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     COMMERCIAL_ADMIN_EMAIL,
@@ -355,6 +358,19 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         page = self.get_branch_list_page(target=self.team)
         self.assertThat(page, Not(self.registered_branches_matcher))
 
+    def test_branch_list_recipes_link(self):
+        # The link to the source package recipes is always displayed.
+        page = self.get_branch_list_page()
+        recipes_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Source package recipes link', 'a',
+                text='Source package recipes',
+                attrs={'href': self.base_url + '/+recipes'}))
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, recipes_matcher)
+        else:
+            self.assertThat(page, Not(recipes_matcher))
+
 
 class TestSimplifiedPersonProductBranchesView(
     TestSimplifiedPersonBranchesView):
@@ -604,6 +620,27 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
         self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
+class TestProductConfigureCodehosting(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_configure_codehosting_hidden(self):
+        # If the user does not have driver permissions, they are not shown
+        # the configure codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'))
+        self.assertFalse('Configure code hosting' in browser.contents)
+
+    def test_configure_codehosting_shown(self):
+        # If the user has driver permissions, they are shown the configure
+        # codehosting link.
+        product = self.factory.makeProduct()
+        browser = self.getUserBrowser(
+            canonical_url(product, rootsite='code'), user=product.owner)
+        self.assertTrue('Configure code hosting' in browser.contents)
+
+
 class TestPersonBranchesPage(BrowserTestCase):
     """Tests for the person branches page.
 
@@ -613,13 +650,13 @@ class TestPersonBranchesPage(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def _make_branch_for_private_team(self):
+        owner = self.factory.makePerson()
         private_team = self.factory.makeTeam(
-            name='shh', displayname='Shh',
+            name='shh', displayname='Shh', owner=owner,
             visibility=PersonVisibility.PRIVATE)
-        member = self.factory.makePerson(
-            email='member@example.com', password='test')
-        with person_logged_in(private_team.teamowner):
-            private_team.addMember(member, private_team.teamowner)
+        member = self.factory.makePerson(email='member@example.com')
+        with person_logged_in(owner):
+            private_team.addMember(member, owner)
         branch = self.factory.makeProductBranch(owner=private_team)
         return private_team, member, branch
 
@@ -649,6 +686,16 @@ class TestPersonBranchesPage(BrowserTestCase):
         view = create_initialized_view(
             branch.product, name="+branches", rootsite='code')
         self.assertIn('a moment ago', view())
+
+    def test_no_branch_message_escaped(self):
+        # make sure we escape any information put into the no branch message
+        badname = '<script>Test</script>'
+        escapedname = 'no branches related to &lt;script&gt;Test'
+        baduser = self.factory.makePerson(displayname=badname)
+        browser = self.getViewBrowser(baduser, rootsite='code')
+        # the content should not appear in tact because it's been escaped
+        self.assertTrue(badname not in browser.contents)
+        self.assertTrue(escapedname in browser.contents)
 
 
 class TestProjectGroupBranches(TestCaseWithFactory,

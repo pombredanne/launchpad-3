@@ -9,11 +9,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.launchpad import _
-from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -23,6 +19,8 @@ from lp.blueprints.interfaces.specificationfeedback import (
     ISpecificationFeedback,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.helpers import english_list
+from lp.services.webapp import canonical_url
 
 
 __all__ = [

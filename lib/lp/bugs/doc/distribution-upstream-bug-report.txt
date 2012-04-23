@@ -7,7 +7,7 @@ project and monitor them as they change. Launchpad offers functionality
 to allow a distribution to focus on and improve this process.
 
     >>> from storm.store import Store
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> from lp.bugs.tests.bug import (
     ...     create_bug_from_strings)
     >>> from lp.registry.interfaces.sourcepackagename import (
@@ -225,7 +225,7 @@ forwarded upstream that have a bug watch against a remote bug.
 Deltas
 ......
 
-BugReportData also offers a set of of *_delta properties along with the
+BugReportData also offers a set of *_delta properties along with the
 *_percentage properties.
 
 BugReportData.triaged_bugs_delta is the difference between the number of
@@ -347,7 +347,7 @@ We test that the view data is constructed sanely and without any hidden
 defects. Let's set up some helpers to make it easier for us to output
 them:
 
-    >>> from canonical.launchpad.testing.systemdocs import create_view
+    >>> from lp.testing.systemdocs import create_view
 
     >>> def print_numbers(data):
     ...     for f in ['open_bugs',
@@ -494,7 +494,7 @@ be reversed.
 The DistributionUpstreamBugReport view has a list of valid sort keys. If
 we try to sort by a key that isn't in that list we'll get the default
 sort_order back. (See test_distribution_upstream_bug_report.py in
-browser/ftests for further testing of this).
+browser/tests for further testing of this).
 
     >>> form = {'sort_by': 'ifthisisvalidilleatmyhat'}
     >>> view = create_view(ubuntu, '+upstreamreport', form)

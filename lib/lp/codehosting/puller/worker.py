@@ -8,15 +8,15 @@ import socket
 import sys
 import urllib2
 
-import lp.codehosting  # Needed to load bzr plugins.
-lp  # squelch lint.sh
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
+import lp.codehosting
 
 from bzrlib import (
     errors,
     urlutils,
     )
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
 from bzrlib.plugins.weave_fmt.repository import (
@@ -32,8 +32,6 @@ from lazr.uri import (
     URI,
     )
 
-from canonical.config import config
-from canonical.launchpad.webapp import errorlog
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -48,6 +46,8 @@ from lp.codehosting.safe_open import (
     BranchReferenceForbidden,
     SafeBranchOpener,
     )
+from lp.services.config import config
+from lp.services.webapp import errorlog
 
 
 __all__ = [
@@ -214,7 +214,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            BzrDir.open, self.policy.createDestinationBranch, source_branch,
+            self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):

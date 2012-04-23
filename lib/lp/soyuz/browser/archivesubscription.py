@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonalArchiveSubscription',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber',
@@ -31,11 +32,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.publisher import (
-    canonical_url,
-    LaunchpadView,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -47,6 +44,14 @@ from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import (
@@ -147,21 +152,28 @@ class ArchiveSubscribersView(LaunchpadFormView):
             return
 
         super(ArchiveSubscribersView, self).initialize()
+        subscription_set = getUtility(IArchiveSubscriberSet)
+        self.subscriptions = subscription_set.getByArchive(self.context)
+        self.batchnav = BatchNavigator(
+            self.subscriptions, self.request,
+            range_factory=StormRangeFactory(self.subscriptions))
 
     @cachedproperty
-    def subscriptions(self):
-        """Return all the subscriptions for this archive."""
-        result = list(getUtility(IArchiveSubscriberSet
-            ).getByArchive(self.context))
-        ids = set(map(attrgetter('subscriber_id'), result))
+    def current_subscriptions_batch(self):
+        """Return the subscriptions of the current batch.
+
+        Bulk loads the related Person records.
+        """
+        batch = list(self.batchnav.currentBatch())
+        ids = map(attrgetter('subscriber_id'), batch)
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
-        return result
+        return batch
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        return bool(self.subscriptions)
+        return self.subscriptions.any() is not None
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -297,6 +309,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
     label = "Private PPA access"
+    private = True
 
     @cachedproperty
     def subscriptions_with_tokens(self):

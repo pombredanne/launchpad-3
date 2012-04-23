@@ -3,17 +3,17 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
-    login_person,
     celebrity_logged_in,
+    login_person,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.testing.views import create_view
 from lp.translations.browser.product import ProductView

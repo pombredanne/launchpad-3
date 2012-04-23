@@ -56,10 +56,6 @@ from contrib.glock import GlobalLock
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility,
-    ScriptRequest,
-    )
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
@@ -70,9 +66,7 @@ from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
     )
-from lp.buildmaster.enums import (
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -80,6 +74,10 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,

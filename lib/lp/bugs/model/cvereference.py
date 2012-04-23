@@ -12,8 +12,8 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from lp.bugs.interfaces.cvereference import ICveReference
+from lp.services.database.sqlbase import SQLBase
 
 
 class CveReference(SQLBase):

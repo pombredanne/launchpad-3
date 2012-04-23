@@ -6,8 +6,8 @@ located on all pages. The search is performed and displayed by the
 LaunchpadSearchView.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.interfaces import ILaunchpadRoot
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> root = getUtility(ILaunchpadRoot)
     >>> request = LaunchpadTestRequest()
@@ -114,7 +114,7 @@ Private bugs are not matched if the user does not have permission to
 see them. For example, Sample Person can see a private bug that he
 created because he is the owner.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user

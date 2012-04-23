@@ -10,7 +10,7 @@
         package=".browser"/>
 
     <subscriber
-        for="canonical.launchpad.webapp.interfaces.IStartRequestEvent"
+        for="lp.services.webapp.interfaces.IStartRequestEvent"
         handler="lp.services.features.webapp.start_request"
         />
 

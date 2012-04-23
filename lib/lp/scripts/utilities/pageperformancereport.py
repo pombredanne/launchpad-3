@@ -25,9 +25,9 @@ import simplejson as json
 import sre_constants
 import zc.zservertracelog.tracereport
 
-from canonical.config import config
-from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
+from lp.services.config import config
+from lp.services.scripts.logger import log
 
 
 class Request(zc.zservertracelog.tracereport.Request):
@@ -1013,8 +1013,7 @@ def html_report(
     """
 
     print >> outf, dedent('''\
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-                "http://www.w3.org/TR/html4/loose.dtd">
+        <!DOCTYPE html>
         <html>
         <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">

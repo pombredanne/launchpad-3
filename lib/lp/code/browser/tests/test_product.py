@@ -9,16 +9,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tag_by_id,
-    )
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.code.enums import (
     BranchType,
@@ -26,6 +21,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.publisher import CodeLayer
+from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -35,9 +31,14 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.views import (
-    create_view,
     create_initialized_view,
+    create_view,
     )
 
 
@@ -184,6 +185,13 @@ class TestProductCodeIndexView(ProductTestBase):
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIs(None, commit_section)
 
+    def test_initial_branches_contains_push_instructions(self):
+        product, branch = self.makeProductAndDevelopmentFocusBranch()
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code', principal=product.owner)
+        content = view()
+        self.assertIn('bzr push lp:~', content)
+
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
@@ -196,8 +204,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
             svn_branch_url='http://svn.example.org/branch')
         login_person(product.owner)
         product.development_focus.branch = code_import.branch
-        logout()
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        logout()
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         login(ANONYMOUS)
         content = find_tag_by_id(browser.contents, 'external')

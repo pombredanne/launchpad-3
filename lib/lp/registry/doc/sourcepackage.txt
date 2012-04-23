@@ -127,7 +127,7 @@ upload, even though it gets changed in the publishing record.
     PENDING main
     PUBLISHED main
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> from lp.soyuz.model.component import Component
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
@@ -356,7 +356,7 @@ julian 2007-09-17 This is duplicating the page test. Instead it should
 be more like the bug number linkification just below.
 
     >>> from zope.component import queryMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> mock_form = {}
     >>> request = LaunchpadTestRequest(form=mock_form)
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
@@ -529,7 +529,7 @@ Interface implementation
 
 SourcePackage implements IHasTranslationImports interface:
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)

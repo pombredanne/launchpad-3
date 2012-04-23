@@ -14,8 +14,10 @@ fi
 RELEASE_FILES=`find $DISTSROOT -maxdepth 2 -name Release`
 DIST_UPGRADER_TARBALLS=`
 	find $DISTSROOT/*/*/dist-upgrader* -name "*.tar.gz" || true`
+INSTALLER_CHECKSUMS=`
+	find $DISTSROOT/*/*/installer-* -name "*SUMS" || true`
 
-for CANDIDATE in $RELEASE_FILES $DIST_UPGRADER_TARBALLS
+for CANDIDATE in $RELEASE_FILES $DIST_UPGRADER_TARBALLS $INSTALLER_CHECKSUMS
 do
     if [ ! -f "$CANDIDATE.gpg" ] || [ "$CANDIDATE" -nt "$CANDIDATE.gpg" ]
     then

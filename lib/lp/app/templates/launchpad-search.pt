@@ -128,7 +128,7 @@
                 </div>
                 <div class="summary">
                   <tal:team
-                    tal:condition="view/person_or_team/isTeam" >
+                    tal:condition="view/person_or_team/is_team" >
                     <div
                       tal:content="view/person_or_team/teamdescription"
                       tal:condition="view/person_or_team/teamdescription">
@@ -143,7 +143,7 @@
                     </div>
                   </tal:team>
                   <tal:person
-                    tal:condition="not: view/person_or_team/isTeam">
+                    tal:condition="not: view/person_or_team/is_team">
                     <div>
                       joined
                       <span

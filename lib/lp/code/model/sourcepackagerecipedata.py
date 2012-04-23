@@ -41,8 +41,6 @@ from storm.locals import (
     )
 from zope.component import getUtility
 
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.errors import (
     NoSuchBranch,
     PrivateBranchRecipe,
@@ -54,6 +52,8 @@ from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import IStore
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -141,7 +141,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         return branch
 
 
-MAX_RECIPE_FORMAT = 0.3
+MAX_RECIPE_FORMAT = 0.4
 
 
 class SourcePackageRecipeData(Storm):
@@ -160,7 +160,7 @@ class SourcePackageRecipeData(Storm):
     base_branch = Reference(base_branch_id, 'Branch.id')
 
     recipe_format = Unicode(allow_none=False)
-    deb_version_template = Unicode(allow_none=False)
+    deb_version_template = Unicode(allow_none=True)
     revspec = Unicode(allow_none=True)
 
     instructions = ReferenceSet(
@@ -303,10 +303,15 @@ class SourcePackageRecipeData(Storm):
             raise PrivateBranchRecipe(base_branch)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
+        else:
+            self.revspec = None
         self._recordInstructions(
             builder_recipe, parent_insn=None, branch_map=branch_map)
         self.base_branch = base_branch
-        self.deb_version_template = unicode(builder_recipe.deb_version)
+        if builder_recipe.deb_version is None:
+            self.deb_version_template = None
+        else:
+            self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
     def __init__(self, recipe, sourcepackage_recipe=None,

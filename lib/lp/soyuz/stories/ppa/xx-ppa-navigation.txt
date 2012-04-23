@@ -31,7 +31,7 @@ And the users can click on the item and will be taken to the PPA page.
 There is a link that allows users with permission to create a PPA.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
     >>> cprov_browser.getLink('Launchpad Buildd Admins').click()
 
@@ -61,7 +61,7 @@ While navigating around the PPA the "structural location" includes a PPA:
 The PPA breadcrumb follows the PPA displayname.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> cprov_browser.getLink("Change details").click()
     >>> cprov_browser.getControl(

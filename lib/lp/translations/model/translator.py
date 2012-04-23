@@ -14,11 +14,11 @@ from storm.expr import Join
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 from lp.translations.interfaces.translator import (
     ITranslator,
     ITranslatorSet,

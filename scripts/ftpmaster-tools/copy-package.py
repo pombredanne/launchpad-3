@@ -9,7 +9,7 @@
 
 import _pythonpath
 
-from canonical.config import config
+from lp.services.config import config
 from lp.soyuz.scripts.packagecopier import PackageCopier
 
 

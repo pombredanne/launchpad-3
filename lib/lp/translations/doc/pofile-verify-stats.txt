@@ -135,7 +135,7 @@ in rosetta_pofile_stats.days_considered_recent parameter).
 In default configuration, we are looking for files modified in the last
 7 days.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> pofile_age = int(
     ...     config.rosetta_pofile_stats.days_considered_recent)
     >>> pofile_age
@@ -177,7 +177,7 @@ all fixed already.
 
     >>> transaction.commit() # Ensure other process can see latest changes
 
-    >>> from canonical.launchpad.ftests.script import run_script
+    >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'cronscripts/rosetta-pofile-stats-daily.py')
     >>> print returncode

@@ -15,8 +15,8 @@ import socket
 from sqlobject import StringCol
 from zope.interface import implements
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 from lp.services.scripts.interfaces.scriptactivity import (
     IScriptActivity,
     IScriptActivitySet,

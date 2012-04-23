@@ -45,20 +45,6 @@ from zope.interface import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import is_english_variant
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionAction,
@@ -107,6 +93,19 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -114,6 +113,7 @@ from lp.services.messages.model.message import (
     MessageChunk,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
 
@@ -1420,7 +1420,7 @@ class QuestionTargetMixin:
         for person in contacts:
             reason_start = (
                 "You received this question notification because you are ")
-            if person.isTeam():
+            if person.is_team:
                 reason = reason_start + (
                     'a member of %s, which is an answer contact for %s.' % (
                         person.displayname, self.displayname))

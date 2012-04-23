@@ -27,9 +27,9 @@ from twisted.python import components
 from twisted.web.xmlrpc import Proxy
 from zope.interface import implements
 
-from canonical.config import config
 from lp.codehosting import sftp
 from lp.codehosting.sshserver.session import launch_smart_server
+from lp.services.config import config
 from lp.services.sshserver.auth import (
     LaunchpadAvatar,
     PublicKeyFromLaunchpadChecker,

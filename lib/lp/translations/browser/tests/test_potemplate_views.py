@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.browser.potemplate import (
     POTemplateAdminView,
     POTemplateEditView,

@@ -10,11 +10,11 @@ import re
 
 from zope.testing.loghandler import Handler
 
-from canonical.config import config
-from canonical.launchpad.scripts.logger import OopsHandler
-from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
+from lp.services.config import config
+from lp.services.scripts.logger import OopsHandler
 from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 
 class TestHWDBSubmissionRelaxNGValidation(TestCase):
@@ -33,7 +33,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.handler.add(self.log.name)
 
         sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest.xml')
         self.sample_data = open(sample_data_path).read()
 
@@ -2804,7 +2804,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # _getValidatedEtree()) creates the missing nodes, so that
         # _getValidatedEtree() succeeds.
         sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest-natty.xml')
         sample_data = open(sample_data_path).read()
         result, submission_id = self.runValidator(sample_data)

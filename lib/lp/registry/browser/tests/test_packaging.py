@@ -7,15 +7,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    PageTestLayer,
-    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import (
@@ -24,8 +15,17 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login,
+    logout,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    PageTestLayer,
+    )
 from lp.testing.memcache import MemcacheTestCase
+from lp.testing.pages import setupBrowser
 from lp.testing.views import create_initialized_view
 
 

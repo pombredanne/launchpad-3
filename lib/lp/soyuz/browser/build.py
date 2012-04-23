@@ -19,6 +19,9 @@ __all__ = [
     ]
 
 
+from itertools import groupby
+from operator import attrgetter
+
 from lazr.batchnavigator import ListRangeFactory
 from lazr.delegates import delegates
 from lazr.restful.utils import safe_hasattr
@@ -27,29 +30,10 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin,
-    ProxiedLibraryFileAlias,
-    )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation,
-    LaunchpadView,
-    Link,
-    StandardLaunchpadFacets,
-    stepthrough,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import (
-    BatchNavigator,
-    StormRangeFactory,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -59,13 +43,38 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobSet,
+    InconsistentBuildFarmJobError,
+    ISpecificBuildFarmJobSource,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import (
+    BatchNavigator,
+    StormRangeFactory,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild,
@@ -293,8 +302,14 @@ class BuildView(LaunchpadView):
         return self.context.buildqueue_record
 
     @cachedproperty
-    def component(self):
-        return self.context.current_component
+    def component_name(self):
+        # Production has some buggy historic builds without
+        # source publications.
+        component = self.context.current_component
+        if component is not None:
+            return component.name
+        else:
+            return 'unknown'
 
     @cachedproperty
     def files(self):
@@ -463,8 +478,7 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    build_farm_job_set = getUtility(IBuildFarmJobSet)
-    builds = build_farm_job_set.getSpecificJobs(
+    builds = getSpecificJobs(
         [build.build_farm_job if IPackageBuild.providedBy(build) else build
             for build in batch])
     if not builds:
@@ -490,6 +504,45 @@ def setupCompleteBuilds(batch):
         else:
             complete_builds.append(build)
     return complete_builds
+
+
+def getSpecificJobs(jobs):
+    """Return the specific build jobs associated with each of the jobs
+        in the provided job list.
+    """
+    builds = []
+    key = attrgetter('job_type.name')
+    sorted_jobs = sorted(jobs, key=key)
+    job_builds = {}
+    for job_type_name, grouped_jobs in groupby(sorted_jobs, key=key):
+        # Fetch the jobs in batches grouped by their job type.
+        source = getUtility(
+            ISpecificBuildFarmJobSource, job_type_name)
+        builds = [build for build
+            in source.getByBuildFarmJobs(list(grouped_jobs))
+            if build is not None]
+        is_binary_package_build = IBinaryPackageBuildSet.providedBy(
+            source)
+        for build in builds:
+            if is_binary_package_build:
+                job_builds[build.package_build.build_farm_job.id] = build
+            else:
+                try:
+                    job_builds[build.build_farm_job.id] = build
+                except Unauthorized:
+                    # If the build farm job is private, we will get an
+                    # Unauthorized exception; we only use
+                    # removeSecurityProxy to get the id of build_farm_job
+                    # but the corresponding build returned in the list
+                    # will be 'None'.
+                    naked_build = removeSecurityProxy(build)
+                    job_builds[naked_build.build_farm_job.id] = None
+    # Return the corresponding builds.
+    try:
+        return [job_builds[job.id] for job in jobs]
+    except KeyError:
+        raise InconsistentBuildFarmJobError(
+            "Could not find all the related specific jobs.")
 
 
 class BuildRecordsView(LaunchpadView):
@@ -535,7 +588,7 @@ class BuildRecordsView(LaunchpadView):
         if self.text is not None or self.arch_tag is not None:
             binary_only = True
 
-        # request context build records according the selected state
+        # request context build records according to the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
             user=self.user, binary_only=binary_only)

@@ -124,7 +124,7 @@ still None:
 
 Setting date_emailed to some date causes it not to be pending anymore:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
     >>> pending_notifications = getUtility(
@@ -349,24 +349,10 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
-We will need some helper functions.
-
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
-    >>> def switch_db_to_launchpad():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> def switch_db_to_bugnotification():
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(
-    ...         config.malone.bugnotification_dbuser)
-
-We will also need a fresh new bug.
+We will need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
@@ -433,7 +419,7 @@ inserted at the top of the message body.
     ...     sec_vuln_bug = ubuntu.createBug(CreateBugParams(
     ...         msg=sec_vuln_description, owner=sample_person,
     ...         title='Zero-day on Frobulator',
-    ...         security_related=True, private=True))
+    ...         information_type=InformationType.EMBARGOEDSECURITY))
 
     >>> sec_vuln_bug.security_related
     True
@@ -743,8 +729,6 @@ won't be included.
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
-    >>> #bug_three.unsubscribe(sample_person, sample_person)
-
 
 The X-Launchpad-Bug-Private header
 ----------------------------------
@@ -770,8 +754,9 @@ Predictably, private bugs are sent with a slightly different header:
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
+    foo.bar@canonical.com ['yes']
+    mark@example.com ['yes']
     test@canonical.com ['yes']
-
 
 The X-Launchpad-Bug-Security-Vulnerability header
 -------------------------------------------------
@@ -786,6 +771,8 @@ security vulnerability. It can have the value "yes" or "no".
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    foo.bar@canonical.com ['no']
+    mark@example.com ['no']
     test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
@@ -800,6 +787,8 @@ simple "yes":
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print message['To'], (
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    foo.bar@canonical.com ['yes']
+    mark@example.com ['yes']
     test@canonical.com ['yes']
 
 
@@ -1125,7 +1114,7 @@ notification level of the subscription.
 
     >>> flush_notifications()
 
-    >>> from lp.bugs.enum import BugNotificationLevel
+    >>> from lp.bugs.enums import BugNotificationLevel
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> mr_no_privs = getUtility(IPersonSet).getByName('no-priv')

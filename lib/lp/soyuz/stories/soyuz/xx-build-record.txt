@@ -46,7 +46,7 @@ page. It's title briefly describes the build.
 
     >>> anon_browser.open(build_url)
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
     i386 build : 1.0 : \u201ctesting\u201d package : ubuntutest
 
@@ -66,7 +66,7 @@ component.
     ...
     Build status
     Needs building
-    Start in ... 
+    Start in ...
     Build score:2505 (What's this?)
     Build details
     Source: testing - 1.0
@@ -144,7 +144,7 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... 
+    Start in ...
     Build score:0 Rescore build (What's this?)
 
 Eventually a pending build record will get started, and while it's
@@ -155,7 +155,6 @@ messages.
     # Reset the sampledata in-progress job and start the testing
     # build with an known buildlog 'tail'.
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.database.constants import UTC_NOW
     >>> from lp.buildmaster.enums import BuildStatus
     >>> in_progress_build.buildqueue_record.reset()
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
@@ -292,7 +291,7 @@ retrying the build is not a possibility anymore.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
-    Start in ... 
+    Start in ...
     Build score:... Rescore build (What's this?)
 
     >>> admin_browser.getLink("Retry this build").click()

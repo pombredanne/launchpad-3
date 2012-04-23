@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -11,13 +11,13 @@
 
   <adapter
       name="blueprints"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="blueprints"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
       permission="zope.Public"/>
@@ -128,7 +128,7 @@
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.blueprints.interfaces.sprint.ISprint"
-        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
         permission="zope.Public"/>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.IHasSprints"
@@ -145,7 +145,7 @@
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         path_expression="string:sprints"
-        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         name="+index"/>
@@ -263,9 +263,6 @@
             for="lp.blueprints.interfaces.specification.ISpecification"
             permission="zope.Public">
             <browser:page
-                name="+listing-column"
-                template="../templates/specification-listing-column.pt"/>
-            <browser:page
                 name="+listing-simple"
                 template="../templates/specification-listing-simple.pt"/>
             <browser:page
@@ -373,6 +370,12 @@
             name="+whiteboard"
             for="lp.blueprints.interfaces.specification.ISpecification"
             class="lp.blueprints.browser.specification.SpecificationEditWhiteboardView"
+            permission="launchpad.AnyPerson"
+            template="../templates/specification-edit.pt"/>
+        <browser:page
+            name="+workitems"
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            class="lp.blueprints.browser.specification.SpecificationEditWorkItemsView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-edit.pt"/>
         <browser:page
@@ -485,7 +488,7 @@
         <browser:url
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             path_expression="string:"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
             rootsite="blueprints"/>
         <browser:defaultView
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
@@ -565,7 +568,7 @@
         <browser:page
             name="+register-a-blueprint-button"
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationTarget"
-            class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+            class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
             permission="zope.Public"/>
 
     <browser:page
