@@ -34,7 +34,10 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import setupBrowserForUser
+from lp.testing.pages import (
+    extract_text,
+    setupBrowserForUser,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -125,6 +128,26 @@ class PillarSharingDetailsMixin:
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
             self.assertEqual(expected, browser.title)
+
+    def test_plus_sharingdetails_breadcrumbs(self):
+        # The breadcrumbs are accurate
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            # We have to do some fun url hacking to force the traversal a user
+            # encounters.
+            pillarperson = self.getPillarPerson()
+            expected_breadcrumbs = [
+                pillarperson.pillar.name, 
+                'Sharing',
+                'Sharing details for %s' % pillarperson.person.name,
+                ]
+            url = 'http://launchpad.dev/%s/+sharing/%s' % (
+                pillarperson.pillar.name, pillarperson.person.name)
+            browser = self.getUserBrowser(user=self.owner, url=url)
+            soup = BeautifulSoup(browser.contents)
+            actual_breadcrumbs = soup.find('ol', {'class': 'breadcrumbs'})
+            self.assertEqual(
+                '\n'.join(expected_breadcrumbs).lower(),
+                extract_text(actual_breadcrumbs).lower())
 
     def test_no_sharing_message(self):
         # If there is no sharing between pillar and person, a suitable message
