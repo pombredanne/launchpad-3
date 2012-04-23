@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'AdvisoryUnlock',
     'Array',
     'Concatenate',
     'CountDistinct',
     'Greatest',
     'NullCount',
+    'TryAdvisoryLock',
     ]
 
 from storm.expr import (
@@ -63,6 +65,20 @@ class Array(ComparableExpr):
 
     def __init__(self, *args):
         self.args = args
+
+
+class TryAdvisoryLock(NamedFunc):
+
+    __slots__ = ()
+
+    name = 'PG_TRY_ADVISORY_LOCK'
+
+
+class AdvisoryUnlock(NamedFunc):
+
+    __slots__ = ()
+
+    name = 'PG_ADVISORY_UNLOCK'
 
 
 @compile.when(Array)
