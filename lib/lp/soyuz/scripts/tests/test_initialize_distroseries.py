@@ -156,9 +156,13 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             distroseries=distroseries,
             sourcepackagename=spn,
             pocket=PackagePublishingPocket.RELEASE)
-        packageset = getUtility(IPackagesetSet).new(
-            packageset_name, packageset_name, distroseries.owner,
-            distroseries=distroseries)
+        try:
+            packageset = getUtility(IPackagesetSet).getByName(
+                packageset_name, distroseries=distroseries)
+        except NoSuchPackageSet:
+            packageset = getUtility(IPackagesetSet).new(
+                packageset_name, packageset_name, distroseries.owner,
+                distroseries=distroseries)
         packageset.addSources(package_name)
         if create_build:
             source.createMissingBuilds()
@@ -685,6 +689,48 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertContentEqual(
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
+
+    def test_copying_packagesets_no_duplication(self):
+        # Copying packagesets only copies the packageset from the most
+        # recent series, rather than merging those from all series.
+        previous_parent, _ = self.setupParent()
+        parent = self._fullInitialize([previous_parent])
+        self.factory.makeSourcePackagePublishingHistory(distroseries=parent)
+        p1, parent_packageset, _ = self.createPackageInPackageset(
+            parent, u"p1", u"packageset")
+        uploader1 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            parent.main_archive, uploader1, parent_packageset)
+        child = self._fullInitialize(
+            [previous_parent], previous_series=parent,
+            distribution=parent.distribution)
+        # Make sure the child's packageset has disjoint packages and
+        # permissions.
+        p2, child_packageset, _ = self.createPackageInPackageset(
+            child, u"p2", u"packageset")
+        child_packageset.removeSources([u"p1"])
+        uploader2 = self.factory.makePerson()
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            child.main_archive, uploader2, child_packageset)
+        getUtility(IArchivePermissionSet).deletePackagesetUploader(
+            parent.main_archive, uploader1, child_packageset)
+        grandchild = self._fullInitialize(
+            [previous_parent], previous_series=child,
+            distribution=parent.distribution)
+        grandchild_packageset = getUtility(IPackagesetSet).getByName(
+            parent_packageset.name, distroseries=grandchild)
+        # The copied grandchild set has sources matching the child.
+        self.assertContentEqual(
+            child_packageset.getSourcesIncluded(),
+            grandchild_packageset.getSourcesIncluded())
+        # It also has permissions matching the child.
+        perms2 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, child_packageset)
+        perms3 = getUtility(IArchivePermissionSet).uploadersForPackageset(
+            parent.main_archive, grandchild_packageset)
+        self.assertContentEqual(
+            [perm.person.name for perm in perms2],
+            [perm.person.name for perm in perms3])
 
     def test_intra_distro_perm_copying(self):
         # If child.distribution equals parent.distribution, we also

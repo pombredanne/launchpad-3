@@ -11,6 +11,7 @@ __all__ = [
 
 from operator import methodcaller
 
+from storm.expr import And
 import transaction
 from zope.component import getUtility
 
@@ -659,7 +660,9 @@ class InitializeDistroSeries:
         from lp.registry.model.distroseries import DistroSeries
 
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
+            Packageset,
+            And(Packageset.distroseries == DistroSeries.id,
+                DistroSeries.id.is_in(self.derivation_parent_ids)))
         parent_to_child = {}
         # Create the packagesets and any archivepermissions if we're not
         # copying cross-distribution.
