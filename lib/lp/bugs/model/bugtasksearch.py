@@ -81,7 +81,6 @@ from lp.services.database.stormexpr import (
     Array,
     NullCount,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import (
     all,
@@ -347,7 +346,7 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
         respected.
     :param just_bug_ids: Return a ResultSet of bug IDs instead of BugTasks.
     """
-    use_flat = bool(getFeatureFlag('bugs.bugtaskflat.search.enabled'))
+    use_flat = True
 
     store = IStore(BugTask)
     orderby_expression, orderby_joins = _process_order_by(
