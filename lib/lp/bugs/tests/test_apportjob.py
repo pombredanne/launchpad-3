@@ -313,9 +313,8 @@ class TestViaCelery(TestCaseWithFactory):
 
     layer = CeleryJobLayer
 
-    def test_run(self):
-        # IProcessApportBlobJobSource.run() extracts salient data from an
-        # Apport BLOB and stores it in the job's metadata attribute.
+    def test_ProcessApportBlobJob(self):
+        # ProcessApportBlobJob runs under Celery.
         blob = self.factory.makeBlob(blob_file='extra_filebug_data.msg')
         self.useFixture(FeatureFixture(
             {'jobs.celery.enabled_classes': 'ProcessApportBlobJob'}))
@@ -327,7 +326,7 @@ class TestViaCelery(TestCaseWithFactory):
         # called processed_data, which will contain the data parsed from
         # the BLOB.
         processed_data = job.metadata.get('processed_data', None)
-        self.assertNotEqual(
+        self.assertIsNot(
             None, processed_data,
             "processed_data should not be None after the job has run.")
 
