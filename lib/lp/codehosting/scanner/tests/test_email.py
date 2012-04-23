@@ -8,6 +8,7 @@ __metaclass__ = type
 import email
 
 from bzrlib.uncommit import uncommit
+import os
 from zope.component import getUtility
 from zope.event import notify
 
@@ -172,6 +173,8 @@ class TestViaCelery(TestCaseWithFactory):
         switch_dbuser(config.branchscanner.dbuser)
         # Needed for feature flag teardown
         self.addCleanup(switch_dbuser, config.launchpad.dbuser)
+        # Set 'bzr whoami' for proper test isolation.  (See bug 981114).
+        os.system("bzr whoami 'Nobody Knows <nobody@example.com>'")
         return db_branch, tree
 
     def test_empty_branch(self):
