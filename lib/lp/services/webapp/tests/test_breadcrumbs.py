@@ -27,13 +27,21 @@ class Cookbook:
 
 class TestBreadcrumb(TestCase):
 
-    def test_init(self):
+    def test_init_without_params(self):
         # The attributes are None by default.
         cookbook = Cookbook()
         breadcrumb = Breadcrumb(cookbook)
         self.assertIs(None, breadcrumb.text)
         self.assertIs(None, breadcrumb._detail)
         self.assertIs(None, breadcrumb._url)
+
+    def test_init_with_params(self):
+        cookbook = Cookbook()
+        breadcrumb = Breadcrumb(
+            cookbook, url='http://example.com', text="Example")
+        self.assertIs('Example', breadcrumb.text)
+        self.assertIs('http://example.com', breadcrumb._url)
+        self.assertIs(None, breadcrumb._detail)
 
     def test_detail(self):
         # The detail properted is the _detail attribute or the text attribute.
