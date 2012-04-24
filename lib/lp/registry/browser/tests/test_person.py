@@ -357,7 +357,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = create_initialized_view(self.person, '+edit')
 
-    def createViewWithForm(self, email_address):
+    def createAddEmailView(self, email_address):
         """Test helper to create +editemails view."""
         form = {
             'field.VALIDATED_SELECTED': self.valid_email_address,
@@ -367,10 +367,17 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             }
         return create_initialized_view(self.person, "+editemails", form=form)
 
+    def createSetContactViaAddEmailView(self, email_address):
+        form = {
+            'field.VALIDATED_SELECTED': email_address,
+            'field.actions.set_preferred': 'Set as Contact Address',
+            }
+        return create_initialized_view(self.person, '+editemails', form=form)
+
     def test_add_email(self):
         stub.test_emails = []
         email_address = self.factory.getUniqueEmailAddress()
-        view = self.createViewWithForm(email_address)
+        view = self.createAddEmailView(email_address)
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
         token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
@@ -402,7 +409,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             displayname='deadaccount',
             email=email_address,
             account_status=AccountStatus.NOACCOUNT)
-        view = self.createViewWithForm(email_address)
+        view = self.createAddEmailView(email_address)
         error_msg = view.errors[0]
         expected_msg = (
             "The email address '%s' is already registered to "
@@ -415,7 +422,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
     def test_remove_unvalidated_email_address(self):
         added_email = self.factory.getUniqueEmailAddress()
-        view = self.createViewWithForm(added_email)
+        view = self.createAddEmailView(added_email)
         form = {
             'field.UNVALIDATED_SELECTED': added_email,
             'field.actions.remove_unvalidated': 'Remove',
@@ -440,21 +447,20 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
     def test_set_contact_address(self):
         added_email = self.factory.getUniqueEmailAddress()
-        view = self.createViewWithForm(added_email)
+        view = self.createAddEmailView(added_email)
         # We need a commit to make sure person and other data are in DB.
         transaction.commit()
         validated_email = getUtility(IEmailAddressSet).new(added_email, self.person)
         self.person.validateAndEnsurePreferredEmail(validated_email)
-        form = {
-            'field.VALIDATED_SELECTED': added_email,
-            'field.actions.set_preferred': 'Set as Contact Address',
-            }
-        view = create_initialized_view(self.person, '+editemails', form=form)
+        view = self.createSetContactViaAddEmailView(added_email)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         expected_msg = (
             u"Your contact address has been changed to: %s" % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
+
+    def test_set_contact_address_already_set(self):
+        pass
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
