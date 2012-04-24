@@ -29,6 +29,7 @@ from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -59,6 +60,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
     
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
+
 
     def _create_sharing(self, grantee, security=False):
             if security:
@@ -238,29 +240,28 @@ class TestDistributionSharingDetailsView(
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
-    layer = DatabaseFunctionalLayer
+    def _makeGrants(self, name):
+        grantee = self.factory.makePerson(name=name)
+        self.grantees.append(grantee)
+        # Make access policy grant so that 'All' is returned.
+        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
+        # Make access artifact grants so that 'Some' is returned.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact,
+            policy=self.access_policy)
 
     def createSharees(self):
-        login_person(self.owner)
-        self.access_policy = self.factory.makeAccessPolicy(
-            pillar=self.pillar,
-            type=InformationType.PROPRIETARY)
-        self.grantees = []
+        with person_logged_in(self.owner):
+            self.access_policy = self.factory.makeAccessPolicy(
+                pillar=self.pillar,
+                type=InformationType.PROPRIETARY)
+            self.grantees = []
 
-        def makeGrants(name):
-            grantee = self.factory.makePerson(name=name)
-            self.grantees.append(grantee)
-            # Make access policy grant so that 'All' is returned.
-            self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
-            # Make access artifact grants so that 'Some' is returned.
-            artifact_grant = self.factory.makeAccessArtifactGrant()
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact_grant.abstract_artifact,
-                policy=self.access_policy)
-        # Make grants for grantees in ascending order so we can slice off the
-        # first elements in the pillar observer results to check batching.
-        for x in range(10):
-            makeGrants('name%s' % x)
+            # Make grants for grantees in ascending order so we can slice off the
+            # first elements in the pillar observer results to check batching.
+            for x in range(10):
+                self._makeGrants('name%s' % x)
 
     def test_init_without_feature_flag(self):
         # We need a feature flag to enable the view.
