@@ -174,6 +174,8 @@ class TestViaCelery(TestCaseWithFactory):
         # Needed for feature flag teardown
         self.addCleanup(switch_dbuser, config.launchpad.dbuser)
         # Set 'bzr whoami' for proper test isolation.  (See bug 981114).
+        # This setting is done in an isolated bzr environment so it does not
+        # affect the environment of the person running the tests.
         os.system("bzr whoami 'Nobody Knows <nobody@example.com>'")
         return db_branch, tree
 
