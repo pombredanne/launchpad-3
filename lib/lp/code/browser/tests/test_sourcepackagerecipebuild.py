@@ -276,14 +276,17 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         naked_build.buildqueue_record.logtail = 'i am failing'
         return build
 
+    def makeNonRedirectingBrowser(url, user=None):
+        browser = setupBrowserForUser(user) if user else setupBrowser()
+        browser.mech_browser.set_handle_equiv(False)
+        browser.open(url)
+        return browser
+
     def test_builder_index_public(self):
         build = self.makeBuildingRecipe()
         url = canonical_url(build.builder)
         logout()
-
-        browser = setupBrowser()
-        browser.mech_browser.set_handle_equiv(False)
-        browser.open(url)
+        browser = self.makeNonRedirectingBrowser(url)
         self.assertIn('i am failing', browser.contents)
 
     def test_builder_index_private(self):
@@ -294,13 +297,9 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         logout()
 
         # An unrelated user can't see the logtail of a private build.
-        browser = setupBrowserForUser(random_person)
-        browser.mech_browser.set_handle_equiv(False)
-        browser.open(url)
+        browser = self.makeNonRedirectingBrowser(url, random_person)
         self.assertNotIn('i am failing', browser.contents)
 
         # But someone who can see the archive can.
-        browser = setupBrowserForUser(archive.owner)
-        browser.mech_browser.set_handle_equiv(False)
-        browser.open(url)
+        browser = self.makeNonRedirectingBrowser(url, archive.owner)
         self.assertIn('i am failing', browser.contents)
