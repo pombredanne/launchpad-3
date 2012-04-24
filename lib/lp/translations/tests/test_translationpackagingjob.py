@@ -421,7 +421,7 @@ class TestViaCelery(TestCaseWithFactory):
         # with new_shared instead of old_shared.
         with celebrity_logged_in('admin'):
             potemplate.name = 'renamed'
-        job = TranslationTemplateChangeJob.create(potemplate=potemplate)
+        TranslationTemplateChangeJob.create(potemplate=potemplate)
 
         with block_on_job(self):
             transaction.commit()
