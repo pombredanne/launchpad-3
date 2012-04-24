@@ -90,14 +90,16 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     id = Int(primary=True)
 
-    is_private = False
-
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
+
+    @property
+    def is_private(self):
+        return self.archive.private
 
     @property
     def binary_builds(self):
