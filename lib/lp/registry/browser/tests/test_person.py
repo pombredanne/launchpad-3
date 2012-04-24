@@ -355,15 +355,19 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = create_initialized_view(self.person, '+edit')
 
-    def test_add_email_good_data(self):
-        email_address = self.factory.getUniqueEmailAddress()
+    def createViewWithForm(self, email_address):
+        """Test helper to create +editemails view."""
         form = {
             'field.VALIDATED_SELECTED': self.valid_email_address,
             'field.VALIDATED_SELECTED-empty-marker': 1,
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        create_initialized_view(self.person, "+editemails", form=form)
+        return create_initialized_view(self.person, "+editemails", form=form)
+
+    def test_add_email_good_data(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        view = self.createViewWithForm(email_address)
 
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
@@ -380,13 +384,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             displayname='deadaccount',
             email=email_address,
             account_status=AccountStatus.NOACCOUNT)
-        form = {
-            'field.VALIDATED_SELECTED': self.valid_email_address,
-            'field.VALIDATED_SELECTED-empty-marker': 1,
-            'field.actions.add_email': 'Add',
-            'field.newemail': email_address,
-            }
-        view = create_initialized_view(self.person, "+editemails", form=form)
+        view = self.createViewWithForm(email_address)
         error_msg = view.errors[0]
         expected_msg = (
             "The email address '%s' is already registered to "
