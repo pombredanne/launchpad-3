@@ -66,7 +66,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeSourcePackageRecipeBuild(self):
+    def makeSourcePackageRecipeBuild(self, archive=None):
         """Create a `SourcePackageRecipeBuild` for testing."""
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
@@ -75,12 +75,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             supports_virtualized=True)
         removeSecurityProxy(distroseries).nominatedarchindep = (
             distroseries_i386)
+        if archive is None:
+            archive = self.factory.makeArchive()
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=distroseries,
             recipe=self.factory.makeSourcePackageRecipe(
                 distroseries=distroseries),
-            archive=self.factory.makeArchive(),
+            archive=archive,
             requester=person)
 
     def test_providesInterfaces(self):
@@ -156,9 +158,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual('main', spb.current_component.name)
 
     def test_is_private(self):
-        # A source package recipe build is currently always public.
+        # A source package recipe build's is private iff its archive is.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(False, spb.is_private)
+        archive = self.factory.makeArchive(private=True)
+        with person_logged_in(archive.owner):
+            spb = self.makeSourcePackageRecipeBuild(archive=archive)
+            self.assertEqual(True, spb.is_private)
 
     def test_view_private_branch(self):
         """Recipebuilds with private branches are restricted."""
@@ -167,24 +173,32 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
+            self.assertTrue(check_permission('launchpad.View', job))
         removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_view_private_archive(self):
         """Recipebuilds with private branches are restricted."""
         owner = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=owner, private=True)
-        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
         with person_logged_in(owner):
+            build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
+            self.assertTrue(check_permission('launchpad.View', job))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_estimateDuration(self):
         # If there are no successful builds, estimate 10 minutes.
