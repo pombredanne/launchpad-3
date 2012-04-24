@@ -31,6 +31,8 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    setupBrowser,
+    setupBrowserForUser,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -263,3 +265,42 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
              extract_text(find_main_content(browser.contents)))
         self.assertEqual(build_url,
                 browser.getLink('~chef/chocolate/cake recipe build').url)
+
+    def makeBuildingRecipe(self, archive=None):
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
+        naked_build = removeSecurityProxy(build)
+        naked_build.queueBuild()
+        naked_build.builder = builder
+        naked_build.buildqueue_record.builder = builder
+        naked_build.buildqueue_record.logtail = 'i am failing'
+        return build
+
+    def test_builder_index_public(self):
+        build = self.makeBuildingRecipe()
+        url = canonical_url(build.builder)
+        logout()
+
+        browser = setupBrowser()
+        browser.mech_browser.set_handle_equiv(False)
+        browser.open(url)
+        self.assertIn('i am failing', browser.contents)
+
+    def test_builder_index_private(self):
+        archive = self.factory.makeArchive(private=True)
+        build = self.makeBuildingRecipe(archive=archive)
+        url = canonical_url(removeSecurityProxy(build).builder)
+        random_person = self.factory.makePerson()
+        logout()
+
+        # An unrelated user can't see the logtail of a private build.
+        browser = setupBrowserForUser(random_person)
+        browser.mech_browser.set_handle_equiv(False)
+        browser.open(url)
+        self.assertNotIn('i am failing', browser.contents)
+
+        # But someone who can see the archive can.
+        browser = setupBrowserForUser(archive.owner)
+        browser.mech_browser.set_handle_equiv(False)
+        browser.open(url)
+        self.assertIn('i am failing', browser.contents)
