@@ -127,17 +127,15 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         if is_ca_available():
             reconnect_stores()
 
-    def start(self, notreally=False):
+    def start(self, retries=20, sleep=0.5):
         """Simply return to simulate an error starting PGBouncer."""
-        if not notreally:
-            super(PGBouncerFixture, self).start()
-        retries = 60
+        super(PGBouncerFixture, self).start()
         for i in itertools.count(1):
             if self.is_running:
                 return
             if i == retries:
                 raise PGNotReadyError("Not ready after %d attempts." % i)
-            time.sleep(0.5)
+            time.sleep(sleep)
 
 
 class ZopeAdapterFixture(Fixture):
