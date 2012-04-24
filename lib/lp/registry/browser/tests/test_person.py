@@ -407,6 +407,18 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         expected_msg = u"The email address '%s' has been removed." % added_email
         self.assertEqual(expected_msg, notifications[0].message)
 
+    def test_cannot_remove_contact_address(self):
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.actions.remove_validated': 'Remove',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        error_msg = view.errors[0]
+        expected_msg = (
+            "You can't remove %s because it's your contact email address."
+            % self.valid_email_address)
+        self.assertEqual(expected_msg, error_msg)
+
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
                                    TestCaseWithFactory):
