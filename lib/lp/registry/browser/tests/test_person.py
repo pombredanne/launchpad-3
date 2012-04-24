@@ -460,7 +460,13 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, notifications[0].message)
 
     def test_set_contact_address_already_set(self):
-        pass
+        view = self.createSetContactViaAddEmailView(self.valid_email_address)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            "%s is already set as your contact address."
+            % self.valid_email_address)
+        self.assertEqual(expected_msg, notifications[0].message)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
