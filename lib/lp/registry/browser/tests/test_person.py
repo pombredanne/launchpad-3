@@ -368,7 +368,6 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
     def test_add_email_good_data(self):
         email_address = self.factory.getUniqueEmailAddress()
         view = self.createViewWithForm(email_address)
-
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
         token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
@@ -394,6 +393,19 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             "field.dupe_person=deadaccount\">merge it</a> into your account."
             % email_address)
         self.assertEqual(expected_msg, error_msg)
+
+    def test_remove_unvalidated_email_address(self):
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createViewWithForm(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.remove_unvalidated': 'Remove',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = u"The email address '%s' has been removed." % added_email
+        self.assertEqual(expected_msg, notifications[0].message)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
