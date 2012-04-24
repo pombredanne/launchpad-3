@@ -74,6 +74,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         login_person(self.driver)
     
     def makeGrantee(self, name=None, share_all=True, share_some=True):
+        # TODO: Split this into just making a regular grantee, and update
+        # setupSharees to call both.
         grantee = self.factory.makePerson(name=name)
         if share_all:
             self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
@@ -139,7 +141,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
-
+    # TODO: Kill the setup here and make sure it's moved into the base class.
     def _create_sharing(self, grantee, security=False):
             if security:
                 owner = self.factory.makePerson()
