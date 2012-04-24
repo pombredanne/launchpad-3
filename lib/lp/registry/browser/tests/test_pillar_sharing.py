@@ -49,6 +49,14 @@ ENABLED_FLAG = {'disclosure.enhanced_sharing.enabled': 'true'}
 WRITE_FLAG = {'disclosure.enhanced_sharing.writable': 'true'}
 
 
+class SharingBaseTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(SharingBaseTestCase, self).setUp()
+
+    
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
@@ -206,7 +214,7 @@ class PillarSharingDetailsMixin:
 
 
 class TestProductSharingDetailsView(
-    TestCaseWithFactory, PillarSharingDetailsMixin):
+    SharingBaseTestCase, PillarSharingDetailsMixin):
 
     pillar_type = 'product'
 
@@ -218,7 +226,7 @@ class TestProductSharingDetailsView(
 
 
 class TestDistributionSharingDetailsView(
-    TestCaseWithFactory, PillarSharingDetailsMixin):
+    SharingBaseTestCase, PillarSharingDetailsMixin):
 
     pillar_type = 'distribution'
 
@@ -369,7 +377,7 @@ class PillarSharingViewTestMixin:
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,
-                                 TestCaseWithFactory):
+                                 SharingBaseTestCase):
     """Test the PillarSharingView with products."""
 
     def setUp(self):
@@ -383,7 +391,7 @@ class TestProductSharingView(PillarSharingViewTestMixin,
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
-                                      TestCaseWithFactory):
+                                      SharingBaseTestCase):
     """Test the PillarSharingView with distributions."""
 
     def setUp(self):
