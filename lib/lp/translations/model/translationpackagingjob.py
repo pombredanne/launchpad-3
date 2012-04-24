@@ -116,6 +116,8 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     create_on_event = IObjectDeletedEvent
 
+    config = config.packaging_translations
+
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
@@ -133,6 +135,8 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
     class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
 
     create_on_event = IObjectModifiedEvent
+
+    config = config.packaging_translations
 
     @classmethod
     def forPOTemplate(cls, potemplate):

@@ -21,6 +21,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.tests import block_on_job
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
+    celebrity_logged_in,
     EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
@@ -377,3 +378,64 @@ class TestViaCelery(TestCaseWithFactory):
             sourcepackagename=job.sourcepackagename,
             distroseries=job.distroseries)
         self.assertEqual(package_msg, product_msg)
+
+    def test_TranslationSplitJob(self):
+        """Ensure TranslationSplitJob runs under Celery."""
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'TranslationSplitJob',
+        }))
+        upstream_item, ubuntu_item = make_shared_potmsgset(self.factory)
+        TranslationSplitJob.create(
+            upstream_item.potemplate.productseries,
+            ubuntu_item.potemplate.distroseries,
+            ubuntu_item.potemplate.sourcepackagename,
+        )
+        self.assertEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)
+        with block_on_job(self):
+            transaction.commit()
+        self.assertNotEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)
+
+    def test_TranslationTemplateChangeJob(self):
+        """Ensure TranslationTemplateChangeJob runs under Celery."""
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'TranslationTemplateChangeJob',
+        }))
+        potemplate = self.factory.makePOTemplate(name='template')
+        other_ps = self.factory.makeProductSeries(
+            product=potemplate.productseries.product)
+        old_shared = self.factory.makePOTemplate(name='template',
+                                                 productseries=other_ps)
+        new_shared = self.factory.makePOTemplate(name='renamed',
+                                                 productseries=other_ps)
+
+        # Set up shared POTMsgSets and translations.
+        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        potmsgset.setSequence(old_shared, 1)
+        self.factory.makeCurrentTranslationMessage(potmsgset=potmsgset)
+
+        # This is the identical English message in the new_shared template.
+        target_potmsgset = self.factory.makePOTMsgSet(
+            new_shared, sequence=1, singular=potmsgset.singular_text)
+
+        # Rename the template and confirm that messages are now shared
+        # with new_shared instead of old_shared.
+        with celebrity_logged_in('admin'):
+            potemplate.name = 'renamed'
+        job = TranslationTemplateChangeJob.create(potemplate=potemplate)
+
+        with block_on_job(self):
+            transaction.commit()
+
+        # New POTMsgSet is now different from the old one (it's been split),
+        # but matches the target potmsgset (it's been merged into it).
+        new_potmsgset = potemplate.getPOTMsgSets()[0]
+        old_potmsgset = old_shared.getPOTMsgSets()[0]
+        target_potmsgset = new_shared.getPOTMsgSets()[0]
+        self.assertNotEqual(old_potmsgset, new_potmsgset)
+        self.assertEqual(target_potmsgset, new_potmsgset)
+
+        # Translations have been merged as well.
+        self.assertContentEqual(
+            [tm.translations for tm in potmsgset.getAllTranslationMessages()],
+            [tm.translations
+             for tm in new_potmsgset.getAllTranslationMessages()])
