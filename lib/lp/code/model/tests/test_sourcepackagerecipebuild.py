@@ -173,24 +173,32 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
+            self.assertTrue(check_permission('launchpad.View', job))
         removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_view_private_archive(self):
         """Recipebuilds with private branches are restricted."""
         owner = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=owner, private=True)
-        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
         with person_logged_in(owner):
+            build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
+            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
+            self.assertTrue(check_permission('launchpad.View', job))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
+        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_estimateDuration(self):
         # If there are no successful builds, estimate 10 minutes.
