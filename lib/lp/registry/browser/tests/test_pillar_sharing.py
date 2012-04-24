@@ -54,10 +54,45 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    pillar_type = None
+
     def setUp(self):
         super(SharingBaseTestCase, self).setUp()
-
+        self.driver = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        if self.pillar_type == 'distribution':
+            self.pillar = self.factory.makeDistribution(
+                owner=self.owner, driver=self.driver)
+        elif self.pillar_type == 'product':
+            self.pillar = self.factory.makeProduct(
+                owner=self.owner, driver=self.driver)
+        self.createSharees()
+        login_person(self.driver)
     
+    def _makeGrants(self, name):
+        grantee = self.factory.makePerson(name=name)
+        self.grantees.append(grantee)
+        # Make access policy grant so that 'All' is returned.
+        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
+        # Make access artifact grants so that 'Some' is returned.
+        artifact_grant = self.factory.makeAccessArtifactGrant()
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact,
+            policy=self.access_policy)
+
+    def createSharees(self):
+        with person_logged_in(self.owner):
+            self.access_policy = self.factory.makeAccessPolicy(
+                pillar=self.pillar,
+                type=InformationType.PROPRIETARY)
+            self.grantees = []
+
+            # Make grants for grantees in ascending order so we can slice off the
+            # first elements in the pillar observer results to check batching.
+            for x in range(10):
+                self._makeGrants('name%s' % x)
+
+
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
@@ -240,28 +275,6 @@ class TestDistributionSharingDetailsView(
 class PillarSharingViewTestMixin:
     """Test the PillarSharingView."""
 
-    def _makeGrants(self, name):
-        grantee = self.factory.makePerson(name=name)
-        self.grantees.append(grantee)
-        # Make access policy grant so that 'All' is returned.
-        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
-        # Make access artifact grants so that 'Some' is returned.
-        artifact_grant = self.factory.makeAccessArtifactGrant()
-        self.factory.makeAccessPolicyArtifact(
-            artifact=artifact_grant.abstract_artifact,
-            policy=self.access_policy)
-
-    def createSharees(self):
-        with person_logged_in(self.owner):
-            self.access_policy = self.factory.makeAccessPolicy(
-                pillar=self.pillar,
-                type=InformationType.PROPRIETARY)
-            self.grantees = []
-
-            # Make grants for grantees in ascending order so we can slice off the
-            # first elements in the pillar observer results to check batching.
-            for x in range(10):
-                self._makeGrants('name%s' % x)
 
     def test_init_without_feature_flag(self):
         # We need a feature flag to enable the view.
@@ -379,25 +392,11 @@ class TestProductSharingView(PillarSharingViewTestMixin,
                                  SharingBaseTestCase):
     """Test the PillarSharingView with products."""
 
-    def setUp(self):
-        super(TestProductSharingView, self).setUp()
-        self.driver = self.factory.makePerson()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeProduct(
-            owner=self.owner, driver=self.driver)
-        self.createSharees()
-        login_person(self.driver)
+    pillar_type = 'product'
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,
                                       SharingBaseTestCase):
     """Test the PillarSharingView with distributions."""
 
-    def setUp(self):
-        super(TestDistributionSharingView, self).setUp()
-        self.driver = self.factory.makePerson()
-        self.owner = self.factory.makePerson()
-        self.pillar = self.factory.makeDistribution(
-            owner=self.owner, driver=self.driver)
-        self.createSharees()
-        login_person(self.driver)
+    pillar_type = 'distribution'
