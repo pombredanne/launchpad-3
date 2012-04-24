@@ -37,6 +37,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail import stub
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
@@ -436,6 +437,24 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             "You can't remove %s because it's your contact email address."
             % self.valid_email_address)
         self.assertEqual(expected_msg, error_msg)
+
+    def test_set_contact_address(self):
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createViewWithForm(added_email)
+        # We need a commit to make sure person and other data are in DB.
+        transaction.commit()
+        validated_email = getUtility(IEmailAddressSet).new(added_email, self.person)
+        self.person.validateAndEnsurePreferredEmail(validated_email)
+        form = {
+            'field.VALIDATED_SELECTED': added_email,
+            'field.actions.set_preferred': 'Set as Contact Address',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"Your contact address has been changed to: %s" % added_email)
+        self.assertEqual(expected_msg, notifications[0].message)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
