@@ -60,8 +60,6 @@ class SharingBaseTestCase(TestCaseWithFactory):
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
-    layer = DatabaseFunctionalLayer
-
     def _create_sharing(self, grantee, security=False):
             if security:
                 owner = self.factory.makePerson()
