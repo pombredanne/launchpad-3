@@ -9,7 +9,6 @@ from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
-import time
 import transaction
 import urllib2
 
