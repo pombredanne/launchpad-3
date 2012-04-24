@@ -66,31 +66,31 @@ class SharingBaseTestCase(TestCaseWithFactory):
         elif self.pillar_type == 'product':
             self.pillar = self.factory.makeProduct(
                 owner=self.owner, driver=self.driver)
-        self.createSharees()
+        self.access_policy = self.factory.makeAccessPolicy(
+            pillar=self.pillar,
+            type=InformationType.PROPRIETARY)
+        self.grantees = []
+        self.createSharees(self.grantees)
         login_person(self.driver)
     
-    def _makeGrants(self, name):
+    def makeGrantee(self, name, share_all=True, share_some=True):
         grantee = self.factory.makePerson(name=name)
-        self.grantees.append(grantee)
-        # Make access policy grant so that 'All' is returned.
-        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
-        # Make access artifact grants so that 'Some' is returned.
-        artifact_grant = self.factory.makeAccessArtifactGrant()
-        self.factory.makeAccessPolicyArtifact(
-            artifact=artifact_grant.abstract_artifact,
-            policy=self.access_policy)
+        if share_all:
+            self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
+        if share_some:
+            artifact_grant = self.factory.makeAccessArtifactGrant()
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact_grant.abstract_artifact,
+                policy=self.access_policy)
+        return grantee
 
-    def createSharees(self):
+    def createSharees(self, sharees):
         with person_logged_in(self.owner):
-            self.access_policy = self.factory.makeAccessPolicy(
-                pillar=self.pillar,
-                type=InformationType.PROPRIETARY)
-            self.grantees = []
-
             # Make grants for grantees in ascending order so we can slice off the
             # first elements in the pillar observer results to check batching.
             for x in range(10):
-                self._makeGrants('name%s' % x)
+                grantee = self.makeGrantee('name%s' % x)
+                sharees.append(grantee)
 
 
 class PillarSharingDetailsMixin:
