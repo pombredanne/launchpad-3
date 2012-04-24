@@ -70,21 +70,64 @@ class SharingBaseTestCase(TestCaseWithFactory):
             pillar=self.pillar,
             type=InformationType.PROPRIETARY)
         self.grantees = []
-        self.createSharees(self.grantees)
+        self.setupSharing(self.grantees)
         login_person(self.driver)
     
-    def makeGrantee(self, name, share_all=True, share_some=True):
+    def makeGrantee(self, name=None, share_all=True, share_some=True):
         grantee = self.factory.makePerson(name=name)
         if share_all:
             self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
         if share_some:
-            artifact_grant = self.factory.makeAccessArtifactGrant()
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact_grant.abstract_artifact,
-                policy=self.access_policy)
+            self.makeArtifactGrantee()
         return grantee
 
-    def createSharees(self, sharees):
+    def makeArtifactGrantee(
+            self, grantee=None, security=False, with_bug=True,
+            with_branch=False):
+
+        if grantee is None:
+            grantee = self.factory.makePerson()
+
+        branch = None
+        bug = None
+        artifacts = []
+
+        if with_branch and pillar_type == 'product':
+            branch = self.factory.makeBranch(
+                product=self.pillar,
+                owner=self.pillar.owner,
+                private=True)
+            artifacts.append(
+                self.factory.makeAccessArtifact(concrete=branch))
+
+        if with_bug:
+            if security:
+                owner = self.factory.makePerson()
+            else:
+                owner = self.pillar.owner
+            if self.pillar_type == 'product':
+                self.bug = self.factory.makeBug(
+                    product=self.pillar,
+                    owner=owner,
+                    private=True)
+            elif self.pillar_type == 'distribution':
+                self.bug = self.factory.makeBug(
+                    distribution=self.pillar,
+                    owner=owner,
+                    private=True)
+            artifacts.append(
+                self.factory.makeAccessArtifact(concrete=bug))
+
+            for artifact in artifacts:
+                self.factory.makeAccessPolicyArtifact(
+                    artifact=artifact, policy=self.access_policy)
+                self.factory.makeAccessArtifactGrant(
+                    artifact=artifact,
+                    grantee=grantee,
+                    grantor=self.pillar.owner)
+
+
+    def setupSharing(self, sharees):
         with person_logged_in(self.owner):
             # Make grants for grantees in ascending order so we can slice off the
             # first elements in the pillar observer results to check batching.
