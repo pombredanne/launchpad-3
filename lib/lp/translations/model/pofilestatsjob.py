@@ -24,6 +24,7 @@ from zope.interface import (
     implements,
     )
 
+from lp.services.config import config
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
@@ -42,6 +43,8 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
     """The details for a POFile status update job."""
 
     __storm_table__ = 'POFileStatsJob'
+
+    config = config.pofile_stats
 
     # Instances of this class are runnable jobs.
     implements(IRunnableJob)
@@ -100,7 +103,16 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
             And(POFileStatsJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
 
+    def makeDerived(self):
+        """Support UniversalJobSource.
+
+        (Most JobSource classes can return a derived class, because they reuse
+        the same database table for multiple types of jobs.)"""
+        return self
+
 
 def schedule(pofile):
     """Schedule a job to update a POFile's stats."""
-    return POFileStatsJob(pofile)
+    job = POFileStatsJob(pofile)
+    job.celeryRunOnCommit()
+    return job
