@@ -21,6 +21,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
 from lp.services.database import bulk
 from lp.services.database.lpstorm import (
     IMasterStore,
@@ -65,12 +66,14 @@ def create_job(derived_series, sourcepackagename, parent_series):
         `derived_series`.  The difference is between the versions of
         `sourcepackagename` in `parent_series` and `derived_series`.
     """
-    job = DistributionJob(
+    db_job = DistributionJob(
         distribution=derived_series.distribution, distroseries=derived_series,
         job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
         metadata=make_metadata(sourcepackagename.id, parent_series.id))
-    IMasterStore(DistributionJob).add(job)
-    return DistroSeriesDifferenceJob(job)
+    IMasterStore(DistributionJob).add(db_job)
+    job = DistroSeriesDifferenceJob(db_job)
+    job.celeryRunOnCommit()
+    return job
 
 
 def create_multiple_jobs(derived_series, parent_series):
@@ -164,6 +167,8 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     classProvides(IDistroSeriesDifferenceJobSource)
 
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
+
+    config = config.distroseriesdifferencejob
 
     @classmethod
     def createForPackagePublication(cls, derived_series, sourcepackagename,
