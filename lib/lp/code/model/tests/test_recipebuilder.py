@@ -49,7 +49,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeJob(self, recipe_registrant=None, recipe_owner=None):
+    def makeJob(self, recipe_registrant=None, recipe_owner=None,
+                archive=None):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
@@ -72,7 +73,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage,
+            sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
@@ -153,6 +154,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         expected_archives.append(
             "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
+           'archive_private': False,
            'arch_tag': 'i386',
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
@@ -165,6 +167,18 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
+
+    def test_extraBuildArgs_private_archive(self):
+        # If the build archive is private, the archive_private flag is
+        # True. This tells launchpad-buildd to redact credentials from
+        # build logs.
+        self._setBuilderConfig()
+        archive = self.factory.makeArchive(private=True)
+        job = self.makeJob(archive=archive)
+        distroarchseries = job.build.distroseries.architectures[0]
+        extra_args = job._extraBuildArgs(distroarchseries)
+        self.assertEqual(
+            True, extra_args['archive_private'])
 
     def test_extraBuildArgs_team_owner_no_email(self):
         # If the owner of the recipe is a team without a preferred email, the
@@ -224,6 +238,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
+           'archive_private': False,
            'arch_tag': 'i386',
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
