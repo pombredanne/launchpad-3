@@ -98,10 +98,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
     @property
-    def is_private(self):
-        return self.archive.private
-
-    @property
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(
