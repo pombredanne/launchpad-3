@@ -37,6 +37,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.mail import stub
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.webapp import canonical_url
@@ -365,7 +366,8 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             }
         return create_initialized_view(self.person, "+editemails", form=form)
 
-    def test_add_email_good_data(self):
+    def test_add_email(self):
+        stub.test_emails = []
         email_address = self.factory.getUniqueEmailAddress()
         view = self.createViewWithForm(email_address)
         # If everything worked, there should now be a login token to validate
@@ -374,7 +376,23 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             email_address,
             self.person,
             LoginTokenType.VALIDATEEMAIL)
-        self.assertTrue(token is not None)
+        self.assertIsNotNone(token)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"A confirmation message has been sent to '%s'."
+            " Follow the instructions in that message to confirm"
+            " that the address is yours. (If the message doesn't arrive in a"
+            " few minutes, your mail provider might use 'greylisting', which"
+            " could delay the message for up to an hour or two.)" %
+            email_address)
+        self.assertEqual(expected_msg, notifications[0].message)
+        transaction.commit()
+        self.assertEqual(2, len(stub.test_emails))
+        to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
+        # Both the new and old addr should be sent email.
+        self.assertIn([self.valid_email_address], to_addrs)
+        self.assertIn([email_address], to_addrs)
 
     def test_add_email_address_taken(self):
         email_address = self.factory.getUniqueEmailAddress()
