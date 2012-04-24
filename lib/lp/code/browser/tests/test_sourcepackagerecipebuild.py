@@ -276,7 +276,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         naked_build.buildqueue_record.logtail = 'i am failing'
         return build
 
-    def makeNonRedirectingBrowser(url, user=None):
+    def makeNonRedirectingBrowser(self, url, user=None):
         browser = setupBrowserForUser(user) if user else setupBrowser()
         browser.mech_browser.set_handle_equiv(False)
         browser.open(url)
