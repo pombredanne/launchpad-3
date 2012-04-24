@@ -26,6 +26,7 @@ from zope.interface import (
     implements,
     )
 
+from lp.services.config import config
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
@@ -87,6 +88,8 @@ class TranslationMergeJob(TranslationPackagingJob):
     class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
     create_on_event = IObjectCreatedEvent
+
+    config = config.packaging_translations
 
     def run(self):
         """See `IRunnableJob`."""

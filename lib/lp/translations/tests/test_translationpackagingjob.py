@@ -13,17 +13,22 @@ from zope.component import getUtility
 from zope.event import notify
 
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
     )
+from lp.services.job.tests import block_on_job
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationpackagingjob import (
@@ -349,3 +354,26 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
             [tm.translations for tm in potmsgset.getAllTranslationMessages()],
             [tm.translations
              for tm in new_potmsgset.getAllTranslationMessages()])
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_TranslationMergeJob(self):
+        """TranslationMergeJob runs under Celery."""
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'TranslationMergeJob',
+        }))
+        job = make_translation_merge_job(self.factory)
+        product_msg = get_msg_sets(productseries=job.productseries)
+        package_msg = get_msg_sets(
+            sourcepackagename=job.sourcepackagename,
+            distroseries=job.distroseries)
+        with block_on_job(self):
+            transaction.commit()
+        product_msg = get_msg_sets(productseries=job.productseries)
+        package_msg = get_msg_sets(
+            sourcepackagename=job.sourcepackagename,
+            distroseries=job.distroseries)
+        self.assertEqual(package_msg, product_msg)
