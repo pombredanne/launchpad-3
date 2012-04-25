@@ -380,6 +380,11 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             }
         return create_initialized_view(self.person, '+editemails', form=form)
 
+    def _assertEmailAndError(self, email_str, expected_msg):
+        view = self.createAddEmailView(email_str)
+        error_msg = view.errors[0]
+        self.assertEqual(expected_msg, error_msg.doc())
+
     def test_add_email(self):
         stub.test_emails = []
         email_address = self.factory.getUniqueEmailAddress()
@@ -532,10 +537,8 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
     def test_email_string_validation_no_email_prodvided(self):
         no_email = ''
-        view = self.createAddEmailView(no_email)
-        error_msg = view.errors[0]
         expected_msg = u'Required input is missing.'
-        self.assertEqual(expected_msg, error_msg.doc())
+        self._assertEmailAndError(no_email, expected_msg)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
