@@ -1280,6 +1280,9 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             try:
                 tunable_loop_class = tunable_loops.pop(0)
             except IndexError:
+                # We catch the exception rather than checking the
+                # length first to avoid race conditions with other
+                # threads.
                 break
 
             loop_name = tunable_loop_class.__name__
