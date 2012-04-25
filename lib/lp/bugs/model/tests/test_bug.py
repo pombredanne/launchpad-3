@@ -627,7 +627,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         return (bug, bug_owner, naked_bugtask_a, naked_bugtask_b,
                 naked_default_bugtask)
 
-
     def test_transition_to_EMBARGOEDSECURITY_information_type(self):
         # When a bug is marked as EMBARGOEDSECURITY, the direct subscribers
         # should include:
@@ -962,6 +961,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s.setUp()
         self.private_project = False
 
+
 class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -988,6 +988,7 @@ class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
         subscribers = bug.getDirectSubscribers()
         self.assertContentEqual(initial_subscribers, subscribers)
         ubuntu.setBugSupervisor(None, ubuntu.owner)
+
 
 class TestBugActivityMethods(TestCaseWithFactory):
 

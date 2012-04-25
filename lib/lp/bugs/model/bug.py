@@ -1723,7 +1723,6 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
-
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
