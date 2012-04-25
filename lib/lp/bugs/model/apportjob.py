@@ -37,10 +37,14 @@ from lp.bugs.utilities.filebugdataparser import (
     FileBugData,
     FileBugDataParser,
     )
+from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.temporaryblobstorage.model import TemporaryBlobStorage
@@ -110,9 +114,13 @@ class ApportJob(StormBase):
                 'No occurrence of %s has key %s' % (cls.__name__, key))
         return instance
 
+    def makeDerived(self):
+        return ApportJobDerived.makeSubclass(self)
+
 
 class ApportJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from ApportJob."""
+    __metaclass__ = EnumeratedSubclass
     delegates(IApportJob)
     classProvides(IApportJobSource)
 
@@ -124,7 +132,9 @@ class ApportJobDerived(BaseRunnableJob):
         """See `IApportJob`."""
         # If there's already a job for the blob, don't create a new one.
         job = ApportJob(blob, cls.class_job_type, {})
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def get(cls, job_id):
@@ -172,6 +182,8 @@ class ProcessApportBlobJob(ApportJobDerived):
 
     class_job_type = ApportJobType.PROCESS_BLOB
     classProvides(IProcessApportBlobJobSource)
+
+    config = config.process_apport_blobs
 
     @classmethod
     def create(cls, blob):
