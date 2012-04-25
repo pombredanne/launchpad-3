@@ -530,6 +530,13 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         browser = setupBrowserForUser(user=self.person)
         self.assertRaises(NotFound, browser.open, url)
 
+    def test_email_string_validation_no_email_prodvided(self):
+        no_email = ''
+        view = self.createAddEmailView(no_email)
+        error_msg = view.errors[0]
+        expected_msg = u'Required input is missing.'
+        self.assertEqual(expected_msg, error_msg.doc())
+
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
                                    TestCaseWithFactory):
