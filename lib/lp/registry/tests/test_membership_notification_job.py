@@ -128,9 +128,9 @@ class TestViaCelery(TestCaseWithFactory):
         # Smoke test, primarily for DB permissions needed by queries to work
         # with admining users and teams
         # Check the oopses in /var/tmp/lperr.test if the assertions fail.
-        self.useFixture(
-            FeatureFixture({
-                'jobs.celery.enabled_classes': 'MembershipNotificationJob'}))
+        self.useFixture(FeatureFixture({
+                'jobs.celery.enabled_classes': 'MembershipNotificationJob'
+        }))
         team = self.factory.makeTeam(name='a-team')
         with person_logged_in(team.teamowner):
             # This implicitly creates a job, but it is not the job under test.
@@ -144,7 +144,7 @@ class TestViaCelery(TestCaseWithFactory):
         person = self.factory.makePerson(name='murdock')
         with block_on_job(self):
             transaction.commit()
-        notifications = pop_remote_notifications()
+        pop_remote_notifications()
         job = getUtility(IMembershipNotificationJobSource).create(
             person, team, team.teamowner,
             TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
