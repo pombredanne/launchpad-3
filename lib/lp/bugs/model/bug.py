@@ -1751,24 +1751,17 @@ class Bug(SQLBase):
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
 
-        # When we start adding people, we need to be able to check if we're
-        # dealing with the ubuntu special case, where security related bugs
-        # get switched to userdata bugs, but the bug supervisor *does not* get
-        # subscribed.
-        def _is_ubuntu_special_case(pillar):
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            is_ubuntu = (pillar == ubuntu)
-            is_security = (self.information_type in SECURITY_INFORMATION_TYPES)
-            return (is_ubuntu and is_security)
-
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
         # bug supervisor, we need to subscribe the maintainer.
         pillars = self.affected_pillars
         if information_type == InformationType.USERDATA:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             for pillar in pillars:
-                if not _is_ubuntu_special_case(pillar):
+                # Ubuntu is special cased; no one else should be added in the
+                # USERDATA case.
+                if pillar != ubuntu:
                     if pillar.bug_supervisor is not None:
                         missing_subscribers.add(pillar.bug_supervisor)
                     else:
