@@ -110,6 +110,9 @@ class TranslationSharingJob(StormBase):
         self.productseries = productseries
         self.potemplate = potemplate
 
+    def makeDerived(self):
+        return TranslationSharingJobDerived.makeSubclass(self)
+
 
 class TranslationSharingJobDerived:
     """Base class for specialized TranslationTemplate Job types."""
@@ -154,7 +157,9 @@ class TranslationSharingJobDerived:
         context = TranslationSharingJob(
             Job(), cls.class_job_type, productseries,
             distroseries, sourcepackagename, potemplate)
-        return cls(context)
+        derived = cls(context)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def schedulePackagingJob(cls, packaging, event):

@@ -58,6 +58,8 @@ def block_on_job(test_case=None):
     with CaptureOops() as capture:
         with monitor_celery() as responses:
             yield
+        if len(responses) == 0:
+            raise Exception('No Job was requested to run via Celery.')
         try:
             responses[-1].wait(30)
         finally:

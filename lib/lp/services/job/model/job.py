@@ -277,11 +277,16 @@ class UniversalJobSource:
             BranchMergeProposalJob,
             )
         from lp.soyuz.model.distributionjob import DistributionJob
+        from lp.translations.model.translationsharingjob import (
+            TranslationSharingJob,
+        )
         dbconfig.override(
             dbuser=config.launchpad.dbuser, isolation_level='read_committed')
 
         for baseclass in [
-            ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob]:
+            ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob,
+            TranslationSharingJob,
+            ]:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
             if derived is not None:
                 cls.clearStore(store)
