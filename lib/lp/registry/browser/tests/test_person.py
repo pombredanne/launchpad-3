@@ -16,6 +16,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -67,7 +68,10 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import extract_text
+from lp.testing.pages import (
+    extract_text,
+    setupBrowserForUser,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -467,6 +471,12 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             "%s is already set as your contact address."
             % self.valid_email_address)
         self.assertEqual(expected_msg, notifications[0].message)
+
+    def test_team_editemails_not_found(self):
+        team = self.factory.makeTeam(owner=self.person, members=[self.person])
+        url = '%s/+editemails' % canonical_url(team)
+        browser = setupBrowserForUser(user=self.person)
+        self.assertRaises(NotFound, browser.open, url)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
