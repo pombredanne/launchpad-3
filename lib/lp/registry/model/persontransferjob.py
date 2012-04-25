@@ -52,7 +52,10 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.model.job import Job
+from lp.services.job.model.job import (
+    EnumeratedSubclass,
+    Job,
+    )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
@@ -115,6 +118,9 @@ class PersonTransferJob(StormBase):
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
+    def makeDerived(self):
+        return PersonTransferJobDerived.makeSubclass(self)
+
 
 class PersonTransferJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from PersonTransferJob.
@@ -126,6 +132,7 @@ class PersonTransferJobDerived(BaseRunnableJob):
     the run() method.
     """
 
+    __metaclass__ = EnumeratedSubclass
     delegates(IPersonTransferJob)
     classProvides(IPersonTransferJobSource)
 
@@ -176,6 +183,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
     class_job_type = PersonTransferJobType.MEMBERSHIP_NOTIFICATION
 
+    config = config.IMembershipNotificationJobSource
+
     @classmethod
     def create(cls, member, team, reviewer, old_status, new_status,
                last_change_comment=None):
@@ -195,8 +204,10 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             'new_status': new_status.name,
             'last_change_comment': last_change_comment,
             }
-        return super(MembershipNotificationJob, cls).create(
+        job = super(MembershipNotificationJob, cls).create(
             minor_person=member, major_person=team, metadata=metadata)
+        job.celeryRunOnCommit()
+        return job
 
     @property
     def member(self):
