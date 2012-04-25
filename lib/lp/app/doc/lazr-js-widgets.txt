@@ -254,11 +254,9 @@ to select.
     >>> print widget()
     <span id="edit-owner">
       <span class="yui3-activator-data-box">
-        <a...>Eric</a>
+        <a href="/~eric"
+         class="sprite person lazr-btn yui3-activator-act">Eric</a>
       </span>
-      <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
-        Edit
-      </button>
       <div class="yui3-activator-message-box yui3-activator-hidden"></div>
     </span>
 
@@ -462,15 +460,10 @@ rendered to hook up the widget.
     <span id="edit-distroseries">
       <dt>
         Recipe distro series
-          <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
-                  id="edit-distroseries-btn">
-            Edit
-          </button>
-        <noscript>
-          <a class="sprite edit"
+          <a class="sprite edit lazr-btn yui3-activator-act"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
-             title=""></a>
-        </noscript>
+             id="edit-distroseries-btn"
+             title="">&nbsp;<span class="invisible-link">Edit</span></a>
       </dt>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>
