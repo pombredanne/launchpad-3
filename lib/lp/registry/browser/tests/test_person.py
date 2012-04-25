@@ -448,6 +448,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertIn([added_email], to_addrs)
 
     def test_validate_token(self):
+        # Ensure hitting +validateemail actually validates the email.
         stub.test_emails = []
         added_email = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(added_email)
