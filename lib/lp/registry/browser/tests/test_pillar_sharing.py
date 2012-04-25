@@ -73,14 +73,9 @@ class SharingBaseTestCase(TestCaseWithFactory):
         self.setupSharing(self.grantees)
         login_person(self.driver)
     
-    def makeGrantee(self, name=None, share_all=True, share_some=True):
-        # TODO: Split this into just making a regular grantee, and update
-        # setupSharees to call both.
+    def makeGrantee(self, name=None):
         grantee = self.factory.makePerson(name=name)
-        if share_all:
-            self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
-        if share_some:
-            self.makeArtifactGrantee()
+        self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
         return grantee
 
     def makeArtifactGrantee(
@@ -134,6 +129,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
             # Make grants for grantees in ascending order so we can slice off the
             # first elements in the pillar observer results to check batching.
             for x in range(10):
+                self.makeArtifactGrantee()
                 grantee = self.makeGrantee('name%s' % x)
                 sharees.append(grantee)
 
