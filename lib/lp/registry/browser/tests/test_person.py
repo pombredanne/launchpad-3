@@ -383,7 +383,9 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
     def _assertEmailAndError(self, email_str, expected_msg):
         view = self.createAddEmailView(email_str)
         error_msg = view.errors[0]
-        self.assertEqual(expected_msg, error_msg.doc())
+        if type(error_msg) != unicode:
+            error_msg = error_msg.doc()
+        self.assertEqual(expected_msg, error_msg)
 
     def test_add_email(self):
         stub.test_emails = []
@@ -539,6 +541,11 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         no_email = ''
         expected_msg = u'Required input is missing.'
         self._assertEmailAndError(no_email, expected_msg)
+
+    def test_email_string_validation_invalid_email(self):
+        not_an_email = 'foo'
+        expected_msg = u"'foo' doesn't seem to be a valid email address."
+        self._assertEmailAndError(not_an_email, expected_msg)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
