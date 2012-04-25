@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import email
 import doctest
 from textwrap import dedent
 
@@ -42,6 +43,7 @@ from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.mail import stub
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -444,6 +446,34 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         transaction.commit()
         to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
         self.assertIn([added_email], to_addrs)
+
+    def test_validate_token(self):
+        stub.test_emails = []
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.validate': 'Confirm',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        # Get the token from the email msg.
+        transaction.commit()
+        messages = [msg for from_addr, to_addr, msg in stub.test_emails]
+        raw_msg = None
+        for orig_msg in messages:
+            msg = email.message_from_string(orig_msg)
+            if msg.get('to') == added_email:
+                raw_msg = orig_msg
+        token_url = get_token_url_from_email(raw_msg)
+        browser = setupBrowserForUser(user=self.person)
+        browser.open(token_url)
+        expected_msg = u'Confirm e-mail address <code>%s</code>' % added_email
+        self.assertIn(expected_msg, browser.contents)
+        browser.getControl('Continue').click()
+        # Login again to access displayname, since browser logged us out.
+        login_person(self.person)
+        expected_title = u'%s in Launchpad' % self.person.displayname
+        self.assertEqual(expected_title, browser.title)
 
     def test_remove_unvalidated_email_address(self):
         added_email = self.factory.getUniqueEmailAddress()
