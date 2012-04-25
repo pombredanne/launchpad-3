@@ -1723,6 +1723,7 @@ class Bug(SQLBase):
         return self.transitionToInformationType(
             convert_to_information_type(self.private, security_related), who)
 
+
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
@@ -1751,6 +1752,16 @@ class Bug(SQLBase):
                 information_type in PRIVATE_INFORMATION_TYPES)
         self.updateHeat()
 
+        # When we start adding people, we need to be able to check if we're
+        # dealing with the ubuntu special case, where security related bugs
+        # get switched to userdata bugs, but the bug supervisor *does not* get
+        # subscribed.
+        def _is_ubuntu_special_case(pillar):
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            is_ubuntu = (pillar == ubuntu)
+            is_security = (self.information_type in SECURITY_INFORMATION_TYPES)
+            return (is_ubuntu and is_security)
+
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
         # supervisors who aren't subscribed and should be. If there is no
@@ -1758,10 +1769,11 @@ class Bug(SQLBase):
         pillars = self.affected_pillars
         if information_type == InformationType.USERDATA:
             for pillar in pillars:
-                if pillar.bug_supervisor is not None:
-                    missing_subscribers.add(pillar.bug_supervisor)
-                else:
-                    missing_subscribers.add(pillar.owner)
+                if not _is_ubuntu_special_case(pillar):
+                    if pillar.bug_supervisor is not None:
+                        missing_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        missing_subscribers.add(pillar.owner)
 
         # If the information type is security related, we need to ensure
         # the security contacts are subscribed. If there is no security
