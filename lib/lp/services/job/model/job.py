@@ -278,6 +278,7 @@ class UniversalJobSource:
             )
         from lp.registry.model.persontransferjob import PersonTransferJob
         from lp.soyuz.model.distributionjob import DistributionJob
+        from lp.soyuz.model.packagecopyjob import PackageCopyJob
         from lp.translations.model.pofilestatsjob import POFileStatsJob
         from lp.translations.model.translationsharingjob import (
             TranslationSharingJob,
@@ -287,7 +288,8 @@ class UniversalJobSource:
 
         for baseclass in [
             ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob,
-            PersonTransferJob, POFileStatsJob, TranslationSharingJob,
+            PackageCopyJob, PersonTransferJob, POFileStatsJob,
+            TranslationSharingJob,
             ]:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
             if derived is not None:
