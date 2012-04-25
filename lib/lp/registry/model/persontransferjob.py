@@ -353,6 +353,8 @@ class PersonMergeJob(PersonTransferJobDerived):
 
     class_job_type = PersonTransferJobType.MERGE
 
+    config = config.IPersonMergeJobSource
+
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
