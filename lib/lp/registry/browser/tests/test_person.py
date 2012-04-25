@@ -547,6 +547,14 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         expected_msg = u"'foo' doesn't seem to be a valid email address."
         self._assertEmailAndError(not_an_email, expected_msg)
 
+    def test_email_string_validation_is_escaped(self):
+        xss_email = "foo@example.com<script>window.alert('XSS')</script>"
+        expected_msg = (
+            u"'foo@example.com&lt;script&gt;"
+            "window.alert('XSS')&lt;/script&gt;'"
+            " doesn't seem to be a valid email address.")
+        self._assertEmailAndError(xss_email, expected_msg)
+
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
                                    TestCaseWithFactory):
