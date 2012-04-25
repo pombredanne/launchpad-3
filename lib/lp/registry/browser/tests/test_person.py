@@ -424,6 +424,27 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             % email_address)
         self.assertEqual(expected_msg, error_msg)
 
+    def test_validate_email(self):
+        stub.test_emails = []
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.validate': 'Confirm',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"An e-mail message was sent to '%s' "
+            "with instructions on how to confirm that it belongs to you."
+            % added_email)
+        self.assertEqual(expected_msg, notifications[0].message)
+        # Ensure we sent mail to the right address.
+        transaction.commit()
+        to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
+        self.assertIn([added_email], to_addrs)
+
     def test_remove_unvalidated_email_address(self):
         added_email = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(added_email)
