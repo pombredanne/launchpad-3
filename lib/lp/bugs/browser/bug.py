@@ -553,6 +553,11 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
+
     def initialize(self):
         super(BugView, self).initialize()
         cache = IJSONRequestCache(self.request)
@@ -560,7 +565,9 @@ class BugView(LaunchpadView, BugViewMixin):
             {'value': term.value, 'description': term.description,
             'name': term.title} for term in InformationTypeVocabulary()]
         cache.objects['private_types'] = [
-            type.name for type in PRIVATE_INFORMATION_TYPES]
+            type.title for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['show_information_type_in_ui'] = (
+            self.show_information_type_in_ui)
 
     @cachedproperty
     def page_description(self):
@@ -865,7 +872,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         label = 'Bug #%i - Set ' % self.context.bug.id
         if bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
-            label += 'Information type'
+            label += 'information type'
         else:
             label += 'visibility and security'
         return label
