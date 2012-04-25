@@ -153,7 +153,9 @@ class PersonTransferJobDerived(BaseRunnableJob):
             major_person=major_person,
             job_type=cls.class_job_type,
             metadata=metadata)
-        return cls(job)
+        derived = cls(job)
+        derived.celeryRunOnCommit()
+        return derived
 
     @classmethod
     def iterReady(cls):
@@ -204,10 +206,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             'new_status': new_status.name,
             'last_change_comment': last_change_comment,
             }
-        job = super(MembershipNotificationJob, cls).create(
+        return super(MembershipNotificationJob, cls).create(
             minor_person=member, major_person=team, metadata=metadata)
-        job.celeryRunOnCommit()
-        return job
 
     @property
     def member(self):
