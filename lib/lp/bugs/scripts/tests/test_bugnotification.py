@@ -80,7 +80,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import lp_dbuser
+from lp.testing.dbuser import (
+    lp_dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Contains
 
@@ -241,7 +244,7 @@ class TestGetEmailNotifications(unittest.TestCase):
 
     def setUp(self):
         """Set up some mock bug notifications to use."""
-        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        switch_dbuser(config.malone.bugnotification_dbuser)
         sample_person = getUtility(IPersonSet).getByEmail(
             'test@canonical.com')
         self.now = datetime.now(pytz.timezone('UTC'))
@@ -607,7 +610,7 @@ class EmailNotificationTestBase(TestCaseWithFactory):
         [self.product_bugtask] = self.bug.bugtasks
         commit()
         login('test@canonical.com')
-        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
+        switch_dbuser(config.malone.bugnotification_dbuser)
         self.now = datetime.now(pytz.UTC)
         self.ten_minutes_ago = self.now - timedelta(minutes=10)
         self.notification_set = getUtility(IBugNotificationSet)

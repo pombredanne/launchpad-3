@@ -29,8 +29,6 @@ import replication.helpers
 # tables. This is to stop the ro user being given access to secrurity
 # sensitive information that interactive sessions don't need.
 SECURE_TABLES = set((
-    'public.accountpassword',
-    'public.accountpassword_id_seq',
     'public.oauthnonce',
     'public.oauthnonce_id_seq',
     'public.openidnonce',

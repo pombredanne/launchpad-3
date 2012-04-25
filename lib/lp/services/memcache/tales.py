@@ -73,7 +73,7 @@ class MemcacheExpr:
 
             authenticated: Authenticated user share a copy of the cached
                            information, and unauthenticated users share
-                           a seperate copy. Use this when information is
+                           a separate copy. Use this when information is
                            being hidden from unauthenticated users, eg.
                            for bug comments where email addresses are
                            obfuscated for unauthenticated users.

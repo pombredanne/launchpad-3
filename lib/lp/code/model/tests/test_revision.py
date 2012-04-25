@@ -15,6 +15,7 @@ from unittest import TestCase
 import psycopg2
 import pytz
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -39,11 +40,13 @@ from lp.services.webapp.interfaces import (
 from lp.testing import (
     login,
     logout,
+    StormStatementRecorder,
     TestCaseWithFactory,
     time_counter,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -256,6 +259,41 @@ class TestRevisionSet(TestCaseWithFactory):
         # with that id.
         found = self.revision_set.getByRevisionId('nonexistent')
         self.assertIs(None, found)
+
+    def test_newFromBazaarRevisions(self):
+        # newFromBazaarRevisions behaves as expected.
+        # only branchscanner can SELECT revisionproperties.
+        self.becomeDbUser('branchscanner')
+        bzr_revisions = [
+            self.factory.makeBzrRevision('rev-1', prop1="foo"),
+            self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
+        ]
+        with StormStatementRecorder() as recorder:
+            self.revision_set.newFromBazaarRevisions(bzr_revisions)
+        rev_1 = self.revision_set.getByRevisionId('rev-1')
+        self.assertEqual(
+            bzr_revisions[0].committer, rev_1.revision_author.name)
+        self.assertEqual(
+            bzr_revisions[0].message, rev_1.log_body)
+        self.assertEqual(
+            datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC), rev_1.revision_date)
+        self.assertEqual([], rev_1.parents)
+        self.assertEqual({'prop1': 'foo'}, rev_1.getProperties())
+        rev_2 = self.revision_set.getByRevisionId('rev-2')
+        self.assertEqual(['rev-1'], rev_2.parent_ids)
+        # Really, less than 9 is great, but if the count improves, we should
+        # tighten this restriction.
+        self.assertThat(recorder, HasQueryCount(Equals(8)))
+
+    def test_acquireRevisionAuthors(self):
+        # AcquireRevisionAuthors creates new authors only if none exists with
+        # that name.
+        author1 = self.revision_set.acquireRevisionAuthors(['name1'])['name1']
+        self.assertEqual(author1.name, 'name1')
+        Store.of(author1).flush()
+        author2 = self.revision_set.acquireRevisionAuthors(['name1'])['name1']
+        self.assertEqual(
+            removeSecurityProxy(author1).id, removeSecurityProxy(author2).id)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):

@@ -40,6 +40,9 @@ from zope.interface import implements
 
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
     CodeReviewVote,
     )
 from lp.code.errors import (
@@ -205,8 +208,9 @@ class BranchMergeProposal(SQLBase):
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, BranchMergeProposalJobFactory,
-            BranchMergeProposalJobType)
+            BranchMergeProposalJob,
+            BranchMergeProposalJobType,
+        )
         jobs = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
@@ -216,7 +220,7 @@ class BranchMergeProposal(SQLBase):
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         job = jobs.order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return BranchMergeProposalJobFactory.create(job)
+            return job.makeDerived()
         else:
             return None
 
@@ -613,6 +617,36 @@ class BranchMergeProposal(SQLBase):
                 review_type = review_type.lower()
         return review_type
 
+    def _subscribeUserToStackedBranch(self, branch, user,
+                                      checked_branches=None):
+        """Subscribe the user to the branch and those it is stacked on."""
+        if checked_branches is None:
+            checked_branches = []
+        branch.subscribe(
+            user,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL,
+            user)
+        if branch.stacked_on is not None:
+            checked_branches.append(branch)
+            if branch.stacked_on not in checked_branches:
+                self._subscribeUserToStackedBranch(
+                    branch.stacked_on, user, checked_branches)
+
+    def _ensureAssociatedBranchesVisibleToReviewer(self, reviewer):
+        """ A reviewer must be able to see the source and target branches.
+
+        Currently, we ensure the required visibility by subscribing the user
+        to the branch and those on which it is stacked.
+        """
+        source = self.source_branch
+        if not source.visibleByUser(reviewer):
+            self._subscribeUserToStackedBranch(source, reviewer)
+        target = self.target_branch
+        if not target.visibleByUser(reviewer):
+            self._subscribeUserToStackedBranch(target, reviewer)
+
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
@@ -630,6 +664,7 @@ class BranchMergeProposal(SQLBase):
                 registrant=registrant,
                 reviewer=reviewer,
                 date_created=_date_created)
+            self._ensureAssociatedBranchesVisibleToReviewer(reviewer)
         vote_reference.review_type = review_type
         if _notify_listeners:
             notify(ReviewerNominatedEvent(vote_reference))

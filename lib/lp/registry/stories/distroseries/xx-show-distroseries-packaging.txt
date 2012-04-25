@@ -66,12 +66,13 @@ The "Packages that need upstream packaging links" lists the source packages
 that need upstream packaging links. The list is prioritized so that the
 packages with the greatest need are listed first.
 
-    >>> # Make a very hot bug to verify the text formatting rule.
     >>> from zope.component import getUtility
-    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('admin@canonical.com')
-    >>> bug = getUtility(IBugSet).get(10)
-    >>> bug.setHeat(300)
+    >>> dsp = getUtility(IDistributionSet).getByName(
+    ...     'ubuntu').getSourcePackage('linux-source-2.6.15')
+    >>> removeSecurityProxy(dsp).bug_count = 1
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary')
@@ -82,8 +83,8 @@ packages with the greatest need are listed first.
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'packages'))
     Source Package       Bugs     Translations
-    linux-source-2.6.15  1 bug    No strings
     pmount               No bugs  64 strings
+    linux-source-2.6.15  1 bug    No strings
     alsa-utils           No bugs  No strings
     cnews                No bugs  No strings
     libstdc++            No bugs  No strings

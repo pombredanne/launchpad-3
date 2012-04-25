@@ -43,6 +43,13 @@
         factory="lp.app.model.cdatetime.AgingAdapter" />
 
     <adapter
+        provides="lp.app.interfaces.launchpad.IPrivacy"
+        for="Exception"
+        factory="lp.app.model.launchpad.ExceptionPrivacy"
+        permission="zope.Public"
+        />
+
+    <adapter
         provides="lp.services.privacy.interfaces.IObjectPrivacy"
         for="zope.interface.Interface"
         factory="lp.services.privacy.adapters.ObjectPrivacy"
@@ -55,4 +62,27 @@
         factory="lp.app.browser.badge.HasBadgeBase"
         permission="zope.Public"
         />
+
+    <!-- Services Infrastructure -->
+    <include
+        package="lp.registry.services"/>
+    <securedutility
+        class="lp.app.services.ServiceFactory"
+        provides="lp.app.interfaces.services.IServiceFactory">
+        <allow
+            interface="lp.app.interfaces.services.IServiceFactory"/>
+        <allow
+            interface="zope.publisher.interfaces.IPublishTraverse"/>
+        <allow
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher"/>
+    </securedutility>
+    <securedutility
+        class="lp.services.webservice.services.ServicesLink"
+        provides="lp.services.webservice.services.IServicesLink">
+        <allow
+            interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
+        <allow
+            interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
+    </securedutility>
+
 </configure>

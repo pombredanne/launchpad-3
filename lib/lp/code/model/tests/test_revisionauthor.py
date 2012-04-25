@@ -18,6 +18,10 @@ from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
@@ -35,7 +39,7 @@ class TestRevisionEmailExtraction(TestCase):
 
     def setUp(self):
         super(TestRevisionEmailExtraction, self).setUp()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
 
     def test_email_extracted_from_name(self):
         # Check that a valid email address is extracted from the name.
@@ -87,8 +91,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
     """
 
     def _createRevisionAuthor(self):
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         return RevisionSet()._createRevisionAuthor(
             '"Harry Potter" <harry@canonical.com>')
 
@@ -135,12 +138,9 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
     def setUp(self):
         # Create a revision author that doesn't have a user yet.
         super(TestNewlyValidatedEmailsLinkRevisionAuthors, self).setUp()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        self.author = RevisionSet()._createRevisionAuthor(
-            '"Harry Potter" <harry@canonical.com>')
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
+        with dbuser(config.branchscanner.dbuser):
+            self.author = RevisionSet()._createRevisionAuthor(
+                '"Harry Potter" <harry@canonical.com>')
         # Reget the revision author as we have crossed a transaction boundary.
         self.author = RevisionAuthor.byName(self.author.name)
 
@@ -175,7 +175,7 @@ class TestRevisionAuthor(TestCase):
 
     def setUp(self):
         super(TestRevisionAuthor, self).setUp()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
 
     def testGetNameWithoutEmailReturnsNamePart(self):
         # name_without_email is equal to the 'name' part of the revision

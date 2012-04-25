@@ -253,8 +253,6 @@ class IBranchPublic(Interface):
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
 
-    access_policy = Attribute("Access policy")
-
 
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
@@ -294,7 +292,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         PersonChoice(
             title=_('Owner'),
             required=True, readonly=True,
-            vocabulary='UserTeamsParticipationPlusSelf',
+            vocabulary='AllUserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
                           "This controls who can modify the branch.")))
 
@@ -1339,6 +1337,37 @@ class IBranchSet(Interface):
         :param eager_load: If True (the default because this is used in the
             web service and it needs the related objects to create links)
             eager load related objects (products, code imports etc).
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(
+            title=_("The person whose branch visibility is being "
+                    "checked."),
+            schema=IPerson),
+        branch_names=List(value_type=Text(),
+            title=_('List of branch unique names'), required=True),
+    )
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBranchVisibilityInfo(user, person, branch_names):
+        """Return the named branches visible to both user and person.
+
+        Anonymous requesters don't get any information.
+
+        :param user: The user requesting the information. If the user is None
+            then we return an empty dict.
+        :param person: The person whose branch visibility we wish to check.
+        :param branch_names: The unique names of the branches to check.
+
+        Return a dict with the following values:
+        person_name: the displayname of the person.
+        visible_branches: a list of the unique names of the branches which
+        the requester and specified person can both see.
+
+        This API call is provided for use by the client Javascript. It is not
+        designed to efficiently scale to handle requests for large numbers of
+        branches.
         """
 
 

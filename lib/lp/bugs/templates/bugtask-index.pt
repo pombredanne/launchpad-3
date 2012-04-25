@@ -7,11 +7,10 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
-      <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
       <script type="text/javascript">
-        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
+        LPJS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.subscribers',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
@@ -37,7 +36,7 @@
         #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
-        .bug-branch-summary dd { font-size: 85% }
+        .bug-branch-summary dd { font-size: 10px; }
         a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
       <style type="text/css">
@@ -146,20 +145,20 @@
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
-                 tal:content="tag"
+                 tal:content="python: tag[0]"
                  class="official-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href python: tag[1]">tag</a>
               <a tal:repeat="tag view/unofficial_tags"
-                 tal:content="tag"
+                 tal:content="python: tag[0]"
                  class="unofficial-tag"
-                 tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+                 tal:attributes="href python: tag[1]">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
                 <input type="text" id="tag-input" class="hidden" style="width: 35em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" class="hidden"/>
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
-                  LPS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
+                  LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
                       // The load event fires very late on bug pages that take a
                       // long time to render, but we prefer to use it since the

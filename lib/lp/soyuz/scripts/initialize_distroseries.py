@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -655,11 +655,9 @@ class InitializeDistroSeries:
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
-        # Avoid circular imports.
-        from lp.registry.model.distroseries import DistroSeries
-
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
+            Packageset,
+            Packageset.distroseries_id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
         # Create the packagesets and any archivepermissions if we're not
         # copying cross-distribution.

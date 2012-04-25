@@ -150,7 +150,7 @@ class PillarAffiliation(object):
                 result.append([])
                 continue
 
-            # Sort the affiliation list according the the importance of each
+            # Sort the affiliation list according to the importance of each
             # affiliation role.
             badges.sort(
                 key=lambda badge:

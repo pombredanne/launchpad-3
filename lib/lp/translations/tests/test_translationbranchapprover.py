@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
 from lp.services.librarianserver.testing.fake import FakeLibrarian
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -295,8 +295,7 @@ class TestBranchApproverPrivileges(TestCaseWithFactory):
         This is the role that the TranslationsBranchApprover is actually
         run under.
         """
-        transaction.commit()
-        self.layer.switchDbUser('translationsbranchscanner')
+        switch_dbuser('translationsbranchscanner')
 
     def test_approve_new_product_template(self):
         # The approver has sufficient privileges to create a new

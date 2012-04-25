@@ -443,7 +443,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according the results of
+        # functions which returns boolean according to the results of
         # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -688,7 +688,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 recipients = recipients.union(
                     get_contact_email_addresses(dsc_key.owner))
 
-        # Modify notification contents according the targeted archive.
+        # Modify notification contents according to the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
         # We only send build-notifications to 'buildd-admin' celebrity for
         # main archive candidates.
@@ -982,7 +982,7 @@ class BinaryPackageBuildSet:
                         SourcePackageRelease.id AND
                     SourcePackageRelease.sourcepackagename =
                         SourcePackageName.id
-                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                    AND SourcepackageName.name LIKE '%%%%' || %s || '%%%%'
                 ''' % quote_like(name))
             else:
                 queries.append('''

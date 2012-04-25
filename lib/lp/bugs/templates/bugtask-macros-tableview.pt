@@ -546,15 +546,41 @@
       </table>
     </fieldset>
 
-    <fieldset tal:condition="view/shouldShowUpstreamStatusBox">
-      <legend>Upstream status</legend>
-          <table>
-            <tr>
-              <td style="white-space: nowrap"
-                  tal:content="structure view/widgets/status_upstream" />
-            </tr>
-          </table>
-    </fieldset>
+    <tal:show_upstream_widgets condition="view/shouldShowUpstreamStatusBox">
+      <fieldset>
+        <legend>Upstream status</legend>
+            <table>
+              <tr>
+                <td style="white-space: nowrap"
+                    tal:content="structure view/widgets/status_upstream" />
+              </tr>
+            </table>
+      </fieldset>
+
+      <fieldset tal:condition="view/upstream_project">
+        <legend>Upstream target</legend>
+            <table>
+              <tr>
+                <td style="white-space: nowrap">
+                  <label>
+                    <input id="field.upstream_target"
+                           name="field.upstream_target"
+                           value="" checked="checked" class="radioType"
+                           type="radio" />
+                    All possible upstream targets
+                  </label><br />
+                  <label>
+                    <input id="field.upstream_target"
+                           name="field.upstream_target"
+                           class="radioType" type="radio"
+                           tal:attributes="value view/upstream_project/name" />
+                    <span tal:replace="view/upstream_project/displayname" />
+                  </label>
+                </td>
+              </tr>
+            </table>
+      </fieldset>
+    </tal:show_upstream_widgets>
 
     <fieldset>
       <legend>Bug relationships</legend>
@@ -655,76 +681,14 @@
       show_new_listings request/features/bugs.dynamic_bug_listings.enabled;
       advanced_search view/shouldShowAdvancedForm"
     tal:condition="python: show_new_listings and not advanced_search">
-    LPS.use('lp.bugs.buglisting', 'lp.ordering', 'lp.buglisting_utils',
-      function(Y) {
+    LPJS.use('lp.bugs.buglisting', function(Y) {
         Y.on('domready', function() {
-            var navigator = Y.lp.bugs.buglisting.BugListingNavigator
-            .from_page();
-            if (Y.Lang.isNull(navigator)){
-              return;
-            }
-            var sort_keys = LP.cache.sort_keys;
-            var active_sort_key = LP.cache.order_by;
-            var sort_order = 'asc';
-            if (active_sort_key.charAt(0) === '-') {
-                active_sort_key = active_sort_key.substring(
-                    1, active_sort_key.length);
-                sort_order = 'desc';
-            }
-            var unknown_sort_key = true;
-            Y.each(sort_keys, function(sort_key) {
-                if (sort_key[0] === active_sort_key) {
-                    unknown_sort_key = false;
-                }
+            var view = new Y.lp.bugs.buglisting.TableView({
+                active_sort_key: LP.cache.order_by,
+                sort_keys: LP.cache.sort_keys
             });
-            if (unknown_sort_key) {
-                active_sort_key = 'importance';
-            }
-            var orderby = new Y.lp.ordering.OrderByBar({
-                srcNode: Y.one('#bugs-orderby'),
-                sort_keys: sort_keys,
-                active: active_sort_key,
-                sort_order: sort_order,
-                config_slot: true
-            });
-            orderby.render();
-            Y.on('orderbybar:sort', function(e) {
-                navigator.first_batch(e);
-            });
-            var model = navigator.get('model');
-            model.get('history').after(
-                'change', function(e) {
-                    // Only update the sort buttons if we've got a valid batch
-                    // key.
-                    if (Y.Object.hasKey(e.newVal, 'batch_key')) {
-                        Y.lp.buglisting_utils.update_sort_button_visibility(
-                            orderby,
-                            e.newVal
-                        );
-                    }
-                 }
-            );
-            var config_node = orderby.get('config_node');
-            var list_util = new Y.lp.buglisting_utils.BugListingConfigUtil({
-                srcNode: config_node,
-                model: model
-            });
-            list_util.render();
-            Y.on('buglisting-config-util:fields-changed', function(e) {
-                navigator.change_fields(list_util.get('field_visibility'));
-            });
-            var field_visibility =
-                navigator.get('model').get_field_visibility();
-            orderby.always_display = ['title'];
-            // The advanced search page contains sort options that have
-            // no related data fields we can display. If a user has selected
-            // such a sort order, this sort option should always be visible.
-            if (field_visibility['show_' + active_sort_key] === undefined) {
-                orderby.always_display.push(active_sort_key);
-            }
-            Y.lp.buglisting_utils.update_sort_button_visibility(
-                 orderby, field_visibility);
-        });
+            view.render();
+        })
     });
   </script>
 </metal:listing_navigator>

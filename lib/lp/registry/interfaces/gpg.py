@@ -75,8 +75,8 @@ class GPGKeyAlgorithm(DBEnumeratedType):
     20: "G", # ElGamal, compromised
 
     FIXME
-    Rewrite it according the experimental API retuning also a name attribute
-    tested on 'algorithmname' attribute
+    Rewrite it according to the experimental API returning also a name
+    attribute tested on 'algorithmname' attribute
 
     """
 

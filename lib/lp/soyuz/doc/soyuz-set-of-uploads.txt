@@ -129,6 +129,7 @@ And then we need a way to process the uploads from the queue
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.scripts.soyuz_process_upload import (
     ...     ProcessUpload)
+    >>> from lp.testing.dbuser import switch_dbuser
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> def process_uploads(upload_policy, series, loglevel):
     ...     """Simulate process-upload.py script run.
@@ -145,8 +146,7 @@ And then we need a way to process the uploads from the queue
     ...         args.extend(["-s", series])
     ...     # Run script under 'uploader' DB user.  The dbuser argument to the
     ...     # script constructor is ignored, so we must change DB users here.
-    ...     LaunchpadZopelessLayer.txn.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
+    ...     switch_dbuser(config.uploader.dbuser)
     ...     process = ProcessUpload(
     ...         'process-upload', dbuser='ignored', test_args=args)
     ...     process.logger = FakeLogger()
@@ -154,7 +154,7 @@ And then we need a way to process the uploads from the queue
     ...         process.logger.setLevel(loglevel)
     ...     process.txn = LaunchpadZopelessLayer.txn
     ...     process.main()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     switch_dbuser('launchpad')
 
 And we need a way to process the accepted queue
 

@@ -72,7 +72,7 @@ class TestSharingInfoMixin:
         If productseries is None, return an arbritrary user. Used by
         implementations of getAuthorizedUser.
         """
-        logged_in_user = self.factory.makePerson(password='test')
+        logged_in_user = self.factory.makePerson()
         if productseries is not None:
             with celebrity_logged_in('admin'):
                 productseries.product.owner = logged_in_user

@@ -13,8 +13,6 @@
      tal:define="user_can_edit_memberships context/required:launchpad.Edit;
                  active_member_count context/active_member_count">
 
-  <p>Active, pending and former members of this team.</p>
-
   <ul>
     <li tal:condition="active_member_count"
         tal:define="membership_batch nocall:view/active_memberships/currentBatch">

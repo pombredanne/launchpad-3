@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -27,6 +27,7 @@ from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import GPGSigningContext
 from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -68,6 +69,32 @@ class TestIncoming(TestCaseWithFactory):
             "(7, 58, u'No data')",
             body)
 
+    def test_mail_too_big(self):
+        """Much-too-big mail should generate a bounce, not an OOPS.
+
+        See <https://bugs.launchpad.net/launchpad/+bug/893612>.
+        """
+        person = self.factory.makePerson()
+        transaction.commit()
+        email_address = person.preferredemail.email
+        fat_body = '\n'.join(
+            ['some big mail with this line repeated many many times\n']
+            * 1000000)
+        ctrl = MailController(
+            email_address, 'to@example.com', 'subject', fat_body,
+            bulk=False)
+        ctrl.send()
+        handleMail()
+        self.assertEqual([], self.oopses)
+        [notification] = pop_notifications()
+        body = notification.get_payload()[0].get_payload(decode=True)
+        self.assertIn(
+            "The mail you sent to Launchpad is too long.",
+            body)
+        self.assertIn(
+            "was 55 MB and the limit is 10 MB.",
+            body)
+
     def test_invalid_to_addresses(self):
         """Invalid To: header should not be handled as an OOPS."""
         raw_mail = open(os.path.join(
@@ -102,13 +129,6 @@ class TestIncoming(TestCaseWithFactory):
         # An unknown email address returns no principal.
         unknown = 'random-unknown@example.com'
         mail = self.factory.makeSignedMessage(email_address=unknown)
-        self.assertThat(authenticateEmail(mail), Is(None))
-
-    def test_accounts_without_person(self):
-        # An account without a person should be the same as an unknown email.
-        email = 'non-person@example.com'
-        self.factory.makeAccount(email=email)
-        mail = self.factory.makeSignedMessage(email_address=email)
         self.assertThat(authenticateEmail(mail), Is(None))
 
 
@@ -154,7 +174,7 @@ class TestExtractAddresses(TestCaseWithFactory):
 
 def setUp(test):
     test._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-    LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    switch_dbuser(config.processmail.dbuser)
 
 
 def tearDown(test):

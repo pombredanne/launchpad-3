@@ -14,7 +14,11 @@ from lazr.uri import (
     URI,
     )
 from sqlobject import SQLObjectNotFound
-from storm.expr import Join
+from storm.expr import (
+    And,
+    Join,
+    Select,
+    )
 from zope.component import (
     adapts,
     getUtility,
@@ -391,14 +395,14 @@ class BranchLookup:
             Branch,
             Join(Person, Branch.owner == Person.id),
             Join(SourcePackageName,
-                 Branch.sourcepackagename == SourcePackageName.id),
-            Join(DistroSeries,
-                 Branch.distroseries == DistroSeries.id),
-            Join(Distribution,
-                 DistroSeries.distribution == Distribution.id)]
+                 Branch.sourcepackagename == SourcePackageName.id)]
         result = store.using(*origin).find(
-            Branch, Person.name == owner, Distribution.name == distribution,
-            DistroSeries.name == distroseries,
+            Branch, Person.name == owner,
+            Branch.distroseriesID == Select(
+                DistroSeries.id, And(
+                    DistroSeries.distribution == Distribution.id,
+                    DistroSeries.name == distroseries,
+                    Distribution.name == distribution)),
             SourcePackageName.name == sourcepackagename,
             Branch.name == branch)
         branch = result.one()

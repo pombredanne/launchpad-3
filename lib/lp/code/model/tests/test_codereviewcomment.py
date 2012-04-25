@@ -29,8 +29,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         target = self.factory.makeProductBranch(
             product=source.product, title='target-branch')
         self.bmp = source.addLandingTarget(source.owner, target)
-        self.submitter = self.factory.makePerson(password='password')
-        self.reviewer = self.factory.makePerson(password='password')
+        self.submitter = self.factory.makePerson()
+        self.reviewer = self.factory.makePerson()
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
     def test_createRootComment(self):

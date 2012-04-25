@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from storm.store import Store
-import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
@@ -17,6 +16,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.services.config import config
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
@@ -55,8 +55,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # The branch scanner creates TranslationTemplatesBuilds.  It has
         # the database privileges it needs for that.
         branch = self.factory.makeBranch()
-        transaction.commit()
-        self.layer.switchDbUser(config.branchscanner.dbuser)
+        switch_dbuser(config.branchscanner.dbuser)
         utility = getUtility(ITranslationTemplatesBuildSource)
         build_farm_job = self._makeBuildFarmJob()
         utility.create(build_farm_job, branch)

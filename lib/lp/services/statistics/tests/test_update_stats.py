@@ -17,6 +17,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.services.config import config
 from lp.services.database.sqlbase import cursor
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
@@ -33,7 +34,7 @@ class UpdateStatsTest(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('statistician')
+        switch_dbuser('statistician')
 
     def tearDown(self):
         # Test uses a subprocess, so force the database to be dirty

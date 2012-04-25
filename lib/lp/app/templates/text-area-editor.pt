@@ -16,7 +16,7 @@
        tal:content="structure view/value">some text</div>
 <script tal:condition="view/can_write"
         tal:content="structure string:
-        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPJS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: ${view/widget_css_selector},
                 accept_empty: ${view/accept_empty},
@@ -29,9 +29,7 @@
                   resource: ${view/json_resource_uri},
                   use_html: true
             }});
-            if (!Y.UA.opera) {
-                widget.render();
-            }
+            widget.render();
             var lpns = Y.namespace('lp');
             if (!lpns.widgets) {
                 lpns.widgets = {};

@@ -34,6 +34,7 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.pofile import POFile
 
 
@@ -73,6 +74,23 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         logger = logging.getLogger()
         logger.info('Updating statistics for %s' % self.pofile.title)
         self.pofile.updateStatistics()
+
+        # Next we have to find any POFiles that share translations with the
+        # above POFile so we can update their statistics too.  To do that we
+        # first have to find the set of shared templates.
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            product=self.pofile.potemplate.product,
+            distribution=self.pofile.potemplate.distribution,
+            sourcepackagename=self.pofile.potemplate.sourcepackagename)
+        shared_templates = subset.getSharingPOTemplates(
+            self.pofile.potemplate.name)
+        # Now we have to find any POFiles that translate the shared templates
+        # into the same language as the POFile this job is about.
+        for template in shared_templates:
+            pofile = template.getPOFileByLang(self.pofile.language.code)
+            if pofile is None:
+                continue
+            pofile.updateStatistics()
 
     @staticmethod
     def iterReady():

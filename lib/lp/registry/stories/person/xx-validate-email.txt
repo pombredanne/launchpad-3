@@ -9,7 +9,7 @@ added by gina. Now he wants to validate it.
     >>> from lp.services.mail import stub
     >>> stub.test_emails[:] = []
 
-    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:test')
     >>> browser.open('http://launchpad.dev/~salgado/+editemails')
     >>> print browser.title
     Change your e-mail settings...
@@ -24,10 +24,14 @@ added by gina. Now he wants to validate it.
 Retrieve the email and make sure it was sent to the right address.
 
     >>> import email
-    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_msg)
-    >>> print msg.get('to')
-    salgado@ubuntu.com
+    >>> found = False
+    >>> raw_msg = None
+    >>> for from_addr, to_addrs, orig_msg in stub.test_emails:
+    ...     msg = email.message_from_string(orig_msg)
+    ...     if msg.get('to') == 'salgado@ubuntu.com':
+    ...        raw_msg = orig_msg
+    ...        found = True
+    >>> assert found
 
 Visit the token URL mentioned in the email, and get redirected to
 +validateemail.
@@ -43,8 +47,8 @@ Visit the token URL mentioned in the email, and get redirected to
     Confirm e-mail address
 
     >>> print extract_text(find_main_content(browser.contents))
-
-    <div...Confirm e-mail address...salgado@ubuntu.com...
+    Confirm e-mail address
+    Confirm e-mail address salgado@ubuntu.com
 
     >>> browser.getControl('Continue').click()
     >>> print browser.title

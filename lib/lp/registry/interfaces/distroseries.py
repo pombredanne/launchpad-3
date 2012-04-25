@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -603,8 +603,7 @@ class IDistroSeriesPublic(
         """
 
     def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Deprecated.  Use IArchive.getPublishedSources instead.
@@ -614,9 +613,6 @@ class IDistroSeriesPublic(
         If pocket is not specified, we look in all pockets.
 
         If version is not specified, return packages with any version.
-
-        If exclude_pocket is specified we exclude results matching that
-        pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher

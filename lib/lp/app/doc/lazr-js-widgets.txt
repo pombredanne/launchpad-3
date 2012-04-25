@@ -42,7 +42,7 @@ In addition, when the logged in user can edit the value, there is a link to
 the edit view that appears as well as a <script> tag that will change that
 link into an AJAX control when JS is available:
 
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> print widget()
     <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
@@ -90,7 +90,7 @@ of the object being edited.  This can be overridden in two ways:
     http://launchpad.dev/widget/+edit-people
     >>> print diff_view.edit_title
     Change the product title
-    >>> login_person(product.owner)
+    >>> ignored = login_person(product.owner)
     >>> print diff_view()
     <h1...
     <a class="yui3-editable_text-trigger sprite edit"
@@ -157,7 +157,7 @@ When the logged in user has edit permission, the edit button is shown, and
 javascript is written to the page to hook up the links to show the multiline
 editor.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
     <div id="edit-description" class="lazr-multiline-edit">
       <div class="clearfix">
@@ -319,7 +319,7 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
     <span id="edit-hide_email_addresses">
     My email: <span class="value">Don't hide it</span>
@@ -331,7 +331,7 @@ rendered to hook up the widget.
       </span>
     </span>
     <script>
-    LPS.use('lp.app.choice', function(Y) {
+    LPJS.use('lp.app.choice', function(Y) {
     ...
     </script>
 
@@ -379,7 +379,7 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(branch.owner)
+    >>> ignored = login_person(branch.owner)
     >>> print widget()
     <span id="edit-lifecycle_status">
         <span class="value branchstatusDEVELOPMENT">Development</span>
@@ -390,7 +390,7 @@ rendered to hook up the widget.
         </span>
     </span>
     <script>
-    LPS.use('lp.app.choice', function(Y) {
+    LPJS.use('lp.app.choice', function(Y) {
     ...
     </script>
 
@@ -457,7 +457,7 @@ on the current value of the field on the object:
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
 
-    >>> login_person(eric)
+    >>> ignored = login_person(eric)
     >>> print widget()
     <span id="edit-distroseries">
       <dt>
@@ -478,7 +478,7 @@ rendered to hook up the widget.
       <div class="yui3-activator-message-box yui3-activator-hidden" />
       </span>
       <script>
-      LPS.use('lp.app.multicheckbox', function(Y) {
+      LPJS.use('lp.app.multicheckbox', function(Y) {
       ...
       </script>
 

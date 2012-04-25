@@ -59,7 +59,7 @@ class TestAssignments(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         url = canonical_url(target) + "/+assignments"
         # Seed the cookie cache and any other cross-request state we may gain

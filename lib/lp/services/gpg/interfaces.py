@@ -282,16 +282,6 @@ class IGPGHandler(Interface):
         """
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 
-    def touchConfigurationDirectory():
-        """Touch the home directory and all files within.
-
-        This function is called so that the configuration directory does not
-        get cleaned up by any reaper scripts which look at time last modified.
-        It is only required in the case where a long running daemon uses an
-        IGPGHandler instance such that the lifetime of the daemon exceeds the
-        reaping (ie tmp clean up) interval.
-        """
-
 
 class IPymeSignature(Interface):
     """pyME signature container."""

@@ -71,7 +71,6 @@ def suite_for_doctest(filename):
 
 special = {
     'tales-cache.txt': suite_for_doctest('tales-cache.txt'),
-    'restful-cache.txt': suite_for_doctest('restful-cache.txt'),
     }
 
 

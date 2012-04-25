@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -203,8 +203,6 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
@@ -367,8 +365,6 @@
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
@@ -404,8 +400,8 @@
                 setAliases"/>
 
         <!-- IProjectGroupModerate -->
-	<allow
-	    interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
+        <allow
+            interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
@@ -454,8 +450,6 @@
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow interface="lp.bugs.interfaces.bugtarget.IBugTarget"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
         <allow
@@ -494,7 +488,6 @@
                 subscribers
                 summary
                 title
-                total_bug_heat
                 upstream_product"/>
 
         <!-- IStructuralSubscriptionTarget -->
@@ -602,6 +595,21 @@
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
             interface="lp.services.webapp.interfaces.ICanonicalUrlData"/>
+    </securedutility>
+
+    <!-- PillarPerson-->
+
+    <class
+        class="lp.registry.model.pillar.PillarPerson">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPerson"/>
+    </class>
+
+    <securedutility
+        component="lp.registry.model.pillar.PillarPerson"
+        provides="lp.registry.interfaces.pillar.IPillarPersonFactory">
+        <allow
+            interface="lp.registry.interfaces.pillar.IPillarPersonFactory"/>
     </securedutility>
 
     <!-- SourcePackageName -->
@@ -913,8 +921,6 @@
                 interface="lp.registry.interfaces.person.IPersonPublic"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
-            <allow
-                interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.LimitedView"
                 interface="lp.registry.interfaces.person.IPersonLimitedView"/>
@@ -935,13 +941,10 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo"/>
+                set_attributes="displayname icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
-            <require
-                permission="launchpad.Commercial"
-                set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>
@@ -1006,6 +1009,7 @@
                 series_target
                 displayname
                 title
+                bugtasks
                 specifications
                 product_release"/>
         <require
@@ -1013,7 +1017,15 @@
             attributes="
                 createProductRelease
                 closeBugsAndBlueprints
-                destroySelf"/>
+                destroySelf
+                setTags
+                "/>
+        <require
+            permission="zope.Public"
+            attributes="
+                getTags
+                getTagsData
+                "/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
@@ -1052,9 +1064,14 @@
         <allow
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
+    <class
+        class="lp.registry.model.milestonetag.ProjectGroupMilestoneTag">
+        <allow
+            interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
+    </class>
     <subscriber
         for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-        handler="lp.registry.subscribers.product_modified"/>
+        handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
         <allow
@@ -1105,6 +1122,16 @@
         for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
         interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
         class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
+        permission="zope.Public"/>
+    <securedutility
+        class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOApplication"
+        provides="lp.registry.interfaces.person.ICanonicalSSOApplication">
+      <allow interface="lp.registry.interfaces.person.ICanonicalSSOApplication" />
+    </securedutility>
+    <xmlrpc:view
+        for="lp.registry.interfaces.person.ICanonicalSSOApplication"
+        interface="lp.registry.interfaces.person.ICanonicalSSOAPI"
+        class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOAPI"
         permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->
@@ -1173,8 +1200,6 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
@@ -1245,7 +1270,7 @@
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
-	<!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
+        <!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
         <require
             permission="launchpad.Moderate"
             set_attributes="name autoupdate registrant"/>
@@ -1268,7 +1293,7 @@
                 project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
-            set_attributes="active private_bugs "/>
+            set_attributes="active"/>
 
         <!-- IHasAliases -->
 
@@ -1425,8 +1450,6 @@
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1500,8 +1523,6 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
-        <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1637,8 +1658,6 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackagePublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
-            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
@@ -1716,29 +1735,6 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productrelease.IProductReleaseFileEditRestricted"/>
     </class>
-    <class
-        class="lp.registry.model.entitlement.Entitlement">
-        <require
-            permission="launchpad.View"
-            interface="lp.registry.interfaces.entitlement.IEntitlement"/>
-        <require
-            permission="launchpad.Admin"
-            set_schema="lp.registry.interfaces.entitlement.IEntitlement"/>
-    </class>
-
-    <!-- EntitlementSet -->
-
-    <class
-        class="lp.registry.model.entitlement.EntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </class>
-    <securedutility
-        class="lp.registry.model.entitlement.EntitlementSet"
-        provides="lp.registry.interfaces.entitlement.IEntitlementSet">
-        <allow
-            interface="lp.registry.interfaces.entitlement.IEntitlementSet"/>
-    </securedutility>
 
     <!-- SuiteSourcePackage -->
     <class
@@ -1938,18 +1934,37 @@
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicySource"/>
     </securedutility>
     <class
+        class="lp.registry.model.accesspolicy.AccessArtifact">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifact"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessArtifact"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactSource"/>
+    </securedutility>
+    <class
         class="lp.registry.model.accesspolicy.AccessPolicyArtifact">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifact"/>
-        <require
-            permission="zope.Public"
-            set_attributes="policy"/>
     </class>
     <securedutility
         component="lp.registry.model.accesspolicy.AccessPolicyArtifact"
         provides="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyArtifactSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.accesspolicy.AccessArtifactGrant">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrant"/>
+    </class>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessArtifactGrant"
+        provides="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessArtifactGrantSource"/>
     </securedutility>
     <class
         class="lp.registry.model.accesspolicy.AccessPolicyGrant">
@@ -1961,5 +1976,11 @@
         provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource">
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantSource"/>
+    </securedutility>
+    <securedutility
+        component="lp.registry.model.accesspolicy.AccessPolicyGrantFlat"
+        provides="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource">
+        <allow
+            interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
     </securedutility>
 </configure>

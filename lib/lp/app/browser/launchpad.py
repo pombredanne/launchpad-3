@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'DoesNotExistView',
+    'ExceptionHierarchy',
     'Hierarchy',
     'IcingFolder',
     'iter_view_registrations',
@@ -79,6 +80,7 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IServiceFactory
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -331,6 +333,14 @@ class Hierarchy(LaunchpadView):
         has_major_heading = IMajorHeadingView.providedBy(
             self._naked_context_view)
         return len(self.items) > 1 and not has_major_heading
+
+
+class ExceptionHierarchy(Hierarchy):
+
+    @property
+    def objects(self):
+        """Return an empty list because the traversal is not safe or sane."""
+        return []
 
 
 class Macro:
@@ -652,6 +662,7 @@ class LaunchpadRootNavigation(Navigation):
     # hierarchical navigation model.
     stepto_utilities = {
         '+announcements': IAnnouncementSet,
+        '+services': IServiceFactory,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
         'bugs': IMaloneApplication,

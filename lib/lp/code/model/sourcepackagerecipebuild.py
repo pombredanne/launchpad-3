@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -89,8 +89,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
-
-    is_private = False
 
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
@@ -290,8 +288,14 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.services.librarian.model import LibraryFileAlias
+        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         package_builds = load_related(
             PackageBuild, builds, ['package_build_id'])
+        build_farm_jobs = load_related(
+            BuildFarmJob, [build.package_build for build in builds],
+            ['build_farm_job_id'])
+        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
         archives = load_related(Archive, package_builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
         sprs = load_related(
@@ -438,7 +442,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
             )
         return list(IStore(SourcePackageRecipeBuildJob).find(
             SourcePackageRecipeBuild,
-            [SourcePackageRecipeBuildJob.id.is_in([job.id for job in jobs]),
+            [SourcePackageRecipeBuildJob.job_id.is_in([j.id for j in jobs]),
              SourcePackageRecipeBuildJob.build_id ==
                  SourcePackageRecipeBuild.id]))
 

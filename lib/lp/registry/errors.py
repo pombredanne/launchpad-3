@@ -6,6 +6,7 @@ __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
     'CannotTransitionToCountryMirror',
+    'CommercialSubscribersOnly',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
     'InvalidName',
@@ -64,6 +65,15 @@ class UserCannotChangeMembershipSilently(Unauthorized):
 
     Raised when a user tries to change someone's membership silently, and is
     not a Launchpad Administrator.
+    """
+
+
+@error_status(httplib.FORBIDDEN)
+class CommercialSubscribersOnly(Unauthorized):
+    """Feature is only available to current commercial subscribers.
+
+    Raised when a user tries to invoke an operation that is only available to
+    current commercial subscribers and they don't have an active subscription.
     """
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -85,10 +85,6 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.propertycache import cachedproperty
 
-# this is a hard limit on the size of email we will be willing to store in
-# the database.
-MAX_EMAIL_SIZE = 10 * 1024 * 1024
-
 
 def utcdatetime_from_field(field_value):
     """Turn an RFC 2822 Date: header value into a Python datetime (UTC).
@@ -126,10 +122,20 @@ class Message(SQLBase):
     rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+    _chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+
+    @cachedproperty
+    def chunks(self):
+        return list(self._chunks)
+
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
-    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+    _bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+
+    @cachedproperty
+    def bugattachments(self):
+        return list(self._bugattachments)
+
     visible = BoolCol(notNull=True, default=True)
 
     def __repr__(self):
@@ -143,24 +149,9 @@ class Message(SQLBase):
         self.visible = visible
 
     @property
-    def followup_title(self):
-        """See IMessage."""
-        if self.title.lower().startswith('re: '):
-            return self.title
-        return 'Re: ' + self.title
-
-    @property
     def title(self):
         """See IMessage."""
         return self.subject
-
-    @property
-    def has_new_title(self):
-        """See IMessage."""
-        if self.parent is None:
-            return True
-        return self.title.lower().lstrip('re:').strip() != \
-        self.parent.title.lower().lstrip('re:').strip()
 
     @property
     def sender(self):
@@ -315,10 +306,7 @@ class MessageSet:
         if not rfc822msgid:
             raise InvalidEmailMessage('Missing Message-Id')
 
-        # make sure we don't process anything too long
-        if len(email_message) > MAX_EMAIL_SIZE:
-            raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
-                rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
+        # Over-long messages are checked for at the handle_on_message level.
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.

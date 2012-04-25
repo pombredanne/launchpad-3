@@ -45,6 +45,7 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
@@ -60,6 +61,7 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -222,11 +224,120 @@ class Specification(SQLBase, BugLinkTargetMixin):
             self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
+    def workitems_text(self):
+        """See ISpecification."""
+        workitems_lines = []
+
+        def get_header_text(milestone):
+            if milestone is None:
+                return "Work items:"
+            else:
+                return "Work items for %s:" % milestone.name
+
+        if self.work_items.count() == 0:
+            return ''
+        milestone = self.work_items[0].milestone
+        # Start by appending a header for the milestone of the first work
+        # item. After this we're going to write a new header whenever we see a
+        # work item with a different milestone.
+        workitems_lines.append(get_header_text(milestone))
+        for work_item in self.work_items:
+            if work_item.milestone != milestone:
+                workitems_lines.append("")
+                milestone = work_item.milestone
+                workitems_lines.append(get_header_text(milestone))
+            assignee = work_item.assignee
+            if assignee is not None:
+                assignee_part = "[%s] " % assignee.name
+            else:
+                assignee_part = ""
+            # work_items are ordered by sequence
+            workitems_lines.append("%s%s: %s" % (assignee_part,
+                                                 work_item.title,
+                                                 work_item.status.name))
+        return "\n".join(workitems_lines)
+
+    @property
     def target(self):
         """See ISpecification."""
         if self.product:
             return self.product
         return self.distribution
+
+    def newWorkItem(self, title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
+        """See ISpecification."""
+        if milestone is not None:
+            assert milestone.target == self.target, (
+                "%s does not belong to this spec's target (%s)" %
+                    (milestone.displayname, self.target.name))
+        return SpecificationWorkItem(
+            title=title, status=status, specification=self, assignee=assignee,
+            milestone=milestone, sequence=sequence)
+
+    @property
+    def work_items(self):
+        """See ISpecification."""
+        return Store.of(self).find(
+            SpecificationWorkItem, specification=self,
+            deleted=False).order_by("sequence")
+
+    def setWorkItems(self, new_work_items):
+        field = ISpecification['workitems_text'].bind(self)
+        self.updateWorkItems(field.parseAndValidate(new_work_items))
+
+    def _deleteWorkItemsNotMatching(self, titles):
+        """Delete all work items whose title does not match the given ones.
+
+        Also set the sequence of those deleted work items to -1.
+        """
+        for work_item in self.work_items:
+            if work_item.title not in titles:
+                work_item.deleted = True
+
+    def updateWorkItems(self, new_work_items):
+        """See ISpecification."""
+        # First mark work items with titles that are no longer present as
+        # deleted.
+        self._deleteWorkItemsNotMatching(
+            [wi['title'] for wi in new_work_items])
+        work_items = Store.of(self).find(
+            SpecificationWorkItem, specification=self, deleted=False)
+        work_items = list(work_items.order_by("sequence"))
+        # At this point the list of new_work_items is necessarily the same
+        # size (or longer) than the list of existing ones, so we can just
+        # iterate over it updating the existing items and creating any new
+        # ones.
+        to_insert = []
+        existing_titles = [wi.title for wi in work_items]
+        for i in range(len(new_work_items)):
+            new_wi = new_work_items[i]
+            if new_wi['title'] not in existing_titles:
+                # This is a new work item, so we insert it with 'i' as its
+                # sequence because that's the position it is on the list
+                # entered by the user.
+                to_insert.append((i, new_wi))
+            else:
+                # Get the existing work item with the same title and update
+                # it to match what we have now.
+                existing_wi = work_items[
+                    existing_titles.index(new_wi['title'])]
+                # Update the sequence to match its current position on the
+                # list entered by the user.
+                existing_wi.sequence = i
+                existing_wi.status = new_wi['status']
+                existing_wi.assignee = new_wi['assignee']
+                milestone = new_wi['milestone']
+                if milestone is not None:
+                    assert milestone.target == self.target, (
+                        "%s does not belong to this spec's target (%s)" %
+                            (milestone.displayname, self.target.name))
+                existing_wi.milestone = milestone
+
+        for sequence, item in to_insert:
+            self.newWorkItem(item['title'], sequence, item['status'],
+                             item['assignee'], item['milestone'])
 
     def setTarget(self, target):
         """See ISpecification."""
@@ -497,7 +608,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                                "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
-                               "whiteboard"))
+                               "whiteboard", "workitems_text"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -962,7 +1073,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None,
+        drafter=None, whiteboard=None, workitems_text=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2004-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -20,6 +20,7 @@ import os
 import readline
 import rlcompleter
 import sys
+import webbrowser
 
 from pytz import utc
 from storm.expr import *
@@ -49,6 +50,10 @@ from lp.services.webapp.interfaces import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 
+# Silence unused name warnings
+(utc, transaction, verifyObject, removeSecurityProxy, canonical_url,
+ SLAVE_FLAVOR, DEFAULT_FLAVOR)
+
 
 def _get_locals():
     if len(sys.argv) > 1:
@@ -77,9 +82,26 @@ def _get_locals():
         b1 = Bug.get(1)
         s = Specification.get(1)
         q = Question.get(1)
+        # Silence unused name warnings
+        d, p, ds, prod, proj, b2, b1, s, q
 
     # Having a factory instance is handy.
     factory = LaunchpadObjectFactory()
+
+    def browser_open(obj, *args, **kwargs):
+        """Open a (possibly newly-created) object's view in a web browser.
+
+        Accepts the same parameters as canonical_url.
+
+        Performs a commit before invoking the browser, so
+        "browser_open(factory.makeFoo())" works.
+        """
+        transaction.commit()
+        webbrowser.open(canonical_url(obj, *args, **kwargs))
+
+    # Silence unused name warnings
+    factory, store
+
     res = {}
     res.update(locals())
     res.update(globals())

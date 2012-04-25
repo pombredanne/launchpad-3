@@ -11,7 +11,7 @@ __all__ = [
 import logging
 
 from lazr.delegates import delegates
-import simplejson
+from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.locals import (
     And,
     Int,
@@ -29,7 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enums import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -40,17 +40,16 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
-    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -59,7 +58,10 @@ from lp.soyuz.adapters.overrides import (
     SourceOverride,
     UnknownOverridePolicy,
     )
-from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageCopyPolicy,
+    )
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
@@ -294,9 +296,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
-            simplejson.dumps(metadata, ensure_ascii=False))
-        format_string = "(%s)" % ", ".join(["%s"] * len(data))
-        return format_string % sqlvalues(*data)
+            metadata)
+        return data
 
     @classmethod
     def createMultiple(cls, target_distroseries, copy_tasks, requester,
@@ -310,20 +311,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 target_distroseries, copy_policy, include_binaries, job_id,
                 task, sponsored)
             for job_id, task in zip(job_ids, copy_tasks)]
-        result = store.execute("""
-            INSERT INTO PackageCopyJob (
-                job_type,
-                target_distroseries,
-                copy_policy,
-                source_archive,
-                target_archive,
-                package_name,
-                job,
-                json_data)
-            VALUES %s
-            RETURNING id
-            """ % ", ".join(job_contents))
-        return [job_id for job_id, in result]
+        return bulk.create(
+                (PackageCopyJob.job_type, PackageCopyJob.target_distroseries,
+                 PackageCopyJob.copy_policy, PackageCopyJob.source_archive,
+                 PackageCopyJob.target_archive, PackageCopyJob.package_name,
+                 PackageCopyJob.job_id, PackageCopyJob.metadata),
+                job_contents, get_primary_keys=True)
 
     @classmethod
     def getActiveJobs(cls, target_archive):
@@ -383,6 +376,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return self.metadata['include_binaries']
 
     @property
+    def error_message(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("error_message")
+
+    @property
     def sponsored(self):
         name = self.metadata['sponsored']
         if name is None:
@@ -404,6 +402,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if override.section is not None:
             metadata_changes['section_override'] = override.section.name
         self.context.extendMetadata(metadata_changes)
+
+    def setErrorMessage(self, message):
+        """See `IPackageCopyJob`."""
+        self.metadata["error_message"] = message
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
@@ -581,18 +583,21 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
         message = unicode(cannotcopy_exception)
-        dsds = self.findMatchingDSDs()
-        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        if self.target_archive.purpose != ArchivePurpose.PPA:
+            dsds = self.findMatchingDSDs()
+            comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
 
-        # Register the error comment in the name of the Janitor.  Not a
-        # great choice, but we have no user identity to represent
-        # Launchpad; it's far too costly to create one; and
-        # impersonating the requester can be misleading and would also
-        # involve extra bookkeeping.
-        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+            # Register the error comment in the name of the Janitor.  Not a
+            # great choice, but we have no user identity to represent
+            # Launchpad; it's far too costly to create one; and
+            # impersonating the requester can be misleading and would also
+            # involve extra bookkeeping.
+            reporting_persona = getUtility(ILaunchpadCelebrities).janitor
 
-        for dsd in dsds:
-            comment_source.new(dsd, reporting_persona, message)
+            for dsd in dsds:
+                comment_source.new(dsd, reporting_persona, message)
+        else:
+            self.setErrorMessage(message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

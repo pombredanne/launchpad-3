@@ -11,11 +11,16 @@
     <title>Oops!</title>
     <style type="text/css">
       html {
-        font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
-        font-size: 8pt;
-      }
-      h1 {background: none; color: #83ad23; font-size: 3em; font-weight: normal;}
-      .oopsid {color: #cc0000; font-weight: bold;}
+          font-family: Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+          }
+      h1 {
+          font-size: 30px;
+          line-height: 34px;
+          }
+      .oopsid {
+          color: #cc0000;
+          font-weight: bold;
+          }
     </style>
   </head>
   <body>

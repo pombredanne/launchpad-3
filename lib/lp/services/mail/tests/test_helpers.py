@@ -12,6 +12,7 @@ from zope.interface import (
     directlyProvides,
     )
 
+from lp.registry.interfaces.person import PersonVisibility
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
@@ -223,14 +224,32 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
             team, get_person_or_team('fooix-devs@lists.example.com'))
 
 
-class getContactEmailAddresses(TestCaseWithFactory):
+class Testget_contact_email_addresses(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
+
+    def test_person_with_hidden_email(self):
+        user = self.factory.makePerson(
+            email='user@canonical.com',
+            hide_email_addresses=True,
+            name='user')
+        result = get_contact_email_addresses(user)
+        self.assertEqual(set(['user@canonical.com']), result)
 
     def test_user_with_preferredemail(self):
         user = self.factory.makePerson(
             email='user@canonical.com', name='user',)
         result = get_contact_email_addresses(user)
         self.assertEqual(set(['user@canonical.com']), result)
+
+    def test_private_team(self):
+        email = 'team@canonical.com'
+        team = self.factory.makeTeam(
+            name='breaks-things',
+            email=email,
+            visibility=PersonVisibility.PRIVATE)
+        result = get_contact_email_addresses(team)
+        self.assertEqual(set(['team@canonical.com']), result)
 
 
 def test_suite():

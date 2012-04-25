@@ -28,21 +28,20 @@ BuildQueue entries.
     >>> hoary386.title
     u'The Hoary Hedgehog Release for i386 (x86)'
 
-    >>> from lp.services.database.sqlbase import commit
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import (
+    ...     lp_dbuser,
+    ...     switch_dbuser,
+    ...     )
 
     >>> test_publisher = SoyuzTestPublisher()
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> test_publisher.prepareBreezyAutotest()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> with lp_dbuser():
+    ...     test_publisher.prepareBreezyAutotest()
 
     >>> version = 1
 
@@ -51,15 +50,12 @@ BuildQueue entries.
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     date_created=LOCAL_NOW, manual=False, archive=None):
     ...     global version
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...     pub = test_publisher.getPubSource(
-    ...        sourcename='test-build', version=str(version),
-    ...        distroseries=hoary, component=component_name,
-    ...        urgency=urgency, pocket=pocket,
-    ...        status=PackagePublishingStatus.PUBLISHED, archive=archive)
-    ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    ...     with lp_dbuser():
+    ...         pub = test_publisher.getPubSource(
+    ...             sourcename='test-build', version=str(version),
+    ...             distroseries=hoary, component=component_name,
+    ...             urgency=urgency, pocket=pocket,
+    ...             status=PackagePublishingStatus.PUBLISHED, archive=archive)
     ...     version += 1
     ...     build = pub.sourcepackagerelease.createBuild(
     ...         hoary386, pub.pocket, pub.archive)
@@ -86,8 +82,7 @@ BuildQueue entries.
 
 If the archive is private, its score is boosted by 10000:
 
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> private_ppa = factory.makeArchive()
     >>> private_ppa.buildd_secret = "secret"
     >>> private_ppa.private = True
@@ -113,7 +108,7 @@ The delta can also be negative.
     12415
 
     >>> private_ppa.relative_build_score = 0
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> switch_dbuser(test_dbuser)
 
 
  * 1500 points for pocket 'RELEASE',
@@ -251,7 +246,7 @@ Builds in COPY archives have a score below zero, so they will only
 be considered when there is nothing else to build. Even language-packs
 and build retries will be built before them.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(

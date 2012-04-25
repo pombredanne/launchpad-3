@@ -21,6 +21,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -33,7 +34,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Some things we are testing are impossible as mere mortals,
         # but might happen from the SQL command line.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         self.store = IMasterStore(BugSummary)
 

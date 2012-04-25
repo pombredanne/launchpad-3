@@ -2,19 +2,23 @@
 Distro Arch Series
 ==================
 
-   >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
 
-   >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import IDistroArchSeriesBinaryPackage
-   >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
-   >>> from lp.soyuz.interfaces.section import ISectionSet
+    >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
+    ...     IDistroArchSeriesBinaryPackage,
+    ...     )
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackagePublishingHistory
+    ...     )
+    >>> from lp.soyuz.interfaces.section import ISectionSet
 
-   >>> from lp.registry.interfaces.distribution import IDistributionSet
-   >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-   >>> hoary = ubuntu.getSeries('hoary')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
 
 DistroArchSeries are retrieved via __getitem__:
 
-   >>> hoary_i386 = hoary['i386']
+    >>> hoary_i386 = hoary['i386']
 
 or getDistroArchSeries():
 
@@ -54,19 +58,19 @@ progress, superseding in progress, or simply that there is more than
 one version spread across the pockets. getReleasedPackages lets us
 interrogate this information.
 
-   >>> for p in hoary_i386.getReleasedPackages("pmount"):
-   ...     print p.binarypackagerelease.binarypackagename.name
-   pmount
+    >>> for p in hoary_i386.getReleasedPackages("pmount"):
+    ...     print p.binarypackagerelease.binarypackagename.name
+    pmount
 
 See more information about getReleasePackages below.
 
 Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
-   >>> results = hoary_i386.searchBinaryPackages(text='pmount')
-   >>> results.count()
-   1
-   >>> pmount = results[0]
+    >>> results = hoary_i386.searchBinaryPackages(text='pmount')
+    >>> results.count()
+    1
+    >>> pmount = results[0]
 
 The method works even when we are searching for packages whose names are
 not fti-matchable, such as "linux-2.6.12", and substrings:
@@ -84,72 +88,72 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
     DistroArchSeriesBinaryPackageRelease: mozilla-firefox
     DistroArchSeriesBinaryPackageRelease: mozilla-firefox-data
 
-   # XXX cprov 2006-03-21: Broken implementation, missing enhances attribute.
-   verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
-   True
+    # XXX cprov 2006-03-21: Broken implementation, missing enhances attribute.
+    verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
+    True
 
 Check IDARBP provider
 
-   >>> pmount_hoary_i386 = hoary_i386.getBinaryPackage('pmount')
+    >>> pmount_hoary_i386 = hoary_i386.getBinaryPackage('pmount')
 
-   >>> verifyObject(IDistroArchSeriesBinaryPackage, pmount_hoary_i386)
-   True
+    >>> verifyObject(IDistroArchSeriesBinaryPackage, pmount_hoary_i386)
+    True
 
-   >>> pmount_hoary_i386.name
-   u'pmount'
+    >>> pmount_hoary_i386.name
+    u'pmount'
 
 
 Check some properties of DARBP meta class
 
 Entire publishing history:
 
-   >>> pmount_hoary_i386.publishing_history.count()
-   2
+    >>> pmount_hoary_i386.publishing_history.count()
+    2
 
 Most recent published history row:
 
-   >>> bpph = pmount_hoary_i386.current_published
+    >>> bpph = pmount_hoary_i386.current_published
 
-   # XXX cprov 2006-03-22: The object doesn't pass verifyObject()
-   # due the lack of distroarchseriesbinarypackagerelease attribute.
+    # XXX cprov 2006-03-22: The object doesn't pass verifyObject()
+    # due the lack of distroarchseriesbinarypackagerelease attribute.
 
-   >>> IBinaryPackagePublishingHistory.providedBy(bpph)
-   True
+    >>> IBinaryPackagePublishingHistory.providedBy(bpph)
+    True
 
-   >>> bpph.section.name
-   u'editors'
+    >>> bpph.section.name
+    u'editors'
 
 Perform `post publication` override:
 
-   >>> new_section = getUtility(ISectionSet)['base']
-   >>> version = bpph.binarypackagerelease.version
-   >>> pmount_hoary_i386_released = pmount_hoary_i386[version]
+    >>> new_section = getUtility(ISectionSet)['base']
+    >>> version = bpph.binarypackagerelease.version
+    >>> pmount_hoary_i386_released = pmount_hoary_i386[version]
 
-   >>> pmount_i386_pub = pmount_hoary_i386_released.current_publishing_record
-   >>> override = pmount_i386_pub.changeOverride(
-   ...     new_section=new_section)
-   >>> override.section == new_section
-   True
-   >>> override.status.name
-   'PENDING'
-   >>> pub_hist = pmount_hoary_i386.publishing_history
-   >>> pub_hist.count()
-   3
+    >>> pmount_i386_pub = pmount_hoary_i386_released.current_publishing_record
+    >>> override = pmount_i386_pub.changeOverride(
+    ...     new_section=new_section)
+    >>> override.section == new_section
+    True
+    >>> override.status.name
+    'PENDING'
+    >>> pub_hist = pmount_hoary_i386.publishing_history
+    >>> pub_hist.count()
+    3
 
 Override information about 'pmount' is pending publication:
 
-   >>> pub_hist[0].status.name, pub_hist[0].section.name
-   ('PENDING', u'base')
+    >>> pub_hist[0].status.name, pub_hist[0].section.name
+    ('PENDING', u'base')
 
 Supersede current publication:
 
-   >>> pub = pmount_hoary_i386_released.current_publishing_record
-   >>> pub.supersede()
-   >>> pmount_hoary_i386.publishing_history.count()
-   3
+    >>> pub = pmount_hoary_i386_released.current_publishing_record
+    >>> pub.supersede()
+    >>> pmount_hoary_i386.publishing_history.count()
+    3
 
-   >>> print pub.status.name, pub.datesuperseded is not None
-   SUPERSEDED True
+    >>> print pub.status.name, pub.datesuperseded is not None
+    SUPERSEDED True
 
 
 Binary publishing lookups
@@ -248,24 +252,6 @@ Using 'pocket' filter:
     >>> soyuz_helper.checkPubList(updates_main_pubs, result)
     True
 
-Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
-
-    >>> non_release_main_pubs = [
-    ...     pub_main_proposed_published,
-    ...     pub_main_updates_pending,
-    ...     ]
-
-    >>> non_release_main_pubs = sorted(
-    ...    non_release_main_pubs, key=operator.attrgetter('id'),
-    ...    reverse=True)
-
-    >>> result = bt_i386.getReleasedPackages(
-    ...     'at', include_pending=True,
-    ...     exclude_pocket=PackagePublishingPocket.RELEASE)
-
-    >>> soyuz_helper.checkPubList(non_release_main_pubs, result)
-    True
-
 Looking for all PUBLISHED or PENDING publications in cprov PPA and all
 pockets.
 
@@ -316,7 +302,7 @@ via the 'architectures' property.
 DistroArchSeries for which we support PPA building can be obtained via
 another distroseries method called 'virtualized_architectures'.
 
-For testing purpose we can compare the results of a
+For testing purposes we can compare the results of a
 manually-calculated set of warty architectures for which we support
 PPA  and the actual value returned from the 'ppa_architecture'
 property.

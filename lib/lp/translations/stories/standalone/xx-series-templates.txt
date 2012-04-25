@@ -72,7 +72,6 @@ The page shows a table of all templates and links to their subpages.
     0         evolution       ... 2007-01-05  Edit Upload Download Administer
     ...
     0         pmount          ... 2005-05-06  Edit Upload Download Administer
-    ...
 
 Translation group owners can administer all templates for their distribution,
 including those that are currently disabled.

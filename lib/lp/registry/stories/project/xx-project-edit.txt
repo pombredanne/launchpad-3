@@ -120,11 +120,9 @@ Registry experts
 Registry experts are not allowed access to the +edit page.
 
     >>> email = "expert@example.com"
-    >>> password = "test"
-    >>> registry_expert= factory.makeRegistryExpert(email=email,
-    ...                                             password=password)
+    >>> registry_expert= factory.makeRegistryExpert(email=email)
     >>> logout()
-    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
+    >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
 
     >>> expert_browser.open('http://launchpad.dev/new-name')
     >>> expert_browser.getLink('Change details').click()

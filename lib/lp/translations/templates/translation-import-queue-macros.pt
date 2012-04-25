@@ -13,7 +13,7 @@
       <script type="text/javascript" tal:content="view/choice_confs_js" />
 
       <script type="text/javascript">
-          LPS.use('lp.translations.importqueue', 'event', function(Y) {
+          LPJS.use('lp.translations.importqueue', 'event', function(Y) {
               Y.on('domready', function(e) {
                   Y.lp.translations.importqueue.initialize_import_queue_page(Y);
               });
@@ -125,7 +125,7 @@
                     </tal:block>
                   </td>
                 </tr>
-                <tr class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
                     Uploaded by
                     <a tal:replace="structure entry/importer/fmt:link">
@@ -141,7 +141,7 @@
                   # sometimes, entry/import_into evaluates as false because
                   # __len__ method returns 0.
                 </tal:XXX>
-                <tr class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
                     <span style="margin-right: 0.5em"
                           tal:condition="entry/import_into/title|nothing" >

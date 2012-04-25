@@ -15,7 +15,7 @@ LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-/srv/launchpad.net/codelines/current}
 GENERATE=$LAUNCHPADROOT/cronscripts/generate-extra-overrides.py
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
-FLAVOURS="ubuntu kubuntu kubuntu-mobile edubuntu xubuntu mythbuntu lubuntu"
+FLAVOURS="ubuntu kubuntu kubuntu-active edubuntu xubuntu mythbuntu lubuntu"
 FLAVOURS="$FLAVOURS ubuntustudio"
 
 ## Check to see if another germinate run is in progress

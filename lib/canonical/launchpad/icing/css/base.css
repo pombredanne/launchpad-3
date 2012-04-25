@@ -209,7 +209,7 @@ tr.white {
 tr.shaded {
     background-color: #f6f6f6;
     }
-table .amount {
+table .amount, table .action-icons {
     text-align: right;
     }
 table.contributions th {
@@ -263,6 +263,9 @@ table.sortable a.sortheader {
     }
 table.sortable img.sortarrow {
     padding-left: 2px;
+    }
+table.sortable th {
+    cursor: pointer;
     }
 th.ascending {
     background-image: url(/@@/arrowDown);
@@ -369,10 +372,6 @@ table.summary ul, table.summary ul li {
 .results {
     background-color: #f4f4f4;
     padding: 2px 10px 5px 10px;
-    -webkit-border-bottom-right-radius: 4px;
-    -webkit-border-bottom-left-radius: 4px;
-    -moz-border-radius-bottomright: 4px;
-    -moz-border-radius-bottomleft: 4px;
-    border-bottom-right-radius: 4px;
-    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
     }

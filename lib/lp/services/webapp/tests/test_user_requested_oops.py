@@ -37,20 +37,28 @@ class TestUserRequestedOops(TestCase):
     def test_none_requested(self):
         # If an oops was not requested, then maybe_record_user_requested_oops
         # does not record an oops.
-        oops_id = maybe_record_user_requested_oops()
-        self.assertIs(None, oops_id)
         request = get_current_browser_request()
+        maybe_record_user_requested_oops()
         self.assertIs(None, request.oopsid)
 
     def test_annotation_key(self):
-        # The request for an oops is stored in the request annotations.  If a
-        # user request oops is recorded, the oops id is returned, and also
-        # stored in the request.
+        # The request for an oops is stored in the request annotations.
+        # If a user request oops is recorded, the oops id is stored in
+        # the request.
         request = get_current_browser_request()
         request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
-        oops_id = maybe_record_user_requested_oops()
-        self.assertIsNot(None, oops_id)
-        self.assertEqual(oops_id, request.oopsid)
+        self.assertIs(None, request.oopsid)
+        maybe_record_user_requested_oops()
+        self.assertIsNot(None, request.oopsid)
+
+    def test_multiple_calls(self):
+        # Asking to record the OOPS twice just returns the same ID.
+        request = get_current_browser_request()
+        request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
+        maybe_record_user_requested_oops()
+        orig_oops_id = request.oopsid
+        maybe_record_user_requested_oops()
+        self.assertEqual(orig_oops_id, request.oopsid)
 
     def test_existing_oops_stops_user_requested(self):
         # If there is already an existing oops id in the request, then the
@@ -58,8 +66,7 @@ class TestUserRequestedOops(TestCase):
         request = get_current_browser_request()
         request.oopsid = "EXISTING"
         request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
-        oops_id = maybe_record_user_requested_oops()
-        self.assertIs(None, oops_id)
+        maybe_record_user_requested_oops()
         self.assertEqual("EXISTING", request.oopsid)
 
     def test_OopsNamespace_traverse(self):

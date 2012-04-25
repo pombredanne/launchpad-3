@@ -270,37 +270,6 @@ a new Person will be created.
     >>> addr['person'].creation_comment
     u'when the some-source_6.6.6 package was uploaded to hoary/RELEASE'
 
-If the email address is registered but not associated with a person it will be
-associated with a new Person. This involves updating the email address,
-something for which the uploader must have explicit permissions (bug 589073).
-
-    >>> sig_file.policy.create_people
-    True
-
-    >>> from lp.services.database.sqlbase import commit
-    >>> from lp.services.identity.interfaces.account import IAccountSet
-    >>> from lp.registry.interfaces.person import (
-    ...      PersonCreationRationale, IPersonSet)
-    >>> (acct, email) = getUtility(IAccountSet).createAccountAndEmail(
-    ...          "foo@canonical.com", PersonCreationRationale.UNKNOWN,
-    ...          "fo", "secr1t")
-    >>> person = getUtility(IPersonSet).createPersonWithoutEmail("fo",
-    ...          rationale=PersonCreationRationale.UNKNOWN)
-    >>> person.account = acct
-
-    Commit the changes so the emailaddress will have to be updated later
-    rather than inserted.
-
-    >>> commit()
-
-    >>> addr = sig_file.parseAddress("Foo <foo@canonical.com>")
-    >>> print addr['person'].creation_rationale.name
-    UNKNOWN
-    >>> commit()
-
-    >>> print addr['email']
-    foo@canonical.com
-
 If the use an un-initialized policy to create a launchpad person the
 creation_rationale will still be possible, however missing important
 information, the upload target:

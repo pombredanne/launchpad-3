@@ -16,6 +16,7 @@ We publish a subset of their attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
+    authorized_size: 1024
     commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/ppa/dependencies'
@@ -37,6 +38,7 @@ For "devel" additional attributes are available.
     >>> cprov_archive_devel = webservice.get(
     ...     "/~cprov/+archive/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
+    authorized_size: 1024
     commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
@@ -105,6 +107,7 @@ The archive has the following attributes:
     >>> ubuntu_main_archive = webservice.get(
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
+    authorized_size: None
     commercial: False
     dependencies_collection_link:
         u'http://.../ubuntutest/+archive/primary/dependencies'
@@ -711,7 +714,7 @@ These are syncSource() and syncSources(). Both are wrappers of the
 `PackageCopier` infrastructure, see more information in
 scripts/packagecopier.py.
 
-For testing purpose we will create some publications.
+For testing purposes we will create some publications.
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -917,6 +920,35 @@ Attempting to modify this flag without the necessary permissions will fail.
     ...
     http_etag: You tried to modify a read-only attribute.
 
+Modifying authorized size
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Archives can have a quota to help moderate consumption of disk space
+resources. This quota is set via the authorized_size attribute which
+describes the maximum size, in MiB, allowed for the archive.
+
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> print mark_archive['authorized_size']
+    1024
+
+Modifying the authorized_size attribute through the API is not allowed except
+for admins and commercial admins.
+
+    >>> mark_archive['authorized_size'] = 4096
+    >>> response = modify_archive(admin_webservice, mark_archive)
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> print mark_archive['authorized_size']
+    4096
+
+Attempting to modify this flag without the necessary permissions will fail.
+
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> mark_archive['authorized_size'] = 1024
+    >>> print modify_archive(user_webservice, mark_archive)
+    HTTP/1.1 401 Unauthorized
+    ...
+    (<Archive at ...>, 'authorized_size', 'launchpad.Commercial')
+
 Private archives
 ~~~~~~~~~~~~~~~~
 
@@ -944,23 +976,25 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    authorized_size: u'tag:launchpad.net:2008:redacted'
     commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
-    external_dependencies: None
+    external_dependencies: u'tag:launchpad.net:2008:redacted'
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
-    require_virtualized: True
+    require_virtualized: u'tag:launchpad.net:2008:redacted'
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
     web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    authorized_size: 2048
     commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'

@@ -577,6 +577,10 @@
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
         factory="lp.services.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="lp.app.interfaces.launchpad.IPrivacy"
+        for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
+        factory="lp.soyuz.interfaces.archivesubscriber.pas_to_privacy"/>
     <subscriber
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber
              lazr.lifecycle.interfaces.IObjectCreatedEvent"

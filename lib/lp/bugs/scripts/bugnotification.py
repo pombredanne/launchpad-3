@@ -20,7 +20,7 @@ from storm.store import Store
 import transaction
 from zope.component import getUtility
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,

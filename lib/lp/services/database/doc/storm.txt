@@ -1,6 +1,6 @@
 Note: A more readable version of this is in db-policy.txt. Most of this
 doctest will disappear soon when the auth replication set is collapsed
-back into the main replication set as part of login server seperation.
+back into the main replication set as part of login server separation.
 -- StuartBishop 20100222
 
 In addition to what Storm provides, we also have some Launchpad
@@ -15,10 +15,6 @@ specific Storm tools to cope with our master and slave store arrangement.
     ...     IMasterStore,
     ...     ISlaveStore,
     ...     IStore,
-    ...     )
-    >>> from lp.services.identity.model.account import (
-    ...     Account,
-    ...     AccountPassword,
     ...     )
     >>> from lp.services.identity.model.emailaddress import EmailAddress
     >>> from zope.security.proxy import ProxyFactory
@@ -79,7 +75,7 @@ from a store other than the correct Master.
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: transaction is read-only
+    InternalError: ...
 
     >>> transaction.abort()
     >>> t = transaction.begin()

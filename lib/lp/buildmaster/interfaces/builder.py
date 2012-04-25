@@ -193,9 +193,6 @@ class IBuilder(IHasOwner):
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
 
-    def setSlaveForTesting(proxy):
-        """Sets the RPC proxy through which to operate the build slave."""
-
     def verifySlaveBuildCookie(slave_build_id):
         """Verify that a slave's build cookie is consistent.
 
@@ -337,11 +334,9 @@ class IBuilder(IHasOwner):
             or immediately if it's a non-virtual slave.
         """
 
-    def findAndStartJob(buildd_slave=None):
+    def findAndStartJob():
         """Find a job to run and send it to the buildd slave.
 
-        :param buildd_slave: An optional buildd slave that this builder should
-            talk to.
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """

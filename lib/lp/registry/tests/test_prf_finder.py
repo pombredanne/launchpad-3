@@ -28,6 +28,7 @@ from lp.testing import (
     reset_logging,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -193,8 +194,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         return file_path, file_name
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(
-            config.productreleasefinder.dbuser)
+        switch_dbuser(config.productreleasefinder.dbuser)
         self.release_root = tempfile.mkdtemp()
         self.release_url = 'file://' + self.release_root
 

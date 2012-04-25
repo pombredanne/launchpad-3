@@ -49,6 +49,9 @@ class ITunableLoop(Interface):
         The chunk_size parameter says (in some way you define) how much work
         the LoopTuner believes you should try to do in this iteration in order
         to get as close as possible to your time goal.
+
+        Note that chunk_size is a float, so, for example, if you use it to
+        slice a list, be careful to round it to an int first.
         """
 
     def cleanUp(self):

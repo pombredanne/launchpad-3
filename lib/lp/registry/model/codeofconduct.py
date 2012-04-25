@@ -114,7 +114,7 @@ class CodeOfConduct:
 
     @property
     def _filename(self):
-        """Rebuild filename according the local version."""
+        """Rebuild filename according to the local version."""
         # Recover the path for CoC from a Component
         path = getUtility(ICodeOfConductConf).path
         return os.path.join(path, self.version + '.txt')

@@ -192,9 +192,11 @@ If the project doesn't qualify for free hosting, or if it doesn't have
 much time left on its commercial subscription, a portlet is displayed to
 direct the owner to purchase a subscription.
 
+    >>> ignored = login_person(firefox.owner)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
     >>> flush_database_updates()
     >>> transaction.commit()
+    >>> logout()
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     <...This project&rsquo;s license is proprietary...

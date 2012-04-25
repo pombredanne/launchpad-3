@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -217,6 +217,7 @@ class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
 
@@ -296,7 +297,7 @@ class ReviewNotPending(Exception):
 
 
 class UpdatePreviewDiffNotReady(Exception):
-    """Raised if the the preview diff is not ready to run."""
+    """Raised if the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):

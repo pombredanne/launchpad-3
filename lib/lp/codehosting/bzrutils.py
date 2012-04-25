@@ -19,6 +19,7 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'server',
     'read_locked',
     'remove_exception_logging_hook',
     ]
@@ -33,6 +34,7 @@ from bzrlib import (
     )
 from bzrlib.errors import (
     NotStacked,
+    UnsupportedProtocol,
     UnstackableBranchFormat,
     UnstackableRepositoryFormat,
     )
@@ -42,6 +44,7 @@ from bzrlib.remote import (
     RemoteRepository,
     )
 from bzrlib.transport import (
+    get_transport,
     register_transport,
     unregister_transport,
     )
@@ -329,3 +332,22 @@ def write_locked(branch):
         yield
     finally:
         branch.unlock()
+
+
+@contextmanager
+def server(server, no_replace=False):
+    run_server = True
+    if no_replace:
+        try:
+            get_transport(server.get_url())
+        except UnsupportedProtocol:
+            pass
+        else:
+            run_server = False
+    if run_server:
+        server.start_server()
+    try:
+        yield server
+    finally:
+        if run_server:
+            server.stop_server()

@@ -409,7 +409,8 @@ class QueueActionFetch(QueueAction):
         self.displayRule()
         for queue_item in self.items:
             file_list = []
-            file_list.append(queue_item.changesfile)
+            if queue_item.changesfile is not None:
+                file_list.append(queue_item.changesfile)
 
             for source in queue_item.sources:
                 for spr_file in source.sourcepackagerelease.files:

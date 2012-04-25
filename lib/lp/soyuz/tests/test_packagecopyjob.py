@@ -6,6 +6,7 @@
 import operator
 from textwrap import dedent
 
+from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
@@ -25,7 +26,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     JobStatus,
-    SuspendJobException,
     )
 from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
@@ -60,6 +60,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -115,8 +116,7 @@ class LocalTestHelper:
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
         # We are basically mimicking the job runner here.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         # Set the state to RUNNING.
         job.start()
         # Commit the RUNNING state.
@@ -329,6 +329,26 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
+    def test_target_ppa_message(self):
+        # When copying to a PPA archive the error message is stored in the
+        # job's metadatas.
+        distroseries = self.factory.makeDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        ppa = self.factory.makeArchive(distroseries.distribution)
+        job = getUtility(IPlainPackageCopyJobSource).create(
+            package_name=package.name, source_archive=archive1,
+            target_archive=ppa, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            include_binaries=False, package_version='1.0',
+            requester=self.factory.makePerson())
+        transaction.commit()
+        job.run()
+
+        self.assertEqual(
+            "Destination pocket must be 'release' for a PPA.",
+            job.error_message)
+
     def test_run(self):
         # A proper test run synchronizes packages.
 
@@ -375,10 +395,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual("libc", job.package_name)
         self.assertEqual("2.8-1", job.package_version)
 
-        # Make sure everything hits the database, switching db users
-        # aborts.
-        transaction.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         job.run()
 
         published_sources = target_archive.getPublishedSources(
@@ -393,7 +410,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Switch back to a db user that has permission to clean up
         # featureflag.
-        self.layer.switchDbUser('launchpad_main')
+        switch_dbuser('launchpad_main')
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
@@ -711,8 +728,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Simulate the job runner suspending after getting a
         # SuspendJobException
         job.suspend()
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
         # Add some overrides to the job.
         package = source_package.sourcepackagerelease.sourcepackagename
@@ -941,8 +957,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Simulate the job runner suspending after getting a
         # SuspendJobException
         job.suspend()
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
         # Accept the upload to release the job then run it.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
@@ -1093,8 +1108,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob()
-        self.layer.txn.commit()
-        self.layer.switchDbUser('sync_packages')
+        switch_dbuser('copy_packages')
 
         override = SourceOverride(
             source_package_name=name,
@@ -1153,8 +1167,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob(
             package_name=name.name, package_version="1.0")
-        self.layer.txn.commit()
-        self.layer.switchDbUser('sync_packages')
+        switch_dbuser('copy_packages')
 
         override = SourceOverride(
             source_package_name=name,
@@ -1202,8 +1215,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Simulate the job runner suspending after getting a
         # SuspendJobException
         job.suspend()
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
         # Patch the job's attemptCopy() method so it just raises an
         # exception.
@@ -1273,14 +1285,12 @@ class TestPlainPackageCopyJobDbPrivileges(TestCaseWithFactory,
 
     def test_findMatchingDSDs(self):
         job = self.makeJob()
-        transaction.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         removeSecurityProxy(job).findMatchingDSDs()
 
     def test_reportFailure(self):
         job = self.makeJob()
-        transaction.commit()
-        self.layer.switchDbUser(self.dbuser)
+        switch_dbuser(self.dbuser)
         removeSecurityProxy(job).reportFailure(CannotCopy("Mommy it hurts"))
 
 

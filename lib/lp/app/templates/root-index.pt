@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <metal:head fill-slot="head_epilogue">
     <style>
@@ -60,7 +60,7 @@
 
         <div class="top-portlet" style="border-bottom: 1px dotted #999;">
           <img src="/@@/launchpad-logo-and-name.png"
-               alt=""
+               id="launchpad-logo-and-name" alt=""
                style="margin: 0 9em 1em 0"/>
         </div>
 
@@ -143,12 +143,14 @@
               xml:lang="en" lang="en" dir="ltr"
               tal:attributes="action string:${rooturl}+search"
               method="get" accept-charset="UTF-8">
-              <input id="text" type="text" name="field.text" size="25%" />
+              <input id="text" type="text" name="field.text" size="25" />
               <input id="search" type="submit" value="Search Launchpad" />
             </form>
-            <script type="text/javascript"><!--
-              setFocusByName('field.text');
-            // --></script>
+            <script type="text/javascript">
+                LPJS.use('lp', function () {
+                    setFocusByName('field.text');
+                });
+            </script>
             <div id="homepage-stats" tal:content="cache:public, 1 hour">
               <strong
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,

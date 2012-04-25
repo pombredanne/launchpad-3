@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -495,6 +495,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=True
         ))
 
+    sponsor = exported(
+        Reference(
+            IPerson,
+            title=_('Publication sponsor'),
+            description=_('The IPerson who sponsored the creation of'
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -712,6 +721,9 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    distroarchseriesID = Int(
+        title=_("The DB id for the distroarchseries."),
+        required=False, readonly=False)
     distroarchseries = exported(
         Reference(
             # Really IDistroArchSeries (fixed in
@@ -1009,6 +1021,8 @@ class IPublishingSet(Interface):
              should be created for the new source publication.
         :param creator: An optional `IPerson`. If this is None, the
             sourcepackagerelease's creator will be used.
+        :param sponsor: An optional `IPerson` indicating the sponsor of this
+            publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

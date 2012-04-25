@@ -8,8 +8,6 @@ __all__ = [
     'TranslatorRemoveView',
     ]
 
-import cgi
-
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,

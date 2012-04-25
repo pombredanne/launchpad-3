@@ -81,7 +81,7 @@ pocket dependencies.
 == 'Ogre' components ==
 
 The ubuntu 'ogre-model' ensures that build dependencies are
-consistently spread according the source target component, i.e. a
+consistently spread according to the source target component, i.e. a
 source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in

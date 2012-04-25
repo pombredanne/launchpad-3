@@ -10,10 +10,10 @@ A new image can be added to the combined file with the command::
 
     make sprite_image
 
-The resulting icon-sprites and icon-sprites.positioning files must
-be committed to the repository. Any changes to the CSS template will
-be automatically picked up when Launchpad is restarted. If you don't
-want to restart launchpad.dev, you can run::
+The resulting icon-sprites.png and icon-sprites.positioning files must
+be committed to the repository. Any changes to the CSS template will be
+automatically picked up when Launchpad is restarted. If you don't want
+to restart launchpad.dev, you can run::
 
     make css_combine
 

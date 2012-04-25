@@ -6,56 +6,11 @@
   <a id="bugtarget-bugfilters-link"
      tal:attributes="href context/fmt:url/+bugtarget-portlet-bugfilters-stats">
   </a>
-  <table class="bug-links">
-    <tbody id="bugfilters-portlet-content"
-           tal:content="structure context/@@+bugtarget-portlet-bugfilters-info" />
-    <tbody tal:define="menu context/menu:bugs">
-
-      <tr class="menu-link-subscribe_to_bug_mail invisible-link"
-          tal:define="link menu/subscribe_to_bug_mail|nothing"
-          tal:condition="python: link and link.enabled">
-        <td class="bugs-count" style="padding-top: 3px">
-          <a tal:attributes="href link/url">
-            <img tal:attributes="src link/icon_url" />
-          </a>
-        </td>
-        <td class="bugs-link">
-          <a class="js-action"
-              tal:attributes="href link/url"
-              tal:content="link/escapedtext" />
-        </td>
-      </tr>
-      <tr class="menu-link-edit_bug_mail"
-          tal:define="link menu/edit_bug_mail|nothing"
-          tal:condition="python: link and link.enabled">
-        <td class="bugs-count" style="padding-top: 3px">
-          <a tal:attributes="href link/url">
-            <img tal:attributes="src link/icon_url" />
-          </a>
-        </td>
-        <td class="bugs-link">
-          <a tal:attributes="href link/url"
-              tal:content="link/escapedtext" />
-        </td>
-      </tr>
-
-      <tr tal:define="review_nominations_link context/menu:bugs/nominations|nothing"
-          tal:condition="review_nominations_link"
-          style="padding-top: 1em">
-        <td class="bugs-count">
-          <a tal:attributes="href review_nominations_link/url">
-            <img tal:attributes="src review_nominations_link/icon_url" />
-          </a>
-        </td>
-        <td class="bugs-link">
-          <a tal:attributes="href review_nominations_link/url"
-             tal:content="review_nominations_link/escapedtext" />
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div
+    id="bugfilters-portlet-content"
+    tal:content="structure context/@@+bugtarget-portlet-bugfilters-info" />
   <script type="text/javascript">
-    LPS.use('io-base', 'node', function(Y) {
+    LPJS.use('io-base', 'node', function(Y) {
         Y.on('domready', function() {
             var url = Y.one('#bugtarget-bugfilters-link').getAttribute('href');
             var handlers = {

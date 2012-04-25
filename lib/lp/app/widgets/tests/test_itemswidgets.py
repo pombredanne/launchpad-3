@@ -1,5 +1,15 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from unittest import TestCase
+
+from lazr.enum._enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.services.features.testing import FeatureFixture
+
 
 __metaclass__ = type
 
@@ -203,3 +213,76 @@ class TestLaunchpadRadioWidgetWithDescription(TestCaseWithFactory):
             '<...>item-&lt;2&gt;<...>&lt;unsafe&gt; &amp;nbsp; title<...>')
         self.assertRenderItem(
             expected, self.widget.renderItem, self.TestEnum.UNSAFE_TERM)
+
+    def test_renderExtraHint(self):
+        # If an extra hint is specified, it is rendered.
+        self.widget.extra_hint = "Hello World"
+        self.widget.extra_hint_class = 'hint_class'
+        expected = (
+            '<div class="hint_class">Hello World</div>')
+        hint_html = self.widget.renderExtraHint()
+        self.assertEqual(expected, hint_html)
+
+
+class TestVocabularyToChoiceEditItems(TestCase):
+    """Tests for vocabulary_to_choice_edit_items.
+
+    This function is tested implicitly in lazr-js-widgets.txt.
+    Here we are adding some explicit tests for the behaviour enabled by
+    feature flag disclosure.enhanced_choice_popup.enabled.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    class ChoiceEnum(DBEnumeratedType):
+
+        ITEM_A = DBItem(1, """
+            Item A
+
+            This is item A.
+            """)
+
+        ITEM_B = DBItem(2, """
+            Item B
+
+            This is item B.
+            """)
+
+    def _makeItemDict(self, item, overrides=None):
+        if not overrides:
+            overrides = dict()
+        result = {
+            'value': item.title,
+            'name': item.title,
+            'description': item.description,
+            'description_css_class': 'choice-description',
+            'style': '', 'help': '', 'disabled': False}
+        result.update(overrides)
+        return result
+
+    def test_vocabulary_to_choice_edit_items(self):
+        # The items list is as expected without the feature flag.
+        items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        overrides = {'description': ''}
+        expected = [self._makeItemDict(e.value, overrides)
+                    for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_no_description(self):
+        # Even if feature flag is on, there are no descriptions unless wanted.
+        feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            overrides = {'description': ''}
+            items = vocabulary_to_choice_edit_items(self.ChoiceEnum)
+        expected = [self._makeItemDict(e.value, overrides)
+                    for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)
+
+    def test_vocabulary_to_choice_edit_items_with_description(self):
+        # The items list is as expected with the feature flag.
+        feature_flag = {'disclosure.enhanced_choice_popup.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            items = vocabulary_to_choice_edit_items(
+                self.ChoiceEnum, include_description=True)
+        expected = [self._makeItemDict(e.value) for e in self.ChoiceEnum]
+        self.assertEqual(expected, items)

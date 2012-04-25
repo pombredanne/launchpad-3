@@ -152,6 +152,8 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             'The vocabulary must implement IEnumeratedType')
         super(LaunchpadRadioWidgetWithDescription, self).__init__(
             field, vocabulary, request)
+        self.extra_hint = None
+        self.extra_hint_class = None
 
     def _renderRow(self, text, form_value, id, elem):
         """Render the table row for the widget depending on description."""
@@ -192,12 +194,25 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
                              type='radio')
         return self._renderRow(text, value, id, elem)
 
+    def renderExtraHint(self):
+        extra_hint_html = ''
+        extra_hint_class = ''
+        if self.extra_hint_class:
+            extra_hint_class = ' class="%s"' % self.extra_hint_class
+        if self.extra_hint:
+            extra_hint_html = ('<div%s>%s</div>'
+                % (extra_hint_class, escape(self.extra_hint)))
+        return extra_hint_html
+
     def renderValue(self, value):
         # Render the items in a table to align the descriptions.
         rendered_items = self.renderItems(value)
+        extra_hint = self.renderExtraHint()
         return (
-            '<table class="radio-button-widget">%s</table>'
-            % ''.join(rendered_items))
+            '%(extra_hint)s\n'
+            '<table class="radio-button-widget">%(items)s</table>'
+            % {'extra_hint': extra_hint,
+               'items': ''.join(rendered_items)})
 
 
 class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):

@@ -87,7 +87,10 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
-from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.pillar import (
+    PillarBugsMenu,
+    PillarNavigationMixin,
+    )
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -101,6 +104,7 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
@@ -134,7 +138,8 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 
 class DistributionNavigation(
     GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
-    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IDistribution
 
@@ -302,9 +307,19 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
         text = "Configure publisher"
         return Link("+pubconf", text, icon="edit")
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        text = 'Sharing'
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
+        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
+            or bool(getFeatureFlag(enabled_writable_flag)))
+        return Link('+sharing', text, icon='edit', enabled=enabled)
+
     @cachedproperty
     def links(self):
-        return ['edit', 'pubconf', 'subscribe_to_bug_mail', 'edit_bug_mail']
+        return ['edit', 'pubconf', 'subscribe_to_bug_mail',
+                 'edit_bug_mail', 'sharing']
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):

@@ -54,7 +54,7 @@ regular users, and the project owner all are denied.
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> check_permission('launchpad.Commercial', bzr.commercial_subscription)
     False
 
@@ -306,25 +306,6 @@ is reviewed, but not approved requires a commercial subscription.
     >>> bzr.qualifies_for_free_hosting
     False
 
-If the licenses or license_info attributes are changed, the
-project_reviewed and license_approved attributes are reset to false.
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.license_info = 'foo'
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
-    >>> bzr.license_approved = True
-    >>> bzr.project_reviewed = True
-    >>> bzr.licenses = [License.BSD]
-    >>> bzr.license_approved
-    False
-    >>> bzr.project_reviewed
-    False
-
 When the products license is OTHER_OPEN_SOURCE or the license_info
 attribute contains a description of another license, the product
 requires approval for free hosting. The qualifies_for_free_hosting
@@ -561,7 +542,7 @@ access it.
     >>> registry = celebs.registry_experts
     >>> ignored = registry.addMember(registry_member, registry.teamowner)
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
@@ -596,7 +577,7 @@ IProduct and IProjectGroup objects and access an IProjectGroupSet.
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 
-    >>> login_person(registry_member)
+    >>> ignored = login_person(registry_member)
     >>> check_permission('launchpad.Moderate', project_set)
     True
     >>> check_permission('launchpad.Moderate', project)

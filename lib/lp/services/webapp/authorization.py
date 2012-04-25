@@ -20,7 +20,10 @@ from zope.interface import classProvides
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.checker import CheckerPublic
-from zope.security.interfaces import ISecurityPolicy
+from zope.security.interfaces import (
+    ISecurityPolicy,
+    Unauthorized,
+    )
 from zope.security.management import (
     checkPermission as zcheckPermission,
     getInteraction,
@@ -36,6 +39,7 @@ from zope.security.simplepolicies import (
     )
 
 from lp.app.interfaces.security import IAuthorization
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.readonly import is_read_only
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -254,12 +258,11 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
             yield cache[objecttoauthorize][permission]
             return
 
-    # Create a check_auth function to call checkAccountAuthenticated or
+    # Create a check_auth function to call checkAuthenticated or
     # checkUnauthenticated as appropriate.
     if ILaunchpadPrincipal.providedBy(principal):
-        account = principal.account
         check_auth = lambda authorization: (
-            authorization.checkAccountAuthenticated(account))
+            authorization.checkAuthenticated(IPersonRoles(principal.person)))
     else:
         check_auth = lambda authorization: (
             authorization.checkUnauthenticated())
@@ -313,6 +316,8 @@ def iter_authorization(objecttoauthorize, permission, principal, cache,
 
 def precache_permission_for_objects(participation, permission_name, objects):
     """Precaches the permission for the objects into the policy cache."""
+    if participation is None:
+        participation = getInteraction().participations[0]
     permission_cache = participation.annotations.setdefault(
         LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
         weakref.WeakKeyDictionary())
@@ -352,3 +357,51 @@ class LaunchpadPermissiveSecurityPolicy(PermissiveSecurityPolicy):
     def __init__(self, *participations):
         PermissiveSecurityPolicy.__init__(self, *participations)
         self.extras = InteractionExtras()
+
+
+class available_with_permission:
+    """Function decorator that ensures the user has the given permission on
+    a context object.
+
+    The context object is one of the function arguments and is specified by
+    nominating the argument name. If no keyword arguments are present, then the
+    first non-keyword argument is used.
+
+    Use it like:
+
+        @available_with_permission('launchpad.Edit', 'context_arg')
+        def some_function(self, context_arg, another_arg):
+            # do something
+
+    And the calling code would be:
+        obj.some_function(context, another)
+    or
+        obj.some_function(context_arg=context, another_arg=another)
+
+    """
+
+    def __init__(self, permission, context_parameter):
+        """Make a new available_with_permission function decorator.
+
+        `permission` is the string permission name, like 'launchpad.Edit'.
+        `context_parameter` is the name of the function argument which
+                            contains the context object.
+        """
+        self.permission = permission
+        self.context_parameter = context_parameter
+
+    def __call__(self, func):
+        permission = self.permission
+        context_parameter = self.context_parameter
+
+        def permission_checker(self, *args, **kwargs):
+            if context_parameter in kwargs:
+                context = kwargs[context_parameter]
+            else:
+                context = args[0]
+            if not check_permission(permission, context):
+                raise Unauthorized(
+                    "Permission %s required on %s."
+                        % (permission, context))
+            return func(self, *args, **kwargs)
+        return permission_checker

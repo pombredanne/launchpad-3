@@ -47,12 +47,18 @@ from lp import _
 class IHasLocation(Interface):
     """An interface supported by objects with a defined location."""
 
-    latitude = exported(doNotSnapshot(
-        Float(title=_("The latitude of this object."),
-              required=False, readonly=True)))
-    longitude = exported(doNotSnapshot(
-        Float(title=_("The longitude of this object."),
-              required=False, readonly=True)))
+    latitude = exported(
+        doNotSnapshot(
+            Float(title=_("The latitude of this object."),
+                  required=False, readonly=True)),
+        ('devel', dict(exported=False)),
+        exported=True)
+    longitude = exported(
+        doNotSnapshot(
+            Float(title=_("The longitude of this object."),
+                  required=False, readonly=True)),
+        ('devel', dict(exported=False)),
+        exported=True)
     time_zone = exported(doNotSnapshot(
         Choice(title=_('The time zone of this object.'),
                required=False, readonly=True,

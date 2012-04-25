@@ -21,21 +21,13 @@
             name string:${submission/translation_html_id}_radiobutton;
             id string:${submission/suggestion_html_id}_radiobutton;
             value string:${submission/suggestion_html_id};
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new')
             " />
         </tal:user-is-official-translator>
         <tal:user-is-not-official-translator condition="not:user_is_official_translator">
         <a href=""
           tal:attributes="
-            onClick string:
-              javascript:copyInnerHTMLById(
-                '${submission/suggestion_html_id}',
-                '${submission/translation_html_id}_new');;
-              selectWidget('${submission/translation_html_id}_new_select', event);;
-            return false;;
+            id string:${submission/suggestion_html_id}_singular_copy_text;
+            name string:${submission/translation_html_id}_singular_copy_text;
           "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
         </tal:user-is-not-official-translator>
         </tal:form-writeable>
@@ -69,7 +61,7 @@
     <tr
       tal:condition="submission/suggestion_text"
       tal:attributes="id string:${submission/origin_html_id};
-                      class string:discreet secondary ${dismissable}">
+                      class string:lesser secondary ${dismissable}">
       <td colspan="3"></td>
       <td class="icon left right">
         <tal:legal-warning condition="submission/legal_warning">
@@ -156,18 +148,9 @@
 </metal:pofile-js-footer>
 
 
-<metal:translations-js define-macro="translations-js">
-      <script
-        type="text/javascript"
-        tal:condition="devmode"
-        tal:attributes="src string:${icingroot}/build/translations/translations.js">
-      </script>
-</metal:translations-js>
-
-
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
-      LPS.use('lp.translations.languages', 'event', function(Y) {
+      LPJS.use('lp.translations.languages', 'event', function(Y) {
           Y.on("click", function(e) {
             Y.lp.translations.languages.toggle_languages_visibility(e);
           }, "#toggle-languages-visibility");

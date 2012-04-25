@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -25,10 +25,12 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     OpenTeamLinkageError,
     )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -264,6 +266,14 @@ class TestDistribution(TestCaseWithFactory):
             ]
         provides_all = MatchesAll(*map(Provides, expected_interfaces))
         self.assertThat(distro, provides_all)
+
+    def test_distribution_creation_creates_accesspolicies(self):
+        # Creating a new distribution also creates AccessPolicies for it.
+        distro = self.factory.makeDistribution()
+        ap = getUtility(IAccessPolicySource).findByPillar((distro,))
+        expected = [
+            InformationType.USERDATA, InformationType.EMBARGOEDSECURITY]
+        self.assertContentEqual(expected, [policy.type for policy in ap])
 
 
 class TestDistributionCurrentSourceReleases(
@@ -595,7 +605,7 @@ class TestWebService(WebServiceTestCase):
         now = datetime.datetime.now(tz=pytz.utc)
         day = datetime.timedelta(days=1)
         self.failUnlessEqual(
-            [oopsid.upper()],
+            [oopsid],
             ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
         self.failUnlessEqual(
             [],

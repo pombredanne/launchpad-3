@@ -36,11 +36,11 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
-        self.assertEqual(
+        self.assertTextMatchesExpressionIgnoreWhitespace(
             "INFO    Creating lockfile: "
             "/var/lock/launchpad-create_merge_proposals.lock\n"
-            "INFO    "
-            "Running CreateMergeProposalJob (ID %d) in status Waiting\n"
+            "INFO    Running <.*CreateMergeProposalJob object at .*?> "
+            "\(ID %s\) in status Waiting\n"
             "INFO    Ran 1 CreateMergeProposalJobs.\n" % job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())

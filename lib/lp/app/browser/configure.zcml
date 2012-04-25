@@ -71,6 +71,14 @@
         permission="zope.Public"
         />
 
+    <browser:page
+        for="Exception"
+        name="+hierarchy"
+        class="lp.app.browser.launchpad.ExceptionHierarchy"
+        template="../templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
+
     <!-- batching -->
     <browser:page
         for="lp.services.webapp.interfaces.IBatchNavigator"
@@ -141,15 +149,6 @@
       attribute="__call__"
       permission="zope.Public"
       />
-
-    <!-- A page to list all the icons in LP -->
-    <browser:page
-        for="lp.services.webapp.interfaces.ILaunchpadApplication"
-        name="+graphics"
-        class="lp.app.browser.launchpad.LaunchpadGraphics"
-        template="../templates/launchpad-graphics.pt"
-        permission="zope.Public"
-        />
 
     <facet facet="overview">
       <!-- Common menus -->

@@ -169,7 +169,7 @@ def listUniques(cur, table, column):
         '''
     cur.execute(sql, dict(table=table))
     for indkey, in cur.fetchall():
-        # We have a space seperated list of integer keys into the attribute
+        # We have a space separated list of integer keys into the attribute
         # mapping. Ignore the 0's, as they indicate a function and we don't
         # handle them.
         keys = [
@@ -490,7 +490,7 @@ class ConnectionString:
     """A libpq connection string.
 
     Some PostgreSQL tools take libpq connection strings. Other tools
-    need the components seperated out (such as pg_dump command line
+    need the components separated out (such as pg_dump command line
     arguments). This class allows you to switch easily between formats.
 
     Quoted or escaped values are not supported.

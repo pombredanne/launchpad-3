@@ -13,7 +13,7 @@ to private or a private branch to public in certain circumstances.
     >>> login('admin@canonical.com')
     >>> eric = factory.makePerson(
     ...     name='eric', displayname='Eric the Viking',
-    ...     email='eric@example.com', password='test')
+    ...     email='eric@example.com')
     >>> fooix = factory.makeProduct(
     ...     name='fooix', displayname='Fooix', owner=eric)
     >>> trunk = factory.makeProductBranch(

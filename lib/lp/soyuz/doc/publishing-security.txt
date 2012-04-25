@@ -70,7 +70,7 @@ As is for a regular user.
 
 But the owner can see them.
 
-    >>> login_person(private_ppa.owner)
+    >>> ignored = login_person(private_ppa.owner)
     >>> print public_ppa.getPublishedSources().first().displayname
     foo 666 in breezy-autotest
 

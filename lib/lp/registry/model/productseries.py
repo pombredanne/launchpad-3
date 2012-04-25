@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -50,16 +50,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import (
-    IHasBugHeat,
-    ISeriesBugTarget,
-    )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags
-from lp.bugs.model.bugtarget import (
-    BugTargetBase,
-    HasBugHeatMixin,
-    )
+from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -121,13 +115,13 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
-                    HasMilestonesMixin, HasSpecificationsMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
+                    HasSpecificationsMixin, HasTranslationImportsMixin,
+                    HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
     implements(
-        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        IBugSummaryDimension, IProductSeries, IServiceUsage,
         ISeriesBugTarget)
 
     _table = 'ProductSeries'
@@ -257,11 +251,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bugtarget_parent(self):
         """See `ISeriesBugTarget`."""
         return self.parent
-
-    @property
-    def max_bug_heat(self):
-        """See `IHasBugs`."""
-        return self.product.max_bug_heat
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -541,11 +530,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return history
 
     def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+                     code_name=None, tags=None):
         """See IProductSeries."""
-        return Milestone(
+        milestone = Milestone(
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
+        if tags:
+            milestone.setTags(tags.split())
+        return milestone
 
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""

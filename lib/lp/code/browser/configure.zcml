@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -67,12 +67,6 @@
       name="+recently-changed-branches"
       class="lp.code.browser.branchlisting.RecentlyChangedBranchesView"
       template="../templates/branch-listing-cross-product.pt"
-      permission="zope.Public"
-      />
-  <browser:page
-      for="zope.interface.Interface"
-      name="+test-webservice-js"
-      template="../templates/test-webservice-js.pt"
       permission="zope.Public"
       />
 
@@ -651,12 +645,20 @@
         class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
         permission="zope.Public">
         <browser:page
-            name="+index"
-            template="../templates/codereviewcomment-index.pt"/>
-        <browser:page
             name="+fragment"
             template="../templates/codereviewcomment-fragment.pt"/>
+        <browser:page
+            name="+download"
+            attribute="download"
+        />
     </browser:pages>
+    <browser:page
+        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
+        name="+index"
+        template="../templates/codereviewcomment-index.pt"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentIndexView"
+        permission="zope.Public"
+        />
     <browser:pages
         for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
         layer="lp.code.publisher.CodeLayer"
@@ -672,6 +674,11 @@
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
     </browser:pages>
+    <adapter
+      provides="lp.services.messages.interfaces.message.IMessage"
+      for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+      factory="lp.code.browser.codereviewcomment.get_message"/>
+
     <browser:pages
         for="lp.code.browser.branchmergeproposal.ICodeReviewNewRevisions"
         layer="lp.code.publisher.CodeLayer"
@@ -871,13 +878,6 @@
             name="+activereviews"
             template="../templates/active-reviews.pt"/>
         <browser:page
-            name="+addbranch"
-            for="lp.registry.interfaces.person.IPerson"
-            layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.branch.BranchAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/branch-add.pt"/>
-        <browser:page
             for="lp.registry.interfaces.person.IPerson"
             layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.branchlisting.PersonTeamBranchesView"
@@ -919,22 +919,6 @@
         permission="zope.Public"
         name="+count-summary"
         template="../templates/branch-count-summary.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.product.IProduct"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
-
-    <browser:page
-        name="+addbranch"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"/>
 
     <browser:menus
         classes="ProductBranchesMenu"

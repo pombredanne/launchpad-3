@@ -768,7 +768,7 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them.  Notice that the
 PRIVATE_TEAM 'myteam' is not included in the results.
 
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
@@ -779,11 +779,11 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 Valid teams do not include teams that have been merged.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> login_person(foo_bar)
+    >>> ignored = login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set.merge(
     ...     ephemeral, registry_experts, reviewer=ephemeral.teamowner)
-    >>> login_person(sample_person)
+    >>> ignored = login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam', u'simple-team',
@@ -1172,7 +1172,7 @@ They can be looked up by their aliases too.
     >>> login('mark@example.com')
     >>> product_set['firefox'].setAliases(['iceweasel'])
     >>> current_user = launchbag.user
-    >>> login_person(current_user)
+    >>> ignored = login_person(current_user)
     >>> vocab.getTermByToken('iceweasel').token
     'firefox'
 
@@ -1240,7 +1240,7 @@ They can be looked up by their aliases too.
     ...     IDistributionSet)
     >>> login('mark@example.com')
     >>> getUtility(IDistributionSet)['ubuntu'].setAliases(['ubantoo'])
-    >>> login_person(current_user)
+    >>> ignored = login_person(current_user)
     >>> vocab.getTermByToken('ubantoo').token
     'ubuntu'
 
@@ -1319,69 +1319,3 @@ _clauseTables).
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian in featured_project_vocabulary
     False
-
-
-CommercialProjectsVocabulary
-----------------------------
-
-The commercial projects vocabulary contains all commercial projects,
-ordered by displayname.  Note:  a project is considered commercial if it
-has a proprietary license or no license.  That's why some of these
-clearly FOSS project in our test data show up as commercial.
-
-For a normal user (one who does not have launchpad.Commercial
-permission) the owned commercial project vocabulary is a list of project
-the user either owns or manages.
-
-The test data has one project with a proprietary license.  Let's change
-bzr's so we will get more interesting results.
-
-    >>> from lp.registry.interfaces.product import License
-    >>> bzr = product_set.getByName('bzr')
-    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
-
-    >>> from lp.services.webapp.authorization import check_permission
-    >>> login('bac@canonical.com')
-    >>> bac = person_set.getByEmail('bac@canonical.com')
-    >>> check_permission('launchpad.Commercial', bac)
-    False
-
-    >>> comm_proj_vocab = get_naked_vocab(bac, "CommercialProjects")
-    >>> print comm_proj_vocab.displayname
-    Select a commercial project
-
-    >>> len(comm_proj_vocab)
-    1
-
-    >>> for term in comm_proj_vocab:
-    ...     print term.value.displayname
-    Mega Money Maker
-
-If the user is a member of Registry Experts, and therefore has
-launchpad.Moderate permission on IProductSet, then all commercial
-projects are returned.
-
-    >>> login('foo.bar@canonical.com')
-    >>> registry_member = factory.makePerson()
-    >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> registry = celebs.registry_experts
-    >>> ignored = registry.addMember(registry_member, registry.teamowner)
-
-    >>> login_person(registry_member)
-    >>> check_permission('launchpad.Moderate', product_set)
-    True
-
-    >>> comm_proj_vocab = get_naked_vocab(registry_member,
-    ...                                   "CommercialProjects")
-    >>> print comm_proj_vocab.displayname
-    Select a commercial project
-
-    >>> len(comm_proj_vocab)
-    2
-
-    >>> for term in list(comm_proj_vocab)[:5]:
-    ...     print term.value.displayname
-    Bazaar
-    Mega Money Maker
-
-

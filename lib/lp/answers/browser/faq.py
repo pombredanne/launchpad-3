@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQ` browser views."""
@@ -13,19 +13,20 @@ __all__ = [
     ]
 
 from lp import _
-from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqcollection import IFAQCollection
-from lp.services.webapp import (
+from lp.app.browser.launchpadform import (
     action,
+    LaunchpadEditFormView,
+    )
+from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadView,
     Link,
     NavigationMenu,
     )
 from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class FAQNavigationMenu(NavigationMenu):

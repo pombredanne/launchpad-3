@@ -199,6 +199,9 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
 
+    error_message = Int(
+        title=_("Error message"), required=True, readonly=True)
+
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
@@ -209,6 +212,9 @@ class IPlainPackageCopyJob(IRunnableJob):
 
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
+
+    def setErrorMessage(message):
+        """Set the error message."""
 
     def getSourceOverride():
         """Get an `ISourceOverride` from the metadata."""

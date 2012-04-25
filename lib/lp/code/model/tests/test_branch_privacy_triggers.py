@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that the triggers to maintain the branch table transitively_private
@@ -9,6 +9,7 @@ __metaclass__ = type
 import unittest
 
 from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -17,7 +18,7 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.branch_ids = dict()
 
     def createBranches(self):
@@ -132,7 +133,7 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
     def testRemoveStackedOn(self):
         # 5 is private, 1 stacked on 5, so 1 is transitively private.
         # Unstack 1.
-        # 1 should no longer be be transitively private.
+        # 1 should no longer be transitively private.
         self.createBranches()
         self.updateStackedOnForBranch(1, 5)
         self.updatePrivacyForBranch(5, True)

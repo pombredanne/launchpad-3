@@ -73,7 +73,7 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
     >>> print user_browser.title
-    Subscribe to Bugs in Mozilla Firefox 1.0
+    Subscribe : 1.0 : Mozilla Firefox
 
 But we can't subscribe to project milestones, since they are not real objects.
 

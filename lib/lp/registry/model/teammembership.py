@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -35,6 +35,7 @@ from lp.registry.errors import (
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.persontransferjob import (
@@ -84,7 +85,7 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
@@ -530,7 +531,7 @@ def _cleanTeamParticipation(child, parent):
     """
     # Delete participation entries for the child and the child's
     # direct/indirect members in other ancestor teams, unless those
-    # ancestor teams have another path the the child besides the
+    # ancestor teams have another path the child besides the
     # membership that has just been deactivated.
     store = Store.of(parent)
     store.execute("""

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -42,9 +42,11 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -147,16 +149,22 @@ class BuilderSetView(LaunchpadView):
     @cachedproperty
     def builders(self):
         """All active builders"""
-        def do_eager_load(builders):
-            # Prefetch the jobs' data.
-            queues = IStore(BuildQueue).find(
-                BuildQueue,
-                BuildQueue.builderID.is_in(
-                    builder.id for builder in builders))
-            BuildQueue.preloadSpecificJobData(queues)
+        builders = list(self.context.getBuilders())
 
-        return list(DecoratedResultSet(
-            list(self.context.getBuilders()), pre_iter_hook=do_eager_load))
+        # Populate builders' currentjob cachedproperty.
+        queues = IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue.builderID.is_in(
+                builder.id for builder in builders))
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        # Prefetch the jobs' data.
+        BuildQueue.preloadSpecificJobData(queues)
+
+        return builders
 
     @property
     def number_of_registered_builders(self):

@@ -303,6 +303,8 @@ class SourcePackageRecipeData(Storm):
             raise PrivateBranchRecipe(base_branch)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
+        else:
+            self.revspec = None
         self._recordInstructions(
             builder_recipe, parent_insn=None, branch_map=branch_map)
         self.base_branch = base_branch

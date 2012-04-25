@@ -21,9 +21,38 @@ from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 class Cookbook:
     implements(ICanonicalUrlData)
     rootsite = None
+    path = 'cookbook'
+    inside = None
 
 
 class TestBreadcrumb(TestCase):
+
+    def test_init(self):
+        # The attributes are None by default.
+        cookbook = Cookbook()
+        breadcrumb = Breadcrumb(cookbook)
+        self.assertIs(None, breadcrumb.text)
+        self.assertIs(None, breadcrumb._detail)
+        self.assertIs(None, breadcrumb._url)
+
+    def test_detail(self):
+        # The detail properted is the _detail attribute or the text attribute.
+        cookbook = Cookbook()
+        breadcrumb = Breadcrumb(cookbook)
+        breadcrumb._detail = 'hello'
+        breadcrumb.text = 'goodbye'
+        self.assertEqual('hello', breadcrumb.detail)
+        breadcrumb._detail = None
+        self.assertEqual('goodbye', breadcrumb.detail)
+
+    def test_url(self):
+        # The detail properted is the _detail attribute or the text attribute.
+        cookbook = Cookbook()
+        breadcrumb = Breadcrumb(cookbook)
+        breadcrumb._url = '/hello'
+        self.assertEqual('/hello', breadcrumb.url)
+        breadcrumb._url = None
+        self.assertEqual('http://launchpad.dev/cookbook', breadcrumb.url)
 
     def test_rootsite_defaults_to_mainsite(self):
         # When a class' ICanonicalUrlData doesn't define a rootsite, our
@@ -123,7 +152,8 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
 
     def test_product_bugtask(self):
         self.assertBreadcrumbUrls(
-            [self.product_url, self.product_bugs_url, self.product_bugtask_url],
+            [self.product_url, self.product_bugs_url,
+            self.product_bugtask_url],
             self.product_bugtask)
 
     def test_package_bugtask(self):

@@ -29,10 +29,13 @@ transaction, since it doesn't need DB access.
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bug_watch_updater = CheckwatchesMaster(transaction)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     transaction, logger=FakeLogger())
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
+    INFO Updating 0 watches for 0 bugs on http://example.com
     initializeRemoteBugDB() called: []
 
 
@@ -403,11 +406,12 @@ logged saying that comments won't be imported.
     ...     sync_comments = True
 
     >>> checkwatches_master = CheckwatchesMaster(
-    ...     transaction, syncable_gnome_products=[])
+    ...     transaction, syncable_gnome_products=[],
+    ...     logger=FakeLogger())
     >>> remote_bug_updater = checkwatches_master.remote_bug_updater_factory(
     ...     checkwatches_master, CommentImportExternalBugTracker(), '1',
     ...     [], [], server_time=None)
-    WARNING:...:Comment importing supported, but server time can't be
+    WARNING Comment importing supported, but server time can't be
                 trusted. No comments will be imported. (OOPS-...)
 
 

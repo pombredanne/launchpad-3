@@ -17,7 +17,6 @@ import tempfile
 
 from fixtures import MonkeyPatch
 from storm.locals import Store
-import transaction
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -101,6 +100,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -132,12 +132,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def switchToUploader(self):
-        transaction.commit()
-        self.layer.switchDbUser("uploader")
+        switch_dbuser("uploader")
 
     def switchToAdmin(self):
-        transaction.commit()
-        self.layer.switchDbUser("launchpad_main")
+        switch_dbuser("launchpad_main")
 
     def setUp(self):
         super(TestUploadProcessorBase, self).setUp()
@@ -627,9 +625,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        to_addrs = [e.strip() for e in to_addrs]
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(to_addrs, [foo_bar, daniel])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
             % raw_msg)
@@ -661,9 +660,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        to_addrs = [e.strip() for e in to_addrs]
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
-        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
+        self.assertContentEqual(to_addrs, [foo_bar, daniel])
         self.assertTrue("Waiting for approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.\n"
                         "Got:\n%s" % raw_msg)

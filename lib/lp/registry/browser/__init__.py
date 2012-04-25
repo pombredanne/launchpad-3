@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common registry browser helpers and mixins."""
@@ -24,6 +24,10 @@ from storm.store import Store
 from zope.component import getUtility
 
 from lp.app.browser.folder import ExportedFolder
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -31,12 +35,9 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.webapp.launchpadform import (
-    action,
-    LaunchpadEditFormView,
-    )
 from lp.services.webapp.publisher import (
     canonical_url,
+    DataDownloadView,
     LaunchpadView,
     )
 
@@ -118,7 +119,7 @@ class MilestoneOverlayMixin:
             'milestone_row_uri': self.milestone_row_uri_template,
             }
         return """
-            LPS.use(
+            LPJS.use(
                 'node', 'lp.registry.milestoneoverlay',
                 'lp.registry.milestonetable',
                 function (Y) {
@@ -271,17 +272,15 @@ class RegistryEditFormView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
 
-class BaseRdfView:
+class BaseRdfView(DataDownloadView):
     """A view that sets its mime-type to application/rdf+xml."""
 
     template = None
     filename = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    content_type = 'application/rdf+xml'
 
-    def __call__(self):
+    def getBody(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
 
         Render the page template to produce RDF output.
@@ -289,10 +288,6 @@ class BaseRdfView:
 
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment; filename=%s.rdf' % (
-             self.filename))
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata

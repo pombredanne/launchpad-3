@@ -191,7 +191,7 @@ approved, though.
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
-    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+    ...     auth='Basic james.blackwell@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription-policy'))
@@ -233,7 +233,7 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     >>> myemail.syncUpdate()
 
     >>> browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.url
     'http://launchpad.dev/~myemail'

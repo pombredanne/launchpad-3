@@ -8,9 +8,9 @@ subscribe to the bug at a given BugNotificationLevel.
     >>> from lp.testing.sampledata import USER_EMAIL
     >>> login(USER_EMAIL)
     >>> bug = factory.makeBug()
+    >>> task = bug.default_bugtask
     >>> logout()
-    >>> user_browser.open(
-    ...     canonical_url(bug.default_bugtask, view_name='+subscribe'))
+    >>> user_browser.open(canonical_url(task, view_name='+subscribe'))
     >>> bug_notification_level_control = user_browser.getControl(
     ...     name='field.bug_notification_level')
     >>> for control in bug_notification_level_control.controls:

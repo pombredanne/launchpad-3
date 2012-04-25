@@ -1,4 +1,4 @@
-Official Bug Tags
+fficial Bug Tags
 =================
 
 Project admins can manage the official bug tags by following a link
@@ -58,13 +58,12 @@ The link is also available for the bug supervisor.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from lp.testing import login, logout
     >>> login(ADMIN_EMAIL)
-    >>> supervisor = factory.makePerson(password='g00dpassword')
+    >>> supervisor = factory.makePerson()
     >>> youbuntu = factory.makeProduct(name='youbuntu',
     ...     bug_supervisor=supervisor,
     ...     official_malone=True)
     >>> bug_super_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...         supervisor.preferredemail.email)
+    ...     auth='Basic %s:test' % supervisor.preferredemail.email)
     >>> logout()
     >>> bug_super_browser.open(
     ...     'http://bugs.launchpad.dev/youbuntu')

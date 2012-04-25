@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -32,8 +32,23 @@
         module="lp.registry.feed.announcement"
         classes="LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
         />
+    <browser:url
+       for="lp.app.interfaces.services.IServiceFactory"
+       path_expression="string:+services"
+       parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
+    <browser:url
+       for="lp.app.interfaces.services.IService"
+       path_expression="string:${name}"
+       parent_utility="lp.app.interfaces.services.IServiceFactory"/>
 
 <facet facet="overview">
+    <browser:page
+        for="lp.services.webapp.interfaces.IBatchNavigator"
+        name="+sharee-table-view"
+        template="../templates/pillar-sharing-table.pt"
+        permission="zope.Public" />
+
     <browser:page
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
@@ -163,7 +178,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
         permission="zope.Public"/>
     <browser:page
         name="+missingpackages"
@@ -337,7 +352,7 @@
         <browser:page
             name="+ask-a-question-button"
             for="lp.registry.interfaces.projectgroup.IProjectGroup"
-            class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+            class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
             permission="zope.Public"/>
     </facet>
     <browser:navigation
@@ -389,7 +404,7 @@
     <browser:page
         name="+register-a-blueprint-button"
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
-        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonView"
+        class="lp.blueprints.browser.specificationtarget.RegisterABlueprintButtonPortlet"
         permission="zope.Public"/>
     <browser:page
         name="+edit"
@@ -765,7 +780,6 @@
         <browser:menus
             module="lp.registry.browser.person"
             classes="
-                PersonBugsMenu
                 PersonEditNavigationMenu
                 PersonFacets
                 PersonIndexMenu
@@ -841,7 +855,7 @@
         <browser:page
             name="+editlocation"
             for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonEditLocationView"
+            class="lp.registry.browser.person.PersonEditTimeZoneView"
             permission="launchpad.Edit"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
@@ -946,9 +960,6 @@
             <browser:page
                 name="+xrds"
                 attribute="xrds"/>
-            <browser:page
-                name="+portlet-map"
-                template="../templates/person-portlet-map.pt"/>
         </browser:pages>
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
@@ -1045,18 +1056,6 @@
             permission="launchpad.Edit"
             template="../templates/person-oauth-tokens.pt"/>
         <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonSubscriptionsView"
-            name="+subscriptions"
-            template="../templates/person-subscriptions.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.IPerson"
-            permission="zope.Public"
-            class="lp.registry.browser.person.PersonStructuralSubscriptionsView"
-            name="+structural-subscriptions"
-            template="../templates/person-structural-subscriptions.pt"/>
-        <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             class="lp.registry.browser.team.TeamIndexView"
@@ -1070,28 +1069,10 @@
             template="../templates/team-portlet-polls.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapView"
-            name="+map"
-            template="../templates/team-map.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamMailingListSubscribersView"
             permission="zope.Public"
             name="+mailing-list-subscribers"
             template="../templates/team-mailinglist-subscribers.pt"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapData"
-            template="../templates/team-map-data.pt"
-            name="+mapdata"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.team.TeamMapLtdData"
-            template="../templates/team-map-data.pt"
-            name="+mapdataltd"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
@@ -1103,12 +1084,12 @@
             name="+mugshots"
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.team.TeamMapLtdView"
+      <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.registry.browser.person.PersonUpcomingWorkView"
             permission="zope.Public"
-            name="+portlet-map"
-            template="../templates/team-portlet-map.pt"/>
+            name="+upcomingwork"
+            template="../templates/person-upcomingwork.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"
@@ -1140,11 +1121,23 @@
             name="+mailinglist-moderate"
             template="../templates/team-mailinglist-moderate.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamMailingListArchiveView"
+            permission="zope.Public"
+            name="+mailing-list-archive"
+            template="../templates/team-mailinglist-archive.pt"/>
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamEditView"
             permission="launchpad.Edit"
             template="../templates/team-edit.pt"/>
+        <browser:page
+            name="+review"
+            for="lp.registry.interfaces.person.ITeam"
+            class="lp.registry.browser.team.TeamAdministerView"
+            permission="launchpad.Moderate"
+            template="../templates/person-review.pt"/>
         <browser:page
             name="+branding"
             for="lp.registry.interfaces.person.ITeam"
@@ -1279,15 +1272,20 @@
             MilestoneNavigation"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
         permission="zope.Public"/>
     <browser:defaultView
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         name="+index"/>
     <browser:url
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         path_expression="string:+milestone/${name}"
+        rootsite="mainsite"
+        attribute_to_parent="target"/>
+    <browser:url
+        for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
+        path_expression="string:+tags/${name}"
         rootsite="mainsite"
         attribute_to_parent="target"/>
     <browser:page
@@ -1297,7 +1295,7 @@
         template="../templates/milestone-macros.pt"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:pages
-        for="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.milestone.IMilestoneData"
         class="lp.registry.browser.milestone.MilestoneView"
         permission="zope.Public">
         <browser:page
@@ -1322,6 +1320,20 @@
         class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
+    <browser:pages
+        for="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"
+        class="lp.registry.browser.milestone.MilestoneTagView"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/milestone-index.pt"/>
+
+        <!-- Project Group Milestone Tag Portlets -->
+
+        <browser:page
+            name="+portlet-milestone-tag-search"
+            template="../templates/milestone-tag-search.pt"/>
+    </browser:pages>
     <browser:page
         name="+edit"
         for="lp.registry.interfaces.milestone.IMilestone"
@@ -1381,8 +1393,7 @@
         name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.product"
-        classes="
-            ProductNavigation"/>
+        classes="ProductNavigation"/>
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
@@ -1422,6 +1433,31 @@
             name="+portlet-license-missing"
             template="../templates/product-portlet-license-missing.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="launchpad.Driver"
+        name="+sharing"
+        class="lp.registry.browser.pillar.PillarSharingView"
+        template="../templates/pillar-sharing.pt"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        factory="lp.registry.browser.pillar.PillarPersonBreadcrumb"
+        permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        path_expression="string:+sharing/${person/name}"
+        rootsite="mainsite"
+        attribute_to_parent="pillar"/>
+    <browser:page
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        permission="launchpad.Driver"
+        name="+index"
+        class="lp.registry.browser.pillar.PillarPersonSharingView"
+        template="../templates/pillar-sharing-details.pt"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        name="+index"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -1755,7 +1791,7 @@
     <browser:page
         name="+ask-a-question-button"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.answers.browser.questiontarget.AskAQuestionButtonView"
+        class="lp.answers.browser.questiontarget.AskAQuestionButtonPortlet"
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
@@ -1784,6 +1820,12 @@
         module="lp.registry.browser.distribution"
         classes="
             DistributionNavigation"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        permission="launchpad.Driver"
+        name="+sharing"
+        class="lp.registry.browser.pillar.PillarSharingView"
+        template="../templates/pillar-sharing.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionArchiveMirrorsView"
@@ -2213,4 +2255,8 @@
         attribute_to_parent="owner" />
 
 </facet>
+<adapter
+  provides="lp.services.messages.interfaces.message.IMessage"
+  for="lp.registry.browser.distroseriesdifference.IDistroSeriesDifferenceDisplayComment"
+  factory="lp.registry.browser.distroseriesdifference.get_message"/>
 </configure>

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0611,W0212
 
@@ -15,6 +15,7 @@ __all__ = [
 import calendar
 import datetime
 import httplib
+import itertools
 import operator
 
 from lazr.delegates import delegates
@@ -37,7 +38,6 @@ from storm.expr import (
 from storm.locals import (
     And,
     Desc,
-    Int,
     Join,
     Not,
     Or,
@@ -52,6 +52,7 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
@@ -89,7 +90,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
@@ -97,7 +97,6 @@ from lp.bugs.model.bug import (
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
@@ -116,6 +115,9 @@ from lp.code.model.hasbranches import (
     )
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.enums import InformationType
+from lp.registry.errors import CommercialSubscribersOnly
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -130,6 +132,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -300,11 +303,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
+              HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
-        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IBugSummaryDimension, IFAQTarget, IHasBugSupervisor,
         IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
         IHasOOPSReferences, ILaunchpadUsage, IProduct, IServiceUsage)
 
@@ -377,7 +380,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
-    max_bug_heat = Int()
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
@@ -511,9 +513,49 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                notNull=True, default=False,
                                storm_validator=_validate_license_approved)
 
+    def checkPrivateBugsTransitionAllowed(self, private_bugs, user):
+        """See `IProductPublic`."""
+        from lp.security import (
+            BugTargetOwnerOrBugSupervisorOrAdmins,
+            ModerateByRegistryExpertsOrAdmins,
+            )
+        if user is not None:
+            person_roles = IPersonRoles(user)
+            moderator_check = ModerateByRegistryExpertsOrAdmins(self)
+            moderator = moderator_check.checkAuthenticated(person_roles)
+            if moderator:
+                return True
+
+            bug_supervisor_check = BugTargetOwnerOrBugSupervisorOrAdmins(self)
+            bug_supervisor = (
+                bug_supervisor_check.checkAuthenticated(person_roles))
+            if (bug_supervisor and
+                    (not private_bugs
+                     or self.has_current_commercial_subscription)):
+                return
+        if private_bugs:
+            raise CommercialSubscribersOnly(
+                'A valid commercial subscription is required to turn on '
+                'default private bugs.')
+        raise Unauthorized(
+            'Only bug supervisors can turn off default private bugs.')
+
+    def setPrivateBugs(self, private_bugs, user):
+        """ See `IProductEditRestricted`."""
+        if self.private_bugs == private_bugs:
+            return
+        self.checkPrivateBugsTransitionAllowed(private_bugs, user)
+        self.private_bugs = private_bugs
+
     @cachedproperty
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)
+
+    @property
+    def has_current_commercial_subscription(self):
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        return (self.commercial_subscription
+            and self.commercial_subscription.date_expires > now)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
@@ -718,14 +760,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # project_reviewed & licenses at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
-        # $product/+edit doesn't require a license if a license hasn't
-        # already been set, but updateContextFromData() updates all the
-        # fields, so we have to avoid this assertion when the attribute
-        # isn't actually being changed.
-        assert len(licenses) != 0, "licenses argument must not be empty"
+        if len(licenses) == 0:
+            raise ValueError('licenses argument must not be empty.')
         for license in licenses:
             if license not in License:
-                raise AssertionError("%s is not a License" % license)
+                raise ValueError("%s is not a License." % license)
 
         for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self,
@@ -735,6 +774,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
         get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
+        if (License.OTHER_PROPRIETARY in licenses
+            and self.commercial_subscription is None):
+            lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+            now = datetime.datetime.now(pytz.UTC)
+            date_expires = now + datetime.timedelta(days=30)
+            sales_system_id = 'complimentary-30-day-%s' % now
+            whiteboard = (
+                "Complimentary 30 day subscription. -- Launchpad %s" %
+                now.date().isoformat())
+            subscription = CommercialSubscription(
+                product=self, date_starts=now, date_expires=date_expires,
+                registrant=lp_janitor, purchaser=lp_janitor,
+                sales_system_id=sales_system_id, whiteboard=whiteboard)
+            get_property_cache(self).commercial_subscription = subscription
+        # Do not use a snapshot because the past is unintersting.
+        notify(ObjectModifiedEvent(self, self, edited_fields=['licenses']))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -926,10 +981,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        return Milestone.selectOne("""
+        results = Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+        return results
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""
@@ -1448,6 +1504,12 @@ class ProductSet:
              'rather than a stable release branch. This is sometimes also '
              'called MAIN or HEAD.'))
         product.development_focus = trunk
+
+        # Add default AccessPolicies.
+        policies = itertools.product(
+            (product,), (InformationType.USERDATA,
+                InformationType.EMBARGOEDSECURITY))
+        getUtility(IAccessPolicySource).create(policies)
 
         return product
 

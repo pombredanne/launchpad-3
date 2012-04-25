@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for handling mailing lists."""
@@ -28,7 +28,7 @@ from lp.services.webapp import (
 
 
 class HeldMessageView(LaunchpadView):
-    """A little helper view for for held messages."""
+    """A little helper view for held messages."""
 
     def __init__(self, context, request):
         super(HeldMessageView, self).__init__(context, request)

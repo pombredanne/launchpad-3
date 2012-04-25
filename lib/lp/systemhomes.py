@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -24,6 +24,7 @@ from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -118,17 +119,18 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params, prejoins=[]):
+    def searchTasks(self, search_params):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(
-            search_params, prejoins=prejoins)
+        return getUtility(IBugTaskSet).search(search_params)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
         """See `IMaloneApplication`."""
+        information_type = convert_to_information_type(
+            private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
-            security_related=security_related, private=private, tags=tags)
+            information_type=information_type, tags=tags)
         if IProduct.providedBy(target):
             params.setBugTarget(product=target)
         elif IDistribution.providedBy(target):

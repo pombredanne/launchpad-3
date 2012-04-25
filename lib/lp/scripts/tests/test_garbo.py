@@ -12,6 +12,7 @@ from datetime import (
     )
 import logging
 from StringIO import StringIO
+from textwrap import dedent
 import time
 
 from pytz import UTC
@@ -29,16 +30,19 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -51,6 +55,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -72,6 +77,8 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.lpstorm import IMasterStore
+from lp.services.features import getFeatureFlag
+from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
@@ -101,6 +108,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -130,6 +138,7 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+        DatabaseLayer.force_dirty_database()
 
 
 class BulkFoo(Storm):
@@ -383,8 +392,7 @@ class TestGarbo(TestCaseWithFactory):
         self.log.addHandler(handler)
 
     def runFrequently(self, maximum_chunk_size=2, test_args=()):
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        switch_dbuser('garbo_daily')
         collector = FrequentDatabaseGarbageCollector(
             test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
@@ -393,8 +401,7 @@ class TestGarbo(TestCaseWithFactory):
         return collector
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
-        transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        switch_dbuser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = self.log
@@ -402,7 +409,7 @@ class TestGarbo(TestCaseWithFactory):
         return collector
 
     def runHourly(self, maximum_chunk_size=2, test_args=()):
-        LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
+        switch_dbuser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = self.log
@@ -417,7 +424,7 @@ class TestGarbo(TestCaseWithFactory):
             now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
             now,  # Not garbage
             ]
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = IMasterStore(OAuthNonce)
 
         # Make sure we start with 0 nonces.
@@ -461,7 +468,7 @@ class TestGarbo(TestCaseWithFactory):
             now - 1 * DAYS + 1 * MINUTES,  # Not garbage
             now,  # Not garbage
             ]
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -496,14 +503,14 @@ class TestGarbo(TestCaseWithFactory):
         results_to_keep_count = (
             config.codeimport.consecutive_failure_limit - 1)
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         code_import_id = self.factory.makeCodeImport().id
         machine_id = self.factory.makeCodeImportMachine().id
         requester_id = self.factory.makePerson().id
         transaction.commit()
 
         def new_code_import_result(timestamp):
-            LaunchpadZopelessLayer.switchDbUser('testadmin')
+            switch_dbuser('testadmin')
             CodeImportResult(
                 date_created=timestamp,
                 code_importID=code_import_id, machineID=machine_id,
@@ -550,7 +557,7 @@ class TestGarbo(TestCaseWithFactory):
         now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         machine = self.factory.makeCodeImportMachine()
         requester = self.factory.makePerson()
         # Create 6 code import events for this machine, 3 on each side of 30
@@ -578,7 +585,7 @@ class TestGarbo(TestCaseWithFactory):
     def test_OpenIDConsumerAssociationPruner(self):
         pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store_selector = getUtility(IStoreSelector)
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         now = time.time()
@@ -602,7 +609,7 @@ class TestGarbo(TestCaseWithFactory):
         # test is running slow.
         self.runFrequently()
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
@@ -620,7 +627,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(num_unexpired > 0)
 
     def test_RevisionAuthorEmailLinker(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
         rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
 
@@ -636,7 +643,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Only the validated email address associated with a Person
         # causes a linkage.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(rev1.revision_author.person, person1)
         self.assertEqual(rev2.revision_author.person, None)
 
@@ -645,11 +652,11 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(rev2.revision_author.person, None)
 
         self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(rev2.revision_author.person, person2)
 
     def test_HWSubmissionEmailLinker(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         sub1 = self.factory.makeHWSubmission(
             emailaddress='author-1@Example.Org')
         sub2 = self.factory.makeHWSubmission(
@@ -667,7 +674,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Only the validated email address associated with a Person
         # causes a linkage.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(sub1.owner, person1)
         self.assertEqual(sub2.owner, None)
 
@@ -676,14 +683,14 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(sub2.owner, None)
 
         self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(sub2.owner, person2)
 
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
         # Switch the DB user because the garbo_daily user isn't allowed to
         # create person entries.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         # Create two new person entries, both not linked to anything. One of
         # them will have the present day as its date created, and so will not
@@ -711,7 +718,7 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_BugNotificationPruner(self):
         # Create some sample data
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         notification = BugNotification(
             messageID=1,
             bugID=1,
@@ -777,7 +784,7 @@ class TestGarbo(TestCaseWithFactory):
     def _test_AnswerContactPruner(self, status, interval, expected_count=0):
         # Garbo should remove answer contacts for accounts with given 'status'
         # which was set more than 'interval' days ago.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = IMasterStore(AnswerContact)
 
         person = self.factory.makePerson()
@@ -802,7 +809,7 @@ class TestGarbo(TestCaseWithFactory):
 
         self.runDaily()
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(
             store.find(
                 AnswerContact,
@@ -830,7 +837,7 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = IMasterStore(Job)
 
         db_branch = self.factory.makeAnyBranch()
@@ -849,7 +856,7 @@ class TestGarbo(TestCaseWithFactory):
 
         self.runDaily()
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(
             store.find(
                 BranchJob,
@@ -859,7 +866,7 @@ class TestGarbo(TestCaseWithFactory):
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
         # Check to make sure the garbo doesn't remove jobs that aren't more
         # than thirty days old.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = IMasterStore(Job)
 
         db_branch = self.factory.makeAnyBranch(
@@ -877,13 +884,13 @@ class TestGarbo(TestCaseWithFactory):
 
         self.runDaily()
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
     def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         bug = self.factory.makeBug()
         attachment = self.factory.makeBugAttachment(bug=bug)
         transaction.commit()
@@ -896,11 +903,11 @@ class TestGarbo(TestCaseWithFactory):
 
         # But once we delete the LfC record, the attachment is deleted
         # in the next daily garbo run.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         removeSecurityProxy(attachment.libraryfile).content = None
         transaction.commit()
         self.runDaily()
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         self.assertEqual(bug.attachments.count(), 0)
 
     def test_TimeLimitedTokenPruner(self):
@@ -924,7 +931,7 @@ class TestGarbo(TestCaseWithFactory):
             path="sample path", token="bar"))))
 
     def test_CacheSuggestivePOTemplates(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         template = self.factory.makePOTemplate()
         self.runDaily()
 
@@ -938,7 +945,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(1, count)
 
     def test_BugSummaryJournalRollup(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         # Generate a load of entries in BugSummaryJournal.
@@ -960,7 +967,7 @@ class TestGarbo(TestCaseWithFactory):
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
         # participating in a POTemplate only as obsolete messages.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         pofile = self.factory.makePOFile()
         translation_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile)
@@ -979,7 +986,7 @@ class TestGarbo(TestCaseWithFactory):
     def test_UnusedPOTMsgSetPruner_removes_unreferenced_message_sets(self):
         # If a POTMsgSet is not referenced by any templates the
         # UnusedPOTMsgSetPruner will remove it.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
         potmsgset = self.factory.makePOTMsgSet()
         # Cheekily drop any references to the POTMsgSet we just created.
         store = IMasterStore(POTMsgSet)
@@ -996,6 +1003,137 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.assertEqual(0, unreferenced_msgsets.count())
 
+    def test_BugHeatUpdater_sees_feature_flag(self):
+        # BugHeatUpdater can see its feature flag even though it's
+        # running in a thread. garbo sets up a feature controller for
+        # each worker.
+        switch_dbuser('testadmin')
+        bug = self.factory.makeBug()
+        now = datetime.now(UTC)
+        cutoff = now - timedelta(days=1)
+        old_update = now - timedelta(days=2)
+        naked_bug = removeSecurityProxy(bug)
+        naked_bug.heat_last_updated = old_update
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'bugs.heat_updates.cutoff',
+            cutoff.isoformat().decode('ascii')))
+        transaction.commit()
+        self.assertEqual(old_update, naked_bug.heat_last_updated)
+        self.runHourly()
+        self.assertNotEqual(old_update, naked_bug.heat_last_updated)
+
+    def test_SpecificationWorkitemMigrator_not_enabled_by_default(self):
+        self.assertFalse(getFeatureFlag('garbo.workitem_migrator.enabled'))
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A single work item: TODO
+            """)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_SpecificationWorkitemMigrator(self):
+        # When the migration is successful we remove all work-items from the
+        # whiteboard.
+        switch_dbuser('testadmin')
+        product = self.factory.makeProduct(name='linaro')
+        milestone = self.factory.makeMilestone(product=product)
+        person = self.factory.makePerson()
+        whiteboard = dedent("""
+            Work items for %s:
+            [%s] A single work item: TODO
+
+            Work items:
+            Another work item: DONE
+            """ % (milestone.name, person.name))
+        spec = self.factory.makeSpecification(
+            product=product, whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual('', spec.whiteboard.strip())
+        self.assertEqual(2, spec.work_items.count())
+        self.assertThat(spec.work_items[0], MatchesStructure.byEquality(
+            assignee=person, title="A single work item",
+            status=SpecificationWorkItemStatus.TODO,
+            milestone=milestone, specification=spec))
+        self.assertThat(spec.work_items[1], MatchesStructure.byEquality(
+            assignee=None, title="Another work item",
+            status=SpecificationWorkItemStatus.DONE,
+            milestone=None, specification=spec))
+
+    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
+        switch_dbuser('testadmin')
+        whiteboard = "Work items:\nA work item: TODO"
+        spec = self.factory.makeSpecification(
+            whiteboard=whiteboard,
+            distribution=getUtility(IDistributionSet)['ubuntu'])
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_SpecificationWorkitemMigrator_parse_error(self):
+        # When we fail to parse any work items in the whiteboard we leave it
+        # untouched and don't create any SpecificationWorkItem entries.
+        switch_dbuser('testadmin')
+        whiteboard = dedent("""
+            Work items:
+            A work item: TODO
+            Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
+            """)
+        product = self.factory.makeProduct(name='linaro')
+        spec = self.factory.makeSpecification(
+            product=product, whiteboard=whiteboard)
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
+        transaction.commit()
+
+        self.runFrequently()
+
+        self.assertEqual(whiteboard, spec.whiteboard)
+        self.assertEqual(0, spec.work_items.count())
+
+    def test_BugTaskFlattener(self):
+        # Private bugs without corresponding data in the access policy
+        # schema get mirrored.
+        switch_dbuser('testadmin')
+        task = self.factory.makeBugTask()
+        # Remove the existing mirrored data.
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+        transaction.commit()
+        self.runHourly()
+        # Check that there's a record again, and delete it.
+        switch_dbuser('testadmin')
+        self.assertEqual(
+            (task.id,),
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+        transaction.commit()
+        self.runHourly()
+        # A watermark is kept in memcache, so a second run doesn't
+        # consider the same task.
+        self.assertIs(
+            None,
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
+
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
@@ -1003,7 +1141,7 @@ class TestGarboTasks(TestCaseWithFactory):
     def test_LoginTokenPruner(self):
         store = IMasterStore(LoginToken)
         now = datetime.now(UTC)
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         # It is configured as a daily task.
         self.assertTrue(
@@ -1024,7 +1162,7 @@ class TestGarboTasks(TestCaseWithFactory):
 
         # Run the pruner. Batching is tested by the BulkPruner tests so
         # no need to repeat here.
-        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        switch_dbuser('garbo_daily')
         pruner = LoginTokenPruner(logging.getLogger('garbo'))
         while not pruner.isDone():
             pruner(10)

@@ -19,6 +19,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+
 from zope.interface import implements
 
 from lp.app.validators.email import valid_email
@@ -56,9 +57,6 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             dbName='email', notNull=True, unique=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
-    account = ForeignKey(
-            dbName='account', foreignKey='Account', notNull=False,
-            default=None)
 
     def __repr__(self):
         return '<EmailAddress at 0x%x <%s> [%s]>' % (
@@ -116,8 +114,7 @@ class EmailAddressSet:
         return EmailAddress.selectOne(
             "lower(email) = %s" % quote(email.strip().lower()))
 
-    def new(self, email, person=None, status=EmailAddressStatus.NEW,
-            account=None):
+    def new(self, email, person=None, status=EmailAddressStatus.NEW):
         """See IEmailAddressSet."""
         email = email.strip()
 
@@ -129,26 +126,11 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
-        if person is None:
-            personID = None
-        else:
-            if account is None:
-                account = person.account
-            personID = person.id
-            accountID = account and account.id
-            assert person.accountID == accountID, (
-                "Email address '%s' must be linked to same account as "
-                "person '%s'.  Expected %r (%s), got %r (%s)" % (
-                    email, person.name, person.account, person.accountID,
-                    account, accountID))
-        # We use personID instead of just person, as in some cases the
-        # Person record will not yet be replicated from the main
-        # Store to the auth master Store.
+        assert person
         return EmailAddress(
             email=email,
             status=status,
-            personID=personID,
-            account=account)
+            person=person)
 
 
 class UndeletableEmailAddress(Exception):

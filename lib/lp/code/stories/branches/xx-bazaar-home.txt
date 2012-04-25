@@ -1,4 +1,5 @@
-= The Launchpad Code front page =
+The Launchpad Code front page
+=============================
 
 First we manually set the Bazaar version, so that this document will not need
 updating when Launchpad upgrades Bazaar.
@@ -37,7 +38,24 @@ with a link to the complete listing.
     /projects
 
 
-== Short Listings ==
+Search
+------
+
+Any user can see the project search form.
+
+    >>> form = find_tag_by_id(browser.contents, 'search-projects-form')
+    >>> print form['action']
+    http://launchpad.dev/projects
+
+    >>> browser.getControl(name='text', index=0)
+    <Control name='text' type='text'>
+
+    >>> browser.getControl('Find a Project')
+    <SubmitControl name='search' type='submit'>
+
+
+Short Listings
+--------------
 
 Each of the three short branch listings on the code homepage now have
 an anchor that looks like "more..." that takes the user to a branch
@@ -45,7 +63,8 @@ listing view that lists all matching branches ordered appropriately
 for the listing.
 
 
-=== Recently registered ===
+Recently registered
+...................
 
 Since each anchor looks the same, the selection is done on url.
 
@@ -78,7 +97,8 @@ registered is the ordering, the registered date is also shown.
     '...1...&rarr;...6...of...28...results...'
 
 
-== Recently changed ==
+Recently changed
+................
 
 Recently changed branches are ordered with the branches with the most
 recent commits first.
@@ -104,7 +124,8 @@ recent commits first.
 
 
 
-== Recently imported ==
+Recently imported
+.................
 
 Recently imported branches are ordered by recent commits only in
 imported branches.
@@ -133,7 +154,8 @@ imported branch listings.
     Last Commit
 
 
-== Recently built recipes ==
+Recently built recipes
+......................
 
 Source package recipes have their own section on the home page.
 

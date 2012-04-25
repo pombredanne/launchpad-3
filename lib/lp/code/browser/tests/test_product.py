@@ -185,6 +185,13 @@ class TestProductCodeIndexView(ProductTestBase):
         commit_section = find_tag_by_id(view.render(), 'commits')
         self.assertIs(None, commit_section)
 
+    def test_initial_branches_contains_push_instructions(self):
+        product, branch = self.makeProductAndDevelopmentFocusBranch()
+        view = create_initialized_view(
+            product, '+code-index', rootsite='code', principal=product.owner)
+        content = view()
+        self.assertIn('bzr push lp:~', content)
+
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""

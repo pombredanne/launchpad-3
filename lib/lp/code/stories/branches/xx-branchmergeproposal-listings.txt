@@ -23,7 +23,7 @@ Make a trunk branch and set as the development focus branch.
 Make a single proposal for albert that is needing review by robert.
 
     >>> albert = factory.makePerson(
-    ...     name='albert', email="albert@example.com", password="test")
+    ...     name='albert', email="albert@example.com")
     >>> robert = factory.makePerson(name='robert')
     >>> branch = factory.makeProductBranch(
     ...     owner=albert, product=fooix, name='review')

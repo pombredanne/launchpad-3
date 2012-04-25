@@ -21,7 +21,6 @@ __all__ = [
     'IDescription',
     'ILocationField',
     'INoneableTextLine',
-    'IPasswordField',
     'IPersonChoice',
     'IStrippedTextLine',
     'ISummary',
@@ -37,7 +36,6 @@ __all__ = [
     'MugshotImageUpload',
     'NoneableDescription',
     'NoneableTextLine',
-    'PasswordField',
     'PersonChoice',
     'PillarAliases',
     'PillarNameField',
@@ -55,6 +53,7 @@ __all__ = [
     'URIField',
     'UniqueField',
     'Whiteboard',
+    'WorkItemsText',
     'is_public_person_or_closed_team',
     'is_public_person',
     ]
@@ -81,7 +80,6 @@ from zope.schema import (
     Field,
     Float,
     Int,
-    Password,
     Text,
     TextLine,
     Tuple,
@@ -94,7 +92,6 @@ from zope.schema.interfaces import (
     IField,
     Interface,
     IObject,
-    IPassword,
     IText,
     ITextLine,
     )
@@ -106,12 +103,18 @@ from lp.app.validators.name import (
     name_validator,
     valid_name,
     )
+from lp.blueprints.enums import SpecificationWorkItemStatus
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.webapp.interfaces import ILaunchBag
 
 # Marker object to tell BaseImageUpload to keep the existing image.
 KEEP_SAME_IMAGE = object()
+# Regexp for detecting milestone headers in work items text.
+MILESTONE_RE = re.compile('^work items(.*)\s*:\s*$', re.I)
+# Regexp for work items.
+WORKITEM_RE = re.compile(
+    '^(\[(?P<assignee>.*?)\])?\s*(?P<title>.*)\s*:\s*(?P<status>.*)\s*$', re.I)
 
 
 # Field Interfaces
@@ -150,11 +153,6 @@ class ITimeInterval(ITextLine):
 
 class IBugField(IObject):
     """A field that allows entry of a Bug number or nickname"""
-
-
-class IPasswordField(IPassword):
-    """A field that ensures we only use http basic authentication safe
-    ascii characters."""
 
 
 class IAnnouncementDate(IDatetime):
@@ -418,17 +416,6 @@ class SearchTag(Tag):
             return super(SearchTag, self).constraint(value)
 
 
-class PasswordField(Password):
-    implements(IPasswordField)
-
-    def _validate(self, value):
-        # Local import to avoid circular imports
-        from lp.app.validators.validation import valid_password
-        if not valid_password(value):
-            raise LaunchpadValidationError(_(
-                "The password provided contains non-ASCII characters."))
-
-
 class UniqueField(TextLine):
     """Base class for fields that are used for unique attributes."""
 
@@ -510,6 +497,10 @@ class ContentNameField(UniqueField):
 class BlacklistableContentNameField(ContentNameField):
     """ContentNameField that also checks that a name is not blacklisted"""
 
+    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
+                         "administrators. Contact Launchpad Support if you "
+                         "want to use this name.")
+
     def _validate(self, input):
         """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
@@ -525,9 +516,7 @@ class BlacklistableContentNameField(ContentNameField):
         from lp.registry.interfaces.person import IPersonSet
         user = getUtility(ILaunchBag).user
         if getUtility(IPersonSet).isNameBlacklisted(input, user):
-            raise LaunchpadValidationError(
-                "The name '%s' has been blocked by the Launchpad "
-                "administrators." % input)
+            raise LaunchpadValidationError(self.blacklistmessage % input)
 
 
 class PillarAliases(TextLine):
@@ -876,3 +865,98 @@ class PublicPersonChoice(PersonChoice):
         else:
             # The vocabulary prevents the revealing of private team names.
             raise PrivateTeamNotAllowed(value)
+
+
+class WorkItemsText(Text):
+
+    def parseLine(self, line):
+        workitem_match = WORKITEM_RE.search(line)
+        if workitem_match:
+            assignee = workitem_match.group('assignee')
+            title = workitem_match.group('title')
+            status = workitem_match.group('status')
+        else:
+            raise LaunchpadValidationError(
+                'Invalid work item format: "%s"' % line)
+        if title == '':
+            raise LaunchpadValidationError(
+                'No work item title found on "%s"' % line)
+        if title.startswith('['):
+            raise LaunchpadValidationError(
+                'Missing closing "]" for assignee on "%s".' % line)
+
+        return {'title': title, 'status': status.strip().upper(),
+                'assignee': assignee}
+
+    def parse(self, text):
+        sequence = 0
+        milestone = None
+        work_items = []
+        for line in text.splitlines():
+            if line.strip() == '':
+                continue
+            milestone_match = MILESTONE_RE.search(line)
+            if milestone_match:
+                milestone_part = milestone_match.group(1).strip()
+                if milestone_part == '':
+                    milestone = None
+                else:
+                    milestone = milestone_part.split()[-1]
+            else:
+                new_work_item = self.parseLine(line)
+                new_work_item['milestone'] = milestone
+                new_work_item['sequence'] = sequence
+                sequence += 1
+                work_items.append(new_work_item)
+        return work_items
+
+    def validate(self, value):
+        self.parseAndValidate(value)
+
+    def parseAndValidate(self, text):
+        work_items = self.parse(text)
+        for work_item in work_items:
+            work_item['status'] = self.getStatus(work_item['status'])
+            work_item['assignee'] = self.getAssignee(work_item['assignee'])
+            work_item['milestone'] = self.getMilestone(work_item['milestone'])
+        return work_items
+
+    def getStatus(self, text):
+        valid_statuses = SpecificationWorkItemStatus.items
+        if text.lower() not in [item.name.lower() for item in valid_statuses]:
+            raise LaunchpadValidationError('Unknown status: %s' % text)
+        return valid_statuses[text.upper()]
+
+    def getAssignee(self, assignee_name):
+        if assignee_name is None:
+            return None
+        from lp.registry.interfaces.person import IPersonSet
+        assignee = getUtility(IPersonSet).getByName(assignee_name)
+        if assignee is None:
+            raise LaunchpadValidationError("Unknown person name: %s" % assignee_name)
+        return assignee
+
+    def getMilestone(self, milestone_name):
+        if milestone_name is None:
+            return None
+
+        target = self.context.target
+
+        milestone = None
+        from lp.registry.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.milestone import IMilestoneSet
+        from lp.registry.interfaces.product import IProduct
+        if IProduct.providedBy(target):
+            milestone = getUtility(IMilestoneSet).getByNameAndProduct(
+                milestone_name, target)
+        elif IDistribution.providedBy(target):
+            milestone = getUtility(IMilestoneSet).getByNameAndDistribution(
+                milestone_name, target)
+        else:
+            raise AssertionError("Unexpected target type.")
+
+        if milestone is None:
+            raise LaunchpadValidationError("The milestone '%s' is not valid "
+                                           "for the target '%s'." % \
+                                               (milestone_name, target.name))
+        return milestone

@@ -59,7 +59,7 @@
             set_attributes="status date_status_set status_comment"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname password"/>
+            set_attributes="displayname"/>
     </class>
 
     <securedutility

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -650,6 +650,7 @@
           permission="launchpad.View"
           attributes="
               bug
+              bugtask
               level
               " />
       <!-- Properties -->
@@ -659,11 +660,23 @@
               all_assignees
               all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
+              direct_subscribers
+              direct_subscribers_at_all_levels
               direct_subscriptions
+              direct_subscriptions_at_all_levels
               duplicate_only_subscriptions
               duplicate_subscriptions
               indirect_subscribers
+              muted_subscribers
+              structural_subscribers
               structural_subscriptions
+              " />
+      <!-- Methods -->
+      <require
+          permission="launchpad.View"
+          attributes="
+              forLevel
+              forTask
               " />
     </class>
 
@@ -703,174 +716,25 @@
 
         <class
             class="lp.bugs.model.bug.Bug">
-            <implements
-                interface="lp.bugs.interfaces.bug.IBug"/>
             <allow
-                attributes="
-                    id
-                    private
-                    access_policy
-                    bugtasks
-                    default_bugtask
-                    affected_pillars
-                    permits_expiration
-                    can_expire
-                    subscriptions
-                    syncUpdate
-                    date_last_updated
-                    getActivityForDateRange
-                    getBugTask
-                    getDirectSubscribers
-                    getDirectSubscribersWithDetails
-                    getDirectSubscriptions
-                    getIndirectSubscribers
-                    is_complete
-                    maybeConfirmBugtasks
-                    official_tags
-                    who_made_private
-                    date_made_private
-                    userCanView
-                    userCanSetCommentVisibility
-                    personIsDirectSubscriber
-                    personIsAlsoNotifiedSubscriber
-                    personIsSubscribedToDuplicate
-                    shouldConfirmBugtasks
-                    heat
-                    heat_last_updated
-                    has_patches
-                    latest_patch
-                    latest_patch_uploaded"/>
+                interface="lp.bugs.interfaces.bug.IBugPublic"/>
             <require
                 permission="launchpad.View"
+                interface="lp.bugs.interfaces.bug.IBugView"
                 attributes="
-                    datecreated
-                    name
-                    title
-                    description
-                    ownerID
-                    owner
-                    duplicateof
-                    communityscore
-                    communitytimestamp
-                    hits
-                    hitstimestamp
-                    activityscore
-                    activitytimestamp
-                    displayname
-                    activity
-                    initial_message
                     linked_branches
-                    getVisibleLinkedBranches
-                    watches
-                    has_cves
-                    cves
-                    cve_links
-                    duplicates
-                    attachments
-                    attachments_unpopulated
-                    questions
-                    specifications
-                    followup_subject
-                    isSubscribed
-                    messages
-                    getBugNotificationRecipients
-                    hasBranch
-                    security_related
-                    tags
-                    getMessagesForView
-                    isSubscribedToDupes
-                    getSubscribersFromDuplicates
-                    getSubscriptionsFromDuplicates
-                    getSubscribersForPerson
-                    getSubscriptionForPerson
-                    getSubscriptionInfo
-                    indexed_messages
-                    _indexed_messages
-                    getAlsoNotifiedSubscribers
-                    getBugWatch
-                    canBeNominatedFor
-                    getNominationFor
-                    getNominations
-                    date_last_message
-                    number_of_duplicates
-                    message_count
-                    comment_count
-                    getQuestionCreatedFromBug
-                    canBeAQuestion
-                    getBugTasksByPackageName
-                    users_affected_count
-                    users_unaffected_count
-                    users_affected
-                    users_unaffected
-                    users_affected_count_with_dupes
-                    other_users_affected_count_with_dupes
-                    users_affected_with_dupes
-                    bug_messages
-                    isUserAffected
-                    getHWSubmissions
-                    isExpirable
-                    isMuted
-                    "/>
+                    getVisibleLinkedBranches"/>
             <require
                 permission="launchpad.Edit"
+                interface="lp.bugs.interfaces.bug.IBugEdit"
                 attributes="
-                    addAttachment
-                    addChange
-                    addCommentNotification
-                    addNomination
-                    addTask
-                    addWatch
-                    convertToQuestion
-                    expireNotifications
-                    findCvesInText
-                    linkAttachment
                     linkBranch
-                    linkCVE
-                    linkCVEAndReturnNothing
-                    linkHWSubmission
-                    linkMessage
-                    markAsDuplicate
-                    markUserAffected
-                    mute
-                    newMessage
-                    removeWatch
-                    setCommentVisibility
-                    setPrivate
-                    setSecurityRelated
-                    setPrivacyAndSecurityRelated
-                    setAccessPolicy
-                    setStatus
-                    subscribe
-                    unlinkBranch
-                    unlinkCVE
-                    unlinkHWSubmission
-                    unmute
-                    unsubscribe
-                    unsubscribeFromDupes
-                    updateHeat"
+                    unlinkBranch"
                 set_attributes="
-                    activity initial_message
-                    activityscore
-                    activitytimestamp
-                    communityscore
-                    communitytimestamp
-                    date_last_updated
-                    date_made_private
-                    datecreated
-                    hits
-                    hitstimestamp
                     name
-                    owner
-                    ownerID
-                    security_related
                     tags
-                    title description
-                    who_made_private"/>
-            <require
-                permission="launchpad.Admin"
-                attributes="
-                    setHeat"
-                set_attributes="heat_last_updated" />
+                    title
+                    description"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"

@@ -195,7 +195,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         removeSecurityProxy(
             bpr.build.source_package_release).changelog = changelog
         self.layer.txn.commit()
-        archive = self.factory.makeArchive()
+        person = self.factory.makePerson(name='archiver')
+        archive = self.factory.makeArchive(owner=person, name='ppa')
         pocket = self.factory.getAnyPocket()
         distroseries = self.factory.makeDistroSeries()
         person = self.factory.makePerson()
@@ -218,8 +219,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             If you don't understand why your files were rejected please send an email
             to launchpad-users@lists.launchpad.net for help (requires membership).
 
-            -- =
-
+            --
+            http://launchpad.dev/~archiver/+archive/ppa
             You are receiving this email because you are the uploader of the above
             PPA package.
             """)

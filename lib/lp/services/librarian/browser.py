@@ -49,14 +49,7 @@ class LibraryFileAliasView(LaunchpadView):
         # If the LFA is deleted, throw a 410.
         if self.context.deleted:
             raise GoneError("File deleted.")
-        # Redirect based on the scheme of the request, as set by
-        # Apache in the 'X-SCHEME' environment variable, which is
-        # mapped to 'HTTP_X_SCHEME.  Note that only some requests
-        # for librarian files are allowed to come in via http as
-        # most are forced to https via Apache redirection.
-        self.request.response.redirect(
-            self.context.getURL(
-                secure=self.request.get('HTTP_X_SCHEME') != 'http'))
+        self.request.response.redirect(self.context.getURL())
 
 
 class LibraryFileAliasMD5View(LaunchpadView):

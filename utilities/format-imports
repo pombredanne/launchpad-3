@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ Format import sections in python files
@@ -65,7 +65,7 @@ are only formatted in this manner if the statement exceeds 78 characters in
 length.
 
 Comments stick with the import statement that followed them. Comments at the
-end of one-line statements are moved to be be in front of it, .i.e.
+end of one-line statements are moved to be in front of it, .i.e.
 {{{
   from sys import exit # Have a way out
 }}}

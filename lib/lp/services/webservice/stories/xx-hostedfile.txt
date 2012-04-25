@@ -30,7 +30,7 @@ Firefox starts out with a link to branding images, but no actual images.
 We can upload branding images with PUT.
 
     >>> import os
-    >>> import canonical
+    >>> import canonical.launchpad
     >>> def load_image(filename):
     ...     image_file = os.path.join(
     ...         os.path.dirname(canonical.launchpad.__file__),

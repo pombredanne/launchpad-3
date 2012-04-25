@@ -69,7 +69,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         return list(IStore(BinaryPackageBuild).find(
             BinaryPackageBuild,
-            [BuildPackageJob.id.is_in([job.id for job in jobs]),
+            [BuildPackageJob.job_id.is_in([job.id for job in jobs]),
              BuildPackageJob.build_id == BinaryPackageBuild.id]))
 
     def score(self):

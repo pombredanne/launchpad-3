@@ -112,7 +112,7 @@ This link can be followed to the bug's details page.
 
     >>> browser.getLink('bug 1').click()
     >>> print browser.title
-    Bug #1 in Mozilla Firefox...
+    Bug #1 ...
 
 
 Unscanned branches

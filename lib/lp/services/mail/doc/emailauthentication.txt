@@ -10,15 +10,11 @@ The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
-    >>> from lp.services.config import config
-    >>> from lp.services.database.sqlbase import commit
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.testing.gpgkeys import import_public_test_keys
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> import_public_test_keys()
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> with lp_dbuser():
+    ...     import_public_test_keys()
 
 For most of these tests, we don't care whether the timestamps are out of
 date:

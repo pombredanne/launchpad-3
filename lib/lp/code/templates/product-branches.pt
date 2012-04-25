@@ -36,15 +36,7 @@
 
       <div id="involvement" class="portlet"
            tal:define="menu context/menu:branches">
-        <ul class="involvement">
-            <li style="border: none">
-              <a href="+addbranch" class="menu-link-addbranch sprite code">
-                Register a branch
-              </a>
-            </li>
-        </ul>
-        <p style="margin-top:10px;"
-           tal:define="link menu/code_import"
+        <p tal:define="link menu/code_import"
            tal:condition="link/enabled"
            tal:content="structure link/render"></p>
         <p tal:define="configure_codehosting view/configure_codehosting | nothing"

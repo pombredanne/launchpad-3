@@ -124,6 +124,19 @@ rows are not rendered.
     </table>
     <input name="field.branch_type-empty-marker" type="hidden" value="1" />
 
+Sometimes, it is desirable to display to the user additional, context specific
+information to explain the choices available for selection. This can be done
+by setting the optional extra_hint and extra_hint_class attributes on the
+widget.
+    >>> radio_widget.extra_hint = 'Some additional information'
+    >>> radio_widget.extra_hint_class = 'inline-informational'
+    >>> print radio_widget()
+    <div class="inline-informational">Some additional information</div>
+    <table class="radio-button-widget"><tr>
+    ...
+    </table>
+    <input name="field.branch_type-empty-marker" type="hidden" value="1" />
+
 
 LaunchpadBooleanRadioWidget
 ---------------------------

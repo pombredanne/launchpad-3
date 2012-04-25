@@ -275,7 +275,7 @@ class NewCodeImportForm(Interface):
     bzr_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_("The URL of the Bazaar branch."),
-        allowed_schemes=["http", "https", "bzr"],
+        allowed_schemes=["http", "https", "bzr", "ftp"],
         allow_userinfo=True,
         allow_port=True,
         allow_query=False,     # Query makes no sense in Bazaar

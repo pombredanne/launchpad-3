@@ -399,7 +399,7 @@ While the other attributes track the other official_ attributes.
 If the official_ attributes are False and the enum hasn't been set,
 the usage enums don't know anything.
 
-    >>> login_person(ubuntu.owner.teamowner)
+    >>> ignored = login_person(ubuntu.owner.teamowner)
     >>> ubuntu.official_answers = False
     >>> print ubuntu.answers_usage.name
     UNKNOWN
@@ -454,7 +454,7 @@ Launchpad admins and the distro owner can set these fields.
 
     >>> debian_owner = factory.makePerson()
     >>> debian.owner = debian_owner
-    >>> login_person(debian_owner)
+    >>> ignored = login_person(debian_owner)
     >>> debian.blueprints_usage = ServiceUsage.NOT_APPLICABLE
     >>> print debian.blueprints_usage.name
     NOT_APPLICABLE

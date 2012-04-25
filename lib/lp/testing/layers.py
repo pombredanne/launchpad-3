@@ -27,7 +27,6 @@ __all__ = [
     'BaseLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
-    'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
     'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
@@ -112,6 +111,7 @@ from lp.services.config.fixture import (
     ConfigUseFixture,
     )
 from lp.services.database.sqlbase import session_store
+from lp.services.job.tests import celeryd
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
@@ -149,7 +149,6 @@ from lp.testing import (
     logout,
     reset_logging,
     )
-from lp.testing.dbuser import switch_dbuser
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -271,7 +270,7 @@ class MockRootFolder:
 class BaseLayer:
     """Base layer.
 
-    All out layers should subclass Base, as this is where we will put
+    All our layers should subclass Base, as this is where we will put
     test isolation checks to ensure that tests to not leave global
     resources in a mess.
 
@@ -772,10 +771,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        # The DB is already available - setUp and testTearDown both make it
-        # available.
-        if cls.use_mockdb is True:
-            cls.installMockDb()
+        pass
 
     @classmethod
     def _ensure_db(cls):
@@ -797,9 +793,6 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        if cls.use_mockdb is True:
-            cls.uninstallMockDb()
-
         # Ensure that the database is connectable
         cls.connect().close()
 
@@ -815,58 +808,6 @@ class DatabaseLayer(BaseLayer):
         # or a subordinate layer which builds on the db. This wastes one setup
         # per db layer teardown per run, but thats tolerable.
         cls._ensure_db()
-
-    use_mockdb = False
-    mockdb_mode = None
-
-    @classmethod
-    @profiled
-    def installMockDb(cls):
-        assert cls.mockdb_mode is None, 'mock db already installed'
-
-        from lp.testing.mockdb import (
-                script_filename, ScriptRecorder, ScriptPlayer,
-                )
-
-        # We need a unique key for each test to store the mock db script.
-        test_key = BaseLayer.test_name
-        assert test_key, "Invalid test_key %r" % (test_key,)
-
-        # Determine if we are in replay or record mode and setup our
-        # mock db script.
-        filename = script_filename(test_key)
-        if os.path.exists(filename):
-            cls.mockdb_mode = 'replay'
-            cls.script = ScriptPlayer(test_key)
-        else:
-            cls.mockdb_mode = 'record'
-            cls.script = ScriptRecorder(test_key)
-
-        global _org_connect
-        _org_connect = psycopg2.connect
-
-        # Proxy real connections with our mockdb.
-        def fake_connect(*args, **kw):
-            return cls.script.connect(_org_connect, *args, **kw)
-
-        psycopg2.connect = fake_connect
-
-    @classmethod
-    @profiled
-    def uninstallMockDb(cls):
-        if cls.mockdb_mode is None:
-            return  # Already uninstalled
-
-        # Store results if we are recording
-        if cls.mockdb_mode == 'record':
-            cls.script.store()
-            assert os.path.exists(cls.script.script_filename), (
-                    "Stored results but no script on disk.")
-
-        cls.mockdb_mode = None
-        global _org_connect
-        psycopg2.connect = _org_connect
-        _org_connect = None
 
     @classmethod
     @profiled
@@ -1553,32 +1494,6 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     def abort(cls):
         transaction.abort()
 
-    @classmethod
-    @profiled
-    def switchDbUser(cls, dbuser):
-        # DEPRECATED: use switch_dbuser directly.
-        switch_dbuser(dbuser)
-
-
-class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
-    """LaunchpadZopelessLayer using the mock database."""
-
-    @classmethod
-    def setUp(cls):
-        DatabaseLayer.use_mockdb = True
-
-    @classmethod
-    def tearDown(cls):
-        DatabaseLayer.use_mockdb = False
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
-
 
 class MockHTTPTask:
 
@@ -1943,6 +1858,42 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
+
+
+class CeleryJobLayer(AppServerLayer):
+    """Layer for tests that run jobs via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
+
+
+class CeleryBranchWriteJobLayer(AppServerLayer):
+    """Layer for tests that run jobs which write to branches via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('branch_write_job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):

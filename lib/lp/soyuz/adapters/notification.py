@@ -52,9 +52,6 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     :param reason: The reason for the rejection.
     """
     ignored, filename = os.path.split(changes_file_path)
-    subject = '%s rejected' % filename
-    if archive and archive.is_ppa:
-        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     information = {
         'SUMMARY': reason,
         'CHANGESFILE': '',
@@ -63,8 +60,13 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
         'MAINTAINER': '',
         'SIGNER': '',
         'ORIGIN': '',
+        'ARCHIVE_URL': '',
         'USERS_ADDRESS': config.launchpad.users_address,
     }
+    subject = '%s rejected' % filename
+    if archive and archive.is_ppa:
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+        information['ARCHIVE_URL'] = '\n%s' % canonical_url(archive)
     template = get_template(archive, 'rejected')
     body = template % information
     to_addrs = get_upload_notification_recipients(
@@ -282,6 +284,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'ORIGIN': '',
         'SIGNER': '',
         'SPR_URL': '',
+        'ARCHIVE_URL': '\n%s' % canonical_url(archive),
         'USERS_ADDRESS': config.launchpad.users_address,
         }
     if spr:

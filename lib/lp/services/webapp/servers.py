@@ -183,6 +183,17 @@ class StepsToGo:
         self.request.setTraversalStack(stack)
         return nextstep
 
+    def peek(self):
+        """Return the next path step without removing it.
+
+        Returns None if there are no path steps left.
+        """
+        stack = self.request.getTraversalStack()
+        try:
+            return stack[-1]
+        except IndexError:
+            return None
+
     def next(self):
         value = self.consume()
         if value is None:
@@ -558,6 +569,8 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
 
     implements(IBasicLaunchpadRequest)
 
+    strict_transport_security = True
+
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
@@ -568,6 +581,18 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
 
         # Our response always vary based on authentication.
         self.response.setHeader('Vary', 'Cookie, Authorization')
+
+        # Prevent clickjacking and content sniffing attacks.
+        self.response.setHeader('X-Frame-Options', 'SAMEORIGIN')
+        self.response.setHeader('X-Content-Type-Options', 'nosniff')
+        self.response.setHeader('X-XSS-Protection', '1; mode=block')
+
+        if self.strict_transport_security:
+            # And tell browsers that we always use SSL unless we're on
+            # an insecure vhost.
+            # 2592000 = 30 days in seconds
+            self.response.setHeader(
+                'Strict-Transport-Security', 'max-age=2592000')
 
     @property
     def stepstogo(self):
@@ -1106,6 +1131,9 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(lp.layers.FeedsLayer)
 
+    # Feeds is not served over SSL, so don't force SSL.
+    strict_transport_security = False
+
 
 # ---- apidoc
 
@@ -1410,7 +1438,9 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
-    # For now, the same as public requests.
+    # For now, the same as public requests except that there's no SSL.
+
+    strict_transport_security = False
 
 
 # ---- Protocol errors

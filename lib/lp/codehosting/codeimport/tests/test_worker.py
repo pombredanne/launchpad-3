@@ -1415,6 +1415,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertBadUrl("svn+ssh://svn.example.com/bla")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
+        self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
 
 
 class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):

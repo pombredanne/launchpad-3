@@ -33,9 +33,10 @@ configuration).
 
 Configs are kept from the 'configs' directory.
 
-    >>> import os.path, canonical
-    >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
-    ...     canonical.__file__)
+    >>> import os.path
+    >>> import lp
+    >>> os.path.join(config.root, 'lib', 'lp') == os.path.dirname(
+    ...     lp.__file__)
     True
 
 LaunchpadConfig loads the conf file from the directory that matches its

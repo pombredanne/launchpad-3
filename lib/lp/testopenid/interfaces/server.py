@@ -11,7 +11,6 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from lp.services.fields import PasswordField
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.webapp.interfaces import ILaunchpadApplication
 from lp.services.webapp.url import urlappend
@@ -24,7 +23,6 @@ class ITestOpenIDApplication(ILaunchpadApplication):
 
 class ITestOpenIDLoginForm(Interface):
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'Password', required=True)
 
 
 class ITestOpenIDPersistentIdentity(IOpenIDPersistentIdentity):

@@ -12,9 +12,6 @@ import socket
 from textwrap import dedent
 from urllib import urlopen
 
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
-
 from lp.services.config import config
 from lp.services.config.fixture import ConfigFixture
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
@@ -22,10 +19,6 @@ from lp.testing import TestCase
 from lp.testing.layers import (
     BaseLayer,
     DatabaseLayer,
-    )
-from lp.testing.tests.test_layers_functional import (
-    BaseLayerIsolator,
-    LayerFixture,
     )
 
 

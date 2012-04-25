@@ -90,8 +90,7 @@ Create a subsequent source publication so a package diff can be provided.
 
 Commit everything.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
 
 PPA file links
@@ -266,7 +265,7 @@ If the associated PPA and the `LibraryFileAlias` are public, the +files/
 proxy redirects to the public http url. We'll copy the test sources and
 binaries across to no-priv's public ppa.
 
-    >>> login_person(no_priv)
+    >>> ignored = login_person(no_priv)
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.scripts.packagecopier import do_copy
     >>> copies = do_copy(
@@ -283,7 +282,7 @@ binaries across to no-priv's public ppa.
     ...     'http://launchpad.dev/~no-priv/+archive/ppa/+files/%s' %
     ...     dsc_file.filename)
 
-    >>> commit()
+    >>> transaction.commit()
     >>> logout()
 
     >>> print file_librarian_url
@@ -355,7 +354,7 @@ immediately deleted in case of reported ToS violation.
     >>> store.commit()
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(dsc_file).content = None
-    >>> commit()
+    >>> transaction.commit()
 
 The librarian URL for a deleted file is None, by convention. See
 `ILibraryFileAlias` for more information on this.

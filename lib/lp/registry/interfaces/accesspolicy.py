@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for pillar and artifact access policies."""
@@ -6,122 +6,251 @@
 __metaclass__ = type
 
 __all__ = [
-    'AccessPolicyType',
+    'IAccessArtifact',
+    'IAccessArtifactGrant',
+    'IAccessArtifactGrantSource',
+    'IAccessArtifactSource',
     'IAccessPolicy',
     'IAccessPolicyArtifact',
     'IAccessPolicyArtifactSource',
     'IAccessPolicyGrant',
+    'IAccessPolicyGrantFlatSource',
+    'IAccessPolicyGrantSource',
     'IAccessPolicySource',
-    'UnsuitableAccessPolicyError',
     ]
 
-import httplib
-
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
-from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
     )
 
 
-@error_status(httplib.BAD_REQUEST)
-class UnsuitableAccessPolicyError(Exception):
-    pass
+class IAccessArtifact(Interface):
+    """An artifact that has its own access control rules.
+
+    Examples are a bug or a branch.
+    """
+
+    id = Attribute("ID")
+    concrete_artifact = Attribute("Concrete artifact")
 
 
-class AccessPolicyType(DBEnumeratedType):
-    """Access policy type."""
+class IAccessArtifactGrant(Interface):
+    """A grant for a person or team to access an artifact.
 
-    PRIVATE = DBItem(1, """
-        Private
+    For example, the reporter of an embargoed security bug has a grant for
+    that bug.
+    """
 
-        This policy covers general private information.
-        """)
+    grantee = Attribute("Grantee")
+    grantor = Attribute("Grantor")
+    date_created = Attribute("Date created")
+    abstract_artifact = Attribute("Abstract artifact")
 
-    SECURITY = DBItem(2, """
-        Security
-
-        This policy covers information relating to confidential security
-        vulnerabilities.
-        """)
+    concrete_artifact = Attribute("Concrete artifact")
 
 
 class IAccessPolicy(Interface):
+    """A policy to govern access to a category of a project's artifacts.
+
+    An example is Ubuntu security, which controls access to Ubuntu's embargoed
+    security bugs.
+    """
+
     id = Attribute("ID")
     pillar = Attribute("Pillar")
     type = Attribute("Type")
 
 
 class IAccessPolicyArtifact(Interface):
-    id = Attribute("ID")
-    concrete_artifact = Attribute("Concrete artifact")
+    """An association between an artifact and a policy.
+
+    For example, a security bug in Ubuntu is associated with the Ubuntu
+    security policy so people with a grant for that policy can see it.
+    """
+
+    abstract_artifact = Attribute("Abstract artifact")
     policy = Attribute("Access policy")
 
 
 class IAccessPolicyGrant(Interface):
-    id = Attribute("ID")
+    """A grant for a person or team to access all of a policy's artifacts.
+
+    For example, the Canonical security team has a grant for Ubuntu's
+    security policy so they can see embargoed security bugs.
+    """
+
     grantee = Attribute("Grantee")
     grantor = Attribute("Grantor")
     date_created = Attribute("Date created")
     policy = Attribute("Access policy")
-    abstract_artifact = Attribute("Abstract artifact")
-
-    concrete_artifact = Attribute("Concrete artifact")
 
 
-class IAccessPolicySource(Interface):
+class IAccessArtifactSource(Interface):
 
-    def create(pillar, display_name):
-        """Create an `IAccessPolicy` for the pillar with the given name."""
+    def ensure(concrete_artifacts):
+        """Return `IAccessArtifact`s for the concrete artifacts.
 
-    def getByID(id):
-        """Return the `IAccessPolicy` with the given ID."""
+        Creates abstract artifacts if they don't already exist.
+        """
 
-    def getByPillarAndType(pillar, type):
-        """Return the pillar's `IAccessPolicy` with the given type."""
+    def find(concrete_artifacts):
+        """Return the `IAccessArtifact`s for the artifacts, if they exist.
 
-    def findByPillar(pillar):
-        """Return a ResultSet of all `IAccessPolicy`s for the pillar."""
+        Use ensure() if you want to create them if they don't yet exist.
+        """
+
+    def delete(concrete_artifacts):
+        """Delete the `IAccessArtifact`s for the concrete artifact.
+
+        Also revokes any `IAccessArtifactGrant`s for the artifacts.
+        """
+
+
+class IAccessArtifactGrantSource(Interface):
+
+    def grant(grants):
+        """Create `IAccessArtifactGrant`s.
+
+        :param grants: a collection of
+            (`IAccessArtifact`, grantee `IPerson`, grantor `IPerson`) triples
+            to grant.
+        """
+
+    def find(grants):
+        """Return the specified `IAccessArtifactGrant`s if they exist.
+
+        :param grants: a collection of (`IAccessArtifact`, grantee `IPerson`)
+            pairs.
+        """
+
+    def findByArtifact(artifacts, grantees=None):
+        """Return `IAccessArtifactGrant` objects for the artifacts.
+
+        :param artifacts: the artifacts for which to find any grants.
+        :param grantees: find grants for the specified grantees only,
+            else find all grants.
+        """
+
+    def revokeByArtifact(artifacts, grantees=None):
+        """Delete `IAccessArtifactGrant` objects for the artifacts.
+
+        :param artifacts: the artifacts to which revoke access.
+        :param grantees: revoke access for the specified grantees only,
+            else delete all grants.
+        """
 
 
 class IAccessPolicyArtifactSource(Interface):
 
-    def ensure(concrete_artifact):
-        """Return the `IAccessPolicyArtifact` for a concrete artifact.
+    def create(links):
+        """Create `IAccessPolicyArtifacts`s.
 
-        Creates the abstract artifact if it doesn't already exist.
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs to link.
         """
 
-    def get(concrete_artifact):
-        """Return the `IAccessPolicyArtifact` for an artifact, if it exists.
+    def find(links):
+        """Return the specified `IAccessPolicyArtifacts`s if they exist.
 
-        Use ensure() if you want to create one if it doesn't yet exist.
+        :param links: a collection of (`IAccessArtifact`, `IAccessPolicy`)
+            pairs.
         """
 
-    def delete(concrete_artifact):
-        """Delete the `IAccessPolicyArtifact` for a concrete artifact.
+    def findByArtifact(artifacts):
+        """Return all `IAccessPolicyArtifact` objects for the artifacts."""
 
-        Also removes any AccessPolicyGrants for the artifact.
+    def findByPolicy(policies):
+        """Return all `IAccessPolicyArtifact` objects for the policies."""
+
+    def deleteByArtifact(artifacts):
+        """Delete all `IAccesyPolicyArtifact` objects for the artifacts."""
+
+
+class IAccessPolicySource(Interface):
+
+    def create(pillars_and_types):
+        """Create an `IAccessPolicy` for the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
+            create `IAccessPolicy` objects for.
+        :return: a collection of the created `IAccessPolicy` objects.
         """
+
+    def find(pillars_and_types):
+        """Return the `IAccessPolicy`s for the given pillars and types.
+
+        :param pillars_and_types: a collection of
+            (`IProduct` or `IDistribution`, `InformationType`) pairs to
+            find.
+        """
+
+    def findByID(ids):
+        """Return the `IAccessPolicy`s with the given IDs."""
+
+    def findByPillar(pillars):
+        """Return a `ResultSet` of all `IAccessPolicy`s for the pillars."""
 
 
 class IAccessPolicyGrantSource(Interface):
 
-    def grant(grantee, grantor, object):
-        """Create an `IAccessPolicyGrant`.
+    def grant(grants):
+        """Create `IAccessPolicyGrant`s.
 
-        :param grantee: the `IPerson` to hold the access.
-        :param grantor: the `IPerson` that grants the access.
-        :param object: the `IAccessPolicy` or `IAccessPolicyArtifact` to
-            grant access to.
+        :param grants: a collection of
+            (`IAccessPolicy`, grantee `IPerson`, grantor `IPerson`) triples
+            to grant.
         """
 
-    def getByID(id):
-        """Return the `IAccessPolicyGrant` with the given ID."""
+    def find(grants):
+        """Return the specified `IAccessPolicyGrant`s if they exist.
 
-    def findByPolicy(policy):
-        """Return all `IAccessPolicyGrant` objects for the policy."""
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
+        """
+
+    def findByPolicy(policies):
+        """Return all `IAccessPolicyGrant` objects for the policies."""
+
+    def revoke(grants):
+        """Revoke the specified grants.
+
+        :param grants: a collection of (`IAccessPolicy`, grantee `IPerson`)
+            pairs.
+        """
+
+
+class IAccessPolicyGrantFlatSource(Interface):
+    """Experimental query utility to search through the flattened schema."""
+
+    def findGranteesByPolicy(policies):
+        """Find teams or users with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        :return: a collection of `IPerson`.
+        """
+
+    def findGranteePermissionsByPolicy(policies, grantees=None):
+        """Find teams or users with access grants for the policies.
+
+        This includes grants for artifacts in the policies.
+
+        :param policies: a collection of `IAccesPolicy`s.
+        :param grantees: if not None, the result only includes people in the
+            specified list of grantees.
+        :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
+            where permission is a SharingPermission enum value.
+            ALL means the person has an access policy grant and can see all
+            artifacts for the associated pillar.
+            SOME means the person only has specified access artifact grants.
+        """
+
+    def findArtifactsByGrantee(grantee, policies):
+        """Find the `IAccessArtifact`s for grantee and policies.
+
+        :param grantee: the access artifact grantee.
+        :param policies: a collection of `IAccesPolicy`s.
+        """

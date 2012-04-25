@@ -1,32 +1,50 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html>
+<!--
+Copyright 2012 Canonical Ltd.  This software is licensed under the
+GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <html>
   <head>
-  <title>Form Overlay</title>
+      <title>formoverlay tests</title>
 
-  <!-- YUI and test setup -->
-  <script type="text/javascript"
-          src="../../../../../canonical/launchpad/icing/yui/yui/yui.js">
-  </script>
-  <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
-  <script type="text/javascript"
-          src="../../../../app/javascript/testing/testrunner.js"></script>
+      <!-- YUI and test setup -->
+      <script type="text/javascript"
+              src="../../../../../../build/js/yui/yui/yui.js">
+      </script>
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/console/assets/console-core.css" />
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/console/assets/skins/sam/console.css" />
+      <link rel="stylesheet"
+      href="../../../../../../build/js/yui/test/assets/skins/sam/test.css" />
 
-  <!-- dependent modules from lazr-->
-  <script type="text/javascript" src="../../lazr/lazr.js"></script>
-  <script type="text/javascript" src="../../overlay/overlay.js"></script>
+      <script type="text/javascript"
+              src="../../../../../../build/js/lp/app/testing/testrunner.js"></script>
 
-  <!-- The module under test -->
-  <script type="text/javascript" src="../formoverlay.js"></script>
+      <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
 
-  <!-- Testing helpers -->
-  <script type="text/javascript" src="../../testing/mockio.js"></script>
+      <!-- Dependencies -->
+      <script type="text/javascript" src="../../../../../../build/js/lp/app/testing/mockio.js"></script>
+      <script type="text/javascript" src="../../../../../../build/js/lp/app/lazr/lazr.js"></script>
+      <script type="text/javascript" src="../../../../../../build/js/lp/app/overlay/overlay.js"></script>
 
-  <!-- The test suite -->
-  <script type="text/javascript" src="test_formoverlay.js"></script>
+      <!-- The module under test. -->
+      <script type="text/javascript" src="../formoverlay.js"></script>
 
-</head>
-<body class="yui3-skin-sam">
-  <div id="form_overlay_example">
-  </div>
-</body>
+      <!-- Placeholder for any css asset for this module. -->
+      <!-- <link rel="stylesheet" href="../assets/formoverlay-core.css" /> -->
+
+      <!-- The test suite. -->
+      <script type="text/javascript" src="test_formoverlay.js"></script>
+
+    </head>
+    <body class="yui3-skin-sam">
+        <ul id="suites">
+            <!-- <li>lp.large_indicator.test</li> -->
+            <li>lp.formoverlay.test</li>
+        </ul>
+        <div id="form_overlay_example">
+        </div>
+    </body>
 </html>

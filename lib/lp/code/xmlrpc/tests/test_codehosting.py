@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -56,6 +56,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.xmlrpc import faults
 
@@ -1041,7 +1042,7 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(expected, translation)
 
     def test_translatePath_branch_id_alias_owned(self):
-        # Even if the the requester is the owner, the branch is read only.
+        # Even if the requester is the owner, the branch is read only.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
@@ -1169,13 +1170,13 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.codehosting_api = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
-    def assertNoBranchIsAquired(self, *branch_types):
+    def assertNoBranchIsAcquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch_types = tuple(branch_type.name for branch_type in branch_types)
         pull_info = self.codehosting_api.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
-    def assertBranchIsAquired(self, branch, *branch_types):
+    def assertBranchIsAcquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
         branch_types = tuple(branch_type.name for branch_type in branch_types)
@@ -1197,7 +1198,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         # This is a bit random, but it works.  acquireBranchToPull marks the
         # branch it returns as started mirroring, but we should check that the
         # one we want is returned...
-        self.assertBranchIsAquired(branch, branch.branch_type)
+        self.assertBranchIsAcquired(branch, branch.branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
@@ -1290,7 +1291,7 @@ def test_suite():
          ])
     scenarios = [
         ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': DatabaseFunctionalLayer}),
+                'layer': LaunchpadFunctionalLayer}),
         ('inmemory', {'frontend': InMemoryFrontend,
                       'layer': FunctionalLayer}),
         ]

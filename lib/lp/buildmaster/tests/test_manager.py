@@ -33,7 +33,10 @@ from lp.buildmaster.manager import (
     NewBuildersScanner,
     SlaveScanner,
     )
-from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.builder import (
+    Builder,
+    BuilderSlave,
+    )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
@@ -51,6 +54,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -133,14 +137,13 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
 
         # Run 'scan' and check its result.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
@@ -178,7 +181,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
@@ -219,7 +222,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -246,7 +249,8 @@ class TestSlaveScannerScan(TestCase):
 
         login('foo.bar@canonical.com')
         builder.builderok = True
-        builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(BuildingSlave(build_id='8-1')))
         transaction.commit()
         login(ANONYMOUS)
 
@@ -254,7 +258,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
@@ -263,7 +267,7 @@ class TestSlaveScannerScan(TestCase):
     def test_scan_with_nothing_to_dispatch(self):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
@@ -272,7 +276,7 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.manual = True
         scanner = self._getScanner()
         d = scanner.scan()
@@ -283,7 +287,7 @@ class TestSlaveScannerScan(TestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(OkSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.builderok = False
         scanner = self._getScanner()
         d = scanner.scan()
@@ -295,7 +299,8 @@ class TestSlaveScannerScan(TestCase):
     def test_scan_of_broken_slave(self):
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
-        builder.setSlaveForTesting(BrokenSlave())
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
         builder.failure_count = 0
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
@@ -390,7 +395,7 @@ class TestSlaveScannerScan(TestCase):
             getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
         self._resetBuilder(builder)
         self.assertEqual(0, builder.failure_count)
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         builder.vm_host = "fake_vm_host"
 
         scanner = self._getScanner()
@@ -434,7 +439,7 @@ class TestSlaveScannerScan(TestCase):
         # For now, we can only cancel virtual builds.
         builder.virtualized = True
         builder.vm_host = "fake_vm_host"
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
@@ -445,7 +450,7 @@ class TestSlaveScannerScan(TestCase):
         build.status = BuildStatus.CANCELLING
 
         # Run 'scan' and check its results.
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = scanner.scan()
 
@@ -508,7 +513,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         slave = OkSlave()
         slave.resume = fake_resume
         self.builder.vm_host = "fake_vm_host"
-        self.builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.status = BuildStatus.CANCELLING

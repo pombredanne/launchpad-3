@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from lp.services.config import config
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
@@ -37,8 +37,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
 
     def _becomeBuilddMaster(self):
         """Switch db identity to the script that uses this approver."""
-        transaction.commit()
-        self.layer.switchDbUser(config.builddmaster.dbuser)
+        switch_dbuser(config.builddmaster.dbuser)
 
     def test_approve_all_new(self):
         # A happy approval case, all new templates.

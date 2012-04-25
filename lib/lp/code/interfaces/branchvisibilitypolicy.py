@@ -53,7 +53,7 @@ class IHasBranchVisibilityPolicy(Interface):
         through team membership.
 
         If there are a number of rules that apply for the owner of the branch
-        then the most restrictive rule is retuned.
+        then the most restrictive rule is returned.
         """
 
     def isUsingInheritedBranchVisibilityPolicy():

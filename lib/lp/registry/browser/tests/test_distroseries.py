@@ -43,7 +43,7 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -1520,7 +1520,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_diff_row_links_to_parent_changelog(self):
         # After the parent's version, there should be text "(changelog)"
         # linked to the parent distro source package +changelog page.  The
-        # text is styled with "discreet".
+        # text is styled with "lesser".
         set_derived_series_ui_feature_flag(self)
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
@@ -1528,7 +1528,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
 
-        changelog_span = row.findAll('span', {'class': 'discreet'})
+        changelog_span = row.findAll('span', {'class': 'lesser'})
         self.assertEqual(1, len(changelog_span))
         link = changelog_span[0].a
         self.assertEqual("changelog", link.string)

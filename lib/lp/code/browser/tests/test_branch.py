@@ -19,7 +19,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.code.browser.branch import (
-    BranchAddView,
     BranchMirrorStatusView,
     BranchReviewerEditView,
     BranchView,
@@ -31,11 +30,9 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     BranchVisibilityRule,
     )
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -120,8 +117,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsBranchOwner(self):
         # A branch location with a defined private host is visible to the
         # owner.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
@@ -138,10 +134,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
     def testHiddenBranchAsOtherLoggedInUser(self):
         # A branch location with a defined private host is hidden from other
         # users.
-        owner = self.factory.makePerson(
-            email="eric@example.com", password="test")
-        other = self.factory.makePerson(
-            email="other@example.com", password="test")
+        owner = self.factory.makePerson(email="eric@example.com")
+        other = self.factory.makePerson(email="other@example.com")
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
@@ -190,29 +184,6 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(
             "This is a short error message.",
             branch_view.mirror_status_message)
-
-    def testBranchAddRequests(self):
-        """Registering a branch that requests a mirror."""
-        arbitrary_person = self.factory.makePerson()
-        arbitrary_product = self.factory.makeProduct()
-        login_person(arbitrary_person)
-        try:
-            add_view = BranchAddView(arbitrary_person, self.request)
-            add_view.initialize()
-            data = {
-                'branch_type': BranchType.HOSTED,
-                'name': 'some-branch',
-                'title': 'Branch Title',
-                'summary': '',
-                'lifecycle_status': BranchLifecycleStatus.DEVELOPMENT,
-                'whiteboard': '',
-                'owner': arbitrary_person,
-                'author': arbitrary_person,
-                'product': arbitrary_product,
-                }
-            add_view.add_action.success(data)
-        finally:
-            logout()
 
     def testShowMergeLinksOnManyBranchProject(self):
         # The merge links are shown on projects that have multiple branches.
@@ -675,36 +646,6 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
         self.assertIsNone(reviews_list.find('a', text='Privateteam'))
 
 
-class TestBranchAddView(TestCaseWithFactory):
-    """Test the BranchAddView view."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBranchAddView, self).setUp()
-        self.person = self.factory.makePerson()
-        login_person(self.person)
-        self.request = LaunchpadTestRequest()
-
-    def tearDown(self):
-        logout()
-        super(TestBranchAddView, self).tearDown()
-
-    def get_view(self, context):
-        view = BranchAddView(context, self.request)
-        view.initialize()
-        return view
-
-    def test_target_person(self):
-        add_view = self.get_view(self.person)
-        self.assertTrue(IBranchTarget.providedBy(add_view.target))
-
-    def test_target_product(self):
-        product = self.factory.makeProduct()
-        add_view = self.get_view(product)
-        self.assertTrue(IBranchTarget.providedBy(add_view.target))
-
-
 class TestBranchReviewerEditView(TestCaseWithFactory):
     """Test the BranchReviewerEditView view."""
 
@@ -931,6 +872,25 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+    def test_private_owner_is_ok(self):
+        # A branch's owner can be changed to a private team permitted by the
+        # visibility policy.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        team = self.factory.makeTeam(
+            owner=person, displayname="Private team",
+            visibility=PersonVisibility.PRIVATE)
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").displayValue = ["Private team"]
+        browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEquals(team, branch.owner)
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):

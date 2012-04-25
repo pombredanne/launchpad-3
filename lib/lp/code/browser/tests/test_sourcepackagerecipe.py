@@ -94,7 +94,7 @@ class TestCaseForRecipe(BrowserTestCase):
         """Provide useful defaults."""
         super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test')
+            displayname='Master Chef', name='chef')
         self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
@@ -603,7 +603,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
         # If the user creating a recipe has no existing PPAs, the selector
         # isn't shown, but the field to enter a new PPA name is.
-        self.user = self.factory.makePerson(password='test')
+        self.user = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         with person_logged_in(self.user):
             content = self.getMainContent(branch, '+new-recipe')
@@ -643,7 +643,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_ppa(self):
         # If the user doesn't have any PPAs, a new once can be created.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -665,7 +665,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_ppa_duplicate(self):
         # If a new PPA is being created, and the user already has a ppa of the
         # name specifed an error is shown.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         # Make a PPA called 'ppa' using the default.
         self.user.createPPA(name='foo')
         branch = self.factory.makeAnyBranch()
@@ -686,7 +686,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a
         # name, an error is shown.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         branch = self.factory.makeAnyBranch()
 
         # A new recipe can be created from the branch page.
@@ -703,7 +703,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_create_new_ppa_owned_by_recipe_owner(self):
         # The new PPA that is created is owned by the recipe owner.
-        self.user = self.factory.makePerson(name='eric', password='test')
+        self.user = self.factory.makePerson(name='eric')
         team = self.factory.makeTeam(
             name='vikings', members=[self.user],
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
@@ -1253,7 +1253,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
                     naked_build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
-        # When there are 4+ pending builds, only the the most
+        # When there are 4+ pending builds, only the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
             [build4, build3, build2, build1, build6],
@@ -1581,7 +1581,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Provide useful defaults."""
         super(TestSourcePackageRecipeBuildView, self).setUp()
         self.user = self.factory.makePerson(
-            displayname='Owner', name='build-owner', password='test')
+            displayname='Owner', name='build-owner')
 
     def makeBuild(self):
         """Make a build suitabe for testing."""

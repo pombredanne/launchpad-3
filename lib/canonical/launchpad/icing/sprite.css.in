@@ -101,6 +101,10 @@
     background-image: url(/@@/package-source.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.package-sync {
+    background-image: url(/@@/package-sync.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+}
 .milestone {
     background-image: url(/@@/milestone.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

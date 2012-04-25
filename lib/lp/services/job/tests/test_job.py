@@ -7,8 +7,15 @@ from datetime import datetime
 import time
 
 import pytz
+from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
+import transaction
 
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    CodeReviewCommentEmailJob,
+    )
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
@@ -18,7 +25,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import (
     InvalidTransition,
     Job,
-    LeaseHeld,
+    UniversalJobSource,
     )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -252,6 +259,114 @@ class TestJob(TestCaseWithFactory):
             self.assertEqual(
                 status in Job.PENDING_STATUSES, job.is_pending)
 
+    def test_start_manages_transactions(self):
+        # Job.start() does not commit the transaction by default.
+        with TransactionRecorder() as recorder:
+            job = Job()
+            job.start()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.start() commits the transaction.
+        with TransactionRecorder() as recorder:
+            job = Job()
+            job.start(manage_transaction=True)
+            self.assertEqual(['commit'], recorder.transaction_calls)
+
+    def test_complete_manages_transactions(self):
+        # Job.complete() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.complete()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.complete() commits the transaction.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.complete(manage_transaction=True)
+            self.assertEqual(['commit', 'commit'], recorder.transaction_calls)
+
+    def test_fail_manages_transactions(self):
+        # Job.fail() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.fail()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.fail() commits the transaction.
+        # Note that there is an additional commit to update the job status.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.fail(manage_transaction=True)
+            self.assertEqual(['abort', 'commit'], recorder.transaction_calls)
+
+    def test_queue_manages_transactions(self):
+        # Job.queue() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.queue() commits the transaction.
+        # Note that there is an additional commit to update the job status.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue(manage_transaction=True)
+            self.assertEqual(['commit', 'commit'], recorder.transaction_calls)
+
+        # If abort_transaction=True is also passed to Job.queue()
+        # the transaction is first aborted, then two times committed.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.queue(manage_transaction=True, abort_transaction=True)
+            self.assertEqual(
+                ['abort', 'commit', 'commit'], recorder.transaction_calls)
+
+    def test_suspend_manages_transactions(self):
+        # Job.suspend() does not commit the transaction by default.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.suspend()
+            self.assertEqual([], recorder.transaction_calls)
+
+        # If explicitly specified, Job.suspend() commits the transaction.
+        job = Job()
+        job.start()
+        with TransactionRecorder() as recorder:
+            job.suspend(manage_transaction=True)
+            self.assertEqual(['commit'], recorder.transaction_calls)
+
+
+class TransactionRecorder:
+    def __init__(self):
+        self.transaction_calls = []
+
+    def __enter__(self):
+        self.real_commit = transaction.commit
+        self.real_abort = transaction.abort
+        transaction.commit = self.commit
+        transaction.abort = self.abort
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        transaction.commit = self.real_commit
+        transaction.abort = self.real_abort
+
+    def commit(self):
+        self.transaction_calls.append('commit')
+        self.real_commit()
+
+    def abort(self):
+        self.transaction_calls.append('abort')
+        self.real_abort()
+
 
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
@@ -340,3 +455,15 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
+
+
+class TestUniversalJobSource(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_getUserAndBaseJob_with_merge_proposal_job(self):
+        comment = self.factory.makeCodeReviewComment()
+        job = CodeReviewCommentEmailJob.create(comment)
+        dbuser, base_class = UniversalJobSource.getUserAndBaseJob(job.job_id)
+        self.assertEqual(dbuser, config.merge_proposal_jobs.dbuser)
+        self.assertEqual(base_class, BranchMergeProposalJob)

@@ -5,9 +5,6 @@
 
 __metaclass__ = type
 
-import os
-from textwrap import dedent
-
 from testtools import TestCase
 
 from lp.services.config import config

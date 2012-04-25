@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Debbugs ExternalBugTracker utility."""
@@ -19,6 +19,7 @@ from email.Utils import (
 import os.path
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -43,7 +44,6 @@ from lp.bugs.interfaces.externalbugtracker import (
 from lp.bugs.scripts import debbugs
 from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
-from lp.services.database.sqlbase import commit
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.webapp import urlsplit
@@ -331,7 +331,7 @@ class DebBugs(ExternalBugTracker):
                 message = getUtility(IMessageSet).fromEmail(comment, poster,
                     parsed_message=parsed_comment, date_created=msg_date)
 
-                commit()
+                transaction.commit()
                 return message
 
     @ensure_no_transaction

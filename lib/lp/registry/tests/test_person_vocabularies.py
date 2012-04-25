@@ -27,10 +27,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -166,7 +163,7 @@ class TestValidPersonOrTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
     Most tests are in lib/lp/registry/doc/vocabularies.txt.
     """
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPersonOrTeam'
 
     def test_team_filter(self):
@@ -218,7 +215,7 @@ class TestValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabularyMixin,
                                             TestCaseWithFactory):
     """Test that the ValidPersonOrClosedTeamVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPillarOwner'
 
     def test_team_filter(self):
@@ -341,7 +338,7 @@ class TestValidPersonVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidPersonVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidPerson'
 
     def test_supported_filters(self):
@@ -353,9 +350,37 @@ class TestValidTeamVocabulary(VocabularyTestBase,
                                       TestCaseWithFactory):
     """Test that the ValidTeamVocabulary behaves as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
     vocabulary_name = 'ValidTeam'
 
     def test_supported_filters(self):
         # The vocab shouldn't support person or team filters.
         self.assertEqual([], self.getVocabulary(None).supportedFilters())
+
+
+class TestNewPillarShareeVocabulary(VocabularyTestBase,
+                                        TestCaseWithFactory):
+    """Test that the NewPillarShareeVocabulary behaves as expected."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'NewPillarSharee'
+
+    def test_existing_grantees_excluded(self):
+        # Existing grantees should be excluded from the results.
+        product = self.factory.makeProduct()
+        person1 = self.factory.makePerson(name='sharee1')
+        person2 = self.factory.makePerson(name='sharee2')
+        policy = self.factory.makeAccessPolicy(pillar=product)
+        self.factory.makeAccessPolicyGrant(policy=policy, grantee=person1)
+        [newsharee] = self.searchVocabulary(product, 'sharee')
+        self.assertEqual(newsharee, person2)
+
+    def test_open_teams_excluded(self):
+        # Only closed teams should be available for selection.
+        product = self.factory.makeProduct()
+        self.factory.makeTeam(name='sharee1')
+        closed_team = self.factory.makeTeam(
+            name='sharee2',
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        [newsharee] = self.searchVocabulary(product, 'sharee')
+        self.assertEqual(newsharee, closed_team)

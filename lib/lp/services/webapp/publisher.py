@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DataDownloadView',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
@@ -26,6 +27,7 @@ __all__ = [
     ]
 
 import httplib
+import re
 
 from lazr.restful import (
     EntryResource,
@@ -61,6 +63,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -88,6 +91,9 @@ from lp.services.webapp.vhosts import allvhosts
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
 error_status(httplib.NOT_FOUND)(NotFound)
+
+# Used to match zope namespaces eg ++model++.
+RESERVED_NAMESPACE = re.compile('\\+\\+.*\\+\\+')
 
 
 class DecoratorAdvisor:
@@ -220,6 +226,29 @@ class redirection:
         return cls
 
 
+class DataDownloadView:
+    """Download data without templating.
+
+    Subclasses must provide getBody, content_type and filename.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Set the headers and return the body.
+
+        It is not necessary to supply Content-length, because this is added by
+        the caller.
+        """
+        self.request.response.setHeader('Content-Type', self.content_type)
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename="%s"' % (
+             self.filename))
+        return self.getBody()
+
+
 class UserAttributeCache:
     """Mix in to provide self.user, cached."""
 
@@ -256,6 +285,8 @@ class LaunchpadView(UserAttributeCache):
                        rendering from Python.
     - publishTraverse() <-- override this to support traversing-through.
     """
+
+    private = False
 
     def __init__(self, context, request):
         self.context = context
@@ -310,6 +341,33 @@ class LaunchpadView(UserAttributeCache):
     def template(self):
         """The page's template, if configured in zcml."""
         return self.index
+
+    @property
+    def yui_version(self):
+        """The version of YUI we are using."""
+        value = getFeatureFlag('js.yui_version')
+        if not value:
+            return 'yui'
+        else:
+            return value
+
+    @property
+    def yui_console_debug(self):
+        """Hide console debug messages in production."""
+        # We need to import here otherwise sitecustomize can't get imported,
+        # likely due to some non-obvious circular import issues.
+        from lp.services.config import config
+        return 'true' if config.devmode else 'false'
+
+    @property
+    def combo_url(self):
+        """Return the URL for the combo loader."""
+        # Circular imports, natch.
+        from lp.services.config import config
+        combo_url = '/+combo'
+        if not config.devmode:
+            combo_url += '/rev%s' % revno
+        return combo_url
 
     def render(self):
         """Return the body of the response.
@@ -854,19 +912,25 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
+        # If the next path step is a zope namespace eg ++model++, then we
+        # actually do not want to process the path steps as a stepthrough
+        # traversal so we just ignore it here.
         namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
                 if stepstogo:
-                    nextstep = stepstogo.consume()
-                    handler = namespace_traversals[name]
-                    try:
-                        nextobj = handler(self, nextstep)
-                    except NotFoundError:
-                        nextobj = None
-                    return self._handle_next_object(nextobj, request,
-                        nextstep)
+                    # First peek at the nextstep to see if we should ignore it.
+                    nextstep = stepstogo.peek()
+                    if not RESERVED_NAMESPACE.match(nextstep):
+                        nextstep = stepstogo.consume()
+                        handler = namespace_traversals[name]
+                        try:
+                            nextobj = handler(self, nextstep)
+                        except NotFoundError:
+                            nextobj = None
+                        return self._handle_next_object(nextobj, request,
+                            nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.

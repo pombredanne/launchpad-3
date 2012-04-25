@@ -26,6 +26,7 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductPackagesView',
     'ProductPackagesPortletView',
+    'ProductPrivateBugsMixin',
     'ProductPurchaseSubscriptionView',
     'ProductRdfView',
     'ProductReviewLicenseView',
@@ -76,7 +77,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -149,6 +149,7 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
+    PillarNavigationMixin,
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
@@ -169,17 +170,13 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.helpers import get_email_template
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     ApplicationMenu,
@@ -197,10 +194,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.interfaces import (
-    ILaunchBag,
-    UnsafeFormGetSubmissionError,
-    )
+from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
 from lp.services.webapp.menu import NavigationMenu
 from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
@@ -216,7 +210,8 @@ SPACE = ' '
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
-    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IProduct
 
@@ -306,74 +301,6 @@ class ProductLicenseMixin:
         else:
             # Launchpad is ok with all licenses used in this project.
             pass
-
-    def notifyCommercialMailingList(self):
-        """Notify user about Launchpad license rules."""
-        licenses = list(self.product.licenses)
-        needs_email = (
-            License.OTHER_PROPRIETARY in licenses
-            or License.OTHER_OPEN_SOURCE in licenses
-            or [License.DONT_KNOW] == licenses)
-        if not needs_email:
-            # The project has a recognized license.
-            return
-
-        def indent(text):
-            if text is None:
-                return None
-            text = '\n    '.join(line for line in text.split('\n'))
-            text = '    ' + text
-            return text
-
-        user = getUtility(ILaunchBag).user
-        user_address = format_address(
-            user.displayname, user.preferredemail.email)
-        from_address = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
-        commercial_address = format_address(
-            'Commercial', 'commercial@launchpad.net')
-        license_titles = '\n'.join(
-            license.title for license in self.product.licenses)
-        substitutions = dict(
-            user_browsername=user.displayname,
-            user_name=user.name,
-            product_name=self.product.name,
-            product_url=canonical_url(self.product),
-            product_summary=indent(self.product.summary),
-            license_titles=indent(license_titles),
-            license_info=indent(self.product.license_info))
-        # Email the user about license policy.
-        subject = (
-            "License information for %(product_name)s "
-            "in Launchpad" % substitutions)
-        template = get_email_template(
-            'product-other-license.txt', app='registry')
-        message = template % substitutions
-        simple_sendmail(
-            from_address, user_address,
-            subject, message, headers={'Reply-To': commercial_address})
-        # Inform that Launchpad recognized the license change.
-        self._addLicenseChangeToReviewWhiteboard()
-        self.request.response.addInfoNotification(_(
-            "Launchpad is free to use for software under approved "
-            "licenses. The Launchpad team will be in contact with "
-            "you soon."))
-
-    def _addLicenseChangeToReviewWhiteboard(self):
-        """Update the whiteboard for the reviewer's benefit."""
-        now = self._formatDate()
-        whiteboard = 'User notified of license policy on %s.' % now
-        naked_product = removeSecurityProxy(self.product)
-        if naked_product.reviewer_whiteboard is None:
-            naked_product.reviewer_whiteboard = whiteboard
-        else:
-            naked_product.reviewer_whiteboard += '\n' + whiteboard
-
-    def _formatDate(self, now=None):
-        """Return the date formatted for messages."""
-        if now is None:
-            now = datetime.now(tz=pytz.UTC)
-        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -515,9 +442,9 @@ class ProductNavigationMenu(NavigationMenu):
         text = 'Downloads'
         return Link('+download', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text)
 
 
@@ -573,6 +500,15 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        text = 'Sharing'
+        enabled_readonly_flag = 'disclosure.enhanced_sharing.enabled'
+        enabled_writable_flag = 'disclosure.enhanced_sharing.writable'
+        enabled = (bool(getFeatureFlag(enabled_readonly_flag))
+            or bool(getFeatureFlag(enabled_writable_flag)))
+        return Link('+sharing', text, icon='edit', enabled=enabled)
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -591,7 +527,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = ['edit', 'review_license', 'administer']
+        links = ['edit', 'review_license', 'administer', 'sharing']
         add_subscribe_link(links)
         return links
 
@@ -619,7 +555,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branch_add',
         'branchvisibility',
         'rdf',
         'branding',
@@ -672,15 +607,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         text = 'Downloads'
         return Link('+download', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branchvisibility(self):
-        text = 'Branch Visibility Policy'
+        text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add', site='code')
 
 
 class ProductBugsMenu(PillarBugsMenu,
@@ -1301,6 +1231,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {self.package_field_name: self.other_package}
 
+    def initialize(self):
+        # The template only shows the form if the portlet is shown and
+        # there aren't any linked sourcepackages. If either of those
+        # conditions fails, there's no point setting up the widgets
+        # (with the expensive FTI query that entails).
+        if self.can_show_portlet and not self.sourcepackages:
+            super(ProductPackagesPortletView, self).initialize()
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
@@ -1524,6 +1462,37 @@ class ProductConfigureAnswersView(ProductConfigureBase):
     usage_fieldname = 'answers_usage'
 
 
+class ProductPrivateBugsMixin():
+    """A mixin for setting the product private_bugs field."""
+    def setUpFields(self):
+        # private_bugs is readonly since we are using a mutator but we need
+        # to edit it on the form.
+        super(ProductPrivateBugsMixin, self).setUpFields()
+        self.form_fields = self.form_fields.omit('private_bugs')
+        private_bugs = copy_field(IProduct['private_bugs'], readonly=False)
+        self.form_fields += form.Fields(private_bugs, render_context=True)
+
+    def validate(self, data):
+        super(ProductPrivateBugsMixin, self).validate(data)
+        private_bugs = data.get('private_bugs')
+        if private_bugs is None:
+            return
+        try:
+            self.context.checkPrivateBugsTransitionAllowed(
+                private_bugs, self.user)
+        except Exception as e:
+            self.setFieldError('private_bugs', e.message)
+
+    def updateContextFromData(self, data, context=None, notify_modified=True):
+        # private_bugs uses a mutator to check permissions, so it needs to
+        # be handled separately.
+        if 'private_bugs' in data:
+            self.context.setPrivateBugs(data['private_bugs'], self.user)
+            del data['private_bugs']
+        parent = super(ProductPrivateBugsMixin, self)
+        return parent.updateContextFromData(data, context, notify_modified)
+
+
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1578,13 +1547,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        previous_licenses = self.context.licenses
         self.updateContextFromData(data)
-        # only send email the first time licenses are set
-        if len(previous_licenses) == 0:
-            # self.product is expected by notifyCommercialMailingList
-            self.product = self.context
-            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
@@ -1602,15 +1565,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
 class ProductValidationMixin:
 
-    def validate_private_bugs(self, data):
-        """Perform validation for the private bugs setting."""
-        if data.get('private_bugs') and self.context.bug_supervisor is None:
-            self.setFieldError('private_bugs',
-                structured(
-                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
-                    'for this project first.',
-                    canonical_url(self.context, rootsite="bugs")))
-
     def validate_deactivation(self, data):
         """Verify whether a product can be safely deactivated."""
         if data['active'] == False and self.context.active == True:
@@ -1623,7 +1577,8 @@ class ProductValidationMixin:
                         canonical_url(self.context, view_name='+packages')))
 
 
-class ProductAdminView(ProductEditView, ProductValidationMixin):
+class ProductAdminView(ProductPrivateBugsMixin, ProductEditView,
+                       ProductValidationMixin):
     """View for $project/+admin"""
     label = "Administer project details"
     default_field_names = [
@@ -1691,7 +1646,7 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        self.validate_private_bugs(data)
+        super(ProductAdminView, self).validate(data)
         self.validate_deactivation(data)
 
     @property
@@ -1700,7 +1655,7 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ReturnToReferrerMixin,
+class ProductReviewLicenseView(ReturnToReferrerMixin, ProductPrivateBugsMixin,
                                ProductEditView, ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
@@ -1720,6 +1675,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     def validate(self, data):
         """See `LaunchpadFormView`."""
 
+        super(ProductReviewLicenseView, self).validate(data)
         # A project can only be approved if it has OTHER_OPEN_SOURCE as one of
         # its licenses and not OTHER_PROPRIETARY.
         licenses = self.context.licenses
@@ -1737,9 +1693,6 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
                 # approved.
                 pass
 
-        # Private bugs can only be enabled if the product has a bug
-        # supervisor.
-        self.validate_private_bugs(data)
         self.validate_deactivation(data)
 
 
@@ -1814,7 +1767,7 @@ class ProductRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return self.context.name
+        return '%s.rdf' % self.context.name
 
 
 class Icon:
@@ -2252,7 +2205,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def main_action(self, data):
         """See `MultiStepView`."""
         self.product = self.create_product(data)
-        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.link_source_package(self.product, data)
 

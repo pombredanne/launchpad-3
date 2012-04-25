@@ -21,7 +21,8 @@ test too much.
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import switch_dbuser
+
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -30,13 +31,11 @@ test too much.
 
     >>> def start_karma_update():
     ...     """Prepare for update to karma cache."""
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('testadmin')
+    ...     switch_dbuser('testadmin')
 
     >>> def finish_karma_update():
     ...     """Return to normal after updating karma cache."""
-    ...     transaction.commit()
-    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     switch_dbuser('launchpad')
 
 ITranslationOverview defines two constants regulating minimum and maximum
 contribution weights.

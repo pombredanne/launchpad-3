@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -39,6 +40,8 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -57,7 +60,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehavior, self).setUp()
-        self.layer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
@@ -137,7 +140,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -157,7 +160,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -180,7 +183,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
-        builder.setSlaveForTesting(slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -280,7 +283,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
-        self.layer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
         self.build = self.factory.makeBinaryPackageBuild(
@@ -308,7 +311,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # When a package fails to build, make sure the builder notes are
         # stored and the build status is set as failed.
         waiting_slave = WaitingSlave('BuildStatus.PACKAGEFAIL')
-        self.builder.setSlaveForTesting(waiting_slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(waiting_slave))
 
         def got_update(ignored):
             self.assertBuildProperties(self.build)
@@ -321,7 +325,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # Package build was left in dependency wait.
         DEPENDENCIES = 'baz (>= 1.0.1)'
         waiting_slave = WaitingSlave('BuildStatus.DEPFAIL', DEPENDENCIES)
-        self.builder.setSlaveForTesting(waiting_slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(waiting_slave))
 
         def got_update(ignored):
             self.assertBuildProperties(self.build)
@@ -334,7 +339,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_chrootfail_collection(self):
         # There was a chroot problem for this build.
         waiting_slave = WaitingSlave('BuildStatus.CHROOTFAIL')
-        self.builder.setSlaveForTesting(waiting_slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(waiting_slave))
 
         def got_update(ignored):
             self.assertBuildProperties(self.build)
@@ -346,7 +352,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_builderfail_collection(self):
         # The builder failed after we dispatched the build.
         waiting_slave = WaitingSlave('BuildStatus.BUILDERFAIL')
-        self.builder.setSlaveForTesting(waiting_slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(waiting_slave))
 
         def got_update(ignored):
             self.assertEqual(
@@ -362,7 +369,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def test_building_collection(self):
         # The builder is still building the package.
-        self.builder.setSlaveForTesting(BuildingSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(BuildingSlave()))
 
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
@@ -373,7 +381,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def test_aborted_collection(self):
         # The builder aborted the job.
-        self.builder.setSlaveForTesting(AbortedSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(AbortedSlave()))
 
         def got_update(ignored):
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
@@ -383,7 +392,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def test_aborting_collection(self):
         # The builder is in the process of aborting.
-        self.builder.setSlaveForTesting(AbortingSlave())
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(AbortingSlave()))
 
         def got_update(ignored):
             self.assertEqual(
@@ -397,7 +407,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # If we collected a build for a superseded/deleted source then
         # the build should get marked superseded as the build results
         # get discarded.
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(WaitingSlave('BuildStatus.OK')))
         spr = removeSecurityProxy(self.build.source_package_release)
         pub = self.build.current_source_publication
         pub.requestDeletion(spr.creator)
@@ -411,7 +422,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(WaitingSlave('BuildStatus.OK')))
 
         def got_update(ignored):
             self.assertEqual(self.build.status, BuildStatus.UPLOADING)
@@ -424,7 +436,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def test_givenback_collection(self):
         waiting_slave = WaitingSlave('BuildStatus.GIVENBACK')
-        self.builder.setSlaveForTesting(waiting_slave)
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(waiting_slave))
         score = self.candidate.lastscore
 
         def got_update(ignored):
@@ -439,7 +452,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(WaitingSlave('BuildStatus.OK')))
         self.build.status = BuildStatus.FULLYBUILT
         old_tmps = sorted(os.listdir('/tmp'))
 
@@ -487,7 +501,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_private_build_log_storage(self):
         # Builds in private archives should have their log uploaded to
         # the restricted librarian.
-        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.patch(BuilderSlave, 'makeBuilderSlave',
+                   FakeMethod(WaitingSlave('BuildStatus.OK')))
 
         # Go behind Storm's back since the field validator on
         # Archive.private prevents us from setting it to True with

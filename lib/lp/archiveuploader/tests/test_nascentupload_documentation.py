@@ -25,6 +25,7 @@ from lp.testing import (
     login,
     logout,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.systemdocs import (
@@ -99,7 +100,7 @@ def setUp(test):
     login('foo.bar@canonical.com')
     testGlobalsSetup(test)
     prepareHoaryForUploads(test)
-    LaunchpadZopelessLayer.switchDbUser('uploader')
+    switch_dbuser('uploader')
 
 
 def tearDown(test):

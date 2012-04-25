@@ -13,7 +13,7 @@
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPS.use('lp.registry.structural_subscription', function(Y) {
+      LPJS.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
           var config = {
               content_box: "#structural-subscription-content-box",

@@ -263,7 +263,7 @@ class ProductReleaseRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return '%s-%s-%s' % (
+        return '%s-%s-%s.rdf' % (
             self.context.product.name,
             self.context.productseries.name,
             self.context.version)
@@ -273,7 +273,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
-    custom_widget('description', TextWidget, width=62)
+    custom_widget('description', TextWidget, displayWidth=60)
 
     @property
     def label(self):

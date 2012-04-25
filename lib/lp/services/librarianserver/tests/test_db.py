@@ -13,6 +13,7 @@ from lp.services.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -20,7 +21,7 @@ class DBTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('librarian')
+        switch_dbuser('librarian')
 
     def test_lookupByDigest(self):
         # Create library
@@ -53,7 +54,7 @@ class TestLibrarianStuff(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('librarian')
+        switch_dbuser('librarian')
         self.store = getUtility(IStoreSelector).get(
                 MAIN_STORE, DEFAULT_FLAVOR)
         self.content_id = db.Library().add('deadbeef', 1234, 'abababab')

@@ -65,6 +65,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
+    has_watermark = False
 
     @staticmethod
     def _get_day_of_year():

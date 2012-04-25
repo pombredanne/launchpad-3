@@ -7,8 +7,7 @@ browser is created.
     >>> from lp.app.enums import ServiceUsage
 
     >>> login('admin@canonical.com')
-    >>> product_owner = factory.makePerson(
-    ...     email="po@ex.com", password="test")
+    >>> product_owner = factory.makePerson(email="po@ex.com")
     >>> chestii = factory.makeProduct(
     ...     name='chestii',
     ...     owner=product_owner,

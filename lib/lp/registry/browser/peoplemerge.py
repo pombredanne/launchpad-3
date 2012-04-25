@@ -134,11 +134,10 @@ class AdminMergeBaseView(ValidatingMergeView):
             # Transfer user email addresses. Team addresses will be deleted.
             for email in self.dupe_person_emails:
                 email = IMasterObject(email)
-                # EmailAddress.person and EmailAddress.account are readonly
-                # fields, so we need to remove the security proxy here.
+                # EmailAddress.person is a readonly field, so we need to
+                # remove the security proxy here.
                 naked_email = removeSecurityProxy(email)
                 naked_email.personID = self.target_person.id
-                naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
         getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user,

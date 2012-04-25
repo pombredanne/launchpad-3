@@ -433,6 +433,26 @@ class TestErrorViews(TestCaseWithFactory):
         self.assertEqual(410, view.request.response.getStatus())
 
 
+class ExceptionHierarchyTestCase(TestCaseWithFactory):
+
+    layer = FunctionalLayer
+
+    def test_exception(self):
+        view = create_view(IndexError('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_zope_exception(self):
+        view = create_view(Unauthorized('test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+    def test_launchapd_exception(self):
+        view = create_view(NotFound(None, 'test'), '+hierarchy')
+        view.request.traversed_objects = [getUtility(ILaunchpadRoot)]
+        self.assertEqual([], view.objects)
+
+
 class TestIterViewRegistrations(TestCaseWithFactory):
 
     layer = FunctionalLayer

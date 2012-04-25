@@ -21,8 +21,6 @@ from zope.interface import implements
 from zope.security.permission import checkPermission
 
 from lp.app.interfaces.security import IAuthorization
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IPersonRoles
 
 
 class AuthorizationBase:
@@ -84,19 +82,6 @@ class AuthorizationBase:
             return False
         else:
             return next_adapter.checkAuthenticated(user)
-
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        :return: True or False.
-        """
-        # For backward compatibility, delegate to one of
-        # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account, None)
-        if person is None:
-            return self.checkUnauthenticated()
-        else:
-            return self.checkAuthenticated(IPersonRoles(person))
 
 
 class AnonymousAuthorization(AuthorizationBase):

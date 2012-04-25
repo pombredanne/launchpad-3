@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -303,7 +303,7 @@ class PackageUploadFile(NascentUploadFile):
 
         They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
-        Even if they might be overriden in the future.
+        Even if they might be overridden in the future.
         """
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
@@ -579,7 +579,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         # Since DDEBs are generated after the original DEBs are processed
         # and considered by `dpkg-genchanges` they are only half-incorporated
-        # the the binary upload changes file. DDEBs are only listed in the
+        # the binary upload changes file. DDEBs are only listed in the
         # Files/Checksums-Sha1/ChecksumsSha256 sections and missing from
         # Binary/Description.
         if not self.filename.endswith('.ddeb'):

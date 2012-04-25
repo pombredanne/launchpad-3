@@ -542,18 +542,16 @@ class UserRequestOops(Exception):
 def maybe_record_user_requested_oops():
     """If an OOPS has been requested, report one.
 
-    :return: The oopsid of the requested oops.  Returns None if an oops was
-        not requested, or if there is already an OOPS.
+    It will be stored in request.oopsid.
     """
     request = get_current_browser_request()
-    # If there is no request, or there is an oops already, then return.
-    if (request is None or
-        request.oopsid is not None or
-        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
-        return None
-    globalErrorUtility.raising(
-        (UserRequestOops, UserRequestOops(), None), request)
-    return request.oopsid
+    # If there's a request and no existing OOPS, but an OOPS has been
+    # requested, record one.
+    if (request is not None
+        and request.oopsid is None
+        and request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
+        globalErrorUtility.raising(
+            (UserRequestOops, UserRequestOops(), None), request)
 
 
 class OopsNamespace(view):

@@ -109,7 +109,7 @@ together with the following data:
 Limitations:
   * "No name" products like mainboards from companies like ASRock
      or Asus that are directly sold to end users have fingerprints like
-     "American Megatrends Inc. Uknown 1.0".
+     "American Megatrends Inc. Unknown 1.0".
   * A manufacturer may erroneously assign identical DMI values for product
     and vendor to different systems.
   * submissions for "counterfeit systems".
@@ -410,7 +410,7 @@ the field `owner` is updated.
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
     >>> transaction.commit()
-    >>> login_person(user)
+    >>> ignored = login_person(user)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> transaction.commit()
     >>> HWSubmissionEmailLinker(log=DevNullLogger()).run()
@@ -743,4 +743,3 @@ IPerson.hardware_submissions.
     >>> set(submission.owner.name for submission
     ...     in owner.hardware_submissions)
     set([u'name12'])
-

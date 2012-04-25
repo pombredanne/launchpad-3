@@ -20,7 +20,6 @@ from fixtures import (
     FunctionFixture,
     )
 
-import canonical
 from lp.services.config import config
 from lp.services.daemons.tachandler import (
     TacException,
@@ -198,10 +197,7 @@ class LibrarianServerFixture(TacTestSetup):
 
     @property
     def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/librarian.tac'
-            ))
+        return os.path.join(self.daemon_directory, 'librarian.tac')
 
     @property
     def pidfile(self):

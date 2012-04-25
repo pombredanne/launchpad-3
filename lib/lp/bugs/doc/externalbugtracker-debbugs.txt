@@ -120,12 +120,13 @@ option, is disabled here and will be tested later.
 
     >>> transaction.commit()
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
-    INFO:...:Updating 5 watches for 5 bugs on http://...
+    INFO Updating 5 watches for 5 bugs on http://...
 
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
@@ -621,27 +622,23 @@ There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
-    >>> from lp.services.database.sqlbase import commit
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
     >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
     []
-    >>> commit()
+    >>> transaction.commit()
 
     # Make sane data to play this test.
-    >>> from lp.services.config import config
-    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> import subprocess
     >>> process = subprocess.Popen(
@@ -659,7 +656,7 @@ tracker.
     INFO    Committing the transaction.
     <BLANKLINE>
 
-    >>> commit()
+    >>> transaction.commit()
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     [u'evolution mail crashes on opening an email with a TIFF attachment']

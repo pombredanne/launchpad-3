@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -653,55 +653,6 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=tag_change_activity,
             expected_notification=tag_change_notification)
 
-    def test_mark_as_security_vulnerability(self):
-        # Marking a bug as a security vulnerability adds to the bug's
-        # activity log and sends a notification.
-        self.bug.setSecurityRelated(False, self.user)
-        self.changeAttribute(self.bug, 'security_related', True)
-
-        security_change_activity = {
-            'person': self.user,
-            'whatchanged': 'security vulnerability',
-            'oldvalue': 'no',
-            'newvalue': 'yes',
-            }
-
-        security_change_notification = {
-            'text': (
-                '** This bug has been flagged as '
-                'a security vulnerability'),
-            'person': self.user,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=security_change_activity,
-            expected_notification=security_change_notification)
-
-    def test_unmark_as_security_vulnerability(self):
-        # Unmarking a bug as a security vulnerability adds to the
-        # bug's activity log and sends a notification.
-        self.bug.setSecurityRelated(True, self.user)
-        self.saveOldChanges()
-        self.changeAttribute(self.bug, 'security_related', False)
-
-        security_change_activity = {
-            'person': self.user,
-            'whatchanged': 'security vulnerability',
-            'oldvalue': 'yes',
-            'newvalue': 'no',
-            }
-
-        security_change_notification = {
-            'text': (
-                '** This bug is no longer flagged as '
-                'a security vulnerability'),
-            'person': self.user,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=security_change_activity,
-            expected_notification=security_change_notification)
-
     def test_link_cve(self):
         # Linking a CVE to a bug adds to the bug's activity log and
         # sends a notification.
@@ -1146,6 +1097,18 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=source_package_bug)
+
+    def test_private_bug_target_change_doesnt_add_everyone(self):
+        # Retargeting a private bug doesn't add all subscribers for the
+        # target.
+        old_product = self.factory.makeProduct()
+        new_product = self.factory.makeProduct()
+        subscriber = self.factory.makePerson()
+        new_product.addBugSubscription(subscriber, subscriber)
+        bug = self.factory.makeBug(product=old_product, private=True)
+        bug.default_bugtask.transitionToTarget(new_product)
+        self.assertNotIn(subscriber, bug.getDirectSubscribers())
+        self.assertNotIn(subscriber, bug.getIndirectSubscribers())
 
     def test_add_bugwatch_to_bugtask(self):
         # Adding a BugWatch to a bug task records an entry in

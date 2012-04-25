@@ -22,60 +22,60 @@
             {{/show_id}}
             <a href="{{bug_url}}" class="bugtitle">{{title}}</a>
         </div>
-    </div>
-    <div class="buglisting-col3">
-        {{#show_targetname}}
-            <span class="{{bugtarget_css}} field">
-                {{bugtarget}}
+        <div class="buginfo-extra">
+            {{#show_targetname}}
+                <span class="{{bugtarget_css}} field">
+                    {{bugtarget}}
+                </span>
+            {{/show_targetname}}
+            {{#show_milestone_name}}
+                <span class="sprite milestone field">
+                    {{#milestone_name}}
+                    {{milestone_name}}
+                    {{/milestone_name}}
+                    {{^milestone_name}}
+                    No milestone set
+                    {{/milestone_name}}
+                </span>
+            {{/show_milestone_name}}
+            {{#show_date_last_updated}}
+                <span class="sprite milestone field">
+                    Last updated {{last_updated}}
+                </span>
+            {{/show_date_last_updated}}
+            {{#show_assignee}}
+                <span class="sprite person field">
+                    {{#assignee}}Assignee: {{assignee}}{{/assignee}}
+                    {{^assignee}}Assignee: None{{/assignee}}
+                </span>
+            {{/show_assignee}}
+            {{#show_reporter}}
+                <span class="sprite person field">
+                    Reporter: {{reporter}}
+                </span>
+            {{/show_reporter}}
+            {{#show_datecreated}}
+                <span class="sprite milestone field">
+                    {{age}}
+                </span>
+            {{/show_datecreated}}
+            {{#show_tag}}
+                <span class="field">Tags:
+                  {{^has_tags}}None{{/has_tags}}
+                  {{#tags}}
+                     <a href="{{url}}" class="tag">{{tag}}</a>&#160;
+                  {{/tags}}
+                </span>
+            {{/show_tag}}
+            {{#show_heat}}
+                <span class="bug-heat-icons">
+                     {{{bug_heat_html}}}
+                </span>
+            {{/show_heat}}
+            <span class="bug-related-icons">
+                {{{badges}}}
             </span>
-        {{/show_targetname}}
-        {{#show_milestone_name}}
-            <span class="sprite milestone field">
-                {{#milestone_name}}
-                {{milestone_name}}
-                {{/milestone_name}}
-                {{^milestone_name}}
-                No milestone set
-                {{/milestone_name}}
-            </span>
-        {{/show_milestone_name}}
-        {{#show_date_last_updated}}
-            <span class="sprite milestone field">
-                Last updated {{last_updated}}
-            </span>
-        {{/show_date_last_updated}}
-        {{#show_assignee}}
-            <span class="sprite person field">
-                {{#assignee}}Assignee: {{assignee}}{{/assignee}}
-                {{^assignee}}Assignee: None{{/assignee}}
-            </span>
-        {{/show_assignee}}
-        {{#show_reporter}}
-            <span class="sprite person field">
-                Reporter: {{reporter}}
-            </span>
-        {{/show_reporter}}
-        {{#show_datecreated}}
-            <span class="sprite milestone field">
-                {{age}}
-            </span>
-        {{/show_datecreated}}
-        {{#show_tag}}
-            <span class="field">Tags:
-              {{^has_tags}}None{{/has_tags}}
-              {{#tags}}
-                 <a href="{{url}}" class="tag">{{tag}}</a>&#160;
-              {{/tags}}
-            </span>
-        {{/show_tag}}
-        {{#show_heat}}
-            <span class="bug-heat-icons">
-                 {{{bug_heat_html}}}
-            </span>
-        {{/show_heat}}
-        <span class="bug-related-icons">
-            {{{badges}}}
-        </span>
+        </div>
     </div>
 
   </div>

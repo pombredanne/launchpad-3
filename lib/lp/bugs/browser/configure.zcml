@@ -1,4 +1,4 @@
-<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -177,6 +177,13 @@
             permission="launchpad.View"/>
         <browser:page
             for="lp.bugs.interfaces.bugmessage.IBugComment"
+            name="+download"
+            class="lp.bugs.browser.bugcomment.BugCommentView"
+            attribute="download"
+            permission="launchpad.View"
+        />
+        <browser:page
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxView"
@@ -220,6 +227,11 @@
             title="Admin"
             action="+admin"/>
     </browser:menuItems>
+    <browser:menus
+        module="lp.bugs.browser.person"
+        classes="
+            PersonBugsMenu
+            "/>
     <browser:defaultView
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         name="+index"/>
@@ -257,8 +269,14 @@
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         name="assigned"
         class="lp.bugs.browser.bug.DeprecatedAssignedBugsView"
-        attribute="redirect_to_assignedbugs"
+        attribute="__call__"
         permission="launchpad.AnyPerson"/>
+    <adapter
+        name="bugs"
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.person.IPerson"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+team-bugs-macro"
@@ -266,51 +284,63 @@
         permission="zope.Public"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        permission="zope.Public"
+        class="lp.bugs.browser.person.PersonSubscriptionsView"
+        name="+subscriptions"
+        template="../templates/person-subscriptions.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        permission="zope.Public"
+        class="lp.bugs.browser.person.PersonStructuralSubscriptionsView"
+        name="+structural-subscriptions"
+        template="../templates/person-structural-subscriptions.pt"/>
+    <browser:page
         name="+bugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonRelatedBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonRelatedBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
         name="+affectingbugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonAffectingBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonAffectingBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
         name="+assignedbugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonAssignedBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonAssignedBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
         name="+commentedbugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonCommentedBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonCommentedBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
         name="+packagebugs-search"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsSearchListingView"
+        class="lp.bugs.browser.person.BugSubscriberPackageBugsSearchListingView"
         permission="zope.Public"
         template="../templates/person-packagebugs-search.pt"/>
     <browser:page
         name="+packagebugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.BugSubscriberPackageBugsOverView"
+        class="lp.bugs.browser.person.BugSubscriberPackageBugsOverView"
         permission="zope.Public"
         template="../templates/person-packagebugs-overview.pt"/>
     <browser:page
         name="+reportedbugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonReportedBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonReportedBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
         name="+subscribedbugs"
         for="lp.registry.interfaces.person.IPerson"
-        class="lp.registry.browser.person.PersonSubscribedBugTaskSearchListingView"
+        class="lp.bugs.browser.person.PersonSubscribedBugTaskSearchListingView"
         permission="zope.Public"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
@@ -369,7 +399,7 @@
         for="lp.registry.interfaces.product.IProduct"
         permission="launchpad.BugSupervisor"
         name="+configure-bugtracker"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/bugtracker-configure.pt"
         class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
@@ -925,7 +955,7 @@
             name="+index"
             class="lp.bugs.browser.bug.BugWithoutContextView"
             permission="zope.Public"
-            attribute="redirectToNewBugPage"/>
+            attribute="__call__"/>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bugtask.BugTasksAndNominationsView"

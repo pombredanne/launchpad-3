@@ -12,46 +12,19 @@ A bug's heat is calculated automatically when it is created.
     >>> bug.heat
     6
 
-Its heat_last_updated time will be the same as its datecreated attribute.
-
-    >>> bug.heat_last_updated == bug.datecreated
-    True
-
-The bug's heat can be set by calling its setHeat() method. We'll commit
-the transaction first so that heat_last_updated gets changed.
-
-    >>> import transaction
-    >>> transaction.commit()
-
-    >>> bug.setHeat(42)
-    >>> bug.heat
-    42
-
-Its heat_last_updated will also have been updated.
-
-    >>> bug.heat_last_updated == bug.datecreated
-    False
-
-    >>> bug.heat_last_updated
-    datetime.datetime(..., tzinfo=<UTC>)
-
-
 Updating bug heat on-the-fly
 ----------------------------
 
 The IBug.updateHeat() method updates a Bug's heat using data already in
-the database. Where setHeat() can be used for setting bug heat to a
-specific value, updateHeat() uses a stored procedure in the database to
+the database. updateHeat() uses a stored procedure in the database to
 calculate the heat overall.
 
 We'll create a new bug with a heat of 0 for the sake of testing.
 
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
-    >>> bug.setHeat(0)
-
-    >>> bug.heat
-    0
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(bug).heat = 0
 
 Calling updateHeat() will update the bug's heat. Since this new bug has
 one subscriber (the bug owner) and one affected user (ditto) its
@@ -64,14 +37,6 @@ heat after update will be 6.
 
 Events which trigger bug heat updates
 -------------------------------------
-
-We current use a feature flag for some privacy related subscription stuff.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {
-    ...     'disclosure.enhanced_private_bug_subscriptions.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
 
 There are several events which will cause a bug's heat to be updated.
 First, as stated above, heat will be calculated when the bug is created.
@@ -143,10 +108,9 @@ unaffected, the bug's heat doesn't change.
     >>> bug.heat
     8
 
-Marking the bug as a duplicate will set its heat to zero, whilst also
-adding 10 points of heat to the bug it duplicates, 6 points for the
-duplication and 4 points for the subscribers that the duplicated bug
-inherits.
+Marking the bug as a duplicate won't change its heat, but it will add 10
+points of heat to the bug it duplicates: 6 points for the duplication
+and 4 points for the subscribers that the duplicated bug inherits.
 
     >>> duplicated_bug = factory.makeBug()
     >>> duplicated_bug.heat
@@ -154,7 +118,7 @@ inherits.
 
     >>> bug.markAsDuplicate(duplicated_bug)
     >>> bug.heat
-    0
+    8
 
     >>> duplicated_bug.heat
     16
@@ -178,9 +142,7 @@ and will cause the bug's heat to be recalculated.
 
 We'll set the bug's heat to 0 first to demonstrate this.
 
-    >>> bug.setHeat(0)
-    >>> bug.heat
-    0
+    >>> removeSecurityProxy(bug).heat = 0
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import timezone
@@ -195,10 +157,6 @@ We'll set the bug's heat to 0 first to demonstrate this.
     >>> bug.heat
     8
 
-Clean up the feature flag.
-
-    >>> flags.cleanUp()
-
 
 Getting bugs whose heat is outdated
 -----------------------------------
@@ -207,33 +165,36 @@ It's possible to get the set of bugs whose heat hasn't been updated for
 a given amount of time by calling IBugSet's getBugsWithOutdatedHeat()
 method.
 
-First, we'll set the heat of all bugs so that none of them are out of
-date.
+First, we'll set the heat_last_updated of all bugs so that none of them are
+out of date.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> for bug in getUtility(IBugSet).dangerousGetAllBugs():
-    ...     bug.setHeat(0)
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.services.database.lpstorm import IStore
+    >>> IStore(Bug).find(Bug).set(
+    ...     heat_last_updated=datetime.now(timezone('UTC')))
 
 If we call getBugsWithOutdatedHeat() now, the set that is returned will
 be empty because all the bugs have been recently updated.
-getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
-is the maximum age, in days, that a bug's heat can be before it gets
-included in the returned set.
+getBugsWithOutdatedHeat() takes a single parameter, cutoff, which is the
+oldest a bug's heat can be before it gets included in the returned set.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> yesterday = datetime.now(timezone('UTC')) - timedelta(days=1)
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
 
-IBug.setHeat() takes a timestamp parameter so that we can set the
-heat_last_updated date manually for the purposes of testing. If we make
-a bug's heat older than the max_heat_age that we pass to
+If we make a bug's heat older than the cutoff that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
     >>> old_heat_bug = factory.makeBug()
-    >>> old_heat_bug.setHeat(
-    ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
+    >>> naked_bug = removeSecurityProxy(old_heat_bug)
+    >>> naked_bug.heat = 0
+    >>> naked_bug.heat_last_updated = datetime.now(
+    ...     timezone('UTC')) - timedelta(days=2)
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     1
 
@@ -247,9 +208,10 @@ updated.
 
 We'll set the new bug's heat_last_updated to None manually.
 
-    >>> new_bug.heat_last_updated = None
+    >>> removeSecurityProxy(new_bug).heat_last_updated = None
 
-    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+    ...     yesterday)
     >>> outdated_bugs.count()
     2
 
@@ -270,115 +232,49 @@ We'll commit the transaction so that the BugHeatUpdater updates the
 right bugs.
 
     >>> transaction.commit()
-    >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
 it as a method will recalculate the heat for all the out-of-date bugs.
 
 There are two bugs with heat more than a day old:
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     2
 
-Calling our BugHeatUpdater will update the heat of those bugs.
+The updater gets the cutoff from a feature flag. By default no bugs are
+considered outdated.
 
     >>> update_bug_heat(chunk_size=1)
+    DEBUG Updating heat for 0 bugs
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
+    2
+
+If we set the cutoff to a day ago, calling our BugHeatUpdater will update the
+heat of those bugs.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> flag = FeatureFixture(
+    ...     {'bugs.heat_updates.cutoff': yesterday.isoformat()})
+
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return 1 item.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     1
 
 Update the rest in one big chunk.
 
-    >>> update_bug_heat(chunk_size=1000)
+    >>> with flag:
+    ...     update_bug_heat(chunk_size=1000)
     DEBUG Updating heat for 1 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
 
-    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(yesterday).count()
     0
-
-
-Caculating the maximum heat for a target
-----------------------------------------
-
-When we update the heat value for a bug, the maximum heat value for the
-targets for all of its tasks is calculated and cached.
-
-    >>> product = factory.makeProduct()
-    >>> bug = factory.makeBug(product=product)
-    >>> bug.setHeat(123)
-    >>> print product.max_bug_heat
-    123
-
-The maximum heat for a project is the value for tasks on all its products.
-
-    >>> project = factory.makeProject()
-    >>> product.project = project
-    >>> bug.setHeat(123)
-    >>> print project.max_bug_heat
-    123
-
-A DistributionSourcePackage has its own maximum heat.
-
-    >>> dsp = factory.makeDistributionSourcePackage()
-    >>> dsp_task = bug.addTask(bug.owner, dsp)
-    >>> print dsp.max_bug_heat
-    123
-
-A DistributionSourcePackage also has a cached value for bug_count and
-total_bug_heat.
-
-    >>> print dsp.bug_count
-    1
-    >>> print dsp.total_bug_heat
-    123
-    >>> dsp_task2 = factory.makeBugTask(target=dsp)
-    >>> dsp_task2.bug.setHeat(7)
-    >>> print dsp.bug_count
-    2
-    >>> print dsp.total_bug_heat
-    130
-
-Transitioning from one target to another, calculates the value for the new
-target.
-
-    >>> another_product = factory.makeProduct()
-    >>> transaction.commit()
-    >>> bug.bugtasks[0].transitionToTarget(another_product)
-    >>> print another_product.max_bug_heat
-    123
-
-ProductSeries and DistroSeries simply delegate to their corresponding Product
-or Distribution.
-
-    >>> product_series = factory.makeProductSeries()
-    >>> ps_task = bug.addTask(bug.owner, product_series)
-    >>> print product_series.max_bug_heat
-    123
-    >>> print product_series.product.max_bug_heat
-    123
-
-    >>> distro_series = factory.makeDistroSeries()
-    >>> ds_task = bug.addTask(bug.owner, distro_series)
-    >>> print distro_series.max_bug_heat
-    123
-    >>> print distro_series.distribution.max_bug_heat
-    123
-
-Maximum heat is limited to bugs of a specific target.
-
-    >>> product = factory.makeProduct()
-    >>> product_bug = factory.makeBug(product=product)
-    >>> product_bug.setHeat(123)
-    >>> distro = factory.makeDistribution()
-    >>> distro_bug = factory.makeBug()
-    >>> distro_task = distro_bug.addTask(bug.owner, distro)
-    >>> distro_bug.setHeat(456)
-    >>> print product.max_bug_heat
-    123
-    >>> print distro.max_bug_heat
-    456

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -47,6 +48,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
+        if chroot is None:
+            distroarchseries = self._getDistroArchSeries()
+            raise CannotBuild("Unable to find a chroot for %s" %
+                              distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
         d = self._builder.slave.cacheFile(logger, chroot)
 

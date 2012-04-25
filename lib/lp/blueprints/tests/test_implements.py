@@ -9,6 +9,9 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItem,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -65,3 +68,13 @@ class ImplementsISpecificationTargetTests(TestCaseWithFactory):
     def test_distroseries_implements_ISpecificationTarget(self):
         distroseries = self.factory.makeDistroSeries()
         self.assertProvides(distroseries, ISpecificationTarget)
+
+
+class ImplementsISpecificationWorkItemTests(TestCaseWithFactory):
+    """Test that various objects implement ISpecificationWorkItem."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_specificationworkitem_implements_ISpecificationTarget(self):
+        specificationworkitem = self.factory.makeSpecificationWorkItem()
+        self.assertProvides(specificationworkitem, ISpecificationWorkItem)

@@ -28,6 +28,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    Insert,
     NamedFunc,
     Not,
     Or,
@@ -42,6 +43,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -126,7 +128,6 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.interfaces.accesspolicy import IAccessPolicyArtifactSource
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -180,8 +181,6 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
-    access_policy_id = Int(name="access_policy")
-    access_policy = Reference(access_policy_id, "AccessPolicy.id")
 
     @property
     def private(self):
@@ -885,13 +884,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
-        data = []
-        for revid, sequence in revision_id_sequence_pairs:
-            data.append('(%s, %s)' % sqlvalues(revid, sequence))
-        data = ', '.join(data)
-        store.execute(
-            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
-            % data)
+        # Force to Unicode or we will end up with bad quoting under
+        # PostgreSQL 9.1.
+        unicode_revid_sequence_pairs = [
+            (a and unicode(a) or None, b and unicode(b) or None)
+                for a, b in revision_id_sequence_pairs]
+        store.execute(Insert(('revision_id', 'sequence'),
+            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
@@ -1058,7 +1057,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            BranchScanJob.create(self)
+            job = BranchScanJob.create(self)
+            job.celeryRunOnCommit()
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
@@ -1128,13 +1128,13 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         self._deleteBranchSubscriptions()
         self._deleteJobs()
-        getUtility(IAccessPolicyArtifactSource).delete(self)
 
         # Now destroy the branch.
         branch_id = self.id
         SQLBase.destroySelf(self)
         # And now create a job to remove the branch from disk when it's done.
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job.celeryRunOnCommit()
 
     def commitsForDays(self, since):
         """See `IBranch`."""
@@ -1188,7 +1188,9 @@ class Branch(SQLBase, BzrIdentityMixin):
     def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job = getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job.celeryRunOnCommit()
+        return job
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
@@ -1411,6 +1413,26 @@ class BranchSet:
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
         return branches
+
+    def getBranchVisibilityInfo(self, user, person, branch_names):
+        """See `IBranchSet`."""
+        if user is None:
+            return dict()
+        branch_set = getUtility(IBranchLookup)
+        visible_branches = []
+        for name in branch_names:
+            branch = branch_set.getByUniqueName(name)
+            try:
+                if (branch is not None
+                        and branch.visibleByUser(user)
+                        and branch.visibleByUser(person)):
+                    visible_branches.append(branch.unique_name)
+            except Unauthorized:
+                # We don't include branches user cannot see.
+                pass
+        return {
+            'person_name': person.displayname,
+            'visible_branches': visible_branches}
 
 
 def update_trigger_modified_fields(branch):

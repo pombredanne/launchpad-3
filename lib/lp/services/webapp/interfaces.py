@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -170,7 +170,7 @@ class ILinkData(Interface):
 
     hidden = Attribute(
         "Boolean to say whether this link is hidden.  This is separate from "
-        "being enabled and is used to support links which need to be be "
+        "being enabled and is used to support links which need to be "
         "enabled but not viewable in the rendered HTML.  The link may be "
         "changed to visible by JavaScript or some other means.")
 
@@ -233,6 +233,8 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+    detail = Attribute('Detailed text of this breadcrumb.')
 
 
 #
@@ -412,20 +414,6 @@ class ILaunchpadBrowserApplicationRequest(
         schema=IBrowserFormNG)
 
 
-class IPasswordEncryptor(Interface):
-    """An interface representing a password encryption scheme."""
-
-    def encrypt(plaintext):
-        """Return the encrypted value of plaintext."""
-
-    def validate(plaintext, encrypted):
-        """Return a true value if the encrypted value of 'plaintext' is
-        equivalent to the value of 'encrypted'.  In general, if this
-        method returns true, it can also be assumed that the value of
-        self.encrypt(plaintext) will compare equal to 'encrypted'.
-        """
-
-
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
     request's credentials.
@@ -494,11 +482,8 @@ class IPlacelessAuthUtility(IAuthentication):
     login name.
     """
 
-    def getPrincipalByLogin(login, want_password=True):
-        """Return a principal based on his login name.
-
-        The principal's password is set to None if want_password is False.
-        """
+    def getPrincipalByLogin(login):
+        """Return a principal based on his login name."""
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -507,15 +492,8 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    # want_password is temporary. Eventually we will have accounts
-    # without passwords at all, authenticated via other means such as external
-    # OpenID providers or SSL certificates. Principals having passwords
-    # doesn't really make sense.
-    def getPrincipalByLogin(login, want_password=True):
-        """Return a principal based on his login name.
-
-        If want_password is False, the principal's password is set to None.
-        """
+    def getPrincipalByLogin(login):
+        """Return a principal based on his login name."""
 
     def getPrincipals(name):
         """Not implemented.

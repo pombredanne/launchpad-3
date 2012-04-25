@@ -14,15 +14,12 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> login('foo.bar@canonical.com')
     >>> joesmith = factory.makePerson(name="joesmith",
     ...                               displayname="Joe Smith",
-    ...                               password="test",
     ...                               email="joe@example.com")
     >>> johnsmith = factory.makePerson(name="johnsmith",
     ...                               displayname="John Smith",
-    ...                               password="test",
     ...                               email="john@example.com")
     >>> fredsmith = factory.makePerson(name="fredsmith",
     ...                               displayname="Fred Smith",
-    ...                               password="test",
     ...                               email="fred@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
@@ -280,11 +277,14 @@ all current subscriptions, most recently created first:
     PPA named p3a for Celso Providelo      2009-02-26
     PPA named p3a for Mark Shuttleworth    2009-02-22
 
+getByArchive() sorts by subscriber name.
+
     >>> for subscription in sub_set.getByArchive(mark_private_ppa):
+    ...     print subscription.subscriber.name
     ...     print subscription.subscriber.displayname
     ...     print subscription.date_created.date()
-    Team Cprov      2009-02-24
-    Joe Smith       2009-02-22
+    joesmith            Joe Smith       2009-02-22
+    team-name-...       Team Cprov      2009-02-24
 
 If we cancel one of the subscriptions:
 
@@ -489,7 +489,6 @@ will return a list with the single subscriber as expected:
     >>> login("mark@example.com")
     >>> harrysmith = factory.makePerson(name="harrysmith",
     ...                                 displayname="Harry Smith",
-    ...                                 password="test",
     ...                                 email="harry@example.com")
     >>> subscription = mark_private_ppa.newSubscription(
     ...     harrysmith, mark, description=u"subscription for joesmith")

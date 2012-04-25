@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2004-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -31,6 +31,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.registry.interfaces.person import IPerson
+from lp.services.comments.interfaces.conversation import IComment
 from lp.services.fields import Title
 from lp.services.messages.interfaces.message import IMessage
 
@@ -113,7 +114,7 @@ class IBugMessageAddForm(Interface):
         required=False, default=None)
 
 
-class IBugComment(IMessage):
+class IBugComment(IMessage, IComment):
     """A bug comment for displaying in the web UI."""
 
     bugtask = Attribute(
@@ -126,12 +127,6 @@ class IBugComment(IMessage):
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
-    index = Int(title=u'The comment number', required=True, readonly=True)
-    was_truncated = Bool(
-        title=u'Whether the displayed text was truncated for display.',
-        readonly=True)
-    text_for_display = Text(
-        title=u'The comment text to be displayed in the UI.', readonly=True)
     display_title = Attribute('Whether or not to show the title.')
     synchronized = Attribute(
         'Has the comment been synchronized with a remote bug tracker?')

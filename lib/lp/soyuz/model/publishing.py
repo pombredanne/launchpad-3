@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -48,15 +48,13 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -456,6 +454,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
+    sponsor = ForeignKey(
+        dbName='sponsor', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -816,7 +817,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True, creator=None):
+               create_dsd_job=True, creator=None, sponsor=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -834,7 +835,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             pocket,
             ancestor=self,
             create_dsd_job=create_dsd_job,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1458,29 +1460,18 @@ class PublishingSet:
         if not needed:
             return []
 
-        insert_head = """
-            INSERT INTO BinaryPackagePublishingHistory
-            (archive, distroarchseries, pocket, binarypackagerelease,
-             binarypackagename, component, section, priority, status,
-             datecreated)
-            VALUES
-            """
-        insert_pubs = ", ".join(
-            "(%s)" % ", ".join(sqlvalues(
-                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
-                bpr.binarypackagename,
-                get_component(archive, das.distroseries, component).id,
-                section.id, priority, PackagePublishingStatus.PENDING,
-                UTC_NOW))
-            for (das, bpr, (component, section, priority)) in needed)
-        insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
-        new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
-            insert_head + insert_pubs + insert_tail)
-
-        publications = IMasterStore(BinaryPackagePublishingHistory).find(
-            BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.id.is_in(id[0] for id in new_ids))
-        return list(publications)
+        BPPH = BinaryPackagePublishingHistory
+        return bulk.create(
+            (BPPH.archive, BPPH.distroarchseries, BPPH.pocket,
+             BPPH.binarypackagerelease, BPPH.binarypackagename,
+             BPPH.component, BPPH.section, BPPH.priority, BPPH.status,
+             BPPH.datecreated),
+            [(get_archive(archive, bpr), das, pocket, bpr,
+              bpr.binarypackagename,
+              get_component(archive, das.distroseries, component),
+              section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
+              for (das, bpr, (component, section, priority)) in needed],
+            get_objects=True)
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
@@ -1511,7 +1502,7 @@ class PublishingSet:
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,
-                             creator=None):
+                             creator=None, sponsor=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
@@ -1528,7 +1519,8 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             ancestor=ancestor,
-            creator=creator)
+            creator=creator,
+            sponsor=sponsor)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:

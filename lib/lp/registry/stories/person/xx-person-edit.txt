@@ -7,8 +7,7 @@ Launchpad.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> user = factory.makePerson(name='ray', displayname='Ray Ray',
-    ...                           email='ray@example.com',
-    ...                           password='test')
+    ...                           email='ray@example.com')
     >>> logout()
     >>> browser.addHeader('Authorization', 'Basic ray@example.com:test')
     >>> browser.open('http://launchpad.dev/~ray')

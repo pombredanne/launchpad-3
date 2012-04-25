@@ -14,7 +14,6 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
@@ -26,9 +25,6 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.side import ITranslationSideTraitsSet
-from lp.translations.interfaces.translatablemessage import (
-    ITranslatableMessage,
-    )
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
@@ -2037,12 +2033,6 @@ class TestPOFile(TestCaseWithFactory):
         super(TestPOFile, self).setUp()
         self.pofile = self.factory.makePOFile('eo')
         self.potemplate = self.pofile.potemplate
-
-    def test_makeTranslatableMessage(self):
-        # TranslatableMessages can be created from the PO file
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate)
-        message = self.pofile.makeTranslatableMessage(potmsgset)
-        verifyObject(ITranslatableMessage, message)
 
     def _createMessageSet(self, testmsg):
         # Create a message set from the test data.

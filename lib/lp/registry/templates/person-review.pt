@@ -25,12 +25,6 @@
               may cause problems with relying parties. PPA and mailing lists
               will be broken too.
             </p>
-            <p>
-              <a tal:attributes="
-                href string:${view/context/fmt:url}/+reviewaccount"><img
-                tal:attributes="alt string:edit" src="/@@/edit" />
-                Review the user's account information</a>.
-            </p>
           </tal:review-person>
 
           <tal:review-account

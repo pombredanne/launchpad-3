@@ -147,31 +147,9 @@ class CodeVHostBreadcrumb(Breadcrumb):
 class BranchBadges(HasBadgeBase):
     badges = "private", "bug", "blueprint", "warning", "mergeproposal"
 
-    def isBugBadgeVisible(self):
-        """Show a bug badge if the branch is linked to bugs."""
-        # Only show the badge if at least one bug is visible by the user.
-        for bug in self.context.linked_bugs:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', bug):
-                return True
-        return False
-
-    def isBlueprintBadgeVisible(self):
-        """Show a blueprint badge if the branch is linked to blueprints."""
-        # When specs get privacy, this will need to be adjusted.
-        return self.context.spec_links.count() > 0
-
     def isWarningBadgeVisible(self):
         """Show a warning badge if there are mirror failures."""
         return self.context.mirror_failures > 0
-
-    def isMergeproposalBadgeVisible(self):
-        """Show a proposal badge if there are any landing targets."""
-        for proposal in self.context.landing_targets:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', proposal):
-                return True
-        return False
 
     def getBadge(self, badge_name):
         """See `IHasBadges`."""
@@ -860,8 +838,8 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews', 'mergequeues',
+    links = ['registered', 'owned', 'subscribed',
+             'active_reviews', 'mergequeues', 'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
     extra_attributes = [
@@ -881,7 +859,7 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
         branches registered by a particular user for the counts that
         appear at the top of a branch listing page.
 
-        This should be overriden in subclasses to restrict to, for
+        This should be overridden in subclasses to restrict to, for
         example, the set of branches of a particular product.
         """
         return getUtility(IAllBranches).visibleByUser(self.user)
@@ -946,6 +924,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             '+activereviews',
             'Active reviews')
 
+    def source_package_recipes(self):
+        return Link(
+            '+recipes',
+            'Source package recipes',
+            enabled=IPerson.providedBy(self.context))
+
     @cachedproperty
     def registered_branch_count(self):
         """Return the number of branches registered by self.person."""
@@ -996,22 +980,12 @@ class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
             'active reviews')
         return Link('+activereviews', text)
 
-    def addbranch(self):
-        if self.user is None:
-            enabled = False
-        else:
-            enabled = self.user.inTeam(self.context)
-        text = 'Register a branch'
-        summary = 'Register a new Bazaar branch'
-        return Link(
-            '+addbranch', text, summary, icon='add', enabled=enabled,
-            site='code')
-
 
 class PersonProductBranchesMenu(PersonBranchesMenu):
 
     usedfor = IPersonProduct
     links = ['registered', 'owned', 'subscribed', 'active_reviews',
+             'source_package_recipes',
              'simplified_subscribed', 'simplified_registered',
              'simplified_owned', 'simplified_active_reviews']
 
@@ -1165,7 +1139,6 @@ class ProductBranchesMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'branches'
     links = [
-        'branch_add',
         'list_branches',
         'active_reviews',
         'code_import',
@@ -1174,11 +1147,6 @@ class ProductBranchesMenu(ApplicationMenu):
     extra_attributes = [
         'active_review_count',
         ]
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = 'Register a new Bazaar branch for this project'
-        return Link('+addbranch', text, summary, icon='add', site='code')
 
     def list_branches(self):
         text = 'List branches'
@@ -1240,7 +1208,7 @@ class ProductBranchListingView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project.')
@@ -1474,7 +1442,7 @@ class ProjectBranchesView(BranchListingView):
             message = (
                 'There are no branches registered for %s '
                 'in Launchpad today. We recommend you visit '
-                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'www.bazaar-vcs.org '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
                 'in this project group.')

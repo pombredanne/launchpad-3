@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PackageCopier utilities."""
@@ -66,7 +66,7 @@ def re_upload_file(libraryfile, restricted=False):
     # XXX cprov 2009-06-12: This function could be incorporated in ILFA.
     # I just don't see a clear benefit in doing that right now.
 
-    # Open the the libraryfile for reading.
+    # Open the libraryfile for reading.
     libraryfile.open()
 
     # Make a temporary file to hold the download.  It's annoying
@@ -93,7 +93,7 @@ def re_upload_file(libraryfile, restricted=False):
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing destination
+    """Update file privacy according to the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -652,13 +652,16 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if sponsored is not None:
                 announce_from_person = sponsored
                 creator = sponsored
+                sponsor = person
             else:
                 creator = person
+                sponsor = None
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
                 create_dsd_job=create_dsd_job,
-                close_bugs_since_version=old_version, creator=creator)
+                close_bugs_since_version=old_version, creator=creator,
+                sponsor=sponsor)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -674,7 +677,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
-                    close_bugs_since_version=None, creator=None):
+                    close_bugs_since_version=None, creator=None,
+                    sponsor=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -701,6 +705,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         then this parameter says which changelog entries to parse looking
         for bugs to close.  See `close_bugs_for_sourcepackagerelease`.
     :param creator: the requester `IPerson`.
+    :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -731,7 +736,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             override = overrides[0]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job=create_dsd_job,
-            creator=creator)
+            creator=creator, sponsor=sponsor)
         if close_bugs:
             close_bugs_for_sourcepublication(
                 source_copy, close_bugs_since_version)
@@ -1080,7 +1085,7 @@ class UnembargoSecurityPackage(PackageCopier):
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
 
-        # Fix copies by overriding them according the current ancestry
+        # Fix copies by overriding them according to the current ancestry
         # and re-upload files with privacy mismatch.
         for pub_record in copies:
             pub_record.overrideFromAncestry()

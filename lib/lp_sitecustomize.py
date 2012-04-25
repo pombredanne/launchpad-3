@@ -19,6 +19,12 @@ from zope.interface import alsoProvides
 import zope.publisher.browser
 from zope.security import checker
 
+# Load bzr plugins
+import lp.codehosting
+lp.codehosting
+# Force LoomBranch classes to be listed as subclasses of Branch
+import bzrlib.plugins.loom.branch
+bzrlib.plugins.loom.branch
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter

@@ -65,7 +65,6 @@ status is returned.
 >>> check_redirect("/feedback", status=301)
 >>> check_redirect("/", host='feeds.launchpad.dev', status=301)
 >>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
->>> check("/+graphics")
 
 >>> check("/+imports", host='translations.launchpad.dev')
 >>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')

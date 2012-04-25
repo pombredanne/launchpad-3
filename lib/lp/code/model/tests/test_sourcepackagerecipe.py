@@ -372,8 +372,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).disable()
         (distroseries,) = list(recipe.distroseries)
-        self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
-                ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
+        with person_logged_in(ppa.owner):
+            self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
+                    ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildScore(self):
         """Normal build requests have a relatively low queue score (2405)."""
@@ -759,7 +760,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, recipe=recipe_text)
         transaction.commit()
-        return recipe.builder_recipe
+        return recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
             num_child_branches=0, revid=None, deb_version=None):
@@ -780,7 +781,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         # bzr-builder format 0.3 deb-version 0.1-{revno}
         %(base)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity,
             deb_version='0.1-{revno}')
@@ -791,7 +792,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         %(base)s
         merge bar %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -806,7 +807,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -822,7 +823,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
         merge zam %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             deb_version='0.1-{revno}')
@@ -842,7 +843,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         merge zam %(merged)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             deb_version='0.1-{revno}')
@@ -862,7 +863,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
           merge zam %(merged)s
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -885,7 +886,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz
           nest zam %(nested2)s zoo
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version='0.1-{revno}')
@@ -905,7 +906,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         nest bar %(nested)s baz tag:b
         merge zam %(merged)s 2
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2,
             revspec="revid:a", deb_version='0.1-{revno}')
@@ -921,13 +922,34 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
 
+    def test_unsets_revspecs(self):
+        # Changing a recipe's text to no longer include revspecs unsets
+        # them from the stored copy.
+        revspec_text = '''\
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
+        %(base)s revid:a
+        nest bar %(nested)s baz tag:b
+        merge zam %(merged)s 2
+        ''' % self.branch_identities
+        no_revspec_text = '''\
+        # bzr-builder format 0.3 deb-version 0.1-{revno}
+        %(base)s
+        nest bar %(nested)s baz
+        merge zam %(merged)s
+        ''' % self.branch_identities
+        recipe = self.get_recipe(revspec_text)
+        self.assertEqual(textwrap.dedent(revspec_text), recipe.recipe_text)
+        with person_logged_in(recipe.owner):
+            recipe.setRecipeText(textwrap.dedent(no_revspec_text))
+        self.assertEqual(textwrap.dedent(no_revspec_text), recipe.recipe_text)
+
     def test_builds_recipe_without_debversion(self):
         recipe_text = '''\
         # bzr-builder format 0.4
         %(base)s
         nest bar %(nested)s baz
         ''' % self.branch_identities
-        base_branch = self.get_recipe(recipe_text)
+        base_branch = self.get_recipe(recipe_text).builder_recipe
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1,
             deb_version=None)

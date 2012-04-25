@@ -83,8 +83,8 @@ exist in Launchpad. we'll get an error message.
     >>> for error in edit_view.errors:
     ...     print error
     (u'ubuntu_thunderbird.target', u'Target',
-     LaunchpadValidationError(u"There is no package name 'no-such-package'
-     published in Ubuntu"))
+     LaunchpadValidationError(u"There is no package named 'no-such-package'
+     published in Ubuntu."))
 
 An error is reported to the user when a bug is retargeted and there is
 an existing task for the same target.

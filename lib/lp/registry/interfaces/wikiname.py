@@ -28,7 +28,7 @@ class IWikiName(IHasOwner):
     """Wiki for Users"""
     export_as_webservice_entry(publish_web_link=False)
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    # schema=Interface will be overriden in person.py because of circular
+    # schema=Interface will be overridden in person.py because of circular
     # dependencies.
     person = exported(
         Reference(

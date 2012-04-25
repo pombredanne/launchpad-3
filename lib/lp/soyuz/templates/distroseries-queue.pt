@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="head_epilogue">
   <script type="text/javascript">
-    LPS.use('node', 'lp.app.widgets.expander', function(Y) {
+    LPJS.use('node', 'lp.app.widgets.expander', function(Y) {
         Y.on('domready', function() {
             var all_expanders = Y.all('.expander-link');
             all_expanders.each(function(link) {
@@ -88,7 +88,7 @@
        </thead>
        <tal:batch repeat="packageupload batch">
          <tal:block define="filelist_class string:queue-${packageupload/id}">
-           <tbody class="lesser">
+           <tbody>
              <tr class="queue-row">
                 <tal:comment condition="nothing">
                   Every column is top-padded apart from the checkbox
@@ -143,12 +143,12 @@
                 </td>
              </tr>
            </tbody>
-           <tbody tal:attributes="class string:${filelist_class} lesser">
+           <tbody tal:attributes="class string:${filelist_class}">
              <metal:filelist use-macro="template/macros/package-filelist"/>
            </tbody>
          </tal:block>
        </tal:batch>
-       <tbody class="lesser">
+       <tbody>
          <tr tal:condition="view/availableActions">
            <td colspan="4" style="text-align: right;
                                   vertical-align: bottom;

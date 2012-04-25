@@ -8,7 +8,7 @@ the user about this.
 Bug 11 has quite a few comments.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     6
 
@@ -26,7 +26,7 @@ threshold.
 Now only 3 comments will be displayed; the oldest and the 2 newest.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     3
 
@@ -59,7 +59,7 @@ comments and the add comment box.
     'http://.../jokosher/+bug/11?comments=all'
 
     >>> user_browser.getLink('View all 6 comments').click()
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     6
 

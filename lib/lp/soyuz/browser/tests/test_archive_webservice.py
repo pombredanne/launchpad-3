@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -338,13 +338,14 @@ class TestCopyPackage(WebServiceTestCase):
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(uploader_dude, "universe")
         transaction.commit()
-        return (source_archive, source_name, target_archive, to_pocket,
-                to_series, uploader_dude, sponsored_dude, version)
+        return (source, source_archive, source_name, target_archive,
+                to_pocket, to_series, uploader_dude, sponsored_dude, version)
 
     def test_copyPackage(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, sponsored_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
@@ -363,8 +364,9 @@ class TestCopyPackage(WebServiceTestCase):
 
     def test_copyPackages(self):
         """Basic smoke test"""
-        (source_archive, source_name, target_archive, to_pocket, to_series,
-         uploader_dude, sponsored_dude, version) = self.setup_data()
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, uploader_dude, sponsored_dude,
+         version) = self.setup_data()
 
         ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
@@ -373,7 +375,8 @@ class TestCopyPackage(WebServiceTestCase):
         ws_target_archive.copyPackages(
             source_names=[source_name], from_archive=ws_source_archive,
             to_pocket=to_pocket.name, to_series=to_series.name,
-            include_binaries=False, sponsored=ws_sponsored_dude)
+            from_series=source.distroseries.name, include_binaries=False,
+            sponsored=ws_sponsored_dude)
         transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -411,3 +414,35 @@ class TestgetPublishedBinaries(WebServiceTestCase):
         ws_archive = self.wsObject(self.archive, user=self.person)
         publications = ws_archive.getPublishedBinaries(ordered=False)
         self.assertEqual(2, len(publications))
+
+
+class TestremoveCopyNotification(WebServiceTestCase):
+    """Test removeCopyNotification."""
+
+    def setUp(self):
+        super(TestremoveCopyNotification, self).setUp()
+        self.ws_version = 'devel'
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=self.person)
+
+    def test_removeCopyNotification(self):
+        distroseries = self.factory.makeDistroSeries()
+        source_archive = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="foo", source_archive=source_archive,
+            target_archive=self.archive, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        job.start()
+        job.fail()
+
+        ws_archive = self.wsObject(self.archive, user=self.person)
+        ws_archive.removeCopyNotification(job_id=job.id)
+        transaction.commit()
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            None, source.getIncompleteJobsForArchive(self.archive).any())

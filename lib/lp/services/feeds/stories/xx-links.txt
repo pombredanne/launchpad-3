@@ -51,7 +51,7 @@ But if the bug is private, there should be no link.
     >>> login(ANONYMOUS)
     >>> user = getUtility(IPersonSet).getByEmail('daf@canonical.com')
     >>> logout()
-    >>> auth_browser = setupBrowserForUser(user, 'daf')
+    >>> auth_browser = setupBrowserForUser(user)
 
     # First check that the bug exists.
     >>> auth_browser.open('http://launchpad.dev/bugs/14')

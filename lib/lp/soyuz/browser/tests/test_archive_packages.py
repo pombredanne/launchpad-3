@@ -11,19 +11,25 @@ __all__ = [
     'TestPPAPackages',
     ]
 
+import re
+
+import soupmatchers
 from testtools.matchers import (
     Equals,
     LessThan,
+    Not,
     )
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.utilities.celebrities import ILaunchpadCelebrities
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp import canonical_url
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.testing import (
     celebrity_logged_in,
     login,
@@ -101,12 +107,6 @@ class TestP3APackages(TestCaseWithFactory):
         view = create_initialized_view(self.private_ppa, "+packages")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
-
-    def test_packages_link_unauthorized(self):
-        login_person(self.fred)
-        view = create_initialized_view(self.private_ppa, "+index")
-        menu = ArchiveNavigationMenu(view)
-        self.assertFalse(menu.packages().enabled)
 
     def test_packages_link_subscriber(self):
         login_person(self.joe)
@@ -197,7 +197,7 @@ class TestPPAPackages(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             # The baseline has one package, because otherwise the
@@ -219,7 +219,7 @@ class TestPPAPackages(TestCaseWithFactory):
         # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             for i in range(2):
@@ -238,7 +238,7 @@ class TestPPAPackages(TestCaseWithFactory):
         collector.register()
         self.addCleanup(collector.unregister)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             # The baseline has one package, because otherwise the
@@ -255,7 +255,7 @@ class TestPPAPackages(TestCaseWithFactory):
         # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
-        viewer = self.factory.makePerson(password="test")
+        viewer = self.factory.makePerson()
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             for i in range(3):
@@ -264,6 +264,150 @@ class TestPPAPackages(TestCaseWithFactory):
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
         self.assertThat(collector, HasQueryCount(Equals(expected_count)))
+
+
+class TestPPAPackagesJobNotifications(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPPAPackagesJobNotifications, self).setUp()
+        self.ws_version = 'devel'
+        self.person = self.factory.makePerson()
+        self.archive = self.factory.makeArchive(owner=self.person)
+
+    def makeJob(self, package_name, failed=False):
+        distroseries = self.factory.makeDistroSeries()
+        source_archive = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name=package_name, source_archive=source_archive,
+            target_archive=self.archive, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
+        job.start()
+        if failed:
+            job.fail()
+        return job
+
+    def getPackagesView(self, query_string=None):
+        ppa = self.factory.makeArchive()
+        return create_initialized_view(
+            ppa, "+packages", query_string=query_string)
+
+    def test_job_notifications_display_failed(self):
+        job = self.makeJob('package_1', failed=True)
+        # Manually poke an error message.
+        removeSecurityProxy(job).extendMetadata(
+            {'error_message': 'Job failed!'})
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            html = view.render()
+        packages_matches = soupmatchers.HTMLContains(
+            # Check the main title.
+            soupmatchers.Tag(
+                'job summary', 'a',
+                text=re.compile('Copying.*'),
+                attrs={'class': re.compile('job-summary')}),
+            # Check the link to the source archive.
+            soupmatchers.Tag(
+                'copied from', 'a',
+                text=job.source_archive.displayname,
+                attrs={'class': re.compile('copied-from')}),
+            # Check the presence of the link to remove the notification.
+            soupmatchers.Tag(
+                'no remove notification link', 'a',
+                text=re.compile('\s*Remove notification\s*'),
+                attrs={'class': re.compile('remove-notification')}),
+            # Check the presence of the error message.
+            soupmatchers.Tag(
+                'job error msg', 'div',
+                text='Job failed!',
+                attrs={'class': re.compile('job-failed-error-msg')}),
+            )
+        self.assertThat(html, packages_matches)
+
+    def test_job_notifications_display_in_progress_not_allowed(self):
+        other_person = self.factory.makePerson()
+        self.makeJob('package_1', failed=True)
+        with person_logged_in(other_person):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=other_person)
+            html = view.render()
+        packages_not_matches = soupmatchers.HTMLContains(
+            # Check the absence of the link remove the notification.
+            soupmatchers.Tag(
+                'no remove notification link', 'a',
+                text=re.compile('\s*Remove notification\s*'),
+                attrs={'class': re.compile('remove-notification')}),
+            )
+        self.assertThat(html, Not(packages_not_matches))
+
+    def test_job_notifications_display_in_progress(self):
+        job = self.makeJob('package_1', failed=False)
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            html = view.render()
+        packages_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'job summary', 'a',
+                text=re.compile('Copying.*'),
+                attrs={'class': re.compile('job-summary')}),
+            soupmatchers.Tag(
+                'copied from', 'a',
+                text=job.source_archive.displayname,
+                attrs={'class': re.compile('copied-from')}),
+            )
+        packages_not_matches = soupmatchers.HTMLContains(
+            # Check the absence of the link remove the notification.
+            soupmatchers.Tag(
+                'remove notification link', 'a',
+                text=re.compile('\s*Remove notification\s*'),
+                attrs={'class': re.compile('remove-notification')}),
+            )
+        self.assertThat(html, packages_matches)
+        self.assertThat(html, Not(packages_not_matches))
+
+    def test_job_notifications_display_multiple(self):
+        job1 = self.makeJob('package_1')
+        job2 = self.makeJob('package_2', failed=True)
+        job3 = self.makeJob('package_3')
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            html = view.render()
+        packages_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'job1', 'div',
+                attrs={'class': 'pending-job', 'job_id': job1.id}),
+            soupmatchers.Tag(
+                'job2', 'div',
+                attrs={'class': 'pending-job', 'job_id': job2.id}),
+            soupmatchers.Tag(
+                'job3', 'div',
+                attrs={'class': 'pending-job', 'job_id': job3.id}),
+            )
+        self.assertThat(html, packages_matches)
+
+    def test_job_notifications_display_owner_is_team(self):
+        team = self.factory.makeTeam()
+        removeSecurityProxy(self.archive).owner = team
+        job = self.makeJob('package_1', failed=False)
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            html = view.render()
+        packages_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'copied by', 'a',
+                text=job.job.requester.displayname,
+                attrs={'class': re.compile('copied-by')}),
+            )
+        self.assertThat(html, packages_matches)
 
 
 class TestP3APackagesQueryCount(TestCaseWithFactory):

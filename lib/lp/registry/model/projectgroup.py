@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -23,7 +23,6 @@ from storm.expr import (
     Join,
     SQL,
     )
-from storm.locals import Int
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -57,11 +56,9 @@ from lp.blueprints.model.specification import (
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
-    HasBugHeatMixin,
     OfficialBugTag,
     )
 from lp.bugs.model.structuralsubscription import (
@@ -114,14 +111,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasBranchesMixin, HasMergeProposalsMixin,
                    HasMilestonesMixin, HasDriversMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
 
     implements(
-        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
-        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasIcon,
+        IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -168,7 +165,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
-    max_bug_heat = Int()
 
     @property
     def pillar_category(self):
@@ -464,19 +460,19 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(True)
+        return self._getMilestones(only_active=True)
 
     @property
     def product_milestones(self):
         """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
         # XXX: bug=644977 Robert Collins - this is a workaround for
-        # insconsistency in project group milestone use.
+        # inconsistency in project group milestone use.
         return self._get_milestones()
 
     @property
     def all_milestones(self):
         """See `IProjectGroup`."""
-        return self._getMilestones(False)
+        return self._getMilestones(only_active=False)
 
     def getMilestone(self, name):
         """See `IProjectGroup`."""

@@ -581,7 +581,7 @@ Publishing History
 ------------------
 
 Users can inspect the full publishing history by clicking on a link in
-the action menu on the the distribution source package index page.
+the action menu on the distribution source package index page.
 
     >>> anon_browser.getLink('View full publishing history').click()
 

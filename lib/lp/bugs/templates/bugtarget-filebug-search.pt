@@ -7,12 +7,8 @@
 
   <metal:block fill-slot="head_epilogue">
     <script type="text/javascript"
-            tal:condition="devmode"
-            tal:content="string:var yui_base='${yui}';"></script>
-
-    <script type="text/javascript"
             tal:condition="context/enable_bugfiling_duplicate_search">
-        LPS.use(
+        LPJS.use(
           'base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
           function(Y) {
             Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();

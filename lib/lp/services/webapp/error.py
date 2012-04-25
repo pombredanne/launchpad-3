@@ -25,7 +25,9 @@ from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
 
 import lp.layers
+from lp.services import features
 from lp.services.config import config
+from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
@@ -39,7 +41,6 @@ class SystemErrorView(LaunchpadView):
     implements(ISystemErrorView)
 
     page_title = 'Error: Launchpad system error'
-    override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
         'templates/oops-veryplain.pt')
@@ -70,6 +71,13 @@ class SystemErrorView(LaunchpadView):
         if getattr(self.request, 'oopsid') is not None:
             self.request.response.addHeader(
                 'X-Lazr-OopsId', self.request.oopsid)
+
+        # Need to neuter the feature flags on error output. The base template
+        # checks for a feature flag, but they depend on db access which might
+        # not have been setup yet.
+        request.features = NullFeatureController()
+        features.install_feature_controller(request.features)
+
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True
@@ -176,7 +184,6 @@ class UnexpectedFormDataView(SystemErrorView):
 class NotFoundView(SystemErrorView):
 
     page_title = 'Error: Page not found'
-    override_title_breadcrumbs = True
 
     response_code = httplib.NOT_FOUND
 
@@ -215,7 +222,6 @@ class GoneView(NotFoundView):
 class RequestExpiredView(SystemErrorView):
 
     page_title = 'Error: Timeout'
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 
@@ -231,7 +237,6 @@ class InvalidBatchSizeView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
     page_title = "Error: Invalid Batch Size"
-    override_title_breadcrumbs = True
 
     response_code = httplib.BAD_REQUEST
 
@@ -250,7 +255,6 @@ class InvalidBatchSizeView(SystemErrorView):
 class TranslationUnavailableView(SystemErrorView):
 
     page_title = 'Error: Translation page is not available'
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 
@@ -262,7 +266,6 @@ class ReadOnlyErrorView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
     page_title = "Error: you can't do this right now"
-    override_title_breadcrumbs = True
 
     response_code = httplib.SERVICE_UNAVAILABLE
 

@@ -47,6 +47,7 @@ from lp.testing import (
     TestCase,
     validate_mock_class,
     )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     BaseLayer,
     LaunchpadZopelessLayer,
@@ -4620,7 +4621,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
         self.handler.add(self.log.name)
-        self.layer.switchDbUser('hwdb-submission-processor')
+        switch_dbuser('hwdb-submission-processor')
 
     def getLogData(self):
         messages = [record.getMessage() for record in self.handler.records]
@@ -5079,7 +5080,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         """Create a submission."""
         if compress:
             data = bz2.compress(data)
-        self.layer.switchDbUser('launchpad')
+        switch_dbuser('launchpad')
         submission = getUtility(IHWSubmissionSet).createSubmission(
             date_created=datetime(2007, 9, 9, tzinfo=pytz.timezone('UTC')),
             format=HWSubmissionFormat.VERSION_1,
@@ -5092,10 +5093,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             filename='hwinfo.xml',
             filesize=len(data),
             system_fingerprint='A Machine Name')
-        # We want to access library file later: ensure that it is
-        # properly stored.
-        self.layer.txn.commit()
-        self.layer.switchDbUser('hwdb-submission-processor')
+        switch_dbuser('hwdb-submission-processor')
         return submission
 
     def getSampleData(self, filename):

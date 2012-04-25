@@ -67,7 +67,7 @@ the delete options.
 Again, for an authenticated user who is not the firefox product owner.
 
     >>> non_owner = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    ...     auth='Basic celso.providelo@canonical.com:test')
     >>> non_owner.open('http://launchpad.dev/firefox/+download')
     >>> non_owner.url
     'http://launchpad.dev/firefox/+download'
@@ -480,85 +480,3 @@ A "Delete Files" button is available.
     >>> firefox_owner.getControl('Delete Files').click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u'1 file has been deleted.']
-
-
-Scheme redirection
-==================
-
-Files may be downloaded over http or https with the URL for the
-librarian file constructed based upon the scheme of the original
-request.  The Apache configuration for Launchpad production servers
-sets a header called 'X-SCHEME' to indicate the original scheme
-(http or https).
-
-If the configuration 'use_https' is False then http will be used
-regardless of the value of X-SCHEME.  In order to exercise the
-use of X-SCHEME we must set 'use_https' to True and remember
-to reset it when we're done.
-
-    >>> from lp.services.config import config
-    >>> use_https_true_data = """
-    ...     [librarian]
-    ...     use_https: True
-    ...     """
-    >>> config.push('use_https_true_data', use_https_true_data)
-
-If the original scheme is https the redirect URL should be https too.
-
-    >>> from textwrap import dedent
-    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> link = firefox_owner.getLink('foo.txt')
-    >>> url_path = urlparse(link.url)[2]
-    >>> redirect_resp = http(dedent("""\
-    ...     GET %s HTTP/1.1
-    ...     X-SCHEME: https
-    ...     """ % url_path))
-    >>> location = redirect_resp.getOutput().split("\n")[3]
-    >>> redirect_url = location.split()[1]
-    >>> print redirect_url
-    https://.../foo.txt
-
-However if the original scheme is http then the redirect URL should be
-over http.
-
-    >>> redirect_resp = http(dedent("""\
-    ...     GET %s HTTP/1.1
-    ...     X-SCHEME: http
-    ...     """ % url_path))
-    >>> location = redirect_resp.getOutput().split("\n")[3]
-    >>> redirect_url = location.split()[1]
-    >>> print redirect_url
-    http://.../foo.txt
-
-When 'use_https' is False the result will always be http.
-
-    >>> config_data = config.pop('use_https_true_data')
-    >>> use_https_false_data = """
-    ...     [vhosts]
-    ...     use_https: False
-    ...     """
-    >>> config.push('use_https_false_data', use_https_false_data)
-    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
-    >>> link = firefox_owner.getLink('foo.txt')
-    >>> url_path = urlparse(link.url)[2]
-    >>> redirect_resp = http(dedent("""\
-    ...     GET %s HTTP/1.1
-    ...     X-SCHEME: https
-    ...     """ % url_path))
-    >>> location = redirect_resp.getOutput().split("\n")[3]
-    >>> redirect_url = location.split()[1]
-    >>> print redirect_url
-    http://.../foo.txt
-
-    >>> redirect_resp = http(dedent("""\
-    ...     GET %s HTTP/1.1
-    ...     X-SCHEME: http
-    ...     """ % url_path))
-    >>> location = redirect_resp.getOutput().split("\n")[3]
-    >>> redirect_url = location.split()[1]
-    >>> print redirect_url
-    http://.../foo.txt
-
-Return 'use_https' to its original value to not mess up future tests.
-
-    >>> config_data = config.pop('use_https_false_data')

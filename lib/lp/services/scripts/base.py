@@ -352,13 +352,13 @@ class LaunchpadScript:
             profiler.dump_stats(self.options.profile)
 
     def _init_zca(self, use_web_security):
-        """Initialize the ZCA, this can be overriden for testing purpose."""
+        """Initialize the ZCA, this can be overridden for testing purposes."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
     def _init_db(self, isolation):
         """Initialize the database transaction.
 
-        Can be overriden for testing purpose.
+        Can be overridden for testing purposes.
         """
         dbuser = self.dbuser
         if dbuser is None:

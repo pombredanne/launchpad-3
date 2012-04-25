@@ -144,7 +144,7 @@ To send email from Zope3, you use an `IMailDelivery` Utility, which
 defines a single `send` method. There are two standard `IMailDelivery`
 implementations:
 
-    1. `QueuedDelivery` -- email is delivered in a seperate thread. We use
+    1. `QueuedDelivery` -- email is delivered in a separate thread. We use
        this for production.
 
     2. `DirectDelivery` -- email is send synchronously during transaction

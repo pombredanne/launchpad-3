@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.registry.enum import PersonTransferJobType
+from lp.registry.enums import PersonTransferJobType
 from lp.registry.model.persontransferjob import (
     PersonTransferJob,
     PersonTransferJobDerived,

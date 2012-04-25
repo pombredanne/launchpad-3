@@ -8,7 +8,7 @@ MilestoneOverlayMixin
 ---------------------
 
 The MilestoneOverlayMixin provides data that is needed by milestoneoverlay.js.
-The milestone_form_uri property is the location of of the rendered form. The
+The milestone_form_uri property is the location of the rendered form. The
 javascript calls newMilestone on the object at series_api_uri.
 
     >>> from lp.services.webapp import LaunchpadView

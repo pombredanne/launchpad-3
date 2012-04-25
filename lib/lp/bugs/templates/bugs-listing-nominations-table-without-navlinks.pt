@@ -8,8 +8,7 @@
   <table class="listing" id="buglisting">
     <thead>
       <tr>
-        <th style="font-size: smaller"
-            tal:condition="view/canApproveNominations">
+        <th tal:condition="view/canApproveNominations">
           <div style="text-align: left">Accept</div>
           <div style="text-align: center">Decline</div>
           <div style="text-align: right">No change</div>
