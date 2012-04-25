@@ -106,8 +106,13 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
     def makeDerived(self):
         """Support UniversalJobSource.
 
-        (Most JobSource classes can return a derived class, because they reuse
-        the same database table for multiple types of jobs.)"""
+        (Most Job ORM classes are generic, because their database table is
+        used for several related job types.  Therefore, they have derived
+        classes to implement the specific Job.
+
+        POFileStatsJob implements the specific job, so its makeDerived returns
+        itself.)
+        """
         return self
 
 
