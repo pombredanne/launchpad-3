@@ -38,7 +38,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config, dbconfig
+from lp.services.config import dbconfig
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
