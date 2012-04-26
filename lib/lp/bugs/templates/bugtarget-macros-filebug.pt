@@ -64,7 +64,7 @@
     <td colspan="2">
       <fieldset id="filebug-extra-options" class="collapsible">
         <legend>Extra options</legend>
-        <div class="unseen">
+        <div>
         <table>
           <tal:status
               define="widget nocall:view/widgets/status|nothing"
