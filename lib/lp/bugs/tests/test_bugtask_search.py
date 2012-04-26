@@ -23,6 +23,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugsummary import BugSummary
+from lp.bugs.model.bugtasksearch import _process_order_by
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -31,6 +32,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.features.testing import FeatureFixture
 from lp.services.searchbuilder import (
     all,
@@ -39,12 +41,61 @@ from lp.services.searchbuilder import (
     )
 from lp.testing import (
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+
+
+class TestProcessOrderBy(TestCase):
+
+    def assertOrderForParams(self, expected, user=None, product=None,
+                             distribution=None, **kwargs):
+        params = BugTaskSearchParams(user, **kwargs)
+        if product:
+            params.setProduct(product)
+        if distribution:
+            params.setProduct(distribution)
+        self.assertEqual(
+            expected,
+            convert_storm_clause_to_string(_process_order_by(params, True)[0]))
+
+    def test_tiebreaker(self):
+        # Requests for ambiguous sorts get a disambiguator of BugTask.id
+        # glued on.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bugtask',
+            orderby='-importance')
+
+    def test_tiebreaker_direction(self):
+        # The tiebreaker direction is the reverse of the primary
+        # direction. This is mostly to retain the old default sort order
+        # of (-importance, bugtask), and could probably be reversed if
+        # someone wants to.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance, BugTaskFlat.bugtask DESC',
+            orderby='importance')
+
+    def test_tiebreaker_in_unique_context(self):
+        # The tiebreaker is Bug.id if the context is unique, so we'll
+        # find no more than a single task for each bug. This applies to
+        # searches within a product, distribution source package, or
+        # source package.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            product='foo')
+
+    def test_tiebreaker_in_duplicated_context(self):
+        # If the context can have multiple tasks for a single bug, we
+        # still use BugTask.id.
+        self.assertOrderForParams(
+            'BugTaskFlat.importance DESC, BugTaskFlat.bug',
+            orderby='-importance',
+            distribution='foo')
 
 
 class SearchTestBase:
