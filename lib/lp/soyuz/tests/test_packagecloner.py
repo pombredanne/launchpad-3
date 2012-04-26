@@ -434,8 +434,9 @@ class PackageClonerTests(TestCaseWithFactory):
             return tuples
         actual_changed_tuples = get_tuples(actual_changed_keys)
         actual_new_tuples = get_tuples(actual_new_keys)
-        self.assertEqual(expected_changed_tuples, actual_changed_tuples)
-        self.assertEqual(expected_new_tuples, actual_new_tuples)
+        self.assertEqual(
+            set(expected_changed_tuples), set(actual_changed_tuples))
+        self.assertEqual(set(expected_new_tuples), set(actual_new_tuples))
 
     def testPackageSetDiffWithNothingNew(self):
         """Test packageSetDiff."""
