@@ -200,7 +200,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJobIgnoreResult
         else:
             cls = CeleryRunJob
-        return cls.apply_async((self.job_id,), queue=self.task_queue)
+        ujob_id = (self.job_id, self.config.dbuser)
+        return cls.apply_async((ujob_id,), queue=self.task_queue)
 
     def celeryCommitHook(self, succeeded):
         """Hook function to call when a commit completes."""

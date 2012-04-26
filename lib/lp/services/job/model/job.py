@@ -295,7 +295,7 @@ class UniversalJobSource:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
             if derived is not None:
                 cls.clearStore(store)
-                return derived.config.dbuser, base_class
+                return base_class
         raise ValueError('No Job with job=%s.' % job_id)
 
     @staticmethod
@@ -305,12 +305,13 @@ class UniversalJobSource:
         store.close()
 
     @classmethod
-    def get(cls, job_id):
+    def get(cls, ujob_id):
         transaction.abort()
         if cls.needs_init:
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
         cls.clearStore(IStore(Job))
-        dbuser, base_class = cls.getUserAndBaseJob(job_id)
+        job_id, dbuser = ujob_id
+        base_class = cls.getUserAndBaseJob(job_id)
         dbconfig.override(dbuser=dbuser, isolation_level='read_committed')
         return cls._getDerived(job_id, base_class)[0]
