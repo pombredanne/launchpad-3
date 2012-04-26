@@ -3,7 +3,7 @@
 # Prod the master mirrors to propagate the update.
 
 MASTERMIRRORS="archive.syncproxy.ubuntu.com wahoo"
-MASTERMIRRORS_ASYNC="scandium sadalbari"
+MASTERMIRRORS_ASYNC="scandium sadalbari kudan"
 echo "$(date -R): Triggering master mirrors..."
 
 for HOST in $MASTERMIRRORS

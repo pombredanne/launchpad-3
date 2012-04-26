@@ -2273,7 +2273,6 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (7, '2006-10-16 18:31:43.465111', 17, 2, 1, 2, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (8, '2006-10-16 18:31:43.465111', 17, 2, 1, 3, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (9, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL, NULL, false);
-INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (12, '2006-10-16 18:31:43.465111', 243620, 1, 12, 5, NULL, NULL, false);
 INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename, packageset, explicit) VALUES (13, '2006-10-16 18:31:43.465111', 12, 2, 1, 1, NULL, NULL, false);

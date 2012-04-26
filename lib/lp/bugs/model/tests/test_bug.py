@@ -8,6 +8,7 @@ from datetime import (
     timedelta,
     )
 
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from pytz import UTC
 from storm.expr import Join
 from storm.store import Store
@@ -15,12 +16,14 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
     BugNotificationStatus,
     )
 from lp.bugs.errors import BugCannotBePrivate
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -42,6 +45,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.event import TestEventListener
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
@@ -864,6 +868,25 @@ class TestBugPrivacy(TestCaseWithFactory):
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
 
+    def test_information_type_modified_event(self):
+        # When a bug's information_type is changed, the expected object
+        # modified event is published.
+        self.event_edited_fields = []
+        self.event_object = None
+
+        def event_callback(object, event):
+            self.event_edited_fields = event.edited_fields
+            self.event_object = event.object
+
+        TestEventListener(IBug, IObjectModifiedEvent, event_callback)
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            private=True, security_related=True, owner=owner)
+        with person_logged_in(owner):
+            bug.transitionToInformationType(InformationType.PUBLIC, owner)
+        self.assertEqual(['information_type'], self.event_edited_fields)
+        self.assertEqual(bug, self.event_object)
+
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
         # type.
@@ -937,6 +960,34 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transition_special_cased_for_ubuntu(self):
+        # When a bug on ubuntu is transitioned to USERDATA from
+        # EMBARGOEDSECURITY, the bug supervisor is not subscribed, and the
+        # bug's subscribers do not change.
+        # This is to protect ubuntu's workflow, which differs from the
+        # Launchpad norm.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        admin = getUtility(ILaunchpadCelebrities).admin
+        ubuntu = removeSecurityProxy(ubuntu)
+        ubuntu.setBugSupervisor(
+            self.factory.makePerson(name='supervisor'), admin)
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY,
+            distribution=ubuntu)
+        bug = removeSecurityProxy(bug)
+        initial_subscribers = bug.getDirectSubscribers()
+        self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
+        bug.transitionToInformationType(
+            InformationType.USERDATA, who=bug.owner)
+        subscribers = bug.getDirectSubscribers()
+        self.assertContentEqual(initial_subscribers, subscribers)
+        ubuntu.setBugSupervisor(None, ubuntu.owner)
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

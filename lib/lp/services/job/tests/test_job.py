@@ -11,7 +11,11 @@ from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
 import transaction
 
-from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob,
+    CodeReviewCommentEmailJob,
+    )
+from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
@@ -457,8 +461,9 @@ class TestUniversalJobSource(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_getDerived_with_merge_proposal_job(self):
+    def test_getUserAndBaseJob_with_merge_proposal_job(self):
         comment = self.factory.makeCodeReviewComment()
         job = CodeReviewCommentEmailJob.create(comment)
-        newjob = UniversalJobSource.getDerived(job.job_id)[0]
-        self.assertEqual(job, newjob)
+        dbuser, base_class = UniversalJobSource.getUserAndBaseJob(job.job_id)
+        self.assertEqual(dbuser, config.merge_proposal_jobs.dbuser)
+        self.assertEqual(base_class, BranchMergeProposalJob)
