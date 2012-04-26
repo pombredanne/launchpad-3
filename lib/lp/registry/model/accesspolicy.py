@@ -365,7 +365,7 @@ class AccessPolicyGrantFlat(StormBase):
 
         # A cache for the sharing permissions, keyed on grantee
         permissions_cache = defaultdict(dict)
-        # aaa
+        # Information types for which there are shared artifacts.
         shared_artifact_info_types = defaultdict(list)
 
         def set_permission(person):

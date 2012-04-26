@@ -248,7 +248,8 @@ class IAccessPolicyGrantFlatSource(Interface):
             artifacts for the associated pillar.
             SOME means the person only has specified access artifact grants.
             shared_artifact_types contains the information_types for which the
-            user has been granted access one or more artifacts of that type.
+            user has been granted access for one or more artifacts of that
+            type.
         """
 
     def findArtifactsByGrantee(grantee, policies):
