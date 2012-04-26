@@ -78,8 +78,8 @@ A member of the team or an admin can subscribe a private team to a bug.
     ...     print message
     Private Team team has been subscribed to this bug.
 
-Now that the private team has been subscribed to a bug, a regular user is
-allowed to know of the team's existence and so can subscribe the team to
+The private team has been subscribed to a bug and although a regular user is
+allowed to know of the team's existence, they cannot subscribe that team to
 another bug.
 
     >>> user_browser.open('http://launchpad.dev/bugs/5')
@@ -88,4 +88,5 @@ another bug.
     >>> user_browser.getControl('Subscribe user').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    Private Team team has been subscribed to this bug.
+    There is 1 error.
+    Constraint not satisfied

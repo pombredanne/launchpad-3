@@ -534,7 +534,7 @@ class ValidPersonOrTeamVocabulary(
     TEAM_FILTER = VocabularyFilterTeam()
 
     def __contains__(self, obj):
-        return self.getTermByToken(obj.name) is not None
+        return obj in self._doSearch()
 
     @cachedproperty
     def store(self):
