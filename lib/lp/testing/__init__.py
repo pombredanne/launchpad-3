@@ -1070,6 +1070,12 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
+        # We flush stdout and stderror at this point in order to avoid
+        # bug 986429; it appears that stdout and stderror get copied in
+        # full when we fork, which means that we end up with repeated
+        # output, resulting in repeated subunit output.
+        sys.stdout.flush()
+        sys.stderr.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
