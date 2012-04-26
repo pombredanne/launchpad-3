@@ -277,6 +277,7 @@ class UniversalJobSource:
             BranchMergeProposalJob,
             )
         from lp.registry.model.persontransferjob import PersonTransferJob
+        from lp.answers.model.questionjob import QuestionJob
         from lp.soyuz.model.distributionjob import DistributionJob
         from lp.soyuz.model.packagecopyjob import PackageCopyJob
         from lp.translations.model.pofilestatsjob import POFileStatsJob
@@ -288,7 +289,7 @@ class UniversalJobSource:
 
         for baseclass in [
             ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob,
-            PackageCopyJob, PersonTransferJob, POFileStatsJob,
+            PackageCopyJob, PersonTransferJob, POFileStatsJob, QuestionJob,
             TranslationSharingJob,
             ]:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
