@@ -38,6 +38,7 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
+from zope import i18n
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -51,6 +52,7 @@ from zope.interface import (
     implements,
     )
 from zope.interface.advice import addClassAdvisor
+from zope.i18nmessageid import Message
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
@@ -938,7 +940,15 @@ class Navigation:
                             if stepthrough_page:
                                 # Not all stepthroughs have a page; if they
                                 # don't, there's no need for a breadcrumb.
-                                stepthrough_text = stepthrough_page.page_title
+                                page_title = getattr(
+                                    stepthrough_page, 'page_title', None)
+                                label = getattr(
+                                    stepthrough_page, 'label', None)
+                                stepthrough_text = page_title or label
+                                if isinstance(stepthrough_text, Message):
+                                    stepthrough_text = i18n.translate(
+                                        stepthrough_text,
+                                        context=self.request)
                                 stepthrough_url = canonical_url(
                                     self.context, view_name=name)
                                 stepthrough_breadcrumb = Breadcrumb(
