@@ -1604,11 +1604,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
                 FROM BugSubscription
                 WHERE BugSubscription.person IN (SELECT team FROM teams) AND
                     BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask
-                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                    BugTask.bug = Bug.id
                 )
             """ % user.id)
     if not private_only:

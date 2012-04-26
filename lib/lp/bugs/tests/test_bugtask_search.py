@@ -1536,17 +1536,7 @@ class UsingFlat:
 class UsingLegacy:
     """Use Bug and BugTask directly for searching."""
 
-    def test_private_bug_in_search_result_assignees(self):
-        # Private bugs are included in search results for the assignee.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
-        bugtask = self.bugtasks[-1]
-        user = self.factory.makePerson()
-        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        with person_logged_in(admin):
-            bugtask.transitionToAssignee(user)
-        params = self.getBugTaskSearchParams(user=user)
-        self.assertSearchFinds(params, self.bugtasks)
+    pass
 
 
 class TestMilestoneDueDateFiltering(TestCaseWithFactory):
