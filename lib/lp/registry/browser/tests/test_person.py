@@ -458,12 +458,12 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         # Ensure hitting +validateemail actually validates the email.
         stub.test_emails = []
         added_email = self.factory.getUniqueEmailAddress()
-        view = self.createAddEmailView(added_email)
+        self.createAddEmailView(added_email)
         form = {
             'field.UNVALIDATED_SELECTED': added_email,
             'field.actions.validate': 'Confirm',
             }
-        view = create_initialized_view(self.person, '+editemails', form=form)
+        create_initialized_view(self.person, '+editemails', form=form)
         # Get the token from the email msg.
         transaction.commit()
         messages = [msg for from_addr, to_addr, msg in stub.test_emails]
@@ -493,7 +493,8 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = create_initialized_view(self.person, '+editemails', form=form)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = u"The email address '%s' has been removed." % added_email
+        expected_msg = (
+            u"The email address '%s' has been removed." % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
 
     def test_cannot_remove_contact_address(self):
@@ -513,7 +514,8 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = self.createAddEmailView(added_email)
         # We need a commit to make sure person and other data are in DB.
         transaction.commit()
-        validated_email = getUtility(IEmailAddressSet).new(added_email, self.person)
+        validated_email = getUtility(
+            IEmailAddressSet).new(added_email, self.person)
         self.person.validateAndEnsurePreferredEmail(validated_email)
         view = self.createSetContactViaAddEmailView(added_email)
         notifications = view.request.response.notifications
