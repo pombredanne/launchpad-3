@@ -258,60 +258,24 @@ class UniversalJobSource:
     needs_init = True
 
     @staticmethod
-    def _getDerived(job_id, base_class):
-        store = IStore(base_class)
-        base_job = store.find(base_class, base_class.job == job_id).one()
-        if base_job is None:
-            return None, None, None
-        return base_job.makeDerived(), base_job.__class__, store
-
-    @classmethod
-    def getUserAndBaseJob(cls, job_id):
-        """Return the derived branch job associated with the job id."""
-        # Avoid circular imports.
-        from lp.bugs.model.apportjob import ApportJob
-        from lp.code.model.branchjob import (
-            BranchJob,
-            )
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob,
-            )
-        from lp.registry.model.persontransferjob import PersonTransferJob
-        from lp.answers.model.questionjob import QuestionJob
-        from lp.soyuz.model.distributionjob import DistributionJob
-        from lp.soyuz.model.packagecopyjob import PackageCopyJob
-        from lp.translations.model.pofilestatsjob import POFileStatsJob
-        from lp.translations.model.translationsharingjob import (
-            TranslationSharingJob,
-        )
-        dbconfig.override(
-            dbuser=config.launchpad.dbuser, isolation_level='read_committed')
-
-        for baseclass in [
-            ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob,
-            PackageCopyJob, PersonTransferJob, POFileStatsJob, QuestionJob,
-            TranslationSharingJob,
-            ]:
-            derived, base_class, store = cls._getDerived(job_id, baseclass)
-            if derived is not None:
-                cls.clearStore(store)
-                return base_class
-        raise ValueError('No Job with job=%s.' % job_id)
-
-    @staticmethod
-    def clearStore(store):
-        transaction.abort()
-        getUtility(IZStorm).remove(store)
-        store.close()
+    def rawGet(job_id, module_name, class_name):
+        bc_module = __import__(module_name, fromlist=[class_name])
+        db_class = getattr(bc_module, class_name)
+        store = IStore(db_class)
+        db_job = store.find(db_class, db_class.job == job_id).one()
+        if db_job is None:
+            return None
+        return db_job.makeDerived()
 
     @classmethod
     def get(cls, ujob_id):
-        transaction.abort()
         if cls.needs_init:
+            transaction.abort()
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
-        cls.clearStore(IStore(Job))
-        job_id, dbuser = ujob_id
-        base_class = cls.getUserAndBaseJob(job_id)
-        dbconfig.override(dbuser=dbuser, isolation_level='read_committed')
-        return cls._getDerived(job_id, base_class)[0]
+        transaction.abort()
+        store = IStore(Job)
+        getUtility(IZStorm).remove(store)
+        store.close()
+        dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
+        return cls.rawGet(*ujob_id[:3])
