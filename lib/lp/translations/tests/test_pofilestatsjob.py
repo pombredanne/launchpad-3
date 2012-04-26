@@ -6,16 +6,25 @@
 __metaclass__ = type
 
 
+import transaction
+
 from lp.app.enums import ServiceUsage
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.services.job.tests import (
+    block_on_job
+    )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.translations.interfaces.pofilestatsjob import IPOFileStatsJobSource
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model import pofilestatsjob
@@ -190,3 +199,25 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         pofile2 = template2.getPOFileByLang(language.code)
 
         self.assertJobUpdatesStats(pofile1, pofile2)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_run(self):
+        # POFileJob can run via Celery.
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'POFileStatsJob'}))
+        # Running a job causes the POFile statistics to be updated.
+        singular = self.factory.getUniqueString()
+        pofile = self.factory.makePOFile(side=TranslationSide.UPSTREAM)
+        # Create a message so we have something to have statistics about.
+        self.factory.makePOTMsgSet(pofile.potemplate, singular)
+        # The statistics start at 0.
+        self.assertEqual(pofile.potemplate.messageCount(), 0)
+        pofilestatsjob.schedule(pofile.id)
+        with block_on_job():
+            transaction.commit()
+        # Now that the job ran, the statistics have been updated.
+        self.assertEqual(pofile.potemplate.messageCount(), 1)
