@@ -914,7 +914,7 @@
 
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
-    <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
   </class>
 
   <securedutility

@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'ArchiveJobType',
     'ArchivePermissionType',
     'ArchivePurpose',
     'ArchiveStatus',
@@ -38,17 +37,6 @@ re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
 re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
-
-
-class ArchiveJobType(DBEnumeratedType):
-    """Values that IArchiveJob.job_type can take."""
-
-    COPY_ARCHIVE = DBItem(0, """
-        Create a copy archive.
-
-        This job creates a copy archive from the current state of
-        the archive.
-        """)
 
 
 class ArchivePermissionType(DBEnumeratedType):

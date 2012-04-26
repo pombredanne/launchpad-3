@@ -1786,7 +1786,7 @@ class Bug(SQLBase):
         self._security_related = (
             information_type in SECURITY_INFORMATION_TYPES)
         notify(ObjectModifiedEvent(
-                self, bug_before_modification, [information_type], user=who))
+                self, bug_before_modification, ['information_type'], user=who))
         return True
 
     def getRequiredSubscribers(self, information_type, who):
