@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <span tal:define="items view/items|nothing"
      tal:attributes="id view/content_box_id">
   <tal:label-open-tag replace="structure view/label_open_tag"/>
@@ -44,3 +48,4 @@ LPJS.use('lp.app.multicheckbox', function(Y) {
       }, window);
 });
 "/>
+</tal:root>
