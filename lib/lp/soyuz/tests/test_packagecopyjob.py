@@ -9,10 +9,7 @@ from textwrap import dedent
 from lazr.jobrunner.jobrunner import SuspendJobException
 from storm.store import Store
 from testtools.content import text_content
-from testtools.matchers import (
-    GreaterThan,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
