@@ -91,6 +91,7 @@ from lp.services.searchbuilder import (
     NULL,
     )
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 # This abstracts most of the columns involved in search so we can switch
@@ -737,29 +738,30 @@ def _build_query(params, use_flat):
                 "distribution or distroseries.")
 
         if zope_isinstance(params.component, any):
-            component_ids = sqlvalues(*params.component.query_values)
+            components = params.component.query_values
         else:
-            component_ids = sqlvalues(params.component)
+            components = [params.component]
 
-        distro_archive_ids = [
-            archive.id
-            for archive in distroseries.distribution.all_distro_archives]
-        with_clauses.append("""spns as (
-            SELECT spr.sourcepackagename
-            FROM SourcePackagePublishingHistory
-            JOIN SourcePackageRelease AS spr ON spr.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.component IN %s AND
-            SourcePackagePublishingHistory.status = %s
-            )""" % sqlvalues(distroseries,
-                            distro_archive_ids,
-                            component_ids,
-                            PackagePublishingStatus.PUBLISHED))
+        # It's much faster to query for a single archive, so don't
+        # include partner unless we have to.
+        archive_ids = set(
+            distroseries.distribution.getArchiveByComponent(c.name).id
+            for c in components)
+
         extra_clauses.append(
             cols['BugTask.sourcepackagenameID'].is_in(
-                SQL('SELECT sourcepackagename FROM spns')))
+                Select(
+                    SourcePackagePublishingHistory.sourcepackagenameID,
+                    tables=[SourcePackagePublishingHistory],
+                    where=And(
+                        SourcePackagePublishingHistory.archiveID.is_in(
+                            archive_ids),
+                        SourcePackagePublishingHistory.distroseries ==
+                            distroseries,
+                        SourcePackagePublishingHistory.componentID.is_in(
+                            c.id for c in components),
+                        SourcePackagePublishingHistory.status ==
+                            PackagePublishingStatus.PUBLISHED))))
 
     upstream_clause = _build_upstream_clause(params, cols)
     if upstream_clause:
@@ -1006,14 +1008,18 @@ def _process_order_by(params, use_flat):
     if ambiguous:
         if use_flat:
             if in_unique_context:
-                orderby_arg.append(BugTaskFlat.bug_id)
+                disambiguator = BugTaskFlat.bug_id
             else:
-                orderby_arg.append(BugTaskFlat.bugtask_id)
+                disambiguator = BugTaskFlat.bugtask_id
         else:
             if in_unique_context:
-                orderby_arg.append(BugTask.bugID)
+                disambiguator = BugTask.bugID
             else:
-                orderby_arg.append(BugTask.id)
+                disambiguator = BugTask.id
+
+        if orderby_arg and not isinstance(orderby_arg[0], Desc):
+            disambiguator = Desc(disambiguator)
+        orderby_arg.append(disambiguator)
 
     return tuple(orderby_arg), extra_joins
 
