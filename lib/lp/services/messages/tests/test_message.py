@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from email.header import Header
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
@@ -13,21 +12,14 @@ from email.utils import (
     make_msgid,
     )
 
-from sqlobject import SQLObjectNotFound
 import transaction
-from zope.component import getUtility
 
-from lp.services.job.model.job import Job
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.sendmail import MailController
 from lp.services.messages.model.message import (
     MessageSet,
     )
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login,
     TestCase,
-    TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import LaunchpadFunctionalLayer

@@ -30,10 +30,6 @@ from operator import attrgetter
 import os.path
 
 from lazr.config import as_timedelta
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 import pytz
 from sqlobject import (
     BoolCol,
@@ -65,12 +61,9 @@ from lp.registry.interfaces.person import (
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,

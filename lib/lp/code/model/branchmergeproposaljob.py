@@ -29,7 +29,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from email.utils import parseaddr
 
 from lazr.delegates import delegates
 from lazr.enum import (
@@ -88,7 +87,6 @@ from lp.code.model.diff import PreviewDiff
 from lp.codehosting.bzrutils import server
 from lp.codehosting.vfs import (
     get_ro_server,
-    get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
@@ -105,10 +103,8 @@ from lp.services.job.runner import (
     )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import errorlog
-from lp.services.webapp.interaction import setupInteraction
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    IPlacelessAuthUtility,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,

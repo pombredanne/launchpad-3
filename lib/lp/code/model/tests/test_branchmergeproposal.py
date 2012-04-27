@@ -78,14 +78,11 @@ from lp.testing import (
     ws_object,
     )
 from lp.testing.factory import (
-    GPGSigningContext,
     LaunchpadObjectFactory,
     )
-from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
     )
 
 

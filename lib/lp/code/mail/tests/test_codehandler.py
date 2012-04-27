@@ -223,7 +223,7 @@ class TestCodeHandler(TestCaseWithFactory):
             review needs-fixing
 
 
-        -- 
+        --\x20
         For more information about using Launchpad by e-mail, see
         https://help.launchpad.net/EmailInterface
         or send an email to help@launchpad.net"""),
