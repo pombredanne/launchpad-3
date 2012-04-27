@@ -31,10 +31,8 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.database.lpstorm import IStore
 from lp.testing import (
     feature_flags,
     login_person,

@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug notification building code."""
-from lp.registry.enums import PRIVATE_INFORMATION_TYPES, SECURITY_INFORMATION_TYPES
 
 __metaclass__ = type
 __all__ = [
@@ -19,6 +18,10 @@ import rfc822
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
 from lp.services.config import config
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
