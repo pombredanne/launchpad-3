@@ -65,14 +65,6 @@ class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
 
 
-class NonLaunchpadTarget(Exception):
-    """Target branch is not registered with Launchpad."""
-
-
-class MissingMergeDirective(Exception):
-    """Emailed merge proposal lacks a merge directive"""
-
-
 class CodeReviewEmailCommandExecutionContext:
     """Passed as the only parameter to each code review email command.
 

@@ -369,14 +369,13 @@ class TestCodeHandler(TestCaseWithFactory):
                           self.code_handler.getBranchMergeProposal, 'mp+abc@')
 
     def test_processWithMergeDirectiveEmail(self):
-        """process creates a merge proposal from a merge directive email."""
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail())
-        # Ensure the message is stored in the librarian.
+        """process errors if merge@ address used."""
+        message = self.factory.makeSignedMessage()
+        file_alias = self.factory.makeLibraryFileAlias(
+            content=message.as_string())
         # mail.incoming.handleMail also explicitly does this.
         switch_dbuser(config.processmail.dbuser)
         code_handler = CodeHandler()
-        self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
         notification = pop_notifications()[0]
         self.assertEqual(
