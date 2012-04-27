@@ -8,8 +8,6 @@ __all__ = [
     'DirectEmailAuthorization',
     'Message',
     'MessageChunk',
-    'MessageJob',
-    'MessageJobAction',
     'MessageSet',
     'UserToUserEmail',
     ]
@@ -77,7 +75,6 @@ from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
     IMessageChunk,
-    IMessageJob,
     IMessageSet,
     InvalidEmailMessage,
     IUserToUserEmail,
@@ -635,59 +632,6 @@ class UserToUserEmail(Storm):
         # constructor to add self to the store.  Also, this closely mimics
         # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
-
-
-class MessageJobAction(DBEnumeratedType):
-    """MessageJob action
-
-    The action that a job should perform.
-    """
-
-    CREATE_MERGE_PROPOSAL = DBItem(1, """
-        Create a merge proposal.
-
-        Create a merge proposal from a message which must contain a merge
-        directive.
-        """)
-
-
-class MessageJob(Storm):
-    """A job for processing messages."""
-
-    implements(IMessageJob)
-    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
-    __storm_table__ = 'MergeDirectiveJob'
-
-    id = Int(primary=True)
-
-    jobID = Int('job', allow_none=False)
-    job = Reference(jobID, Job.id)
-
-    message_bytesID = Int('merge_directive', allow_none=False)
-    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
-
-    action = EnumCol(enum=MessageJobAction)
-
-    def __init__(self, message_bytes, action):
-        Storm.__init__(self)
-        self.job = Job()
-        self.message_bytes = message_bytes
-        self.action = action
-
-    def destroySelf(self):
-        """See `IMessageJob`."""
-        self.job.destroySelf()
-        Store.of(self).remove(self)
-
-    def sync(self):
-        """Update the database with all changes for this object."""
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def getMessage(self):
-        """See `IMessageJob`."""
-        return signed_message_from_string(self.message_bytes.read())
 
 
 class DirectEmailAuthorization:

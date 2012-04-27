@@ -20,10 +20,7 @@ from zope.component import getUtility
 from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.mail.sendmail import MailController
-from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.messages.model.message import (
-    MessageJob,
-    MessageJobAction,
     MessageSet,
     )
 from lp.services.webapp.testing import verifyObject
@@ -200,41 +197,3 @@ class TestMessageSet(TestCase):
             'Treating unknown encoding "booga" as latin-1.'):
             result = MessageSet.decode(self.high_characters, 'booga')
         self.assertEqual(self.high_characters.decode('latin-1'), result)
-
-
-class TestMessageJob(TestCaseWithFactory):
-    """Tests for MessageJob."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_providesInterface(self):
-        """Ensure that BranchJob implements IBranchJob."""
-        # Ensure database constraints are satisfied.
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = MessageJob(file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        job.sync()
-        verifyObject(IMessageJob, job)
-
-    def test_destroySelf_destroys_job(self):
-        """Ensure that MessageJob.destroySelf destroys the Job as well."""
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        message_job = MessageJob(
-            file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        job_id = message_job.job.id
-        message_job.destroySelf()
-        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
-
-    def test_getMessage(self):
-        """getMessage should return a Message with appropriate values."""
-        ctrl = MailController(
-            'from@example.com', ['to@example.com'], 'subject', 'body')
-        content = ctrl.makeMessage().as_string()
-        lfa = getUtility(ILibraryFileAliasSet).create(
-            'message', len(content), StringIO(content), 'text/x-diff')
-        message_job = MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        transaction.commit()
-        message = message_job.getMessage()
-        self.assertEqual('from@example.com', message['From'])
-        self.assertEqual('to@example.com', message['To'])
-        self.assertEqual('subject', message['Subject'])
-        self.assertEqual('body', message.get_payload())

@@ -47,8 +47,6 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
-    ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource,
     notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
@@ -57,7 +55,6 @@ from lp.code.model.branchmergeproposal import (
     )
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
-    CreateMergeProposalJob,
     MergeProposalNeedsReviewEmailJob,
     UpdatePreviewDiffJob,
     )
@@ -68,7 +65,6 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
-from lp.services.messages.interfaces.message import IMessageJob
 from lp.services.webapp import canonical_url
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
@@ -1747,66 +1743,6 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
                     second_mp.target_branch)
             self.assertEqual(
                 BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
-
-
-class TestCreateMergeProposalJob(TestCaseWithFactory):
-    """Tests for CreateMergeProposalJob."""
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
-
-    def test_providesInterface(self):
-        """The class and instances correctly implement their interfaces."""
-        verifyObject(ICreateMergeProposalJobSource, CreateMergeProposalJob)
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        job.context.sync()
-        verifyObject(IMessageJob, job)
-        verifyObject(ICreateMergeProposalJob, job)
-
-    def test_run_creates_proposal(self):
-        """CreateMergeProposalJob.run should create a merge proposal."""
-        key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail(
-                signing_context=signing_context))
-        job = CreateMergeProposalJob.create(file_alias)
-        transaction.commit()
-        proposal = job.run()
-        self.assertEqual(proposal.source_branch, source)
-        self.assertEqual(proposal.target_branch, target)
-
-    def test_getOopsMailController(self):
-        """The sender is notified when creating a bmp from email fails."""
-        key = import_secret_test_key()
-        signing_context = GPGSigningContext(key.fingerprint, password='test')
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail(
-                signing_context=signing_context))
-        job = CreateMergeProposalJob.create(file_alias)
-        transaction.commit()
-        ctrl = job.getOopsMailController('1234')
-        self.assertEqual([message['From']], ctrl.to_addrs)
-        desc = ('creating a merge proposal from message with subject %s' %
-                message['Subject'])
-        self.assertIn(desc, ctrl.body)
-
-    def test_iterReady_includes_ready_jobs(self):
-        """Ready jobs should be listed."""
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        self.assertEqual([job], list(CreateMergeProposalJob.iterReady()))
-
-    def test_iterReady_excludes_unready_jobs(self):
-        """Unready jobs should not be listed."""
-        file_alias = self.factory.makeMergeDirectiveEmail()[1]
-        job = CreateMergeProposalJob.create(file_alias)
-        job.job.start()
-        job.job.complete()
-        self.assertEqual([], list(CreateMergeProposalJob.iterReady()))
 
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):

@@ -44,7 +44,6 @@ from lp.code.mail.codehandler import (
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     BranchMergeProposalJobType,
-    CreateMergeProposalJob,
     MergeProposalNeedsReviewEmailJob,
     )
 from lp.code.model.diff import PreviewDiff
@@ -581,45 +580,6 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(0, bmp.all_comments.count())
         transaction.commit()
 
-    def test_processMergeDirectiveEmailNeedsGPG(self):
-        """process creates a merge proposal from a merge directive email."""
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail())
-        # Ensure the message is stored in the librarian.
-        # mail.incoming.handleMail also explicitly does this.
-        switch_dbuser(config.create_merge_proposals.dbuser)
-        code_handler = CodeHandler()
-        # In order to fake a non-gpg signed email, we say that the current
-        # principal direcly provides IWeaklyAuthenticatePrincipal, which is
-        # what the surrounding code does.
-        cur_principal = get_current_principal()
-        directlyProvides(
-            cur_principal, directlyProvidedBy(cur_principal),
-            IWeaklyAuthenticatedPrincipal)
-        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
-
-        notification = pop_notifications()[0]
-        self.assertEqual('Submit Request Failure', notification['subject'])
-        # The returned message is a multipart message, the first part is
-        # the message, and the second is the original message.
-        message, original = notification.get_payload()
-        self.assertEqual(dedent("""\
-        An error occurred while processing a mail you sent to Launchpad's email
-        interface.
-
-
-        Error message:
-
-        All emails to merge@code.launchpad.net must be signed with your OpenPGP
-        key.
-
-
-        -- 
-        For more information about using Launchpad by e-mail, see
-        https://help.launchpad.net/EmailInterface
-        or send an email to help@launchpad.net"""),
-                                message.get_payload(decode=True))
-
     def test_processWithMergeDirectiveEmail(self):
         """process creates a merge proposal from a merge directive email."""
         message, file_alias, source, target = (
@@ -630,28 +590,9 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', file_alias)
-        switch_dbuser(config.create_merge_proposals.dbuser)
-        JobRunner.fromReady(CreateMergeProposalJob).runAll()
-        self.assertEqual(target, source.landing_targets[0].target_branch)
-        # Ensure the DB operations violate no constraints.
-        Store.of(source).flush()
-
-    def test_processWithUnicodeMergeDirectiveEmail(self):
-        """process creates a comment from a unicode message body."""
-        message, file_alias, source, target = (
-            self.factory.makeMergeDirectiveEmail(body=u'\u1234'))
-        # Ensure the message is stored in the librarian.
-        # mail.incoming.handleMail also explicitly does this.
-        switch_dbuser(config.processmail.dbuser)
-        code_handler = CodeHandler()
-        self.assertEqual(0, source.landing_targets.count())
-        code_handler.process(message, 'merge@code.launchpad.net', file_alias)
-        switch_dbuser(config.create_merge_proposals.dbuser)
-        JobRunner.fromReady(CreateMergeProposalJob).runAll()
-        proposal = source.landing_targets[0]
-        self.assertEqual(u'\u1234', proposal.description)
-        # Ensure the DB operations violate no constraints.
-        Store.of(proposal).flush()
+        notification = pop_notifications()[0]
+        self.assertEqual(
+            'Merge directive not supported.', notification['Subject'])
 
     def test_processMergeProposalReviewerRequested(self):
         # The commands in the merge proposal are parsed.

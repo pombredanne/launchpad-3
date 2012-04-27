@@ -37,7 +37,6 @@ from lp.code.errors import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter,
-    ICreateMergeProposalJobSource,
     )
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace,
@@ -46,6 +45,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import check_default_stacked_on
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
+from lp.services.config import config
 from lp.services.mail.commands import (
     EmailCommand,
     EmailCommandCollection,
@@ -283,7 +283,10 @@ class CodeHandler:
         deferred to jobs to create BranchMergeProposals.
         """
         if email_addr.startswith('merge@'):
-            return self.createMergeProposalJob(mail, email_addr, file_alias)
+            body = get_error_message('mergedirectivenotsupported.txt')
+            simple_sendmail(
+                config.canonical.noreply_from_address, [mail.get('from')],
+                'Merge directive not supported.', body)
         else:
             try:
                 return self.processComment(mail, email_addr, file_alias)
@@ -293,23 +296,6 @@ class CodeHandler:
                     [mail.get('from')],
                     'Error Creating Merge Proposal', body)
                 return True
-
-    def createMergeProposalJob(self, mail, email_addr, file_alias):
-        """Check that the message is signed and create the job."""
-        try:
-            ensure_not_weakly_authenticated(
-                mail, email_addr, 'not-signed-md.txt',
-                'key-not-registered-md.txt', error_templates)
-        except IncomingEmailError, error:
-            user = getUtility(ILaunchBag).user
-            send_process_error_notification(
-                str(user.preferredemail.email),
-                'Submit Request Failure',
-                error.message, mail, error.failing_command)
-            transaction.abort()
-        else:
-            getUtility(ICreateMergeProposalJobSource).create(file_alias)
-        return True
 
     def processCommands(self, context, commands):
         """Process the various merge proposal commands against the context."""
