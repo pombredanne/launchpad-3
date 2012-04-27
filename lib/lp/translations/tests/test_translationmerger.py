@@ -11,6 +11,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.log.logger import FakeLogger
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
@@ -53,7 +54,8 @@ class TranslatableProductMixin:
         self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
-        self.script = MessageSharingMerge('tms-merging-test', test_args=[])
+        self.script = MessageSharingMerge(
+            'tms-merging-test', test_args=[], logger=FakeLogger())
         self.script.logger.setLevel(ERROR)
         tm = TransactionManager(self.script.txn, self.script.options.dry_run)
         self.merger = TranslationMerger(self.templates, tm)
