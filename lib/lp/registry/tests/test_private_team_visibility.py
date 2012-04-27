@@ -28,7 +28,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.authorization import (
     check_permission,
     clear_cache,
@@ -276,19 +275,6 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # The team is now visible.
         self._check_permission(some_person, True)
 
-    def _check_permission_using_feature_flag(self, user, permission=True):
-        # The team is visible if the feature flag is set.
-        login_person(user)
-        flag = 'disclosure.extra_private_team_LimitedView_security.enabled'
-        with FeatureFixture({flag: 'true'}):
-            self.assertEqual(
-                permission,
-                check_permission('launchpad.LimitedView', self.priv_team))
-        clear_cache()
-        self.assertFalse(
-            check_permission('launchpad.LimitedView', self.priv_team))
-        clear_cache()
-
     def test_team_subscribed_to_blueprint(self):
         # Users can see teams subscribed to blueprints.
         spec = self.factory.makeSpecification()
@@ -298,7 +284,7 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Subscribe the private team to the spec.
         login_person(spec.owner)
         spec.subscribe(self.priv_team, spec.owner)
-        self._check_permission_using_feature_flag(some_person)
+        self._check_permission(some_person, True)
 
     def _test_team_subscribed_to_bug(self, private=True):
         # Users can see teams subscribed to bugs.
@@ -316,12 +302,12 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # All users can see public bugs, so in that case, the team is
         # now visible, else team is still not visible.
         some_person = self.factory.makePerson()
-        self._check_permission_using_feature_flag(some_person, not private)
+        self._check_permission(some_person, not private)
         # Subscribe the user to the bug.
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
         # The team is now visible.
-        self._check_permission_using_feature_flag(some_person)
+        self._check_permission(some_person, True)
 
     def test_team_subscribed_to_public_bug(self):
         self._test_team_subscribed_to_bug(private=False)
@@ -345,12 +331,12 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # All users can see public bugs, so in that case, the team is
         # now visible, else team is still not visible.
         some_person = self.factory.makePerson()
-        self._check_permission_using_feature_flag(some_person, not private)
+        self._check_permission(some_person, not private)
         # Subscribe the user to the bug.
         login_person(bug_owner)
         bug.subscribe(some_person, bug_owner)
         # The team is now visible.
-        self._check_permission_using_feature_flag(some_person)
+        self._check_permission(some_person, True)
 
     def test_team_assigned_to_public_bug(self):
         self._test_team_assigned_to_bug(private=False)

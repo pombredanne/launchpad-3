@@ -365,30 +365,39 @@ class AccessPolicyGrantFlat(StormBase):
 
         # A cache for the sharing permissions, keyed on grantee
         permissions_cache = defaultdict(dict)
+        # Information types for which there are shared artifacts.
+        shared_artifact_info_types = defaultdict(list)
 
         def set_permission(person):
             # Lookup the permissions from the previously loaded cache.
-            return (person[0], permissions_cache[person[0]])
+            return (
+                person[0],
+                permissions_cache[person[0]],
+                shared_artifact_info_types[person[0]])
 
         def load_permissions(people):
             # We now have the grantees and policies we want in the result so
             # load any corresponding permissions and cache them.
             people_by_id = dict(
                 (person[0].id, person[0]) for person in people)
-            sharing_permission_term = SQL(
-                "CASE MIN(COALESCE(artifact, 0)) WHEN 0 THEN ? ELSE ? END",
-                (SharingPermission.ALL.name, SharingPermission.SOME.name))
+            all_permission_term = SQL("bool_or(artifact IS NULL) as all")
+            some_permission_term = SQL(
+                "bool_or(artifact IS NOT NULL) as some")
             constraints = [
                 cls.grantee_id.is_in(people_by_id.keys()),
                 cls.policy_id.is_in(policies_by_id.keys())]
             result_set = IStore(cls).find(
-                (cls.grantee_id, cls.policy_id, sharing_permission_term),
+                (cls.grantee_id, cls.policy_id, all_permission_term,
+                 some_permission_term),
                 *constraints).group_by(cls.grantee_id, cls.policy_id)
-            for (person_id, policy_id, permission) in result_set:
+            for (person_id, policy_id, has_all, has_some) in result_set:
                 person = people_by_id[person_id]
                 policy = policies_by_id[policy_id]
                 permissions_cache[person][policy] = (
-                    SharingPermission.items[str(permission)])
+                    SharingPermission.ALL if has_all
+                    else SharingPermission.SOME)
+                if has_some:
+                    shared_artifact_info_types[person].append(policy.type)
 
         constraints = [cls.policy_id.is_in(policies_by_id.keys())]
         if grantees:

@@ -16,7 +16,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.testing import (
@@ -83,10 +82,6 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
 
     def setUp(self):
         super(TestTeamLimitedViewAccess, self).setUp()
-        flag = 'disclosure.extra_private_team_LimitedView_security.enabled'
-        flags = FeatureFixture({flag: 'true'})
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
 
         # Make a private team.
         team_owner = self.factory.makePerson()

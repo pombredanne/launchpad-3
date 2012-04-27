@@ -224,9 +224,7 @@ class TeamFormMixin:
 
     The visibility field is shown if
     * The user has launchpad.Commercial permission.
-    * Or the feature flag
-    disclosure.show_visibility_for_team_add.enabled is on, and the user has
-    a current commercial subscription.
+    * The user has a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",

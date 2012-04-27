@@ -34,7 +34,10 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import setupBrowserForUser
+from lp.testing.pages import (
+    extract_text,
+    setupBrowserForUser,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -118,7 +121,7 @@ class PillarSharingDetailsMixin:
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
             pillarperson = self.getPillarPerson()
-            expected = "Sharing details for %s : %s" % (
+            expected = "Sharing details for %s : Sharing : %s" % (
                     pillarperson.person.displayname,
                     pillarperson.pillar.displayname)
             url = 'http://launchpad.dev/%s/+sharing/%s' % (
