@@ -9,7 +9,6 @@ from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
-import time
 import transaction
 import urllib2
 
@@ -112,31 +111,15 @@ class TestDatabaseErrorViews(TestCase):
         bouncer.stop()
         url = 'http://launchpad.dev/'
         error = self.getHTTPError(url)
-        self.assertEqual(503, error.code)
+        self.assertEqual(httplib.SERVICE_UNAVAILABLE, error.code)
         self.assertThat(error.read(),
                         Contains(OperationalErrorView.reason))
         # We keep seeing the correct exception on subsequent requests.
-        self.assertEqual(503, self.getHTTPError(url).code)
+        self.assertEqual(httplib.SERVICE_UNAVAILABLE,
+                         self.getHTTPError(url).code)
         # When the database is available again, requests succeed.
         bouncer.start()
-        # bouncer.start() can sometimes return before the service is actually
-        # available for use.  To be defensive, let's retry a few times.  See
-        # bug 974617.
-        retries = 5
-        for i in xrange(retries):
-            try:
-                urllib2.urlopen(url)
-            except urllib2.HTTPError as e:
-                if e.code != httplib.SERVICE_UNAVAILABLE:
-                    raise
-            else:
-                break
-            time.sleep(0.5)
-        else:
-            raise TimeoutException(
-                "bouncer did not come up after {} attempts.".format(retries))
-
-
+        urllib2.urlopen(url)
 
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()

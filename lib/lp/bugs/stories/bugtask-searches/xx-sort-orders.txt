@@ -78,12 +78,12 @@ By status:
     >>> anon_browser.getControl(name="orderby").displayValue = ["by status"]
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG
-    mozilla-firefox Medium New
-    10 another test bug
-    linux-source-2.6.15 Medium New
     2 Blackhole Trash folder
     &mdash; Medium New
+    10 another test bug
+    linux-source-2.6.15 Medium New
+    1 Firefox does not support SVG
+    mozilla-firefox Medium New
     9 Thunderbird crashes
     thunderbird Medium Confirmed
 

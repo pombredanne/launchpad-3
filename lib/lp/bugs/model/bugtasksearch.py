@@ -1006,14 +1006,18 @@ def _process_order_by(params, use_flat):
     if ambiguous:
         if use_flat:
             if in_unique_context:
-                orderby_arg.append(BugTaskFlat.bug_id)
+                disambiguator = BugTaskFlat.bug_id
             else:
-                orderby_arg.append(BugTaskFlat.bugtask_id)
+                disambiguator = BugTaskFlat.bugtask_id
         else:
             if in_unique_context:
-                orderby_arg.append(BugTask.bugID)
+                disambiguator = BugTask.bugID
             else:
-                orderby_arg.append(BugTask.id)
+                disambiguator = BugTask.id
+
+        if orderby_arg and not isinstance(orderby_arg[0], Desc):
+            disambiguator = Desc(disambiguator)
+        orderby_arg.append(disambiguator)
 
     return tuple(orderby_arg), extra_joins
 

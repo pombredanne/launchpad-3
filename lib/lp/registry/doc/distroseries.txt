@@ -344,7 +344,7 @@ distroseries are sane. A DRSPR instance should filter attributes of
 a SPR according to the distroseries in question (practically according
 what is published in this distrorelease)
 
-Since the initialize-from-parent procedure copies the latest
+Since the InitializeDistroSeries procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting
 that there are no builds for this SPR in this DistroSeries.
 IDRSPR.builds will be non-empty after a developer submits a new SPR

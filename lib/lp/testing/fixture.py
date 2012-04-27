@@ -8,6 +8,7 @@ __all__ = [
     'CaptureOops',
     'DemoMode',
     'PGBouncerFixture',
+    'PGNotReadyError',
     'Urllib2Fixture',
     'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
@@ -23,6 +24,7 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
+import itertools
 from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
@@ -54,6 +56,10 @@ from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.webapp.errorlog import ErrorReportEvent
+
+
+class PGNotReadyError(Exception):
+    pass
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
@@ -120,6 +126,16 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             )
         if is_ca_available():
             reconnect_stores()
+
+    def start(self, retries=20, sleep=0.5):
+        """Simply return to simulate an error starting PGBouncer."""
+        super(PGBouncerFixture, self).start()
+        for i in itertools.count(1):
+            if self.is_running:
+                return
+            if i == retries:
+                raise PGNotReadyError("Not ready after %d attempts." % i)
+            time.sleep(sleep)
 
 
 class ZopeAdapterFixture(Fixture):

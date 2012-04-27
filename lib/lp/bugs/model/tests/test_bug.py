@@ -16,6 +16,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -959,6 +960,34 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transition_special_cased_for_ubuntu(self):
+        # When a bug on ubuntu is transitioned to USERDATA from
+        # EMBARGOEDSECURITY, the bug supervisor is not subscribed, and the
+        # bug's subscribers do not change.
+        # This is to protect ubuntu's workflow, which differs from the
+        # Launchpad norm.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        admin = getUtility(ILaunchpadCelebrities).admin
+        ubuntu = removeSecurityProxy(ubuntu)
+        ubuntu.setBugSupervisor(
+            self.factory.makePerson(name='supervisor'), admin)
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY,
+            distribution=ubuntu)
+        bug = removeSecurityProxy(bug)
+        initial_subscribers = bug.getDirectSubscribers()
+        self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
+        bug.transitionToInformationType(
+            InformationType.USERDATA, who=bug.owner)
+        subscribers = bug.getDirectSubscribers()
+        self.assertContentEqual(initial_subscribers, subscribers)
+        ubuntu.setBugSupervisor(None, ubuntu.owner)
 
 
 class TestBugActivityMethods(TestCaseWithFactory):
