@@ -742,9 +742,12 @@ def _build_query(params, use_flat):
         else:
             components = [params.component]
 
-        distro_archive_ids = [
-            archive.id
-            for archive in distroseries.distribution.all_distro_archives]
+        # It's much faster to query for a single archive, so don't
+        # include partner unless we have to.
+        archive_ids = set(
+            distroseries.distribution.getArchiveByComponent(c.name).id
+            for c in components)
+
         extra_clauses.append(
             cols['BugTask.sourcepackagenameID'].is_in(
                 Select(
@@ -752,7 +755,7 @@ def _build_query(params, use_flat):
                     tables=[SourcePackagePublishingHistory],
                     where=And(
                         SourcePackagePublishingHistory.archiveID.is_in(
-                            distro_archive_ids),
+                            archive_ids),
                         SourcePackagePublishingHistory.distroseries ==
                             distroseries,
                         SourcePackagePublishingHistory.componentID.is_in(
