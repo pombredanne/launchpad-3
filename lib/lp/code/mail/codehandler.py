@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,43 +8,21 @@ import operator
 import os
 import re
 
-from bzrlib.branch import Branch
-from bzrlib.errors import (
-    NotAMergeDirective,
-    NotBranchError,
-    NotStacked,
-    )
-from bzrlib.merge_directive import MergeDirective
-from bzrlib.transport import get_transport
-from bzrlib.urlutils import join as urljoin
-from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from lp.code.bzr import get_branch_formats
 from lp.code.enums import (
-    BranchType,
     CodeReviewVote,
     )
 from lp.code.errors import (
-    BranchCreationException,
-    BranchMergeProposalExists,
     UserNotBranchReviewer,
     )
-from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter,
     )
-from lp.code.interfaces.branchnamespace import (
-    lookup_branch_namespace,
-    split_unique_name,
-    )
-from lp.code.interfaces.branchtarget import check_default_stacked_on
-from lp.codehosting.bzrutils import is_branch_stackable
-from lp.codehosting.vfs import get_lp_server
 from lp.services.config import config
 from lp.services.mail.commands import (
     EmailCommand,
@@ -65,8 +43,6 @@ from lp.services.mail.interfaces import (
 from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.webapp import urlparse
-from lp.services.webapp.errorlog import globalErrorUtility
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -387,292 +363,3 @@ class CodeHandler:
             return getter.get(merge_proposal_id)
         except SQLObjectNotFound:
             raise NonExistantBranchMergeProposalAddress(email_addr)
-
-    def _acquireBranchesForProposal(self, md, submitter):
-        """Find or create DB Branches from a MergeDirective.
-
-        If the target is not a Launchpad branch, NonLaunchpadTarget will be
-        raised.  If the source is not a Launchpad branch, a REMOTE branch will
-        be created implicitly, with submitter as its owner/registrant.
-
-        :param md: The `MergeDirective` to get branch URLs from.
-        :param submitter: The `Person` who requested that the merge be
-            performed.
-        :return: source_branch, target_branch
-        """
-        mp_target = getUtility(IBranchLookup).getByUrl(md.target_branch)
-        if mp_target is None:
-            raise NonLaunchpadTarget()
-        # If the target branch cannot be stacked upon, then don't try to stack
-        # upon it or get revisions form it.
-        if md.bundle is None or check_default_stacked_on(mp_target) is None:
-            mp_source = self._getSourceNoBundle(
-                md, mp_target, submitter)
-        else:
-            mp_source = self._getSourceWithBundle(
-                md, mp_target, submitter)
-        return mp_source, mp_target
-
-    @staticmethod
-    def _getNewBranchInfo(url, target_branch, submitter):
-        """Return the namespace and basename for a branch.
-
-        If an LP URL is provided, the namespace and basename will match the
-        LP URL.
-
-        Otherwise, the target is used to determine the namespace, and the base
-        depends on what was supplied.
-
-        If a URL is supplied, its base is used.
-
-        If no URL is supplied, 'merge' is used as the base.
-
-        :param url: The public URL of the source branch, if any.
-        :param target_branch: The target branch.
-        :param submitter: The person submitting the merge proposal.
-        """
-        if url is not None:
-            url = url.rstrip('/')
-            branches = getUtility(IBranchLookup)
-            unique_name = branches.uriToUniqueName(URI(url))
-            if unique_name is not None:
-                namespace_name, base = split_unique_name(unique_name)
-                return lookup_branch_namespace(namespace_name), base
-        if url is None:
-            basename = 'merge'
-        else:
-            basename = urlparse(url)[2].split('/')[-1]
-        namespace = target_branch.target.getNamespace(submitter)
-        return namespace, basename
-
-    def _getNewBranch(self, branch_type, url, target, submitter):
-        """Return a new database branch.
-
-        :param branch_type: The type of branch to create.
-        :param url: The public location of the branch to create.
-        :param product: The product associated with the branch to create.
-        :param submitter: The person who requested the merge.
-        """
-        namespace, basename = self._getNewBranchInfo(url, target, submitter)
-        if branch_type == BranchType.REMOTE:
-            db_url = url
-        else:
-            db_url = None
-        return namespace.createBranchWithPrefix(
-            branch_type, basename, submitter, url=db_url)
-
-    def _getSourceNoBundle(self, md, target, submitter):
-        """Get a source branch for a merge directive with no bundle."""
-        source_db_branch = getUtility(IBranchLookup).getByUrl(
-            md.source_branch)
-        if source_db_branch is None:
-            source_db_branch = self._getNewBranch(
-                BranchType.REMOTE, md.source_branch, target, submitter)
-        return source_db_branch
-
-    def _getOrCreateDBBranch(self, md, db_target, submitter):
-        """Return the source branch, creating a new branch if necessary."""
-        db_source = None
-        if md.source_branch is not None:
-            db_source = getUtility(IBranchLookup).getByUrl(md.source_branch)
-        if db_source is None:
-            db_source = self._getNewBranch(
-                BranchType.HOSTED, md.source_branch, db_target, submitter)
-            # Commit the transaction to make sure the new source branch is
-            # visible to the XMLRPC server which provides the virtual file
-            # system information.
-            transaction.commit()
-        return db_source
-
-    def _openSourceBzrBranch(self, source_url, target_url, stacked_url):
-        """Open the source bzr branch, creating a new branch if necessary."""
-        try:
-            return Branch.open(source_url)
-        except NotBranchError:
-            bzr_target = Branch.open(target_url)
-            transport = get_transport(
-                source_url,
-                possible_transports=[bzr_target.bzrdir.root_transport])
-            bzrdir = bzr_target.bzrdir.sprout(
-                transport.base, bzr_target.last_revision(),
-                force_new_repo=True, stacked=True, create_tree_if_local=False,
-                possible_transports=[transport], source_branch=bzr_target)
-            bzr_branch = bzrdir.open_branch()
-            # Set the stacked url to be the relative url for the target.
-            bzr_branch.set_stacked_on_url(stacked_url)
-            return bzr_branch
-
-    def _getSourceWithBundle(self, md, db_target, submitter):
-        """Get a source branch for a merge directive with a bundle."""
-        db_source = self._getOrCreateDBBranch(md, db_target, submitter)
-        # Make sure that the target branch is stackable so that we only
-        # install the revisions unique to the source branch. If the target
-        # branch is not stackable, return the existing branch or a new hosted
-        # source branch - one that has *no* Bazaar data.  Together these
-        # prevent users from using Launchpad disk space at a rate that is
-        # disproportionately greater than data uploaded.
-        mirrored_bzr_target = db_target.getBzrBranch()
-        if not is_branch_stackable(mirrored_bzr_target):
-            return db_source
-        assert db_source.branch_type == BranchType.HOSTED, (
-            "Source branch is not hosted.")
-
-        # Create the LP server as if the submitter was pushing a branch to LP.
-        lp_server = get_lp_server(submitter.id)
-        lp_server.start_server()
-        try:
-            source_url = urljoin(lp_server.get_url(), db_source.unique_name)
-            target_url = urljoin(lp_server.get_url(), db_target.unique_name)
-            stacked_url = '/' + db_target.unique_name
-            bzr_source = self._openSourceBzrBranch(
-                source_url, target_url, stacked_url)
-            if is_branch_stackable(bzr_source):
-                # Set the stacked on URL if not set.
-                try:
-                    bzr_source.get_stacked_on_url()
-                except NotStacked:
-                    # We don't currently support pulling in the revisions if
-                    # the source branch exists and isn't stacked.
-                    # XXX Tim Penhey 2010-07-27 bug 610292
-                    # We should fail here and return an oops email to the
-                    # user.
-                    return db_source
-                self._pullRevisionsFromMergeDirectiveIntoSourceBranch(
-                    md, target_url, bzr_source)
-                # Get the puller to pull the branch into the mirrored area.
-                formats = get_branch_formats(bzr_source)
-                db_source.branchChanged(
-                    stacked_url, bzr_source.last_revision(), *formats)
-            return db_source
-        finally:
-            lp_server.stop_server()
-
-    def _pullRevisionsFromMergeDirectiveIntoSourceBranch(self, md,
-                                                         target_url,
-                                                         bzr_branch):
-        """Pull the revisions from the merge directive into the branch.
-
-        :param md: The merge directive
-        :param target_url: The URL of the branch that the merge directive is
-            targetting using the user's LP transport.
-        :param bzr_branch: The bazaar branch entity for the branch that the
-            revisions from the merge directive are being pulled into.
-        """
-        # Tell the merge directive to use the user's LP transport URL to get
-        # access to any needed but not supplied revisions.
-        md.target_branch = target_url
-        md.install_revisions(bzr_branch.repository)
-        bzr_branch.lock_write()
-        try:
-            bzr_branch.pull(bzr_branch, stop_revision=md.revision_id,
-                            overwrite=True)
-        finally:
-            bzr_branch.unlock()
-
-    def findMergeDirectiveAndComment(self, message):
-        """Extract the comment and Merge Directive from a SignedMessage."""
-        body = None
-        md = None
-        for part in message.walk():
-            if part.is_multipart():
-                continue
-            payload = part.get_payload(decode=True)
-            content_type = part.get('Content-type', 'text/plain').lower()
-            if content_type.startswith('text/plain'):
-                body = payload
-                charset = part.get_param('charset')
-                if charset is not None:
-                    body = body.decode(charset)
-            try:
-                md = MergeDirective.from_lines(payload.splitlines(True))
-            except NotAMergeDirective:
-                pass
-            if None not in (body, md):
-                return body, md
-        else:
-            raise MissingMergeDirective()
-
-    def processMergeProposal(self, message):
-        """Generate a merge proposal (and comment) from an email message.
-
-        The message is expected to contain a merge directive in one of its
-        parts.  Its values are used to generate a BranchMergeProposal.
-        If the message has a non-empty body, it is turned into a
-        CodeReviewComment.
-        """
-        submitter = getUtility(ILaunchBag).user
-        try:
-            email_body_text, md = self.findMergeDirectiveAndComment(message)
-        except MissingMergeDirective:
-            body = get_error_message(
-                'missingmergedirective.txt',
-                error_templates=error_templates)
-            simple_sendmail('merge@code.launchpad.net',
-                [message.get('from')],
-                'Error Creating Merge Proposal', body)
-            return
-        oops_message = (
-            'target: %r source: %r' %
-            (md.target_branch, md.source_branch))
-        with globalErrorUtility.oopsMessage(oops_message):
-            try:
-                source, target = self._acquireBranchesForProposal(
-                    md, submitter)
-            except NonLaunchpadTarget:
-                body = get_error_message('nonlaunchpadtarget.txt',
-                    error_templates=error_templates,
-                    target_branch=md.target_branch)
-                simple_sendmail('merge@code.launchpad.net',
-                    [message.get('from')],
-                    'Error Creating Merge Proposal', body)
-                return
-            except BranchCreationException, e:
-                body = get_error_message(
-                        'branch-creation-exception.txt',
-                        error_templates=error_templates,
-                        reason=e)
-                simple_sendmail('merge@code.launchpad.net',
-                    [message.get('from')],
-                    'Error Creating Merge Proposal', body)
-                return
-        with globalErrorUtility.oopsMessage(
-            'target: %r source: %r' % (target, source)):
-            try:
-                # When creating a merge proposal, we need to gather all
-                # necessary arguments to addLandingTarget(). So from the email
-                # body we need to extract: reviewer, review type, description.
-                description = None
-                review_requests = []
-                email_body_text = email_body_text.strip()
-                if email_body_text != '':
-                    description = email_body_text
-                    review_args = parse_commands(
-                        email_body_text, ['reviewer'])
-                    if len(review_args) > 0:
-                        cmd, args = review_args[0]
-                        review_request = (
-                            CodeEmailCommands.parseReviewRequest(cmd, args))
-                        review_requests.append(review_request)
-
-                bmp = source.addLandingTarget(submitter, target,
-                                              needs_review=True,
-                                              description=description,
-                                              review_requests=review_requests)
-                return bmp
-
-            except BranchMergeProposalExists:
-                body = get_error_message(
-                    'branchmergeproposal-exists.txt',
-                    error_templates=error_templates,
-                    source_branch=source.bzr_identity,
-                    target_branch=target.bzr_identity)
-                simple_sendmail('merge@code.launchpad.net',
-                    [message.get('from')],
-                    'Error Creating Merge Proposal', body)
-                transaction.abort()
-            except IncomingEmailError, error:
-                send_process_error_notification(
-                    str(submitter.preferredemail.email),
-                    'Submit Request Failure',
-                    error.message, email_body_text, error.failing_command)
-                transaction.abort()
