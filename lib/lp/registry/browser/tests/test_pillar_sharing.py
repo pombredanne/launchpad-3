@@ -122,6 +122,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 artifact=artifact,
                 grantee=grantee,
                 grantor=self.pillar.owner)
+        return grantee
 
 
     def setupSharing(self, sharees):
