@@ -23,9 +23,7 @@
         class="sprite maybe"
         >&nbsp;<span class="invisible-link">Tag help</span></a>build
       <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
-      <noscript>
-        <input type="submit" value="Filter"/>
-      </noscript>
+      <input id="filter_form_submit" type="submit" value="Filter"/>
     </form>
 
     <script type="text/javascript">
