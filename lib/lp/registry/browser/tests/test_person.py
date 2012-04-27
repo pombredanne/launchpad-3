@@ -374,6 +374,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         return create_initialized_view(self.person, "+editemails", form=form)
 
     def createSetContactViaAddEmailView(self, email_address):
+        """Test helper to use +editemails view to set preferred address."""
         form = {
             'field.VALIDATED_SELECTED': email_address,
             'field.actions.set_preferred': 'Set as Contact Address',
@@ -381,6 +382,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         return create_initialized_view(self.person, '+editemails', form=form)
 
     def _assertEmailAndError(self, email_str, expected_msg):
+        """Special assert function for dealing with email-related errors."""
         view = self.createAddEmailView(email_str)
         error_msg = view.errors[0]
         if type(error_msg) != unicode:
@@ -388,6 +390,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, error_msg)
 
     def test_add_email(self):
+        """Adding email should add a login token, notification, and email."""
         stub.test_emails = []
         email_address = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(email_address)
@@ -416,6 +419,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertIn([email_address], to_addrs)
 
     def test_add_email_address_taken(self):
+        """Adding an already existing email should give error notice."""
         email_address = self.factory.getUniqueEmailAddress()
         self.factory.makePerson(
             name='deadaccount',
@@ -434,6 +438,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, error_msg)
 
     def test_validate_email(self):
+        """Validating an email should send a notice email to the user."""
         stub.test_emails = []
         added_email = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(added_email)
@@ -455,7 +460,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertIn([added_email], to_addrs)
 
     def test_validate_token(self):
-        # Ensure hitting +validateemail actually validates the email.
+        """Hitting +validateemail should actuall validate the email."""
         stub.test_emails = []
         added_email = self.factory.getUniqueEmailAddress()
         self.createAddEmailView(added_email)
@@ -484,6 +489,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_title, browser.title)
 
     def test_remove_unvalidated_email_address(self):
+        """A user should be able to remove and unvalidated email."""
         added_email = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(added_email)
         form = {
@@ -498,6 +504,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, notifications[0].message)
 
     def test_cannot_remove_contact_address(self):
+        """A user should not be able to remove their own contact email."""
         form = {
             'field.VALIDATED_SELECTED': self.valid_email_address,
             'field.actions.remove_validated': 'Remove',
@@ -510,6 +517,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, error_msg)
 
     def test_set_contact_address(self):
+        """A user should be able to change to a new contact email."""
         added_email = self.factory.getUniqueEmailAddress()
         view = self.createAddEmailView(added_email)
         # We need a commit to make sure person and other data are in DB.
@@ -525,6 +533,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, notifications[0].message)
 
     def test_set_contact_address_already_set(self):
+        """Users should be warned when setting the same contact email."""
         view = self.createSetContactViaAddEmailView(self.valid_email_address)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
@@ -534,22 +543,26 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_msg, notifications[0].message)
 
     def test_team_editemails_not_found(self):
+        """Teams should not have a +editemails page."""
         team = self.factory.makeTeam(owner=self.person, members=[self.person])
         url = '%s/+editemails' % canonical_url(team)
         browser = setupBrowserForUser(user=self.person)
         self.assertRaises(NotFound, browser.open, url)
 
     def test_email_string_validation_no_email_prodvided(self):
+        """+editemails should warn if no email is provided."""
         no_email = ''
         expected_msg = u'Required input is missing.'
         self._assertEmailAndError(no_email, expected_msg)
 
     def test_email_string_validation_invalid_email(self):
+        """+editemails should warn when provided data is not an email."""
         not_an_email = 'foo'
         expected_msg = u"'foo' doesn't seem to be a valid email address."
         self._assertEmailAndError(not_an_email, expected_msg)
 
     def test_email_string_validation_is_escaped(self):
+        """+editemails should escape output to prevent XSS."""
         xss_email = "foo@example.com<script>window.alert('XSS')</script>"
         expected_msg = (
             u"'foo@example.com&lt;script&gt;"
