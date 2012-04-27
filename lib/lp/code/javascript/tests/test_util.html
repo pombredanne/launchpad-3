@@ -71,5 +71,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                 <input id="filter_form_submit" type="submit" value="Filter"/>
             </form>
         </script>
+
+        <script type="text/x-template" id="retry-import-form">
+            <form name="tryagain" id="tryagain" action="/+test">
+                <input type="hidden" name="tryagain.actions.tryagain"
+                    value="" />
+                <input type="submit" id="tryagain.actions.tryagain"
+                    name="tryagain.actions.tryagain" value="Try Again"  />
+                <a class="unseen" id="tryagainlink" href="#">Try again</a>
+            </form>
+        </script>
     </body>
 </html>
