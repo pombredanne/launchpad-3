@@ -80,8 +80,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
         return grantee
 
     def makeArtifactGrantee(
-            self, grantee=None, security=False, with_bug=True,
-            with_branch=False):
+            self, grantee=None, with_bug=True,
+            with_branch=False, security=False):
         if grantee is None:
             grantee = self.factory.makePerson()
 
@@ -138,13 +138,8 @@ class SharingBaseTestCase(TestCaseWithFactory):
 class PillarSharingDetailsMixin:
     """Test the pillar sharing details view."""
 
-    def getPillarPerson(self, person=None, with_sharing=True):
-        if person is None:
-            person = self.factory.makePerson()
-        if with_sharing:
-            self.makeArtifactGrantee(
-                grantee=person, with_bug=True, with_branch=True)
-
+    def getPillarPerson(self, person=None, security=False):
+        person = self.makeArtifactGrantee(person, True, True, security)
         return PillarPerson(self.pillar, person)
 
     def test_view_filters_security_wisely(self):
@@ -152,17 +147,11 @@ class PillarSharingDetailsMixin:
         # `launchpad.Driver` -- the permission level for the page -- should be
         # able to see.
         with FeatureFixture(DETAILS_ENABLED_FLAG):
-            pillarperson = self.getPillarPerson(with_sharing=False)
-            self.makeArtifactGrantee(
-                grantee=pillarperson.person,
-                security=True,
-                with_bug=True,
-                with_branch=True)
+            pillarperson = self.getPillarPerson(security=True)
             view = create_initialized_view(pillarperson, '+index')
             # The page loads
             self.assertEqual(pillarperson.person.displayname, view.page_title)
             # The bug, which is not shared with the owner, is not included.
-
             self.assertEqual(0, view.shared_bugs_count)
 
     def test_view_traverses_plus_sharingdetails(self):
@@ -185,7 +174,8 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             # We have to do some fun url hacking to force the traversal a user
             # encounters.
-            pillarperson = self.getPillarPerson(with_sharing=False)
+            pillarperson = PillarPerson(
+                self.pillar, self.factory.makePerson())
             url = 'http://launchpad.dev/%s/+sharing/%s' % (
                 pillarperson.pillar.name, pillarperson.person.name)
             browser = self.getUserBrowser(user=self.owner, url=url)
