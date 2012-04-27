@@ -60,5 +60,16 @@ GNU Affero General Public License version 3 (see the file LICENSE).
                 <input id="filter_form_submit" type="submit" value="Filter"/>
             </form>
         </script>
+
+        <script type="text/x-template" id="merge-proposal-form">
+            <form name="filter" id="filter_form" action="/+test">
+                <select id="field.status"
+                    name="field.status" size="1">
+                    <option selected="selected" value="ALL">All</option>
+                    <option value="WITHIN_30_DAYS">Recent</option>
+                </select>
+                <input id="filter_form_submit" type="submit" value="Filter"/>
+            </form>
+        </script>
     </body>
 </html>
