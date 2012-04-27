@@ -421,11 +421,6 @@ inserted at the top of the message body.
     ...         title='Zero-day on Frobulator',
     ...         information_type=InformationType.EMBARGOEDSECURITY))
 
-    >>> sec_vuln_bug.security_related
-    True
-    >>> sec_vuln_bug.private
-    True
-
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
@@ -730,66 +725,61 @@ won't be included.
     ...     message.get_all('X-Launchpad-Bug-Tags')
 
 
-The X-Launchpad-Bug-Private header
-----------------------------------
+The X-Launchpad-Bug-Information-Type header
+-------------------------------------------
 
 When a notification is sent out about a bug, the
-X-Launchpad-Bug-Private header shows if the bug is marked as
-private. It can have the value "yes" or "no".
+X-Launchpad-Bug-Information-Type header shows the information type value
+assigned to the bug. For backwards compatibility, the X-Launchpad-Bug-Private
+and X-Launchpad-Bug-Security-Vulnerability headers are also set. These headers
+can have the value "yes" or "no".
 
-    >>> bug_three.private
-    False
+    >>> print bug_three.information_type.title
+    Public
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    test@canonical.com ['no']
+    ...     print '%s %s %s %s' % (
+    ...         message['To'],
+    ...         message.get_all('X-Launchpad-Bug-Private'),
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
+    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    test@canonical.com ['no'] ['no'] ['Public']
 
 Predictably, private bugs are sent with a slightly different header:
 
     >>> with lp_dbuser():
-    ...     bug_three.setPrivate(True, sample_person)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.USERDATA, sample_person)
     True
-    >>> bug_three.private
-    True
+    >>> print bug_three.information_type.title
+    User Data
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
-    test@canonical.com ['yes']
+    ...     print '%s %s %s %s' % (
+    ...         message['To'], message.get_all('X-Launchpad-Bug-Private'),
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
+    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    foo.bar@canonical.com ['yes'] ['no'] ['User Data']
+    mark@example.com ['yes'] ['no']  ['User Data']
+    test@canonical.com ['yes'] ['no']  ['User Data']
 
-The X-Launchpad-Bug-Security-Vulnerability header
--------------------------------------------------
-
-When a notification is sent out about a bug, the
-X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
-security vulnerability. It can have the value "yes" or "no".
-
-    >>> bug_three.security_related
-    False
-
-    >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['no']
-    mark@example.com ['no']
-    test@canonical.com ['no']
-
-The presence of the security flag on a bug is, surprise, denoted by a
-simple "yes":
+Now transition the bug to embargoed security:
 
     >>> with lp_dbuser():
-    ...     bug_three.setSecurityRelated(True, getUtility(ILaunchBag).user)
+    ...     bug_three.transitionToInformationType(
+    ...         InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
     True
-    >>> bug_three.security_related
-    True
+    >>> print bug_three.information_type.title
+    Embargoed Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print message['To'], (
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
-    foo.bar@canonical.com ['yes']
-    mark@example.com ['yes']
-    test@canonical.com ['yes']
+    ...     print '%s %s %s %s' % (
+    ...         message['To'], message.get_all('X-Launchpad-Bug-Private'),
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
+    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    foo.bar@canonical.com ['yes'] ['yes'] ['Embargoed Security']
+    mark@example.com ['yes'] ['yes']  ['Embargoed Security']
+    test@canonical.com ['yes'] ['yes']  ['Embargoed Security']
 
 
 The X-Launchpad-Bug-Commenters header

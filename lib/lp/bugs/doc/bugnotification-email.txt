@@ -36,6 +36,7 @@ that follow:
     ...        IBugDelta,
     ...        IBugSet,
     ...        )
+    >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.person import IPersonSet
 
 
@@ -93,8 +94,8 @@ as well.
 
 New security related bugs are sent with a prominent warning:
 
-    >>> changed = bug_four.setSecurityRelated(
-    ...     True, getUtility(ILaunchBag).user)
+    >>> changed = bug_four.transitionToInformationType(
+    ...     InformationType.UNEMBARGOEDSECURITY, getUtility(ILaunchBag).user)
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
@@ -107,9 +108,10 @@ New security related bugs are sent with a prominent warning:
     <BLANKLINE>
     ...
 
-But of course, security related bugs are private by default:
+Security related bugs can be made embargoed:
 
-    >>> bug_four.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> bug_four.transitionToInformationType(
+    ...     InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
     True
 
     >>> subject, body = generate_bug_add_email(bug_four)
@@ -224,10 +226,9 @@ logins to a user that is explicitly subscribed to this bug):
     >>> login("steve.alexander@ubuntulinux.com")
 
     >>> edited_bug = getUtility(IBugSet).get(6)
-    >>> edited_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    >>> edited_bug.transitionToInformationType(
+    ...     InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)
     True
-    >>> changed = edited_bug.setSecurityRelated(
-    ...     True, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/6",
@@ -251,10 +252,8 @@ logins to a user that is explicitly subscribed to this bug):
 Now we set the bug public, and not security-related and check if the
 e-mail sent changed as well.
 
-    >>> edited_bug.setPrivate(False, getUtility(ILaunchBag).user)
-    True
-    >>> changed = edited_bug.setSecurityRelated(
-    ...     False, getUtility(ILaunchBag).user)
+    >>> changed = edited_bug.transitionToInformationType(
+    ...     InformationType.PUBLIC, getUtility(ILaunchBag).user)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/6",
@@ -532,6 +531,7 @@ the bug so that they are not calculated for every recipient.
     Sender: bounces@canonical.com
     X-Launchpad-Bug: product=firefox; ...; assignee=None;
     X-Launchpad-Bug-Tags: bar foo
+    X-Launchpad-Bug-Information-Type: Embargoed Security
     X-Launchpad-Bug-Private: yes
     X-Launchpad-Bug-Security-Vulnerability: yes
     X-Launchpad-Bug-Commenters: name12
