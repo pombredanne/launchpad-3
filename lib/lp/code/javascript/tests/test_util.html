@@ -38,10 +38,24 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
         <script type="text/x-template" id="daily-builds-form">
             <form name="filter" id="filter_form" action="/+test">
-                <select id="field.when_completed_filter" 
+                <select id="field.when_completed_filter"
                     name="field.when_completed_filter" size="1">
                     <option selected="selected" value="ALL">All</option>
                     <option value="WITHIN_30_DAYS">Recent</option>
+                </select>
+                <input id="filter_form_submit" type="submit" value="Filter"/>
+            </form>
+        </script>
+
+        <script type="text/x-template" id="branch-listing-form">
+            <form name="filter" id="filter_form" action="/+test">
+                <select id="field.lifecycle" name="field.lifecycle" size="1">
+                    <option selected="selected" value="ALL">All</option>
+                    <option value="Active">Active</option>
+                </select>
+                <select id="field.sort_by" name="field.sort_by" size="1">
+                    <option selected="selected" value="NEW">Newest</option>
+                    <option value="OLD">Oldest</option>
                 </select>
                 <input id="filter_form_submit" type="submit" value="Filter"/>
             </form>
