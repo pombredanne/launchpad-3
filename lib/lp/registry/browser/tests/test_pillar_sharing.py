@@ -36,7 +36,6 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
-    extract_text,
     setupBrowserForUser,
     )
 from lp.testing.views import (
@@ -73,7 +72,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
             pillar=self.pillar,
             type=InformationType.PROPRIETARY)
         self.grantees = []
-    
+
     def makeGrantee(self, name=None):
         grantee = self.factory.makePerson(name=name)
         self.factory.makeAccessPolicyGrant(self.access_policy, grantee)
@@ -124,11 +123,10 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 grantor=self.pillar.owner)
         return grantee
 
-
     def setupSharing(self, sharees):
         with person_logged_in(self.owner):
-            # Make grants for grantees in ascending order so we can slice off the
-            # first elements in the pillar observer results to check batching.
+            # Make grants in ascending order so we can slice off the first
+            # elements in the pillar observer results to check batching.
             for x in range(10):
                 self.makeArtifactGrantee()
                 grantee = self.makeGrantee('name%s' % x)

@@ -6,11 +6,11 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.model.pillar import PillarPerson
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 from lp.registry.browser.tests.test_pillar_sharing import SharingBaseTestCase
+
 
 class TestPillarSharingBreadcrumb(BaseBreadcrumbTestCase, SharingBaseTestCase):
     """Test breadcrumbs for the sharing views."""
@@ -22,7 +22,7 @@ class TestPillarSharingBreadcrumb(BaseBreadcrumbTestCase, SharingBaseTestCase):
         login_person(self.driver)
 
     def test_sharing_breadcrumb(self):
-        crumbs = [self.pillar.displayname, 'Sharing']        
+        crumbs = [self.pillar.displayname, 'Sharing']
         self.assertBreadcrumbTexts(
             expected=crumbs,
             obj=self.pillar,
@@ -37,8 +37,9 @@ class TestPillarSharingBreadcrumb(BaseBreadcrumbTestCase, SharingBaseTestCase):
             ]
         url = 'https://launchpad.dev/%s/+sharing/%s' % (
             self.pillar.name, grantee.name)
-        crumbs = [c.text for c in self.getBreadcrumbsForUrl(url)] 
+        crumbs = [c.text for c in self.getBreadcrumbsForUrl(url)]
         self.assertEqual(expected_crumbs, crumbs)
+
 
 class TestDistroseriesBreadcrumb(BaseBreadcrumbTestCase):
     """Test breadcrumbs for an `IDistroseries`."""
