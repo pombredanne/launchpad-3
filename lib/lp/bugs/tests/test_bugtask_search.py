@@ -39,6 +39,7 @@ from lp.services.searchbuilder import (
     any,
     greater_than,
     )
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
@@ -734,6 +735,9 @@ class DistributionAndDistroSeriesTests:
     def test_search_by_component(self):
         series = self.getCurrentSeries()
         distro = series.distribution
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+
         main = getUtility(IComponentSet)['main']
         main_task = self.makeBugInComponent(
             distro.main_archive, series, main)
