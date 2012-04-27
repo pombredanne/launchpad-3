@@ -39,6 +39,9 @@ from lp.services.searchbuilder import (
     any,
     greater_than,
     )
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
     TestCase,
@@ -719,6 +722,48 @@ class ProjectGroupAndDistributionTests:
         self.assertSearchFinds(params, self.bugtasks)
 
 
+class DistributionAndDistroSeriesTests:
+    """Tests which are useful for distributions and their series."""
+
+    def makeBugInComponent(self, archive, series, component):
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, distroseries=series, component=component,
+            status=PackagePublishingStatus.PUBLISHED)
+        return self.factory.makeBugTask(
+            target=self.searchtarget.getSourcePackage(pub.sourcepackagename))
+
+    def test_search_by_component(self):
+        series = self.getCurrentSeries()
+        distro = series.distribution
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+
+        main = getUtility(IComponentSet)['main']
+        main_task = self.makeBugInComponent(
+            distro.main_archive, series, main)
+        universe = getUtility(IComponentSet)['universe']
+        universe_task = self.makeBugInComponent(
+            distro.main_archive, series, universe)
+        partner = getUtility(IComponentSet)['partner']
+        partner_task = self.makeBugInComponent(
+            distro.getArchiveByComponent('partner'), series, partner)
+
+        # Searches for a single component work.
+        params = self.getBugTaskSearchParams(user=None, component=main)
+        self.assertSearchFinds(params, [main_task])
+        params = self.getBugTaskSearchParams(user=None, component=universe)
+        self.assertSearchFinds(params, [universe_task])
+
+        # Non-primary-archive component searches also work.
+        params = self.getBugTaskSearchParams(user=None, component=partner)
+        self.assertSearchFinds(params, [partner_task])
+
+        # A combination of archives works.
+        params = self.getBugTaskSearchParams(
+            user=None, component=any(partner, main))
+        self.assertSearchFinds(params, [main_task, partner_task])
+
+
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
 
@@ -1062,7 +1107,8 @@ class MilestoneTarget(BugTargetTestBase):
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
                          BugTargetWithBugSuperVisor,
-                         ProjectGroupAndDistributionTests):
+                         ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -1087,6 +1133,11 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         """See `ProductAndDistributionTests`."""
         return self.factory.makeDistroSeries(distribution=self.searchtarget)
 
+    def getCurrentSeries(self):
+        if self.searchtarget.currentseries is None:
+            self.makeSeries()
+        return self.searchtarget.currentseries
+
     def setUpStructuralSubscriptions(self):
         # See `ProjectGroupAndDistributionTests`.
         subscriber = self.factory.makePerson()
@@ -1110,7 +1161,8 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
         return self.bugtasks[1:] + self.bugtasks[:1]
 
 
-class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
+class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests,
+                         DistributionAndDistroSeriesTests):
     """Use a distro series as the bug target."""
 
     def setUp(self):
@@ -1131,6 +1183,9 @@ class DistroseriesTarget(BugTargetTestBase, ProjectGroupAndDistributionTests):
 
     def setBugParamsTarget(self, params, target):
         params.setDistroSeries(target)
+
+    def getCurrentSeries(self):
+        return self.searchtarget
 
     def setUpMilestoneSorting(self):
         with person_logged_in(self.owner):
