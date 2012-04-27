@@ -92,14 +92,12 @@
               tal:define="link context/menu:context/request_daily_build"
               tal:condition="link/enabled"
               >
-              <noscript>
-                <form action="+request-daily-build"
-                      method="post"
-                      id="request-daily-build-form">
-                    <input type="submit" name="field.actions.build"
-                        id="field.actions.build" value="Build now" />
-                </form>
-              </noscript>
+              <form action="+request-daily-build"
+                    method="post"
+                    id="request-daily-build-form">
+                  <input type="submit" name="field.actions.build"
+                      id="field.actions.build" value="Build now" />
+              </form>
               <a id="request-daily-build"
                  class="sprite source-package-recipe js-action unseen"
                  tal:attributes="href link/url"
@@ -172,6 +170,7 @@
                 Y.lp.code.requestbuild_overlay.connect_requestbuilds();
 
             }
+            Y.one('#request-daily-build-form').addClass('unseen');
         }, window);
       });
     </script>
