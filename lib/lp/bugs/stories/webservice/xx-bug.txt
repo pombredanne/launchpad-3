@@ -8,61 +8,51 @@ lot of state and many relationships to other objects.
 Bugs themselves
 ---------------
 
-At the top level we provide a collection of bugs.
+Bugs are indexed by number beneath the top-level collection.
 
     >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
-    >>> from operator import itemgetter
-    >>> bugs = webservice.get("/bugs").jsonBody()
-    >>> bugs['total_size']
-    15
-    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
-    >>> pprint_entry(bug_entries[0])
-    activity_collection_link: u'http://.../bugs/11/activity'
-    attachments_collection_link: u'http://.../bugs/11/attachments'
-    bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
-    bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
+    >>> bug_one = webservice.get("/bugs/1").jsonBody()
+    >>> pprint_entry(bug_one)
+    activity_collection_link: u'http://.../bugs/1/activity'
+    attachments_collection_link: u'http://.../bugs/1/attachments'
+    bug_tasks_collection_link: u'http://.../bugs/1/bug_tasks'
+    bug_watches_collection_link: u'http://.../bugs/1/bug_watches'
     can_expire: False
-    cves_collection_link: u'http://.../bugs/11/cves'
-    date_created: u'2007-03-15T20:33:56.678930+00:00'
+    cves_collection_link: u'http://.../bugs/1/cves'
+    date_created: u'2004-01-01T20:58:04.553583+00:00'
     date_last_message: None
-    date_last_updated: u'2007-03-15T20:37:51.603369+00:00'
+    date_last_updated: u'2006-05-19T06:37:40.344941+00:00'
     date_made_private: None
-    description: u"I've had problems when switching..."
+    description: u'Firefox needs to support embedded SVG...'
     duplicate_of_link: None
-    duplicates_collection_link: u'http://.../bugs/11/duplicates'
+    duplicates_collection_link: u'http://.../bugs/1/duplicates'
     heat: 0
-    id: 11
+    id: 1
     information_type: u'Public'
     latest_patch_uploaded: None
-    linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
-    message_count: 7
-    messages_collection_link: u'http://.../bugs/11/messages'
+    linked_branches_collection_link: u'http://.../bugs/1/linked_branches'
+    message_count: 2
+    messages_collection_link: u'http://.../bugs/1/messages'
     name: None
     number_of_duplicates: 0
     other_users_affected_count_with_dupes: 0
-    owner_link: u'http://.../~name16'
+    owner_link: u'http://.../~name12'
     private: False
     resource_type_link: u'http://.../#bug'
     security_related: False
-    self_link: u'http://.../bugs/11'
-    subscriptions_collection_link: u'http://.../bugs/11/subscriptions'
+    self_link: u'http://.../bugs/1'
+    subscriptions_collection_link: u'http://.../bugs/1/subscriptions'
     tags: []
-    title: u'Make Jokosher use autoaudiosink'
-    users_affected_collection_link: u'http://.../bugs/11/users_affected'
+    title: u'Firefox does not support SVG'
+    users_affected_collection_link: u'http://.../bugs/1/users_affected'
     users_affected_count: 0
     users_affected_count_with_dupes: 0
-    users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
-    users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
+    users_affected_with_dupes_collection_link: u'http://.../bugs/1/users_affected_with_dupes'
+    users_unaffected_collection_link: u'http://.../bugs/1/users_unaffected'
     users_unaffected_count: 0
-    web_link: u'http://bugs.../bugs/11'
+    web_link: u'http://bugs.../bugs/1'
     who_made_private_link: None
-
-Bugs are indexed by number beneath the top-level collection.
-
-    >>> bug_one = webservice.get("/bugs/1").jsonBody()
-    >>> bug_one['id']
-    1
 
 Bugs have relationships to other bugs, like "duplicate_of".
 
@@ -562,16 +552,12 @@ similar to bug 1 for Firefox.
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
 
-    >>> print webservice.named_post(
+    >>> new_bug_response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='a', description='Test bug',
     ...     target=firefox['self_link'])
-    HTTP/1.1 201 Created...
-
-    >>> bugs = webservice.get("/bugs").jsonBody()
-    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
-    >>> new_bug = webservice.get(bug_entries[-1]['self_link']).jsonBody()
-
+    >>> new_bug = webservice.get(
+    ...     new_bug_response.getHeader('Location')).jsonBody()
     >>> new_bug_task = webservice.get(
     ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
     ...     ).jsonBody()
@@ -802,6 +788,7 @@ Bug subscriptions
 
 We can get the collection of subscriptions to a bug.
 
+    >>> from operator import itemgetter
     >>> bug_one_subscriptions_url = bug_one['subscriptions_collection_link']
     >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
     >>> subscription_entries = sorted(
