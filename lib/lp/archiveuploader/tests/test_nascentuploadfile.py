@@ -325,42 +325,6 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", uploadfile.source_version)
         self.assertEquals("0.42", uploadfile.control_version)
 
-    def test_verifyFormat_xz_good_predep(self):
-        # verifyFormat accepts xz-compressed .debs with a sufficient dpkg
-        # pre-dependency.
-        uploadfile = self.createDebBinaryUploadFile(
-            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
-        control = self.getBaseControl()
-        control["Pre-Depends"] = "dpkg (>= 1.15.6~)"
-        uploadfile.parseControl(control)
-        self.assertEqual([], list(uploadfile.verifyFormat()))
-
-    def test_verifyFormat_xz_bad_predep(self):
-        # verifyFormat rejects xz-compressed .debs with an insufficient dpkg
-        # pre-dependency.
-        uploadfile = self.createDebBinaryUploadFile(
-            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
-        control = self.getBaseControl()
-        control["Pre-Depends"] = "dpkg (>= 1.15.5)"
-        uploadfile.parseControl(control)
-        errors = list(uploadfile.verifyFormat())
-        self.assertEqual(1, len(errors))
-        self.assertIsInstance(errors[0], UploadError)
-
-    def test_verifyFormat_xz_no_predep(self):
-        # verifyFormat rejects xz-compressed .debs with no dpkg
-        # pre-dependency.
-        uploadfile = self.createDebBinaryUploadFile(
-            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
-        control = self.getBaseControl()
-        uploadfile.parseControl(control)
-        errors = list(uploadfile.verifyFormat())
-        self.assertEqual(1, len(errors))
-        self.assertIsInstance(errors[0], UploadError)
-
     def test_storeInDatabase(self):
         # storeInDatabase creates a BinaryPackageRelease.
         uploadfile = self.createDebBinaryUploadFile(
