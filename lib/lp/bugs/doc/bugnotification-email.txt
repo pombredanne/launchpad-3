@@ -108,7 +108,7 @@ New security related bugs are sent with a prominent warning:
     <BLANKLINE>
     ...
 
-Security related bugs can be made embargoed:
+Security related bugs can be embargoed:
 
     >>> bug_four.transitionToInformationType(
     ...     InformationType.EMBARGOEDSECURITY, getUtility(ILaunchBag).user)

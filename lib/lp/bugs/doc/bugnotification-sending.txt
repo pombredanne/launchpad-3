@@ -737,12 +737,15 @@ can have the value "yes" or "no".
     >>> print bug_three.information_type.title
     Public
 
-    >>> for message in trigger_and_get_email_messages(bug_three):
+    >>> def print_message_header_details(message):
     ...     print '%s %s %s %s' % (
     ...         message['To'],
     ...         message.get_all('X-Launchpad-Bug-Private'),
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
     ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print_message_header_details(message)
     test@canonical.com ['no'] ['no'] ['Public']
 
 Predictably, private bugs are sent with a slightly different header:
@@ -755,10 +758,7 @@ Predictably, private bugs are sent with a slightly different header:
     User Data
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print '%s %s %s %s' % (
-    ...         message['To'], message.get_all('X-Launchpad-Bug-Private'),
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
-    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    ...     print_message_header_details(message)
     foo.bar@canonical.com ['yes'] ['no'] ['User Data']
     mark@example.com ['yes'] ['no']  ['User Data']
     test@canonical.com ['yes'] ['no']  ['User Data']
@@ -773,10 +773,7 @@ Now transition the bug to embargoed security:
     Embargoed Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
-    ...     print '%s %s %s %s' % (
-    ...         message['To'], message.get_all('X-Launchpad-Bug-Private'),
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
-    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    ...     print_message_header_details(message)
     foo.bar@canonical.com ['yes'] ['yes'] ['Embargoed Security']
     mark@example.com ['yes'] ['yes']  ['Embargoed Security']
     test@canonical.com ['yes'] ['yes']  ['Embargoed Security']
