@@ -93,10 +93,10 @@
                               omit-tag="">
                     <td class="import_status"
                         tal:condition="entry/required:launchpad.Edit">
-                      <noscript>
+                      <span class="status-select">
                         <tal:status define="name string:status_${entry/id}"
                                     replace="structure view/widgets/?name" />
-                      </noscript>
+                      </span>
                       <span class="status-choice hidden">
                         <span tal:attributes="class string:value ${css_status}"
                               tal:content="entry/status/title">
@@ -171,18 +171,16 @@
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-lower" />
 
+            <tal:block define="user request/lp:person" condition="user">
+              <div id="import-queue-submit" class="actions">
+                <input
+                  tal:replace="structure view/change_status_action/render" />
+              </div>
+            </tal:block>
             <script type="text/javascript"
                     tal:define="script view/focusedElementScript"
                     tal:condition="script"
                     tal:content="structure script" />
-            <tal:block define="user request/lp:person" condition="user">
-              <noscript>
-                <div class="actions">
-                  <input
-                    tal:replace="structure view/change_status_action/render" />
-                </div>
-              </noscript>
-            </tal:block>
           </form>
         </tal:block>
       </div>
