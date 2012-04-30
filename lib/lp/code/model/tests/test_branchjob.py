@@ -1247,11 +1247,11 @@ class TestViaCelery(TestCaseWithFactory):
         commit.writeFile('foo.pot', 'gibberish')
         with person_logged_in(db_branch.owner):
             # wait for branch scan
-            with block_on_job():
+            with block_on_job(self):
                 commit.commit('message')
                 transaction.commit()
         series = self.factory.makeProductSeries(branch=db_branch)
-        with block_on_job():
+        with block_on_job(self):
             RosettaUploadJob.create(
                 commit.db_branch, NULL_REVISION,
                 force_translations_upload=True)
