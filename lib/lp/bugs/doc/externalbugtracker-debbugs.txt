@@ -682,13 +682,13 @@ If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
 won't be imported again. A warning is logged so that the person runnning
 the script gets notified about it.
 
-    >>> from lp.bugs.scripts.importdebianbugs import (
-    ...     import_debian_bugs)
+    >>> from lp.bugs.scripts.importdebianbugs import import_debian_bugs
+    >>> from lp.services.log.logger import FakeLogger
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
-    >>> import_debian_bugs(['304014'])
-    WARNING:...:Not importing debbugs #304014, since it's already
-                linked from LP bug(s) #1.
+    >>> import_debian_bugs(['304014'], logger=FakeLogger())
+    WARNING Not importing debbugs #304014, since it's already
+            linked from LP bug(s) #1.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
 
