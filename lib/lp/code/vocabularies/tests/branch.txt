@@ -21,8 +21,7 @@ concerned).
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
     ...     terms = vocab.searchForTerms(search)
-    ...     names = sorted(term.value.unique_name for term in terms)
-    ...     for name in names:
+    ...     for name in sorted(term.value.unique_name for term in terms):
     ...         print name
 
     >>> print_vocab_branches(branch_vocabulary, 'main')
