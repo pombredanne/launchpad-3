@@ -538,25 +538,3 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
         view = create_initialized_view(
             bug.default_bugtask, '+addcomment', form=form)
         self.assertEqual(0, len(view.errors))
-
-
-class TestBugTaskInterestingActivity(BrowserTestCase):
-    """Tests for which activities are interesting enough to show on
-    Bug:+index."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_information_type_is_interesting(self):
-        # information_type changes are interesting enough for Bug:+index.
-        bug = self.factory.makeBug()
-        feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            browser = self.getViewBrowser(
-                bug.default_bugtask, rootsite="bugs", view_name='+secrecy')
-            browser.getControl("User Data").selected = True
-            browser.getControl('Change').click()
-            browser = self.getViewBrowser(bug, rootsite="bugs")
-            soup = BeautifulSoup(browser.contents)
-            information_type = soup.find(text='information type')
-            self.assertIsNot(None, information_type)

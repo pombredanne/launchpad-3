@@ -573,6 +573,7 @@ class BugInformationTypeChange(AttributeChange):
                 self.title(self.old_value), self.title(self.new_value))}
 
 
+# XXX: This can be deleted when show_information_type_in_ui is removed.
 class BugVisibilityChange(AttributeChange):
     """Describes a change to a bug's visibility."""
 
@@ -604,6 +605,7 @@ class BugVisibilityChange(AttributeChange):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
+# XXX: This can be deleted when show_information_type_in_ui is removed.
 class BugSecurityChange(AttributeChange):
     """Describes a change to a bug's security setting."""
 
