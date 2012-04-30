@@ -10,17 +10,12 @@
 <head>
     <metal:block fill-slot="head_epilogue">
     <script>
-            LPJS.use('base', 'node', 'event', 'lp.registry.sharing.details',
+            LPJS.use('base', 'node', 'event', 'lp.registry.sharing.sharingdetailsview',
                 function(Y) {
             Y.on('domready', function() {
-                var config = {
-                    branches: LP.cache.branches,
-                    bugs: LP.cache.bugs
-                };
-                var details_module  = Y.lp.registry.sharing.details;
-                var details_widget = new details_module.SharingDetailsTable(
-                                                          config);
-                details_widget.render();
+                var details_module  = Y.lp.registry.sharing.sharingdetailsview;
+                var details_view = new details_module.SharingDetailsView();
+                details_view.render();
             });
           });
     </script>
@@ -47,19 +42,25 @@
       <col width="20px"/>
       <col width="auto"/>
       <col width="auto"/>
-      <col width="30%"/>
+      <col width="auto"/>
       <col width="auto"/>
       <thead>
         <tr>
-          <th colspan="3" width="">
-            <a href="#" class="sortheader">Bug Report or Branch</a>
+          <th colspan="4" width="">
+            Subscribed Bug Report or Branch
           </th>
-          <th colspan="2" width="">
-            <a href="#" class="sortheader">Via</a>
+          <th>
+            Information Type
           </th>
         </tr>
       </thead>
-      <tbody id="sharing-table-body"></tbody>
+      <tbody id="sharing-table-body">
+          <tr>
+              <td colspan="5">
+                  There are no shared bugs or branches.
+              </td>
+          </tr>
+      </tbody>
     </table>
 
   </div>

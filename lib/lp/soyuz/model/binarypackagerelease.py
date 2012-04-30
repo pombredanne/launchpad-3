@@ -15,7 +15,6 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     IntCol,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.locals import (
@@ -30,12 +29,7 @@ from zope.interface import implements
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.sqlbase import (
-    quote,
-    quote_like,
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -44,7 +38,6 @@ from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
     PackagePublishingPriority,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageRelease,

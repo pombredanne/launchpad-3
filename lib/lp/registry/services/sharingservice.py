@@ -21,6 +21,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyGrantFlatSource,
     IAccessPolicyGrantSource,
     IAccessPolicySource,
@@ -124,16 +125,25 @@ class SharingService:
         result = []
         request = get_current_web_service_request()
         browser_request = IWebBrowserOriginatingRequest(request)
-        for (grantee, permissions) in grant_permissions:
+        details_enabled = bool((getFeatureFlag(
+            'disclosure.enhanced_sharing_details.enabled')))
+        for (grantee, permissions, shared_artifact_types) in grant_permissions:
+            some_things_shared = (
+                details_enabled and len(shared_artifact_types) > 0)
+            sharee_permissions = {}
+            for (policy, permission) in permissions.iteritems():
+                sharee_permissions[policy.type.name] = permission.name
+            shared_artifact_type_names = [
+                info_type.name for info_type in shared_artifact_types]
             result.append({
                 'name': grantee.name,
                 'meta': 'team' if grantee.is_team else 'person',
                 'display_name': grantee.displayname,
                 'self_link': absoluteURL(grantee, request),
                 'web_link': absoluteURL(grantee, browser_request),
-                'permissions': dict(
-                    (policy.type.name, permission.name)
-                    for (policy, permission) in permissions.iteritems())})
+                'permissions': sharee_permissions,
+                'shared_artifact_types': shared_artifact_type_names,
+                'shared_items_exist': some_things_shared})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -242,3 +252,23 @@ class SharingService:
             accessartifact_grant_source = getUtility(
                 IAccessArtifactGrantSource)
             accessartifact_grant_source.revokeByArtifact(to_delete)
+
+    @available_with_permission('launchpad.Edit', 'pillar')
+    def revokeAccessGrants(self, pillar, sharee, branches=None, bugs=None):
+        """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
+
+        artifacts = []
+        if branches:
+            artifacts.extend(branches)
+        if bugs:
+            artifacts.extend(bugs)
+        # Find the access artifacts associated with the bugs and branches.
+        accessartifact_source = getUtility(IAccessArtifactSource)
+        artifacts_to_delete = accessartifact_source.find(artifacts)
+        # Revoke access to bugs/branches for the specified sharee.
+        accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
+        accessartifact_grant_source.revokeByArtifact(
+            artifacts_to_delete, [sharee])

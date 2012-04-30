@@ -9,7 +9,10 @@ to use Celery may break if this is used.
 
 __metaclass__ = type
 
-__all__ = ['CeleryRunJob']
+__all__ = [
+    'CeleryRunJob',
+    'CeleryRunJobIgnoreResult',
+    ]
 
 import os
 
@@ -28,3 +31,8 @@ class CeleryRunJob(RunJob):
     def getJobRunner(self):
         """Return a BaseJobRunner, to support customization."""
         return BaseJobRunner()
+
+
+class CeleryRunJobIgnoreResult(CeleryRunJob):
+
+    ignore_result = True

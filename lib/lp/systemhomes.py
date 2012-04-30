@@ -119,10 +119,9 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params, prejoins=[]):
+    def searchTasks(self, search_params):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(
-            search_params, prejoins=prejoins)
+        return getUtility(IBugTaskSet).search(search_params)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
@@ -182,8 +181,9 @@ class MaloneApplication:
         return getUtility(IBugSet).searchAsUser(
             user=user, orderBy=['-datecreated'], limit=5)
 
-    def default_bug_list(self, user=None):
-        return getUtility(IBugSet).searchAsUser(user)
+    def empty_list(self):
+        """See `IMaloneApplication`."""
+        return []
 
 
 class BazaarApplication:

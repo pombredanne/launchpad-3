@@ -163,7 +163,6 @@ from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
-from lp.services.features import getFeatureFlag
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
@@ -961,12 +960,6 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # participation check. For the bug query, we first filter on team
             # association (subscribed to, assigned to etc) and then on user
             # visibility.
-
-            # The extra checks may be expensive so we'll use a feature flag.
-            extra_checks_enabled = bool(getFeatureFlag(
-                'disclosure.extra_private_team_LimitedView_security.enabled'))
-            if not extra_checks_enabled:
-                return False
 
             store = IStore(Person)
             team_bugs_visible_select = """
@@ -1846,7 +1839,7 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
-class ViewBuildFarmJobOld(AuthorizationBase):
+class ViewBuildFarmJobOld(DelegatedAuthorization):
     """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
@@ -1869,29 +1862,15 @@ class ViewBuildFarmJobOld(AuthorizationBase):
         else:
             return None
 
-    def _checkBuildPermission(self, user=None):
-        """Check access to `IPackageBuild` for this job."""
-        permission = getAdapter(
-            self.obj.build, IAuthorization, self.permission)
-        if user is None:
-            return permission.checkUnauthenticated()
-        else:
-            return permission.checkAuthenticated(user)
-
-    def _checkAccess(self, user=None):
-        """Unified access check for anonymous and authenticated users."""
+    def iter_objects(self):
         branch = self._getBranch()
-        if branch is not None and not branch.visibleByUser(user):
-            return False
-
         build = self._getBuild()
-        if build is not None and not self._checkBuildPermission(user):
-            return False
-
-        return True
-
-    checkAuthenticated = _checkAccess
-    checkUnauthenticated = _checkAccess
+        objects = []
+        if branch:
+            objects.append(branch)
+        if build:
+            objects.append(build)
+        return objects
 
 
 class SetQuestionCommentVisibility(AuthorizationBase):

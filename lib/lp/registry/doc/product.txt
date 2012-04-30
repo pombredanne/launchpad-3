@@ -289,7 +289,7 @@ This is true even if its project has a bug tracker specified.
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
     >>> gnome_bugzilla = bug_tracker_set.getByName('gnome-bugzilla')
     >>> firefox.project.bugtracker = gnome_bugzilla
@@ -722,7 +722,7 @@ A product owner can be changed by the current owner.
     >>> print mark.name
     mark
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> firefox.owner = mark
 
     >>> print firefox.owner.name

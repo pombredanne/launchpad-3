@@ -15,6 +15,7 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'clean_up_reactor',
     'ExpectedException',
     'extract_lp_cache',
     'FakeAdapterMixin',
@@ -1069,6 +1070,12 @@ class ZopeTestInSubProcess:
         assert isinstance(result, ZopeTestResult), (
             "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
+        # We flush stdout and stderror at this point in order to avoid
+        # bug 986429; it appears that stdout and stderror get copied in
+        # full when we fork, which means that we end up with repeated
+        # output, resulting in repeated subunit output.
+        sys.stdout.flush()
+        sys.stderr.flush()
         pid = os.fork()
         if pid == 0:
             # Child.
@@ -1527,3 +1534,12 @@ class FakeAdapterMixin:
             self.addCleanup(
                 site_manager.registerUtility, current_commponent,
                 for_interface, name)
+
+
+def clean_up_reactor():
+    # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+    # calls around.  They need to be updated to use Twisted correctly.
+    # For the meantime, just blat the reactor.
+    from twisted.internet import reactor
+    for delayed_call in reactor.getDelayedCalls():
+        delayed_call.cancel()

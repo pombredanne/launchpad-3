@@ -12,8 +12,6 @@ __all__ = [
 
 import random
 
-from zope.component import getUtility
-
 from lp.services.database.lpstorm import IMasterStore
 
 

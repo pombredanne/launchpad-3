@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -84,7 +84,10 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.registry.enums import PUBLIC_INFORMATION_TYPES
+from lp.registry.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -109,6 +112,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -365,8 +369,7 @@ def validate_target(bug, target, retarget_existing=True):
             except NotFoundError, e:
                 raise IllegalTarget(e[0])
 
-    if bug.private and not bool(features.getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled')):
+    if bug.information_type == InformationType.PROPRIETARY:
         # Perhaps we are replacing the one and only existing bugtask, in
         # which case that's ok.
         if retarget_existing and len(bug.bugtasks) <= 1:
@@ -375,8 +378,8 @@ def validate_target(bug, target, retarget_existing=True):
         if (len(bug.affected_pillars) > 0
                 and target.pillar not in bug.affected_pillars):
             raise IllegalTarget(
-                "This private bug already affects %s. "
-                "Private bugs cannot affect multiple projects."
+                "This proprietary bug already affects %s. "
+                "Proprietary bugs cannot affect multiple projects."
                     % bug.default_bugtask.target.bugtargetdisplayname)
 
 
@@ -1502,9 +1505,6 @@ class BugTaskSet:
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
-        :param prejoins: A sequence of tuples (table, table_join) which
-            which should be pre-joined in addition to the default prejoins.
-            This parameter has no effect if _noprejoins is True.
         """
         # Prevent circular import problems.
         from lp.registry.model.product import Product
@@ -1512,41 +1512,18 @@ class BugTaskSet:
         from lp.bugs.model.bugtasksearch import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
         if _noprejoins:
-            prejoins = []
-            resultrow = BugTask
             eager_load = None
         else:
-            requested_joins = kwargs.get('prejoins', [])
-            # NB: We could save later work by predicting what sort of
-            # targets we might be interested in here, but as at any
-            # point we're dealing with relatively few results, this is
-            # likely to be a small win.
-            prejoins = [
-                (Bug, Join(Bug, BugTask.bug == Bug.id))] + requested_joins
-
-            def eager_load(results):
-                product_ids = set([row[0].productID for row in results])
-                product_ids.discard(None)
-                pkgname_ids = set(
-                    [row[0].sourcepackagenameID for row in results])
-                pkgname_ids.discard(None)
-                store = IStore(BugTask)
-                if product_ids:
-                    list(store.find(Product, Product.id.is_in(product_ids)))
-                if pkgname_ids:
-                    list(store.find(SourcePackageName,
-                        SourcePackageName.id.is_in(pkgname_ids)))
-            resultrow = (BugTask, Bug)
-            additional_result_objects = [
-                table for table, join in requested_joins
-                if table not in resultrow]
-            resultrow = resultrow + tuple(additional_result_objects)
-        return search_bugs(resultrow, prejoins, eager_load, (params,) + args)
+            def eager_load(rows):
+                load_related(Bug, rows, ['bugID'])
+                load_related(Product, rows, ['productID'])
+                load_related(SourcePackageName, rows, ['sourcepackagenameID'])
+        return search_bugs(eager_load, (params,) + args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         from lp.bugs.model.bugtasksearch import search_bugs
-        return search_bugs(BugTask.bugID, [], None, [params]).result_set
+        return search_bugs(None, [params], just_bug_ids=True).result_set
 
     def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
@@ -1978,10 +1955,7 @@ class BugTaskSet:
 
         See `IBugTask.getBugCountsForPackages` for more information.
         """
-        from lp.bugs.model.bugtasksearch import (
-            get_bug_privacy_filter,
-            search_value_to_where_condition,
-            )
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         packages = [
             package for package in packages
@@ -1990,23 +1964,23 @@ class BugTaskSet:
             package.sourcepackagename.id for package in packages]
 
         open_bugs_cond = (
-            'BugTask.status %s' % search_value_to_where_condition(
-                any(*DB_UNRESOLVED_BUGTASK_STATUSES)))
+            'BugTask.status IN %s' %
+            sqlvalues(DB_UNRESOLVED_BUGTASK_STATUSES))
 
         sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
         sums = [
             sum_template % (open_bugs_cond, 'open_bugs'),
             sum_template % (
-                'BugTask.importance %s' % search_value_to_where_condition(
-                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
+                'BugTask.importance = %s' %
+                sqlvalues(BugTaskImportance.CRITICAL), 'open_critical_bugs'),
             sum_template % (
                 'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
             sum_template % (
-                'BugTask.status %s' % search_value_to_where_condition(
-                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+                'BugTask.status = %s' %
+                sqlvalues(BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
             sum_template % (
-                'BugTask.importance %s' % search_value_to_where_condition(
-                    BugTaskImportance.HIGH), 'open_high_bugs'),
+                'BugTask.importance = %s' %
+                sqlvalues(BugTaskImportance.HIGH), 'open_high_bugs'),
             ]
 
         conditions = [

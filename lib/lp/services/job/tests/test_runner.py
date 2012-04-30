@@ -19,6 +19,7 @@ from zope.interface import implements
 
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
@@ -26,6 +27,7 @@ from lp.services.job.interfaces.job import (
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob,
+    celery_enabled,
     JobCronScript,
     JobRunner,
     TwistedJobRunner,
@@ -147,7 +149,7 @@ class TestJobRunner(TestCaseWithFactory):
         """Ensure status is set to completed when a job runs to completion."""
         job_1, job_2 = self.makeTwoJobs()
         runner = JobRunner(job_1)
-        runner.runJob(job_1)
+        runner.runJob(job_1, None)
         self.assertEqual(JobStatus.COMPLETED, job_1.job.status)
         self.assertEqual([job_1], runner.completed_jobs)
 
@@ -303,7 +305,7 @@ class TestJobRunner(TestCaseWithFactory):
         """When a job fails, the failure needs to be recorded."""
         job = RaisingJob('boom')
         runner = JobRunner([job])
-        self.assertRaises(RaisingJobException, runner.runJob, job)
+        self.assertRaises(RaisingJobException, runner.runJob, job, None)
         # Abort the transaction to confirm that the update of the job status
         # has been committed.
         transaction.abort()
@@ -328,7 +330,7 @@ class TestJobRunner(TestCaseWithFactory):
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
         with self.expectedLog('Scheduling retry due to RetryError'):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -336,11 +338,11 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runJob_exceeding_max_retries(self):
         """If a job exceeds maximum retries, it should raise normally."""
         job = RaisingRetryJob('completion')
-        JobRunner([job]).runJob(job)
+        JobRunner([job]).runJob(job, None)
         self.assertEqual(JobStatus.WAITING, job.status)
         runner = JobRunner([job])
         with ExpectedException(RetryError, ''):
-            runner.runJob(job)
+            runner.runJob(job, None)
         self.assertEqual(JobStatus.FAILED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
@@ -368,7 +370,7 @@ class TestJobRunner(TestCaseWithFactory):
         job = NullJob('suspended')
         job.run = FakeMethod(failure=SuspendJobException())
         runner = JobRunner([job])
-        runner.runJob(job)
+        runner.runJob(job, None)
 
         self.assertEqual(JobStatus.SUSPENDED, job.status)
         self.assertNotIn(job, runner.completed_jobs)
@@ -705,3 +707,32 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
         """No --log-twisted sets JobCronScript.log_twisted False."""
         jcs = JobCronScript(TwistedJobRunner, test_args=[])
         self.assertFalse(jcs.log_twisted)
+
+
+class TestCeleryEnabled(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_no_flag(self):
+        """With no flag set, result is False."""
+        self.assertFalse(celery_enabled('foo'))
+
+    def test_matching_flag(self):
+        """A matching flag returns True."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foo bar'}))
+        self.assertTrue(celery_enabled('foo'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_non_matching_flag(self):
+        """A non-matching flag returns false."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foo bar'}))
+        self.assertFalse(celery_enabled('baz'))
+        self.assertTrue(celery_enabled('bar'))
+
+    def test_substring(self):
+        """A substring of an enabled class does not match."""
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'foobar'}))
+        self.assertFalse(celery_enabled('bar'))

@@ -6,10 +6,50 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.model.pillar import PillarPerson
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
+
+class TestPillarSharingBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for the sharing views."""
+
+    def setUp(self):
+        super(TestPillarSharingBreadcrumb, self).setUp()
+        self.pillar = self.factory.makeProduct()
+        self.grantee = self.factory.makePerson()
+        self.bug = self.factory.makeBug(
+            product=self.pillar,
+            private=True)
+
+        artifact = self.factory.makeAccessArtifact(concrete=self.bug)
+        policy = self.factory.makeAccessPolicy(pillar=self.pillar)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact, policy=policy)
+        self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=self.grantee, grantor=self.pillar.owner)
+        self.pillarperson = PillarPerson(self.pillar, self.grantee)
+        login_person(self.pillar.owner)
+
+    def test_sharing_breadcrumb(self):
+        crumbs = [self.pillar.displayname, 'Sharing']        
+        self.assertBreadcrumbTexts(
+            expected=crumbs,
+            obj=self.pillar,
+            view_name="+sharing")
+
+    def test_sharing_details_breadcrumbs(self):
+        expected_crumbs = [
+            self.pillar.displayname,
+            'Sharing',
+            'Sharing details for %s' % self.grantee.displayname,
+            ]
+        url = 'https://launchpad.dev/%s/+sharing/%s' % (
+            self.pillar.name, self.grantee.name)
+        crumbs = [c.text for c in self.getBreadcrumbsForUrl(url)] 
+        self.assertEqual(expected_crumbs, crumbs)
+        #self.assertBreadcrumbTexts(expected=crumbs, obj=self.pillarperson)
 
 class TestDistroseriesBreadcrumb(BaseBreadcrumbTestCase):
     """Test breadcrumbs for an `IDistroseries`."""

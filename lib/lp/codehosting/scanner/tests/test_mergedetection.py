@@ -19,7 +19,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
-    BranchMergeProposalJobFactory,
     BranchMergeProposalJobType,
     )
 from lp.codehosting.scanner import (
@@ -285,7 +284,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
             BranchMergeProposalJob.branch_merge_proposal == proposal,
             BranchMergeProposalJob.job_type ==
             BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED).one()
-        derived_job = BranchMergeProposalJobFactory.create(job)
+        derived_job = job.makeDerived()
         derived_job.run()
         notifications = pop_notifications()
         self.assertIn('Work in progress => Merged',

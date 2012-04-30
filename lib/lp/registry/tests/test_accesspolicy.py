@@ -290,6 +290,21 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
             grants,
             getUtility(IAccessArtifactGrantSource).findByArtifact([artifact]))
 
+    def test_findByArtifact_specified_grantees(self):
+        # findByArtifact() finds only the relevant grants for the specified
+        # grantees.
+        artifact = self.factory.makeAccessArtifact()
+        grantees = [self.factory.makePerson() for i in range(3)]
+        grants = [
+            self.factory.makeAccessArtifactGrant(
+                artifact=artifact, grantee=grantee)
+            for grantee in grantees]
+        self.factory.makeAccessArtifactGrant()
+        self.assertContentEqual(
+            grants[:2],
+            getUtility(IAccessArtifactGrantSource).findByArtifact(
+                [artifact], grantees=grantees[:2]))
+
     def test_revokeByArtifact(self):
         # revokeByArtifact() removes the relevant grants.
         artifact = self.factory.makeAccessArtifact()
@@ -298,6 +313,25 @@ class TestAccessArtifactGrantSource(TestCaseWithFactory):
         getUtility(IAccessArtifactGrantSource).revokeByArtifact([artifact])
         IStore(grant).invalidate()
         self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertIsNot(None, other_grant.grantor)
+
+    def test_revokeByArtifact_specified_grantees(self):
+        # revokeByArtifact() removes the relevant grants for the specified
+        # grantees.
+        artifact = self.factory.makeAccessArtifact()
+        grantee = self.factory.makePerson()
+        someone_else = self.factory.makePerson()
+        grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=grantee)
+        someone_else_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=someone_else)
+        other_grant = self.factory.makeAccessArtifactGrant()
+        aags = getUtility(IAccessArtifactGrantSource)
+        aags.revokeByArtifact([artifact], [grantee])
+        IStore(grant).invalidate()
+        self.assertRaises(LostObjectError, getattr, grant, 'grantor')
+        self.assertEqual(
+            someone_else_grant, aags.findByArtifact([artifact])[0])
         self.assertIsNot(None, other_grant.grantor)
 
 
@@ -481,7 +515,7 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         policy = self.factory.makeAccessPolicy()
         policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
         self.assertContentEqual(
-            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
             apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
@@ -492,7 +526,7 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         other_artifact_grant = self.factory.makeAccessArtifactGrant(
             artifact=artifact)
         self.assertContentEqual(
-            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
             apgfs.findGranteePermissionsByPolicy(
                 [policy, policy_with_no_grantees]))
 
@@ -503,9 +537,11 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [(policy_grant.grantee, {
                 policy: SharingPermission.ALL,
-                another_policy: SharingPermission.SOME}),
+                another_policy: SharingPermission.SOME},
+              [another_policy.type]),
              (other_artifact_grant.grantee, {
-                 another_policy: SharingPermission.SOME})],
+                 another_policy: SharingPermission.SOME},
+              [another_policy.type])],
             apgfs.findGranteePermissionsByPolicy([
                 policy, another_policy, policy_with_no_grantees]))
 
@@ -513,10 +549,33 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.assertContentEqual(
             [(policy_grant.grantee, {
                 policy: SharingPermission.ALL,
-                another_policy: SharingPermission.SOME})],
+                another_policy: SharingPermission.SOME},
+             [another_policy.type])],
             apgfs.findGranteePermissionsByPolicy([
                 policy, another_policy, policy_with_no_grantees]).order_by(
                     Person.id)[:1])
+
+    def test_findGranteePermissionsByPolicy_shared_artifact_types(self):
+        # findGranteePermissionsByPolicy() returns all information types for
+        # which grantees have been granted access one or more artifacts of that
+        # type.
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+
+        policy_with_no_grantees = self.factory.makeAccessPolicy()
+        policy = self.factory.makeAccessPolicy()
+        policy_grant = self.factory.makeAccessPolicyGrant(policy=policy)
+
+        artifact = self.factory.makeAccessArtifact()
+        artifact_grant = self.factory.makeAccessArtifactGrant(
+            artifact=artifact, grantee=policy_grant.grantee)
+        self.factory.makeAccessPolicyArtifact(
+            artifact=artifact_grant.abstract_artifact, policy=policy)
+
+        self.assertContentEqual(
+            [(policy_grant.grantee, {policy: SharingPermission.ALL},
+              [policy.type])],
+            apgfs.findGranteePermissionsByPolicy(
+                [policy, policy_with_no_grantees]))
 
     def test_findGranteePermissionsByPolicy_filter_grantees(self):
         # findGranteePermissionsByPolicy() returns anyone with a grant for any
@@ -533,7 +592,7 @@ class TestAccessPolicyGrantFlatSource(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(
             policy=policy, grantee=grantee_not_in_result)
         self.assertContentEqual(
-            [(policy_grant.grantee, {policy: SharingPermission.ALL})],
+            [(policy_grant.grantee, {policy: SharingPermission.ALL}, [])],
             apgfs.findGranteePermissionsByPolicy(
                 [policy], [grantee_in_result]))
 

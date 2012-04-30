@@ -183,6 +183,17 @@ class StepsToGo:
         self.request.setTraversalStack(stack)
         return nextstep
 
+    def peek(self):
+        """Return the next path step without removing it.
+
+        Returns None if there are no path steps left.
+        """
+        stack = self.request.getTraversalStack()
+        try:
+            return stack[-1]
+        except IndexError:
+            return None
+
     def next(self):
         value = self.consume()
         if value is None:

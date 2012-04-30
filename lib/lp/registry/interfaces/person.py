@@ -1487,11 +1487,12 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         displayname=TextLine(required=False),
         description=TextLine(required=False),
         private=Bool(required=False),
+        commercial=Bool(required=False),
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, commercial=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
@@ -1809,6 +1810,17 @@ class IPersonEditRestricted(Interface):
         The given team's renewal policy must be ONDEMAND and the membership
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+    def security_field_changed(subject, change_description,
+        recipient_emails=None):
+        """Trigger email when a secured field like preferredemail changes.
+        
+        :param recipient_emails: If supplied custom email addresses to notify.
+            This is used when a new preferred email address is set.
+        :param subject: The subject to use.
+        :param change_description: A textual description to use when notifying
+            about the change.
         """
 
 

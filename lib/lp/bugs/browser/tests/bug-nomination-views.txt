@@ -27,7 +27,7 @@ the bug to series for which they are drivers.
     >>> firefox = removeSecurityProxy(firefox)
     >>> firefox.bug_supervisor = nominator
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
     >>> request = LaunchpadTestRequest()
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
     >>> print bug_one_in_ubuntu_firefox.bug.id
@@ -48,7 +48,7 @@ to process nominations.
 
 Here's an example of nominating a bug for a distroseries.
 
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -187,7 +187,7 @@ widget set up for accepting/declining the nomination. The widget is only
 set up if the user has permission to approve the nomination.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> login_person(nominator)
+    >>> ignored = login_person(nominator)
     >>> no_priv = getUtility(ILaunchBag).user
     >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
     ...     no_priv, "Ubuntu bug", comment="Test bug."))

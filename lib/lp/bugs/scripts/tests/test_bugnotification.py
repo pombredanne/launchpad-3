@@ -61,6 +61,7 @@ from lp.bugs.scripts.bugnotification import (
     notification_comment_batches,
     process_deferred_notifications,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
@@ -95,6 +96,7 @@ class MockBug:
     duplicateof = None
     private = False
     security_related = False
+    information_type = InformationType.PUBLIC
     messages = []
 
     def __init__(self, id, owner):

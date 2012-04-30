@@ -1078,7 +1078,7 @@ class IBranchEdit(Interface):
         """Create an IBranchUpgradeJob to upgrade this branch."""
 
     def branchChanged(stacked_on_url, last_revision_id, control_format,
-                      branch_format, repository_format, celery_scan=True):
+                      branch_format, repository_format):
         """Record that a branch has been changed.
 
         This method records the stacked on branch tip revision id and format
@@ -1092,9 +1092,6 @@ class IBranchEdit(Interface):
         :param branch_format: The entry from BranchFormat for the branch.
         :param repository_format: The entry from RepositoryFormat for the
             branch.
-        :param celery_scan: If True, request a branch scan via Celery.
-            Otherwise, a BranchScanJob may be created, but not requested to
-            run.  Should only be False in certain tests.
         """
 
     @export_destructor_operation()

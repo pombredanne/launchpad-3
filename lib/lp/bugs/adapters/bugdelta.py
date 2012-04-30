@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components related to bugs."""
@@ -16,9 +16,9 @@ class BugDelta:
 
     def __init__(self, bug, bugurl, user,
                  title=None, description=None, name=None,
-                 private=None, security_related=None, duplicateof=None,
-                 external_reference=None, bugwatch=None, cve=None,
-                 attachment=None, tags=None,
+                 private=None, security_related=None, information_type=None,
+                 duplicateof=None, external_reference=None, bugwatch=None,
+                 cve=None, attachment=None, tags=None,
                  added_bugtasks=None, bugtask_deltas=None,
                  bug_before_modification=None):
         self.bug = bug
@@ -30,6 +30,7 @@ class BugDelta:
         self.name = name
         self.private = private
         self.security_related = security_related
+        self.information_type = information_type
         self.duplicateof = duplicateof
         self.external_reference = external_reference
         self.bugwatch = bugwatch

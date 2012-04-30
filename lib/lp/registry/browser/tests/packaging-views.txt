@@ -195,7 +195,7 @@ and a new entry can be added to the packaging history.
     >>> grumpy_series.status = SeriesStatus.FROZEN
 
     >>> a_user = factory.makePerson(name="hedgehog")
-    >>> login_person(a_user)
+    >>> ignored = login_person(a_user)
     >>> form = {
     ...     'field.sourcepackagename': 'hot',
     ...     'field.actions.continue': 'Update',
@@ -263,7 +263,7 @@ instead.)
     >>> from lp.testing.pages import find_tag_by_id
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> steve_a = getUtility(IPersonSet).getByName('stevea')
-    >>> login_person(steve_a)
+    >>> ignored = login_person(steve_a)
     >>> view = create_initialized_view(
     ...     product, name='+packages', principal=steve_a)
     >>> print_packages(view)

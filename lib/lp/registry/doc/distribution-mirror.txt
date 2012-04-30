@@ -838,7 +838,7 @@ The mirror owner can change the owner to another user.
     ...     owner, speed, brazil, content, http_base_url='http://a.ab/')
 
 
-    >>> login_person(mirror.owner)
+    >>> ignored = login_person(mirror.owner)
     >>> mirror.owner = new_owner
     >>> print mirror.owner.name
     bear
@@ -855,7 +855,7 @@ bogus mirrors on their list of unapproved mirrors, so we allow admins
 
 Only mirrors which have never been probed can be deleted this way.
 
-    >>> login_person(cdimage_mirror.owner)
+    >>> ignored = login_person(cdimage_mirror.owner)
     >>> cdimage_mirror.destroySelf()
     Traceback (most recent call last):
     ...

@@ -39,6 +39,7 @@ __all__ = [
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
+    'InformationTypeVocabulary',
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NewPillarShareeVocabulary',
@@ -64,6 +65,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.interfaces import IReference
 from lazr.restful.utils import safe_hasattr
 from sqlobject import (
@@ -102,6 +104,7 @@ from zope.security.proxy import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -172,6 +175,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -1042,20 +1046,19 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class NewPillarShareeVocabulary(TeamVocabularyMixin,
-                                    ValidPersonOrTeamVocabulary):
+class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
     """The set of people and teams with whom to share information.
 
     A person or team is eligible for sharing with if they are not already an
     existing sharee for the pillar.
     """
 
-    displayname = 'Share with a user or team'
+    displayname = 'Grant access to project artifacts'
     step_title = 'Search for user or exclusive team with whom to share'
 
     def __init__(self, context):
         assert IPillar.providedBy(context)
-        super(ValidPersonOrTeamVocabulary, self).__init__(context)
+        super(NewPillarShareeVocabulary, self).__init__(context)
         aps = getUtility(IAccessPolicySource)
         access_policies = aps.findByPillar([self.context])
         self.policy_ids = [policy.id for policy in access_policies]
@@ -1068,7 +1071,9 @@ class NewPillarShareeVocabulary(TeamVocabularyMixin,
                 WHERE policy in %s
                 )
             """ % sqlvalues(self.policy_ids))
-        return clause
+        return And(
+            clause,
+            super(NewPillarShareeVocabulary, self).extra_clause)
 
 
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
@@ -2220,3 +2225,33 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             SQL('DistributionSourcePackage.id = SearchableDSP.id'))
 
         return CountableIterator(dsps.count(), dsps, self.toTerm)
+
+
+class InformationTypeVocabulary(SimpleVocabulary):
+
+    implements(IEnumeratedType)
+
+    def __init__(self):
+        types = [
+            InformationType.PUBLIC,
+            InformationType.UNEMBARGOEDSECURITY,
+            InformationType.EMBARGOEDSECURITY,
+            InformationType.USERDATA]
+        proprietary_disabled = bool(getFeatureFlag(
+            'disclosure.proprietary_information_type.disabled'))
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if not proprietary_disabled:
+            types.append(InformationType.PROPRIETARY)
+        terms = []
+        for type in types:
+            title = type.title
+            description = type.description
+            if type == InformationType.USERDATA and show_userdata_as_private:
+                title = 'Private'
+                description = (
+                    description.replace('user data', 'private information'))
+            term = SimpleTerm(type, type.name, title)
+            term.description = description
+            terms.append(term)
+        super(InformationTypeVocabulary, self).__init__(terms)

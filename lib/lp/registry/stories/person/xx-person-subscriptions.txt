@@ -24,13 +24,14 @@ those.
 
     >>> login('foo.bar@canonical.com')
     >>> scofflaw = factory.makeProduct(name='scofflaw')
+    >>> subscriber = factory.makePerson(name='webster')
     >>> bugA = factory.makeBug(product=scofflaw,
     ...     title='Word needs more popularity')
     >>> affluenza = factory.makeProduct(name='affluenza')
+    >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
+    >>> transaction.commit()
     >>> bugB = factory.makeBug(product=affluenza,
     ...     title='A terrible affliction')
-    >>> subscriber = factory.makePerson(name='webster')
-    >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
 
@@ -43,11 +44,11 @@ includes the bug number, title and location.
     Summary
     In
     ...
-    Word needs more popularity
-    Scofflaw
-    ...
     A terrible affliction
     Affluenza
+    ...
+    Word needs more popularity
+    Scofflaw
 
 The bug subscriptions table also includes an unsubscribe link, if the user has
 permission to remove the subscription, for bugs to which the person or team is

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This makefile is used for two task:
@@ -135,6 +135,21 @@ stagingsetup:
 	# irrelevant, as if our dump was created with --exclude-schema=_sl
 	# it will not contain anything to remove.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Apply database patches now. This is unfortunate, as it means
+	# the patches are not being applied to a replicated database.
+	# With this update, we get incorrect patch application times and
+	# won't catch patches incompatible with Slony. We do this now,
+	# because we are running short of disk space on the staging
+	# database server. With the patches being applied before
+	# replication, we can swap the slave database into place before
+	# it has finished building and we end up using only 3*production
+	# amount of disk space rather than 4*production.
+	@echo Running upgrade.py `date` non-replicated. Times need adjustment.
+	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	@echo Running security.py `date`
+	LPCONFIG=${NEW_STAGING_CONFIG} ${SHHH} ../schema/security.py -U slony \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Setup replication
 	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
@@ -203,15 +218,8 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}" \
 	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	# Upgrade all databases in the cluster and reset security.
-	@echo Running upgrade.py `date`
-	${SHHH} ../schema/upgrade.py \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
-	@echo Running security.py `date`
-	./slon_ctl.py stop # security.py can deadlock with slony
-	${SHHH} ../schema/security.py --cluster -U slony \
-	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
 	# Restart slon daemons with default lag setting.
+	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
 	# Generate a preamble for manual slonik(1) usage.
 	./preamble.py > preamble.sk

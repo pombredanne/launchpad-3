@@ -11,17 +11,28 @@ from datetime import (
     )
 
 import pytz
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enums import ProductJobType
+from lp.registry.interfaces.product import (
+    License,
+    )
 from lp.registry.interfaces.productjob import (
     IProductJob,
     IProductJobSource,
     IProductNotificationJobSource,
+    ICommercialExpiredJob,
+    ICommercialExpiredJobSource,
+    ISevenDayCommercialExpirationJob,
+    ISevenDayCommercialExpirationJobSource,
+    IThirtyDayCommercialExpirationJob,
+    IThirtyDayCommercialExpirationJobSource,
     )
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -29,6 +40,9 @@ from lp.registry.model.productjob import (
     ProductJob,
     ProductJobDerived,
     ProductNotificationJob,
+    CommercialExpiredJob,
+    SevenDayCommercialExpirationJob,
+    ThirtyDayCommercialExpirationJob,
     )
 from lp.testing import (
     person_logged_in,
@@ -225,6 +239,9 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertIs(
             True,
             IProductNotificationJobSource.providedBy(ProductNotificationJob))
+        self.assertEqual(
+            ProductJobType.REVIEWER_NOTIFICATION,
+            ProductNotificationJob.class_job_type)
         job = ProductNotificationJob.create(
             product, email_template_name, subject, reviewer,
             reply_to_commercial=False)
@@ -369,3 +386,183 @@ class ProductNotificationJobTestCase(TestCaseWithFactory):
         self.assertEqual(subject, notifications[0]['Subject'])
         self.assertIn(
             'Launchpad <noreply@launchpad.net>', notifications[0]['From'])
+
+
+class CommericialExpirationMixin:
+
+    layer = DatabaseFunctionalLayer
+
+    EXPIRE_SUBSCRIPTION = False
+
+    def make_notification_data(self, licenses=[License.MIT]):
+        product = self.factory.makeProduct(licenses=licenses)
+        if License.OTHER_PROPRIETARY not in product.licenses:
+            # The proprietary project was automatically given a CS.
+            self.factory.makeCommercialSubscription(product)
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        return product, reviewer
+
+    def test_create(self):
+        # Create an instance of an commercial expiration job that stores
+        # the notification information.
+        product = self.factory.makeProduct()
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
+        self.assertIs(
+            True,
+            self.JOB_SOURCE_INTERFACE.providedBy(self.JOB_CLASS))
+        self.assertEqual(
+            self.JOB_CLASS_TYPE, self.JOB_CLASS.class_job_type)
+        job = self.JOB_CLASS.create(product, reviewer)
+        self.assertIsInstance(job, self.JOB_CLASS)
+        self.assertIs(
+            True, self.JOB_INTERFACE.providedBy(job))
+        self.assertEqual(product, job.product)
+        self.assertEqual(job._subject_template % product.name, job.subject)
+        self.assertEqual(reviewer, job.reviewer)
+        self.assertEqual(True, job.reply_to_commercial)
+
+    def test_email_template_name(self):
+        # The class defines the email_template_name.
+        product, reviewer = self.make_notification_data()
+        job = self.JOB_CLASS.create(product, reviewer)
+        self.assertEqual(job.email_template_name, job._email_template_name)
+
+    def test_message_data(self):
+        # The commercial expiration data is added.
+        product, reviewer = self.make_notification_data()
+        job = self.JOB_CLASS.create(product, reviewer)
+        commercial_subscription = product.commercial_subscription
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        self.assertEqual(
+            iso_date, job.message_data['commercial_use_expiration'])
+
+    def test_run(self):
+        # Smoke test that run() can make the email from the template and data.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        commercial_subscription = product.commercial_subscription
+        if self.EXPIRE_SUBSCRIPTION:
+            expired_date = (
+                commercial_subscription.date_expires - timedelta(days=365))
+            removeSecurityProxy(
+                commercial_subscription).date_expires = expired_date
+        iso_date = commercial_subscription.date_expires.date().isoformat()
+        job = self.JOB_CLASS.create(product, reviewer)
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertIn(iso_date, notifications[0].get_payload())
+
+
+class SevenDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
+                                              TestCaseWithFactory):
+    """Test case for the SevenDayCommercialExpirationJob class."""
+
+    JOB_INTERFACE = ISevenDayCommercialExpirationJob
+    JOB_SOURCE_INTERFACE = ISevenDayCommercialExpirationJobSource
+    JOB_CLASS = SevenDayCommercialExpirationJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_7_DAYS
+
+
+class ThirtyDayCommercialExpirationJobTestCase(CommericialExpirationMixin,
+                                               TestCaseWithFactory):
+    """Test case for the SevenDayCommercialExpirationJob class."""
+
+    JOB_INTERFACE = IThirtyDayCommercialExpirationJob
+    JOB_SOURCE_INTERFACE = IThirtyDayCommercialExpirationJobSource
+    JOB_CLASS = ThirtyDayCommercialExpirationJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRATION_30_DAYS
+
+
+class CommercialExpiredJobTestCase(CommericialExpirationMixin,
+                                   TestCaseWithFactory):
+    """Test case for the CommercialExpiredJob class."""
+
+    EXPIRE_SUBSCRIPTION = True
+    JOB_INTERFACE = ICommercialExpiredJob
+    JOB_SOURCE_INTERFACE = ICommercialExpiredJobSource
+    JOB_CLASS = CommercialExpiredJob
+    JOB_CLASS_TYPE = ProductJobType.COMMERCIAL_EXPIRED
+
+    def test_is_proprietary_open_source(self):
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(False, job._is_proprietary)
+
+    def test_is_proprietary_proprietary(self):
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertIs(True, job._is_proprietary)
+
+    def test_email_template_name(self):
+        # Redefine the inherited test to verify the open source license case.
+        # The state of the product's license defines the email_template_name.
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertEqual(
+            'product-commercial-subscription-expired-open-source',
+            job.email_template_name)
+
+    def test_email_template_name_proprietary(self):
+        # The state of the product's license defines the email_template_name.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        self.assertEqual(
+            'product-commercial-subscription-expired-proprietary',
+            job.email_template_name)
+
+    def test_deactivateCommercialFeatures_proprietary(self):
+        # When the project is proprietary, the product is deactivated.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        job._deactivateCommercialFeatures()
+        self.assertIs(False, product.active)
+
+    def test_deactivateCommercialFeatures_open_source(self):
+        # When the project is open source, the product's commercial features
+        # are deactivated.
+        product, reviewer = self.make_notification_data(licenses=[License.MIT])
+        public_branch = self.factory.makeBranch(
+            owner=product.owner, product=product)
+        private_branch = self.factory.makeBranch(
+            owner=product.owner, product=product, private=True)
+        with person_logged_in(product.owner):
+            product.setPrivateBugs(True, product.owner)
+            public_series = product.development_focus
+            public_series.branch = public_branch
+            private_series = product.newSeries(
+                product.owner, 'special', 'testing', branch=private_branch)
+        job = CommercialExpiredJob.create(product, reviewer)
+        job._deactivateCommercialFeatures()
+        self.assertIs(True, product.active)
+        self.assertIs(False, product.private_bugs)
+        self.assertEqual(public_branch, public_series.branch)
+        self.assertIs(None, private_series.branch)
+
+    def test_run_deactivation_performed(self):
+        # An email is sent and the deactivation steps are performed.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        expired_date = (
+            product.commercial_subscription.date_expires - timedelta(days=365))
+        removeSecurityProxy(
+            product.commercial_subscription).date_expires = expired_date
+        job = CommercialExpiredJob.create(product, reviewer)
+        job.run()
+        self.assertIs(False, product.active)
+
+    def test_run_deactivation_aborted(self):
+        # The deactivation steps and email are aborted if the commercial
+        # subscription was renewed after the job was created.
+        product, reviewer = self.make_notification_data(
+            licenses=[License.OTHER_PROPRIETARY])
+        job = CommercialExpiredJob.create(product, reviewer)
+        pop_notifications()
+        job.run()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
+        self.assertIs(True, product.active)

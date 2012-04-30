@@ -33,7 +33,9 @@ from storm.locals import (
     Int,
     Reference,
     )
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import dbconfig
@@ -187,10 +189,12 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
-        # Commit the transaction to update the DB time.
         if manage_transaction:
+            if abort_transaction:
+                transaction.abort()
+            # Commit the transaction to update the DB time.
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
@@ -253,17 +257,25 @@ class UniversalJobSource:
 
     needs_init = True
 
+    @staticmethod
+    def rawGet(job_id, module_name, class_name):
+        bc_module = __import__(module_name, fromlist=[class_name])
+        db_class = getattr(bc_module, class_name)
+        store = IStore(db_class)
+        db_job = store.find(db_class, db_class.job == job_id).one()
+        if db_job is None:
+            return None
+        return db_job.makeDerived()
+
     @classmethod
-    def get(cls, job_id):
+    def get(cls, ujob_id):
         if cls.needs_init:
+            transaction.abort()
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
-
-        dbconfig.override(
-            dbuser='branchscanner', isolation_level='read_committed')
-        from lp.code.model.branchjob import (
-            BranchJob,
-            )
-        store = IStore(BranchJob)
-        branch_job = store.find(BranchJob, BranchJob.job == job_id).one()
-        return branch_job.makeDerived()
+        transaction.abort()
+        store = IStore(Job)
+        getUtility(IZStorm).remove(store)
+        store.close()
+        dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
+        return cls.rawGet(*ujob_id[:3])

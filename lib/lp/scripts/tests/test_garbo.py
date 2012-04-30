@@ -42,6 +42,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -1103,6 +1104,35 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(whiteboard, spec.whiteboard)
         self.assertEqual(0, spec.work_items.count())
+
+    def test_BugTaskFlattener(self):
+        # Private bugs without corresponding data in the access policy
+        # schema get mirrored.
+        switch_dbuser('testadmin')
+        task = self.factory.makeBugTask()
+        # Remove the existing mirrored data.
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+        transaction.commit()
+        self.runHourly()
+        # Check that there's a record again, and delete it.
+        switch_dbuser('testadmin')
+        self.assertEqual(
+            (task.id,),
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
+        IMasterStore(BugTask).execute(
+            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+        transaction.commit()
+        self.runHourly()
+        # A watermark is kept in memcache, so a second run doesn't
+        # consider the same task.
+        self.assertIs(
+            None,
+            IMasterStore(BugTask).execute(
+                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
+                (task.id,)).get_one())
 
 
 class TestGarboTasks(TestCaseWithFactory):

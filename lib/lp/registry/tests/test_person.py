@@ -49,7 +49,6 @@ from lp.services.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.propertycache import clear_property_cache
@@ -568,12 +567,9 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.hasCurrentCommercialSubscription())
 
-    def test_commercial_admin_with_ff_checkAllowVisibility(self):
+    def test_commercial_admin_with_checkAllowVisibility(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        feature_flag = {
-            'disclosure.show_visibility_for_team_add.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            self.assertTrue(admin.checkAllowVisibility())
+        self.assertTrue(admin.checkAllowVisibility())
 
     def test_can_not_set_visibility(self):
         person = self.factory.makePerson()
@@ -1454,4 +1450,4 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
         # 9. One to get all sourcepackagenames;
         # 10. One to get all distroseries of a bug's distro. (See comment on
         # getAssignedBugTasksDueBefore() to understand why it's needed)
-        self.assertThat(recorder, HasQueryCount(Equals(10)))
+        self.assertThat(recorder, HasQueryCount(Equals(11)))

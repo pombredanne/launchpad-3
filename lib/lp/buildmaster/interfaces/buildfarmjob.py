@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -209,9 +209,10 @@ class IBuildFarmJob(IBuildFarmJobOld):
                           "is dispatched the first time and not changed in "
                           "subsequent build attempts.")))
 
-    builder = Reference(
-        title=_("Builder"), schema=IBuilder, required=False, readonly=True,
-        description=_("The builder assigned to this job."))
+    builder = exported(
+        Reference(
+            title=_("Builder"), schema=IBuilder, required=False, readonly=True,
+            description=_("The builder assigned to this job.")))
 
     buildqueue_record = Reference(
         # Really IBuildQueue, set in _schema_circular_imports to avoid

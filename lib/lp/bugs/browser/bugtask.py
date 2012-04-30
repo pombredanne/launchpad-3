@@ -217,9 +217,10 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.bugs.model.bugtasksearch import unflat_orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -788,7 +789,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             activity = self.context.bug.activity
         bug_change_re = (
-            'affects|description|security vulnerability|'
+            'affects|description|security vulnerability|information type|'
             'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
@@ -2709,7 +2710,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     batch_navigator.field_visibility)
                 cache.objects['field_visibility_defaults'] = (
                     batch_navigator.field_visibility_defaults)
-                cache.objects['cbl_cookie_name'] = batch_navigator.getCookieName()
+                cache.objects['cbl_cookie_name'] = (
+                    batch_navigator.getCookieName())
 
                 def _getBatchInfo(batch):
                     if batch is None:
@@ -2724,7 +2726,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 cache.objects['total'] = batch_navigator.batch.total()
                 cache.objects['order_by'] = ','.join(
                     get_sortorder_from_request(self.request))
-                cache.objects['forwards'] = batch_navigator.batch.range_forwards
+                cache.objects['forwards'] = (
+                    batch_navigator.batch.range_forwards)
                 last_batch = batch_navigator.batch.lastBatch()
                 cache.objects['last_start'] = last_batch.startNumber() - 1
                 cache.objects.update(_getBatchInfo(batch_navigator.batch))
@@ -2799,7 +2802,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                orderby_expression[orderby_col]
+                unflat_orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
@@ -3033,7 +3036,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self._batch_navigator
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None, prejoins=[]):
+                        extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: Text that must occur in the bug report. If
@@ -3052,7 +3055,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
         try:
-            tasks = context.searchTasks(search_params, prejoins=prejoins)
+            tasks = context.searchTasks(search_params)
         except ValueError as e:
             self.request.response.addErrorNotification(str(e))
             self.request.response.redirect(canonical_url(
@@ -3855,12 +3858,6 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return None
 
-    @property
-    def _allow_multipillar_private_bugs(self):
-        """ Some teams still need to have multi pillar private bugs."""
-        return bool(getFeatureFlag(
-            'disclosure.allow_multipillar_private_bugs.enabled'))
-
     def canAddProjectTask(self):
         """Can a new bug task on a project be added to this bug?
 
@@ -3875,7 +3872,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         """
         bug = self.context
-        if self._allow_multipillar_private_bugs:
+        if bug.information_type != InformationType.PROPRIETARY:
             return True
         return len(bug.bugtasks) == 0
 
@@ -3896,7 +3893,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         is used to hide the link when body.private is True.
         """
         bug = self.context
-        if self._allow_multipillar_private_bugs:
+        if bug.information_type != InformationType.PROPRIETARY:
             return True
         for pillar in bug.affected_pillars:
             if IProduct.providedBy(pillar):

@@ -3,11 +3,11 @@
 
 __metaclass__ = type
 
+import email
 import doctest
 from textwrap import dedent
 
 import soupmatchers
-from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import (
     DocTestMatches,
@@ -17,10 +17,10 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import PersonView
 from lp.registry.browser.team import TeamInvitationView
@@ -37,11 +37,13 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
-from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
+from lp.services.mail import stub
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -68,7 +70,10 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import extract_text
+from lp.testing.pages import (
+    extract_text,
+    setupBrowserForUser,
+    )
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -358,38 +363,70 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = create_initialized_view(self.person, '+edit')
 
-    def test_add_email_good_data(self):
-        email_address = self.factory.getUniqueEmailAddress()
+    def createAddEmailView(self, email_address):
+        """Test helper to create +editemails view."""
         form = {
             'field.VALIDATED_SELECTED': self.valid_email_address,
             'field.VALIDATED_SELECTED-empty-marker': 1,
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        create_initialized_view(self.person, "+editemails", form=form)
+        return create_initialized_view(self.person, "+editemails", form=form)
 
+    def createSetContactViaAddEmailView(self, email_address):
+        """Test helper to use +editemails view to set preferred address."""
+        form = {
+            'field.VALIDATED_SELECTED': email_address,
+            'field.actions.set_preferred': 'Set as Contact Address',
+            }
+        return create_initialized_view(self.person, '+editemails', form=form)
+
+    def _assertEmailAndError(self, email_str, expected_msg):
+        """Special assert function for dealing with email-related errors."""
+        view = self.createAddEmailView(email_str)
+        error_msg = view.errors[0]
+        if type(error_msg) != unicode:
+            error_msg = error_msg.doc()
+        self.assertEqual(expected_msg, error_msg)
+
+    def test_add_email(self):
+        """Adding email should add a login token, notification, and email."""
+        stub.test_emails = []
+        email_address = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(email_address)
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
         token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
             email_address,
             self.person,
             LoginTokenType.VALIDATEEMAIL)
-        self.assertTrue(token is not None)
+        self.assertIsNotNone(token)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"A confirmation message has been sent to '%s'."
+            " Follow the instructions in that message to confirm"
+            " that the address is yours. (If the message doesn't arrive in a"
+            " few minutes, your mail provider might use 'greylisting', which"
+            " could delay the message for up to an hour or two.)" %
+            email_address)
+        self.assertEqual(expected_msg, notifications[0].message)
+        transaction.commit()
+        self.assertEqual(2, len(stub.test_emails))
+        to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
+        # Both the new and old addr should be sent email.
+        self.assertIn([self.valid_email_address], to_addrs)
+        self.assertIn([email_address], to_addrs)
 
     def test_add_email_address_taken(self):
+        """Adding an already existing email should give error notice."""
         email_address = self.factory.getUniqueEmailAddress()
         self.factory.makePerson(
             name='deadaccount',
             displayname='deadaccount',
             email=email_address,
             account_status=AccountStatus.NOACCOUNT)
-        form = {
-            'field.VALIDATED_SELECTED': self.valid_email_address,
-            'field.VALIDATED_SELECTED-empty-marker': 1,
-            'field.actions.add_email': 'Add',
-            'field.newemail': email_address,
-            }
-        view = create_initialized_view(self.person, "+editemails", form=form)
+        view = self.createAddEmailView(email_address)
         error_msg = view.errors[0]
         expected_msg = (
             "The email address '%s' is already registered to "
@@ -399,6 +436,139 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             "field.dupe_person=deadaccount\">merge it</a> into your account."
             % email_address)
         self.assertEqual(expected_msg, error_msg)
+
+    def test_validate_email(self):
+        """Validating an email should send a notice email to the user."""
+        stub.test_emails = []
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.validate': 'Confirm',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"An e-mail message was sent to '%s' "
+            "with instructions on how to confirm that it belongs to you."
+            % added_email)
+        self.assertEqual(expected_msg, notifications[0].message)
+        # Ensure we sent mail to the right address.
+        transaction.commit()
+        to_addrs = [to_addr for from_addr, to_addr, msg in stub.test_emails]
+        self.assertIn([added_email], to_addrs)
+
+    def test_validate_token(self):
+        """Hitting +validateemail should actuall validate the email."""
+        stub.test_emails = []
+        added_email = self.factory.getUniqueEmailAddress()
+        self.createAddEmailView(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.validate': 'Confirm',
+            }
+        create_initialized_view(self.person, '+editemails', form=form)
+        # Get the token from the email msg.
+        transaction.commit()
+        messages = [msg for from_addr, to_addr, msg in stub.test_emails]
+        raw_msg = None
+        for orig_msg in messages:
+            msg = email.message_from_string(orig_msg)
+            if msg.get('to') == added_email:
+                raw_msg = orig_msg
+        token_url = get_token_url_from_email(raw_msg)
+        browser = setupBrowserForUser(user=self.person)
+        browser.open(token_url)
+        expected_msg = u'Confirm e-mail address <code>%s</code>' % added_email
+        self.assertIn(expected_msg, browser.contents)
+        browser.getControl('Continue').click()
+        # Login again to access displayname, since browser logged us out.
+        login_person(self.person)
+        expected_title = u'%s in Launchpad' % self.person.displayname
+        self.assertEqual(expected_title, browser.title)
+
+    def test_remove_unvalidated_email_address(self):
+        """A user should be able to remove and unvalidated email."""
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(added_email)
+        form = {
+            'field.UNVALIDATED_SELECTED': added_email,
+            'field.actions.remove_unvalidated': 'Remove',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"The email address '%s' has been removed." % added_email)
+        self.assertEqual(expected_msg, notifications[0].message)
+
+    def test_cannot_remove_contact_address(self):
+        """A user should not be able to remove their own contact email."""
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.actions.remove_validated': 'Remove',
+            }
+        view = create_initialized_view(self.person, '+editemails', form=form)
+        error_msg = view.errors[0]
+        expected_msg = (
+            "You can't remove %s because it's your contact email address."
+            % self.valid_email_address)
+        self.assertEqual(expected_msg, error_msg)
+
+    def test_set_contact_address(self):
+        """A user should be able to change to a new contact email."""
+        added_email = self.factory.getUniqueEmailAddress()
+        view = self.createAddEmailView(added_email)
+        # We need a commit to make sure person and other data are in DB.
+        transaction.commit()
+        validated_email = getUtility(
+            IEmailAddressSet).new(added_email, self.person)
+        self.person.validateAndEnsurePreferredEmail(validated_email)
+        view = self.createSetContactViaAddEmailView(added_email)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            u"Your contact address has been changed to: %s" % added_email)
+        self.assertEqual(expected_msg, notifications[0].message)
+
+    def test_set_contact_address_already_set(self):
+        """Users should be warned when setting the same contact email."""
+        view = self.createSetContactViaAddEmailView(self.valid_email_address)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected_msg = (
+            "%s is already set as your contact address."
+            % self.valid_email_address)
+        self.assertEqual(expected_msg, notifications[0].message)
+
+    def test_team_editemails_not_found(self):
+        """Teams should not have a +editemails page."""
+        team = self.factory.makeTeam(owner=self.person, members=[self.person])
+        url = '%s/+editemails' % canonical_url(team)
+        browser = setupBrowserForUser(user=self.person)
+        self.assertRaises(NotFound, browser.open, url)
+
+    def test_email_string_validation_no_email_prodvided(self):
+        """+editemails should warn if no email is provided."""
+        no_email = ''
+        expected_msg = u'Required input is missing.'
+        self._assertEmailAndError(no_email, expected_msg)
+
+    def test_email_string_validation_invalid_email(self):
+        """+editemails should warn when provided data is not an email."""
+        not_an_email = 'foo'
+        expected_msg = u"'foo' doesn't seem to be a valid email address."
+        self._assertEmailAndError(not_an_email, expected_msg)
+
+    def test_email_string_validation_is_escaped(self):
+        """+editemails should escape output to prevent XSS."""
+        xss_email = "foo@example.com<script>window.alert('XSS')</script>"
+        expected_msg = (
+            u"'foo@example.com&lt;script&gt;"
+            "window.alert('XSS')&lt;/script&gt;'"
+            " doesn't seem to be a valid email address.")
+        self._assertEmailAndError(xss_email, expected_msg)
 
 
 class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
@@ -1135,16 +1305,6 @@ class BugTaskViewsTestBase:
         self.assertEqual(
             self.expected_for_search_unbatched, list(view.searchUnbatched()))
 
-    def test_searchUnbatched_with_prejoins(self):
-        view = create_initialized_view(self.person, self.view_name)
-        Store.of(self.subscribed_bug).invalidate()
-        with StormStatementRecorder() as recorder:
-            prejoins = [
-                (Person, LeftJoin(Person, BugTask.owner == Person.id))]
-            bugtasks = view.searchUnbatched(prejoins=prejoins)
-            [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(LessThan(3)))
-
     def test_getMilestoneWidgetValues(self):
         view = create_initialized_view(self.person, self.view_name)
         milestones = [
@@ -1161,7 +1321,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
 
     def test_context_description(self):
         # view.context_description returns a string that can be used

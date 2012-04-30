@@ -23,7 +23,6 @@ from storm.expr import (
     Join,
     SQL,
     )
-from storm.locals import Int
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements

@@ -316,13 +316,15 @@ And have a Trac instance process them:
 
     >>> transaction.commit()
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = CheckwatchesMaster(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     txn, FakeLogger())
     >>> trac = TestTrac(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -365,7 +367,7 @@ We'll add some more watches now.
 
     >>> trac.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
-    INFO:...:Updating 12 watches for 12 bugs on http://bugs.some.where
+    INFO Updating 12 watches for 12 bugs on http://bugs.some.where
     CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
@@ -416,7 +418,7 @@ watch hasn't altered:
     >>> trac.batch_query_threshold = 0
     >>> trac.trace_calls = False
     >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed
     True

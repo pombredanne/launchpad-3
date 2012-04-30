@@ -124,11 +124,21 @@ class IAccessArtifactGrantSource(Interface):
             pairs.
         """
 
-    def findByArtifact(artifacts):
-        """Return all `IAccessArtifactGrant` objects for the artifacts."""
+    def findByArtifact(artifacts, grantees=None):
+        """Return `IAccessArtifactGrant` objects for the artifacts.
 
-    def revokeByArtifact(artifacts):
-        """Delete all `IAccessArtifactGrant` objects for the artifacts."""
+        :param artifacts: the artifacts for which to find any grants.
+        :param grantees: find grants for the specified grantees only,
+            else find all grants.
+        """
+
+    def revokeByArtifact(artifacts, grantees=None):
+        """Delete `IAccessArtifactGrant` objects for the artifacts.
+
+        :param artifacts: the artifacts to which revoke access.
+        :param grantees: revoke access for the specified grantees only,
+            else delete all grants.
+        """
 
 
 class IAccessPolicyArtifactSource(Interface):
@@ -231,11 +241,15 @@ class IAccessPolicyGrantFlatSource(Interface):
         :param policies: a collection of `IAccesPolicy`s.
         :param grantees: if not None, the result only includes people in the
             specified list of grantees.
-        :return: a collection of (`IPerson`, `IAccessPolicy`, permission)
+        :return: a collection of
+            (`IPerson`, `IAccessPolicy`, permission, shared_artifact_types)
             where permission is a SharingPermission enum value.
             ALL means the person has an access policy grant and can see all
             artifacts for the associated pillar.
             SOME means the person only has specified access artifact grants.
+            shared_artifact_types contains the information_types for which the
+            user has been granted access for one or more artifacts of that
+            type.
         """
 
     def findArtifactsByGrantee(grantee, policies):
