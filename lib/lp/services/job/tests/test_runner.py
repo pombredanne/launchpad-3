@@ -662,10 +662,9 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('merge_proposal_jobs')
-                utility = errorlog.globalErrorUtility
                 self.assertEqual(
                     'T-merge_proposal_jobs',
-                    utility._oops_config.template['reporter'])
+                    errorlog.globalErrorUtility.oops_prefix)
                 return cls()
 
             completed_jobs = []
