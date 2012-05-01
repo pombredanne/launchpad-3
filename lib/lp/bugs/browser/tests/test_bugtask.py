@@ -52,7 +52,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskSet,
     )
-from lp.bugs.model.bugtasksearch import unflat_orderby_expression
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.layers import (
     FeedsLayer,
     setFirstLayer,
@@ -2325,7 +2325,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(unflat_orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "

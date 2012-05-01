@@ -5,7 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_bug_privacy_filter',
-    'unflat_orderby_expression',
+    'orderby_expression',
     'search_bugs',
     ]
 
@@ -150,6 +150,7 @@ flat_cols = {
     'BugTask.datecreated': BugTaskFlat.datecreated,
     'BugTask._status': BugTaskFlat.status,
     }
+cols = flat_cols
 
 
 bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
@@ -308,6 +309,7 @@ flat_orderby_expression = {
             ]
         ),
     }
+orderby_expression = flat_orderby_expression
 
 
 def search_value_to_storm_where_condition(comp, search_value):
@@ -451,7 +453,6 @@ def _build_query(params):
         decorator to call on each returned row.
     """
     params = _require_params(params)
-    cols = flat_cols
 
     extra_clauses = []
     clauseTables = []
@@ -919,7 +920,6 @@ def _process_order_by(params):
     else:
         in_unique_context = False
 
-    orderby_expression = flat_orderby_expression
     unambiguous_cols = set([
         BugTaskFlat.date_last_updated,
         BugTaskFlat.datecreated,
