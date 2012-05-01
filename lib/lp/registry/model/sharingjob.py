@@ -263,10 +263,11 @@ class RemoveSubscriptionsJob(SharingJobDerived):
     def getErrorRecipients(self):
         # If something goes wrong we want to let the requestor know as well
         # as the pillar maintainer.
-        result = [format_address_for_person(self.requestor)]
+        result = set()
+        result.add(format_address_for_person(self.requestor))
         if self.pillar.owner.preferredemail:
-            result.append(format_address_for_person(self.pillar.owner))
-        return result
+            result.add(format_address_for_person(self.pillar.owner))
+        return list(result)
 
     def getOperationDescription(self):
         return ('removing subscriptions for artifacts '
