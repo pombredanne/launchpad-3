@@ -61,11 +61,8 @@ Other users cannot see the Project group status in the details portlet.
     Project group information
     Maintainer:
     Sample Person
-    Edit
     Driver:
     Not yet selected
-    Edit
-    Driver help
     Bug tracker:
     The Mozilla.org Bug Tracker
     Download RDF metadata
