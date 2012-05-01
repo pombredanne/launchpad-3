@@ -24,8 +24,10 @@ def patch_find_tests(hook):
         structure.
     """
     real_find_tests = find.find_tests
+
     def find_tests(*args):
         return hook(real_find_tests(*args))
+
     find.find_tests = find_tests
 
 
@@ -46,12 +48,14 @@ def filter_tests(list_name):
             for t in suite:
                 testnames[t.id()] = t
             suites_by_layer[layer_name] = testnames
-        # There are ~30 layers.
+
         def find_layer(t):
+            # There are ~30 layers.
             for layer, names in suites_by_layer.items():
                 if t in names:
                     return layer, names[t]
             return None, None
+
         ordered_layers = []
         result = {}
         for testname in tests:
