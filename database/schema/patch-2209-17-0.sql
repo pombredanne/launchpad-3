@@ -4,7 +4,7 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE sharingjob (
-    id integer NOT NULL,
+    id serial PRIMARY KEY,
     job integer REFERENCES Job ON DELETE CASCADE UNIQUE NOT NULL,
     product integer REFERENCES Product,
     distro integer REFERENCES Distribution,
@@ -29,24 +29,6 @@ COMMENT ON COLUMN sharingjob.job_type IS 'The type of job, like remove subscript
 COMMENT ON COLUMN sharingjob.json_data IS 'Data that is specific to the type of job.';
 
 CREATE INDEX sharingjob__grantee__idx ON SharingJob(grantee);
-
-CREATE SEQUENCE sharingjob_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE sharingjob_id_seq OWNED BY sharingjob.id;
-
-ALTER TABLE sharingjob ALTER COLUMN id SET DEFAULT nextval('sharingjob_id_seq'::regclass);
-
-ALTER TABLE ONLY sharingjob
-    ADD CONSTRAINT sharingjob_job_key UNIQUE (job);
-
-ALTER TABLE ONLY sharingjob
-    ADD CONSTRAINT sharingjob_pkey PRIMARY KEY (id);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 17, 0);
