@@ -17,13 +17,14 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 
 
 class TestArchivePrivacy(TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestArchivePrivacy, self).setUp()
