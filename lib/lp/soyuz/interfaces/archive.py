@@ -324,8 +324,9 @@ class IArchivePublic(IPrivacy, IHasOwner):
             title=_("Commercial"),
             required=True,
             description=_(
-                "Display the archive in Software Center's commercial "
-                "listings. Only private archives can be commercial.")))
+                "True if the archive is for commercial applications in the "
+                "Ubuntu Software Centre.  Governs whether subscribers or "
+                "uploaders get mail from Launchpad about archive events.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
