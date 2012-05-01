@@ -5,10 +5,10 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE sharingjob (
     id integer NOT NULL,
-    job integer NOT NULL,
-    product integer,
-    distro integer,
-    grantee integer,
+    job integer REFERENCES Job ON DELETE CASCADE UNIQUE NOT NULL,
+    product integer REFERENCES Product,
+    distro integer REFERENCES Distribution,
+    grantee integer REFERENCES Person,
     job_type integer NOT NULL,
     json_data text
 );
@@ -28,6 +28,7 @@ COMMENT ON COLUMN sharingjob.job_type IS 'The type of job, like remove subscript
 
 COMMENT ON COLUMN sharingjob.json_data IS 'Data that is specific to the type of job.';
 
+CREATE INDEX sharingjob__grantee__idx ON SharingJob(grantee);
 
 CREATE SEQUENCE sharingjob_id_seq
     START WITH 1
@@ -46,9 +47,6 @@ ALTER TABLE ONLY sharingjob
 
 ALTER TABLE ONLY sharingjob
     ADD CONSTRAINT sharingjob_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY sharingjob
-    ADD CONSTRAINT sharingjob_job_fkey FOREIGN KEY (job) REFERENCES job(id) ON DELETE CASCADE;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 17, 0);
