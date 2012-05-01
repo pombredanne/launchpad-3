@@ -20,34 +20,6 @@ class TestSoftwareCenterAgent(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_commercial_archives(self):
-        # The software center agent has no special permissions for commercial
-        # archives.
-        ppa = self.factory.makeArchive(private=True, commercial=True)
-        with celebrity_logged_in('software_center_agent'):
-            self.assertEqual(check_permission('launchpad.View', ppa), False)
-            self.assertEqual(check_permission('launchpad.Append', ppa), False)
-
-    def test_private_archives(self):
-        # The software center agent has no special permissions for private
-        # archives.
-        ppa = self.factory.makeArchive(private=True, commercial=False)
-        with celebrity_logged_in('software_center_agent'):
-            self.assertEqual(check_permission('launchpad.View', ppa), False)
-            self.assertEqual(check_permission('launchpad.Append', ppa), False)
-
-    def test_add_subscription(self):
-        # The software center agent can subscribe anyone to an archive that it
-        # owns.  This is what allows people to buy stuff.
-        person = self.factory.makePerson()
-        ppa = self.factory.makeArchive(private=True)
-        with person_logged_in(ppa.owner) as agent:
-            ppa.newSubscription(person, agent)
-            subscription = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                person, archive=ppa).one()
-            self.assertEqual(subscription.registrant, agent)
-            self.assertEqual(subscription.subscriber, person)
-
     def test_getArchiveSubscriptionURL(self):
         # The software center agent can get subscription URLs for any
         # archive that it's an owner of.
