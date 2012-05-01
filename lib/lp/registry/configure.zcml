@@ -1983,4 +1983,19 @@
         <allow
             interface="lp.registry.interfaces.accesspolicy.IAccessPolicyGrantFlatSource"/>
     </securedutility>
+
+    <!-- Sharing jobs -->
+    <class class=".model.sharingjob.RemoveSubscriptionsJob">
+      <allow interface=".interfaces.sharingjob.IRemoveSubscriptionsJob"/>
+      <allow attributes="
+         context
+         log_name"/>
+    </class>
+
+    <securedutility
+        component=".model.sharingjob.RemoveSubscriptionsJob"
+        provides=".interfaces.sharingjob.IRemoveSubscriptionsJobSource">
+      <allow interface=".interfaces.sharingjob.IRemoveSubscriptionsJobSource"/>
+    </securedutility>
+
 </configure>

@@ -18,7 +18,6 @@ import datetime
 import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
-
 import pytz
 from sqlobject import (
     IntCol,
@@ -38,7 +37,11 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import config, dbconfig
+from lp.services import scripts
+from lp.services.config import (
+    config,
+    dbconfig,
+    )
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -49,7 +52,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
-from lp.services import scripts
 
 
 UTC = pytz.timezone('UTC')
@@ -277,6 +279,7 @@ class UniversalJobSource:
             BranchMergeProposalJob,
             )
         from lp.registry.model.persontransferjob import PersonTransferJob
+        from lp.registry.model.sharingjob import SharingJob
         from lp.soyuz.model.distributionjob import DistributionJob
         from lp.translations.model.pofilestatsjob import POFileStatsJob
         from lp.translations.model.translationsharingjob import (
@@ -288,6 +291,7 @@ class UniversalJobSource:
         for baseclass in [
             ApportJob, BranchJob, BranchMergeProposalJob, DistributionJob,
             PersonTransferJob, POFileStatsJob, TranslationSharingJob,
+            SharingJob,
             ]:
             derived, base_class, store = cls._getDerived(job_id, baseclass)
             if derived is not None:
