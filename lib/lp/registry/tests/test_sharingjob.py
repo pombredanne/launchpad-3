@@ -181,14 +181,7 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertContentEqual([bug.id], naked_job.bug_ids)
         self.assertContentEqual([branch.unique_name], naked_job.branch_names)
 
-    def _run_job(self, job):
-        job.run()
-
-    def _run_job_celery(self, job):
-        with block_on_job(self):
-            transaction.commit()
-
-    def _assert_unsubscribe_bugs(self, run_job_callback):
+    def test_unsubscribe_bugs(self):
         # The requested bug subscriptions are removed.
         pillar = self.factory.makeDistribution()
         grantee = self.factory.makePerson()
@@ -197,18 +190,13 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
         self.assertContentEqual([owner, grantee], bug.getDirectSubscribers())
-        job = getUtility(IRemoveSubscriptionsJobSource).create(
+        getUtility(IRemoveSubscriptionsJobSource).create(
             pillar, grantee, owner, [bug])
-        run_job_callback(job)
+        with block_on_job(self):
+            transaction.commit()
         self.assertContentEqual([owner], bug.getDirectSubscribers())
 
-    def test_unsubscribe_bugs(self):
-        self._assert_unsubscribe_bugs(self._run_job)
-
-    def test_unsubscribe_bugs_celery(self):
-        self._assert_unsubscribe_bugs(self._run_job_celery)
-
-    def _assert_unsubscribe_branches(self, run_job_callback):
+    def test_unsubscribe_branches(self):
         # The requested branch subscriptions are removed.
         pillar = self.factory.makeProduct()
         grantee = self.factory.makePerson()
@@ -219,13 +207,8 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
                 BranchSubscriptionNotificationLevel.NOEMAIL, None,
                 CodeReviewNotificationLevel.NOEMAIL, owner)
         self.assertContentEqual([owner, grantee], list(branch.subscribers))
-        job = getUtility(IRemoveSubscriptionsJobSource).create(
+        getUtility(IRemoveSubscriptionsJobSource).create(
             pillar, grantee, owner, branches=[branch])
-        run_job_callback(job)
+        with block_on_job(self):
+            transaction.commit()
         self.assertContentEqual([owner], list(branch.subscribers))
-
-    def test_unsubscribe_branches(self):
-        self._assert_unsubscribe_branches(self._run_job)
-
-    def test_unsubscribe_branches_celery(self):
-        self._assert_unsubscribe_branches(self._run_job_celery)
