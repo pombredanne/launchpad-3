@@ -93,37 +93,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
-# This abstracts most of the columns involved in search so we can switch
-# to/from BugTaskFlat easily.
-unflat_cols = {
-    'Bug.id': Bug.id,
-    'Bug.duplicateof': Bug.duplicateof,
-    'Bug.owner': Bug.owner,
-    'Bug.date_last_updated': Bug.date_last_updated,
-    'BugTask.id': BugTask.id,
-    'BugTask.bug': BugTask.bug,
-    'BugTask.bugID': BugTask.bugID,
-    'BugTask.importance': BugTask.importance,
-    'BugTask.product': BugTask.product,
-    'BugTask.productID': BugTask.productID,
-    'BugTask.productseries': BugTask.productseries,
-    'BugTask.productseriesID': BugTask.productseriesID,
-    'BugTask.distribution': BugTask.distribution,
-    'BugTask.distributionID': BugTask.distributionID,
-    'BugTask.distroseries': BugTask.distroseries,
-    'BugTask.distroseriesID': BugTask.distroseriesID,
-    'BugTask.sourcepackagename': BugTask.sourcepackagename,
-    'BugTask.sourcepackagenameID': BugTask.sourcepackagenameID,
-    'BugTask.milestone': BugTask.milestone,
-    'BugTask.milestoneID': BugTask.milestoneID,
-    'BugTask.assignee': BugTask.assignee,
-    'BugTask.owner': BugTask.owner,
-    'BugTask.date_closed': BugTask.date_closed,
-    'BugTask.datecreated': BugTask.datecreated,
-    'BugTask._status': BugTask._status,
-    }
-
-flat_cols = {
+cols = {
     'Bug.id': BugTaskFlat.bug_id,
     'Bug.duplicateof': BugTaskFlat.duplicateof,
     'Bug.owner': BugTaskFlat.bug_owner,
@@ -150,93 +120,14 @@ flat_cols = {
     'BugTask.datecreated': BugTaskFlat.datecreated,
     'BugTask._status': BugTaskFlat.status,
     }
-cols = flat_cols
 
 
-bug_join = (Bug, Join(Bug, BugTask.bug == Bug.id))
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
-unflat_orderby_expression = {
-    "task": (BugTask.id, []),
-    "id": (BugTask.bugID, []),
-    "importance": (BugTask.importance, []),
-    # TODO: sort by their name?
-    "assignee": (
-        Assignee.name,
-        [
-            (Assignee,
-                LeftJoin(Assignee, BugTask.assignee == Assignee.id))
-            ]),
-    "targetname": (BugTask.targetnamecache, []),
-    "status": (BugTask._status, []),
-    "title": (Bug.title, [bug_join]),
-    "milestone": (BugTask.milestoneID, []),
-    "dateassigned": (BugTask.date_assigned, []),
-    "datecreated": (BugTask.datecreated, []),
-    "date_last_updated": (Bug.date_last_updated, [bug_join]),
-    "date_closed": (BugTask.date_closed, []),
-    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
-    "message_count": (Bug.message_count, [bug_join]),
-    "users_affected_count": (Bug.users_affected_count, [bug_join]),
-    "heat": (BugTask.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
-    "milestone_name": (
-        Milestone.name,
-        [
-            (Milestone,
-                LeftJoin(Milestone,
-                        BugTask.milestone == Milestone.id))
-            ]),
-    "reporter": (
-        Reporter.name,
-        [
-            bug_join,
-            (Reporter, Join(Reporter, Bug.owner == Reporter.id))
-            ]),
-    "tag": (
-        BugTag.tag,
-        [
-            bug_join,
-            (BugTag,
-                LeftJoin(
-                    BugTag,
-                    BugTag.bug == Bug.id and
-                    # We want at most one tag per bug. Select the
-                    # tag that comes first in alphabetic order.
-                    BugTag.id == Select(
-                        BugTag.id, tables=[BugTag],
-                        where=(BugTag.bugID == Bug.id),
-                        order_by=BugTag.tag, limit=1))),
-            ]
-        ),
-    "specification": (
-        Specification.name,
-        [
-            bug_join,
-            (Specification,
-                LeftJoin(
-                    Specification,
-                    # We want at most one specification per bug.
-                    # Select the specification that comes first
-                    # in alphabetic order.
-                    Specification.id == Select(
-                        Specification.id,
-                        tables=[
-                            SpecificationBug,
-                            Join(
-                                Specification,
-                                Specification.id ==
-                                    SpecificationBug.specificationID)],
-                        where=(SpecificationBug.bugID == Bug.id),
-                        order_by=Specification.name, limit=1))),
-            ]
-        ),
-    }
-
-flat_bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
-flat_bugtask_join = (
+bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
+bugtask_join = (
     BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
-flat_orderby_expression = {
+orderby_expression = {
     "task": (BugTaskFlat.bugtask_id, []),
     "id": (BugTaskFlat.bug_id, []),
     "importance": (BugTaskFlat.importance, []),
@@ -247,19 +138,19 @@ flat_orderby_expression = {
             (Assignee,
                 LeftJoin(Assignee, BugTaskFlat.assignee == Assignee.id))
             ]),
-    "targetname": (BugTask.targetnamecache, [flat_bugtask_join]),
+    "targetname": (BugTask.targetnamecache, [bugtask_join]),
     "status": (BugTaskFlat.status, []),
-    "title": (Bug.title, [flat_bug_join]),
+    "title": (Bug.title, [bug_join]),
     "milestone": (BugTaskFlat.milestone_id, []),
-    "dateassigned": (BugTask.date_assigned, [flat_bugtask_join]),
+    "dateassigned": (BugTask.date_assigned, [bugtask_join]),
     "datecreated": (BugTaskFlat.datecreated, []),
     "date_last_updated": (BugTaskFlat.date_last_updated, []),
-    "date_closed": (BugTask.date_closed, [flat_bugtask_join]),
-    "number_of_duplicates": (Bug.number_of_duplicates, [flat_bug_join]),
-    "message_count": (Bug.message_count, [flat_bug_join]),
-    "users_affected_count": (Bug.users_affected_count, [flat_bug_join]),
+    "date_closed": (BugTask.date_closed, [bugtask_join]),
+    "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
+    "message_count": (Bug.message_count, [bug_join]),
+    "users_affected_count": (Bug.users_affected_count, [bug_join]),
     "heat": (BugTaskFlat.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [flat_bug_join]),
+    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
     "milestone_name": (
         Milestone.name,
         [
@@ -309,7 +200,6 @@ flat_orderby_expression = {
             ]
         ),
     }
-orderby_expression = flat_orderby_expression
 
 
 def search_value_to_storm_where_condition(comp, search_value):
@@ -501,7 +391,7 @@ def _build_query(params):
     # All the standard args filter on BugTaskFlat, except for
     # date_closed which isn't denormalised (yet?).
     if params.date_closed is not None:
-        join_tables.append(flat_bugtask_join)
+        join_tables.append(bugtask_join)
 
     if params.status is not None:
         extra_clauses.append(
@@ -588,7 +478,7 @@ def _build_query(params):
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
             extra_clauses.append(Bug.latest_patch_uploaded != None)
-            join_tables.append(flat_bug_join)
+            join_tables.append(bug_join)
         else:
             extra_clauses.append(
                 cols['Bug.id'].is_in(
