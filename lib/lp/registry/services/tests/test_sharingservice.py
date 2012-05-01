@@ -59,7 +59,8 @@ class TestSharingService(TestCaseWithFactory):
         super(TestSharingService, self).setUp()
         self.service = getUtility(IService, 'sharing')
 
-    def _makeShareeData(self, sharee, policy_permissions):
+    def _makeShareeData(self, sharee, policy_permissions,
+                        shared_artifact_types):
         # Unpack a sharee into its attributes and add in permissions.
         request = get_current_web_service_request()
         sharee_data = {
@@ -77,6 +78,8 @@ class TestSharingService(TestCaseWithFactory):
             if permission == SharingPermission.SOME:
                 shared_items_exist = True
         sharee_data['shared_items_exist'] = shared_items_exist
+        sharee_data['shared_artifact_types'] = [
+            info_type.name for info_type in shared_artifact_types]
         sharee_data['permissions'] = permissions
         return sharee_data
 
@@ -143,11 +146,13 @@ class TestSharingService(TestCaseWithFactory):
             sharees = self.service.jsonShareeData(
                 [(grantee, {
                     policy1: SharingPermission.ALL,
-                    policy2: SharingPermission.SOME})])
+                    policy2: SharingPermission.SOME},
+                  [policy1.type, policy2.type])])
         expected_data = self._makeShareeData(
             grantee,
             [(policy1.type, SharingPermission.ALL),
-             (policy2.type, SharingPermission.SOME)])
+             (policy2.type, SharingPermission.SOME)],
+             [policy1.type, policy2.type])
         self.assertContentEqual([expected_data], sharees)
 
     def test_jsonShareeData_with_Some_without_flag(self):
@@ -160,11 +165,11 @@ class TestSharingService(TestCaseWithFactory):
         sharees = self.service.jsonShareeData(
             [(grantee, {
                 policy1: SharingPermission.ALL,
-                policy2: SharingPermission.SOME})])
+                policy2: SharingPermission.SOME}, [policy2.type])])
         expected_data = self._makeShareeData(
             grantee,
             [(policy1.type, SharingPermission.ALL),
-             (policy2.type, SharingPermission.SOME)])
+             (policy2.type, SharingPermission.SOME)], [policy2.type])
         expected_data['shared_items_exist'] = False
         self.assertContentEqual([expected_data], sharees)
 
@@ -178,10 +183,10 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(DETAILS_FLAG):
             sharees = self.service.jsonShareeData(
                 [(grantee, {
-                    policy1: SharingPermission.ALL})])
+                    policy1: SharingPermission.ALL}, [])])
         expected_data = self._makeShareeData(
             grantee,
-            [(policy1.type, SharingPermission.ALL)])
+            [(policy1.type, SharingPermission.ALL)], [])
         self.assertContentEqual([expected_data], sharees)
 
     def _assert_getPillarShareeData(self, pillar):
@@ -202,10 +207,11 @@ class TestSharingService(TestCaseWithFactory):
         expected_sharees = [
             self._makeShareeData(
                 grantee,
-                [(InformationType.PROPRIETARY, SharingPermission.ALL)]),
+                [(InformationType.PROPRIETARY, SharingPermission.ALL)], []),
             self._makeShareeData(
                 artifact_grant.grantee,
-                [(InformationType.PROPRIETARY, SharingPermission.SOME)])]
+                [(InformationType.PROPRIETARY, SharingPermission.SOME)],
+                [InformationType.PROPRIETARY])]
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductShareeData(self):
@@ -305,8 +311,9 @@ class TestSharingService(TestCaseWithFactory):
 
         sharees = self.service.getPillarSharees(pillar)
         expected_sharees = [
-            (grantee, {access_policy: SharingPermission.ALL}),
-            (artifact_grant.grantee, {access_policy: SharingPermission.SOME})]
+            (grantee, {access_policy: SharingPermission.ALL}, []),
+            (artifact_grant.grantee, {access_policy: SharingPermission.SOME},
+             [access_policy.type])]
         self.assertContentEqual(expected_sharees, sharees)
 
     def test_getProductSharees(self):
@@ -400,13 +407,15 @@ class TestSharingService(TestCaseWithFactory):
             (InformationType.EMBARGOEDSECURITY, SharingPermission.ALL),
             (InformationType.USERDATA, SharingPermission.SOME)]
         expected_sharee_data = self._makeShareeData(
-            sharee, expected_permissions)
+            sharee, expected_permissions,
+            [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])
         self.assertEqual(expected_sharee_data, sharee_data)
         # Check that getPillarSharees returns what we expect.
         expected_sharee_grants = [
             (sharee, {
                 es_policy: SharingPermission.ALL,
-                ud_policy: SharingPermission.SOME})]
+                ud_policy: SharingPermission.SOME},
+             [InformationType.USERDATA, InformationType.EMBARGOEDSECURITY])]
         sharee_grants = list(self.service.getPillarSharees(pillar))
         self.assertContentEqual(expected_sharee_grants, sharee_grants)
 
@@ -518,11 +527,11 @@ class TestSharingService(TestCaseWithFactory):
                 access_policy for access_policy in access_policies
                 if access_policy.type in expected_information_types]
             expected_data = [
-                (grantee, {policy: SharingPermission.ALL})
+                (grantee, {policy: SharingPermission.ALL}, [])
                 for policy in expected_policies]
         # Add the expected data for the other sharee.
         another_person_data = (
-            another, {access_policies[0]: SharingPermission.ALL})
+            another, {access_policies[0]: SharingPermission.ALL}, [])
         expected_data.append(another_person_data)
         self.assertContentEqual(
             expected_data, self.service.getPillarSharees(pillar))

@@ -181,8 +181,9 @@ class MaloneApplication:
         return getUtility(IBugSet).searchAsUser(
             user=user, orderBy=['-datecreated'], limit=5)
 
-    def default_bug_list(self, user=None):
-        return getUtility(IBugSet).searchAsUser(user)
+    def empty_list(self):
+        """See `IMaloneApplication`."""
+        return []
 
 
 class BazaarApplication:

@@ -33,8 +33,12 @@ class Breadcrumb:
     _detail = None
     _url = None
 
-    def __init__(self, context):
+    def __init__(self, context, url=None, text=None):
         self.context = context
+        if url is not None:
+            self._url = url
+        if text is not None:
+            self.text = text
 
     @property
     def rootsite(self):

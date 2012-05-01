@@ -254,7 +254,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -1506,6 +1505,7 @@ class Person(
                AND(WorkItem.assignee == None,
                    Specification.assigneeID.is_in(self.participant_ids))))
         result = store.using(*origin).find(WorkItem, query)
+
         def eager_load(workitems):
             specs = bulk.load_related(
                 Specification, workitems, ['specification_id'])
@@ -2981,7 +2981,7 @@ class Person(
         # creation ought to be passed through.
         errors = Archive.validatePPA(self, name, private, commercial)
         if errors:
-           raise PPACreationError(errors)
+            raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
@@ -3096,13 +3096,12 @@ class Person(
 
     def checkAllowVisibility(self):
         role = IPersonRoles(self)
-        if role.in_commercial_admin or role.in_admin:
+        if (role.in_commercial_admin
+            or role.in_admin
+            or self.hasCurrentCommercialSubscription()):
             return True
-        feature_flag = getFeatureFlag(
-            'disclosure.show_visibility_for_team_add.enabled')
-        if feature_flag and self.hasCurrentCommercialSubscription():
-            return True
-        return False
+        else:
+            return False
 
     def security_field_changed(self, subject, change_description,
         recipient_emails=None):

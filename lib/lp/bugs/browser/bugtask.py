@@ -789,7 +789,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             activity = self.context.bug.activity
         bug_change_re = (
-            'affects|description|security vulnerability|'
+            'affects|description|security vulnerability|information type|'
             'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
