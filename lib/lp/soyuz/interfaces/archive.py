@@ -1886,14 +1886,6 @@ class IArchiveSet(Interface):
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
 
-    def getCommercialPPAs():
-        """Return a result set containing all commercial PPAs.
-
-        Commercial PPAs are private, but explicitly flagged up as commercial
-        so that they are discoverable by people who wish to buy items
-        from them.
-        """
-
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):
         """Return a result set of publishing records for the source package.

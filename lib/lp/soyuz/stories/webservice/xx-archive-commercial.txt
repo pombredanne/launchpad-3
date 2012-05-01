@@ -15,17 +15,6 @@ Start by making a commercial PPA that we can fetch via the webservice:
     >>> transaction.commit()
     >>> logout()
 
-Commercial archives can be found with a custom method 'getCommercialPPAs'
-that lives on the distribution object.
-
-Using webservice directly:
-
-    >>> ubuntu = webservice.get("/ubuntu").jsonBody()
-    >>> cppas = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCommercialPPAs').jsonBody()
-    >>> for entry in cppas['entries']:
-    ...     print entry['name']
-    cpppa
 
 == Software Center Agent ==
 
