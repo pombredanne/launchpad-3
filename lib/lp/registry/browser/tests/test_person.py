@@ -1321,7 +1321,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+        self.assertThat(recorder, HasQueryCount(LessThan(6)))
 
     def test_context_description(self):
         # view.context_description returns a string that can be used
