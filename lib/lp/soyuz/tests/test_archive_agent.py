@@ -9,7 +9,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.testing import (
-    login,
     login_person,
     TestCaseWithFactory,
     )
@@ -17,21 +16,14 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestArchivePrivacy(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestArchivePrivacy, self).setUp()
-        self.ppa = self._makePrivateArchive()
-        self.ppa.commercial = True
+        self.ppa = self.factory.makeArchive(private=True, commercial=True)
         self.agent = getUtility(ILaunchpadCelebrities).software_center_agent
         self.joe = self.factory.makePerson(name='joe')
-
-    def _makePrivateArchive(self):
-        ppa = self.factory.makeArchive()
-        login('admin@canonical.com')
-        ppa.buildd_secret = 'blah'
-        ppa.private = True
-        return ppa
 
     def test_check_permission(self):
         """The software center agent has the relevant permissions for a
@@ -44,7 +36,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
             check_permission('launchpad.Append', self.ppa), True)
 
     def test_check_permission_private(self):
-        ppa = self._makePrivateArchive()
+        ppa = self.factory.makeArchive(private=True, commercial=False)
         login_person(self.agent)
         self.assertEqual(check_permission('launchpad.View', ppa), False)
         self.assertEqual(check_permission('launchpad.Append', ppa), False)
