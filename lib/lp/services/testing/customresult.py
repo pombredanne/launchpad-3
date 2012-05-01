@@ -39,14 +39,28 @@ def filter_tests(list_name):
         returns only those tests with ids in the file 'list_name'.
     """
     def do_filter(tests_by_layer_name):
-        tests = sorted(set(line.strip() for line in open(list_name, 'rb')))
-        result = {}
+        tests = [line.strip() for line in open(list_name, 'rb')]
+        suites_by_layer = {}
         for layer_name, suite in tests_by_layer_name.iteritems():
-            new_suite = TestSuite()
-            for test in iterate_tests(suite):
-                if test.id() in tests:
-                    new_suite.addTest(test)
-            if new_suite.countTestCases():
-                result[layer_name] = new_suite
+            testnames = {}
+            for t in suite:
+                testnames[t.id()] = t
+            suites_by_layer[layer_name] = testnames
+        # There are ~30 layers.
+        def find_layer(t):
+            for layer, names in suites_by_layer.items():
+                if t in names:
+                    return layer, names[t]
+            return None, None
+        ordered_layers = []
+        result = {}
+        for testname in tests:
+            layer, test = find_layer(testname)
+            if not layer:
+                raise Exception("Test not found: %s" % testname)
+            if not layer in ordered_layers:
+                ordered_layers.append(layer)
+            suite = result.setdefault(layer, TestSuite())
+            suite.addTest(test)
         return result
     return do_filter
