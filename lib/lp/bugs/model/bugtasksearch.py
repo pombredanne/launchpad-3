@@ -347,38 +347,29 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
         respected.
     :param just_bug_ids: Return a ResultSet of bug IDs instead of BugTasks.
     """
-    use_flat = True
-
     store = IStore(BugTask)
-    orderby_expression, orderby_joins = _process_order_by(
-        alternatives[0], use_flat)
+    orderby_expression, orderby_joins = _process_order_by(alternatives[0])
     decorators = []
 
-    # If we are to use BugTaskFlat, we just return the ID. The
-    # DecoratedResultSet will turn it into the actual BugTask.
-    # If we're not using BugTaskFlat yet, we should still return
-    # the BugTask directly.
-    if use_flat:
-        start = BugTaskFlat
-        if just_bug_ids:
-            want = BugTaskFlat.bug_id
-        else:
-            want = BugTaskFlat.bugtask_id
-            decorators.append(lambda id: IStore(BugTask).get(BugTask, id))
-            orig_pre_iter_hook = pre_iter_hook
-
-            def pre_iter_hook(rows):
-                rows = load(BugTask, rows)
-                if orig_pre_iter_hook:
-                    orig_pre_iter_hook(rows)
+    # Normally we just return the ID -- the DecoratedResultSet will turn
+    # it into the actual BugTask. But the caller can also request to
+    # just get the bug IDs back, in which case we don't use DRS.
+    start = BugTaskFlat
+    if just_bug_ids:
+        want = BugTaskFlat.bug_id
     else:
-        start = BugTask
-        want = BugTask.bugID if just_bug_ids else BugTask
+        want = BugTaskFlat.bugtask_id
+        decorators.append(lambda id: IStore(BugTask).get(BugTask, id))
+        orig_pre_iter_hook = pre_iter_hook
+
+        def pre_iter_hook(rows):
+            rows = load(BugTask, rows)
+            if orig_pre_iter_hook:
+                orig_pre_iter_hook(rows)
 
     if len(alternatives) == 1:
         [query, clauseTables, bugtask_decorator, join_tables,
-         has_duplicate_results, with_clause] = _build_query(
-             alternatives[0], use_flat)
+         has_duplicate_results, with_clause] = _build_query(alternatives[0])
         if with_clause:
             store = store.with_(with_clause)
         decorators.append(bugtask_decorator)
@@ -386,10 +377,10 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
         if has_duplicate_results:
             origin = _build_origin(join_tables, clauseTables, start)
             outer_origin = _build_origin(orderby_joins, [], start)
-            want_inner = BugTaskFlat.bugtask_id if use_flat else BugTask.id
-            subquery = Select(want_inner, where=query, tables=origin)
+            subquery = Select(
+                BugTaskFlat.bugtask_id, where=query, tables=origin)
             result = store.using(*outer_origin).find(
-                want, In(want_inner, subquery))
+                want, In(BugTaskFlat.bugtask_id, subquery))
         else:
             origin = _build_origin(
                 join_tables + orderby_joins, clauseTables, start)
@@ -399,14 +390,12 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
 
         for params in alternatives:
             [query, clauseTables, decorator, join_tables,
-             has_duplicate_results, with_clause] = _build_query(
-                 params, use_flat)
+             has_duplicate_results, with_clause] = _build_query(params)
             origin = _build_origin(join_tables, clauseTables, start)
             localstore = store
             if with_clause:
                 localstore = store.with_(with_clause)
-            want_inner = BugTaskFlat if use_flat else BugTask
-            next_result = localstore.using(*origin).find((want_inner,), query)
+            next_result = localstore.using(*origin).find(BugTaskFlat, query)
             results.append(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
@@ -415,10 +404,7 @@ def search_bugs(pre_iter_hook, alternatives, just_bug_ids=False):
 
         resultset = reduce(lambda l, r: l.union(r), results)
         origin = _build_origin(
-            orderby_joins, [],
-            Alias(
-                resultset._get_select(),
-                "BugTaskFlat" if use_flat else "BugTask"))
+            orderby_joins, [], Alias(resultset._get_select(), "BugTaskFlat"))
         result = store.using(*origin).find(want)
 
     result.order_by(orderby_expression)
@@ -456,7 +442,7 @@ def _build_origin(join_tables, clauseTables, start_with):
     return origin
 
 
-def _build_query(params, use_flat):
+def _build_query(params):
     """Build and return an SQL query with the given parameters.
 
     Also return the clauseTables and orderBy for the generated query.
@@ -465,16 +451,11 @@ def _build_query(params, use_flat):
         decorator to call on each returned row.
     """
     params = _require_params(params)
-    cols = flat_cols if use_flat else unflat_cols
+    cols = flat_cols
 
-    if use_flat:
-        extra_clauses = []
-        clauseTables = []
-        join_tables = []
-    else:
-        extra_clauses = [Bug.id == BugTask.bugID]
-        clauseTables = [BugTask, Bug]
-        join_tables = []
+    extra_clauses = []
+    clauseTables = []
+    join_tables = []
 
     decorators = []
     has_duplicate_results = False
@@ -518,7 +499,7 @@ def _build_query(params, use_flat):
 
     # All the standard args filter on BugTaskFlat, except for
     # date_closed which isn't denormalised (yet?).
-    if params.date_closed is not None and use_flat:
+    if params.date_closed is not None:
         join_tables.append(flat_bugtask_join)
 
     if params.status is not None:
@@ -606,8 +587,7 @@ def _build_query(params, use_flat):
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
             extra_clauses.append(Bug.latest_patch_uploaded != None)
-            if use_flat:
-                join_tables.append(flat_bug_join)
+            join_tables.append(flat_bug_join)
         else:
             extra_clauses.append(
                 cols['Bug.id'].is_in(
@@ -617,12 +597,10 @@ def _build_query(params, use_flat):
                             BugAttachment.type, params.attachmenttype))))
 
     if params.searchtext:
-        extra_clauses.append(_build_search_text_clause(
-            params, use_flat=use_flat))
+        extra_clauses.append(_build_search_text_clause(params))
 
     if params.fast_searchtext:
-        extra_clauses.append(_build_search_text_clause(
-            params, fast=True, use_flat=use_flat))
+        extra_clauses.append(_build_search_text_clause(params, fast=True))
 
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
@@ -854,7 +832,7 @@ def _build_query(params, use_flat):
                 Milestone.dateexpected <= dateexpected_before)
 
     clause, decorator = _get_bug_privacy_filter_with_decorator(
-        params.user, use_flat=use_flat)
+        params.user, use_flat=True)
     if clause:
         extra_clauses.append(SQL(clause))
         decorators.append(decorator)
@@ -912,7 +890,7 @@ def _build_query(params, use_flat):
         has_duplicate_results, with_clause)
 
 
-def _process_order_by(params, use_flat):
+def _process_order_by(params):
     """Process the orderby parameter supplied to search().
 
     This method ensures the sort order will be stable, and converting
@@ -941,34 +919,16 @@ def _process_order_by(params, use_flat):
     else:
         in_unique_context = False
 
-    if use_flat:
-        orderby_expression = flat_orderby_expression
-        unambiguous_cols = set([
-            BugTaskFlat.date_last_updated,
-            BugTaskFlat.datecreated,
-            BugTaskFlat.bugtask_id,
-            Bug.datecreated,
-            BugTask.date_assigned,
-            ])
-        if in_unique_context:
-            unambiguous_cols.add(BugTaskFlat.bug)
-    else:
-        orderby_expression = unflat_orderby_expression
-        # Bug.id and BugTask.bugID shouldn't really be here; they're
-        # ambiguous in a distribution or distroseries context. They're
-        # omitted from the new BugTaskFlat path, but kept in the legacy
-        # code in case it affects index selection.
-        unambiguous_cols = set([
-            Bug.date_last_updated,
-            Bug.datecreated,
-            Bug.id,
-            BugTask.bugID,
-            BugTask.date_assigned,
-            BugTask.datecreated,
-            BugTask.id,
-            ])
-        if in_unique_context:
-            unambiguous_cols.add(BugTask.bug)
+    orderby_expression = flat_orderby_expression
+    unambiguous_cols = set([
+        BugTaskFlat.date_last_updated,
+        BugTaskFlat.datecreated,
+        BugTaskFlat.bugtask_id,
+        Bug.datecreated,
+        BugTask.date_assigned,
+        ])
+    if in_unique_context:
+        unambiguous_cols.add(BugTaskFlat.bug)
 
     # Translate orderby keys into corresponding Table.attribute
     # strings.
@@ -1005,16 +965,10 @@ def _process_order_by(params, use_flat):
         orderby_arg.append(order_clause)
 
     if ambiguous:
-        if use_flat:
-            if in_unique_context:
-                disambiguator = BugTaskFlat.bug_id
-            else:
-                disambiguator = BugTaskFlat.bugtask_id
+        if in_unique_context:
+            disambiguator = BugTaskFlat.bug_id
         else:
-            if in_unique_context:
-                disambiguator = BugTask.bugID
-            else:
-                disambiguator = BugTask.id
+            disambiguator = BugTaskFlat.bugtask_id
 
         if orderby_arg and not isinstance(orderby_arg[0], Desc):
             disambiguator = Desc(disambiguator)
@@ -1032,7 +986,7 @@ def _require_params(params):
     return params
 
 
-def _build_search_text_clause(params, fast=False, use_flat=False):
+def _build_search_text_clause(params, fast=False):
     """Build the clause for searchtext."""
     if fast:
         assert params.searchtext is None, (
@@ -1043,14 +997,13 @@ def _build_search_text_clause(params, fast=False, use_flat=False):
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
 
-    col = 'BugTaskFlat.fti' if use_flat else 'Bug.fti'
-
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
-        params.orderby = [SQL("-rank(%s, ftq(?))" % col, params=(searchtext,))]
+        params.orderby = [
+            SQL("-rank(BugTaskFlat.fti, ftq(?))", params=(searchtext,))]
 
-    return SQL("%s @@ ftq(?)" % col, params=(searchtext,))
+    return SQL("BugTaskFlat.fti @@ ftq(?)", params=(searchtext,))
 
 
 def _build_status_clause(col, status):

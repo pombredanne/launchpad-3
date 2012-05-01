@@ -63,7 +63,7 @@ class TestProcessOrderBy(TestCase):
             params.setProduct(distribution)
         self.assertEqual(
             expected,
-            convert_storm_clause_to_string(_process_order_by(params, True)[0]))
+            convert_storm_clause_to_string(_process_order_by(params)[0]))
 
     def test_tiebreaker(self):
         # Requests for ambiguous sorts get a disambiguator of BugTask.id
