@@ -324,7 +324,7 @@ class ErrorReportingUtility:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
         reporter = config[self._default_config_section].oops_prefix
-        if section_name:
+        if section_name != self._default_config_section:
             reporter = '%s-%s' % (reporter, section_name)
         self._oops_config.template['reporter'] = reporter
         # Should go in an HTTP module.
