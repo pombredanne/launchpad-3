@@ -900,39 +900,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
 
-    def test_script(self):
-        # Do an end-to-end test using the command-line tool.
-        self.parent, self.parent_das = self.setupParent()
-        uploader = self.factory.makePerson()
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test1.addSources('udev')
-        getUtility(IArchivePermissionSet).newPackagesetUploader(
-            self.parent.main_archive, uploader, test1)
-        child = self.factory.makeDistroSeries(previous_series=self.parent)
-        # Create an initialized series in the distribution.
-        other_series = self.factory.makeDistroSeries(
-            distribution=child.parent)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=other_series)
-        transaction.commit()
-        ifp = os.path.join(
-            config.root, 'scripts', 'ftpmaster-tools',
-            'initialize-from-parent.py')
-        process = subprocess.Popen(
-            [sys.executable, ifp, "-vv", "-d", child.parent.name,
-            child.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
-        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
-        self.assertEqual(process.returncode, 0)
-        self.assertTrue(
-            "DEBUG   Committing transaction." in stderr.split('\n'))
-        transaction.commit()
-        self.assertDistroSeriesInitializedCorrectly(
-            child, self.parent, self.parent_das)
-
     def test_is_initialized(self):
         # At the end of the initialization, the distroseriesparent is marked
         # as 'initialized'.

@@ -9,9 +9,12 @@ import time
 import pytz
 from lazr.jobrunner.jobrunner import LeaseHeld
 from storm.locals import Store
+from testtools.matchers import Equals
 import transaction
 
-from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
+from lp.code.model.branchmergeproposaljob import (
+    CodeReviewCommentEmailJob,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.job.interfaces.job import (
@@ -25,10 +28,12 @@ from lp.services.job.model.job import (
     )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestJob(TestCaseWithFactory):
@@ -457,8 +462,14 @@ class TestUniversalJobSource(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_getDerived_with_merge_proposal_job(self):
+    def test_rawGet_with_merge_proposal_job(self):
         comment = self.factory.makeCodeReviewComment()
         job = CodeReviewCommentEmailJob.create(comment)
-        newjob = UniversalJobSource.getDerived(job.job_id)[0]
-        self.assertEqual(job, newjob)
+        job_id = job.job_id
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            got_job = UniversalJobSource.rawGet(
+                job_id, 'lp.code.model.branchmergeproposaljob',
+                 'BranchMergeProposalJob')
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertEqual(got_job, job)

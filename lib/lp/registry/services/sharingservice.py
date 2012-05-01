@@ -127,13 +127,14 @@ class SharingService:
         browser_request = IWebBrowserOriginatingRequest(request)
         details_enabled = bool((getFeatureFlag(
             'disclosure.enhanced_sharing_details.enabled')))
-        for (grantee, permissions) in grant_permissions:
-            some_things_sharred = False
+        for (grantee, permissions, shared_artifact_types) in grant_permissions:
+            some_things_shared = (
+                details_enabled and len(shared_artifact_types) > 0)
             sharee_permissions = {}
             for (policy, permission) in permissions.iteritems():
                 sharee_permissions[policy.type.name] = permission.name
-                if details_enabled and permission == SharingPermission.SOME:
-                    some_things_sharred = True
+            shared_artifact_type_names = [
+                info_type.name for info_type in shared_artifact_types]
             result.append({
                 'name': grantee.name,
                 'meta': 'team' if grantee.is_team else 'person',
@@ -141,7 +142,8 @@ class SharingService:
                 'self_link': absoluteURL(grantee, request),
                 'web_link': absoluteURL(grantee, browser_request),
                 'permissions': sharee_permissions,
-                'shared_items_exist': some_things_sharred})
+                'shared_artifact_types': shared_artifact_type_names,
+                'shared_items_exist': some_things_shared})
         return result
 
     @available_with_permission('launchpad.Edit', 'pillar')

@@ -1277,10 +1277,13 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     threading.currentThread().name)
                 break
 
-            num_remaining_tasks = len(tunable_loops)
-            if not num_remaining_tasks:
+            try:
+                tunable_loop_class = tunable_loops.pop(0)
+            except IndexError:
+                # We catch the exception rather than checking the
+                # length first to avoid race conditions with other
+                # threads.
                 break
-            tunable_loop_class = tunable_loops.pop(0)
 
             loop_name = tunable_loop_class.__name__
 
@@ -1315,7 +1318,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             try:
                 loop_logger.info("Running %s", loop_name)
 
-                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                abort_time = self.get_loop_abort_time(len(tunable_loops) + 1)
                 loop_logger.debug2(
                     "Task will be terminated in %0.3f seconds",
                     abort_time)

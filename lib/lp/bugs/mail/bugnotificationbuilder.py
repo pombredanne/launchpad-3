@@ -18,6 +18,10 @@ import rfc822
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    )
 from lp.services.config import config
 from lp.services.helpers import shortlist
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
@@ -110,19 +114,21 @@ class BugNotificationBuilder:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
 
-        # Add the X-Launchpad-Bug-Private header. This is a simple
-        # yes/no value denoting privacy for the bug.
-        if bug.private:
+        self.common_headers.append(
+            ('X-Launchpad-Bug-Information-Type',
+             bug.information_type.title))
+
+        # For backwards compatibility, we still include the
+        # X-Launchpad-Bug-Private and X-Launchpad-Bug-Security-Vulnerability
+        # headers.
+        if bug.information_type in PRIVATE_INFORMATION_TYPES:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Private', 'yes'))
         else:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Private', 'no'))
 
-        # Add the X-Launchpad-Bug-Security-Vulnerability header to
-        # denote security for this bug. This follows the same form as
-        # the -Bug-Private header.
-        if bug.security_related:
+        if bug.information_type in SECURITY_INFORMATION_TYPES:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
         else:

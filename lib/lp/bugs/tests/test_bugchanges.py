@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
@@ -8,7 +8,10 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
-from testtools.matchers import StartsWith
+from testtools.matchers import (
+    MatchesStructure,
+    StartsWith,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
@@ -21,6 +24,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
+from lp.registry.enums import InformationType
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -139,19 +144,12 @@ class TestBugChanges(TestCaseWithFactory):
             self.assertEqual(len(expected_activities), len(new_activities))
             for expected_activity in expected_activities:
                 added_activity = new_activities.pop(0)
-                self.assertEqual(
-                    expected_activity['person'], added_activity.person)
-                self.assertEqual(
-                    expected_activity['whatchanged'],
-                    added_activity.whatchanged)
-                self.assertEqual(
-                    expected_activity.get('oldvalue'),
-                    added_activity.oldvalue)
-                self.assertEqual(
-                    expected_activity.get('newvalue'),
-                    added_activity.newvalue)
-                self.assertEqual(
-                    expected_activity.get('message'), added_activity.message)
+                self.assertThat(added_activity, MatchesStructure.byEquality(
+                    person=expected_activity['person'],
+                    whatchanged=expected_activity['whatchanged'],
+                    oldvalue=expected_activity.get('oldvalue'),
+                    newvalue=expected_activity.get('newvalue'),
+                    message=expected_activity.get('message')))
 
         if expected_notification is None:
             self.assertEqual(0, len(new_notifications))
@@ -606,6 +604,61 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=visibility_change_activity,
             expected_notification=visibility_change_notification,
             bug=private_bug)
+
+    def test_change_information_type(self):
+        # Changing the information type of a bug adds items to the activity
+        # log and notifications.
+        bug = self.factory.makeBug()
+        self.saveOldChanges(bug=bug)
+        feature_flag = {
+            'disclosure.show_information_type_in_ui.enabled': 'on'}
+        with FeatureFixture(feature_flag):
+            bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, self.user)
+
+        information_type_change_activity = {
+            'person': self.user,
+            'whatchanged': 'information type',
+            'oldvalue': 'Public',
+            'newvalue': 'Embargoed Security',
+            }
+        information_type_change_notification = {
+            'text': '** Information type changed from Public to Embargoed '
+                'Security',
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=information_type_change_activity,
+            expected_notification=information_type_change_notification,
+            bug=bug)
+
+    def test_change_information_type_userdata_as_private(self):
+        # Changing the information type of a bug to User Data with the
+        # display_userdata_as_private flag enabled adds the change as
+        # 'Private' to the activity log and notifications.
+        bug = self.factory.makeBug()
+        self.saveOldChanges(bug=bug)
+        feature_flags = {
+            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.display_userdata_as_private.enabled': 'on'}
+        with FeatureFixture(feature_flags):
+            bug.transitionToInformationType(
+                InformationType.USERDATA, self.user)
+
+        information_type_change_activity = {
+            'person': self.user,
+            'whatchanged': 'information type',
+            'oldvalue': 'Public',
+            'newvalue': 'Private',
+            }
+        information_type_change_notification = {
+            'text': '** Information type changed from Public to Private',
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=information_type_change_activity,
+            expected_notification=information_type_change_notification,
+            bug=bug)
 
     def test_tags_added(self):
         # Adding tags to a bug will add BugActivity and BugNotification

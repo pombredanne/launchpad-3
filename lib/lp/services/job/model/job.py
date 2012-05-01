@@ -258,45 +258,24 @@ class UniversalJobSource:
     needs_init = True
 
     @staticmethod
-    def getDerived(job_id):
-        """Return the derived branch job associated with the job id."""
-        # Avoid circular imports.
-        from lp.code.model.branchjob import (
-            BranchJob,
-            )
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob,
-            )
-        store = IStore(Job)
-        for cls in [BranchJob, BranchMergeProposalJob]:
-            base_job = store.find(cls, cls.job == job_id).one()
-            if base_job is not None:
-                break
-        if base_job is None:
-            raise ValueError('No BranchJob with job=%s.' % job_id)
-
-        return base_job.makeDerived(), store
-
-    @staticmethod
-    def clearStore(store):
-        transaction.abort()
-        getUtility(IZStorm).remove(store)
-        store.close()
+    def rawGet(job_id, module_name, class_name):
+        bc_module = __import__(module_name, fromlist=[class_name])
+        db_class = getattr(bc_module, class_name)
+        store = IStore(db_class)
+        db_job = store.find(db_class, db_class.job == job_id).one()
+        if db_job is None:
+            return None
+        return db_job.makeDerived()
 
     @classmethod
-    def switchDBUser(cls, job_id):
-        """Switch to the DB user associated with this Job ID."""
-        cls.clearStore(IStore(Job))
-        derived, store = cls.getDerived(job_id)
-        dbconfig.override(
-            dbuser=derived.config.dbuser, isolation_level='read_committed')
-        cls.clearStore(store)
-
-    @classmethod
-    def get(cls, job_id):
-        transaction.abort()
+    def get(cls, ujob_id):
         if cls.needs_init:
+            transaction.abort()
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
-        cls.switchDBUser(job_id)
-        return cls.getDerived(job_id)[0]
+        transaction.abort()
+        store = IStore(Job)
+        getUtility(IZStorm).remove(store)
+        store.close()
+        dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
+        return cls.rawGet(*ujob_id[:3])

@@ -1757,11 +1757,15 @@ class Bug(SQLBase):
         # bug supervisor, we need to subscribe the maintainer.
         pillars = self.affected_pillars
         if information_type == InformationType.USERDATA:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             for pillar in pillars:
-                if pillar.bug_supervisor is not None:
-                    missing_subscribers.add(pillar.bug_supervisor)
-                else:
-                    missing_subscribers.add(pillar.owner)
+                # Ubuntu is special cased; no one else should be added in the
+                # USERDATA case.
+                if pillar != ubuntu:
+                    if pillar.bug_supervisor is not None:
+                        missing_subscribers.add(pillar.bug_supervisor)
+                    else:
+                        missing_subscribers.add(pillar.owner)
 
         # If the information type is security related, we need to ensure
         # the security contacts are subscribed. If there is no security
@@ -1786,7 +1790,7 @@ class Bug(SQLBase):
         self._security_related = (
             information_type in SECURITY_INFORMATION_TYPES)
         notify(ObjectModifiedEvent(
-                self, bug_before_modification, [information_type], user=who))
+                self, bug_before_modification, ['information_type'], user=who))
         return True
 
     def getRequiredSubscribers(self, information_type, who):

@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bug import BugView
@@ -73,3 +74,19 @@ class TestBugView(TestCaseWithFactory):
         with FeatureFixture(feature_flag):
             view = BugView(self.bug, LaunchpadTestRequest())
             self.assertEqual('Private', view.information_type)
+
+    def test_proprietary_hidden(self):
+        # When the proprietary_information_type.disabled feature flag is
+        # enabled, it isn't in the JSON request cache.
+        feature_flag = {
+            'disclosure.proprietary_information_type.disabled': 'on'}
+        with FeatureFixture(feature_flag):
+            view = BugView(self.bug, LaunchpadTestRequest())
+            view.initialize()
+            cache = IJSONRequestCache(view.request)
+            expected = [
+                InformationType.PUBLIC, InformationType.UNEMBARGOEDSECURITY,
+                InformationType.EMBARGOEDSECURITY, InformationType.USERDATA]
+            self.assertContentEqual(expected, [
+                type['value']
+                for type in cache.objects['information_types']])
