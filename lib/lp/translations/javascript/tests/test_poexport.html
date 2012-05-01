@@ -40,32 +40,25 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <div id="fixture"></div>
 
         <script type="text/x-template" id="pofile-export">
-        <form action="" method="post" class="translations">
-          <div class="fields">
-            <div id="div_format">
-              <label for="sel_format">Format:</label>
-              <select name="format" id="sel_format">
-                <option value="PO">PO format</option>
-                <option value="MO">MO format</option>
-              </select>
-            </div>
-            <div id="div_pochanged" style="margin-top: 10px">
-              <input type="checkbox" name="pochanged" id="cb_pochanged"
-                     value="POCHANGED" />
-              <label for="cb_pochanged">
-                <span><em id="po-format-only">PO format only:</em>
-                  Only strings that differ from imported versions
-                  (<a href="https://help.launchpad.net/Translations/PartialPOExport"
-                      target="_blank">What's this?</a>).</span>
-              </label>
-            </div>
-          </div>
-          <div class="actions">
-            <p>
-              <input type="submit" value="Request Download" />
-            </p>
-          </div>
-        </form>
+            <form>
+                <div id="div_format">
+                    <label for="sel_format">Format:</label>
+                    <select name="format" id="sel_format">
+                        <option value="PO">PO format</option>
+                        <option value="MO">MO format</option>
+                    </select>
+                </div>
+                <div id="div_pochanged">
+                    <input type="checkbox" name="pochanged" id="cb_pochanged"
+                        value="POCHANGED" />
+                    <label for="cb_pochanged">
+                        <span>
+                            <em id="po-format-only">PO format only:</em>
+                            Only strings that differ from imported versions
+                        </span>
+                    </label>
+                </div>
+            </form>
         </script>
     </body>
 </html>
