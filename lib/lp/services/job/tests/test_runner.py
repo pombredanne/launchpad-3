@@ -662,10 +662,10 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('merge_proposal_jobs')
-                # Check that the unique oops token was applied.
+                utility = errorlog.globalErrorUtility
                 self.assertEqual(
-                    errorlog.globalErrorUtility.oops_prefix,
-                    expected_config.oops_prefix)
+                    'T-merge_proposal_jobs',
+                    utility._oops_config.template['reporter'])
                 return cls()
 
             completed_jobs = []
