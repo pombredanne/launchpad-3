@@ -12,12 +12,12 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestArchivePrivacy(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestArchivePrivacy, self).setUp()
