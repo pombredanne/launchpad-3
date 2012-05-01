@@ -23,7 +23,6 @@ class TestArchivePrivacy(TestCaseWithFactory):
         super(TestArchivePrivacy, self).setUp()
         self.ppa = self.factory.makeArchive(private=True, commercial=True)
         self.agent = getUtility(ILaunchpadCelebrities).software_center_agent
-        self.joe = self.factory.makePerson(name='joe')
 
     def test_check_permission(self):
         """The software center agent has the relevant permissions for a
@@ -42,18 +41,20 @@ class TestArchivePrivacy(TestCaseWithFactory):
         self.assertEqual(check_permission('launchpad.Append', ppa), False)
 
     def test_add_subscription(self):
+        person = self.factory.makePerson()
         login_person(self.agent)
-        self.ppa.newSubscription(self.joe, self.agent)
+        self.ppa.newSubscription(person, self.agent)
         subscription = getUtility(
             IArchiveSubscriberSet).getBySubscriber(
-            self.joe, archive=self.ppa).one()
+                person, archive=self.ppa).one()
         self.assertEqual(subscription.registrant, self.agent)
-        self.assertEqual(subscription.subscriber, self.joe)
+        self.assertEqual(subscription.subscriber, person)
 
     def test_getArchiveSubscriptionURL(self):
+        person = self.factory.makePerson()
         login_person(self.agent)
-        sources = self.joe.getArchiveSubscriptionURL(self.agent, self.ppa)
-        authtoken = self.ppa.getAuthToken(self.joe).token
+        sources = person.getArchiveSubscriptionURL(self.agent, self.ppa)
+        authtoken = self.ppa.getAuthToken(person).token
         url = self.ppa.archive_url.split('http://')[1]
-        new_url = "http://joe:%s@%s" % (authtoken, url)
+        new_url = "http://%s:%s@%s" % (person.name, authtoken, url)
         self.assertEqual(sources, new_url)
