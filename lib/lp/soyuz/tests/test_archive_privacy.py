@@ -3,16 +3,12 @@
 
 """Test Archive privacy features."""
 
-from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from lp.soyuz.interfaces.archive import (
-    CannotSwitchPrivacy,
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import CannotSwitchPrivacy
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -25,24 +21,21 @@ class TestArchivePrivacy(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestArchivePrivacy, self).setUp()
-        self.private_ppa = self.factory.makeArchive(
-            description='Foo', private=True)
-        self.joe = self.factory.makePerson(name='joe')
-        self.fred = self.factory.makePerson(name='fred')
-        login_person(self.private_ppa.owner)
-        self.private_ppa.newSubscription(self.joe, self.private_ppa.owner)
-
     def test_no_subscription(self):
-        login_person(self.fred)
-        p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
-        self.assertRaises(Unauthorized, getattr, p3a, 'description')
+        # You cannot access private PPAs without a subscription.
+        ppa = self.factory.makeArchive(private=True)
+        non_subscriber = self.factory.makePerson()
+        with person_logged_in(non_subscriber):
+            self.assertRaises(Unauthorized, getattr, ppa, 'description')
 
     def test_subscription(self):
-        login_person(self.joe)
-        p3a = getUtility(IArchiveSet).get(self.private_ppa.id)
-        self.assertEqual(p3a.description, "Foo")
+        # Once you have a subscription, you can access private PPAs.
+        ppa = self.factory.makeArchive(private=True, description="Foo")
+        subscriber = self.factory.makePerson()
+        with person_logged_in(ppa.owner):
+            ppa.newSubscription(subscriber, ppa.owner)
+        with person_logged_in(subscriber):
+            self.assertEqual(ppa.description, "Foo")
 
 
 class TestArchivePrivacySwitching(TestCaseWithFactory):
