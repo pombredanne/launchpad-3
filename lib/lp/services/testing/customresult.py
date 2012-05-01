@@ -11,7 +11,6 @@ __all__ = [
 
 from unittest import TestSuite
 
-from testtools import iterate_tests
 from zope.testing.testrunner import find
 
 
@@ -39,7 +38,8 @@ def filter_tests(list_name):
         returns only those tests with ids in the file 'list_name'.
     """
     def do_filter(tests_by_layer_name):
-        tests = [line.strip() for line in open(list_name, 'rb')]
+        # Read the tests, filtering out any blank lines.
+        tests = filter(None, [line.strip() for line in open(list_name, 'rb')])
         suites_by_layer = {}
         for layer_name, suite in tests_by_layer_name.iteritems():
             testnames = {}
