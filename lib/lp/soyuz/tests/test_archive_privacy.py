@@ -58,8 +58,7 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
         """Create a public and a private PPA."""
         super(TestArchivePrivacySwitching, self).setUp()
         self.public_ppa = self.factory.makeArchive()
-        self.private_ppa = self.factory.makeArchive()
-        self.private_ppa.private = True
+        self.private_ppa = self.factory.makeArchive(private=True)
 
     def set_ppa_privacy(self, ppa, private):
         """Helper method to privatise a ppa."""
