@@ -11,9 +11,7 @@
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
     <tal:sort-by replace="structure context/view/widgets/sort_by"
                  condition="context/view/widgets/sort_by|nothing"/>
-    <noscript>
-      <input type="submit" value="Filter"/>
-    </noscript>
+    <input id="filter_form_submit" type="submit" value="Filter"/>
   </form>
 
 <script type="text/javascript">

@@ -350,10 +350,14 @@ class TestViaCelery(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'QuestionEmailJob',
         }))
+        body = self.factory.getUniqueString('body')
         make_question_job(
             self.factory, QuestionRecipientSet.ASKER_SUBSCRIBER,
-            question=question)
+            question=question, body=body)
         with block_on_job(self):
             transaction.commit()
         transaction.commit()
-        self.assertEqual(2, len(pop_remote_notifications()))
+        mail = pop_remote_notifications()
+        self.assertEqual(2, len(mail))
+        for message in mail:
+            self.assertIn(body, message.get_payload())

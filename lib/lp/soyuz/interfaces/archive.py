@@ -324,8 +324,9 @@ class IArchivePublic(IPrivacy, IHasOwner):
             title=_("Commercial"),
             required=True,
             description=_(
-                "Display the archive in Software Center's commercial "
-                "listings. Only private archives can be commercial.")))
+                "True if the archive is for commercial applications in the "
+                "Ubuntu Software Centre.  Governs whether subscribers or "
+                "uploaders get mail from Launchpad about archive events.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
@@ -1885,14 +1886,6 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
-
-    def getCommercialPPAs():
-        """Return a result set containing all commercial PPAs.
-
-        Commercial PPAs are private, but explicitly flagged up as commercial
-        so that they are discoverable by people who wish to buy items
-        from them.
-        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):

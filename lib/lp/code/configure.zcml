@@ -289,16 +289,6 @@
 
   <!-- Branch Merge Proposal Jobs -->
 
-  <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="lp.services.messages.interfaces.message.IMessageJob"/>
-    <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
-  </class>
-  <securedutility
-      component="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob"
-      provides="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource">
-    <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
-  </securedutility>
-
   <class class="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJob"/>

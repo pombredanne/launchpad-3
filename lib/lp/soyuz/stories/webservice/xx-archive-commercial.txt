@@ -8,24 +8,11 @@ soyuz/doc/archive-commercial.txt)
 Start by making a commercial PPA that we can fetch via the webservice:
 
     >>> login("admin@canonical.com")
-    >>> ppa = factory.makeArchive(private=True, name="cpppa")
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(ppa).commercial = True
+    >>> ppa = factory.makeArchive(private=True, name="cpppa", commercial=True)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()
 
-Commercial archives can be found with a custom method 'getCommercialPPAs'
-that lives on the distribution object.
-
-Using webservice directly:
-
-    >>> ubuntu = webservice.get("/ubuntu").jsonBody()
-    >>> cppas = webservice.named_get(
-    ...     ubuntu['self_link'], 'getCommercialPPAs').jsonBody()
-    >>> for entry in cppas['entries']:
-    ...     print entry['name']
-    cpppa
 
 == Software Center Agent ==
 
@@ -35,8 +22,8 @@ Create the P3A marked commercial, and fetch the celebrity.
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login('admin@canonical.com')
     >>> celebrity = getUtility(ILaunchpadCelebrities).software_center_agent
-    >>> archive = factory.makeArchive(name='commercial', private=True)
-    >>> archive.commercial = True
+    >>> archive = factory.makeArchive(
+    ...     name='commercial', private=True, commercial=True)
     >>> url = "/~%s/+archive/commercial" % archive.owner.name
     >>> person = factory.makePerson(name='joe')
     >>> logout()

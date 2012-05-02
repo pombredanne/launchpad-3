@@ -282,18 +282,19 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     def test_bugtasks_queries(self):
         # The view.bugtasks attribute will make several queries:
-        #  1. Load bugtasks
-        #  2. Load bugs.
-        #  3. Loads the target (sourcepackagename / product)
-        #  4. Load assignees (Person, Account, and EmailAddress).
-        #  5. Load links to specifications.
-        #  6. Load links to branches.
-        #  7. Loads milestones
-        #  8. Loads tags
-        #  9. All related people
+        #  1. Search for bugtask IDs.
+        #  2. Load bugtasks
+        #  3. Load bugs.
+        #  4. Loads the target (sourcepackagename / product)
+        #  5. Load assignees (Person, Account, and EmailAddress).
+        #  6. Load links to specifications.
+        #  7. Load links to branches.
+        #  8. Loads milestones
+        #  9. Loads tags
+        #  10. All related people
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=10)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -408,17 +409,18 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
     def test_bugtasks_queries(self):
         # The view.bugtasks attribute will make several queries:
         #  1. For each project in the group load all the dev focus series ids.
-        #  2. Load bugtasks.
-        #  3. Load bugs.
-        #  4. Load assignees (Person, Account, and EmailAddress).
-        #  5. Load links to specifications.
-        #  6. Load links to branches.
-        #  7. Loads milestones.
-        #  8. Loads tags.
-        #  9. All related people.
+        #  2. Search for bugtask IDs.
+        #  3. Load bugtasks.
+        #  4. Load bugs.
+        #  5. Load assignees (Person, Account, and EmailAddress).
+        #  6. Load links to specifications.
+        #  7. Load links to branches.
+        #  8. Loads milestones.
+        #  9. Loads tags.
+        #  10. All related people.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=10)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more

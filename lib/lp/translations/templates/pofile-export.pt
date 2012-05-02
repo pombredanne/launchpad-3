@@ -32,6 +32,7 @@
             formatlist.on('change', toggle_pochanged);
             // Initialize the state of the controls.
             toggle_pochanged();
+            Y.one('#po-format-only').addClass('unseen');
         });
     });
     </script>
@@ -65,7 +66,7 @@
               <input type="checkbox" name="pochanged" id="cb_pochanged"
                      value="POCHANGED" />
               <label for="cb_pochanged">
-                <span><noscript><em>PO format only:</em></noscript>
+                <span><em id="po-format-only">PO format only:</em>
                   Only strings that differ from imported versions
                   (<a href="https://help.launchpad.net/Translations/PartialPOExport"
                       target="_blank">What's this?</a>).</span>
