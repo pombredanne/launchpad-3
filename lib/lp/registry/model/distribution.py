@@ -1316,12 +1316,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self,
             purpose=ArchivePurpose.PPA).order_by('id')
 
-    def getCommercialPPAs(self):
-        """See `IDistribution`."""
-        # If we ever see non-Ubuntu PPAs, this will return more than
-        # just the PPAs for the Ubuntu context.
-        return getUtility(IArchiveSet).getCommercialPPAs()
-
     def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
