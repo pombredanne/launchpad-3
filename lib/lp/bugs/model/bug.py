@@ -1748,7 +1748,6 @@ class Bug(SQLBase):
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
-        self.updateHeat()
 
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
@@ -1784,6 +1783,7 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self.updateHeat()
         # Set the legacy attributes for now.
         self._private = information_type in PRIVATE_INFORMATION_TYPES
         self._security_related = (

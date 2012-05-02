@@ -316,8 +316,8 @@ class TestBugTaskFlatTriggers(BugTaskFlatTestMixin):
         task = self.makeLoggedInTask(private=True)
         with self.bugtaskflat_is_updated(
             task, [
-                'information_type', 'date_last_updated', 'heat',
-                'access_policies', 'access_grants']):
+                'information_type', 'heat', 'access_policies',
+                'access_grants']):
             task.bug.setPrivate(False, task.owner)
 
     def test_bug_change_unflattened(self):
