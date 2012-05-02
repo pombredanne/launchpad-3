@@ -152,7 +152,7 @@ so that they are treated as "key: value" pairs.
     priority: P1
     product: Marvin
     resolution: FIXED
-    see_also:...
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -178,7 +178,7 @@ one bug will be returned (assuming they all exist and are accessible).
     priority: P1
     product: Marvin
     resolution: FIXED
-    see_also:...
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
