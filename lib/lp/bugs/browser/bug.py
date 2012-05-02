@@ -863,6 +863,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
+# XXX: This can move to using LaunchpadEditFormView when 
+# show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
