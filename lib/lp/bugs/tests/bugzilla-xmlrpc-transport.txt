@@ -448,7 +448,8 @@ on the remote server.
 
     >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
     >>> bugzilla_transport.auth_cookie = 'open sesame'
-    >>> return_dict = server.Launchpad.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict = server.Launchpad.add_comment(
+    ...     {'id': 1, 'comment': comment})
     >>> print return_dict['comment_id']
     5
 
