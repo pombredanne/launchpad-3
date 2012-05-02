@@ -526,9 +526,3 @@ added (i.e. `add` overrides `remove`).
     ...     'remove': ['https://launchpad.dev/bugs/14']})
     {'changes': {1: {'see_also':
         {'added': ['https://launchpad.net/bugs/14']}}}}
-
-Undo the changes for test isolation.
-    >>> server.Bug.update_see_also({
-    ...     'ids': [1], 'remove': ['https://launchpad.net/bugs/14']})
-    {'changes': {1: {'see_also':
-        {'removed': ['https://launchpad.net/bugs/14']}}}}
