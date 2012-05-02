@@ -74,7 +74,12 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
 
     def makeBugAndPolicies(self, private=False):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(private=private, product=product)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        bug = self.factory.makeBug(
+            product=product, information_type=information_type)
         return removeSecurityProxy(bug)
 
     def getPoliciesForArtifact(self, artifact):

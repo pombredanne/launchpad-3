@@ -35,9 +35,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import (
-    setupBrowserForUser,
-    )
+from lp.testing.pages import setupBrowserForUser
 from lp.testing.views import (
     create_initialized_view,
     create_view,
@@ -90,9 +88,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
 
         if with_branch and self.pillar_type == 'product':
             branch = self.factory.makeBranch(
-                product=self.pillar,
-                owner=self.pillar.owner,
-                private=True)
+                product=self.pillar, owner=self.pillar.owner, private=True)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=branch))
 
@@ -103,14 +99,12 @@ class SharingBaseTestCase(TestCaseWithFactory):
                 owner = self.pillar.owner
             if self.pillar_type == 'product':
                 bug = self.factory.makeBug(
-                    product=self.pillar,
-                    owner=owner,
-                    private=True)
+                    product=self.pillar, owner=owner,
+                    information_type=InformationType.USERDATA)
             elif self.pillar_type == 'distribution':
                 bug = self.factory.makeBug(
-                    distribution=self.pillar,
-                    owner=owner,
-                    private=True)
+                    distribution=self.pillar, owner=owner,
+                    information_type=InformationType.USERDATA)
             artifacts.append(
                 self.factory.makeAccessArtifact(concrete=bug))
 
@@ -251,8 +245,6 @@ class PillarSharingDetailsMixin:
 class TestProductSharingDetailsView(
     SharingBaseTestCase, PillarSharingDetailsMixin):
 
-    pillar_type = 'product'
-
     def setUp(self):
         super(TestProductSharingDetailsView, self).setUp()
         login_person(self.owner)
@@ -260,8 +252,6 @@ class TestProductSharingDetailsView(
 
 class TestDistributionSharingDetailsView(
     SharingBaseTestCase, PillarSharingDetailsMixin):
-
-    pillar_type = 'distribution'
 
     def setUp(self):
         super(TestDistributionSharingDetailsView, self).setUp()

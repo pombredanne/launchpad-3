@@ -14,8 +14,8 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import Bug
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactSource,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
@@ -27,6 +27,7 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import DatabaseFunctionalLayer
+
 
 BUGTASKFLAT_COLUMNS = (
     'bugtask',
@@ -90,8 +91,13 @@ class BugTaskFlatTestMixin(TestCaseWithFactory):
 
     def makeLoggedInTask(self, private=False):
         owner = self.factory.makePerson()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         login_person(owner)
-        bug = self.factory.makeBug(private=private, owner=owner)
+        bug = self.factory.makeBug(
+            information_type=information_type, owner=owner)
         return bug.default_bugtask
 
     @contextmanager
