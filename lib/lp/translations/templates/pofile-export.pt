@@ -15,7 +15,7 @@
     <script type="text/javascript">
     LPJS.use('lp.translations.poexport', function(Y){
         Y.on('domready', function(){
-            Y.lp.translations.poexport.initialize_pofile_export_page(Y);
+            Y.lp.translations.poexport.initialize_pofile_export_page();
         });
     });
     </script>
