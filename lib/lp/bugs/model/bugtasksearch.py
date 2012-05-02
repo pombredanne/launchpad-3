@@ -18,7 +18,6 @@ from storm.expr import (
     Desc,
     Exists,
     In,
-    Intersect,
     Join,
     LeftJoin,
     Not,
@@ -1442,7 +1441,7 @@ def _build_tag_set_query(clauses, cols):
     if len(subselects) == 1:
         return Exists(subselects[0])
     else:
-        return Exists(Intersect(*subselects))
+        return And(*(Exists(subselect) for subselect in subselects))
 
 
 def _build_tag_set_query_all(tags, cols):
