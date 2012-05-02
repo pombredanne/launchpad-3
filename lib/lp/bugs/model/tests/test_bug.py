@@ -16,6 +16,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -31,10 +32,8 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.database.lpstorm import IStore
 from lp.testing import (
     feature_flags,
     login_person,
@@ -765,59 +764,6 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
 
-    def _fetch_notifications(self, bug, reason_header):
-        store = IStore(BugNotification)
-        return store.find(
-            BugNotification,
-            BugNotificationRecipient.bug_notificationID == BugNotification.id,
-            BugNotificationRecipient.reason_header == reason_header,
-            BugNotification.bug == bug,
-            BugNotification.status == BugNotificationStatus.PENDING,
-            BugNotification.date_emailed == None)
-
-    def _check_email_content(self, message, expected_headers,
-                             expected_body_text):
-        # Ensure that the email header values and message body text is as
-        # expected.
-        headers = {}
-        for header in ['X-Launchpad-Message-Rationale',
-                       'X-Launchpad-Bug-Security-Vulnerability',
-                       'X-Launchpad-Bug-Private']:
-            if message[header]:
-                headers[header] = message[header]
-        self.assertEqual(expected_headers, headers)
-        body_text = message.get_payload(decode=True)
-        self.assertTrue(expected_body_text in body_text)
-
-    def _check_notifications(self, bug, expected_recipients,
-                             expected_body_text, expected_reason_body,
-                             is_private, is_security_related, role):
-        # Ensure that the content of the pending email notifications is
-        # correct.
-        notifications = self._fetch_notifications(bug, role)
-        actual_recipients = []
-        email_notifications = get_email_notifications(notifications)
-        for bug_notifications, omitted, messages in email_notifications:
-            for message in messages:
-                expected_headers = {
-                    'X-Launchpad-Bug-Private':
-                        'yes' if is_private else 'no',
-                    'X-Launchpad-Bug-Security-Vulnerability':
-                        'yes' if is_security_related else 'no',
-                    'X-Launchpad-Message-Rationale': role,
-                }
-                self._check_email_content(
-                    message, expected_headers, expected_body_text)
-            expected_reason_header = role
-            for notification in bug_notifications:
-                for recipient in notification.recipients:
-                    self.assertEqual(
-                        expected_reason_header, recipient.reason_header)
-                    self.assertEqual(
-                        expected_reason_body, recipient.reason_body)
-                    actual_recipients.append(recipient.person)
-        self.assertContentEqual(expected_recipients, actual_recipients)
-
     def test_structural_bug_supervisor_becomes_direct_on_private(self):
         # If a bug supervisor has a structural subscription to the bug, and
         # the bug is marked as private, the supervisor should get a direct
@@ -959,6 +905,34 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transition_special_cased_for_ubuntu(self):
+        # When a bug on ubuntu is transitioned to USERDATA from
+        # EMBARGOEDSECURITY, the bug supervisor is not subscribed, and the
+        # bug's subscribers do not change.
+        # This is to protect ubuntu's workflow, which differs from the
+        # Launchpad norm.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        admin = getUtility(ILaunchpadCelebrities).admin
+        ubuntu = removeSecurityProxy(ubuntu)
+        ubuntu.setBugSupervisor(
+            self.factory.makePerson(name='supervisor'), admin)
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY,
+            distribution=ubuntu)
+        bug = removeSecurityProxy(bug)
+        initial_subscribers = bug.getDirectSubscribers()
+        self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
+        bug.transitionToInformationType(
+            InformationType.USERDATA, who=bug.owner)
+        subscribers = bug.getDirectSubscribers()
+        self.assertContentEqual(initial_subscribers, subscribers)
+        ubuntu.setBugSupervisor(None, ubuntu.owner)
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

@@ -121,6 +121,9 @@ class TranslationSharingJobDerived:
 
     delegates(ITranslationSharingJob, 'job')
 
+    def getDBClass(self):
+        return TranslationSharingJob
+
     _event_types = {}
 
     @property

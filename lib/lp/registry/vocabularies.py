@@ -2252,6 +2252,7 @@ class InformationTypeVocabulary(SimpleVocabulary):
                 description = (
                     description.replace('user data', 'private information'))
             term = SimpleTerm(type, type.name, title)
+            term.name = type.name
             term.description = description
             terms.append(term)
         super(InformationTypeVocabulary, self).__init__(terms)

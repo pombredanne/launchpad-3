@@ -36,6 +36,7 @@ from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
+    DatabaseLayer,
     LaunchpadZopelessLayer,
     )
 
@@ -352,6 +353,7 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     def test_cronscript(self):
         run_script(
             'cronscripts/run_jobs.py', ['-v', 'initializedistroseries'])
+        DatabaseLayer.force_dirty_database()
 
 
 class TestViaCelery(TestCaseWithFactory):

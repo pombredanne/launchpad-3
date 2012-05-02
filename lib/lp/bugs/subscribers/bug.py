@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -32,6 +32,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.features import getFeatureFlag
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.mail.sendmail import (
     format_address,
@@ -115,9 +116,14 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-
-    for field_name in ("title", "description", "name", "private",
-                       "security_related", "duplicateof", "tags"):
+    fields = ["title", "description", "name"]
+    if bool(getFeatureFlag(
+        'disclosure.show_information_type_in_ui.enabled')):
+        fields.append('information_type')
+    else:
+        fields.extend(('private', 'security_related'))
+    fields.extend(("duplicateof", "tags"))
+    for field_name in fields:
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)

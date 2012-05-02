@@ -217,7 +217,7 @@ from lp.bugs.interfaces.bugtracker import (
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtasksearch import unflat_orderby_expression
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.layers import FeedsLayer
 from lp.registry.enums import InformationType
@@ -789,7 +789,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             activity = self.context.bug.activity
         bug_change_re = (
-            'affects|description|security vulnerability|'
+            'affects|description|security vulnerability|information type|'
             'summary|tags|visibility|bug task deleted')
         bugtask_change_re = (
             '[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?: '
@@ -2802,7 +2802,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 orderby_col = orderby_col[1:]
 
             try:
-                unflat_orderby_expression[orderby_col]
+                orderby_expression[orderby_col]
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)

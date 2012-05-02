@@ -115,6 +115,9 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
         """
         return self
 
+    def getDBClass(self):
+        return self.__class__
+
 
 def schedule(pofile):
     """Schedule a job to update a POFile's stats."""

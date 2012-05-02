@@ -71,7 +71,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -1320,13 +1319,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report_visibility_leak(self):
-        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
-            request = get_current_browser_request()
-            try:
-                raise MixedVisibilityError()
-            except MixedVisibilityError:
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
+        request = get_current_browser_request()
+        try:
+            raise MixedVisibilityError()
+        except MixedVisibilityError:
+            getUtility(IErrorReportingUtility).raising(
+                sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):

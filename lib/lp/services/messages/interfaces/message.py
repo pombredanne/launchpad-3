@@ -11,7 +11,6 @@ __all__ = [
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
-    'IMessageJob',
     'IMessageSet',
     'IUserToUserEmail',
     'IndexedMessage',
@@ -47,7 +46,6 @@ from zope.schema import (
 
 from lp import _
 from lp.app.errors import NotFoundError
-from lp.services.job.interfaces.job import IJob
 from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
@@ -285,22 +283,6 @@ class IDirectEmailAuthorization(Interface):
         :param message: The email message that was sent.
         :type message: `email.Message.Message`
         """
-
-
-class IMessageJob(Interface):
-    """Interface for jobs triggered by messages."""
-
-    job = Object(schema=IJob, required=True)
-
-    message_bytes = Object(
-        title=_('Full MIME content of Email.'), required=True,
-        schema=ILibraryFileAlias)
-
-    def getMessage():
-        """Return an email.Message representing this job's message."""
-
-    def destroySelf():
-        """Remove this object (and its job) from the database."""
 
 
 class UnknownSender(NotFoundError):
