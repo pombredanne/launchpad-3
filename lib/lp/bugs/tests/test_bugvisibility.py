@@ -76,13 +76,6 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
             self.bug.subscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
 
-    def test_privateBugAssignee(self):
-        # The bug assignee can see the private bug.
-        bug_assignee = self.factory.makePerson(name="bugassignee")
-        with celebrity_logged_in('admin'):
-            self.bug.default_bugtask.transitionToAssignee(bug_assignee)
-        self.assertTrue(self.bug.userCanView(bug_assignee))
-
     def test_publicBugAnonUser(self):
         # Since the bug is private, the anonymous user cannot see it.
         self.assertFalse(self.bug.userCanView(None))

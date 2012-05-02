@@ -1299,28 +1299,6 @@ class TestBugChanges(TestCaseWithFactory):
             self.user, self.product_metadata_subscriber, old_assignee]
         self._test_unassign_bugtask(self.bug_task, expected_recipients)
 
-    def test_unassign_private_bugtask(self):
-        # Test that unassigning a private bug task adds entries to the
-        # bug activity and notifications sets. This test creates a private bug
-        # that the user can only see because they are assigned to it. The user
-        # then unassigns themselves.
-
-        # Create the private bug.
-        bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
-        bug_task = bug.bugtasks[0]
-        # Create a test assignee.
-        old_assignee = self.factory.makePerson()
-        # As the bug owner, assign the test assignee..
-        with person_logged_in(self.user):
-            bug_task.transitionToAssignee(old_assignee)
-            self.saveOldChanges(bug=bug)
-
-        # Only the bug owner will get notified about the change.
-        expected_recipients = [self.user]
-        with person_logged_in(old_assignee):
-            self._test_unassign_bugtask(bug_task, expected_recipients)
-
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and
         # BugNotification records will be created.
