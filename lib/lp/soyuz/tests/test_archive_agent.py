@@ -6,8 +6,6 @@
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.webapp.authorization import check_permission
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
