@@ -13,26 +13,9 @@
     }
     </style>
     <script type="text/javascript">
-    LPJS.use('node', 'event', function(Y){
+    LPJS.use('lp.translations.poexport', function(Y){
         Y.on('domready', function(){
-            // The pochanged option is only available for the PO format.
-            var formatlist = Y.one('#div_format select');
-            var checkbox = Y.one('#div_pochanged input');
-            var changedtext = Y.one('#div_pochanged span');
-            function toggle_pochanged() {
-                if (formatlist.get('value') == 'PO') {
-                    changedtext.removeClass('disabledpochanged');
-                    checkbox.set('disabled', false);
-                }
-                else {
-                    changedtext.addClass('disabledpochanged');
-                    checkbox.set('disabled', true);
-                }
-            }
-            formatlist.on('change', toggle_pochanged);
-            // Initialize the state of the controls.
-            toggle_pochanged();
-            Y.one('#po-format-only').addClass('unseen');
+            Y.lp.translations.poexport.initialize_pofile_export_page();
         });
     });
     </script>
