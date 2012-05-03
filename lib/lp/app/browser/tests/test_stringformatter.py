@@ -380,9 +380,9 @@ class TestOOPSFormatter(TestCase):
 
     def test_doesnt_linkify_for_non_developers(self):
         # OOPS IDs won't be linkified for non-developers.
-        self._setDeveloper(False)
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
+        self._setDeveloper(False)
         formatted_string = formatter.oops_id()
 
         self.assertEqual(
@@ -394,7 +394,6 @@ class TestOOPSFormatter(TestCase):
         # OOPS IDs will be linkified for Launchpad developers.
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
-
         self._setDeveloper(True)
         formatted_string = formatter.oops_id()
 
