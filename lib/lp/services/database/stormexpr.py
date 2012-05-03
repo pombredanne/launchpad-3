@@ -5,6 +5,9 @@ __metaclass__ = type
 __all__ = [
     'AdvisoryUnlock',
     'Array',
+    'ArrayAgg',
+    'ArrayContains',
+    'ArrayIntersects',
     'Concatenate',
     'CountDistinct',
     'Greatest',
@@ -15,6 +18,7 @@ __all__ = [
 from storm.expr import (
     BinaryOper,
     ComparableExpr,
+    CompoundOper,
     compile,
     EXPR,
     Expr,
@@ -87,3 +91,21 @@ def compile_array(compile, array, state):
     args = compile(array.args, state)
     state.pop()
     return "ARRAY[%s]" % args
+
+
+class ArrayAgg(NamedFunc):
+    "Aggregate values (within a GROUP BY) into an array."
+    __slots__ = ()
+    name = "ARRAY_AGG"
+
+
+class ArrayContains(CompoundOper):
+    "True iff the left side is a superset of the right side."
+    __slots__ = ()
+    oper = "@>"
+
+
+class ArrayIntersects(CompoundOper):
+    "True iff the left side shares at least one element with the right side."
+    __slots__ = ()
+    oper = "&&"
