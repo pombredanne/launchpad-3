@@ -419,17 +419,20 @@ Create some bugs.
       distribution task. Subscribed to by team_c.
     - bug_z is public.
 
+    >>> from lp.registry.enums import InformationType
     >>> distro_p = factory.makeDistribution(name='di-p')
     >>> series_p = factory.makeDistroSeries(
     ...     distribution=distro_p, name='ds-p')
     >>> bug_a = factory.makeBug(
-    ...     owner=owner, distribution=distro_p, private=True)
+    ...     owner=owner, distribution=distro_p,
+    ...     information_type=InformationType.USERDATA)
     >>> bug_b = factory.makeBug(
-    ...     owner=owner, distribution=distro_p, private=True)
+    ...     owner=owner, distribution=distro_p,
+    ...     information_type=InformationType.USERDATA)
     >>> bug_c = factory.makeBug(
-    ...     owner=owner, series=series_p, private=True)
-    >>> bug_z = factory.makeBug(
-    ...     owner=owner, distribution=distro_p, private=False)
+    ...     owner=owner, series=series_p,
+    ...     information_type=InformationType.USERDATA)
+    >>> bug_z = factory.makeBug(owner=owner, distribution=distro_p)
 
     >>> sub = bug_a.subscribe(team_a, person_a)
     >>> sub = bug_b.subscribe(person_b, person_b)

@@ -607,9 +607,8 @@ class JobCronScript(LaunchpadCronScript):
 
     def main(self):
         section = self.config_section
-        if (getattr(section, 'error_dir', None) is not None
-            and getattr(section, 'oops_prefix', None) is not None):
-            # If the two variables are not set, we will let the error
+        if getattr(section, 'error_dir', None) is not None:
+            # If the error_dir is not set, we will let the error
             # utility default to using the [error_reports] config.
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)

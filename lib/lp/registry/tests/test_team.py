@@ -10,7 +10,10 @@ from zope.component import getUtility
 from zope.interface.exceptions import Invalid
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.enums import PersonTransferJobType
+from lp.registry.enums import (
+    InformationType,
+    PersonTransferJobType,
+    )
 from lp.registry.errors import (
     JoinNotAllowed,
     TeamSubscriptionPolicyError,
@@ -400,7 +403,9 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
     def test_closed_team_with_private_bugs_cannot_become_open(self):
         # The team cannot become open if it is subscribed to private bugs.
         self.setUpTeams()
-        bug = self.factory.makeBug(owner=self.team.teamowner, private=True)
+        bug = self.factory.makeBug(
+            owner=self.team.teamowner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(self.team.teamowner):
             bug.subscribe(self.team, self.team.teamowner)
         self.assertFalse(
@@ -412,7 +417,9 @@ class TestTeamSubscriptionPolicyChoiceModerated(TeamSubscriptionPolicyBase):
     def test_closed_team_with_private_bugs_assigned_cannot_become_open(self):
         # The team cannot become open if it is assigned private bugs.
         self.setUpTeams()
-        bug = self.factory.makeBug(owner=self.team.teamowner, private=True)
+        bug = self.factory.makeBug(
+            owner=self.team.teamowner,
+            information_type=InformationType.USERDATA)
         with person_logged_in(self.team.teamowner):
             bug.default_bugtask.transitionToAssignee(self.team)
         self.assertFalse(

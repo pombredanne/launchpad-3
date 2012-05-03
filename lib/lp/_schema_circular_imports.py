@@ -470,8 +470,6 @@ patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
     IDistribution, 'searchSourcePackages', IDistributionSourcePackage)
-patch_collection_return_type(
-    IDistribution, 'getCommercialPPAs', IArchive)
 patch_reference_property(
     IDistribution, 'main_archive', IArchive)
 IDistribution['all_distro_archives'].value_type.schema = IArchive
@@ -861,9 +859,9 @@ patch_entry_explicit_version(ICve, 'beta')
 
 # IDistribution
 patch_operations_explicit_version(
-    IDistribution, 'beta', "getArchive", "getCommercialPPAs",
-    "getCountryMirror", "getDevelopmentSeries", "getMirrorByName",
-    "getSeries", "getSourcePackage", "searchSourcePackages")
+    IDistribution, 'beta', "getArchive", "getCountryMirror",
+    "getDevelopmentSeries", "getMirrorByName", "getSeries",
+    "getSourcePackage", "searchSourcePackages")
 
 # IDistributionMirror
 patch_entry_explicit_version(IDistributionMirror, 'beta')
