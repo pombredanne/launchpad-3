@@ -58,6 +58,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.features import getFeatureFlag
 from lp.services.mail.commands import (
     EditEmailCommand,
     EmailCommand,
@@ -151,6 +152,66 @@ class BugEmailCommand(EmailCommand):
                         error_templates=error_templates,
                         bug_id=bugid))
             return bug, None
+
+
+class InformationTypeEmailCommand(EmailCommand):
+    """Changes the information type of a bug.
+
+    We do not subclass `EditEmailCommand` because we must call
+    `IBug.transitionToInformationType` to update it.
+    """
+
+    implements(IBugEditEmailCommand)
+
+    _numberOfArguments = 3
+    RANK = 3
+
+    def execute(self, context, current_event):
+        information_type_string = ' '.join(self.string_args)
+        userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if information_type_string == 'Private' and userdata_as_private:
+            information_type_string = 'User Data'
+        if information_type_string == 'Proprietary':
+            raise EmailProcessingError(
+                get_error_message(
+                    'information_type-proprietary-denied.txt',
+                    error_templates=error_templates),
+                stop_processing=True)
+        try:
+            information_type = InformationType.getTermByToken(
+                information_type_string).value
+        except LookupError:
+            raise EmailProcessingError(
+                get_error_message(
+                    'information_type-parameter-mismatch.txt',
+                    error_templates=error_templates),
+                stop_processing=True)
+
+        # Snapshot.
+        edited_fields = set()
+        if IObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
+
+        # Apply requested changes.
+        if isinstance(context, CreateBugParams):
+            context.information_type = information_type
+            return context, current_event
+
+        edited = context.transitionToInformationType(
+            information_type, getUtility(ILaunchBag).user)
+
+        # Update the current event.
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
+            edited_fields.add('private')
+            current_event = ObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class PrivateEmailCommand(EmailCommand):
@@ -901,6 +962,7 @@ class BugEmailCommands(EmailCommandCollection):
 
     _commands = {
         'bug': BugEmailCommand,
+        'information_type': InformationTypeEmailCommand,
         'private': PrivateEmailCommand,
         'security': SecurityEmailCommand,
         'summary': SummaryEmailCommand,
