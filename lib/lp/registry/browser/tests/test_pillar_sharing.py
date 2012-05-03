@@ -67,8 +67,7 @@ class SharingBaseTestCase(TestCaseWithFactory):
             self.pillar = self.factory.makeProduct(
                 owner=self.owner, driver=self.driver)
         self.access_policy = self.factory.makeAccessPolicy(
-            pillar=self.pillar,
-            type=InformationType.PROPRIETARY)
+            pillar=self.pillar, type=InformationType.PROPRIETARY)
         self.grantees = []
 
     def makeGrantee(self, name=None):
@@ -245,6 +244,8 @@ class PillarSharingDetailsMixin:
 class TestProductSharingDetailsView(
     SharingBaseTestCase, PillarSharingDetailsMixin):
 
+    pillar_type = 'product'
+
     def setUp(self):
         super(TestProductSharingDetailsView, self).setUp()
         login_person(self.owner)
@@ -252,6 +253,8 @@ class TestProductSharingDetailsView(
 
 class TestDistributionSharingDetailsView(
     SharingBaseTestCase, PillarSharingDetailsMixin):
+
+    pillar_type = 'distribution'
 
     def setUp(self):
         super(TestDistributionSharingDetailsView, self).setUp()

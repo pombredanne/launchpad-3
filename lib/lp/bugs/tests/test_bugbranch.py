@@ -62,7 +62,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         # getBranchesWithVisibleBugs shows public bugs to anyone,
         # including anonymous users.
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=False)
+        bug = self.factory.makeBug()
         with celebrity_logged_in('admin'):
             bug.linkBranch(branch, self.factory.makePerson())
         utility = getUtility(IBugBranchSet)

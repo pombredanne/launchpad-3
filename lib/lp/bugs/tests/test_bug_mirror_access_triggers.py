@@ -93,7 +93,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
             policy.type for policy in self.getPoliciesForArtifact(artifact))
 
     def test_public_has_nothing(self):
-        bug = self.factory.makeBug(private=False)
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
         artifact = getUtility(IAccessArtifactSource).find([bug]).one()
         self.assertIs(None, artifact)
 
