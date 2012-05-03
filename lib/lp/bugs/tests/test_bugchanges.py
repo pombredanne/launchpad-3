@@ -237,7 +237,8 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         # Create the private bug.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
+            product=self.product, owner=self.user,
+            information_type=InformationType.USERDATA)
         bug.subscribe(subscriber, self.user)
         self.saveOldChanges(bug=bug)
         bug.unsubscribe(subscriber, subscriber)
@@ -588,13 +589,14 @@ class TestBugChanges(TestCaseWithFactory):
     def test_make_public(self):
         # Marking a bug as public adds items to the bug's activity log
         # and notifications.
-        private_bug = self.factory.makeBug(private=True)
+        private_bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         self.saveOldChanges(private_bug)
         self.assertTrue(private_bug.private)
-
         bug_before_modification = Snapshot(
             private_bug, providing=providedBy(private_bug))
-        private_bug.setPrivate(False, self.user)
+        private_bug.transitionToInformationType(
+            InformationType.PUBLIC, self.user)
         notify(ObjectModifiedEvent(
             private_bug, bug_before_modification, ['private'],
             user=self.user))
@@ -1126,7 +1128,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_retarget_private_security_bug_to_product(self):
         # A series of tests for re-targetting a private bug task.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
+            product=self.product, owner=self.user,
+            information_type=InformationType.USERDATA)
         maintainer = self.factory.makePerson()
         bug_supervisor = self.factory.makePerson()
 
@@ -1208,7 +1211,8 @@ class TestBugChanges(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         subscriber = self.factory.makePerson()
         new_product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=old_product, private=True)
+        bug = self.factory.makeBug(
+            product=old_product, information_type=InformationType.USERDATA)
         bug.default_bugtask.transitionToTarget(new_product)
         self.assertNotIn(subscriber, bug.getDirectSubscribers())
         self.assertNotIn(subscriber, bug.getIndirectSubscribers())

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bug-branch linking from the bugs side."""
@@ -17,6 +17,7 @@ from lp.bugs.model.bugbranch import (
     BugBranch,
     BugBranchSet,
     )
+from lp.registry.enums import InformationType
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
@@ -47,7 +48,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         branch_1 = self.factory.makeBranch()
         branch_2 = self.factory.makeBranch()
         bug_a = self.factory.makeBug()
-        bug_b = self.factory.makeBug()
+        self.factory.makeBug()
         self.factory.loginAsAnyone()
         bug_a.linkBranch(branch_1, self.factory.makePerson())
         bug_a.linkBranch(branch_2, self.factory.makePerson())
@@ -61,7 +62,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         # getBranchesWithVisibleBugs shows public bugs to anyone,
         # including anonymous users.
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=False)
+        bug = self.factory.makeBug()
         with celebrity_logged_in('admin'):
             bug.linkBranch(branch, self.factory.makePerson())
         utility = getUtility(IBugBranchSet)
@@ -97,7 +98,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         # getBranchesWithVisibleBugs does not show private bugs to users
         # who aren't logged in.
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         with celebrity_logged_in('admin'):
             bug.linkBranch(branch, self.factory.makePerson())
         utility = getUtility(IBugBranchSet)
@@ -109,7 +110,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         # arbitrary logged-in users (such as Average Joe, or J. Random
         # Hacker).
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         with celebrity_logged_in('admin'):
             bug.linkBranch(branch, self.factory.makePerson())
         utility = getUtility(IBugBranchSet)
@@ -122,7 +123,7 @@ class TestBugBranchSet(TestCaseWithFactory):
         # getBranchesWithVisibleBugs will show private bugs to their
         # subscribers.
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         user = self.factory.makePerson()
         with celebrity_logged_in('admin'):
             bug.subscribe(user, self.factory.makePerson())
@@ -134,7 +135,7 @@ class TestBugBranchSet(TestCaseWithFactory):
     def test_getBranchesWithVisibleBugs_shows_private_bugs_to_admins(self):
         # getBranchesWithVisibleBugs will show private bugs to admins.
         branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         with celebrity_logged_in('admin'):
             bug.linkBranch(branch, self.factory.makePerson())
         utility = getUtility(IBugBranchSet)
@@ -248,12 +249,12 @@ class TestBugBranch(TestCaseWithFactory):
 
     def test_the_unwashed_cannot_link_branch_to_private_bug(self):
         # Those who cannot see a bug are forbidden to link a branch to it.
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         self.assertRaises(Unauthorized, getattr, bug, 'linkBranch')
 
     def test_the_unwashed_cannot_unlink_branch_from_private_bug(self):
         # Those who cannot see a bug are forbidden to unlink branches from it.
-        bug = self.factory.makeBug(private=True)
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
         self.assertRaises(Unauthorized, getattr, bug, 'unlinkBranch')
 
     def test_anonymous_users_cannot_link_branches(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -33,6 +33,7 @@ from lp.code.enums import (
     BranchType,
     BranchVisibilityRule,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -303,7 +304,8 @@ class TestBranchView(BrowserTestCase):
         # can't see any of the tasks.
         branch = self.factory.makeAnyBranch()
         reporter = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=reporter)
+        bug = self.factory.makeBug(
+            owner=reporter, information_type=InformationType.USERDATA)
         with person_logged_in(reporter):
             branch.linkBug(bug, reporter)
             view = create_initialized_view(branch, '+index')

@@ -445,7 +445,8 @@ instead of a productseries field.
     >>> milestone = hoary_series.newMilestone('alpha')
     >>> view = create_initialized_view(milestone, '+edit')
     >>> view.field_names
-    ['name', 'code_name', 'active', 'dateexpected', 'tags', 'summary', 'distroseries']
+    ['name', 'code_name', 'active', 'dateexpected', 'tags', 'summary',
+    'distroseries']
 
 The distroseries milestone can be updated too.
 
@@ -736,7 +737,9 @@ to a private bug that was targeted to a milestone by a driver.
 
     >>> ignored = login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.13')
-    >>> private_bug = factory.makeBug(product=firefox, private=True)
+    >>> from lp.registry.enums import InformationType
+    >>> private_bug = factory.makeBug(
+    ...     product=firefox, information_type=InformationType.USERDATA)
     >>> private_bugtask = bug.bugtasks[0]
     >>> private_bugtask.milestone = milestone
     >>> view = create_initialized_view(milestone, '+delete')

@@ -27,6 +27,7 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.enums import InformationType
 from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -1326,10 +1327,14 @@ class Test_getAssignedBugTasksDueBefore(TestCaseWithFactory):
     def test_skips_private_bugs_the_user_is_not_allowed_to_see(self):
         milestone = self.factory.makeMilestone(dateexpected=self.today)
         private_bug = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
         self._assignBugTaskToTeamOwner(private_bug.bugtasks[0])
         private_bug2 = removeSecurityProxy(
-            self.factory.makeBug(milestone=milestone, private=True))
+            self.factory.makeBug(
+                milestone=milestone,
+                information_type=InformationType.USERDATA))
         self._assignBugTaskToTeamOwner(private_bug2.bugtasks[0])
 
         with person_logged_in(private_bug2.owner):
