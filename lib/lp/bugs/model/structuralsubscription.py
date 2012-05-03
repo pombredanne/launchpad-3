@@ -18,12 +18,10 @@ import pytz
 from storm.base import Storm
 from storm.expr import (
     And,
-    CompoundOper,
     Count,
     In,
     Join,
     LeftJoin,
-    NamedFunc,
     Not,
     Or,
     Select,
@@ -86,6 +84,11 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import cachedproperty
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayContains,
+    ArrayIntersects,
+    )
 
 
 class StructuralSubscription(Storm):
@@ -685,24 +688,6 @@ def get_structural_subscribers(
                     person, subscription.target)
             recipients.addFilter(filter)
         return subscribers
-
-
-class ArrayAgg(NamedFunc):
-    "Aggregate values (within a GROUP BY) into an array."
-    __slots__ = ()
-    name = "ARRAY_AGG"
-
-
-class ArrayContains(CompoundOper):
-    "True iff the left side is a superset of the right side."
-    __slots__ = ()
-    oper = "@>"
-
-
-class ArrayIntersects(CompoundOper):
-    "True iff the left side shares at least one element with the right side."
-    __slots__ = ()
-    oper = "&&"
 
 
 def _get_structural_subscription_filter_id_query(
