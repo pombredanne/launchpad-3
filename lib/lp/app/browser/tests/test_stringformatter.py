@@ -382,7 +382,6 @@ class TestOOPSFormatter(TestCase):
         # OOPS IDs won't be linkified for non-developers.
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
-        self._setDeveloper(False)
         formatted_string = formatter.oops_id()
 
         self.assertEqual(
