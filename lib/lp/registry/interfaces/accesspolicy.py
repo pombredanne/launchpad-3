@@ -252,6 +252,31 @@ class IAccessPolicyGrantFlatSource(Interface):
             type.
         """
 
+    def findIndirectGranteePermissionsByPolicy(policies, grantees=None):
+        """Find teams or users with access grants for the policies.
+
+        This method is similar to findGranteePermissionsByPolicy, but the
+        results contain people who have access by virtue of team membership.
+
+        :param policies: a collection of `IAccessPolicy`s.
+        :param grantees: if not None, the result only includes people in the
+            specified list of grantees.
+        :return: a collection of
+            (`IPerson` sharee, `IAccessPolicy`, permission,
+                [`ITeam`] via_teams, shared_artifact_types)
+            where
+            sharee is the person or team with access
+            permission is a SharingPermission enum value.
+            ALL means the person has an access policy grant and can see all
+            artifacts for the associated pillar.
+            SOME means the person only has specified access artifact grants.
+            via_teams is the team the sharee belongs to in order to gain
+            access. If via is None, then the sharee has direct access.
+            shared_artifact_types contains the information_types for which the
+            user has been granted access for one or more artifacts of that
+            type.
+        """
+
     def findArtifactsByGrantee(grantee, policies):
         """Find the `IAccessArtifact`s for grantee and policies.
 
