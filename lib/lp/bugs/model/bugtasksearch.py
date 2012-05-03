@@ -18,7 +18,6 @@ from storm.expr import (
     Desc,
     Exists,
     In,
-    Intersect,
     Join,
     LeftJoin,
     Not,
@@ -1284,7 +1283,7 @@ def _build_tag_set_query(clauses, cols):
     if len(subselects) == 1:
         return Exists(subselects[0])
     else:
-        return Exists(Intersect(*subselects))
+        return And(*(Exists(subselect) for subselect in subselects))
 
 
 def _build_tag_set_query_all(tags, cols):
@@ -1452,11 +1451,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
                 FROM BugSubscription
                 WHERE BugSubscription.person IN (SELECT team FROM teams) AND
                     BugSubscription.bug = Bug.id
-                UNION ALL
-                SELECT BugTask.bug
-                FROM BugTask
-                WHERE BugTask.assignee IN (SELECT team FROM teams) AND
-                    BugTask.bug = Bug.id
                 )
             """ % user.id)
     if not private_only:

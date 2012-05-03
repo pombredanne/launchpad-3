@@ -814,25 +814,6 @@ class TestBugPrivacy(TestCaseWithFactory):
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
 
-    def test_information_type_modified_event(self):
-        # When a bug's information_type is changed, the expected object
-        # modified event is published.
-        self.event_edited_fields = []
-        self.event_object = None
-
-        def event_callback(object, event):
-            self.event_edited_fields = event.edited_fields
-            self.event_object = event.object
-
-        TestEventListener(IBug, IObjectModifiedEvent, event_callback)
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
-        with person_logged_in(owner):
-            bug.transitionToInformationType(InformationType.PUBLIC, owner)
-        self.assertEqual(['information_type'], self.event_edited_fields)
-        self.assertEqual(bug, self.event_object)
-
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
         # type.

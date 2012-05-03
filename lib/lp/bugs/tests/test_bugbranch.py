@@ -132,19 +132,6 @@ class TestBugBranchSet(TestCaseWithFactory):
         self.assertContentEqual(
             [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
 
-    def test_getBranchesWithVisibleBugs_shows_private_bugs_to_assignee(self):
-        # getBranchesWithVisibleBugs will show private bugs to their
-        # assignees.
-        branch = self.factory.makeBranch()
-        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
-        user = self.factory.makePerson()
-        with celebrity_logged_in('admin'):
-            bug.default_bugtask.transitionToAssignee(user)
-            bug.linkBranch(branch, self.factory.makePerson())
-        utility = getUtility(IBugBranchSet)
-        self.assertContentEqual(
-            [branch.id], utility.getBranchesWithVisibleBugs([branch], user))
-
     def test_getBranchesWithVisibleBugs_shows_private_bugs_to_admins(self):
         # getBranchesWithVisibleBugs will show private bugs to admins.
         branch = self.factory.makeBranch()
