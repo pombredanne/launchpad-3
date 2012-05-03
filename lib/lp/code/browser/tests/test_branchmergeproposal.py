@@ -53,6 +53,7 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -890,7 +891,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        private_bug = self.factory.makeBug(owner=person, private=True)
+        private_bug = self.factory.makeBug(
+            owner=person, information_type=InformationType.USERDATA)
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         with person_logged_in(person):
             self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)

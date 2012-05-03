@@ -62,6 +62,7 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
@@ -77,9 +78,7 @@ from lp.testing import (
     WebServiceTestCase,
     ws_object,
     )
-from lp.testing.factory import (
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -1274,7 +1273,8 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         bmp.source_branch.linkBug(bug, bmp.registrant)
         person = self.factory.makePerson()
         with person_logged_in(person):
-            private_bug = self.factory.makeBug(private=True, owner=person)
+            private_bug = self.factory.makeBug(
+                owner=person, information_type=InformationType.USERDATA)
             bmp.source_branch.linkBug(private_bug, person)
             private_tasks = private_bug.bugtasks
         self.assertEqual(

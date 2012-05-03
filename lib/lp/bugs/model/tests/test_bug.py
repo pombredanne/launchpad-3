@@ -803,9 +803,10 @@ class TestBugPrivacy(TestCaseWithFactory):
         # Public security bugs are currently untested since it is impossible
         # to create one at the moment.
         bug = self.factory.makeBug()
-        private_bug = self.factory.makeBug(private=True)
+        private_bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         private_sec_bug = self.factory.makeBug(
-            private=True, security_related=True)
+            information_type=InformationType.EMBARGOEDSECURITY)
         mapping = (
             (bug, InformationType.PUBLIC),
             (private_bug, InformationType.USERDATA),
@@ -813,30 +814,12 @@ class TestBugPrivacy(TestCaseWithFactory):
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
 
-    def test_information_type_modified_event(self):
-        # When a bug's information_type is changed, the expected object
-        # modified event is published.
-        self.event_edited_fields = []
-        self.event_object = None
-
-        def event_callback(object, event):
-            self.event_edited_fields = event.edited_fields
-            self.event_object = event.object
-
-        TestEventListener(IBug, IObjectModifiedEvent, event_callback)
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
-        with person_logged_in(owner):
-            bug.transitionToInformationType(InformationType.PUBLIC, owner)
-        self.assertEqual(['information_type'], self.event_edited_fields)
-        self.assertEqual(bug, self.event_object)
-
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
         # type.
         owner = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=owner)
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
@@ -846,7 +829,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         # correct information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(
@@ -857,7 +840,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         # information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
             bug.transitionToInformationType(InformationType.PUBLIC, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
@@ -878,7 +861,8 @@ class TestBugPrivacy(TestCaseWithFactory):
             product.addSubscription(product.owner, product.owner)
         reporter = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, product=product, owner=reporter)
+            information_type=InformationType.USERDATA, product=product,
+            owner=reporter)
         recipients = Store.of(bug).using(
             BugNotificationRecipient,
             Join(BugNotification, BugNotification.bugID == bug.id)).find(

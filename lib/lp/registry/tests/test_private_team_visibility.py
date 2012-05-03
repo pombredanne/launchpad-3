@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of private teams.
@@ -20,6 +20,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
@@ -290,8 +291,13 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Users can see teams subscribed to bugs.
         bug_owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=bug_owner)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product, private=private)
+            owner=bug_owner, product=product,
+            information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()
         self._check_permission(some_person, False)
@@ -319,8 +325,13 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         # Users can see teams assigned to bugs.
         bug_owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=bug_owner)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
         bug = self.factory.makeBug(
-            owner=bug_owner, product=product, private=private)
+            owner=bug_owner, product=product,
+            information_type=information_type)
         # Initially no visibility.
         some_person = self.factory.makePerson()
         self._check_permission(some_person, False)

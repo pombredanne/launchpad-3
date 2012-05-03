@@ -348,16 +348,6 @@ admin as well:
     >>> hidden_bugs()
     []
 
-If a bug is private, bugtask assignees can see the bug.  Previously
-sample person could not see bug 14.  But after making him the
-assignee it is visible.
-
-    >>> bug14 = bugset.get(14)
-    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
-    >>> login("test@canonical.com")
-    >>> hidden_bugs()
-    []
-
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
 

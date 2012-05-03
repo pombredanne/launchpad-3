@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the BugSummary class and underlying database triggers."""
@@ -18,6 +18,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.enums import InformationType
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.lpstorm import IMasterStore
 from lp.testing import TestCaseWithFactory
@@ -275,7 +276,8 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_makePublic(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, private=True)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -298,7 +300,8 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_subscribePrivate(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, private=True)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
@@ -316,7 +319,8 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_unsubscribePrivate(self):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, private=True)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
 
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
