@@ -774,8 +774,8 @@ results:
     >>> print sorted(bug_ids)
     [1, 4, 5]
 
-We can create an access policy grant on the pillar to which the bug is targeted
-and No Privileges Person will have access to the private bug.
+We can create an access policy grant on the pillar to which the bug is
+targeted and No Privileges Person will have access to the private bug.
 
     >>> from lp.registry.enums import InformationType
     >>> from lp.registry.interfaces.accesspolicy import (
