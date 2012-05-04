@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+from copy import deepcopy
 from datetime import (
     datetime,
     timedelta,
@@ -390,7 +391,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     utc_offset = 0
     print_method_calls = False
 
-    bugs = {
+    _bugs = {
         1: {'alias': '',
             'assigned_to': 'test@canonical.com',
             'component': 'GPPSystems',
@@ -426,14 +427,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Map aliases onto bugs.
-    bug_aliases = {
+    _bug_aliases = {
         'bug-two': 2,
         }
 
     # Comments are mapped to bug IDs.
     comment_id_index = 4
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'id': 1,
@@ -467,25 +468,34 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Launchpad': [
+        'Launchpad': (
             'add_comment',
             'comments',
             'get_bugs',
             'login',
             'time',
             'set_link',
-            ],
+            ),
         'Test': ['login_required'],
         }
 
     # Methods that require authentication.
-    auth_required_methods = [
+    auth_required_methods = (
         'add_comment',
         'login_required',
         'set_link',
-        ]
+        )
 
     expired_cookie = None
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        # UrlLib2Transport is not a new style class so 'super' cannot be
+        # used.
+        UrlLib2Transport.__init__(self, *args, **kwargs)
+        self.bugs = deepcopy(TestBugzillaXMLRPCTransport._bugs)
+        self.bug_aliases = deepcopy(self._bug_aliases)
+        self.bug_comments = deepcopy(self._bug_comments)
 
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
@@ -800,7 +810,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         ]
 
     # A list of comments on bugs.
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'bug_id': 1,
@@ -835,6 +845,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 },
             },
         }
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        TestBugzillaXMLRPCTransport.__init__(self, *args, **kwargs)
 
     def version(self):
         """Return the version of Bugzilla being used."""
