@@ -17,6 +17,8 @@ SHHH=utilities/shhh.py
 
 LPCONFIG?=development
 
+LISTEN_ADDRESS?=127.0.0.88
+
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
@@ -464,6 +466,7 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
