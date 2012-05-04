@@ -2672,7 +2672,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
         :param suppress_subscription_notifications: Whether to suppress
-            subscription notifications, defaults to False.
+            subscription notifications, defaults to False.  Only useful
+            for private archives.
         """
         if purpose is None:
             purpose = ArchivePurpose.PPA

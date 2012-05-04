@@ -1502,7 +1502,8 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :param private: Whether or not to create a private PPA. Defaults to
             False, which means the PPA will be public.
         :param suppress_subscription_notifications: Whether or not to suppress
-            emails to new subscribers about their subscriptions.
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.
