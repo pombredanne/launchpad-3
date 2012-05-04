@@ -55,6 +55,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
@@ -1133,6 +1134,16 @@ class TestGarbo(TestCaseWithFactory):
             IMasterStore(BugTask).execute(
                 'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
                 (task.id,)).get_one())
+
+    def test_BranchInformationTypeMigrator(self):
+        # A non-migrated branch will have information_type set correctly.
+        switch_dbuser('testadmin')
+        branch = self.factory.makeBranch(private=True)
+        # Since creating a branch will set information_type, unset it.
+        removeSecurityProxy(branch).information_type = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(InformationType.USERDATA, branch.information_type)
 
 
 class TestGarboTasks(TestCaseWithFactory):
