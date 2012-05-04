@@ -76,7 +76,7 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
     EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
 
-ALTER TABLE POFileTranslator DROP COLUMN IF EXISTS latest_message;
+ALTER TABLE POFileTranslator DROP COLUMN latest_message;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 17, 1);
