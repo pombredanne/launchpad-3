@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
@@ -35,6 +35,7 @@ from lp.code.model.branchnamespace import (
     PersonalNamespace,
     ProductNamespace,
     )
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -79,6 +80,7 @@ class NamespaceMixin:
             BranchType.HOSTED, branch_name, registrant)
         self.assertEqual(
             expected_unique_name, branch.unique_name)
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_createBranch_passes_through(self):
         # createBranch takes all the arguments that the `Branch` constructor
@@ -372,6 +374,20 @@ class TestProductNamespacePrivacy(TestCaseWithFactory):
         product.setBranchVisibilityTeamPolicy(
             team, BranchVisibilityRule.PRIVATE)
         self.assertEqual(team, namespace.getPrivacySubscriber())
+
+    def test_information_type_private_team(self):
+        # Given a privacy policy for a namespace, branches are created with
+        # the correct information type.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        product = self.factory.makeProduct()
+        namespace = ProductNamespace(team, product)
+        product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        branch = namespace.createBranch(
+            BranchType.HOSTED, self.factory.getUniqueString(),
+            namespace.owner)
+        self.assertEqual(InformationType.USERDATA, branch.information_type)
 
     def test_subscriber_private_team_namespace(self):
         # If there is a private policy for a namespace owner, then there is no

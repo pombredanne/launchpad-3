@@ -1431,10 +1431,19 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
         return "", _nocache_bug_decorator
 
     if use_flat:
-        query = ("""
+        artifact_grant_query = ("""
             BugTaskFlat.access_grants &&
             (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
             """ % user.id)
+        policy_grant_query = ("""
+            BugTaskFlat.access_policies &&
+            (SELECT array_agg(policy) FROM
+                accesspolicygrant
+                JOIN teamparticipation
+                    ON teamparticipation.team = accesspolicygrant.grantee
+                WHERE person = %d)
+            """ % user.id)
+        query = "%s OR %s" % (artifact_grant_query, policy_grant_query)
     else:
         # A subselect is used here because joining through
         # TeamParticipation is only relevant to the "user-aware"
