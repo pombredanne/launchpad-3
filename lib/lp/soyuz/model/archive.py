@@ -340,6 +340,14 @@ class Archive(SQLBase):
         else:
             alsoProvides(self, IDistributionArchive)
 
+    @property
+    def suppress_subscription_notifications(self):
+        return self.commercial
+
+    @suppress_subscription_notifications.setter
+    def suppress_subscription_notifications(self, suppress):
+        self.commercial = suppress
+
     # Note: You may safely ignore lint when it complains about this
     # declaration.  As of Python 2.6, this is a perfectly valid way
     # of adding a setter

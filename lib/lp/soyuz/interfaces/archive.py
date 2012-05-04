@@ -328,6 +328,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
                 "Ubuntu Software Centre.  Governs whether subscribers or "
                 "uploaders get mail from Launchpad about archive events.")))
 
+    suppress_subscription_notifications = exported(
+        Bool(
+            title=_("Suppress subscription notifications"),
+            required=True,
+            description=_(
+                "Whether subscribers get emails about their subscriptions.")))
+
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
 

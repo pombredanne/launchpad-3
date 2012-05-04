@@ -413,7 +413,8 @@
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             commercial enabled_restricted_families
                             external_dependencies private
-                            require_virtualized relative_build_score "/>
+                            require_virtualized relative_build_score
+                            suppress_subscription_notifications"/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>
