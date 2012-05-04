@@ -37,11 +37,12 @@ class TestCreatePPA(TestCaseWithFactory):
 
     def test_commercial(self):
         with celebrity_logged_in('commercial_admin') as person:
-            ppa = person.createPPA(commercial=True)
+            ppa = person.createPPA(suppress_subscription_notifications=True)
             self.assertEqual(True, ppa.commercial)
 
     def test_commercial_without_permission(self):
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(
-                PPACreationError, person.createPPA, commercial=True)
+                PPACreationError, person.createPPA,
+                suppress_subscription_notifications=True)
