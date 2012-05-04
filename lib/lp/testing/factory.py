@@ -2658,7 +2658,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
                     virtualized=True, description=None, displayname=None,
-                    commercial=False):
+                    suppress_subscription_notifications=False):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -2671,8 +2671,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param private: Whether the archive is created private.
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
-        :param commercial: Whether the archive is commercial.  Defaults to
-            False.
+        :param suppress_subscription_notifications: Whether to suppress
+            subscription notifications, defaults to False.
         """
         if purpose is None:
             purpose = ArchivePurpose.PPA
@@ -2711,9 +2711,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_archive.private = True
             naked_archive.buildd_secret = "sekrit"
 
-        if commercial:
+        if suppress_subscription_notifications:
             naked_archive = removeSecurityProxy(archive)
-            naked_archive.commercial = True
+            naked_archive.suppress_subscription_notifications = True
 
         return archive
 

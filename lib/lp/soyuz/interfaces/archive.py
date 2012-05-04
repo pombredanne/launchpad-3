@@ -1750,7 +1750,7 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, commercial=False):
+            private=False, suppress_subscription_notifications=False):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -1773,6 +1773,8 @@ class IArchiveSet(Interface):
         :param require_virtualized: whether builds for the new archive shall
             be carried out on virtual builders
         :param private: whether or not to make the PPA private
+        :param suppress_subscription_notifications: whether to suppress
+            emails to subscribers about new subscriptions.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
