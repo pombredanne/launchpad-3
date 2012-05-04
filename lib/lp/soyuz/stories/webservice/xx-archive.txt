@@ -17,7 +17,6 @@ We publish a subset of their attributes.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     authorized_size: 1024
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
@@ -40,7 +39,6 @@ For "devel" additional attributes are available.
     ...     "/~cprov/+archive/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     authorized_size: 1024
-    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -110,7 +108,6 @@ The archive has the following attributes:
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
     authorized_size: None
-    commercial: False
     dependencies_collection_link:
         u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
@@ -980,7 +977,6 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
     authorized_size: u'tag:launchpad.net:2008:redacted'
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
@@ -999,7 +995,6 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
     authorized_size: 2048
-    commercial: False
     dependencies_collection_link:
         u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'packages to help my friends.'
