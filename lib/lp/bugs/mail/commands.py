@@ -814,6 +814,31 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         return {self.name: dbitem}
 
 
+class InformationTypeEmailCommand(DBSchemaEditEmailCommand):
+    """Change the information type of a bug."""
+
+    implements(IBugEditEmailCommand)
+    dbschema = InformationType
+    RANK = 3
+
+    def convertArguments(self, context):
+        args = super(InformationTypeEmailCommand, self).convertArguments(
+            context)
+        return {'information_type': args['informationtype']}
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        user = getUtility(ILaunchBag).user
+        if attr_value == InformationType.PROPRIETARY:
+            raise EmailProcessingError(
+                'Proprietary bugs are forbidden to be filed via the mail '
+                'interface.')
+        if isinstance(context, CreateBugParams):
+            context.information_type = attr_value
+        else:
+            context.transitionToInformationType(attr_value, user)
+
+
 class StatusEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's status."""
     dbschema = BugTaskStatus
@@ -901,6 +926,7 @@ class BugEmailCommands(EmailCommandCollection):
 
     _commands = {
         'bug': BugEmailCommand,
+        'informationtype': InformationTypeEmailCommand,
         'private': PrivateEmailCommand,
         'security': SecurityEmailCommand,
         'summary': SummaryEmailCommand,
