@@ -373,6 +373,11 @@ class TestOOPSFormatter(TestCase):
 
     layer = DatabaseFunctionalLayer
 
+    def _setDeveloper(self, value):
+        """Override ILaunchBag.developer for testing purposes."""
+        launch_bag = getUtility(ILaunchBag)
+        launch_bag.setDeveloper(value)
+
     def test_doesnt_linkify_for_non_developers(self):
         # OOPS IDs won't be linkified for non-developers.
         oops_id = 'OOPS-12345TEST'
@@ -384,17 +389,11 @@ class TestOOPSFormatter(TestCase):
             "Formatted string should be '%s', was '%s'" % (
                 oops_id, formatted_string))
 
-    def _setDeveloper(self):
-        """Override ILaunchBag.developer for testing purposes."""
-        launch_bag = getUtility(ILaunchBag)
-        launch_bag.setDeveloper(True)
-
     def test_linkifies_for_developers(self):
         # OOPS IDs will be linkified for Launchpad developers.
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
-
-        self._setDeveloper()
+        self._setDeveloper(True)
         formatted_string = formatter.oops_id()
 
         expected_string = '<a href="%s">%s</a>' % (
