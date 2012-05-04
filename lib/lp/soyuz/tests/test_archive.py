@@ -1282,31 +1282,30 @@ class TestArchiveDelete(TestCaseWithFactory):
         self.assertEqual(ArchiveStatus.DELETING, self.archive.status)
 
 
-class TestCommercialArchive(TestCaseWithFactory):
-    """Tests relating to commercial archives."""
+class TestSuppressSubscription(TestCaseWithFactory):
+    """Tests relating to suppressing subscription."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestCommercialArchive, self).setUp()
+        super(TestSuppressSubscription, self).setUp()
         self.archive = self.factory.makeArchive()
 
-    def test_set_and_get_commercial(self):
+    def test_set_and_get_suppress(self):
         # Basic set and get of the commercial property.  Anyone can read
         # it and it defaults to False.
-        login_person(self.archive.owner)
-        self.assertFalse(self.archive.suppress_subscription_notifications)
+        with person_logged_in(self.archive.owner):
+            self.assertFalse(self.archive.suppress_subscription_notifications)
 
-        # The archive owner can't change the value.
-        self.assertRaises(
-            Unauthorized, setattr, self.archive,
-            'suppress_subscription_notifications', True)
+            # The archive owner can't change the value.
+            self.assertRaises(
+                Unauthorized, setattr, self.archive,
+                'suppress_subscription_notifications', True)
 
         # Commercial admins can change it.
-        # XXX: Use celebrity & contextmgr
-        login(COMMERCIAL_ADMIN_EMAIL)
-        self.setCommercial(self.archive, True)
-        self.assertTrue(self.archive.suppress_subscription_notifications)
+        with celebrity_logged_in('commercial_admin'):
+            self.setCommercial(self.archive, True)
+            self.assertTrue(self.archive.suppress_subscription_notifications)
 
 
 class TestBuildDebugSymbols(TestCaseWithFactory):
