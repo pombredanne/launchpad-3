@@ -855,9 +855,10 @@ class BranchInformationTypeMigrator(TunableLoop):
 
     def __call__(self, chunk_size):
         self.findBranches()[:chunk_size].set(
-            information_type=SQL("CASE WHEN transitively_private THEN %s "
-                "ELSE %s END" % sqlvalues(
-                    InformationType.USERDATA, InformationType.PUBLIC)))
+            information_type=SQL(
+                "CASE WHEN transitively_private THEN ? ELSE ? END",
+                params=(InformationType.USERDATA.value,
+                    InformationType.PUBLIC.value)))
         self.transaction.commit()
 
 

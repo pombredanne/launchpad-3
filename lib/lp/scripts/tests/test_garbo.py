@@ -1135,8 +1135,20 @@ class TestGarbo(TestCaseWithFactory):
                 'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
                 (task.id,)).get_one())
 
-    def test_BranchInformationTypeMigrator(self):
-        # A non-migrated branch will have information_type set correctly.
+    def test_BranchInformationTypeMigrator_public(self):
+        # A non-migrated public branch will have information_type set
+        # correctly.
+        switch_dbuser('testadmin')
+        branch = self.factory.makeBranch()
+        # Since creating a branch will set information_type, unset it.
+        removeSecurityProxy(branch).information_type = None
+        transaction.commit()
+        self.runHourly()
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
+
+    def test_BranchInformationTypeMigrator_private(self):
+        # A non-migrated private branch will have information_type set
+        # correctly.
         switch_dbuser('testadmin')
         branch = self.factory.makeBranch(private=True)
         # Since creating a branch will set information_type, unset it.
