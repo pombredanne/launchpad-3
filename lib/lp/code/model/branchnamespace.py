@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
@@ -44,6 +44,7 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
+from lp.registry.enums import InformationType
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
@@ -108,15 +109,19 @@ class _BaseNamespace:
 
         # If branches can be private, make them private initially.
         private = self.areNewBranchesPrivate()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
 
         branch = Branch(
             registrant=registrant,
             name=name, owner=self.owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, explicitly_private=private,
-            date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created, branch_format=branch_format,
-            repository_format=repository_format,
+            information_type=information_type, date_created=date_created,
+            branch_type=branch_type, date_last_modified=date_created,
+            branch_format=branch_format, repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 

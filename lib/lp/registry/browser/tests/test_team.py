@@ -16,6 +16,7 @@ from lp.registry.browser.team import (
     TeamMailingListArchiveView,
     TeamOverviewMenu,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     CLOSED_TEAM_POLICY,
@@ -368,7 +369,9 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
         # the team is subscribed to a private bug.
 
         def setup_team(team):
-            bug = self.factory.makeBug(owner=team.teamowner, private=True)
+            bug = self.factory.makeBug(
+                owner=team.teamowner,
+                information_type=InformationType.USERDATA)
             with person_logged_in(team.teamowner):
                 bug.default_bugtask.transitionToAssignee(team)
 

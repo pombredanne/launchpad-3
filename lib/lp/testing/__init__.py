@@ -647,6 +647,11 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self.addCleanup(
                 self.attachLibrarianLog,
                 LibrarianLayer.librarian_fixture)
+        # Remove all log handlers, tests should not depend on global logging
+        # config but should make their own config instead.
+        logger = logging.getLogger()
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.

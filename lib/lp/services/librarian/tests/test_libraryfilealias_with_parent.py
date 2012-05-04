@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,6 +8,7 @@ __all__ = []
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 
+from lp.registry.enums import InformationType
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent
 from lp.testing import (
     login_person,
@@ -25,7 +26,8 @@ class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
         super(TestLibraryFileAliasForBugAttachment, self).setUp()
         self.bug_owner = self.factory.makePerson()
         login_person(self.bug_owner)
-        self.bug = self.factory.makeBug(owner=self.bug_owner, private=True)
+        self.bug = self.factory.makeBug(
+            owner=self.bug_owner, information_type=InformationType.USERDATA)
         self.bug_attachment = self.factory.makeBugAttachment(bug=self.bug)
         self.lfa_with_parent = getMultiAdapter(
             (self.bug_attachment.libraryfile, self.bug_attachment),

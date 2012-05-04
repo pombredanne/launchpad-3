@@ -61,8 +61,8 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.services.database.sqlbase import (
-    flush_database_updates,
     convert_storm_clause_to_string,
+    flush_database_updates,
     )
 from lp.services.searchbuilder import (
     all,
@@ -1002,9 +1002,12 @@ class TestBugTaskSearch(TestCaseWithFactory):
         """Private bugs from a search know the user can see the bugs."""
         target = self.makeBugTarget()
         person = self.login()
-        self.factory.makeBug(product=target, private=True, owner=person)
-        self.factory.makeBug(product=target, private=True, owner=person)
-        self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeBug(product=target, owner=person,
+            information_type=InformationType.USERDATA)
+        self.factory.makeBug(product=target, owner=person,
+            information_type=InformationType.USERDATA)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.
         login_person(person)
