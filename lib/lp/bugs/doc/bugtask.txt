@@ -774,6 +774,27 @@ results:
     >>> print sorted(bug_ids)
     [1, 4, 5]
 
+We can create an access policy grant on the pillar to which the bug is targeted
+and No Privileges Person will have access to the private bug.
+
+    >>> from lp.registry.enums import InformationType
+    >>> from lp.registry.interfaces.accesspolicy import (
+    ...     IAccessPolicyGrantSource,
+    ...     IAccessPolicySource,
+    ...     )
+    >>> aps = getUtility(IAccessPolicySource)
+    >>> [policy] = aps.find(
+    ...     [(upstream_mozilla, InformationType.USERDATA)])
+    >>> apgs = getUtility(IAccessPolicyGrantSource)
+    >>> grant = apgs.grant([(policy, mr_no_privs, ubuntu_team)])
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bug_ids = [bt.bug.id for bt in bugtasks]
+    >>> print sorted(bug_ids)
+    [1, 4, 5, 6]
+    >>> apgs.revoke([(policy, mr_no_privs)])
+
 
 Open bugtask count for a given list of projects
 -----------------------------------------------
