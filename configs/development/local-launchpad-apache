@@ -9,8 +9,7 @@ RewriteLock /var/tmp/rewrite-lock
   ServerName launchpad.dev
   ServerAlias answers.launchpad.dev api.launchpad.dev blueprints.launchpad.dev
   ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
-  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev
-  ServerAlias xmlrpc-private.launchpad.dev testopenid.dev
+  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev testopenid.dev
 
   RewriteEngine On
   RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
@@ -20,8 +19,7 @@ RewriteLock /var/tmp/rewrite-lock
   ServerName launchpad.dev
   ServerAlias answers.launchpad.dev api.launchpad.dev blueprints.launchpad.dev
   ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
-  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev
-  ServerAlias xmlrpc-private.launchpad.dev testopenid.dev
+  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev testopenid.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -49,27 +47,6 @@ RewriteLock /var/tmp/rewrite-lock
   </Location>
 
   WSGIScriptAlias /+combo /usr/share/convoy/convoy.wsgi
-</VirtualHost>
-
-<VirtualHost %LISTEN_ADDRESS%:80>
-  ServerName xmlrpc-private.launchpad.dev
-  ServerAlias xmlrpc.launchpad.dev
-  <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
-  </Proxy>
-  ProxyPreserveHost on
-
-  ProxyPass / http://localhost:8087/ retry=1
-</VirtualHost>
-
-<VirtualHost %LISTEN_ADDRESS%:80>
-  ServerName lists.launchpad.dev
-  Alias  /   /var/tmp/mailman/mhonarc/
-  <Directory /var/tmp/mailman/mhonarc>
-    AllowOverride None
-    DirectoryIndex maillist.html
-  </Directory>
 </VirtualHost>
 
 <VirtualHost %LISTEN_ADDRESS%:80>
@@ -143,6 +120,15 @@ RewriteLock /var/tmp/rewrite-lock
     Options SymLinksIfOwnerMatch
     AllowOverride None
     Options Indexes
+  </Directory>
+</VirtualHost>
+
+<VirtualHost %LISTEN_ADDRESS%:80>
+  ServerName lists.launchpad.dev
+  Alias  /   /var/tmp/mailman/mhonarc/
+  <Directory /var/tmp/mailman/mhonarc>
+    AllowOverride None
+    DirectoryIndex maillist.html
   </Directory>
 </VirtualHost>
 
