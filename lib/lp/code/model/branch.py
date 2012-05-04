@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -128,6 +128,7 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -181,6 +182,8 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     @property
     def private(self):
@@ -203,8 +206,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         # otherwise we need to reload the value.
         if private:
             self.transitively_private = True
+            self.information_type = InformationType.USERDATA
         else:
             self.transitively_private = AutoReload
+            self.information_type = InformationType.PUBLIC
+
+    def transitionToInformationType(self, information_type, who):
+        """See `IBranch`."""
+        self.information_type = information_type
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
