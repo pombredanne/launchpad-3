@@ -362,7 +362,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.private").value
     False
-    >>> admin_browser.getControl(name="field.commercial").value
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value
     False
     >>> admin_browser.getControl(name="field.require_virtualized").value
     True
@@ -373,7 +374,8 @@ build on a virtualized builder.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.commercial").value = True
+    >>> admin_browser.getControl(
+    ...     name="field.suppress_subscription_notifications").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = True
@@ -417,10 +419,10 @@ a sources.list entry.  If the field fails validation an error is displayed.
     'deb not_a_url' is not a complete and valid sources.list entry
 
 
-Setting the buildd secret for non-private archives also generates
-an error.  Because the "commercial" flag is also currently set, removing
-privacy will also trigger a validation error because the commercial flag can
-only be set on private archives:
+Setting the buildd secret for non-private archives also generates an error.
+Because the "suppress_subscription_notifications" flag is also currently set,
+removing privacy will also trigger a validation error because the
+suppress_subscription_notifications flag can only be set on private archives:
 
     >>> admin_browser.getControl(
     ...     name="field.external_dependencies").value = ""
@@ -431,7 +433,7 @@ only be set on private archives:
     >>> for error in get_feedback_messages(admin_browser.contents):
     ...     print error
     There are 2 errors.
-    Can only set commericial for private archives.
+    Can only suppress subscription notifications for private archives.
     Do not specify for non-private archives
 
 
