@@ -81,12 +81,12 @@ LXC_GUEST_OS = 'lucid'
 LXC_HOSTS_CONTENT = (
     ('127.0.0.88',
         'launchpad.dev answers.launchpad.dev archive.launchpad.dev '
-        'api.launchpad.dev bazaar.launchpad.dev bazaar-internal.launchpad.dev'
-        'blueprints.launchpad.dev bugs.launchpad.dev code.launchpad.dev '
-        'feeds.launchpad.dev keyserver.launchpad.dev lists.launchpad.dev '
-        'ppa.launchpad.dev private-ppa.launchpad.dev testopenid.dev '
-        'translations.launchpad.dev xmlrpc-private.launchpad.dev '
-        'xmlrpc.launchpad.dev'),
+        'api.launchpad.dev bazaar.launchpad.dev '
+        'bazaar-internal.launchpad.dev blueprints.launchpad.dev '
+        'bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev '
+        'keyserver.launchpad.dev lists.launchpad.dev ppa.launchpad.dev '
+        'private-ppa.launchpad.dev testopenid.dev translations.launchpad.dev '
+        'xmlrpc-private.launchpad.dev xmlrpc.launchpad.dev'),
     )
 LXC_NAME = 'lptests'
 LXC_OPTIONS = """
