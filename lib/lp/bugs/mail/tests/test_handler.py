@@ -325,7 +325,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         handler = MaloneHandler()
         with person_logged_in(project.owner):
             msg = self.factory.makeSignedMessage(
-                body='unsecure\n information_type User Data\n affects fnord',
+                body='unsecure\n informationtype userdata\n affects fnord',
                 subject='unsecure code',
                 to_address='new@bugs.launchpad.dev')
             handler.process(msg, msg['To'])

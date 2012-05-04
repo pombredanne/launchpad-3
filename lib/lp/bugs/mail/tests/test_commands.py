@@ -21,7 +21,6 @@ from lp.bugs.mail.commands import (
     UnsubscribeEmailCommand,
     )
 from lp.registry.enums import InformationType
-from lp.services.features.testing import FeatureFixture
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -423,45 +422,19 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = InformationTypeEmailCommand(
-            'information_type', ['Unembargoed', 'Security'])
+            'informationtype', ['unembargoedsecurity'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
         self.assertEqual(
             InformationType.UNEMBARGOEDSECURITY, bug_params.information_type)
-        self.assertEqual(dummy_event, event)
-
-    def test_private_without_feature_flag(self):
-        user = self.factory.makePerson()
-        login_person(user)
-        bug_params = CreateBugParams(title='bug title', owner=user)
-        command = InformationTypeEmailCommand(
-            'information_type', ['Private'])
-        dummy_event = object()
-        self.assertRaises(
-            EmailProcessingError, command.execute, bug_params, dummy_event)
-
-    def test_private_with_feature_flag(self):
-        user = self.factory.makePerson()
-        login_person(user)
-        bug_params = CreateBugParams(title='bug title', owner=user)
-        command = InformationTypeEmailCommand(
-            'information_type', ['Private'])
-        dummy_event = object()
-        feature_flag = {
-            'disclosure.display_userdata_as_private.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            params, event = command.execute(bug_params, dummy_event)
-        self.assertEqual(bug_params, params)
-        self.assertEqual(
-            InformationType.USERDATA, bug_params.information_type)
-        self.assertEqual(dummy_event, event)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
         login_person(bug.owner)
         command = InformationTypeEmailCommand(
-            'information_type', ['Embargoed', 'Security'])
+            'informationtype', ['embargoedsecurity'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
         self.assertEqual(
@@ -473,7 +446,7 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = InformationTypeEmailCommand(
-            'information_type', ['Rubbish'])
+            'informationtype', ['rubbish'])
         dummy_event = object()
         self.assertRaises(
             EmailProcessingError, command.execute, bug_params, dummy_event)
@@ -483,10 +456,12 @@ class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = InformationTypeEmailCommand(
-            'information_type', ['Proprietary'])
+            'informationtype', ['proprietary'])
         dummy_event = object()
-        self.assertRaises(
-            EmailProcessingError, command.execute, bug_params, dummy_event)
+        self.assertRaisesWithContent(
+            EmailProcessingError, 'Proprietary bugs are forbidden to be '
+            'filed via the mail interface.', command.execute, bug_params,
+            dummy_event)
 
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):

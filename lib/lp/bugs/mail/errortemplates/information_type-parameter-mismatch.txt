@@ -1,6 +1,0 @@
-The 'information_type' command expects one of 'Public', 'Unembargoed Security',
-'Embargoed Security', 'User Data'.
-
-For example:
-
-    information_type Unembargoed Security
