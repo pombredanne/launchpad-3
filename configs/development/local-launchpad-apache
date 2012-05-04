@@ -3,6 +3,54 @@ NameVirtualHost %LISTEN_ADDRESS%:443
 
 RewriteLock /var/tmp/rewrite-lock
 
+# These have to be first so non-Host/non-SNI requests don't hit bazaar etc.
+# But they can't have a ServerAlias wildcard or they'll shadow bazaar.
+<VirtualHost %LISTEN_ADDRESS%:80>
+  ServerName launchpad.dev
+  ServerAlias answers.launchpad.dev api.launchpad.dev blueprints.launchpad.dev
+  ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
+  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev
+  ServerAlias xmlrpc-private.launchpad.dev testopenid.dev
+
+  RewriteEngine On
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</VirtualHost>
+
+<VirtualHost %LISTEN_ADDRESS%:443>
+  ServerName launchpad.dev
+  ServerAlias answers.launchpad.dev api.launchpad.dev blueprints.launchpad.dev
+  ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
+  ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev
+  ServerAlias xmlrpc-private.launchpad.dev testopenid.dev
+  <Proxy *>
+    Order deny,allow
+    Allow from 127.0.0.0/255.0.0.0
+  </Proxy>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
+  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
+
+  ProxyPreserveHost on
+  ProxyPass /+longpoll/ http://localhost:22435/ retry=1
+  ProxyPass /+combo !
+  ProxyPass / http://localhost:8086/ retry=1
+
+  <Location />
+    # Insert filter
+    SetOutputFilter DEFLATE
+
+    # Don't compress images
+    SetEnvIfNoCase Request_URI \
+    \.(?:gif|jpe?g|png)$ no-gzip dont-vary
+
+    # Don't gzip anything that starts /@@/ and doesn't end .js (ie images)
+    SetEnvIfNoCase Request_URI ^/@@/ no-gzip dont-vary
+    SetEnvIfNoCase Request_URI ^/@@/.*\.js$ !no-gzip !dont-vary
+  </Location>
+
+  WSGIScriptAlias /+combo /usr/share/convoy/convoy.wsgi
+</VirtualHost>
+
 <VirtualHost %LISTEN_ADDRESS%:80>
   ServerName xmlrpc-private.launchpad.dev
   ServerAlias xmlrpc.launchpad.dev
@@ -124,44 +172,4 @@ RewriteLock /var/tmp/rewrite-lock
     Allow from 127.0.0.0/255.0.0.0
     Options Indexes
   </Directory>
-</VirtualHost>
-
-<VirtualHost %LISTEN_ADDRESS%:443>
-  ServerName launchpad.dev
-  ServerAlias *.launchpad.dev
-  <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
-  </Proxy>
-  SSLEngine On
-  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
-  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
-
-  ProxyPreserveHost on
-  ProxyPass /+longpoll/ http://localhost:22435/ retry=1
-  ProxyPass /+combo !
-  ProxyPass / http://localhost:8086/ retry=1
-
-  <Location />
-    # Insert filter
-    SetOutputFilter DEFLATE
-
-    # Don't compress images
-    SetEnvIfNoCase Request_URI \
-    \.(?:gif|jpe?g|png)$ no-gzip dont-vary
-
-    # Don't gzip anything that starts /@@/ and doesn't end .js (ie images)
-    SetEnvIfNoCase Request_URI ^/@@/ no-gzip dont-vary
-    SetEnvIfNoCase Request_URI ^/@@/.*\.js$ !no-gzip !dont-vary
-  </Location>
-
-  WSGIScriptAlias /+combo /usr/share/convoy/convoy.wsgi
-
-</VirtualHost>
-
-<VirtualHost %LISTEN_ADDRESS%:80>
-  ServerName launchpad.dev
-  ServerAlias *.launchpad.dev
-  RewriteEngine On
-  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </VirtualHost>
