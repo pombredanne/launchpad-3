@@ -1291,23 +1291,22 @@ class TestCommercialArchive(TestCaseWithFactory):
         super(TestCommercialArchive, self).setUp()
         self.archive = self.factory.makeArchive()
 
-    def setCommercial(self, archive, commercial):
-        """Helper function."""
-        archive.commercial = commercial
-
     def test_set_and_get_commercial(self):
         # Basic set and get of the commercial property.  Anyone can read
         # it and it defaults to False.
         login_person(self.archive.owner)
-        self.assertFalse(self.archive.commercial)
+        self.assertFalse(self.archive.suppress_subscription_notifications)
 
         # The archive owner can't change the value.
-        self.assertRaises(Unauthorized, self.setCommercial, self.archive, True)
+        self.assertRaises(
+            Unauthorized, setattr, self.archive,
+            'suppress_subscription_notifications', True)
 
         # Commercial admins can change it.
+        # XXX: Use celebrity & contextmgr
         login(COMMERCIAL_ADMIN_EMAIL)
         self.setCommercial(self.archive, True)
-        self.assertTrue(self.archive.commercial)
+        self.assertTrue(self.archive.suppress_subscription_notifications)
 
 
 class TestBuildDebugSymbols(TestCaseWithFactory):

@@ -38,7 +38,7 @@ class TestCreatePPA(TestCaseWithFactory):
     def test_commercial(self):
         with celebrity_logged_in('commercial_admin') as person:
             ppa = person.createPPA(suppress_subscription_notifications=True)
-            self.assertEqual(True, ppa.commercial)
+            self.assertEqual(True, ppa.suppress_subscription_notifications)
 
     def test_commercial_without_permission(self):
         person = self.factory.makePerson()
