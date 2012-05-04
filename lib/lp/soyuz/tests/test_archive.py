@@ -1287,25 +1287,22 @@ class TestSuppressSubscription(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestSuppressSubscription, self).setUp()
-        self.archive = self.factory.makeArchive()
-
     def test_set_and_get_suppress(self):
         # Basic set and get of the commercial property.  Anyone can read
         # it and it defaults to False.
-        with person_logged_in(self.archive.owner):
-            self.assertFalse(self.archive.suppress_subscription_notifications)
+        archive = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            self.assertFalse(archive.suppress_subscription_notifications)
 
             # The archive owner can't change the value.
             self.assertRaises(
-                Unauthorized, setattr, self.archive,
-                'suppress_subscription_notifications', True)
+                Unauthorized,
+                setattr, archive, 'suppress_subscription_notifications', True)
 
         # Commercial admins can change it.
         with celebrity_logged_in('commercial_admin'):
-            self.setCommercial(self.archive, True)
-            self.assertTrue(self.archive.suppress_subscription_notifications)
+            archive.suppress_subscription_notifications = True
+            self.assertTrue(archive.suppress_subscription_notifications)
 
 
 class TestBuildDebugSymbols(TestCaseWithFactory):
