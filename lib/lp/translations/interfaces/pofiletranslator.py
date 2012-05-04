@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213
@@ -21,7 +21,6 @@ from zope.schema import (
 from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.translationmessage import ITranslationMessage
 
 
 class IPOFileTranslator(Interface):
@@ -36,10 +35,6 @@ class IPOFileTranslator(Interface):
     pofile = Object(
         title=_(u"The `POFile` modified by the translator."), required=True,
         readonly=True, schema=IPOFile)
-
-    latest_message = Object(
-        title=_(u"Latest `TranslationMessage` for this person and file."),
-        required=True, readonly=True, schema=ITranslationMessage)
 
     date_last_touched = Datetime(
         title=_(u"When the latest translation message was added."),
@@ -69,9 +64,10 @@ class IPOFileTranslatorSet(Interface):
             person and pofile, or None.
         """
 
-    def getForPOTMsgSet(potmsgset):
-        """Retrieve `POFileTranslator`s for translations of `potmsgset`.
+    def getForTemplate(potemplate):
+        """Retrieve `POFileTranslator` objects associated iwth `POTemplate`.
 
-        :return: a query result of `POFileTranslator`s whose
-            `latest_message` are translations of `potmsgset`.
+        :param potemplate: `POTemplate` to look for.
+        :return: Result set of `POFileTranslator` records associated with
+            `POFile`s that translate `potemplate`.
         """
