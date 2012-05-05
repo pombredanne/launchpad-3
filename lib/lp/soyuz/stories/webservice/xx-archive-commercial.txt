@@ -8,7 +8,8 @@ soyuz/doc/archive-commercial.txt)
 Start by making a commercial PPA that we can fetch via the webservice:
 
     >>> login("admin@canonical.com")
-    >>> ppa = factory.makeArchive(private=True, name="cpppa", commercial=True)
+    >>> ppa = factory.makeArchive(private=True, name="cpppa",
+    ...     suppress_subscription_notifications=True)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()

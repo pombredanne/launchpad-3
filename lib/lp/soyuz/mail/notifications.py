@@ -29,9 +29,10 @@ def notify_new_ppa_subscription(subscription, event):
 
     archive = subscription.archive
 
-    # We don't send notification emails for commercial PPAs as these
-    # are purchased via software center (and do not mention Launchpad).
-    if archive.commercial:
+    # We don't send notification emails for some PPAs, particularly those that
+    # are purchased via the Software Centre, so that its users do not have to
+    # learn about Launchpad.
+    if archive.suppress_subscription_notifications:
         return
 
     registrant_name = subscription.registrant.displayname
