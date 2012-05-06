@@ -8,6 +8,7 @@ __all__ = [
     'ScrubPOFileTranslator',
     ]
 
+import transaction
 
 from lp.services.database.lpstorm import IStore
 from lp.services.scripts.base import LaunchpadCronScript
@@ -41,3 +42,4 @@ class ScrubPOFileTranslator(LaunchpadCronScript):
         """See `LaunchpadScript`."""
         for pofile in self.get_pofiles():
             self.scrub_pofile(pofile)
+            transaction.commit()
