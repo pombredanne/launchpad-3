@@ -9,7 +9,10 @@ __all__ = [
     ]
 
 
+from lp.services.database.lpstorm import IStore
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplate
 
 
 class ScrubPOFileTranslator(LaunchpadCronScript):
@@ -22,8 +25,9 @@ class ScrubPOFileTranslator(LaunchpadCronScript):
         by POTemplate name for locality of shared POTMsgSets, and by language
         for locality of shared TranslationMessages.
         """
-        # TODO: Implement
-        return []
+        store = IStore(POFile)
+        query = store.find(POFile, POFile.potemplateID == POTemplate.id)
+        return query.order_by(POTemplate.name, POFile.languageID)
 
     def scrub_pofile(self, pofile):
         """Scrub `POFileTranslator` entries for one `POFile`.
