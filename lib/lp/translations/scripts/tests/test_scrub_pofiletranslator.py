@@ -5,6 +5,14 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+import pytz
+import transaction
+
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
 from lp.services.scripts.tests import run_script
@@ -50,6 +58,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
     def make_message_without_pofiletranslator(self, pofile=None):
         """Create a `TranslationMessage` without `POFileTranslator`."""
         tm = self.make_message_with_pofiletranslator(pofile)
+        IStore(pofile).flush()
         self.becomeDbUser('postgres')
         self.query_pofiletranslator(pofile, tm.submitter).remove()
         return tm
@@ -60,15 +69,18 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
             pofile = self.factory.makePOFile()
         poft = POFileTranslator(
             pofile=pofile, person=self.factory.makePerson(),
-            date_last_touched=UTC_NOW,
-            # TODO: This argument can go once we've dropped latest_message.
-            latest_message=self.factory.makeSuggestion())
+            date_last_touched=UTC_NOW)
         IStore(poft.pofile).add(poft)
         return poft
 
-    def test_get_pofiles_gets_all_pofiles(self):
+    def test_get_pofiles_gets_pofiles_for_active_templates(self):
         pofile = self.factory.makePOFile()
         self.assertIn(pofile, self.make_script().get_pofiles())
+
+    def test_get_pofiles_skips_inactive_templates(self):
+        pofile = self.factory.makePOFile()
+        pofile.potemplate.iscurrent = False
+        self.assertNotIn(pofile, self.make_script().get_pofiles())
 
     def test_get_pofiles_clusters_by_template_name(self):
         # POFiles for templates with the same name are bunched together
@@ -108,6 +120,55 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
             self.assertEqual(
                 1, abs(measure_distance(ordering, pofiles[0], pofiles[1])))
 
+    def test_get_contributions_gets_contributions(self):
+        pofile = self.factory.makePOFile()
+        tm = self.factory.makeSuggestion(pofile=pofile)
+        self.assertEqual(
+            {tm.submitter.id: tm.date_created},
+            self.make_script().get_contributions(pofile))
+
+    def test_get_contributions_uses_latest_contribution(self):
+        pofile = self.factory.makePOFile()
+        today = datetime.now(pytz.UTC)
+        yesterday = today - timedelta(1, 1, 1)
+        old_tm = self.factory.makeSuggestion(
+            pofile=pofile, date_created=yesterday)
+        new_tm = self.factory.makeSuggestion(
+            translator=old_tm.submitter, pofile=pofile, date_created=today)
+        self.assertNotEqual(old_tm.date_created, new_tm.date_created)
+        self.assertItemsEqual(
+            [new_tm.date_created],
+            self.make_script().get_contributions(pofile).values())
+
+    def test_get_contributions_ignores_inactive_potmsgsets(self):
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, sequence=0)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
+        self.assertEqual({}, self.make_script().get_contributions(pofile))
+
+    def test_get_contributions_includes_diverged_messages_for_template(self):
+        pofile = self.factory.makePOFile()
+        tm = self.factory.makeSuggestion(pofile=pofile)
+        tm.potemplate = pofile.potemplate
+        self.assertItemsEqual(
+            [tm.submitter.id],
+            self.make_script().get_contributions(pofile).keys())
+
+    def test_get_contributions_excludes_other_diverged_messages(self):
+        pofile = self.factory.makePOFile()
+        tm = self.factory.makeSuggestion(pofile=pofile)
+        tm.potemplate = self.factory.makePOTemplate()
+        self.assertEqual({}, self.make_script().get_contributions(pofile))
+
+    def test_get_pofiletranslators_gets_pofiletranslators_for_pofile(self):
+        pofile = self.factory.makePOFile()
+        tm = self.make_message_with_pofiletranslator(pofile)
+        pofts = self.make_script().get_pofiletranslators(pofile)
+        self.assertItemsEqual([tm.submitter.id], pofts.keys())
+        poft = pofts[tm.submitter.id]
+        self.assertEqual(pofile, poft.pofile)
+
     def test_scrub_pofile_leaves_good_pofiletranslator_in_place(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_with_pofiletranslator(pofile)
@@ -120,11 +181,12 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
 
     def test_scrub_pofile_deletes_unwarranted_entries(self):
         poft = self.make_pofiletranslator_without_message()
-
+        pofile = poft.pofile
+        person = poft.person
+        self.becomeDbUser('scrub_pofiletranslator')
         self.make_script().scrub_pofile(poft.pofile)
-
-        self.assertIsNone(
-            self.query_pofiletranslator(poft.pofile, poft.person).one())
+        self.becomeDbUser('launchpad')
+        self.assertIsNone(self.query_pofiletranslator(pofile, person).one())
 
     def test_scrub_pofile_adds_missing_entries(self):
         pofile = self.factory.makePOFile()
@@ -140,6 +202,8 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         pofile = self.factory.makePOFile()
         tm = self.make_message_without_pofiletranslator(pofile)
         bad_poft = self.make_pofiletranslator_without_message(pofile)
+        noncontributor = bad_poft.person
+        transaction.commit()
 
         retval, stdout, stderr = run_script(
             'cronscripts/scrub-pofiletranslator.py', [])
@@ -147,4 +211,4 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         self.assertIsNotNone(
             self.query_pofiletranslator(pofile, tm.submitter).one())
         self.assertIsNone(
-            self.query_pofiletranslator(pofile, bad_poft.person).one())
+            self.query_pofiletranslator(pofile, noncontributor).one())
