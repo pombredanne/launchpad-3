@@ -80,6 +80,9 @@ class ScrubPOFileTranslator(LaunchpadCronScript):
 
     def remove_pofiletranslators(self, pofile, person_ids):
         """Delete `POFileTranslator` records."""
+        self.logger.debug(
+            "Removing %d POFileTranslator(s) for %s.",
+            len(person_ids), pofile.title)
         store = IStore(pofile)
         pofts = store.find(
             POFileTranslator,
@@ -96,6 +99,11 @@ class ScrubPOFileTranslator(LaunchpadCronScript):
     def create_missing_pofiletranslators(self, pofile, pofts, contribs):
         """Create `POFileTranslator` records that were missing."""
         shortage = set(contribs) - set(pofts)
+        if len(shortage) == 0:
+            return
+        self.logger.debug(
+            "Adding %d POFileTranslator(s) for %s.",
+            len(shortage), pofile.title)
         store = IStore(pofile)
         for missing_contributor in shortage:
             store.add(POFileTranslator(
