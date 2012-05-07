@@ -848,13 +848,14 @@ class BranchInformationTypeMigrator(TunableLoop):
         self.store = IMasterStore(Branch)
 
     def findBranches(self):
-        return self.store.find(Branch, Branch.information_type == None)
+        return self.store.find(Branch.id, Branch.information_type == None)
 
     def isDone(self):
         return self.findBranches().is_empty()
 
     def __call__(self, chunk_size):
-        self.findBranches()[:chunk_size].set(
+        self.store.find(
+            Branch, Branch.id.is_in(self.findBranches()[:chunk_size])).set(
             information_type=SQL(
                 "CASE WHEN transitively_private THEN ? ELSE ? END",
                 params=(InformationType.USERDATA.value,
