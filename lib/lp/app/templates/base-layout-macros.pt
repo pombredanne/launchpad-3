@@ -152,7 +152,7 @@
 
     <script id="base-layout-load-scripts" type="text/javascript">
         LPJS.use('base', 'node', 'console', 'event',
-            'oop', 'lp', 'lp.app.privacy',
+            'oop', 'lp', 'lp.app.banner.privacy',
             'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
@@ -161,8 +161,8 @@
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {
-                    Y.lp.app.privacy.setup_privacy_notification();
-                    Y.lp.app.privacy.display_privacy_notification();
+                    Y.lp.app.banner.privacy.setup_privacy_notification();
+                    Y.lp.app.banner.privacy.display_privacy_notification();
                 }
                 Y.lp.app.beta_features.display_beta_notification();
                 Y.lp.app.sorttable.SortTable.init();

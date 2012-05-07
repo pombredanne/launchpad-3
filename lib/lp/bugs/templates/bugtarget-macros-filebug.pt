@@ -328,30 +328,30 @@
 <metal:privacy define-macro="bug-reporting-privacy">
     <tal:private condition="view/isPrivate">
         <script type="text/javascript">
-            LPJS.use('lp.app.privacy',  function(Y) {
+            LPJS.use('lp.app.banner.privacy',  function(Y) {
                 Y.on('domready', function() {
                    var cfg = {
                         notification_text: "This report will be private. "
                             + "You can disclose it later."
                     };
-                    Y.lp.app.privacy.setup_privacy_notification(cfg);
-                    Y.lp.app.privacy.display_privacy_notification();
+                    Y.lp.app.banner.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.banner.privacy.display_privacy_notification();
                 });
             });
         </script>
     </tal:private>
     <tal:flip-privacy>
         <script type="text/javascript">
-            LPJS.use('node-event-delegate', 'lp.app.privacy', function(Y) {
+            LPJS.use('node-event-delegate', 'lp.app.banner.privacy', function(Y) {
                 var setup_information_type = function() {
                     var itypes_table = Y.one('.radio-button-widget');
                     itypes_table.delegate('click', function() {
                         var private_type = (Y.Array.indexOf(
                             LP.cache.private_types, this.get('value')) >= 0);
                         if (private_type) {
-                            Y.lp.app.privacy.display_privacy_notification();
+                            Y.lp.app.banner.privacy.display_privacy_notification();
                         } else {
-                            Y.lp.app.privacy.hide_privacy_notification();
+                            Y.lp.app.banner.privacy.hide_privacy_notification();
                         }
                         }, "input[name='field.information_type']");
                 };
@@ -361,14 +361,14 @@
                           + "because it is a security vulnerability. You "
                           + "can disclose it later."
                     };
-                    Y.lp.app.privacy.setup_privacy_notification(cfg);
+                    Y.lp.app.banner.privacy.setup_privacy_notification(cfg);
                     var sec = Y.one('[id="field.security_related"]');
                     sec.on('change', function() {
                       var checked = sec.get('checked');
                       if (checked) {
-                          Y.lp.app.privacy.display_privacy_notification();
+                          Y.lp.app.banner.privacy.display_privacy_notification();
                       } else {
-                          Y.lp.app.privacy.hide_privacy_notification();
+                          Y.lp.app.banner.privacy.hide_privacy_notification();
                       }
                     });
                 };
