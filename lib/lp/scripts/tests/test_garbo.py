@@ -109,7 +109,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1107,33 +1110,45 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(0, spec.work_items.count())
 
     def test_BugTaskFlattener(self):
-        # Private bugs without corresponding data in the access policy
-        # schema get mirrored.
-        switch_dbuser('testadmin')
-        task = self.factory.makeBugTask()
+        # Bugs without a record in BugTaskFlat get mirrored.
         # Remove the existing mirrored data.
-        IMasterStore(BugTask).execute(
-            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-        transaction.commit()
-        self.runHourly()
-        # Check that there's a record again, and delete it.
-        switch_dbuser('testadmin')
-        self.assertEqual(
-            (task.id,),
+        with dbuser('testadmin'):
+            task = self.factory.makeBugTask()
             IMasterStore(BugTask).execute(
+                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+
+        def get_flat():
+            return IMasterStore(BugTask).execute(
                 'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
-                (task.id,)).get_one())
-        IMasterStore(BugTask).execute(
-            'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
-        transaction.commit()
+                (task.id,)).get_one()
+
+        # Nothing is done until the feature flag is set.
         self.runHourly()
+        self.assertIs(None, get_flat())
+
+        # If we set the generation flag, the bug will be mirrored.
+        with dbuser('testadmin'):
+            IMasterStore(FeatureFlag).add(FeatureFlag(
+                u'default', 0, u'bugs.bugtaskflattener.generation', u'1'))
+        self.runHourly()
+        self.assertEqual((task.id,), get_flat())
+
         # A watermark is kept in memcache, so a second run doesn't
         # consider the same task.
-        self.assertIs(
-            None,
+        with dbuser('testadmin'):
             IMasterStore(BugTask).execute(
-                'SELECT bugtask FROM BugTaskFlat WHERE bugtask = ?',
-                (task.id,)).get_one())
+                'DELETE FROM BugTaskFlat WHERE bugtask = ?', (task.id,))
+        self.runHourly()
+        self.assertIs(None, get_flat())
+
+        # Incrementing the generation feature flag causes a fresh pass.
+        with dbuser('testadmin'):
+            IMasterStore(FeatureFlag).find(
+                FeatureFlag, flag=u'bugs.bugtaskflattener.generation').remove()
+            IMasterStore(FeatureFlag).add(FeatureFlag(
+                u'default', 1, u'bugs.bugtaskflattener.generation', u'2'))
+        self.runHourly()
+        self.assertEqual((task.id,), get_flat())
 
     def test_BranchInformationTypeMigrator_public(self):
         # A non-migrated public branch will have information_type set
