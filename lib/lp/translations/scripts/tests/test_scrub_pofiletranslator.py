@@ -24,10 +24,10 @@ from lp.translations.scripts.scrub_pofiletranslator import (
     )
 
 
-def measure_distance(sequence, item1, item2):
-    """Return the distance between items in a sequence."""
+def size_distance(sequence, item1, item2):
+    """Return the absolute distance between items in a sequence."""
     container = list(sequence)
-    return container.index(item2) - container.index(item1)
+    return abs(container.index(item2) - container.index(item1))
 
 
 class TestScrubPOFileTranslator(TestCaseWithFactory):
@@ -96,8 +96,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
             self.factory.makePOFile(potemplate=template)
             for template in templates]
         ordering = self.make_script().get_pofiles()
-        self.assertEqual(
-            1, abs(measure_distance(ordering, pofiles[0], pofiles[-1])))
+        self.assertEqual(1, size_distance(ordering, pofiles[0], pofiles[-1]))
 
     def test_get_pofiles_clusters_by_language(self):
         # POFiles for sharing templates and the same language are
@@ -109,7 +108,8 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         # POFiles per language & template.  We create these in a strange
         # way to avoid the risk of mistaking accidental orderings such
         # as per-id from being mistaken for the proper order.
-        pofiles_per_language = {language: [] for language in ['nl', 'fr']}
+        languages = ['nl', 'fr']
+        pofiles_per_language = dict((language, []) for language in languages)
         for language, pofiles in pofiles_per_language.items():
             for template in templates:
                 pofiles.append(
@@ -118,7 +118,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         ordering = self.make_script().get_pofiles()
         for pofiles in pofiles_per_language.values():
             self.assertEqual(
-                1, abs(measure_distance(ordering, pofiles[0], pofiles[1])))
+                1, size_distance(ordering, pofiles[0], pofiles[1]))
 
     def test_get_contributions_gets_contributions(self):
         pofile = self.factory.makePOFile()
