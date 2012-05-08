@@ -24,8 +24,8 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     And,
-    Not,
     In,
+    Not,
     Select,
     )
 from storm.locals import (
