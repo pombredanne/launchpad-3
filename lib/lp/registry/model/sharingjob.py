@@ -18,10 +18,16 @@ from lazr.delegates import delegates
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
+    enumerated_type_registry,
     )
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.expr import And
+from storm.expr import (
+    And,
+    Not,
+    In,
+    Select,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -33,10 +39,14 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugtaskflat import BugTaskFlat
+from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
@@ -67,10 +77,11 @@ class SharingJobType(DBEnumeratedType):
     """Values that ISharingJob.job_type can take."""
 
     REMOVE_SUBSCRIPTIONS = DBItem(0, """
-        Remove subscriptions when access is revoked.
+        Remove subscriptions of artifacts which are inaccessible.
 
         This job removes subscriptions to artifacts when access is
-        revoked for a particular information type or artifact.
+        no longer possible because a user no longer has an access
+        grant (either direct or indirect via team membership).
         """)
 
 
@@ -227,7 +238,8 @@ class RemoveSubscriptionsJob(SharingJobDerived):
     config = config.sharing_jobs
 
     @classmethod
-    def create(cls, pillar, grantee, requestor, bugs=None, branches=None):
+    def create(cls, pillar, grantee, requestor, information_types=None,
+               bugs=None, branches=None):
         """See `IRemoveSubscriptionsJob`."""
 
         bug_ids = [
@@ -236,9 +248,13 @@ class RemoveSubscriptionsJob(SharingJobDerived):
         branch_names = [
             branch.unique_name for branch in branches or []
         ]
+        information_types = [
+            info_type.value for info_type in information_types or []
+        ]
         metadata = {
             'bug_ids': bug_ids,
             'branch_names': branch_names,
+            'information_types': information_types,
             'requestor.id': requestor.id
         }
         return super(RemoveSubscriptionsJob, cls).create(
@@ -259,6 +275,12 @@ class RemoveSubscriptionsJob(SharingJobDerived):
     @property
     def branch_names(self):
         return self.metadata['branch_names']
+
+    @property
+    def information_types(self):
+        return [
+            enumerated_type_registry[InformationType.name].items[value]
+            for value in self.metadata['information_types']]
 
     def getErrorRecipients(self):
         # If something goes wrong we want to let the requestor know as well
@@ -285,8 +307,8 @@ class RemoveSubscriptionsJob(SharingJobDerived):
         if self.bug_ids:
             bugs = getUtility(IBugSet).getByNumbers(self.bug_ids)
             for bug in bugs:
-                removeSecurityProxy(bug).unsubscribe(
-                    self.grantee, self.requestor)
+                bug.unsubscribe(
+                    self.grantee, self.requestor, ignore_permissions=True)
 
         # Unsubscribe grantee from the specified branches.
         if self.branch_names:
@@ -294,4 +316,38 @@ class RemoveSubscriptionsJob(SharingJobDerived):
                 getUtility(IBranchLookup).getByUniqueName(branch_name)
                 for branch_name in self.branch_names]
             for branch in branches:
-                branch.unsubscribe(self.grantee, self.requestor)
+                branch.unsubscribe(
+                    self.grantee, self.requestor, ignore_permissions=True)
+
+        # If required, unsubscribe all pillar artifacts.
+        if not self.bug_ids and not self.branch_names:
+            self._unsubscribe_pillar_artifacts(self.information_types)
+
+    def _unsubscribe_pillar_artifacts(self, only_information_types):
+        # Unsubscribe grantee from pillar artifacts to which they no longer
+        # have access. If only_information_types is specified, filter by the
+        # specified information types, else unsubscribe from all artifacts.
+
+        # Branches are not handled until information_type is supported.
+
+        # Do the bugs.
+        privacy_filter = get_bug_privacy_filter(self.grantee, use_flat=True)
+        bug_filter = Not(In(
+            Bug.id,
+            Select(
+                (BugTaskFlat.bug_id,),
+                where=privacy_filter)))
+        if only_information_types:
+            bug_filter = And(
+                bug_filter,
+                Bug.information_type.is_in(only_information_types)
+            )
+        store = IStore(BugSubscription)
+        subscribed_invisible_bugs = store.find(
+            Bug,
+            BugSubscription.bug_id == Bug.id,
+            BugSubscription.person == self.grantee,
+            bug_filter)
+        for bug in subscribed_invisible_bugs:
+            bug.unsubscribe(
+                self.grantee, self.requestor, ignore_permissions=True)
