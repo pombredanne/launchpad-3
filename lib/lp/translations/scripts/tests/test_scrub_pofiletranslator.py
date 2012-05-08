@@ -181,6 +181,9 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         self.assertEqual(old_poft, new_poft)
 
     def test_scrub_pofile_deletes_unwarranted_entries(self):
+        # Deleting POFileTranslator records is not something the app
+        # server ever does, so it requires special privileges.
+        self.becomeDbUser('postgres')
         poft = self.make_pofiletranslator_without_message()
         (pofile, person) = (poft.pofile, poft.person)
         scrub_pofile(fake_logger, poft.pofile)
