@@ -118,7 +118,7 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
     fields = ["title", "description", "name"]
     if bool(getFeatureFlag(
-        'disclosure.show_information_type_in_ui.enabled')):
+        'disclosure.information_type_notifications.enabled')):
         fields.append('information_type')
     else:
         fields.extend(('private', 'security_related'))
