@@ -1414,6 +1414,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,
@@ -1421,7 +1422,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = [
         PersonPruner,
-        ScrubPOFileTranslator,
         ]
 
     # 1 day, minus 30 minutes for cleanup. This ensures the script is
