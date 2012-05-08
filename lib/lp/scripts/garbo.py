@@ -1386,9 +1386,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugHeatUpdater,
         BugTaskFlattener,
         ]
-    experimental_tunable_loops = [
-        ScrubPOFileTranslator,
-        ]
+    experimental_tunable_loops = []
 
     # 1 hour, minus 5 minutes for cleanup. This ensures the script is
     # fully terminated before the next scheduled hourly run kicks in.
@@ -1423,6 +1421,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = [
         PersonPruner,
+        ScrubPOFileTranslator,
         ]
 
     # 1 day, minus 30 minutes for cleanup. This ensures the script is
