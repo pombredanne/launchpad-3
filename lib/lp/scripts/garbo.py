@@ -105,6 +105,9 @@ from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
+from lp.translations.scripts.scub_pofiletranslator import (
+    ScrubPOFileTranslator,
+    )
 
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
@@ -1383,7 +1386,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugHeatUpdater,
         BugTaskFlattener,
         ]
-    experimental_tunable_loops = []
+    experimental_tunable_loops = [
+        ScrubPOFileTranslator,
+        ]
 
     # 1 hour, minus 5 minutes for cleanup. This ensures the script is
     # fully terminated before the next scheduled hourly run kicks in.
