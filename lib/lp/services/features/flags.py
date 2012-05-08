@@ -322,7 +322,7 @@ flag_info = sorted([
      ''),
     ('disclosure.information_type_notifications.enabled',
      'boolean',
-     ('If true, calculates and stores bugchange notifications to reference '
+     ('If true, calculate and store bugchange notifications to reference '
       'information_type rather than private/security_related.'),
      '',
      '',
