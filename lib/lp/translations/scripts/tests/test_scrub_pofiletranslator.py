@@ -145,20 +145,6 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         self.assertContentEqual(
             [tm.submitter.id], summarize_contributors(pofile, potmsgset_ids))
 
-    def test_summarize_contributors_uses_latest_contribution(self):
-        pofile = self.factory.makePOFile()
-        today = datetime.now(pytz.UTC)
-        yesterday = today - timedelta(1, 1, 1)
-        old_tm = self.factory.makeSuggestion(
-            pofile=pofile, date_created=yesterday)
-        new_tm = self.factory.makeSuggestion(
-            translator=old_tm.submitter, pofile=pofile, date_created=today)
-        potmsgset_ids = get_potmsgset_ids(pofile)
-        self.assertNotEqual(old_tm.date_created, new_tm.date_created)
-        self.assertContentEqual(
-            [new_tm.date_created],
-            summarize_contributors(pofile, potmsgset_ids))
-
     def test_summarize_contributors_ignores_inactive_potmsgsets(self):
         pofile = self.factory.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(
