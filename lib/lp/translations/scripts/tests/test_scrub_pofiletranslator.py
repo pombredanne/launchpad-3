@@ -203,8 +203,8 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         noncontributor = bad_poft.person
         transaction.commit()
 
+        self.becomeDbUser('garbo')
         ScrubPOFileTranslator(fake_logger).run()
-
         # Try to break the loop if it failed to commit its changes.
         transaction.abort()
 
