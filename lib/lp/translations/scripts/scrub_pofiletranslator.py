@@ -76,7 +76,7 @@ class ScrubPOFileTranslator(LaunchpadCronScript):
         store = IStore(pofile)
         pofts = store.find(
             POFileTranslator, POFileTranslator.pofileID == pofile.id)
-        return {poft.personID: poft for poft in pofts}
+        return dict((poft.personID, poft) for poft in pofts)
 
     def remove_pofiletranslators(self, pofile, person_ids):
         """Delete `POFileTranslator` records."""
