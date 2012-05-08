@@ -66,12 +66,3 @@ translation, we get two POFileTranslator records for each of the POFiles.
     ...     "pofile IN (%s, %s)"
     ...     % sqlvalues(devel_sr_pofile, stable_sr_pofile)).count()
     2
-
-Removing a translation message triggers POFileTranslator row removal as well.
-
-    >>> tm.destroySelf()
-    >>> print list(POFileTranslator.select(
-    ...     "pofile IN (%s, %s)"
-    ...     % sqlvalues(devel_sr_pofile, stable_sr_pofile)))
-    []
-
