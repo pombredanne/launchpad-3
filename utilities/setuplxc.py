@@ -801,6 +801,7 @@ def create_scripts(user, lxcname, ssh_key_path):
             lxc-start -n {lxcname} -d
             lxc-wait -n {lxcname} -s RUNNING
 
+            exit_code=0
             delay=30
             while [ "$delay" -gt 0 -a ! -s {leases1} -a ! -s {leases2} ]
             do
@@ -830,10 +831,12 @@ def create_scripts(user, lxcname, ssh_key_path):
                 echo "could not get IP address - aborting." >&2
                 echo "content of $LEASES:" >&2
                 cat $LEASES >&2
+                exit_code=-1
             fi
 
             lxc-stop -n {lxcname}
             lxc-wait -n {lxcname} -s STOPPED
+            exit $exit_code
             """.format(**mapping)))
         os.chmod(build_script_file, 0555)
     # We need a script to test launchpad using LXC ephemeral instances.
