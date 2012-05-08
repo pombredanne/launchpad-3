@@ -40,7 +40,35 @@ def get_pofiles():
     return query.order_by(POTemplate.name, POFile.languageID)
 
 
-def get_contributions(pofile):
+def get_potmsgset_ids(pofile):
+    """Get the ids for each current `POTMsgSet` in `pofile`."""
+    store = IStore(pofile)
+    return store.find(
+        TranslationTemplateItem.potmsgsetID,
+        TranslationTemplateItem.potemplateID == pofile.potemplate.id,
+        TranslationTemplateItem.sequence > 0)
+
+
+def summarize_contributors(pofile, potmsgset_ids):
+    """Return the set of ids of persons who contributed to `pofile`.
+
+    This is a limited version of `get_contributions` that is easier to
+    compute.
+    """
+    store = IStore(pofile)
+    contribs = store.find(
+        TranslationMessage.submitterID,
+        TranslationMessage.potmsgsetID.is_in(potmsgset_ids),
+        TranslationMessage.languageID == pofile.language.id,
+        TranslationMessage.msgstr0 != None,
+        Coalesce(
+            TranslationMessage.potemplateID,
+            pofile.potemplate.id) == pofile.potemplate.id)
+    contribs.config(distinct=True)
+    return set(contribs)
+
+
+def get_contributions(pofile, potmsgset_ids):
     """Map all users' most recent contributions to `pofile`.
 
     Returns a dict mapping `Person` id to the creation time of their most
@@ -50,12 +78,12 @@ def get_contributions(pofile):
     a diverged entry in this POFile will nevertheless produce a
     POFileTranslator record.  Fixing that would complicate the work more than
     it is probably worth.
+
+    :param pofile: The `POFile` to find contributions for.
+    :param potmsgset_ids: The ids of the `POTMsgSet`s to look for, as returned
+        by `get_potmsgset_ids`.
     """
     store = IStore(pofile)
-    potmsgset_ids = store.find(
-        TranslationTemplateItem.potmsgsetID,
-        TranslationTemplateItem.potemplateID == pofile.potemplate.id,
-        TranslationTemplateItem.sequence > 0)
     contribs = store.find(
         (TranslationMessage.submitterID, TranslationMessage.date_created),
         TranslationMessage.potmsgsetID.is_in(potmsgset_ids),
@@ -122,8 +150,16 @@ def scrub_pofile(logger, pofile):
 
     Removes inappropriate entries and adds missing ones.
     """
-    contribs = get_contributions(pofile)
     pofiletranslators = get_pofiletranslators(pofile)
+    potmsgset_ids = get_potmsgset_ids(pofile)
+    contributors = summarize_contributors(pofile, potmsgset_ids)
+    if set(pofiletranslators) == set(contributors):
+        # Things look roughly OK.  Move on.
+        return
+
+    # Things are not quite right.  Look up the rest of the information
+    # we need, and fix the problems.
+    contribs = get_contributions(pofile, potmsgset_ids)
     remove_unwarranted_pofiletranslators(
         logger, pofile, pofiletranslators, contribs)
     create_missing_pofiletranslators(
