@@ -320,6 +320,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.information_type_notifications.enabled',
+     'boolean',
+     ('If true, calculate and store bugchange notifications to reference '
+      'information_type rather than private/security_related.'),
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
