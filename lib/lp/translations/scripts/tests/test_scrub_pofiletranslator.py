@@ -151,7 +151,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
         tm.potemplate = pofile.potemplate
-        self.ContenttItemsEqual(
+        self.assertContentEqual(
             [tm.submitter.id],
             self.make_script().get_contributions(pofile).keys())
 
@@ -165,7 +165,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         pofile = self.factory.makePOFile()
         tm = self.make_message_with_pofiletranslator(pofile)
         pofts = self.make_script().get_pofiletranslators(pofile)
-        self.ContenttItemsEqual([tm.submitter.id], pofts.keys())
+        self.assertContentEqual([tm.submitter.id], pofts.keys())
         poft = pofts[tm.submitter.id]
         self.assertEqual(pofile, poft.pofile)
 
