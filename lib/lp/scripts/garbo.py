@@ -105,7 +105,7 @@ from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
-from lp.translations.scripts.scub_pofiletranslator import (
+from lp.translations.scripts.scrub_pofiletranslator import (
     ScrubPOFileTranslator,
     )
 
