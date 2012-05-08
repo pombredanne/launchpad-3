@@ -24,7 +24,7 @@ def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
     get created (through message sharing) while translations are still
     being copied.
     """
-    assert to_table.lower() == "POFile".lower(), (
+    assert to_table.lower() == "pofile", (
         "This callback is meant for pouring the POFile table only.")
 
     params = {
