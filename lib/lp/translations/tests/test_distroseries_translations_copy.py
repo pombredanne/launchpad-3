@@ -54,7 +54,7 @@ class TestDistroSeriesTranslationsCopying(TestCaseWithFactory):
         def pour_or_stop_at_pofile(self, holding_table, table, *args,
                                    **kwargs):
             args = (self, holding_table, table) + args
-            if table.lower() == 'pofile':
+            if table.lower() == 'POFile'.lower():
                 raise EarlyExit(*args, **kwargs)
             else:
                 return pour_table(*args, **kwargs)
