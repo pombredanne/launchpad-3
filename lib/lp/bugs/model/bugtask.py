@@ -1979,9 +1979,8 @@ class BugTaskSet:
             sourcepackagename = getUtility(ISourcePackageNameSet).get(row[1])
             source_package = distribution.getSourcePackage(sourcepackagename)
             packages_with_bugs.add((distribution, sourcepackagename))
-            package_counts = dict(
-                package=source_package,
-                **zip(map(itemgetter(0), sumexprs), row[2:]))
+            package_counts = dict(package=source_package)
+            package_counts.update(zip(map(itemgetter(0), sumexprs), row[2:]))
             counts.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
@@ -1992,8 +1991,9 @@ class BugTaskSet:
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
-                package=distribution.getSourcePackage(sourcepackagename),
-                **zip(map(itemgetter(0), sumexprs), repeat(0)))
+                package=distribution.getSourcePackage(sourcepackagename))
+            package_counts.update(
+                zip(map(itemgetter(0), sumexprs), repeat(0)))
             counts.append(package_counts)
 
         return counts
