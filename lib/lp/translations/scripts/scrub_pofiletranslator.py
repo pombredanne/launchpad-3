@@ -212,10 +212,13 @@ def gather_work_items(pofile_ids):
     :return: A sequence of `WorkItem`s for those `POFile`s that need fixing.
     """
     pofile_summaries = summarize_pofiles(pofile_ids)
+    cached_potmsgsets = {}
     work_items = []
     for pofile_id in pofile_ids:
         template_id, language_id = pofile_summaries[pofile_id]
-        potmsgset_ids = get_potmsgset_ids(template_id)
+        if template_id not in cached_potmsgsets:
+            cached_potmsgsets[template_id] = get_potmsgset_ids(template_id)
+        potmsgset_ids = cached_potmsgsets[template_id]
         pofts = get_pofiletranslators(pofile_id)
         if needs_fixing(template_id, language_id, potmsgset_ids, pofts):
             work_items.append(WorkItem(pofile_id, potmsgset_ids, pofts))

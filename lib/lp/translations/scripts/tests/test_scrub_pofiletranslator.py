@@ -21,6 +21,7 @@ from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.scripts.scrub_pofiletranslator import (
     fix_pofile,
+    gather_work_items,
     get_contributions,
     get_pofile_ids,
     get_pofiletranslators,
@@ -267,6 +268,29 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(tm.submitter, new_poft.person)
         self.assertEqual(pofile, new_poft.pofile)
+
+    def test_gather_work_items_caches_potmsgset_ids_for_same_template(self):
+        template = self.factory.makePOTemplate()
+        pofiles = [
+            self.factory.makePOFile(potemplate=template)
+            for counter in range(2)]
+        for pofile in pofiles:
+            self.make_message_without_pofiletranslator(pofile)
+        work_items = gather_work_items([pofile.id for pofile in pofiles])
+        # The potmsgset_ids entries are references to one and the same
+        # object.
+        self.assertIs(
+            work_items[0].potmsgset_ids, work_items[1].potmsgset_ids)
+
+    def test_gather_work_items_does_not_cache_across_templates(self):
+        pofiles = [self.factory.makePOFile() for counter in range(2)]
+        for pofile in pofiles:
+            self.make_message_without_pofiletranslator(pofile)
+        work_items = gather_work_items([pofile.id for pofile in pofiles])
+        # The POFiles are for different templates, so they do not share
+        # the same potmsgset_ids.
+        self.assertNotEqual(
+            work_items[0].potmsgset_ids, work_items[1].potmsgset_ids)
 
     def test_tunable_loop(self):
         pofile = self.factory.makePOFile()
