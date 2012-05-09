@@ -1860,7 +1860,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
-            owner=owner, private=True, security_related=True)
+            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
     else:

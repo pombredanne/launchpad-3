@@ -1726,7 +1726,6 @@ class Bug(SQLBase):
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
-        bug_before_modification = Snapshot(self, providing=providedBy(self))
         if from_api and information_type == InformationType.PROPRIETARY:
             raise BugCannotBePrivate(
                 "Cannot transition the information type to proprietary.")
@@ -1749,7 +1748,6 @@ class Bug(SQLBase):
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
-        self.updateHeat()
 
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
@@ -1785,12 +1783,11 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self.updateHeat()
         # Set the legacy attributes for now.
         self._private = information_type in PRIVATE_INFORMATION_TYPES
         self._security_related = (
             information_type in SECURITY_INFORMATION_TYPES)
-        notify(ObjectModifiedEvent(
-                self, bug_before_modification, ['information_type'], user=who))
         return True
 
     def getRequiredSubscribers(self, information_type, who):

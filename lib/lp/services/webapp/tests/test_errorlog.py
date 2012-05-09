@@ -161,8 +161,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
-        self.assertEqual(config.branchscanner.oops_prefix,
-            utility.oops_prefix)
+        self.assertEqual('T-branchscanner', utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
             utility._oops_datedir_repo.root)
 

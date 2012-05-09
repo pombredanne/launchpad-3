@@ -30,6 +30,7 @@ from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.tests.helpers import remove_all_sample_data_branches
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -768,11 +769,13 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
         linked_bugtasks = []
         with person_logged_in(branch.owner):
             for x in range(0, 4):
-                private = x % 2
+                information_type = InformationType.PUBLIC
+                if x % 2:
+                    information_type = InformationType.USERDATA
                 bug = self.factory.makeBug(
-                    owner=branch.owner, private=private)
+                    owner=branch.owner, information_type=information_type)
                 merge_proposals[0].source_branch.linkBug(bug, branch.owner)
-                if not private:
+                if information_type == InformationType.PUBLIC:
                     linked_bugtasks.append(bug.default_bugtask)
         expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
 

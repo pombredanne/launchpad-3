@@ -37,6 +37,7 @@ from lp.services.webapp.interaction import (
     setupInteractionByEmail,
     setupInteractionForPerson,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.vhosts import allvhosts
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -135,6 +136,8 @@ def logout():
     LaunchpadFunctionalTestCase's tearDown method so
     you generally won't need to call this.
     """
+    # Ensure the launchbag developer flag is off when logging out.
+    getUtility(ILaunchBag).setDeveloper(False)
     endInteraction()
 
 

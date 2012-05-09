@@ -2107,9 +2107,17 @@ ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
 
 class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
 
-    field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
-                   'build_debug_symbols', 'buildd_secret', 'authorized_size',
-                   'relative_build_score', 'external_dependencies']
+    field_names = [
+        'enabled',
+        'private',
+        'suppress_subscription_notifications',
+        'require_virtualized',
+        'build_debug_symbols',
+        'buildd_secret',
+        'authorized_size',
+        'relative_build_score',
+        'external_dependencies',
+        ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
     custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
@@ -2164,10 +2172,12 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
 
-        if data.get('commercial') is True and not data['private']:
+        if (data.get('suppress_subscription_notifications') is True
+            and not data['private']):
             self.setFieldError(
-                'commercial',
-                'Can only set commericial for private archives.')
+                'suppress_subscription_notifications',
+                'Can only suppress subscription notifications for private '
+                'archives.')
 
         enabled_restricted_families = data.get('enabled_restricted_families')
         require_virtualized = data.get('require_virtualized')

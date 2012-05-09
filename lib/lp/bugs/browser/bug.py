@@ -854,8 +854,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         # We handle duplicate changes by hand instead of leaving it to
         # the usual machinery because we must use bug.markAsDuplicate().
         bug = self.context.bug
-        bug_before_modification = Snapshot(
-            bug, providing=providedBy(bug))
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         duplicateof = data.pop('duplicateof')
         bug.markAsDuplicate(duplicateof)
         notify(
@@ -864,6 +863,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
+# XXX: This can move to using LaunchpadEditFormView when 
+# show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
@@ -942,12 +943,19 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         """Update the bug."""
         data = dict(data)
         bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         if bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
             information_type = data.pop('information_type')
+            changed_fields = ['information_type']
         else:
+            changed_fields = []
             private = data.pop('private', bug.private)
+            if bug.private != private:
+                changed_fields.append('private')
             security_related = data.pop('security_related')
+            if bug.security_related != security_related:
+                changed_fields.append('security_related')
             information_type = convert_to_information_type(
                 private, security_related)
         user_will_be_subscribed = (
@@ -957,6 +965,10 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             information_type, self.user)
         if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
+            notify(
+                ObjectModifiedEvent(
+                    bug, bug_before_modification, changed_fields,
+                    user=self.user))
         if self.request.is_ajax:
             if changed:
                 return self._getSubscriptionDetails()

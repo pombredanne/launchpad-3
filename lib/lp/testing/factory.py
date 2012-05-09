@@ -76,7 +76,6 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
-from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -1638,11 +1637,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, security_related=False, information_type=None,
-                date_closed=None, title=None, date_created=None,
-                description=None, comment=None, status=None,
-                distribution=None, milestone=None, series=None, tags=None,
-                sourcepackagename=None):
+                information_type=InformationType.PUBLIC, date_closed=None,
+                title=None, date_created=None, description=None,
+                comment=None, status=None, distribution=None, milestone=None,
+                series=None, tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1689,10 +1687,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
-        # Factory changes delayed for a seperate branch.
-        if information_type is None:
-            information_type = convert_to_information_type(
-                private, security_related)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
@@ -2664,7 +2658,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
                     virtualized=True, description=None, displayname=None,
-                    commercial=False):
+                    suppress_subscription_notifications=False):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -2677,8 +2671,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param private: Whether the archive is created private.
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
-        :param commercial: Whether the archive is commercial.  Defaults to
-            False.
+        :param suppress_subscription_notifications: Whether to suppress
+            subscription notifications, defaults to False.  Only useful
+            for private archives.
         """
         if purpose is None:
             purpose = ArchivePurpose.PPA
@@ -2717,9 +2712,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_archive.private = True
             naked_archive.buildd_secret = "sekrit"
 
-        if commercial:
+        if suppress_subscription_notifications:
             naked_archive = removeSecurityProxy(archive)
-            naked_archive.commercial = True
+            naked_archive.suppress_subscription_notifications = True
 
         return archive
 
