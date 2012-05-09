@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact sharing service."""
+from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
 
 __metaclass__ = type
 __all__ = [
@@ -217,7 +218,7 @@ class SharingService:
         return sharee
 
     @available_with_permission('launchpad.Edit', 'pillar')
-    def deletePillarSharee(self, pillar, sharee,
+    def deletePillarSharee(self, pillar, user, sharee,
                              information_types=None):
         """See `ISharingService`."""
 
@@ -253,8 +254,14 @@ class SharingService:
                 IAccessArtifactGrantSource)
             accessartifact_grant_source.revokeByArtifact(to_delete)
 
+        # Create a job to remove subscriptions for artifacts the sharee can no
+        # longer see.
+        getUtility(IRemoveSubscriptionsJobSource).create(
+            pillar, sharee, user, information_types=information_types)
+
     @available_with_permission('launchpad.Edit', 'pillar')
-    def revokeAccessGrants(self, pillar, sharee, branches=None, bugs=None):
+    def revokeAccessGrants(self, pillar, user, sharee, branches=None,
+                           bugs=None):
         """See `ISharingService`."""
 
         if not self.write_enabled:
@@ -272,3 +279,8 @@ class SharingService:
         accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
         accessartifact_grant_source.revokeByArtifact(
             artifacts_to_delete, [sharee])
+
+        # Create a job to remove subscriptions for artifacts the sharee can no
+        # longer see.
+        getUtility(IRemoveSubscriptionsJobSource).create(
+            pillar, sharee, user, bugs=bugs, branches=branches)

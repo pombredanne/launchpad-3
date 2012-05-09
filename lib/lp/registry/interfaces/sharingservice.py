@@ -103,22 +103,25 @@ class ISharingService(IService):
         """
 
     @export_write_operation()
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         sharee=Reference(IPerson, title=_('Sharee'), required=True),
         information_types=List(
             Choice(vocabulary=InformationType), required=False))
     @operation_for_version('devel')
-    def deletePillarSharee(pillar, sharee, information_types):
+    def deletePillarSharee(pillar, sharee, user, information_types):
         """Remove a sharee from a pillar.
 
         :param pillar: the pillar from which to remove access
+        :param user: the user making the request
         :param sharee: the person or team to remove
         :param information_types: if None, remove all access, otherwise just
                                    remove the specified access_policies
         """
 
     @export_write_operation()
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         pillar=Reference(IPillar, title=_('Pillar'), required=True),
         sharee=Reference(IPerson, title=_('Sharee'), required=True),
@@ -127,10 +130,11 @@ class ISharingService(IService):
         branches=List(
             Reference(schema=IBranch), title=_('Branches'), required=False))
     @operation_for_version('devel')
-    def revokeAccessGrants(pillar, sharee, branches=None, bugs=None):
+    def revokeAccessGrants(pillar, user, sharee, branches=None, bugs=None):
         """Remove a sharee's access to the specified artifacts.
 
         :param pillar: the pillar from which to remove access
+        :param user: the user making the request
         :param sharee: the person or team for whom to revoke access
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access

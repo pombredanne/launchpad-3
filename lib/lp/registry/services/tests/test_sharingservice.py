@@ -13,6 +13,10 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
@@ -25,6 +29,7 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.services.sharingservice import SharingService
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import block_on_job
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.publisher import canonical_url
@@ -38,7 +43,7 @@ from lp.testing import (
     )
 from lp.testing.layers import (
     AppServerLayer,
-    DatabaseFunctionalLayer,
+    CeleryJobLayer,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import LaunchpadWebServiceCaller
@@ -46,14 +51,15 @@ from lp.testing.pages import LaunchpadWebServiceCaller
 
 WRITE_FLAG = {
     'disclosure.enhanced_sharing.writable': 'true',
-    'disclosure.enhanced_sharing_details.enabled': 'true'}
+    'disclosure.enhanced_sharing_details.enabled': 'true',
+    'jobs.celery.enabled_classes': 'RemoveSubscriptionsJob'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
 class TestSharingService(TestCaseWithFactory):
     """Tests for the SharingService."""
 
-    layer = DatabaseFunctionalLayer
+    layer = CeleryJobLayer
 
     def setUp(self):
         super(TestSharingService, self).setUp()
@@ -516,7 +522,8 @@ class TestSharingService(TestCaseWithFactory):
         self.factory.makeAccessPolicyGrant(access_policies[0], another)
         # Delete data for a specific information type.
         with FeatureFixture(WRITE_FLAG):
-            self.service.deletePillarSharee(pillar, grantee, types_to_delete)
+            self.service.deletePillarSharee(
+                pillar, pillar.owner, grantee, types_to_delete)
         # Assemble the expected data for the remaining access grants for
         # grantee.
         expected_data = []
@@ -572,7 +579,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.deletePillarSharee,
-                pillar, [InformationType.USERDATA])
+                pillar, pillar.owner, [InformationType.USERDATA])
 
     def test_deletePillarShareeAnonymous(self):
         # Anonymous users are not allowed.
@@ -595,7 +602,69 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.deletePillarSharee,
-            product, [InformationType.USERDATA])
+            product, product.owner, [InformationType.USERDATA])
+
+    def _assert_deleteShareeRemoveSubscriptions(self,
+                                                types_to_delete=None):
+        product = self.factory.makeProduct()
+        access_policies = getUtility(IAccessPolicySource).findByPillar(
+            (product,))
+        information_types = [ap.type for ap in access_policies]
+        grantee = self.factory.makePerson()
+        # Make some access policy grants for our sharee.
+        for access_policy in access_policies:
+            self.factory.makeAccessPolicyGrant(access_policy, grantee)
+
+        login_person(product.owner)
+        # Make some bug artifact grants for our sharee.
+        # Branches will be done when information_type attribute is supported.
+        bugs = []
+        for access_policy in access_policies:
+            bug = self.factory.makeBug(
+                product=product, owner=product.owner,
+                information_type=access_policy.type)
+            bugs.append(bug)
+            artifact = self.factory.makeAccessArtifact(concrete=bug)
+            self.factory.makeAccessArtifactGrant(artifact, grantee)
+
+        # Make some access policy grants for another sharee.
+        another = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(access_policies[0], another)
+
+        # Subscribe the grantee and other person to the artifacts.
+        for person in [grantee, another]:
+            for bug in bugs:
+                bug.subscribe(person, product.owner)
+
+        # Delete data for specified information types or all.
+        with FeatureFixture(WRITE_FLAG):
+            self.service.deletePillarSharee(
+                product, product.owner, grantee, types_to_delete)
+        with block_on_job(self):
+            transaction.commit()
+
+        expected_information_types = []
+        if types_to_delete is not None:
+            expected_information_types = (
+                set(information_types).difference(types_to_delete))
+        # Check that grantee is unsubscribed.
+        for bug in bugs:
+            if bug.information_type in expected_information_types:
+                self.assertIn(grantee, bug.getDirectSubscribers())
+            else:
+                self.assertNotIn(grantee, bug.getDirectSubscribers())
+            self.assertIn(another, bug.getDirectSubscribers())
+
+    def test_shareeUnsubscribedWhenDeleted(self):
+        # The sharee is unsubscribed from any inaccessible artifacts when their
+        # access is revoked.
+        self._assert_deleteShareeRemoveSubscriptions()
+
+    def test_shareeUnsubscribedWhenDeletedSelectedPolicies(self):
+        # The sharee is unsubscribed from any inaccessible artifacts when their
+        # access to selected policies is revoked.
+        self._assert_deleteShareeRemoveSubscriptions(
+            [InformationType.USERDATA])
 
     def _assert_revokeAccessGrants(self, pillar, bugs, branches):
         artifacts = []
@@ -619,6 +688,15 @@ class TestSharingService(TestCaseWithFactory):
                     artifact=access_artifact, grantee=person,
                     grantor=pillar.owner)
 
+        # Subscribe the grantee and other person to the artifacts.
+        for person in [grantee, someone]:
+            for bug in bugs or []:
+                bug.subscribe(person, pillar.owner)
+            for branch in branches or []:
+                branch.subscribe(grantee,
+                    BranchSubscriptionNotificationLevel.NOEMAIL, None,
+                    CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
+
         # Check that grantee has expected access grants.
         accessartifact_grant_source = getUtility(IAccessArtifactGrantSource)
         grants = accessartifact_grant_source.findByArtifact(
@@ -628,17 +706,29 @@ class TestSharingService(TestCaseWithFactory):
 
         with FeatureFixture(WRITE_FLAG):
             self.service.revokeAccessGrants(
-                pillar, grantee, bugs=bugs, branches=branches)
+                pillar, pillar.owner, grantee, bugs=bugs, branches=branches)
+        with block_on_job(self):
+            transaction.commit()
 
         # The grantee now has no access to anything.
         permission_info = apgfs.findGranteePermissionsByPolicy(
             [policy], [grantee])
         self.assertEqual(0, permission_info.count())
 
+        # Check that the grantee's subscriptions have been removed.
+        # Branches will be done once they have the information_type attribute.
+        for bug in bugs:
+            self.assertNotIn(grantee, bug.getDirectSubscribers())
+
         # Someone else still has access to the bugs and branches.
         grants = accessartifact_grant_source.findByArtifact(
             access_artifacts, [someone])
         self.assertEqual(1, grants.count())
+        # Someone else still has subscriptions to the bugs and branches.
+        for bug in bugs:
+            self.assertIn(someone, bug.getDirectSubscribers())
+        for branch in branches:
+            self.assertIn(someone, branch.subscribers)
 
     def test_revokeAccessGrantsBugs(self):
         # Users with launchpad.Edit can delete all access for a sharee.
@@ -669,7 +759,7 @@ class TestSharingService(TestCaseWithFactory):
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
                 Unauthorized, self.service.revokeAccessGrants,
-                product, sharee, bugs=[bug])
+                product, product.owner, sharee, bugs=[bug])
 
     def test_revokeAccessGrantsAnonymous(self):
         # Anonymous users are not allowed.
@@ -693,7 +783,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(owner)
         self.assertRaises(
             Unauthorized, self.service.revokeAccessGrants,
-            product, sharee, bugs=[bug])
+            product, product.owner, sharee, bugs=[bug])
 
 
 class ApiTestMixin:
