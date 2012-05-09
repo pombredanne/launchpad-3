@@ -173,9 +173,8 @@ def create_missing_pofiletranslators(logger, pofile, pofts, contribs):
             date_last_touched=contribs[missing_contributor]))
 
 
-def fix_pofile(logger, pofile_id, potmsgset_ids, pofiletranslators):
+def fix_pofile(logger, pofile, potmsgset_ids, pofiletranslators):
     """This `POFile` needs fixing.  Load its data & fix it."""
-    pofile = IStore(POFile).get(POFile, pofile_id)
     contribs = get_contributions(pofile, potmsgset_ids)
     remove_unwarranted_pofiletranslators(
         logger, pofile, pofiletranslators, contribs)
@@ -226,7 +225,12 @@ def gather_work_items(pofile_ids):
 
 
 def preload_work_items(work_items):
-    """Bulk load data that will be needed to process `work_items`."""
+    """Bulk load data that will be needed to process `work_items`.
+
+    :param work_items: A sequence of `WorkItem` records.
+    :return: A dict mapping `POFile` ids from `work_items` to their
+        respective `POFile` objects.
+    """
     pofiles = load(POFile, [work_item.pofile_id for work_item in work_items])
     load_related(Language, pofiles, ['languageID'])
     templates = load_related(POTemplate, pofiles, ['potemplateID'])
@@ -235,13 +239,15 @@ def preload_work_items(work_items):
     productseries = load_related(
         ProductSeries, templates, ['productseriesID'])
     load_related(Product, productseries, ['productID'])
+    return dict((pofile.id, pofile) for pofile in pofiles)
 
 
-def process_work_items(logger, work_items):
+def process_work_items(logger, work_items, pofiles):
     """Fix the `POFileTranslator` records covered by `work_items`."""
     for work_item in work_items:
+        pofile = pofiles[work_item.pofile_id]
         fix_pofile(
-            logger, work_item.pofile_id, work_item.potmsgset_ids,
+            logger, pofile, work_item.potmsgset_ids,
             work_item.pofiletranslators)
 
 
@@ -264,8 +270,8 @@ class ScrubPOFileTranslator(TunableLoop):
             self.next_offset = None
         else:
             work_items = gather_work_items(batch)
-            preload_work_items(work_items)
-            process_work_items(self.log, work_items)
+            pofiles = preload_work_items(work_items)
+            process_work_items(self.log, work_items, pofiles)
             transaction.commit()
 
     def isDone(self):
