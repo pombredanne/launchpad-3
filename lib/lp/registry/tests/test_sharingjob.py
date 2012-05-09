@@ -165,7 +165,7 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
 
     def test_create(self):
         # Create an instance of RemoveSubscriptionsJob that stores
-        # the notification information.
+        # the information type and artifact information.
         self.assertIs(
             True,
             IRemoveSubscriptionsJobSource.providedBy(RemoveSubscriptionsJob))
@@ -188,6 +188,21 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertContentEqual([info_type], naked_job.information_types)
         self.assertContentEqual([bug.id], naked_job.bug_ids)
         self.assertContentEqual([branch.unique_name], naked_job.branch_names)
+
+    def test_create_no_pillar(self):
+        # Create an instance of RemoveSubscriptionsJob that stores
+        # the information type and artifact information but with no pillar.
+        grantee = self.factory.makePerson()
+        requestor = self.factory.makePerson()
+        job = getUtility(IRemoveSubscriptionsJobSource).create(
+            None, grantee, requestor)
+        naked_job = removeSecurityProxy(job)
+        self.assertIsInstance(job, RemoveSubscriptionsJob)
+        self.assertEqual(None, job.pillar)
+        self.assertEqual(grantee, job.grantee)
+        self.assertEqual(requestor.id, naked_job.requestor_id)
+        self.assertIn('all pillars', repr(job))
+        self.assertEqual(1, len(job.getErrorRecipients()))
 
     def _make_subscribed_bug(self, grantee, product=None, distribution=None,
                              information_type=InformationType.USERDATA):
@@ -235,10 +250,9 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(
             grantee, list(removeSecurityProxy(branch).subscribers))
 
-    def test_unsubscribe_pillar_artifacts_direct_bugs(self):
+    def _assert_unsubscribe_pillar_artifacts_direct_bugs(self,
+                                                         pillar=None):
         # All direct pillar bug subscriptions are removed.
-        owner = self.factory.makePerson()
-        pillar = self.factory.makeProduct(owner=owner)
         grantee = self.factory.makePerson()
 
         # Make some bugs subscribed to by grantee.
@@ -257,8 +271,9 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
             accessartifact_source.find([bug1, bug2]), [grantee])
 
         # Now run the job.
+        requestor = self.factory.makePerson()
         getUtility(IRemoveSubscriptionsJobSource).create(
-            pillar, grantee, owner)
+            pillar, grantee, requestor)
         with block_on_job(self):
             transaction.commit()
 
@@ -267,12 +282,19 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         self.assertNotIn(
             grantee, removeSecurityProxy(bug2).getDirectSubscribers())
 
-    def test_unsubscribe_pillar_artifacts_indirect_bugs(self):
+    def test_unsubscribe_pillar_artifacts_direct_bugs(self):
+        pillar = self.factory.makeProduct()
+        self._assert_unsubscribe_pillar_artifacts_direct_bugs(pillar)
+
+    def test_unsubscribe_artifacts_direct_bugs_unspecified_pillar(
+                                                                        self):
+        self._assert_unsubscribe_pillar_artifacts_direct_bugs()
+
+    def _assert_unsubscribe_pillar_artifacts_indirect_bugs(self,
+                                                           pillar=None):
         # Do not delete subscriptions to bugs a user has indirect access to
         # because they belong to a team which has an artifact grant on the bug.
 
-        owner = self.factory.makePerson(name='pillarowner')
-        pillar = self.factory.makeProduct(owner=owner)
         person_grantee = self.factory.makePerson(name='grantee')
 
         # Make a bug the person_grantee is subscribed to.
@@ -301,8 +323,9 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
             accessartifact_source.find([bug1, bug2]), [person_grantee])
 
         # Now run the job.
+        requestor = self.factory.makePerson()
         getUtility(IRemoveSubscriptionsJobSource).create(
-            pillar, person_grantee, owner)
+            pillar, person_grantee, requestor)
         with block_on_job(self):
             transaction.commit()
 
@@ -313,6 +336,14 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         # via a team.
         self.assertIn(
             person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
+
+    def test_unsubscribe_pillar_artifacts_indirect_bugs(self):
+        pillar = self.factory.makeProduct()
+        self._assert_unsubscribe_pillar_artifacts_indirect_bugs(pillar)
+
+    def test_unsubscribe_artifacts_indirect_bugs_unspecified_pillar(
+                                                                        self):
+        self._assert_unsubscribe_pillar_artifacts_indirect_bugs()
 
     def test_unsubscribe_pillar_artifacts_specific_info_types(self):
         # Only delete pillar artifacts of the specified info type.

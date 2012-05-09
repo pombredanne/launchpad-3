@@ -164,7 +164,7 @@ class SharingJobDerived(BaseRunnableJob):
         return '<%(job_type)s job for %(grantee)s and %(pillar)s>' % {
             'job_type': self.context.job_type.name,
             'grantee': self.grantee.displayname,
-            'pillar': self.pillar.displayname,
+            'pillar': self.pillar_text,
             }
 
     @property
@@ -173,6 +173,10 @@ class SharingJobDerived(BaseRunnableJob):
             return self.product
         else:
             return self.distro
+
+    @property
+    def pillar_text(self):
+        return self.pillar.displayname if self.pillar else 'all pillars'
 
     @property
     def log_name(self):
@@ -284,18 +288,16 @@ class RemoveSubscriptionsJob(SharingJobDerived):
 
     def getErrorRecipients(self):
         # If something goes wrong we want to let the requestor know as well
-        # as the pillar maintainer.
+        # as the pillar maintainer (if there is a pillar).
         result = set()
         result.add(format_address_for_person(self.requestor))
-        if self.pillar.owner.preferredemail:
+        if self.pillar and self.pillar.owner.preferredemail:
             result.add(format_address_for_person(self.pillar.owner))
         return list(result)
 
     def getOperationDescription(self):
         return ('removing subscriptions for artifacts '
-            'for %s on %s' %
-            (self.grantee.displayname,
-             self.pillar.displayname))
+            'for %s on %s' % (self.grantee.displayname, self.pillar_text))
 
     def run(self):
         """See `IRemoveSubscriptionsJob`."""
