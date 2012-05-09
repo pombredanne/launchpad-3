@@ -200,8 +200,7 @@ def needs_fixing(template_id, language_id, potmsgset_ids, pofiletranslators):
 
 # A tuple describing a POFile that needs its POFileTranslators fixed.
 WorkItem = namedtuple("WorkItem", [
-    'template_id',
-    'language_id',
+    'pofile_id',
     'potmsgset_ids',
     'pofiletranslators',
     ])
@@ -230,8 +229,7 @@ def preload_work_items(work_items):
     """Bulk load data that will be needed to process `work_items`."""
     pofiles = load(POFile, [work_item.pofile_id for work_item in work_items])
     load_related(Language, pofiles, ['languageID'])
-    templates = load(
-        POTemplate, [work_item.template_id for work_item in work_items])
+    templates = load_related(POTemplate, pofiles, ['potemplateID'])
     distroseries = load_related(DistroSeries, templates, ['distroseriesID'])
     load_related(Distribution, distroseries, ['distributionID'])
     productseries = load_related(
