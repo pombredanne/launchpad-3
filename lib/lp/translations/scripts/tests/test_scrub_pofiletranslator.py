@@ -58,7 +58,8 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         if pofile is None:
             pofile = self.factory.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(
-            potemplate=pofile.potemplate, sequence=1)
+            potemplate=pofile.potemplate,
+            sequence=self.factory.getUniqueInteger())
         # A database trigger on TranslationMessage automatically creates
         # a POFileTranslator record for each new TranslationMessage.
         return self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
