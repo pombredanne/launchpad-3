@@ -23,8 +23,14 @@ __all__ = [
 
 from collections import defaultdict
 import datetime
-from itertools import chain
-from operator import attrgetter
+from itertools import (
+    chain,
+    repeat,
+    )
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import re
 
 from lazr.lifecycle.event import (
@@ -1950,19 +1956,21 @@ class BugTaskSet:
         package_name_ids = [
             package.sourcepackagename.id for package in packages]
 
-        # Each boolean expressions will be casted to 0 or 1 and summed
-        # across the search results.
-        sums = [
-            BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
-            BugTaskFlat.importance == BugTaskImportance.CRITICAL,
-            BugTaskFlat.assignee == None,
-            BugTaskFlat.status == BugTaskStatus.INPROGRESS,
-            BugTaskFlat.importance == BugTaskImportance.HIGH,
+        # The count of each package's open bugs matching each predicate
+        # will be returned in the dict under the given name.
+        sumexprs = [
+            ('open', BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)),
+            ('open_critical',
+             BugTaskFlat.importance == BugTaskImportance.CRITICAL),
+            ('open_unassigned', BugTaskFlat.assignee == None),
+            ('open_inprogress',
+             BugTaskFlat.status == BugTaskStatus.INPROGRESS),
+            ('open_high', BugTaskFlat.importance == BugTaskImportance.HIGH),
             ]
 
         result = IStore(BugTaskFlat).find(
             (BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
-            + tuple(Sum(Cast(sum, 'integer')) for sum in sums),
+            + tuple(Sum(Cast(expr[1], 'integer')) for expr in sumexprs),
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
             BugTaskFlat.distribution == distribution,
@@ -1971,29 +1979,19 @@ class BugTaskSet:
             ).group_by(
                 BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 
+        # Map the returned counts back to their names and throw them in
+        # the dict.
         distribution_set = getUtility(IDistributionSet)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
         counts = []
-        for (distro_id, spn_id, open_bugs,
-             open_critical_bugs, open_unassigned_bugs,
-             open_inprogress_bugs, open_high_bugs) in result:
-            distribution = distribution_set.get(distro_id)
-            sourcepackagename = sourcepackagename_set.get(spn_id)
+        for row in result:
+            distribution = distribution_set.get(row[0])
+            sourcepackagename = sourcepackagename_set.get(row[1])
             source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Bjorn Tillenius 2006-12-15:
-            # Add a tuple instead of the distribution package
-            # directly, since DistributionSourcePackage doesn't define a
-            # __hash__ method.
             packages_with_bugs.add((distribution, sourcepackagename))
-            package_counts = dict(
-                package=source_package,
-                open=open_bugs,
-                open_critical=open_critical_bugs,
-                open_unassigned=open_unassigned_bugs,
-                open_inprogress=open_inprogress_bugs,
-                open_high=open_high_bugs,
-                )
+            package_counts = dict(package=source_package)
+            package_counts.update(zip(map(itemgetter(0), sumexprs), row[2:]))
             counts.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
@@ -2004,9 +2002,8 @@ class BugTaskSet:
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
-                package=distribution.getSourcePackage(sourcepackagename),
-                open=0, open_critical=0, open_unassigned=0,
-                open_inprogress=0, open_high=0)
+                package=distribution.getSourcePackage(sourcepackagename))
+            package_counts.update(zip(map(itemgetter(0), sumexprs), repeat(0)))
             counts.append(package_counts)
 
         return counts
