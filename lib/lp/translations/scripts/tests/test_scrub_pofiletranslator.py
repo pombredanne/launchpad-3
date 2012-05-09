@@ -245,7 +245,9 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         tm = self.make_message_with_pofiletranslator(pofile)
         old_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
 
-        fix_pofile(fake_logger, pofile.id, [tm.potmsgset.id], [old_poft])
+        fix_pofile(
+            fake_logger, pofile.id, [tm.potmsgset.id],
+            {tm.submitter.id: old_poft})
 
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(old_poft, new_poft)
@@ -256,7 +258,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         self.becomeDbUser('postgres')
         poft = self.make_pofiletranslator_without_message()
         (pofile, person) = (poft.pofile, poft.person)
-        fix_pofile(fake_logger, pofile.id, [], [poft])
+        fix_pofile(fake_logger, pofile.id, [], {person.id: poft})
         self.assertIsNone(self.query_pofiletranslator(pofile, person).one())
 
     def test_fix_pofile_adds_missing_entries(self):
