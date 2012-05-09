@@ -127,15 +127,14 @@ def get_contributions(pofile, potmsgset_ids):
 
 
 def get_pofiletranslators(pofile_id):
-    """Get `POFileTranslator` entries for a `POFile`.
+    """Get `Person` ids from `POFileTranslator` entries for a `POFile`.
 
-    Returns a dict mapping each contributor's person id to their
-    `POFileTranslator` record.
+    Returns a set of `Person` ids.
     """
     store = IStore(POFileTranslator)
-    pofts = store.find(
-        POFileTranslator, POFileTranslator.pofileID == pofile_id)
-    return dict((poft.personID, poft) for poft in pofts)
+    return set(store.find(
+        POFileTranslator.personID,
+        POFileTranslator.pofileID == pofile_id))
 
 
 def remove_pofiletranslators(logger, pofile, person_ids):
@@ -153,14 +152,14 @@ def remove_pofiletranslators(logger, pofile, person_ids):
 
 def remove_unwarranted_pofiletranslators(logger, pofile, pofts, contribs):
     """Delete `POFileTranslator` records that shouldn't be there."""
-    excess = set(pofts) - set(contribs)
+    excess = pofts - set(contribs)
     if len(excess) > 0:
         remove_pofiletranslators(logger, pofile, excess)
 
 
 def create_missing_pofiletranslators(logger, pofile, pofts, contribs):
     """Create `POFileTranslator` records that were missing."""
-    shortage = set(contribs) - set(pofts)
+    shortage = set(contribs) - pofts
     if len(shortage) == 0:
         return
     logger.debug(
@@ -194,7 +193,7 @@ def needs_fixing(template_id, language_id, potmsgset_ids, pofiletranslators):
     """
     contributors = summarize_contributors(
         template_id, language_id, potmsgset_ids)
-    return set(pofiletranslators) != set(contributors)
+    return pofiletranslators != set(contributors)
 
 
 # A tuple describing a POFile that needs its POFileTranslators fixed.

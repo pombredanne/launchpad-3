@@ -232,13 +232,11 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertEqual({}, get_contributions(pofile, potmsgset_ids))
 
-    def test_get_pofiletranslators_gets_pofiletranslators_for_pofile(self):
+    def test_get_pofiletranslators_gets_translators_for_pofile(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_with_pofiletranslator(pofile)
-        pofts = get_pofiletranslators(pofile.id)
-        self.assertContentEqual([tm.submitter.id], pofts.keys())
-        poft = pofts[tm.submitter.id]
-        self.assertEqual(pofile, poft.pofile)
+        self.assertContentEqual(
+            [tm.submitter.id], get_pofiletranslators(pofile.id))
 
     def test_fix_pofile_leaves_good_pofiletranslator_in_place(self):
         pofile = self.factory.makePOFile()
