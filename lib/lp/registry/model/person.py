@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0611,W0212,W0612,C0322
 
 """Implementation classes for a Person."""
-from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
 
 __metaclass__ = type
 __all__ = [
@@ -199,6 +198,7 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
