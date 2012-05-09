@@ -22,12 +22,12 @@ from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.scripts.scrub_pofiletranslator import (
     fix_pofile,
     get_contributions,
-    get_pofile_details,
     get_pofile_ids,
     get_pofiletranslators,
     get_potmsgset_ids,
     ScrubPOFileTranslator,
     summarize_contributors,
+    summarize_pofiles,
     )
 
 
@@ -128,11 +128,11 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
             self.assertEqual(
                 1, size_distance(ordering, pofiles[0].id, pofiles[1].id))
 
-    def test_get_pofile_details_maps_id_to_template_and_language_ids(self):
+    def test_summarize_pofiles_maps_id_to_template_and_language_ids(self):
         pofile = self.factory.makePOFile()
         self.assertEqual(
             {pofile.id: (pofile.potemplate.id, pofile.language.id)},
-            get_pofile_details([pofile.id]))
+            summarize_pofiles([pofile.id]))
 
     def test_get_potmsgset_ids_returns_potmsgset_ids(self):
         pofile = self.factory.makePOFile()

@@ -8,14 +8,25 @@ __all__ = [
     'ScrubPOFileTranslator',
     ]
 
+from collections import namedtuple
+
 from storm.expr import (
     Coalesce,
     Desc,
     )
 import transaction
 
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.lpstorm import IStore
 from lp.services.looptuner import TunableLoop
+from lp.translations.model.language import Language
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import POTemplate
@@ -40,8 +51,11 @@ def get_pofile_ids():
     return query.order_by(POTemplate.name, POFile.languageID)
 
 
-def get_pofile_details(pofile_ids):
+def summarize_pofiles(pofile_ids):
     """Retrieve relevant parts of `POFile`s with given ids.
+
+    This gets just enough information to determine whether any of the
+    `POFile`s need their `POFileTranslator` records fixed.
 
     :param pofile_ids: Iterable of `POFile` ids.
     :return: Dict mapping each id in `pofile_ids` to a duple of
@@ -184,6 +198,55 @@ def needs_fixing(template_id, language_id, potmsgset_ids, pofiletranslators):
     return set(pofiletranslators) != set(contributors)
 
 
+# A tuple describing a POFile that needs its POFileTranslators fixed.
+WorkItem = namedtuple("WorkItem", [
+    'template_id',
+    'language_id',
+    'potmsgset_ids',
+    'pofiletranslators',
+    ])
+
+
+def gather_work_items(pofile_ids):
+    """Produce `WorkItem`s for those `POFile`s that need fixing.
+
+    :param pofile_ids: An iterable of `POFile` ids to check.
+    :param pofile_summaries: Dict as returned by `summarize_pofiles`.
+    :return: A sequence of `WorkItem`s for those `POFile`s that need fixing.
+    """
+    pofile_summaries = summarize_pofiles(pofile_ids)
+    work_items = []
+    for pofile_id in pofile_ids:
+        template_id, language_id = pofile_summaries[pofile_id]
+        potmsgset_ids = get_potmsgset_ids(template_id)
+        pofts = get_pofiletranslators(pofile_id)
+        if needs_fixing(template_id, language_id, potmsgset_ids, pofts):
+            work_items.append(WorkItem(pofile_id, potmsgset_ids, pofts))
+
+    return work_items
+
+
+def preload_work_items(work_items):
+    """Bulk load data that will be needed to process `work_items`."""
+    pofiles = load(POFile, [work_item.pofile_id for work_item in work_items])
+    load_related(Language, pofiles, ['languageID'])
+    templates = load(
+        POTemplate, [work_item.template_id for work_item in work_items])
+    distroseries = load_related(DistroSeries, templates, ['distroseriesID'])
+    load_related(Distribution, distroseries, ['distributionID'])
+    productseries = load_related(
+        ProductSeries, templates, ['productseriesID'])
+    load_related(Product, productseries, ['productID'])
+
+
+def process_work_items(logger, work_items):
+    """Fix the `POFileTranslator` records covered by `work_items`."""
+    for work_item in work_items:
+        fix_pofile(
+            logger, work_item.pofile_id, work_item.potmsgset_ids,
+            work_item.pofiletranslators)
+
+
 class ScrubPOFileTranslator(TunableLoop):
     """Tunable loop, meant for running from inside Garbo."""
 
@@ -201,19 +264,11 @@ class ScrubPOFileTranslator(TunableLoop):
         batch = self.pofile_ids[start_offset:self.next_offset]
         if len(batch) == 0:
             self.next_offset = None
-            return
-
-        pofile_details = get_pofile_details(batch)
-        for pofile_id in batch:
-            template_id, language_id = pofile_details[pofile_id]
-            potmsgset_ids = get_potmsgset_ids(template_id)
-            pofiletranslators = get_pofiletranslators(pofile_id)
-            fix = needs_fixing(
-                template_id, language_id, potmsgset_ids, pofiletranslators)
-            if fix:
-                fix_pofile(
-                    self.log, pofile_id, potmsgset_ids, pofiletranslators)
-        transaction.commit()
+        else:
+            work_items = gather_work_items(batch)
+            preload_work_items(work_items)
+            process_work_items(self.log, work_items)
+            transaction.commit()
 
     def isDone(self):
         """See `ITunableLoop`."""
