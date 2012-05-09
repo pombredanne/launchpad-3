@@ -169,17 +169,19 @@ def fix_pofile(logger, pofile_id, potmsgset_ids, pofiletranslators):
         logger, pofile, pofiletranslators, contribs)
 
 
-def scrub_pofile(logger, pofile_id, template_id, language_id):
-    """Scrub `POFileTranslator` entries for one `POFile`.
+def needs_fixing(template_id, language_id, potmsgset_ids, pofiletranslators):
+    """Does the `POFile` with given details need `POFileTranslator` changes?
 
-    Removes inappropriate entries and adds missing ones.
+    :param template_id: id of the `POTemplate` for the `POFile`.
+    :param language_id: id of the `Language` the `POFile` translates to.
+    :param potmsgset_ids: ids of the `POTMsgSet` items participating in the
+        template.
+    :param pofiletranslators: `POFileTranslator` objects for the `POFile`.
+    :return: Bool: does the existing set of `POFileTranslator` need fixing?
     """
-    pofiletranslators = get_pofiletranslators(pofile_id)
-    potmsgset_ids = get_potmsgset_ids(template_id)
     contributors = summarize_contributors(
         template_id, language_id, potmsgset_ids)
-    if set(pofiletranslators) != set(contributors):
-        fix_pofile(logger, pofile_id, potmsgset_ids, pofiletranslators)
+    return set(pofiletranslators) != set(contributors)
 
 
 class ScrubPOFileTranslator(TunableLoop):
@@ -204,7 +206,13 @@ class ScrubPOFileTranslator(TunableLoop):
         pofile_details = get_pofile_details(batch)
         for pofile_id in batch:
             template_id, language_id = pofile_details[pofile_id]
-            scrub_pofile(self.log, pofile_id, template_id, language_id)
+            potmsgset_ids = get_potmsgset_ids(template_id)
+            pofiletranslators = get_pofiletranslators(pofile_id)
+            fix = needs_fixing(
+                template_id, language_id, potmsgset_ids, pofiletranslators)
+            if fix:
+                fix_pofile(
+                    self.log, pofile_id, potmsgset_ids, pofiletranslators)
         transaction.commit()
 
     def isDone(self):

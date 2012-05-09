@@ -20,12 +20,12 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.scripts.scrub_pofiletranslator import (
+    fix_pofile,
     get_contributions,
     get_pofile_details,
     get_pofile_ids,
     get_pofiletranslators,
     get_potmsgset_ids,
-    scrub_pofile,
     ScrubPOFileTranslator,
     summarize_contributors,
     )
@@ -240,33 +240,30 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         poft = pofts[tm.submitter.id]
         self.assertEqual(pofile, poft.pofile)
 
-    def test_scrub_pofile_leaves_good_pofiletranslator_in_place(self):
+    def test_fix_pofile_leaves_good_pofiletranslator_in_place(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_with_pofiletranslator(pofile)
         old_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
 
-        scrub_pofile(
-            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
+        fix_pofile(fake_logger, pofile.id, [tm.potmsgset.id], [old_poft])
 
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(old_poft, new_poft)
 
-    def test_scrub_pofile_deletes_unwarranted_entries(self):
+    def test_fix_pofile_deletes_unwarranted_entries(self):
         # Deleting POFileTranslator records is not something the app
         # server ever does, so it requires special privileges.
         self.becomeDbUser('postgres')
         poft = self.make_pofiletranslator_without_message()
         (pofile, person) = (poft.pofile, poft.person)
-        scrub_pofile(
-            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
+        fix_pofile(fake_logger, pofile.id, [], [poft])
         self.assertIsNone(self.query_pofiletranslator(pofile, person).one())
 
-    def test_scrub_pofile_adds_missing_entries(self):
+    def test_fix_pofile_adds_missing_entries(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_without_pofiletranslator(pofile)
 
-        scrub_pofile(
-            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
+        fix_pofile(fake_logger, pofile.id, [tm.potmsgset.id], [])
 
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(tm.submitter, new_poft.person)
