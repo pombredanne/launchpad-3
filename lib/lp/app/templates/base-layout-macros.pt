@@ -161,7 +161,7 @@
 
             Y.on("domready", function () {
                 if (Y.one(document.body).hasClass('private')) {
-                    banner = new Y.lp.app.banner.privacy.PrivacyBanner();
+                    var banner = new Y.lp.app.banner.privacy.PrivacyBanner();
                     banner.render();
                     banner.show();
                 }
