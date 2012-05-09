@@ -280,9 +280,9 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         # Try to break the loop if it failed to commit its changes.
         transaction.abort()
 
-        # The unwarranted POFileTranslator record has been deleted.
+        # An unwarranted POFileTranslator record has been deleted.
         self.assertIsNotNone(
             self.query_pofiletranslator(pofile, tm.submitter).one())
-        # The missing POFileTranslator has been created.
+        # A missing POFileTranslator has been created.
         self.assertIsNone(
             self.query_pofiletranslator(pofile, noncontributor).one())

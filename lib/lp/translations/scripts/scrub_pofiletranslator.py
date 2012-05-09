@@ -129,7 +129,7 @@ def get_contributions(pofile, potmsgset_ids):
 def get_pofiletranslators(pofile_id):
     """Get `Person` ids from `POFileTranslator` entries for a `POFile`.
 
-    Returns a set of `Person` ids.
+    Returns a `set` of `Person` ids.
     """
     store = IStore(POFileTranslator)
     return set(store.find(
