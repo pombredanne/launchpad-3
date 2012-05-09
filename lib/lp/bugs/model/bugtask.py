@@ -1900,29 +1900,26 @@ class BugTaskSet:
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
         # Local import of Bug to avoid import loop.
-        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        origin = [
-            Bug,
-            Join(BugTask, BugTask.bug == Bug.id),
-            ]
+        origin = [BugTaskFlat]
 
         product_ids = [product.id for product in products]
         conditions = And(
-            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
-            Bug.duplicateof == None,
-            BugTask.productID.is_in(product_ids))
+            BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
+            BugTaskFlat.duplicateof == None,
+            BugTaskFlat.product_id.is_in(product_ids))
 
-        privacy_filter = get_bug_privacy_filter(user)
+        privacy_filter = get_bug_privacy_filter(user, use_flat=True)
         if privacy_filter != '':
             conditions = And(conditions, privacy_filter)
         result = store.using(*origin).find(
-            (BugTask.productID, SQL('COUNT(*)')),
+            (BugTaskFlat.product_id, SQL('COUNT(*)')),
             conditions)
 
-        result = result.group_by(BugTask.productID)
+        result = result.group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
