@@ -1981,13 +1981,11 @@ class BugTaskSet:
 
         # Map the returned counts back to their names and throw them in
         # the dict.
-        distribution_set = getUtility(IDistributionSet)
-        sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
         counts = []
         for row in result:
-            distribution = distribution_set.get(row[0])
-            sourcepackagename = sourcepackagename_set.get(row[1])
+            distribution = getUtility(IDistributionSet).get(row[0])
+            sourcepackagename = getUtility(ISourcePackageNameSet).get(row[1])
             source_package = distribution.getSourcePackage(sourcepackagename)
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(package=source_package)
