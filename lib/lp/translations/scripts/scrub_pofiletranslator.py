@@ -26,7 +26,7 @@ from lp.services.database.bulk import (
     )
 from lp.services.database.lpstorm import IStore
 from lp.services.looptuner import TunableLoop
-from lp.translations.model.language import Language
+from lp.services.worlddata.model.language import Language
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import POTemplate
