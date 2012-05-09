@@ -25,8 +25,8 @@ from lp.translations.model.translationtemplateitem import (
     )
 
 
-def get_pofiles():
-    """Retrieve POFiles to scrub.
+def get_pofile_ids():
+    """Retrieve ids of POFiles to scrub.
 
     The result's ordering is aimed at maximizing cache effectiveness:
     by POTemplate name for locality of shared POTMsgSets, and by language
@@ -34,42 +34,55 @@ def get_pofiles():
     """
     store = IStore(POFile)
     query = store.find(
-        POFile,
+        POFile.id,
         POFile.potemplateID == POTemplate.id,
         POTemplate.iscurrent == True)
     return query.order_by(POTemplate.name, POFile.languageID)
 
 
-def get_potmsgset_ids(pofile):
-    """Get the ids for each current `POTMsgSet` in `pofile`."""
-    store = IStore(pofile)
+def get_pofile_details(pofile_ids):
+    """Retrieve relevant parts of `POFile`s with given ids.
+
+    :param pofile_ids: Iterable of `POFile` ids.
+    :return: Dict mapping each id in `pofile_ids` to a duple of
+        `POTemplate` id and `Language` id for the associated `POFile`.
+    """
+    store = IStore(POFile)
+    rows = store.find(
+        (POFile.id, POFile.potemplateID, POFile.languageID),
+        POFile.id.is_in(pofile_ids))
+    return dict((row[0], row[1:]) for row in rows)
+
+
+def get_potmsgset_ids(potemplate_id):
+    """Get the ids for each current `POTMsgSet` in a `POTemplate`."""
+    store = IStore(POTemplate)
     return store.find(
         TranslationTemplateItem.potmsgsetID,
-        TranslationTemplateItem.potemplateID == pofile.potemplate.id,
+        TranslationTemplateItem.potemplateID == potemplate_id,
         TranslationTemplateItem.sequence > 0)
 
 
-def summarize_contributors(pofile, potmsgset_ids):
-    """Return the set of ids of persons who contributed to `pofile`.
+def summarize_contributors(potemplate_id, language_id, potmsgset_ids):
+    """Return the set of ids of persons who contributed to a `POFile`.
 
     This is a limited version of `get_contributions` that is easier to
     compute.
     """
-    store = IStore(pofile)
+    store = IStore(POFile)
     contribs = store.find(
         TranslationMessage.submitterID,
         TranslationMessage.potmsgsetID.is_in(potmsgset_ids),
-        TranslationMessage.languageID == pofile.language.id,
+        TranslationMessage.languageID == language_id,
         TranslationMessage.msgstr0 != None,
-        Coalesce(
-            TranslationMessage.potemplateID,
-            pofile.potemplate.id) == pofile.potemplate.id)
+        Coalesce(TranslationMessage.potemplateID, potemplate_id) ==
+            potemplate_id)
     contribs.config(distinct=True)
     return set(contribs)
 
 
 def get_contributions(pofile, potmsgset_ids):
-    """Map all users' most recent contributions to `pofile`.
+    """Map all users' most recent contributions to a `POFile`.
 
     Returns a dict mapping `Person` id to the creation time of their most
     recent `TranslationMessage` in `POFile`.
@@ -84,29 +97,30 @@ def get_contributions(pofile, potmsgset_ids):
         by `get_potmsgset_ids`.
     """
     store = IStore(pofile)
+    language_id = pofile.language.id
+    template_id = pofile.potemplate.id
     contribs = store.find(
         (TranslationMessage.submitterID, TranslationMessage.date_created),
         TranslationMessage.potmsgsetID.is_in(potmsgset_ids),
-        TranslationMessage.languageID == pofile.language.id,
+        TranslationMessage.languageID == language_id,
         TranslationMessage.msgstr0 != None,
-        Coalesce(
-            TranslationMessage.potemplateID,
-            pofile.potemplate.id) == pofile.potemplate.id)
+        Coalesce(TranslationMessage.potemplateID, template_id) ==
+            template_id)
     contribs = contribs.config(distinct=(TranslationMessage.submitterID,))
     contribs = contribs.order_by(
         TranslationMessage.submitterID, Desc(TranslationMessage.date_created))
     return dict(contribs)
 
 
-def get_pofiletranslators(pofile):
-    """Get `POFileTranslator` entries for `pofile`.
+def get_pofiletranslators(pofile_id):
+    """Get `POFileTranslator` entries for a `POFile`.
 
     Returns a dict mapping each contributor's person id to their
     `POFileTranslator` record.
     """
-    store = IStore(pofile)
+    store = IStore(POFileTranslator)
     pofts = store.find(
-        POFileTranslator, POFileTranslator.pofileID == pofile.id)
+        POFileTranslator, POFileTranslator.pofileID == pofile_id)
     return dict((poft.personID, poft) for poft in pofts)
 
 
@@ -145,25 +159,27 @@ def create_missing_pofiletranslators(logger, pofile, pofts, contribs):
             date_last_touched=contribs[missing_contributor]))
 
 
-def scrub_pofile(logger, pofile):
-    """Scrub `POFileTranslator` entries for one `POFile`.
-
-    Removes inappropriate entries and adds missing ones.
-    """
-    pofiletranslators = get_pofiletranslators(pofile)
-    potmsgset_ids = get_potmsgset_ids(pofile)
-    contributors = summarize_contributors(pofile, potmsgset_ids)
-    if set(pofiletranslators) == set(contributors):
-        # Things look roughly OK.  Move on.
-        return
-
-    # Things are not quite right.  Look up the rest of the information
-    # we need, and fix the problems.
+def fix_pofile(logger, pofile_id, potmsgset_ids, pofiletranslators):
+    """This `POFile` needs fixing.  Load its data & fix it."""
+    pofile = IStore(POFile).get(POFile, pofile_id)
     contribs = get_contributions(pofile, potmsgset_ids)
     remove_unwarranted_pofiletranslators(
         logger, pofile, pofiletranslators, contribs)
     create_missing_pofiletranslators(
         logger, pofile, pofiletranslators, contribs)
+
+
+def scrub_pofile(logger, pofile_id, template_id, language_id):
+    """Scrub `POFileTranslator` entries for one `POFile`.
+
+    Removes inappropriate entries and adds missing ones.
+    """
+    pofiletranslators = get_pofiletranslators(pofile_id)
+    potmsgset_ids = get_potmsgset_ids(template_id)
+    contributors = summarize_contributors(
+        template_id, language_id, potmsgset_ids)
+    if set(pofiletranslators) != set(contributors):
+        fix_pofile(logger, pofile_id, potmsgset_ids, pofiletranslators)
 
 
 class ScrubPOFileTranslator(TunableLoop):
@@ -173,24 +189,23 @@ class ScrubPOFileTranslator(TunableLoop):
 
     def __init__(self, *args, **kwargs):
         super(ScrubPOFileTranslator, self).__init__(*args, **kwargs)
-        # This does not listify the POFiles; they are batch-fetched on
-        # demand.  So iteration may not be entirely exact, but it
-        # doesn't really need to be.  It avoids loading all those
-        # POFiles into memory when we only need a few per iteration.
-        self.pofiles = get_pofiles()
+        self.pofile_ids = tuple(get_pofile_ids())
         self.next_offset = 0
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         start_offset = self.next_offset
         self.next_offset = start_offset + int(chunk_size)
-        batch = list(self.pofiles[start_offset:self.next_offset])
+        batch = self.pofile_ids[start_offset:self.next_offset]
         if len(batch) == 0:
             self.next_offset = None
-        else:
-            for pofile in batch:
-                scrub_pofile(self.log, pofile)
-            transaction.commit()
+            return
+
+        pofile_details = get_pofile_details(batch)
+        for pofile_id in batch:
+            template_id, language_id = pofile_details[pofile_id]
+            scrub_pofile(self.log, pofile_id, template_id, language_id)
+        transaction.commit()
 
     def isDone(self):
         """See `ITunableLoop`."""

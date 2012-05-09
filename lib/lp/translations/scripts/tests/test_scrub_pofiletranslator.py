@@ -21,7 +21,8 @@ from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.scripts.scrub_pofiletranslator import (
     get_contributions,
-    get_pofiles,
+    get_pofile_details,
+    get_pofile_ids,
     get_pofiletranslators,
     get_potmsgset_ids,
     scrub_pofile,
@@ -79,18 +80,18 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         IStore(poft.pofile).add(poft)
         return poft
 
-    def test_get_pofiles_gets_pofiles_for_active_templates(self):
+    def test_get_pofile_ids_gets_pofiles_for_active_templates(self):
         pofile = self.factory.makePOFile()
-        self.assertIn(pofile, get_pofiles())
+        self.assertIn(pofile.id, get_pofile_ids())
 
-    def test_get_pofiles_skips_inactive_templates(self):
+    def test_get_pofile_ids_skips_inactive_templates(self):
         pofile = self.factory.makePOFile()
         pofile.potemplate.iscurrent = False
-        self.assertNotIn(pofile, get_pofiles())
+        self.assertNotIn(pofile.id, get_pofile_ids())
 
-    def test_get_pofiles_clusters_by_template_name(self):
+    def test_get_pofile_ids_clusters_by_template_name(self):
         # POFiles for templates with the same name are bunched together
-        # in the get_pofiles() output.
+        # in the get_pofile_ids() output.
         templates = [
             self.factory.makePOTemplate(name='shared'),
             self.factory.makePOTemplate(name='other'),
@@ -101,12 +102,13 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         pofiles = [
             self.factory.makePOFile(potemplate=template)
             for template in templates]
-        ordering = get_pofiles()
-        self.assertEqual(1, size_distance(ordering, pofiles[0], pofiles[-1]))
+        ordering = get_pofile_ids()
+        self.assertEqual(
+            1, size_distance(ordering, pofiles[0].id, pofiles[-1].id))
 
-    def test_get_pofiles_clusters_by_language(self):
+    def test_get_pofile_ids_clusters_by_language(self):
         # POFiles for sharing templates and the same language are
-        # bunched together in the get_pofiles() output.
+        # bunched together in the get_pofile_ids() output.
         templates = [
             self.factory.makePOTemplate(
                 name='shared', distroseries=self.factory.makeDistroSeries())
@@ -121,59 +123,74 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
                 pofiles.append(
                     self.factory.makePOFile(language, potemplate=template))
 
-        ordering = get_pofiles()
+        ordering = get_pofile_ids()
         for pofiles in pofiles_per_language.values():
             self.assertEqual(
-                1, size_distance(ordering, pofiles[0], pofiles[1]))
+                1, size_distance(ordering, pofiles[0].id, pofiles[1].id))
+
+    def test_get_pofile_details_maps_id_to_template_and_language_ids(self):
+        pofile = self.factory.makePOFile()
+        self.assertEqual(
+            {pofile.id: (pofile.potemplate.id, pofile.language.id)},
+            get_pofile_details([pofile.id]))
 
     def test_get_potmsgset_ids_returns_potmsgset_ids(self):
         pofile = self.factory.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, sequence=1)
-        self.assertContentEqual([potmsgset.id], get_potmsgset_ids(pofile))
+        self.assertContentEqual(
+            [potmsgset.id], get_potmsgset_ids(pofile.potemplate.id))
 
     def test_get_potmsgset_ids_ignores_inactive_messages(self):
         pofile = self.factory.makePOFile()
         self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, sequence=0)
-        self.assertContentEqual([], get_potmsgset_ids(pofile))
+        self.assertContentEqual([], get_potmsgset_ids(pofile.potemplate.id))
 
     def test_summarize_contributors_gets_contributors(self):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertContentEqual(
-            [tm.submitter.id], summarize_contributors(pofile, potmsgset_ids))
+            [tm.submitter.id],
+            summarize_contributors(
+                pofile.potemplate.id, pofile.language.id, potmsgset_ids))
 
     def test_summarize_contributors_ignores_inactive_potmsgsets(self):
         pofile = self.factory.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, sequence=0)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertContentEqual(
-            [], summarize_contributors(pofile, potmsgset_ids))
+            [],
+            summarize_contributors(
+                pofile.potemplate.id, pofile.language.id, potmsgset_ids))
 
     def test_summarize_contributors_includes_diverged_msgs_for_template(self):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
         tm.potemplate = pofile.potemplate
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertContentEqual(
-            [tm.submitter.id], summarize_contributors(pofile, potmsgset_ids))
+            [tm.submitter.id],
+            summarize_contributors(
+                pofile.potemplate.id, pofile.language.id, potmsgset_ids))
 
     def test_summarize_contributors_excludes_other_diverged_messages(self):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
         tm.potemplate = self.factory.makePOTemplate()
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertContentEqual(
-            [], summarize_contributors(pofile, potmsgset_ids))
+            [],
+            summarize_contributors(
+                pofile.potemplate.id, pofile.language.id, potmsgset_ids))
 
     def test_get_contributions_gets_contributions(self):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertEqual(
             {tm.submitter.id: tm.date_created},
             get_contributions(pofile, potmsgset_ids))
@@ -186,7 +203,7 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
             pofile=pofile, date_created=yesterday)
         new_tm = self.factory.makeSuggestion(
             translator=old_tm.submitter, pofile=pofile, date_created=today)
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertNotEqual(old_tm.date_created, new_tm.date_created)
         self.assertContentEqual(
             [new_tm.date_created],
@@ -197,14 +214,14 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(
             potemplate=pofile.potemplate, sequence=0)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertEqual({}, get_contributions(pofile, potmsgset_ids))
 
     def test_get_contributions_includes_diverged_messages_for_template(self):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
         tm.potemplate = pofile.potemplate
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertContentEqual(
             [tm.submitter.id], get_contributions(pofile, potmsgset_ids))
 
@@ -212,13 +229,13 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         pofile = self.factory.makePOFile()
         tm = self.factory.makeSuggestion(pofile=pofile)
         tm.potemplate = self.factory.makePOTemplate()
-        potmsgset_ids = get_potmsgset_ids(pofile)
+        potmsgset_ids = get_potmsgset_ids(pofile.potemplate.id)
         self.assertEqual({}, get_contributions(pofile, potmsgset_ids))
 
     def test_get_pofiletranslators_gets_pofiletranslators_for_pofile(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_with_pofiletranslator(pofile)
-        pofts = get_pofiletranslators(pofile)
+        pofts = get_pofiletranslators(pofile.id)
         self.assertContentEqual([tm.submitter.id], pofts.keys())
         poft = pofts[tm.submitter.id]
         self.assertEqual(pofile, poft.pofile)
@@ -228,7 +245,8 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         tm = self.make_message_with_pofiletranslator(pofile)
         old_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
 
-        scrub_pofile(fake_logger, pofile)
+        scrub_pofile(
+            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
 
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(old_poft, new_poft)
@@ -239,14 +257,16 @@ class TestScrubPOFileTranslator(TestCaseWithFactory):
         self.becomeDbUser('postgres')
         poft = self.make_pofiletranslator_without_message()
         (pofile, person) = (poft.pofile, poft.person)
-        scrub_pofile(fake_logger, poft.pofile)
+        scrub_pofile(
+            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
         self.assertIsNone(self.query_pofiletranslator(pofile, person).one())
 
     def test_scrub_pofile_adds_missing_entries(self):
         pofile = self.factory.makePOFile()
         tm = self.make_message_without_pofiletranslator(pofile)
 
-        scrub_pofile(fake_logger, pofile)
+        scrub_pofile(
+            fake_logger, pofile.id, pofile.potemplate.id, pofile.language.id)
 
         new_poft = self.query_pofiletranslator(pofile, tm.submitter).one()
         self.assertEqual(tm.submitter, new_poft.person)
