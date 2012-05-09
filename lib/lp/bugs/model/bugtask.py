@@ -48,6 +48,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Cast,
+    Count,
     Join,
     Or,
     SQL,
@@ -1910,23 +1911,13 @@ class BugTaskSet:
         from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        origin = [BugTaskFlat]
-
-        product_ids = [product.id for product in products]
-        conditions = And(
+        result = IStore(BugTaskFlat).find(
+            (BugTaskFlat.product_id, Count()),
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.duplicateof == None,
-            BugTaskFlat.product_id.is_in(product_ids))
-
-        privacy_filter = get_bug_privacy_filter(user, use_flat=True)
-        if privacy_filter != '':
-            conditions = And(conditions, privacy_filter)
-        result = store.using(*origin).find(
-            (BugTaskFlat.product_id, SQL('COUNT(*)')),
-            conditions)
-
-        result = result.group_by(BugTaskFlat.product_id)
+            BugTaskFlat.product_id.is_in(product.id for product in products),
+            SQL(get_bug_privacy_filter(user, use_flat=True) or True)
+            ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
