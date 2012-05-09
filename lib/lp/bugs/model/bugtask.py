@@ -1952,7 +1952,7 @@ class BugTaskSet:
             'BugTask.status IN %s' %
             sqlvalues(DB_UNRESOLVED_BUGTASK_STATUSES))
 
-        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
+        sum_template = "SUM(CAST(%s AS integer)) AS %s"
         sums = [
             sum_template % (open_bugs_cond, 'open_bugs'),
             sum_template % (
