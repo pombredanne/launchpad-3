@@ -993,7 +993,7 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
 
 
 class TestTeamMembershipJobs(TestCaseWithFactory):
-    """Test jobs asscoiated with managing team membership."""
+    """Test jobs associated with managing team membership."""
     layer = CeleryJobLayer
 
     def setUp(self):
@@ -1023,9 +1023,7 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
 
         # Make another bug and grant access to a team.
-        team_owner = self.factory.makePerson()
         team_grantee = self.factory.makeTeam(
-            owner=team_owner,
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
             members=[person_grantee])
         bug2, bug2_owner = self._make_subscribed_bug(
@@ -1042,16 +1040,16 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
         accessartifact_grant_source.revokeByArtifact(
             accessartifact_source.find([bug2]), [person_grantee])
 
-        with person_logged_in(team_owner):
-            team_grantee.retractTeamMembership(person_grantee, team_owner)
+        with person_logged_in(person_grantee):
+            person_grantee.retractTeamMembership(team_grantee, person_grantee)
         with block_on_job(self):
             transaction.commit()
 
         # person_grantee is still subscribed to bug1.
         self.assertIn(
             person_grantee, removeSecurityProxy(bug1).getDirectSubscribers())
-        # person_grantee is not to bug2 because they no longer have access
-        # via a team.
+        # person_grantee is not subscribed to bug2 because they no longer have
+        # access via a team.
         self.assertNotIn(
             person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
 

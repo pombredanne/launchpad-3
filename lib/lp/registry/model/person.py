@@ -1735,7 +1735,7 @@ class Person(
         # A person has left the team so they may no longer have access to some
         # artifacts shared with the team. We need to run a job to remove any
         # subscriptions to such artifacts.
-        getUtility(IRemoveSubscriptionsJobSource).create(None, team, user)
+        getUtility(IRemoveSubscriptionsJobSource).create(None, self, user)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
