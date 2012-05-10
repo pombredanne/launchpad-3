@@ -46,9 +46,11 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
     Cast,
     Count,
     Join,
+    LeftJoin,
     Or,
     SQL,
     Sum,
@@ -127,6 +129,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     block_implicit_flushes,
+    convert_storm_clause_to_string,
     cursor,
     quote,
     SQLBase,
@@ -1755,7 +1758,7 @@ class BugTaskSet:
             if bug_privacy_filter != '':
                 bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
-        (target_join, target_clause) = self._getTargetJoinAndClause(target)
+        (target_joins, target_conds) = self._getTargetJoinAndClause(target)
         query = """
             BugTask.bug = Bug.id
             AND BugTask.id IN (
@@ -1763,9 +1766,9 @@ class BugTaskSet:
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
                     LEFT JOIN BugWatch on Bug.id = BugWatch.bug
-                """ + target_join + """
+                """ + ' '.join(convert_storm_clause_to_string(join) for join in target_joins) + """
                 WHERE
-                """ + target_clause + """
+                """ + convert_storm_clause_to_string(And(*target_conds)) + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
                     AND BugTask.status in (%s, %s, %s)
@@ -1810,60 +1813,6 @@ class BugTaskSet:
                     AND RelatedBugTask.status IN %s)
             """ % sqlvalues(unexpirable_status_list)
 
-    TARGET_SELECT = {
-        IDistribution: """
-            SELECT Distribution.id, NULL, NULL, NULL,
-                Distribution.id, NULL
-            FROM Distribution
-            WHERE Distribution.enable_bug_expiration IS TRUE""",
-        IDistroSeries: """
-            SELECT NULL, DistroSeries.id, NULL, NULL,
-                Distribution.id, NULL
-            FROM DistroSeries
-                JOIN Distribution
-                    ON DistroSeries.distribution = Distribution.id
-            WHERE Distribution.enable_bug_expiration IS TRUE""",
-        IProduct: """
-            SELECT NULL, NULL, Product.id, NULL,
-                NULL, Product.id
-            FROM Product
-            WHERE Product.enable_bug_expiration IS TRUE""",
-        IProductSeries: """
-            SELECT NULL, NULL, NULL, ProductSeries.id,
-                NULL, Product.id
-            FROM ProductSeries
-                JOIN Product
-                    ON ProductSeries.Product = Product.id
-            WHERE Product.enable_bug_expiration IS TRUE""",
-        }
-
-    TARGET_JOIN_CLAUSE = {
-        IDistribution: "BugTask.distribution = target.distribution",
-        IDistroSeries: "BugTask.distroseries = target.distroseries",
-        IProduct: "BugTask.product = target.product",
-        IProductSeries: "BugTask.productseries = target.productseries",
-        }
-
-    def _getJoinForTargets(self, *targets):
-        """Build the UNION of the sub-query for the given set of targets."""
-        selects = ' UNION '.join(
-            self.TARGET_SELECT[target] for target in targets)
-        join_clause = ' OR '.join(
-            self.TARGET_JOIN_CLAUSE[target] for target in targets)
-        # We create this rather bizarre looking structure
-        # because we must replicate the behaviour of BugTask since
-        # we are joining to it. So when distroseries is set,
-        # distribution should be NULL. The two pillar columns will
-        # be used in the WHERE clause.
-        return """
-        JOIN (
-            SELECT 0 AS distribution, 0 AS distroseries,
-                   0 AS product , 0 AS productseries,
-                   0 AS distribution_pillar, 0 AS product_pillar
-            UNION %s
-            ) target
-            ON (%s)""" % (selects, join_clause)
-
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
 
@@ -1876,24 +1825,45 @@ class BugTaskSet:
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+
+        # XXX: Not all of these are necessary all the time.
+        joins = [
+            LeftJoin(
+                ProductSeries,
+                ProductSeries.id == BugTask.productseriesID),
+            LeftJoin(
+                Product,
+                Product.id.is_in(
+                    (BugTask.productID, ProductSeries.productID))),
+            LeftJoin(
+                DistroSeries,
+                DistroSeries.id == BugTask.distroseriesID),
+            LeftJoin(
+                Distribution,
+                Distribution.id.is_in((
+                    BugTask.distributionID,
+                    DistroSeries.distributionID))),
+            ]
+        conds = [
+            Or(
+                Distribution.enable_bug_expiration,
+                Product.enable_bug_expiration)
+            ]
+
         if target is None:
-            target_join = self._getJoinForTargets(
-                IDistribution, IDistroSeries, IProduct, IProductSeries)
-            target_clause = "TRUE IS TRUE"
+            pass
         elif IDistribution.providedBy(target):
-            target_join = self._getJoinForTargets(
-                IDistribution, IDistroSeries)
-            target_clause = "target.distribution_pillar = %s" % sqlvalues(
-                target)
+            conds.append(Distribution.id == target.id)
         elif IDistroSeries.providedBy(target):
-            target_join = self._getJoinForTargets(IDistroSeries)
-            target_clause = "BugTask.distroseries = %s" % sqlvalues(target)
+            conds.append(DistroSeries.id == target.id)
         elif IProduct.providedBy(target):
-            target_join = self._getJoinForTargets(IProduct, IProductSeries)
-            target_clause = "target.product_pillar = %s" % sqlvalues(target)
+            conds.append(Product.id == target.id)
         elif IProductSeries.providedBy(target):
-            target_join = self._getJoinForTargets(IProductSeries)
-            target_clause = "BugTask.productseries = %s" % sqlvalues(target)
+            conds.append(ProductSeries.id == target.id)
         elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
@@ -1902,7 +1872,7 @@ class BugTaskSet:
         else:
             raise AssertionError("Unknown BugTarget type.")
 
-        return (target_join, target_clause)
+        return (joins, conds)
 
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
