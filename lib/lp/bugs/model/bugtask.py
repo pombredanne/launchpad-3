@@ -1819,39 +1819,45 @@ class BugTaskSet:
         from lp.registry.model.productseries import ProductSeries
 
         # XXX: Not all of these are necessary all the time.
-        joins = [
-            LeftJoin(
-                ProductSeries,
-                ProductSeries.id == BugTaskFlat.productseries_id),
-            LeftJoin(
-                Product,
-                Product.id.is_in(
-                    (BugTaskFlat.product_id, ProductSeries.productID))),
-            LeftJoin(
-                DistroSeries,
-                DistroSeries.id == BugTaskFlat.distroseries_id),
-            LeftJoin(
-                Distribution,
-                Distribution.id.is_in((
-                    BugTaskFlat.distribution_id,
-                    DistroSeries.distributionID))),
-            ]
-        conds = [
-            Or(
-                Distribution.enable_bug_expiration,
-                Product.enable_bug_expiration)
-            ]
+        join_map = {
+            Product: (
+                LeftJoin(
+                    ProductSeries,
+                    ProductSeries.id == BugTaskFlat.productseries_id),
+                LeftJoin(
+                    Product,
+                    Product.id.is_in(
+                        (BugTaskFlat.product_id, ProductSeries.productID)))),
+            Distribution: (
+                LeftJoin(
+                    DistroSeries,
+                    DistroSeries.id == BugTaskFlat.distroseries_id),
+                LeftJoin(
+                    Distribution,
+                    Distribution.id.is_in((
+                        BugTaskFlat.distribution_id,
+                        DistroSeries.distributionID)))),
+            }
+        pred_map = {
+            Distribution: Distribution.enable_bug_expiration,
+            Product: Product.enable_bug_expiration,
+            }
 
-        if target is None:
-            pass
-        elif IDistribution.providedBy(target):
-            conds.append(Distribution.id == target.id)
+        if IDistribution.providedBy(target):
+            want = [Distribution]
+            target_col = Distribution.id
         elif IDistroSeries.providedBy(target):
-            conds.append(DistroSeries.id == target.id)
+            want = [Distribution]
+            target_col = DistroSeries.id
         elif IProduct.providedBy(target):
-            conds.append(Product.id == target.id)
+            want = [Product]
+            target_col = Product.id
         elif IProductSeries.providedBy(target):
-            conds.append(ProductSeries.id == target.id)
+            want = [Product]
+            target_col = ProductSeries.id
+        elif target is None:
+            want = [Product, Distribution]
+            target_col = None
         elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
@@ -1860,7 +1866,16 @@ class BugTaskSet:
         else:
             raise AssertionError("Unknown BugTarget type.")
 
-        return (joins, conds)
+        joins = []
+        target_expirability_preds = []
+        for cls in want:
+            joins.extend(join_map[cls])
+            target_expirability_preds.append(pred_map[cls])
+        preds = [Or(*target_expirability_preds)]
+        if target_col:
+            preds.append(target_col == target.id)
+
+        return (joins, preds)
 
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
