@@ -121,15 +121,18 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     block_implicit_flushes,
-    convert_storm_clause_to_string,
     cursor,
     quote,
     SQLBase,
@@ -1743,51 +1746,42 @@ class BugTaskSet:
         Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.bugs.model.bugwatch import BugWatch
 
-        if bug is None:
-            bug_clause = ''
-        else:
-            bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
-
-        if user == getUtility(ILaunchpadCelebrities).janitor:
-            # The janitor needs access to all bugs.
-            bug_privacy_filter = ''
-        else:
-            bug_privacy_filter = get_bug_privacy_filter(user)
-            if bug_privacy_filter != '':
-                bug_privacy_filter = "AND " + bug_privacy_filter
-        unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
         (target_joins, target_conds) = self._getTargetJoinAndClause(target)
-        query = """
-            BugTask.bug = Bug.id
-            AND BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask
-                    JOIN Bug ON BugTask.bug = Bug.id
-                    LEFT JOIN BugWatch on Bug.id = BugWatch.bug
-                """ + ' '.join(convert_storm_clause_to_string(join) for join in target_joins) + """
-                WHERE
-                """ + convert_storm_clause_to_string(And(*target_conds)) + """
-                """ + bug_clause + """
-                """ + bug_privacy_filter + """
-                    AND BugTask.status in (%s, %s, %s)
-                    AND BugTask.assignee IS NULL
-                    AND BugTask.milestone IS NULL
-                    AND Bug.duplicateof IS NULL
-                    AND Bug.date_last_updated < CURRENT_TIMESTAMP
-                        AT TIME ZONE 'UTC' - interval '%s days'
-                    AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE,
-                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, min_days_old)
-        expirable_bugtasks = BugTask.select(
-            query + unconfirmed_bug_condition,
-            clauseTables=['Bug'],
-            orderBy='Bug.date_last_updated')
+        origin = IStore(BugTaskFlat).using(
+            BugTaskFlat,
+            LeftJoin(BugWatch, BugWatch.bugID == BugTaskFlat.bug_id),
+            *target_joins)
+        conds = [
+            BugTaskFlat.status.is_in(DB_INCOMPLETE_BUGTASK_STATUSES),
+            BugTaskFlat.assignee == None,
+            BugTaskFlat.milestone == None,
+            BugTaskFlat.duplicateof == None,
+            BugTaskFlat.date_last_updated <
+                UTC_NOW - SQL("INTERVAL ?", (u'%d days' % min_days_old,)),
+            BugWatch.id == None,
+            self._getUnconfirmedBugCondition(),
+            ]
+        conds.extend(target_conds)
+        if bug is not None:
+            conds.append(BugTaskFlat.bug_id == bug.id)
+        # The janitor needs access to all bugs.
+        if user != getUtility(ILaunchpadCelebrities).janitor:
+            bug_privacy_filter = get_bug_privacy_filter(user, use_flat=True)
+            if bug_privacy_filter != '':
+                conds.append(bug_privacy_filter)
+
+        ids = origin.find(BugTaskFlat.bugtask_id, conds)
+        ids = ids.order_by(BugTaskFlat.date_last_updated)
         if limit is not None:
-            expirable_bugtasks = expirable_bugtasks.limit(limit)
-        return expirable_bugtasks
+            ids = ids.limit(limit)
+
+        return DecoratedResultSet(
+            ids, lambda id: BugTask.get(id),
+            pre_iter_hook=lambda rows: load(BugTask, rows))
 
     def _getUnconfirmedBugCondition(self):
         """Return the SQL to filter out BugTasks that has been confirmed
@@ -1806,10 +1800,10 @@ class BugTaskSet:
             if status not in statuses_not_preventing_expiration]
 
         return """
-             AND NOT EXISTS (
+             NOT EXISTS (
                 SELECT TRUE
                 FROM BugTask AS RelatedBugTask
-                WHERE RelatedBugTask.bug = BugTask.bug
+                WHERE RelatedBugTask.bug = BugTaskFlat.bug
                     AND RelatedBugTask.status IN %s)
             """ % sqlvalues(unexpirable_status_list)
 
@@ -1825,6 +1819,7 @@ class BugTaskSet:
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.product import Product
@@ -1834,18 +1829,18 @@ class BugTaskSet:
         joins = [
             LeftJoin(
                 ProductSeries,
-                ProductSeries.id == BugTask.productseriesID),
+                ProductSeries.id == BugTaskFlat.productseries_id),
             LeftJoin(
                 Product,
                 Product.id.is_in(
-                    (BugTask.productID, ProductSeries.productID))),
+                    (BugTaskFlat.product_id, ProductSeries.productID))),
             LeftJoin(
                 DistroSeries,
-                DistroSeries.id == BugTask.distroseriesID),
+                DistroSeries.id == BugTaskFlat.distroseries_id),
             LeftJoin(
                 Distribution,
                 Distribution.id.is_in((
-                    BugTask.distributionID,
+                    BugTaskFlat.distribution_id,
                     DistroSeries.distributionID))),
             ]
         conds = [
