@@ -1794,7 +1794,7 @@ class BugTaskSet:
         ids = origin.find(BugTaskFlat.bugtask_id, conds)
         ids = ids.order_by(BugTaskFlat.date_last_updated)
         if limit is not None:
-            ids = ids.limit(limit)
+            ids = ids[:limit]
 
         return DecoratedResultSet(
             ids, lambda id: BugTask.get(id),
