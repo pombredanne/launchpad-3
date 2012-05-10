@@ -1818,7 +1818,6 @@ class BugTaskSet:
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
 
-        # XXX: Not all of these are necessary all the time.
         join_map = {
             Product: (
                 LeftJoin(
