@@ -198,7 +198,6 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
@@ -1731,11 +1730,6 @@ class Person(
             self._inTeam_cache = {}
             new_status = active_and_transitioning[tm.status]
             tm.setStatus(new_status, user, comment=comment)
-
-        # A person has left the team so they may no longer have access to some
-        # artifacts shared with the team. We need to run a job to remove any
-        # subscriptions to such artifacts.
-        getUtility(IRemoveSubscriptionsJobSource).create(None, self, user)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
