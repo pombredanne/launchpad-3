@@ -286,8 +286,7 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         pillar = self.factory.makeProduct()
         self._assert_unsubscribe_pillar_artifacts_direct_bugs(pillar)
 
-    def test_unsubscribe_artifacts_direct_bugs_unspecified_pillar(
-                                                                  self):
+    def test_unsubscribe_artifacts_direct_bugs_unspecified_pillar(self):
         self._assert_unsubscribe_pillar_artifacts_direct_bugs()
 
     def _assert_unsubscribe_pillar_artifacts_indirect_bugs(self,
@@ -341,8 +340,7 @@ class RemoveSubscriptionsJobTestCase(TestCaseWithFactory):
         pillar = self.factory.makeProduct()
         self._assert_unsubscribe_pillar_artifacts_indirect_bugs(pillar)
 
-    def test_unsubscribe_artifacts_indirect_bugs_unspecified_pillar(
-                                                                        self):
+    def test_unsubscribe_artifacts_indirect_bugs_unspecified_pillar(self):
         self._assert_unsubscribe_pillar_artifacts_indirect_bugs()
 
     def test_unsubscribe_pillar_artifacts_specific_info_types(self):
