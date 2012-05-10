@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from testtools.content import text_content
 
 from lp.testing.fixture import CaptureOops
+from lp.services.config import config
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -71,6 +72,13 @@ def block_on_job(test_case=None):
             for oops in capture.oopses:
                 test_case.addDetail(
                     'oops', text_content(str(oops)))
+
+
+def drain_celery_queues():
+    from lazr.jobrunner.celerytask import drain_queues
+    from lp.services.job.celeryjob import CeleryRunJob
+    drain_queues(CeleryRunJob.app, CeleryRunJob.app.conf.CELERY_QUEUES.keys())
+
 
 
 def pop_remote_notifications():

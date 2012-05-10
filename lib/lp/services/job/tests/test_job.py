@@ -12,6 +12,7 @@ from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 
+from lp.code.model.branchjob import BranchScanJob
 from lp.code.model.branchmergeproposaljob import (
     CodeReviewCommentEmailJob,
     )
@@ -22,17 +23,19 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import (
+    find_missing_ready,
     InvalidTransition,
     Job,
     UniversalJobSource,
     )
+from lp.services.job.tests import drain_celery_queues
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import ZopelessDatabaseLayer, ZopelessAppServerLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -473,3 +476,17 @@ class TestUniversalJobSource(TestCaseWithFactory):
                  'BranchMergeProposalJob')
         self.assertThat(recorder, HasQueryCount(Equals(1)))
         self.assertEqual(got_job, job)
+
+
+class TestRunMissingJobs(TestCaseWithFactory):
+
+    layer = ZopelessAppServerLayer
+
+    def test_find_missing_ready(self):
+        """A job which is ready but not queued is "missing"."""
+        job = BranchScanJob.create(self.factory.makeBranch())
+        self.assertEqual([job], find_missing_ready(BranchScanJob))
+        job.runViaCelery()
+        self.assertEqual([], find_missing_ready(BranchScanJob))
+        drain_celery_queues()
+        self.assertEqual([job], find_missing_ready(BranchScanJob))

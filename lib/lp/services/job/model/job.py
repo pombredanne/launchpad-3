@@ -279,3 +279,13 @@ class UniversalJobSource:
         store.close()
         dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
         return cls.rawGet(*ujob_id[:3])
+
+
+def find_missing_ready(job_source):
+    """Find ready jobs that are not queued."""
+    from lp.services.job.celeryjob import CeleryRunJob
+    from lazr.jobrunner.celerytask import list_queued
+    queued_job_ids = set(task[1][0][0] for task in list_queued(
+        CeleryRunJob.app, [job_source.task_queue]))
+    return [job for job in job_source.iterReady() if job.job_id not in
+            queued_job_ids]
