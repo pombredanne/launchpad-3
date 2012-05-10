@@ -1,17 +1,50 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions to copy translations from previous to child distroseries."""
 
 __metaclass__ = type
 
-__all__ = [ 'copy_active_translations' ]
+__all__ = [
+    'copy_active_translations',
+    ]
 
 from lp.services.database.multitablecopy import MultiTableCopy
 from lp.services.database.sqlbase import (
     cursor,
     quote,
     )
+
+
+def omit_redundant_pofiles(from_table, to_table, batch_size, begin_id,
+                           end_id):
+    """Batch-pouring callback: skip POFiles that have become redundant.
+
+    This is needed to deal with a concurrency problem where POFiles may
+    get created (through message sharing) while translations are still
+    being copied.
+    """
+    assert to_table.lower() == "pofile", (
+        "This callback is meant for pouring the POFile table only.")
+
+    params = {
+        'from_table': from_table,
+        'begin_id': begin_id,
+        'end_id': end_id,
+    }
+    cursor().execute("""
+        DELETE FROM %(from_table)s
+        WHERE
+            id >= %(begin_id)s AND
+            id < %(end_id)s AND
+            EXISTS (
+                SELECT *
+                FROM POFile
+                WHERE
+                    POFile.potemplate = %(from_table)s.potemplate AND
+                    POFile.language = %(from_table)s.language
+            )
+        """ % params)
 
 
 def copy_active_translations(child, transaction, logger):
@@ -41,9 +74,7 @@ def copy_active_translations(child, transaction, logger):
         # translations.
         return
 
-    translation_tables = [
-        'potemplate', 'translationtemplateitem', 'pofile', 'pofiletranslator'
-        ]
+    translation_tables = ['potemplate', 'translationtemplateitem', 'pofile']
 
     full_name = "%s_%s" % (child.distribution.name, child.name)
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
@@ -55,12 +86,6 @@ def copy_active_translations(child, transaction, logger):
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
         (child.name, previous_series.name))
-
-    # Because this function only deals with the case where "child" is a new
-    # distroseries without any existing translations attached, it can afford
-    # to be much more cavalier with ACID considerations than the function that
-    # updates an existing translation based on what's found in the previous
-    # series.
 
     # 1. Extraction phase--for every table involved (called a "source table"
     # in MultiTableCopy parlance), we create a "holding table."  We fill that
@@ -91,9 +116,9 @@ def copy_active_translations(child, transaction, logger):
     # Now that we have the data "in private," where nobody else can see it,
     # we're free to play with it.  No risk of locking other processes out of
     # the database.
-    # Change series identifiers in the holding table to point to the child
-    # (right now they all bear the previous series's id) and set creation
-    # dates to the current transaction time.
+    # Change series identifiers in the holding table to point to the new
+    # series (right now they all bear the previous series's id) and set
+    # creation dates to the current transaction time.
     cursor().execute('''
         UPDATE %s
         SET
@@ -103,18 +128,15 @@ def copy_active_translations(child, transaction, logger):
                     ('now'::text)::timestamp(6) with time zone)
     ''' % (copier.getHoldingTableName('potemplate'), quote(child)))
 
-
     # Copy each TranslationTemplateItem whose template we copied, and let
     # MultiTableCopy replace each potemplate reference with a reference to
     # our copy of the original POTMsgSet's potemplate.
     copier.extract('translationtemplateitem', ['potemplate'], 'sequence > 0')
 
     # Copy POFiles, making them refer to the child's copied POTemplates.
-    copier.extract('pofile', ['potemplate'])
-
-    # Copy POFileTranslators, making them refer to the child's copied POFile.
-    copier.extract('pofiletranslator', ['pofile'])
+    copier.extract(
+        'pofile', ['potemplate'],
+        batch_pouring_callback=omit_redundant_pofiles)
 
     # Finally, pour the holding tables back into the originals.
     copier.pour(transaction)
-
