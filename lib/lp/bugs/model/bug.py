@@ -162,6 +162,10 @@ from lp.registry.enums import (
     PRIVATE_INFORMATION_TYPES,
     SECURITY_INFORMATION_TYPES,
     )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessArtifactSource,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -880,6 +884,14 @@ class Bug(SQLBase):
                 store.flush()
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
+
+                # Revoke access to bug if feature flag is on.
+                flag = 'disclosure.legacy_subscription_visibility.enabled'
+                if bool(getFeatureFlag(flag)):
+                    artifacts_to_delete = getUtility(
+                        IAccessArtifactSource).find([self])
+                    getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+                        artifacts_to_delete, [person])
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):

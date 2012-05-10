@@ -281,6 +281,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('disclosure.legacy_subscription_visibility.enabled',
+     'boolean',
+     ('If true, the legacy behaviour of unsubscribing from a bug or branch'
+      'revokes access.'),
+     '',
+     '',
+     ''),
     ('disclosure.enhanced_sharing.writable',
      'boolean',
      ('If true, will allow the use of the new sharing view and apis used '
