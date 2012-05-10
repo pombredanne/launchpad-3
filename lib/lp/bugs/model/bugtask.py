@@ -119,7 +119,10 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    create,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
@@ -150,31 +153,27 @@ def bugtask_sort_key(bugtask):
           - distro tasks, followed by their distroseries tasks
           - ubuntu first among the distros
     """
+    product_name = None
+    productseries_name = None
+    distribution_name = None
+    distroseries_name = None
+    sourcepackage_name = None
+
     if bugtask.product:
         product_name = bugtask.product.name
-        productseries_name = None
     elif bugtask.productseries:
         productseries_name = bugtask.productseries.name
         product_name = bugtask.productseries.product.name
-    else:
-        product_name = None
-        productseries_name = None
 
     if bugtask.distribution:
         distribution_name = bugtask.distribution.name
-    else:
-        distribution_name = None
 
     if bugtask.distroseries:
         distroseries_name = bugtask.distroseries.version
         distribution_name = bugtask.distroseries.distribution.name
-    else:
-        distroseries_name = None
 
     if bugtask.sourcepackagename:
         sourcepackage_name = bugtask.sourcepackagename.name
-    else:
-        sourcepackage_name = None
 
     # Move ubuntu to the top.
     if distribution_name == 'ubuntu':
@@ -1604,11 +1603,8 @@ class BugTaskSet:
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
-    def createTask(self, bug, owner, target,
-                   status=IBugTask['status'].default,
-                   importance=IBugTask['importance'].default,
-                   assignee=None, milestone=None):
-        """See `IBugTaskSet`."""
+    def _initNewTask(self, bug, owner, target, status, importance, assignee,
+                       milestone):
         if not status:
             status = IBugTask['status'].default
         if not importance:
@@ -1640,18 +1636,63 @@ class BugTaskSet:
             milestone=milestone)
         create_params = non_target_create_params.copy()
         create_params.update(target_key)
+        return create_params, non_target_create_params
+
+    def createManyTasks(self, bug, owner, targets,
+                        status=IBugTask['status'].default,
+                        importance=IBugTask['importance'].default,
+                        assignee=None, milestone=None):
+        """See `IBugTaskSet`."""
+        params = [self._initNewTask(bug, owner, target, status, importance,
+            assignee, milestone) for target in targets]
+
+        fieldnames = (
+            'assignee',
+            'bug',
+            'distribution',
+            'distroseries',
+            'importance',
+            'milestone',
+            'owner',
+            'product',
+            'productseries',
+            'sourcepackagename',
+            '_status',
+        )
+
+        fields = [getattr(BugTask, field) for field in fieldnames]
+        # Values need to be a list of tuples in the order we're declaring our
+        # fields.
+        values = [[p[0].get(field) for field in fieldnames] for p in params]
+
+        taskset = create(fields, values, get_objects=True)
+        del get_property_cache(bug).bugtasks
+        for bugtask in taskset:
+            bugtask.updateTargetNameCache()
+            if bugtask.conjoined_slave:
+                bugtask._syncFromConjoinedSlave()
+        return taskset
+
+    def createTask(self, bug, owner, target,
+                   status=IBugTask['status'].default,
+                   importance=IBugTask['importance'].default,
+                   assignee=None, milestone=None):
+        """See `IBugTaskSet`."""
+        create_params, non_target_create_params = self._initNewTask(bug,
+            owner, target, status, importance, assignee, milestone)
         bugtask = BugTask(**create_params)
-        if target_key['distribution']:
+
+        if create_params['distribution']:
             # Create tasks for accepted nominations if this is a source
             # package addition.
             accepted_nominations = [
                 nomination for nomination in
-                bug.getNominations(target_key['distribution'])
+                bug.getNominations(create_params['distribution'])
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
                 accepted_series_task = BugTask(
                     distroseries=nomination.distroseries,
-                    sourcepackagename=target_key['sourcepackagename'],
+                    sourcepackagename=create_params['sourcepackagename'],
                     **non_target_create_params)
                 accepted_series_task.updateTargetNameCache()
 

@@ -91,8 +91,8 @@ class BugNomination(SQLBase):
                     targets.append(distroseries)
         else:
             targets.append(self.productseries)
-        for target in targets:
-            bug_task = self.bug.addTask(approver, target)
+        bugtasks = self.bug.addManyTasks(approver, targets)
+        for bug_task in bugtasks:
             self.bug.addChange(BugTaskAdded(UTC_NOW, approver, bug_task))
 
     def decline(self, decliner):
