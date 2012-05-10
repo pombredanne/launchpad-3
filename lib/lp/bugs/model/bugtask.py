@@ -1643,6 +1643,7 @@ class BugTaskSet:
                         importance=IBugTask['importance'].default,
                         assignee=None, milestone=None):
         """See `IBugTaskSet`."""
+
         params = [self._initNewTask(bug, owner, target, status, importance,
             assignee, milestone) for target in targets]
 
@@ -1678,34 +1679,22 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See `IBugTaskSet`."""
-        create_params, non_target_create_params = self._initNewTask(bug,
-            owner, target, status, importance, assignee, milestone)
-        bugtask = BugTask(**create_params)
+        # Create tasks for accepted nominations if this is a source
+        # package addition. Distribution nominations are for all the
+        # tasks.
+        targets = [target]
+        key = bug_target_to_key(target)
+        if key['distribution'] is not None:
+            for nomination in bug.getNominations(key['distribution']):
+                if not nomination.isApproved():
+                    continue
+                targets.append(
+                    nomination.distroseries.getSourcePackage(
+                        key['sourcepackagename']))
 
-        if create_params['distribution']:
-            # Create tasks for accepted nominations if this is a source
-            # package addition.
-            accepted_nominations = [
-                nomination for nomination in
-                bug.getNominations(create_params['distribution'])
-                if nomination.isApproved()]
-            for nomination in accepted_nominations:
-                accepted_series_task = BugTask(
-                    distroseries=nomination.distroseries,
-                    sourcepackagename=create_params['sourcepackagename'],
-                    **non_target_create_params)
-                accepted_series_task.updateTargetNameCache()
-
-        if bugtask.conjoined_slave:
-            bugtask._syncFromConjoinedSlave()
-
-        bugtask.updateTargetNameCache()
-        del get_property_cache(bug).bugtasks
-        # Because of block_implicit_flushes, it is possible for a new bugtask
-        # to be queued in appropriately, which leads to Bug.bugtasks not
-        # finding the bugtask.
-        Store.of(bugtask).flush()
-        return bugtask
+        return self.createManyTasks(
+            bug, owner, targets, status=status, importance=importance,
+            assignee=assignee, milestone=milestone)[0]
 
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
