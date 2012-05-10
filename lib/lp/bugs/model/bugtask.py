@@ -1764,10 +1764,7 @@ class BugTaskSet:
         RelatedBugTaskFlat = ClassAlias(BugTaskFlat)
 
         (target_joins, target_conds) = self._getTargetJoinAndClause(target)
-        origin = IStore(BugTaskFlat).using(
-            BugTaskFlat,
-            LeftJoin(BugWatch, BugWatch.bugID == BugTaskFlat.bug_id),
-            *target_joins)
+        origin = IStore(BugTaskFlat).using(BugTaskFlat, *target_joins)
         conds = [
             BugTaskFlat.status.is_in(DB_INCOMPLETE_BUGTASK_STATUSES),
             BugTaskFlat.assignee == None,
@@ -1775,7 +1772,9 @@ class BugTaskSet:
             BugTaskFlat.duplicateof == None,
             BugTaskFlat.date_last_updated <
                 UTC_NOW - SQL("INTERVAL ?", (u'%d days' % min_days_old,)),
-            BugWatch.id == None,
+            Not(Exists(Select(
+                1, tables=[BugWatch],
+                where=[BugWatch.bugID == BugTaskFlat.bug_id]))),
             Not(Exists(Select(
                 1, tables=[RelatedBugTaskFlat],
                 where=And(
