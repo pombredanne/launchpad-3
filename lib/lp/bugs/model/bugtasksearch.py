@@ -1373,9 +1373,10 @@ def _build_tag_search_clause(tags_spec, cols):
 
 # Privacy restrictions
 
-def get_bug_privacy_filter(user, private_only=False):
+def get_bug_privacy_filter(user, private_only=False, use_flat=False):
     """An SQL filter for search results that adds privacy-awareness."""
-    return _get_bug_privacy_filter_with_decorator(user, private_only)[0]
+    return _get_bug_privacy_filter_with_decorator(
+        user, private_only, use_flat)[0]
 
 
 def _nocache_bug_decorator(obj):
