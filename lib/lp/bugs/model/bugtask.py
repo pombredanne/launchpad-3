@@ -23,8 +23,14 @@ __all__ = [
 
 from collections import defaultdict
 import datetime
-from itertools import chain
-from operator import attrgetter
+from itertools import (
+    chain,
+    repeat,
+    )
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import re
 
 from lazr.lifecycle.event import (
@@ -40,7 +46,8 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
-    And,
+    Cast,
+    Count,
     Join,
     Or,
     SQL,
@@ -1900,29 +1907,16 @@ class BugTaskSet:
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
         # Local import of Bug to avoid import loop.
-        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        origin = [
-            Bug,
-            Join(BugTask, BugTask.bug == Bug.id),
-            ]
-
-        product_ids = [product.id for product in products]
-        conditions = And(
-            BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
-            Bug.duplicateof == None,
-            BugTask.productID.is_in(product_ids))
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter != '':
-            conditions = And(conditions, privacy_filter)
-        result = store.using(*origin).find(
-            (BugTask.productID, SQL('COUNT(*)')),
-            conditions)
-
-        result = result.group_by(BugTask.productID)
+        result = IStore(BugTaskFlat).find(
+            (BugTaskFlat.product_id, Count()),
+            BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
+            BugTaskFlat.duplicateof == None,
+            BugTaskFlat.product_id.is_in(product.id for product in products),
+            SQL(get_bug_privacy_filter(user, use_flat=True) or True)
+            ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
         return dict(result)
@@ -1943,6 +1937,7 @@ class BugTaskSet:
 
         See `IBugTask.getBugCountsForPackages` for more information.
         """
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
 
         packages = [
@@ -1951,70 +1946,41 @@ class BugTaskSet:
         package_name_ids = [
             package.sourcepackagename.id for package in packages]
 
-        open_bugs_cond = (
-            'BugTask.status IN %s' %
-            sqlvalues(DB_UNRESOLVED_BUGTASK_STATUSES))
-
-        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
-        sums = [
-            sum_template % (open_bugs_cond, 'open_bugs'),
-            sum_template % (
-                'BugTask.importance = %s' %
-                sqlvalues(BugTaskImportance.CRITICAL), 'open_critical_bugs'),
-            sum_template % (
-                'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
-            sum_template % (
-                'BugTask.status = %s' %
-                sqlvalues(BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
-            sum_template % (
-                'BugTask.importance = %s' %
-                sqlvalues(BugTaskImportance.HIGH), 'open_high_bugs'),
+        # The count of each package's open bugs matching each predicate
+        # will be returned in the dict under the given name.
+        sumexprs = [
+            ('open',
+             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES)),
+            ('open_critical',
+             BugTaskFlat.importance == BugTaskImportance.CRITICAL),
+            ('open_unassigned', BugTaskFlat.assignee == None),
+            ('open_inprogress',
+             BugTaskFlat.status == BugTaskStatus.INPROGRESS),
+            ('open_high', BugTaskFlat.importance == BugTaskImportance.HIGH),
             ]
 
-        conditions = [
-            'Bug.id = BugTask.bug',
-            open_bugs_cond,
-            'BugTask.sourcepackagename IN %s' % sqlvalues(package_name_ids),
-            'BugTask.distribution = %s' % sqlvalues(distribution),
-            'Bug.duplicateof is NULL',
-            ]
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
+        result = IStore(BugTaskFlat).find(
+            (BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
+            + tuple(Sum(Cast(expr[1], 'integer')) for expr in sumexprs),
+            BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
+            BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
+            BugTaskFlat.distribution == distribution,
+            BugTaskFlat.duplicateof == None,
+            SQL(get_bug_privacy_filter(user, use_flat=True) or True)
+            ).group_by(
+                BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 
-        query = """SELECT BugTask.distribution,
-                          BugTask.sourcepackagename,
-                          %(sums)s
-                   FROM BugTask, Bug
-                   WHERE %(conditions)s
-                   GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
-        cur = cursor()
-        cur.execute(query % dict(
-            sums=', '.join(sums), conditions=' AND '.join(conditions)))
-        distribution_set = getUtility(IDistributionSet)
-        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        # Map the returned counts back to their names and throw them in
+        # the dict.
         packages_with_bugs = set()
         counts = []
-        for (distro_id, spn_id, open_bugs,
-             open_critical_bugs, open_unassigned_bugs,
-             open_inprogress_bugs,
-             open_high_bugs) in shortlist(cur.fetchall()):
-            distribution = distribution_set.get(distro_id)
-            sourcepackagename = sourcepackagename_set.get(spn_id)
+        for row in result:
+            distribution = getUtility(IDistributionSet).get(row[0])
+            sourcepackagename = getUtility(ISourcePackageNameSet).get(row[1])
             source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Bjorn Tillenius 2006-12-15:
-            # Add a tuple instead of the distribution package
-            # directly, since DistributionSourcePackage doesn't define a
-            # __hash__ method.
             packages_with_bugs.add((distribution, sourcepackagename))
-            package_counts = dict(
-                package=source_package,
-                open=open_bugs,
-                open_critical=open_critical_bugs,
-                open_unassigned=open_unassigned_bugs,
-                open_inprogress=open_inprogress_bugs,
-                open_high=open_high_bugs,
-                )
+            package_counts = dict(package=source_package)
+            package_counts.update(zip(map(itemgetter(0), sumexprs), row[2:]))
             counts.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
@@ -2025,9 +1991,9 @@ class BugTaskSet:
         for distribution, sourcepackagename in all_packages.difference(
                 packages_with_bugs):
             package_counts = dict(
-                package=distribution.getSourcePackage(sourcepackagename),
-                open=0, open_critical=0, open_unassigned=0,
-                open_inprogress=0, open_high=0)
+                package=distribution.getSourcePackage(sourcepackagename))
+            package_counts.update(
+                zip(map(itemgetter(0), sumexprs), repeat(0)))
             counts.append(package_counts)
 
         return counts

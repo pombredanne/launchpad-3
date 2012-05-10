@@ -4,10 +4,12 @@
 
 __metaclass__ = type
 
+import StringIO
 from datetime import (
     datetime,
     timedelta,
     )
+import logging
 import re
 import unittest
 
@@ -240,12 +242,13 @@ class TestGetActivityKey(TestCase):
                          'some bug task identifier:status')
 
 
-class TestGetEmailNotifications(unittest.TestCase):
+class TestGetEmailNotifications(TestCase):
     """Tests for the exception handling in get_email_notifications()."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up some mock bug notifications to use."""
+        super(TestGetEmailNotifications, self).setUp()
         switch_dbuser(config.malone.bugnotification_dbuser)
         sample_person = getUtility(IPersonSet).getByEmail(
             'test@canonical.com')
@@ -290,6 +293,7 @@ class TestGetEmailNotifications(unittest.TestCase):
         sm.registerUtility(self._fake_utility)
 
     def tearDown(self):
+        super(TestGetEmailNotifications, self).tearDown()
         sm = getSiteManager()
         sm.unregisterUtility(self._fake_utility)
         sm.registerUtility(self._original_utility)
@@ -382,6 +386,44 @@ class TestGetEmailNotifications(unittest.TestCase):
         # cause any errors.
         bug_four = getUtility(IBugSet).get(4)
         self.assertEqual(bug_four.id, 4)
+
+    def test_early_exit(self):
+        # When not-yet-exhausted generators need to be deallocated Python
+        # raises a GeneratorExit exception at the point of their last yield.
+        # The get_email_notifications generator was catching that exception in
+        # a try/except and logging it, leading to bug 994694.  This test
+        # verifies that the fix for that bug (re-raising the exception) stays
+        # in place.
+
+        # Set up logging so we can later assert that no exceptions are logged.
+        log_output = StringIO.StringIO()
+        logger = logging.getLogger()
+        log_handler = logging.StreamHandler(log_output)
+        logger.addHandler(logging.StreamHandler(log_output))
+        self.addCleanup(logger.removeHandler, log_handler)
+
+        # Make some data to feed to get_email_notifications.
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        msg = getUtility(IMessageSet).fromText('', '', owner=person)
+        bug = MockBug(1, person)
+        # We need more than one notification because we want the generator to
+        # stay around after being started.  Consuming the first starts it but
+        # since the second exists, the generator stays active.
+        notifications = [
+            MockBugNotification(
+                message=msg, bug=bug, is_comment=True, date_emailed=None),
+            MockBugNotification(
+                message=msg, bug=bug, is_comment=True, date_emailed=None),
+            ]
+
+        # Now we create the generator, start it, and then close it, triggering
+        # a GeneratorExit exception inside the generator.
+        email_notifications = get_email_notifications(notifications)
+        email_notifications.next()
+        email_notifications.close()
+
+        # Verify that no "Error while building email notifications." is logged.
+        self.assertEqual('', log_output.getvalue())
 
 
 class TestNotificationCommentBatches(unittest.TestCase):

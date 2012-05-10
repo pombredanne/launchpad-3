@@ -41,7 +41,8 @@ class TestArchivePrivacy(TestCaseWithFactory):
         # Commercial private PPAs cannot be accessed by non-subscribers.
         ppa_name = self.factory.getUniqueString()
         ppa = self.factory.makeArchive(
-            private=True, commercial=True, name=ppa_name)
+            private=True, suppress_subscription_notifications=True,
+            name=ppa_name)
         non_subscriber = self.factory.makePerson()
         with person_logged_in(non_subscriber):
             self.assertEqual(ppa_name, ppa.name)
