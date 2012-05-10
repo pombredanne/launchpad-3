@@ -779,6 +779,9 @@ class IBugEdit(Interface):
     def removeWatch(bug_watch, owner):
         """Remove a bug watch from the bug."""
 
+    def addManyTasks(owners, targets):
+        """Create multiple bug tasks on this bug."""
+
     @call_with(owner=REQUEST_USER)
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
