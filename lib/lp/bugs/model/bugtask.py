@@ -49,12 +49,16 @@ from storm.expr import (
     And,
     Cast,
     Count,
+    Exists,
     Join,
     LeftJoin,
+    Not,
     Or,
+    Select,
     SQL,
     Sum,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -1750,6 +1754,15 @@ class BugTaskSet:
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
         from lp.bugs.model.bugwatch import BugWatch
 
+        statuses_not_preventing_expiration = [
+            BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatus.WONTFIX]
+        unexpirable_status_list = [
+            status for status in BugTaskStatus.items
+            if status not in statuses_not_preventing_expiration]
+        RelatedBugTaskFlat = ClassAlias(BugTaskFlat)
+
         (target_joins, target_conds) = self._getTargetJoinAndClause(target)
         origin = IStore(BugTaskFlat).using(
             BugTaskFlat,
@@ -1763,7 +1776,12 @@ class BugTaskSet:
             BugTaskFlat.date_last_updated <
                 UTC_NOW - SQL("INTERVAL ?", (u'%d days' % min_days_old,)),
             BugWatch.id == None,
-            self._getUnconfirmedBugCondition(),
+            Not(Exists(Select(
+                1, tables=[RelatedBugTaskFlat],
+                where=And(
+                    RelatedBugTaskFlat.bug_id == BugTaskFlat.bug_id,
+                    RelatedBugTaskFlat.status.is_in(
+                        unexpirable_status_list))))),
             ]
         conds.extend(target_conds)
         if bug is not None:
@@ -1782,30 +1800,6 @@ class BugTaskSet:
         return DecoratedResultSet(
             ids, lambda id: BugTask.get(id),
             pre_iter_hook=lambda rows: load(BugTask, rows))
-
-    def _getUnconfirmedBugCondition(self):
-        """Return the SQL to filter out BugTasks that has been confirmed
-
-        A bugtasks cannot expire if the bug is, has been, or
-        will be, confirmed to be legitimate. Once the bug is considered
-        valid for one target, it is valid for all targets.
-        """
-        statuses_not_preventing_expiration = [
-            BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
-            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
-            BugTaskStatus.WONTFIX]
-
-        unexpirable_status_list = [
-            status for status in BugTaskStatus.items
-            if status not in statuses_not_preventing_expiration]
-
-        return """
-             NOT EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                WHERE RelatedBugTask.bug = BugTaskFlat.bug
-                    AND RelatedBugTask.status IN %s)
-            """ % sqlvalues(unexpirable_status_list)
 
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
