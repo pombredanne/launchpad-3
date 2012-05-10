@@ -1603,7 +1603,7 @@ class BugTaskSet:
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
-    def _init_new_task(self, bug, owner, target, status, importance, assignee,
+    def _initNewTask(self, bug, owner, target, status, importance, assignee,
                        milestone):
         if not status:
             status = IBugTask['status'].default
@@ -1643,7 +1643,7 @@ class BugTaskSet:
                         importance=IBugTask['importance'].default,
                         assignee=None, milestone=None):
         """See `IBugTaskSet`."""
-        params = [self._init_new_task(bug, owner, target, status, importance,
+        params = [self._initNewTask(bug, owner, target, status, importance,
             assignee, milestone) for target in targets]
 
         fieldnames = (
@@ -1678,7 +1678,7 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See `IBugTaskSet`."""
-        create_params, non_target_create_params = self._init_new_task(bug,
+        create_params, non_target_create_params = self._initNewTask(bug,
             owner, target, status, importance, assignee, milestone)
         bugtask = BugTask(**create_params)
 

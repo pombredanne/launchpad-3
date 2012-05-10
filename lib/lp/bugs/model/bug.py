@@ -1239,8 +1239,7 @@ class Bug(SQLBase):
 
     def addManyTasks(self, owner, targets):
         """See `IBug`."""
-        new_tasks = getUtility(IBugTaskSet).createManyTasks(self, owner, targets)
-        return new_tasks
+        return getUtility(IBugTaskSet).createManyTasks(self, owner, targets)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
