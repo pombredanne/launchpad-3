@@ -155,10 +155,6 @@
         Y.on('lp:context:base_branch_link:changed', function(e) {
             Y.lp.ui.update_field('#base-branch dd', e.new_value_html);
         });
-
-        if(Y.UA.ie) {
-            return;
-        }
         Y.on('load', function() {
             Y.lp.code.requestbuild_overlay.hookUpDailyBuildsSchedule();
         }, window);

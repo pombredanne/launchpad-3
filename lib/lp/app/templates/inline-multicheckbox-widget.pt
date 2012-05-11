@@ -32,10 +32,6 @@
 <script tal:condition="view/can_write"
         tal:content="string:
 LPJS.use('lp.app.multicheckbox', function(Y) {
-    if (Y.UA.ie) {
-        return;
-    }
-
     Y.on('load', function(e) {
       Y.lp.app.multicheckbox.addMultiCheckboxPatcher(
         ${view/json_items},
