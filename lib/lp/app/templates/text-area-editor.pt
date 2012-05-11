@@ -1,6 +1,6 @@
 <div
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  tal:attributes="id view/content_box_id;
+  xmlns:tal="http://xml.zope.org/namespaces/tal">
+  <div tal:attributes="id view/content_box_id;
                      class view/tag_class">
   <div class="clearfix">
     <div class="edit-controls" tal:condition="view/can_write">
@@ -14,6 +14,7 @@
   </div>
   <div class="yui3-editable_text-text"
        tal:content="structure view/value">some text</div>
+  </div>
 <script tal:condition="view/can_write"
         tal:content="structure string:
         LPJS.use('lazr.editor', 'lp.client.plugins', function (Y) {
