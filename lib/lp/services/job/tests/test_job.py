@@ -18,6 +18,7 @@ from lp.code.model.branchmergeproposaljob import (
     )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -26,9 +27,13 @@ from lp.services.job.model.job import (
     find_missing_ready,
     InvalidTransition,
     Job,
+    run_missing_ready,
     UniversalJobSource,
     )
-from lp.services.job.tests import drain_celery_queues
+from lp.services.job.tests import (
+    drain_celery_queues,
+    monitor_celery,
+    )
 from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     StormStatementRecorder,
@@ -482,11 +487,30 @@ class TestRunMissingJobs(TestCaseWithFactory):
 
     layer = ZopelessAppServerLayer
 
+    def createMissingJob(self):
+        job = BranchScanJob.create(self.factory.makeBranch())
+        self.addCleanup(drain_celery_queues)
+        return job
+
     def test_find_missing_ready(self):
         """A job which is ready but not queued is "missing"."""
-        job = BranchScanJob.create(self.factory.makeBranch())
+        job = self.createMissingJob()
         self.assertEqual([job], find_missing_ready(BranchScanJob))
         job.runViaCelery()
         self.assertEqual([], find_missing_ready(BranchScanJob))
         drain_celery_queues()
         self.assertEqual([job], find_missing_ready(BranchScanJob))
+
+    def test_run_missing_ready_not_enabled(self):
+        job = self.createMissingJob()
+        with monitor_celery() as responses:
+            run_missing_ready()
+        self.assertEqual([], responses)
+
+    def test_run_missing_ready(self):
+        job = self.createMissingJob()
+        self.useFixture(
+            FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))
+        with monitor_celery() as responses:
+            run_missing_ready()
+        self.assertEqual(1, len(responses))

@@ -49,6 +49,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
+from lp.services.job.runner import celery_enabled
 from lp.services import scripts
 
 
@@ -289,3 +290,11 @@ def find_missing_ready(job_source):
         CeleryRunJob.app, [job_source.task_queue]))
     return [job for job in job_source.iterReady() if job.job_id not in
             queued_job_ids]
+
+def run_missing_ready():
+    from lp.code.model.branchjob import BranchScanJob
+    for job in find_missing_ready(BranchScanJob):
+        if not celery_enabled(job.__class__.__name__):
+            continue
+        job.celeryCommitHook(True)
+    return
