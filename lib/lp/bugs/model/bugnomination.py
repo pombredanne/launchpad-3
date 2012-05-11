@@ -22,6 +22,7 @@ from sqlobject import (
     ForeignKey,
     SQLObjectNotFound,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
@@ -32,6 +33,7 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNomination,
     IBugNominationSet,
     )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
