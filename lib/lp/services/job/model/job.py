@@ -268,15 +268,9 @@ class UniversalJobSource:
         return db_job.makeDerived()
 
     @classmethod
-    def maybe_init(cls):
-        if cls.needs_init:
-            transaction.abort()
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-
-    @classmethod
     def get(cls, ujob_id):
-        cls.maybe_init()
+        from lp.services.job.celeryjob import ensure_zcml
+        ensure_zcml()
         transaction.abort()
         store = IStore(Job)
         getUtility(IZStorm).remove(store)

@@ -14,11 +14,13 @@ __all__ = [
     'CeleryRunJobIgnoreResult',
     ]
 
+from logging import info
 import os
 
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
 from celery.task import task
 from lazr.jobrunner.celerytask import RunJob
+import transaction
 
 from lp.code.model.branchjob import BranchScanJob
 
@@ -31,7 +33,7 @@ from lp.services.job.runner import (
     BaseJobRunner,
     celery_enabled,
     )
-from lp.services.features import getFeatureFlag
+from lp.services import scripts
 
 
 class CeleryRunJob(RunJob):
@@ -58,12 +60,10 @@ def find_missing_ready(job_source):
     return [job for job in job_source.iterReady() if job.job_id not in
             queued_job_ids]
 
-from logging import info
 @task
-def run_missing_ready():
-    UniversalJobSource.maybe_init()
-    install_feature_controller(make_script_feature_controller('celery'))
-    info('Flag: %s', getFeatureFlag('jobs.celery.enabled_classes'))
+def run_missing_ready(_no_init=False):
+    if not _no_init:
+        task_init()
     count = 0
     for job in find_missing_ready(BranchScanJob):
         if not celery_enabled(job.__class__.__name__):
@@ -72,3 +72,19 @@ def run_missing_ready():
         count += 1
     info('Scheduled %d missing jobs.', count)
     return
+
+
+needs_zcml = True
+
+
+def ensure_zcml():
+    global needs_zcml
+    if not needs_zcml:
+        return
+    transaction.abort()
+    scripts.execute_zcml_for_scripts(use_web_security=False)
+    needs_zcml = False
+
+def task_init():
+    ensure_zcml()
+    install_feature_controller(make_script_feature_controller('celery'))
