@@ -2,7 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import argparse
+from datetime import timedelta
 import sys
+
 from lp.services.config import config
 
 
@@ -79,6 +81,12 @@ def configure(argv):
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'
+    result['CELERYBEAT_SCHEDULE'] = {
+        'schedule-missing': {
+            'task': 'lp.services.job.celeryjob.run_missing_ready',
+            'schedule': timedelta(seconds=600)
+        }
+    }
     return result
 
 try:

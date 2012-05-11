@@ -49,7 +49,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
-from lp.services.job.runner import celery_enabled
 from lp.services import scripts
 
 
@@ -269,32 +268,18 @@ class UniversalJobSource:
         return db_job.makeDerived()
 
     @classmethod
-    def get(cls, ujob_id):
+    def maybe_init(cls):
         if cls.needs_init:
             transaction.abort()
             scripts.execute_zcml_for_scripts(use_web_security=False)
             cls.needs_init = False
+
+    @classmethod
+    def get(cls, ujob_id):
+        cls.maybe_init()
         transaction.abort()
         store = IStore(Job)
         getUtility(IZStorm).remove(store)
         store.close()
         dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
         return cls.rawGet(*ujob_id[:3])
-
-
-def find_missing_ready(job_source):
-    """Find ready jobs that are not queued."""
-    from lp.services.job.celeryjob import CeleryRunJob
-    from lazr.jobrunner.celerytask import list_queued
-    queued_job_ids = set(task[1][0][0] for task in list_queued(
-        CeleryRunJob.app, [job_source.task_queue]))
-    return [job for job in job_source.iterReady() if job.job_id not in
-            queued_job_ids]
-
-def run_missing_ready():
-    from lp.code.model.branchjob import BranchScanJob
-    for job in find_missing_ready(BranchScanJob):
-        if not celery_enabled(job.__class__.__name__):
-            continue
-        job.celeryCommitHook(True)
-    return
