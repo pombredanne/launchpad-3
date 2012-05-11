@@ -417,19 +417,21 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5):
+    @property
+    def most_recently_fixed_bugs(self):
         """Return the five most recently fixed bugs."""
         params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
         return getUtility(IBugSet).getDistinctBugsForBugTasks(
-            self.context.searchTasks(params), self.user, limit)
+            self.context.searchTasks(params), self.user, limit=5)
 
-    def getMostRecentlyReportedBugs(self, limit=5):
+    @property
+    def most_recently_reported_bugs(self):
         """Return the five most recently reported bugs."""
         params = BugTaskSearchParams(self.user, orderby='-datecreated')
         return getUtility(IBugSet).getDistinctBugsForBugTasks(
-            self.context.searchTasks(params), self.user, limit)
+            self.context.searchTasks(params), self.user, limit=5)
 
     def getCveBugLinkCount(self):
         """Return the number of links between bugs and CVEs there are."""
