@@ -1603,80 +1603,43 @@ class BugTaskSet:
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
-    def _initNewTask(self, bug, owner, target, status, importance, assignee,
-                       milestone):
-        if not status:
-            status = IBugTask['status'].default
-        if not importance:
-            importance = IBugTask['importance'].default
-        if not assignee:
-            assignee = None
-        if not milestone:
-            milestone = None
-
-        # Make sure there's no task for this bug already filed
-        # against the target.
-        validate_new_target(bug, target)
-
-        target_key = bug_target_to_key(target)
-        if not bug.private and bug.security_related:
-            product = target_key['product']
-            distribution = target_key['distribution']
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact, owner)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact, owner)
-
-        non_target_create_params = dict(
-            bug=bug,
-            _status=status,
-            importance=importance,
-            assignee=assignee,
-            owner=owner,
-            milestone=milestone)
-        create_params = non_target_create_params.copy()
-        create_params.update(target_key)
-        return create_params, non_target_create_params
-
-    def createManyTasks(self, bug, owner, targets,
-                        status=IBugTask['status'].default,
-                        importance=IBugTask['importance'].default,
-                        assignee=None, milestone=None):
+    def createManyTasks(self, bug, owner, targets, status=None,
+                        importance=None, assignee=None, milestone=None):
         """See `IBugTaskSet`."""
+        if status is None:
+            status = IBugTask['status'].default
+        if importance is None:
+            importance = IBugTask['importance'].default
+        target_keys = []
+        pillars = set()
+        for target in targets:
+            pillars.add(target.pillar)
+            validate_new_target(bug, target)
+            target_keys.append(bug_target_to_key(target))
+        for pillar in pillars:
+            if pillar.security_contact:
+                bug.subscribe(pillar.security_contact, owner)
 
-        params = [self._initNewTask(bug, owner, target, status, importance,
-            assignee, milestone) for target in targets]
+        values = [
+            (bug, owner, key['product'], key['productseries'],
+             key['distribution'], key['distroseries'],
+             key['sourcepackagename'], status, importance, assignee, milestone)
+            for key in target_keys]
+        tasks = create(
+            (BugTask.bug, BugTask.owner, BugTask.product,
+             BugTask.productseries, BugTask.distribution, BugTask.distroseries,
+             BugTask.sourcepackagename, BugTask._status, BugTask.importance,
+             BugTask.assignee, BugTask.milestone),
+            values, get_objects=True)
 
-        fieldnames = (
-            'assignee',
-            'bug',
-            'distribution',
-            'distroseries',
-            'importance',
-            'milestone',
-            'owner',
-            'product',
-            'productseries',
-            'sourcepackagename',
-            '_status',
-        )
-
-        fields = [getattr(BugTask, field) for field in fieldnames]
-        # Values need to be a list of tuples in the order we're declaring our
-        # fields.
-        values = [[p[0].get(field) for field in fieldnames] for p in params]
-
-        taskset = create(fields, values, get_objects=True)
         del get_property_cache(bug).bugtasks
-        for bugtask in taskset:
+        for bugtask in tasks:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
-        return taskset
+        return tasks
 
-    def createTask(self, bug, owner, target,
-                   status=IBugTask['status'].default,
-                   importance=IBugTask['importance'].default,
+    def createTask(self, bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):
         """See `IBugTaskSet`."""
         # Create tasks for accepted nominations if this is a source
