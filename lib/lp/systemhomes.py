@@ -175,12 +175,6 @@ class MaloneApplication:
     def top_bugtrackers(self):
         return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
-    @property
-    def latest_bugs(self):
-        user = getUtility(ILaunchBag).user
-        return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy=['-datecreated'], limit=5)
-
     def empty_list(self):
         """See `IMaloneApplication`."""
         return []
