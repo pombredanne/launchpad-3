@@ -1655,9 +1655,10 @@ class BugTaskSet:
                     nomination.distroseries.getSourcePackage(
                         key['sourcepackagename']))
 
-        return self.createManyTasks(
+        tasks = self.createManyTasks(
             bug, owner, targets, status=status, importance=importance,
-            assignee=assignee, milestone=milestone)[0]
+            assignee=assignee, milestone=milestone)
+        return [task for task in tasks if task.target == target][0]
 
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
