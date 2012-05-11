@@ -20,15 +20,21 @@ import os
 os.environ.setdefault('CELERY_CONFIG_MODULE', 'lp.services.job.celeryconfig')
 from celery.task import task
 from lazr.jobrunner.celerytask import RunJob
+from storm.zope.interfaces import IZStorm
 import transaction
+from zope.component import getUtility
 
 from lp.code.model.branchjob import BranchScanJob
-
+from lp.services.config import dbconfig
+from lp.services.database.lpstorm import IStore
 from lp.services.features import (
     install_feature_controller,
     make_script_feature_controller,
     )
-from lp.services.job.model.job import UniversalJobSource
+from lp.services.job.model.job import (
+    Job,
+    UniversalJobSource,
+    )
 from lp.services.job.runner import (
     BaseJobRunner,
     celery_enabled,
@@ -45,8 +51,8 @@ class CeleryRunJob(RunJob):
         """Return a BaseJobRunner, to support customization."""
         return BaseJobRunner()
 
-    def run(self, job_id):
-        task_init()
+    def run(self, job_id, dbuser):
+        task_init(dbuser)
         super(CeleryRunJob, self).run(job_id)
 
 
@@ -63,6 +69,7 @@ def find_missing_ready(job_source):
         CeleryRunJob.app, [job_source.task_queue]))
     return [job for job in job_source.iterReady() if job.job_id not in
             queued_job_ids]
+
 
 @task
 def run_missing_ready(_no_init=False):
@@ -89,6 +96,16 @@ def ensure_zcml():
     scripts.execute_zcml_for_scripts(use_web_security=False)
     needs_zcml = False
 
-def task_init():
+
+def task_init(dbuser):
+    """Prepare to run a task.
+
+    :param dbuser: The database user to use for running the task.
+    """
     ensure_zcml()
+    transaction.abort()
+    store = IStore(Job)
+    getUtility(IZStorm).remove(store)
+    store.close()
+    dbconfig.override(dbuser=dbuser, isolation_level='read_committed')
     install_feature_controller(make_script_feature_controller('celery'))
