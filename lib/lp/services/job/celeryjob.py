@@ -45,6 +45,10 @@ class CeleryRunJob(RunJob):
         """Return a BaseJobRunner, to support customization."""
         return BaseJobRunner()
 
+    def run(self, job_id):
+        task_init()
+        super(CeleryRunJob, self).run(job_id)
+
 
 class CeleryRunJobIgnoreResult(CeleryRunJob):
 

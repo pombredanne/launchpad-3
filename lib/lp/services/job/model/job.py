@@ -269,8 +269,6 @@ class UniversalJobSource:
 
     @classmethod
     def get(cls, ujob_id):
-        from lp.services.job.celeryjob import ensure_zcml
-        ensure_zcml()
         transaction.abort()
         store = IStore(Job)
         getUtility(IZStorm).remove(store)
