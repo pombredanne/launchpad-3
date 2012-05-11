@@ -1613,12 +1613,13 @@ class BugTaskSet:
         target_keys = []
         pillars = set()
         for target in targets:
-            pillars.add(target.pillar)
             validate_new_target(bug, target)
+            pillars.add(target.pillar)
             target_keys.append(bug_target_to_key(target))
-        for pillar in pillars:
-            if pillar.security_contact:
-                bug.subscribe(pillar.security_contact, owner)
+        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
+            for pillar in pillars:
+                if pillar.security_contact:
+                    bug.subscribe(pillar.security_contact, owner)
 
         values = [
             (bug, owner, key['product'], key['productseries'],
