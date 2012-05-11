@@ -1237,6 +1237,10 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IBugTaskSet).createTask(self, owner, target)
 
+    def addManyTasks(self, owner, targets):
+        """See `IBug`."""
+        return getUtility(IBugTaskSet).createManyTasks(self, owner, targets)
+
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
@@ -2052,7 +2056,7 @@ class Bug(SQLBase):
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
         if not self.private:
             # This is a public bug.
@@ -2064,11 +2068,8 @@ class Bug(SQLBase):
         if user.id in self._known_viewers:
             return True
 
-        filter = get_bug_privacy_filter(user)
-        store = Store.of(self)
-        store.flush()
-        if (not filter or
-            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+        params = BugTaskSearchParams(user=user, bug=self)
+        if not getUtility(IBugTaskSet).search(params).is_empty():
             self._known_viewers.add(user.id)
             return True
         return False

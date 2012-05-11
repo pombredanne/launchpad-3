@@ -1570,6 +1570,10 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
+    def createManyTasks(bug, owner, targets, status=None, importance=None,
+                   assignee=None, milestone=None):
+        """Create a series of bug tasks and return them."""
+
     def createTask(bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):
         """Create a bug task on a bug and return it.

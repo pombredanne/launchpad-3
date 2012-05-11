@@ -108,7 +108,7 @@ def get_bug_changes(bug_delta):
     # log and in notification emails.
     bug_change_field_names = ['duplicateof', 'title', 'description']
     if bool(getFeatureFlag(
-        'disclosure.show_information_type_in_ui.enabled')):
+        'disclosure.information_type_notifications.enabled')):
         bug_change_field_names.append('information_type')
     else:
         bug_change_field_names.extend(('private', 'security_related'))
@@ -573,7 +573,7 @@ class BugInformationTypeChange(AttributeChange):
                 self.title(self.old_value), self.title(self.new_value))}
 
 
-# XXX: This can be deleted when show_information_type_in_ui is removed.
+# XXX: This can be deleted when information_type_notifications is removed.
 class BugVisibilityChange(AttributeChange):
     """Describes a change to a bug's visibility."""
 
@@ -605,7 +605,7 @@ class BugVisibilityChange(AttributeChange):
         return {'text': "** Visibility changed to: %s" % visibility_string}
 
 
-# XXX: This can be deleted when show_information_type_in_ui is removed.
+# XXX: This can be deleted when information_type_notifications is removed.
 class BugSecurityChange(AttributeChange):
     """Describes a change to a bug's security setting."""
 

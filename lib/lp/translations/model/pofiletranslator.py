@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,7 +23,7 @@ from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslator,
     IPOFileTranslatorSet,
     )
-from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.pofile import POFile
 
 
 class POFileTranslator(SQLBase):
@@ -34,9 +34,6 @@ class POFileTranslator(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    latest_message = ForeignKey(
-        foreignKey='TranslationMessage', dbName='latest_message',
-        notNull=True)
     date_last_touched = UtcDateTimeCol(
         dbName='date_last_touched', notNull=False, default=None)
 
@@ -62,10 +59,6 @@ class POFileTranslatorSet:
                 'pofile.potemplate.productseries.product',
                 'pofile.potemplate.distroseries',
                 'pofile.potemplate.sourcepackagename',
-                'latest_message',
-                'latest_message.potmsgset',
-                'latest_message.potmsgset.msgid_singular',
-                'latest_message.msgstr0',
                 ]))
 
     def getForPersonPOFile(self, person, pofile):
@@ -74,10 +67,9 @@ class POFileTranslatorSet:
             POFileTranslator.person == person.id,
             POFileTranslator.pofile == pofile.id)).one()
 
-    def getForPOTMsgSet(self, potmsgset):
+    def getForTemplate(self, potemplate):
         """See `IPOFileTranslatorSet`."""
-        store = Store.of(potmsgset)
-        match = And(
-            POFileTranslator.latest_message == TranslationMessage.id,
-            TranslationMessage.potmsgset == potmsgset)
-        return store.find(POFileTranslator, match).config(distinct=True)
+        return Store.of(potemplate).find(
+            POFileTranslator,
+            POFileTranslator.pofileID == POFile.id,
+            POFile.potemplateID == potemplate.id)

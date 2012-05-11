@@ -522,11 +522,11 @@ contacted.
     [u'no-priv']
 
 
-Non-member contacting a Team
-----------------------------
+Non-team-admin contacting a Team
+--------------------------------
 
-The EmailToPersonView can be used by non-members to contact the team
-owner.
+The EmailToPersonView can be used by non-team-admins to contact the team
+admins.
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> print view.label
@@ -543,20 +543,19 @@ owner.
     [u'name12']
 
 
-Member contacting a Team
-------------------------
+Team admin contacting a Team
+----------------------------
 
-Members can contact their team. How they are contacted depends upon
-whether the team's contact address is set. Sample Person can contact his
-team, Landscape developers, even though they do not have a contact
-address.
+Team admins can contact their team to broadcast a message to all members.
+Sample Person can contact his team, Landscape developers, even though they do
+not have a contact address.
 
-    >>> login('test@canonical.com')
+    >>> team_admin = login_person(landscape_developers.adminmembers[0])
     >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contact_link_title
     Send an email to your team's members through Launchpad
 
-The EmailToPersonView can be used by members to contact their team.
+The EmailToPersonView can be used by admins to contact their team.
 
     >>> view = create_initialized_view(landscape_developers, '+contactuser')
     >>> print view.label

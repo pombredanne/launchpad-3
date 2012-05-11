@@ -51,7 +51,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branch import Branch
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -59,7 +58,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.enums import InformationType
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database import postgresql
@@ -837,32 +835,6 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
-class BranchInformationTypeMigrator(TunableLoop):
-    """A `TunableLoop` to populate information_type for all branches."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BranchInformationTypeMigrator, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Branch)
-
-    def findBranches(self):
-        return self.store.find(Branch.id, Branch.information_type == None)
-
-    def isDone(self):
-        return self.findBranches().is_empty()
-
-    def __call__(self, chunk_size):
-        self.store.find(
-            Branch, Branch.id.is_in(self.findBranches()[:chunk_size])).set(
-            information_type=SQL(
-                "CASE WHEN transitively_private THEN ? ELSE ? END",
-                params=(InformationType.USERDATA.value,
-                    InformationType.PUBLIC.value)))
-        self.transaction.commit()
-
-
 class BugWatchActivityPruner(BulkPruner):
     """A TunableLoop to prune BugWatchActivity entries."""
     target_table_class = BugWatchActivity
@@ -1128,11 +1100,19 @@ class BugTaskFlattener(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugTaskFlattener, self).__init__(log, abort_time)
-        watermark = getUtility(IMemcacheClient).get(
-            '%s:bugtask-flattener' % config.instance_name)
-        self.start_at = watermark or 0
+        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
+        if generation is None:
+            self.start_at = None
+        else:
+            self.memcache_key = (
+                '%s:bugtask-flattener:%s'
+                % (config.instance_name, generation.encode('utf-8')))
+            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+            self.start_at = watermark or 0
 
     def findTaskIDs(self):
+        if self.start_at is None:
+            return EmptyResultSet()
         return IMasterStore(BugTask).find(
             (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
@@ -1147,8 +1127,7 @@ class BugTaskFlattener(TunableLoop):
 
         self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
-            '%s:bugtask-flattener' % config.instance_name,
-            self.start_at)
+            self.memcache_key, self.start_at)
         if not result:
             self.log.warning('Failed to set start_at in memcache.')
 
@@ -1410,7 +1389,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
-        BranchInformationTypeMigrator,
         ]
     experimental_tunable_loops = []
 
