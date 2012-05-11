@@ -1237,10 +1237,6 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IBugTaskSet).createTask(self, owner, target)
 
-    def addManyTasks(self, owner, targets):
-        """See `IBug`."""
-        return getUtility(IBugTaskSet).createManyTasks(self, owner, targets)
-
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
