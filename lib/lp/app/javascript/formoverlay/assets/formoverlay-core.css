@@ -2,6 +2,11 @@
     visibility: hidden;
 }
 
+.yui3-lazr-formoverlay-hidden input {
+    /* msie 8 and below do not support visibility:hidden for <input> */
+    display: none;
+}
+
 .yui3-lazr-formoverlay-form th, .yui3-lazr-formoverlay-form td {
     /* The same as the Launchpad style, so the example represents
      * how it will look.
