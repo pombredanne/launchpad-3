@@ -21,6 +21,7 @@ import os
 
 from lazr.restful import ServiceRootResource
 from lazr.restful.interfaces import ITopLevelEntryLink
+from storm.expr import Max
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -40,6 +41,7 @@ from lp.bugs.interfaces.malone import (
     IMaloneApplication,
     IPrivateMaloneApplication,
     )
+from lp.bugs.model.bug import Bug
 from lp.code.interfaces.codehosting import (
     IBazaarApplication,
     ICodehostingApplication,
@@ -67,6 +69,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import (
@@ -146,8 +149,7 @@ class MaloneApplication:
 
     @property
     def bug_count(self):
-        user = getUtility(ILaunchBag).user
-        return getUtility(IBugSet).searchAsUser(user=user).count()
+        return IStore(Bug).find(Max(Bug.id)).one()
 
     @property
     def bugwatch_count(self):
