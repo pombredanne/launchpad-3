@@ -3,7 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-
 -- And add a BugTaskFlat.latest_patch_uploaded sort index to each set.
 CREATE INDEX
     bugtaskflat__distribution__latest_patch_uploaded__bugtask__idx
