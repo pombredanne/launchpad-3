@@ -25,10 +25,6 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
@@ -45,7 +41,6 @@ from lazr.restful import (
     )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
-import pytz
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
@@ -105,10 +100,7 @@ from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
-from lp.services.searchbuilder import (
-    any,
-    greater_than,
-    )
+from lp.services.searchbuilder import any
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -443,10 +435,15 @@ class MaloneView(LaunchpadFormView):
         return bugs
 
     def getMostRecentlyFixedBugs(self, limit=5):
-        """Return the ten most recently fixed bugs."""
+        """Return the five most recently fixed bugs."""
         params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
+        return self.getBugsFromTasks(self.context.searchTasks(params), limit)
+
+    def getMostRecentlyReportedBugs(self, limit=5):
+        """Return the five most recently reported bugs."""
+        params = BugTaskSearchParams(self.user, orderby='-datecreated')
         return self.getBugsFromTasks(self.context.searchTasks(params), limit)
 
     def getCveBugLinkCount(self):

@@ -59,7 +59,7 @@
         <div class="portlet">
           <h2>Recently reported</h2>
           <ul id="reported-bugs">
-            <li tal:repeat="bug context/latest_bugs"
+            <li tal:repeat="bug view/getMostRecentlyReportedBugs"
                 tal:replace="structure bug/@@+listing-detailed" />
           </ul>
         </div>
