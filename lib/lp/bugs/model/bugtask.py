@@ -1624,13 +1624,14 @@ class BugTaskSet:
         values = [
             (bug, owner, key['product'], key['productseries'],
              key['distribution'], key['distroseries'],
-             key['sourcepackagename'], status, importance, assignee, milestone)
+             key['sourcepackagename'], status, importance, assignee,
+             milestone)
             for key in target_keys]
         tasks = create(
             (BugTask.bug, BugTask.owner, BugTask.product,
-             BugTask.productseries, BugTask.distribution, BugTask.distroseries,
-             BugTask.sourcepackagename, BugTask._status, BugTask.importance,
-             BugTask.assignee, BugTask.milestone),
+             BugTask.productseries, BugTask.distribution,
+             BugTask.distroseries, BugTask.sourcepackagename, BugTask._status,
+             BugTask.importance, BugTask.assignee, BugTask.milestone),
             values, get_objects=True)
 
         del get_property_cache(bug).bugtasks
