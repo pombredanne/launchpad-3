@@ -1237,10 +1237,6 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IBugTaskSet).createTask(self, owner, target)
 
-    def addManyTasks(self, owner, targets):
-        """See `IBug`."""
-        return getUtility(IBugTaskSet).createManyTasks(self, owner, targets)
-
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
@@ -2054,7 +2050,7 @@ class Bug(SQLBase):
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
-        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
+        bugtasksearch's get_bug_privacy_filter.
         """
         from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
@@ -2670,27 +2666,6 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
-
-    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
-        """See `IBugSet`."""
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-
-        where_clauses = []
-        if duplicateof:
-            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            where_clauses.append(privacy_filter)
-
-        other_params = {}
-        if orderBy:
-            other_params['orderBy'] = orderBy
-        if limit:
-            other_params['limit'] = limit
-
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See `IBugSet`."""

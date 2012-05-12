@@ -11,10 +11,6 @@ PYTHON=../../bin/py
 SAMPLEDATA=../sampledata/current.sql
 SAMPLEDATA_DEV=../sampledata/current-dev.sql
 
-# The database dump to create
-NEWSAMPLEDATA=../sampledata/newsampledata.sql
-NEWSAMPLEDATA_DEV=../sampledata/newsampledata-dev.sql
-
 # The database dump to create for lint reports
 LINTDATA=../sampledata/lintdata.sql
 LINTDATA_DEV=../sampledata/lintdata-dev.sql
@@ -178,10 +174,10 @@ diagram:
 	${PYTHON} diagram.py
 
 newsampledata_test:
-	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${NEWSAMPLEDATA})
+	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${SAMPLEDATA})
 
 newsampledata_dev:
-	$(call build_new_sampledata,${DBNAME_DEV},${NEWSAMPLEDATA_DEV})
+	$(call build_new_sampledata,${DBNAME_DEV},${SAMPLEDATA_DEV})
 
 newsampledata: newsampledata_dev newsampledata_test
 
