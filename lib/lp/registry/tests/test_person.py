@@ -1143,24 +1143,39 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
         workitem = self.factory.makeSpecificationWorkItem(
             title=u'workitem 1', specification=assigned_spec)
 
-        # Create a workitem with somebody who's not a member of our team as
-        # the assignee. This workitem must not be in the list returned by
-        # getAssignedSpecificationWorkItemsDueBefore().
-        self.factory.makeSpecificationWorkItem(
-            title=u'workitem 2', specification=assigned_spec,
-            assignee=self.factory.makePerson())
-
         # Create a workitem targeted to a milestone too far in the future.
         # This workitem must not be in the list returned by
         # getAssignedSpecificationWorkItemsDueBefore().
         self.factory.makeSpecificationWorkItem(
-            title=u'workitem 3', specification=assigned_spec,
+            title=u'workitem 2', specification=assigned_spec,
             milestone=self.future_milestone)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
             self.current_milestone.dateexpected)
 
         self.assertEqual([workitem], list(workitems))
+
+    def test_workitems_assigned_to_others_working_on_blueprint(self):
+        assigned_spec = self.factory.makeSpecification(
+                assignee=self.team.teamowner, milestone=self.current_milestone,
+                product=self.product)
+        # Create a workitem with no explicit assignee/milestone. This way it
+        # will inherit the ones from the spec it belongs to.
+        workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=assigned_spec)
+
+        # Create a workitem with somebody who's not a member of our team as
+        # the assignee. This workitem must be in the list returned by
+        # getAssignedSpecificationWorkItemsDueBefore().
+        workitem_for_other_person = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=assigned_spec,
+            assignee=self.factory.makePerson())
+
+        workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
+            self.current_milestone.dateexpected)
+
+        self.assertContentEqual([workitem, workitem_for_other_person],
+                                list(workitems))
 
     def test_skips_workitems_with_milestone_in_the_past(self):
         today = datetime.today().date()
