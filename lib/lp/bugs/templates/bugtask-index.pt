@@ -14,10 +14,8 @@
                   'lp.bugs.subscribers',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
-            Y.on('domready', function(e) {
-                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
-            }, window);
             Y.on('domready', function() {
+                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
                 Y.lp.bugs.bugtask_index.setup_bugtask_index();
                 Y.lp.bugs.bugtask_index.setup_bugtask_table();
                 LP.cache.comment_context = LP.cache.bug;
@@ -27,7 +25,7 @@
                     subscribers_details_view:
                         '/+bug-portlet-subscribers-details',
                     subscribe_someone_else_link: '.menu-link-addsubscriber'
-                });
+                }, window);
             });
          });
       </script>
@@ -178,11 +176,6 @@
             <span class="invisible-link">Tag help</span></a>
             <script type="text/javascript">
                 LPJS.use('event', 'node', 'lp.bugs.bug_tags_entry', function(Y) {
-                    if (LP.links['me'] !== undefined) {
-                        Y.one('#edit-tags-trigger').on('click', function(e) {
-                            e.halt();
-                        });
-                    }
                     Y.on('domready',
                          function(e) {
                              Y.lp.bugs.bug_tags_entry.setup_tag_entry(
