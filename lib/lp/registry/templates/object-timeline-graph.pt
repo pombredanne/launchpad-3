@@ -27,6 +27,7 @@
     </div>
   </div>
   <script>
+  //<![CDATA[
   function show_timeline_graph(include_inactive, resize_frame, start, size) {
       if (include_inactive == 'true') {
           include_inactive = true;
@@ -50,7 +51,7 @@
       LPJS.use('lp.registry.timeline', 'node', 'lp.app.dragscroll', 'lp.client',
         function(Y) {
           Y.on('domready', function(e) {
-              if (Y.UA.ie) {
+              if (!Y.lp.registry.timeline.isCanvasSupported()) {
                   return;
               }
 
@@ -135,6 +136,7 @@
           });
       });
   }
+  //]]>
   </script>
   <script
     tal:define="
