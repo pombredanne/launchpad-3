@@ -85,7 +85,7 @@
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <div id="tags-autocomplete">
-       <div id="tags-autocomplete-content"></div>
+        <div id="tags-autocomplete-content"></div>
       </div>
 
       <p class="informational message"
@@ -95,15 +95,13 @@
         Reported this bug as also occurring in upstream firefox
       </p>
 
-      <p
-         id="can-expire"
-         tal:condition="python: context.bug.isExpirable(days_old=0)"
-         >
+      <p id="can-expire"
+         tal:condition="python: context.bug.isExpirable(days_old=0)">
         <tal:expiration_message replace="view/expiration_message" />
         (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
       </p>
 
-      <p id="bug-is-question" class="informational message"
+      <p id="bug-is-question" class="sprite info"
          tal:condition="context/bug/getQuestionCreatedFromBug"
          tal:define="question context/bug/getQuestionCreatedFromBug">
         This bug report was converted into a question:
@@ -111,10 +109,6 @@
         <a href=""
            tal:attributes="href question/fmt:url"
            tal:content="question/title">%s</a>.
-        <tal:XXX condition="nothing">
-          # XXX mpt 20080716 bug=249094: This should be an alert only when
-          # you have just now converted the report into a question.
-        </tal:XXX>
       </p>
 
       <div style="float: right;">

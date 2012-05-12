@@ -37,7 +37,7 @@
           </a>
         </span>
       </span>
-        <script type="text/javascript" tal:content="string:
+      <script type="text/javascript" tal:content="string:
           LPJS.use('event', 'lp.bugs.bugtask_index', function(Y) {
               Y.on('domready', function(e) {
                   Y.lp.bugs.bugtask_index.setup_me_too(
@@ -46,7 +46,7 @@
               }, window);
           });
           ">
-        </script>
+      </script>
     </div>
   </tal:editable>
   <tal:not-editable

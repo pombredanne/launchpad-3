@@ -3,7 +3,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 <span tal:define="items view/items|nothing"
-     tal:attributes="id view/content_box_id">
+  tal:attributes="id view/content_box_id">
   <tal:label-open-tag replace="structure view/label_open_tag"/>
     <span tal:replace="structure view/label"/>
     <tal:has_choices condition="python:view.has_choices and view.can_write">
