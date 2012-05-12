@@ -115,7 +115,7 @@ cols = {
     'BugTask.milestoneID': BugTaskFlat.milestone_id,
     'BugTask.assignee': BugTaskFlat.assignee,
     'BugTask.owner': BugTaskFlat.owner,
-    'BugTask.date_closed': BugTask.date_closed,
+    'BugTask.date_closed': BugTaskFlat.date_closed,
     'BugTask.datecreated': BugTaskFlat.datecreated,
     'BugTask._status': BugTaskFlat.status,
     }
@@ -144,12 +144,12 @@ orderby_expression = {
     "dateassigned": (BugTask.date_assigned, [bugtask_join]),
     "datecreated": (BugTaskFlat.datecreated, []),
     "date_last_updated": (BugTaskFlat.date_last_updated, []),
-    "date_closed": (BugTask.date_closed, [bugtask_join]),
+    "date_closed": (BugTaskFlat.date_closed, []),
     "number_of_duplicates": (Bug.number_of_duplicates, [bug_join]),
     "message_count": (Bug.message_count, [bug_join]),
     "users_affected_count": (Bug.users_affected_count, [bug_join]),
     "heat": (BugTaskFlat.heat, []),
-    "latest_patch_uploaded": (Bug.latest_patch_uploaded, [bug_join]),
+    "latest_patch_uploaded": (BugTaskFlat.latest_patch_uploaded, []),
     "milestone_name": (
         Milestone.name,
         [
@@ -387,11 +387,6 @@ def _build_query(params):
         if where_cond is not None:
             extra_clauses.append(where_cond)
 
-    # All the standard args filter on BugTaskFlat, except for
-    # date_closed which isn't denormalised (yet?).
-    if params.date_closed is not None:
-        join_tables.append(bugtask_join)
-
     if params.status is not None:
         extra_clauses.append(
             _build_status_clause(cols['BugTask._status'], params.status))
@@ -476,8 +471,7 @@ def _build_query(params):
 
     if params.attachmenttype is not None:
         if params.attachmenttype == BugAttachmentType.PATCH:
-            extra_clauses.append(Bug.latest_patch_uploaded != None)
-            join_tables.append(bug_join)
+            extra_clauses.append(BugTaskFlat.latest_patch_uploaded != None)
         else:
             extra_clauses.append(
                 cols['Bug.id'].is_in(
