@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import unittest
 
+from lp.registry.enums import InformationType
 from lp.services.database.sqlbase import cursor
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -29,7 +30,11 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
         # 6 stacked on 1 at insert time
         cur = cursor()
         for x in range(7):
-            is_private = 'True' if x == 3 else 'False'
+            is_private = 'False'
+            information_type = InformationType.PUBLIC.value
+            if x == 3:
+                is_private = 'True'
+                information_type = InformationType.USERDATA.value
             if x == 4:
                 stacked_on = self.branch_ids[3]
             elif x == 6:
@@ -38,11 +43,12 @@ class BranchPrivacyTriggersTestCase(unittest.TestCase):
                 stacked_on = 'NULL'
             cur.execute("""
                 INSERT INTO Branch (
-                    name, private, stacked_on, owner, registrant, branch_type
+                    name, private, information_type, stacked_on, owner,
+                    registrant, branch_type
                     )
-                    VALUES ('branch%d', %s, %s, 1, 1, 1)
+                    VALUES ('branch%d', %s, %s, %s, 1, 1, 1)
                     RETURNING id
-                """ % (x, is_private, stacked_on))
+                """ % (x, is_private, information_type, stacked_on))
             branch_id = cur.fetchone()[0]
             self.branch_ids[x] = branch_id
         self.updateStackedOnForBranch(2, 5)

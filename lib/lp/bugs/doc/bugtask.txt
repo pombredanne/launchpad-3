@@ -86,6 +86,21 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_series_task.distroseries == warty
     True
 
+
+Next we verify that we can create many tasks at a time for multiple targets.
+
+    >>> bug_many = getUtility(IBugSet).get(4)
+    >>> taskset = bugtaskset.createManyTasks(bug_many, mark,
+    ...    [evolution, a_distro, warty], status=BugTaskStatus.FIXRELEASED)
+    >>> tasks = [(t.product, t.distribution, t.distroseries) for t in taskset]
+    >>> tasks.sort()
+    >>> tasks[0][2] == warty
+    True
+    >>> tasks[1][1] == a_distro
+    True
+    >>> tasks[2][0] == evolution
+    True
+
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
 # test documentation that is missing from here, due to problems with resetting
 # the connection after a ProgrammingError is raised. ARGH.
