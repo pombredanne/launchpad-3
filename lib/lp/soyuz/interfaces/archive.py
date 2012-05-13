@@ -319,13 +319,21 @@ class IArchivePublic(IPrivacy, IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    commercial = exported(
+    commercial = Bool(
+        title=_("Commercial"),
+        required=True,
+        description=_(
+            "True if the archive is for commercial applications in the "
+            "Ubuntu Software Centre.  Governs whether subscribers or "
+            "uploaders get mail from Launchpad about archive events."))
+
+    suppress_subscription_notifications = exported(
         Bool(
-            title=_("Commercial"),
+            title=_("Suppress subscription notifications"),
             required=True,
             description=_(
-                "Display the archive in Software Center's commercial "
-                "listings. Only private archives can be commercial.")))
+                "Whether subscribers to private PPAs get emails about their "
+                "subscriptions.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
@@ -1742,7 +1750,7 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, commercial=False):
+            private=False, suppress_subscription_notifications=False):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -1765,6 +1773,8 @@ class IArchiveSet(Interface):
         :param require_virtualized: whether builds for the new archive shall
             be carried out on virtual builders
         :param private: whether or not to make the PPA private
+        :param suppress_subscription_notifications: whether to suppress
+            emails to subscribers about new subscriptions.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.
@@ -1885,14 +1895,6 @@ class IArchiveSet(Interface):
 
     def getPrivatePPAs():
         """Return a result set containing all private PPAs."""
-
-    def getCommercialPPAs():
-        """Return a result set containing all commercial PPAs.
-
-        Commercial PPAs are private, but explicitly flagged up as commercial
-        so that they are discoverable by people who wish to buy items
-        from them.
-        """
 
     def getPublicationsInArchives(source_package_name, archive_list,
                                   distribution):

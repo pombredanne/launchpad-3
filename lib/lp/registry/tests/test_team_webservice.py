@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,14 +10,12 @@ from lazr.restfulclient.errors import (
     Unauthorized,
     )
 import transaction
-from zope.component import getUtility
 
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -91,14 +89,14 @@ class TestTeamLimitedViewAccess(TestCaseWithFactory):
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
         # Create a P3A for the team.
         with person_logged_in(team_owner):
-            getUtility(IArchiveSet).new(
-                owner=db_team, purpose=ArchivePurpose.PPA,
-                private=True, name='private-ppa')
+            self.factory.makeArchive(
+                owner=db_team, private=True, name='private-ppa')
         # Create an authorised user with limitedView permission on the team.
         # We do that by subscribing the team and the user to the same
         # private bug.
         self.bug_owner = self.factory.makePerson()
-        bug = self.factory.makeBug(owner=self.bug_owner, private=True)
+        bug = self.factory.makeBug(
+            owner=self.bug_owner, information_type=InformationType.USERDATA)
         self.authorised_person = self.factory.makePerson()
         with person_logged_in(self.bug_owner):
             bug.subscribe(db_team, self.bug_owner)

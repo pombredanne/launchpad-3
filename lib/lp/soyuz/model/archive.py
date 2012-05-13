@@ -340,6 +340,14 @@ class Archive(SQLBase):
         else:
             alsoProvides(self, IDistributionArchive)
 
+    @property
+    def suppress_subscription_notifications(self):
+        return self.commercial
+
+    @suppress_subscription_notifications.setter
+    def suppress_subscription_notifications(self, suppress):
+        self.commercial = suppress
+
     # Note: You may safely ignore lint when it complains about this
     # declaration.  As of Python 2.6, this is a perfectly valid way
     # of adding a setter
@@ -1978,9 +1986,9 @@ class Archive(SQLBase):
 
     @classmethod
     def validatePPA(self, person, proposed_name, private=False,
-                    commercial=False):
+                    suppress_subscription_notifications=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if private or commercial:
+        if private or suppress_subscription_notifications:
             # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
             # which says that one needs 'launchpad.Commercial' permission to
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
@@ -1991,10 +1999,10 @@ class Archive(SQLBase):
                 if private:
                     return (
                         '%s is not allowed to make private PPAs' % person.name)
-                if commercial:
+                if suppress_subscription_notifications:
                     return (
-                        '%s is not allowed to make commercial PPAs'
-                        % person.name)
+                        '%s is not allowed to make PPAs that suppress '
+                        'subscription notifications' % person.name)
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -2129,7 +2137,8 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True, private=False, commercial=False):
+            require_virtualized=True, private=False,
+            suppress_subscription_notifications=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2206,7 +2215,8 @@ class ArchiveSet:
         else:
             new_archive.private = private
 
-        new_archive.commercial = commercial
+        new_archive.suppress_subscription_notifications = (
+            suppress_subscription_notifications)
 
         return new_archive
 
@@ -2402,14 +2412,6 @@ class ArchiveSet:
         return store.find(
             Archive,
             Archive._private == True,
-            Archive.purpose == ArchivePurpose.PPA)
-
-    def getCommercialPPAs(self):
-        """See `IArchiveSet`."""
-        store = IStore(Archive)
-        return store.find(
-            Archive,
-            Archive.commercial == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,

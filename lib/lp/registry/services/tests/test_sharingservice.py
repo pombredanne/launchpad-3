@@ -646,7 +646,8 @@ class TestSharingService(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=owner)
         login_person(owner)
         bug = self.factory.makeBug(
-            distribution=distro, owner=owner, private=True)
+            distribution=distro, owner=owner,
+            information_type=InformationType.USERDATA)
         self._assert_revokeAccessGrants(distro, [bug], None)
 
     def test_revokeAccessGrantsBranches(self):
@@ -662,7 +663,8 @@ class TestSharingService(TestCaseWithFactory):
         # revokeAccessGrants raises an Unauthorized exception if the user
         # is not permitted to do so.
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product, private=True)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
         sharee = self.factory.makePerson()
         with FeatureFixture(WRITE_FLAG):
             self.assertRaises(
@@ -685,7 +687,8 @@ class TestSharingService(TestCaseWithFactory):
         # The feature flag needs to be enabled.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=owner)
-        bug = self.factory.makeBug(product=product, private=True)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
         sharee = self.factory.makePerson()
         login_person(owner)
         self.assertRaises(

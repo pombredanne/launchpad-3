@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401,W0611
@@ -90,6 +90,7 @@ from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
@@ -247,11 +248,16 @@ class IBranchPublic(Interface):
             title=_('Date Last Modified'),
             required=True,
             readonly=False))
-
     explicitly_private = Bool(
         title=_("Explicitly Private"),
         description=_("This branch is explicitly marked private as opposed "
         "to being private because it is stacked on a private branch."))
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this branch.')))
 
 
 class IBranchAnyone(Interface):
@@ -1112,6 +1118,13 @@ class IBranchEdit(Interface):
             branch by deleting items with mandatory references and
             NULLing other references.
         :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
+    def transitionToInformationType(information_type, who):
+         """Set the information type for this branch.
+
+        :information_type: The `InformationType` to transition to.
+        :who: The `IPerson` who is making the change.
         """
 
 

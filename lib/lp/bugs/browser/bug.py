@@ -25,10 +25,6 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
@@ -45,7 +41,6 @@ from lazr.restful import (
     )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
-import pytz
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
@@ -105,10 +100,7 @@ from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
-from lp.services.searchbuilder import (
-    any,
-    greater_than,
-    )
+from lp.services.searchbuilder import any
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -425,39 +417,21 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5, when=None):
-        """Return the ten most recently fixed bugs."""
-        if when is None:
-            when = datetime.now(pytz.timezone('UTC'))
-        date_closed_limits = [
-            timedelta(days=1),
-            timedelta(days=7),
-            timedelta(days=30),
-            None,
-        ]
-        for date_closed_limit in date_closed_limits:
-            fixed_bugs = []
-            search_params = BugTaskSearchParams(
-                self.user, status=BugTaskStatus.FIXRELEASED,
-                orderby='-date_closed')
-            if date_closed_limit is not None:
-                search_params.date_closed = greater_than(
-                    when - date_closed_limit)
-            fixed_bugtasks = self.context.searchTasks(search_params)
-            # XXX: Bjorn Tillenius 2006-12-13:
-            #      We might end up returning less than :limit: bugs, but in
-            #      most cases we won't, and '4*limit' is here to prevent
-            #      this page from timing out in production. Later I'll fix
-            #      this properly by selecting bugs instead of bugtasks.
-            #      If fixed_bugtasks isn't sliced, it will take a long time
-            #      to iterate over it, even over just 10, because
-            #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4 * limit]:
-                if bugtask.bug not in fixed_bugs:
-                    fixed_bugs.append(bugtask.bug)
-                    if len(fixed_bugs) >= limit:
-                        return fixed_bugs
-        return fixed_bugs
+    @property
+    def most_recently_fixed_bugs(self):
+        """Return the five most recently fixed bugs."""
+        params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            orderby='-date_closed')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
+
+    @property
+    def most_recently_reported_bugs(self):
+        """Return the five most recently reported bugs."""
+        params = BugTaskSearchParams(self.user, orderby='-datecreated')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
 
     def getCveBugLinkCount(self):
         """Return the number of links between bugs and CVEs there are."""
@@ -854,8 +828,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         # We handle duplicate changes by hand instead of leaving it to
         # the usual machinery because we must use bug.markAsDuplicate().
         bug = self.context.bug
-        bug_before_modification = Snapshot(
-            bug, providing=providedBy(bug))
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         duplicateof = data.pop('duplicateof')
         bug.markAsDuplicate(duplicateof)
         notify(
@@ -864,6 +837,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
+# XXX: This can move to using LaunchpadEditFormView when 
+# show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
@@ -942,12 +917,19 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         """Update the bug."""
         data = dict(data)
         bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         if bool(getFeatureFlag(
             'disclosure.show_information_type_in_ui.enabled')):
             information_type = data.pop('information_type')
+            changed_fields = ['information_type']
         else:
+            changed_fields = []
             private = data.pop('private', bug.private)
+            if bug.private != private:
+                changed_fields.append('private')
             security_related = data.pop('security_related')
+            if bug.security_related != security_related:
+                changed_fields.append('security_related')
             information_type = convert_to_information_type(
                 private, security_related)
         user_will_be_subscribed = (
@@ -957,6 +939,10 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             information_type, self.user)
         if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
+            notify(
+                ObjectModifiedEvent(
+                    bug, bug_before_modification, changed_fields,
+                    user=self.user))
         if self.request.is_ajax:
             if changed:
                 return self._getSubscriptionDetails()

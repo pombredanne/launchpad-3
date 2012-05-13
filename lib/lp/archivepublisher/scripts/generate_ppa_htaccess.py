@@ -122,6 +122,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
     def sendCancellationEmail(self, token):
         """Send an email to the person whose subscription was cancelled."""
+        if token.archive.suppress_subscription_notifications:
+            # Don't send an email if they should be suppresed for the
+            # archive
+            return
         send_to_person = token.person
         ppa_name = token.archive.displayname
         ppa_owner_url = canonical_url(token.archive.owner)

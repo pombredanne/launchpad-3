@@ -14,11 +14,6 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <noscript>
-      <style type="text/css">
-        div.collapsible, div.collapsed {display: block;}
-      </style>
-    </noscript>
     <tal:uses_launchpad_bugtracker
        condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript">

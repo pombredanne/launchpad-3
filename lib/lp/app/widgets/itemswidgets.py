@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets dealing with a choice of options."""
@@ -159,7 +159,10 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
         """Render the table row for the widget depending on description."""
         if form_value != self._missing:
             vocab_term = self.vocabulary.getTermByToken(form_value)
-            description = vocab_term.value.description
+            # This is not needed when display_userdata_as_private is removed.
+            description = getattr(vocab_term, 'description', None)
+            if description is None:
+                description = vocab_term.value.description
         else:
             description = None
 

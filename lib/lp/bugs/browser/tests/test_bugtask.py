@@ -49,10 +49,11 @@ from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     )
-from lp.bugs.model.bugtasksearch import unflat_orderby_expression
+from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.layers import (
     FeedsLayer,
     setFirstLayer,
@@ -139,7 +140,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(86)))
+        self.assertThat(recorder, HasQueryCount(LessThan(88)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -155,7 +156,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                89, self.factory.makePerson())
+                91, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -200,7 +201,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(108)))
+        self.assertThat(recorder, HasQueryCount(LessThan(110)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -1860,7 +1861,7 @@ def make_bug_task_listing_item(factory, bugtask=None):
     if bugtask is None:
         owner = factory.makePerson()
         bug = factory.makeBug(
-            owner=owner, private=True, security_related=True)
+            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
         with person_logged_in(owner):
             bugtask = bug.default_bugtask
     else:
@@ -2325,7 +2326,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         cache = IJSONRequestCache(view.request)
         json_sort_keys = cache.objects['sort_keys']
         json_sort_keys = set(key[0] for key in json_sort_keys)
-        valid_keys = set(unflat_orderby_expression.keys())
+        valid_keys = set(orderby_expression.keys())
         self.assertEqual(
             valid_keys, json_sort_keys,
             "Existing sort order values not available in JSON cache: %r; "
@@ -2373,7 +2374,8 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product, status=BugTaskStatus.INCOMPLETE)
+            product=product,
+            status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
             content = self.getMainContent(

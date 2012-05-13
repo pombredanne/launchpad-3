@@ -4123,12 +4123,12 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if person_or_team.is_team:
-            if self.user.inTeam(person_or_team):
+            if person_or_team in self.user.getAdministratedTeams():
+                # Team admins can broadcast messages to all members.
                 return self.TO_MEMBERS
             else:
-                # A non-member can only send emails to a single person to
-                # hinder spam and to prevent leaking membership
-                # information for private teams when the members reply.
+                # A non-team-admins can make inquiries to the people who
+                # lead the team.
                 return self.TO_ADMINS
         else:
             # Send to the user

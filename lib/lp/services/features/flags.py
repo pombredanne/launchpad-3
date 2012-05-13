@@ -63,10 +63,12 @@ flag_info = sorted([
      '',
      '',
      'https://bugs.launchpad.net/launchpad/+bug/678090'),
-    ('bugs.bugtaskflat.search.enabled',
-     'boolean',
-     'Use BugTaskFlat for bug searches.',
-     '',
+    ('bugs.bugtaskflattener.generation',
+     'string',
+     ("Sets the key used to store progress in a BugTaskFlat update pass. "
+      "Normally disabled unless recent schema changes require a full "
+      "update."),
+     'BugTaskFlattener disabled',
      '',
      ''),
     ('bugs.bugtracker_components.enabled',
@@ -315,6 +317,13 @@ flag_info = sorted([
      'boolean',
      ('If true, displays the information_type directly in the UI when '
       'filing a bug and changing the information_type.'),
+     '',
+     '',
+     ''),
+    ('disclosure.information_type_notifications.enabled',
+     'boolean',
+     ('If true, calculate and store bugchange notifications to reference '
+      'information_type rather than private/security_related.'),
      '',
      '',
      ''),

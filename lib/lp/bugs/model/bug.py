@@ -1726,7 +1726,6 @@ class Bug(SQLBase):
     def transitionToInformationType(self, information_type, who,
                                     from_api=False):
         """See `IBug`."""
-        bug_before_modification = Snapshot(self, providing=providedBy(self))
         if from_api and information_type == InformationType.PROPRIETARY:
             raise BugCannotBePrivate(
                 "Cannot transition the information type to proprietary.")
@@ -1749,7 +1748,6 @@ class Bug(SQLBase):
         for attachment in self.attachments_unpopulated:
             attachment.libraryfile.restricted = (
                 information_type in PRIVATE_INFORMATION_TYPES)
-        self.updateHeat()
 
         # There are several people we need to ensure are subscribed.
         # If the information type is userdata, we need to check for bug
@@ -1785,12 +1783,11 @@ class Bug(SQLBase):
                 self.subscribe(s, who)
 
         self.information_type = information_type
+        self.updateHeat()
         # Set the legacy attributes for now.
         self._private = information_type in PRIVATE_INFORMATION_TYPES
         self._security_related = (
             information_type in SECURITY_INFORMATION_TYPES)
-        notify(ObjectModifiedEvent(
-                self, bug_before_modification, ['information_type'], user=who))
         return True
 
     def getRequiredSubscribers(self, information_type, who):
@@ -2053,9 +2050,9 @@ class Bug(SQLBase):
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
-        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
+        bugtasksearch's get_bug_privacy_filter.
         """
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
         if not self.private:
             # This is a public bug.
@@ -2067,11 +2064,8 @@ class Bug(SQLBase):
         if user.id in self._known_viewers:
             return True
 
-        filter = get_bug_privacy_filter(user)
-        store = Store.of(self)
-        store.flush()
-        if (not filter or
-            not store.find(Bug, Bug.id == self.id, filter).is_empty()):
+        params = BugTaskSearchParams(user=user, bug=self)
+        if not getUtility(IBugTaskSet).search(params).is_empty():
             self._known_viewers.add(user.id)
             return True
         return False
@@ -2672,27 +2666,6 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
-
-    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
-        """See `IBugSet`."""
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-
-        where_clauses = []
-        if duplicateof:
-            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            where_clauses.append(privacy_filter)
-
-        other_params = {}
-        if orderBy:
-            other_params['orderBy'] = orderBy
-        if limit:
-            other_params['limit'] = limit
-
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See `IBugSet`."""

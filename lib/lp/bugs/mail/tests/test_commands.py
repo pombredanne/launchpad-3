@@ -12,6 +12,7 @@ from lp.bugs.mail.commands import (
     BugEmailCommand,
     CVEEmailCommand,
     DuplicateEmailCommand,
+    InformationTypeEmailCommand,
     PrivateEmailCommand,
     SecurityEmailCommand,
     SubscribeEmailCommand,
@@ -410,6 +411,57 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual(
             InformationType.EMBARGOEDSECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
+
+
+class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['unembargoedsecurity'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(
+            InformationType.UNEMBARGOEDSECURITY, bug_params.information_type)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['embargoedsecurity'])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual(
+            InformationType.EMBARGOEDSECURITY, bug.information_type)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params_with_rubbish(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['rubbish'])
+        dummy_event = object()
+        self.assertRaises(
+            EmailProcessingError, command.execute, bug_params, dummy_event)
+
+    def test_execute_bug_params_with_proprietary(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['proprietary'])
+        dummy_event = object()
+        self.assertRaisesWithContent(
+            EmailProcessingError, 'Proprietary bugs are forbidden to be '
+            'filed via the mail interface.', command.execute, bug_params,
+            dummy_event)
 
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):

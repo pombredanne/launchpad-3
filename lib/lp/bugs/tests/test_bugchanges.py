@@ -30,7 +30,9 @@ from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    api_url,
     celebrity_logged_in,
+    launchpadlib_for,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -235,7 +237,8 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(displayname='Mom')
         # Create the private bug.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
+            product=self.product, owner=self.user,
+            information_type=InformationType.USERDATA)
         bug.subscribe(subscriber, self.user)
         self.saveOldChanges(bug=bug)
         bug.unsubscribe(subscriber, subscriber)
@@ -561,7 +564,11 @@ class TestBugChanges(TestCaseWithFactory):
     def test_make_private(self):
         # Marking a bug as private adds items to the bug's activity log
         # and notifications.
+        bug_before_modification = Snapshot(
+            self.bug, providing=providedBy(self.bug))
         self.bug.setPrivate(True, self.user)
+        notify(ObjectModifiedEvent(
+            self.bug, bug_before_modification, ['private'], user=self.user))
 
         visibility_change_activity = {
             'person': self.user,
@@ -582,11 +589,17 @@ class TestBugChanges(TestCaseWithFactory):
     def test_make_public(self):
         # Marking a bug as public adds items to the bug's activity log
         # and notifications.
-        private_bug = self.factory.makeBug(private=True)
+        private_bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         self.saveOldChanges(private_bug)
         self.assertTrue(private_bug.private)
-
-        private_bug.setPrivate(False, self.user)
+        bug_before_modification = Snapshot(
+            private_bug, providing=providedBy(private_bug))
+        private_bug.transitionToInformationType(
+            InformationType.PUBLIC, self.user)
+        notify(ObjectModifiedEvent(
+            private_bug, bug_before_modification, ['private'],
+            user=self.user))
 
         visibility_change_activity = {
             'person': self.user,
@@ -611,10 +624,14 @@ class TestBugChanges(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
         feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
+            'disclosure.information_type_notifications.enabled': 'on'}
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flag):
             bug.transitionToInformationType(
                 InformationType.EMBARGOEDSECURITY, self.user)
+            notify(ObjectModifiedEvent(
+                bug, bug_before_modification, ['information_type'],
+                user=self.user))
 
         information_type_change_activity = {
             'person': self.user,
@@ -639,11 +656,15 @@ class TestBugChanges(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
         feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.information_type_notifications.enabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flags):
             bug.transitionToInformationType(
                 InformationType.USERDATA, self.user)
+            notify(ObjectModifiedEvent(
+                bug, bug_before_modification, ['information_type'],
+                user=self.user))
 
         information_type_change_activity = {
             'person': self.user,
@@ -659,6 +680,37 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=information_type_change_activity,
             expected_notification=information_type_change_notification,
             bug=bug)
+
+    def test_change_information_type_using_api(self):
+        # Changing the information type of a bug adds items to the activity
+        # log and notifications.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=person)
+        self.saveOldChanges(bug=bug)
+        feature_flag = {
+            'disclosure.information_type_notifications.enabled': 'on'}
+        webservice = launchpadlib_for('test', person)
+        lp_bug = webservice.load(api_url(bug))
+        with FeatureFixture(feature_flag):
+            lp_bug.transitionToInformationType(
+                information_type='Embargoed Security')
+
+        information_type_change_activity = {
+            'person': person,
+            'whatchanged': 'information type',
+            'oldvalue': 'Public',
+            'newvalue': 'Embargoed Security',
+            }
+        information_type_change_notification = {
+            'text': '** Information type changed from Public to Embargoed '
+                'Security',
+            'person': person,
+            }
+        with person_logged_in(person):
+            self.assertRecordedChange(
+                expected_activity=information_type_change_activity,
+                expected_notification=information_type_change_notification,
+                bug=bug)
 
     def test_tags_added(self):
         # Adding tags to a bug will add BugActivity and BugNotification
@@ -1076,7 +1128,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_retarget_private_security_bug_to_product(self):
         # A series of tests for re-targetting a private bug task.
         bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
+            product=self.product, owner=self.user,
+            information_type=InformationType.USERDATA)
         maintainer = self.factory.makePerson()
         bug_supervisor = self.factory.makePerson()
 
@@ -1158,7 +1211,8 @@ class TestBugChanges(TestCaseWithFactory):
         new_product = self.factory.makeProduct()
         subscriber = self.factory.makePerson()
         new_product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=old_product, private=True)
+        bug = self.factory.makeBug(
+            product=old_product, information_type=InformationType.USERDATA)
         bug.default_bugtask.transitionToTarget(new_product)
         self.assertNotIn(subscriber, bug.getDirectSubscribers())
         self.assertNotIn(subscriber, bug.getIndirectSubscribers())
@@ -1298,28 +1352,6 @@ class TestBugChanges(TestCaseWithFactory):
         expected_recipients = [
             self.user, self.product_metadata_subscriber, old_assignee]
         self._test_unassign_bugtask(self.bug_task, expected_recipients)
-
-    def test_unassign_private_bugtask(self):
-        # Test that unassigning a private bug task adds entries to the
-        # bug activity and notifications sets. This test creates a private bug
-        # that the user can only see because they are assigned to it. The user
-        # then unassigns themselves.
-
-        # Create the private bug.
-        bug = self.factory.makeBug(
-            product=self.product, owner=self.user, private=True)
-        bug_task = bug.bugtasks[0]
-        # Create a test assignee.
-        old_assignee = self.factory.makePerson()
-        # As the bug owner, assign the test assignee..
-        with person_logged_in(self.user):
-            bug_task.transitionToAssignee(old_assignee)
-            self.saveOldChanges(bug=bug)
-
-        # Only the bug owner will get notified about the change.
-        expected_recipients = [self.user]
-        with person_logged_in(old_assignee):
-            self._test_unassign_bugtask(bug_task, expected_recipients)
 
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and

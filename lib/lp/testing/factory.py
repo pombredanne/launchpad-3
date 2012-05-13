@@ -45,7 +45,6 @@ from textwrap import dedent
 from types import InstanceType
 import warnings
 
-from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
@@ -77,7 +76,6 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
-from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -1639,11 +1637,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, security_related=False, information_type=None,
-                date_closed=None, title=None, date_created=None,
-                description=None, comment=None, status=None,
-                distribution=None, milestone=None, series=None, tags=None,
-                sourcepackagename=None):
+                information_type=InformationType.PUBLIC, date_closed=None,
+                title=None, date_created=None, description=None,
+                comment=None, status=None, distribution=None, milestone=None,
+                series=None, tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1690,10 +1687,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=distribution.currentseries,
                 sourcepackagename=sourcepackagename)
-        # Factory changes delayed for a seperate branch.
-        if information_type is None:
-            information_type = convert_to_information_type(
-                private, security_related)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, information_type=information_type,
             datecreated=date_created, description=description,
@@ -2664,7 +2657,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True, description=None, displayname=None):
+                    virtualized=True, description=None, displayname=None,
+                    suppress_subscription_notifications=False):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -2677,6 +2671,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param private: Whether the archive is created private.
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
+        :param suppress_subscription_notifications: Whether to suppress
+            subscription notifications, defaults to False.  Only useful
+            for private archives.
         """
         if purpose is None:
             purpose = ArchivePurpose.PPA
@@ -2714,6 +2711,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_archive = removeSecurityProxy(archive)
             naked_archive.private = True
             naked_archive.buildd_secret = "sekrit"
+
+        if suppress_subscription_notifications:
+            naked_archive = removeSecurityProxy(archive)
+            naked_archive.suppress_subscription_notifications = True
 
         return archive
 
@@ -4100,87 +4101,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 msg.attach(attachment)
         return msg
 
-    def makeBundleMergeDirectiveEmail(self, source_branch, target_branch,
-                                      signing_context=None, sender=None):
-        """Create a merge directive email from two bzr branches.
-
-        :param source_branch: The source branch for the merge directive.
-        :param target_branch: The target branch for the merge directive.
-        :param signing_context: A GPGSigningContext instance containing the
-            gpg key to sign with.  If None, the message is unsigned.  The
-            context also contains the password and gpg signing mode.
-        :param sender: The `Person` that is sending the email.
-        """
-        md = MergeDirective2.from_objects(
-            source_branch.repository, source_branch.last_revision(),
-            public_branch=source_branch.get_public_branch(),
-            target_branch=target_branch.getInternalBzrUrl(),
-            local_target_branch=target_branch.getInternalBzrUrl(), time=0,
-            timezone=0)
-        email = None
-        if sender is not None:
-            email = removeSecurityProxy(sender).preferredemail.email
-        return self.makeSignedMessage(
-            body='My body', subject='My subject',
-            attachment_contents=''.join(md.to_lines()),
-            signing_context=signing_context, email_address=email)
-
-    def makeMergeDirective(self, source_branch=None, target_branch=None,
-        source_branch_url=None, target_branch_url=None):
-        """Return a bzr merge directive object.
-
-        :param source_branch: The source database branch in the merge
-            directive.
-        :param target_branch: The target database branch in the merge
-            directive.
-        :param source_branch_url: The URL of the source for the merge
-            directive.  Overrides source_branch.
-        :param target_branch_url: The URL of the target for the merge
-            directive.  Overrides target_branch.
-        """
-        from bzrlib.merge_directive import MergeDirective2
-        if source_branch_url is not None:
-            assert source_branch is None
-        else:
-            if source_branch is None:
-                source_branch = self.makeAnyBranch()
-            source_branch_url = (
-                config.codehosting.supermirror_root +
-                source_branch.unique_name)
-        if target_branch_url is not None:
-            assert target_branch is None
-        else:
-            if target_branch is None:
-                target_branch = self.makeAnyBranch()
-            target_branch_url = (
-                config.codehosting.supermirror_root +
-                target_branch.unique_name)
-        return MergeDirective2(
-            'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid',
-            patch='')
-
-    def makeMergeDirectiveEmail(self, body='Hi!\n', signing_context=None):
-        """Create an email with a merge directive attached.
-
-        :param body: The message body to use for the email.
-        :param signing_context: A GPGSigningContext instance containing the
-            gpg key to sign with.  If None, the message is unsigned.  The
-            context also contains the password and gpg signing mode.
-        :return: message, file_alias, source_branch, target_branch
-        """
-        target_branch = self.makeProductBranch()
-        source_branch = self.makeProductBranch(
-            product=target_branch.product)
-        md = self.makeMergeDirective(source_branch, target_branch)
-        message = self.makeSignedMessage(body=body,
-            subject='My subject', attachment_contents=''.join(md.to_lines()),
-            signing_context=signing_context)
-        message_string = message.as_string()
-        file_alias = getUtility(ILibraryFileAliasSet).create(
-            '*', len(message_string), StringIO(message_string), '*')
-        return message, file_alias, source_branch, target_branch
-
     def makeHWSubmission(self, date_created=None, submission_key=None,
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
@@ -4446,7 +4366,6 @@ unwrapped_types = frozenset((
         BaseRecipeBranch,
         DSCFile,
         InstanceType,
-        MergeDirective2,
         Message,
         datetime,
         int,
