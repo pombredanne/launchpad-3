@@ -14,7 +14,7 @@ method accepts a single parameter; an BugTaskSearchParams instance.
 
     >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
-    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     "BugTask.bug = Bug.id AND Bug.information_type IN (1, 2)",
     ...     clauseTables=['Bug'])
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True

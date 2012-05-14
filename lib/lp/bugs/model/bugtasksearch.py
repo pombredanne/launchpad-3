@@ -1405,18 +1405,15 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
-    :param private_only: If a user is specified, this parameter determines
-        whether only private bugs will be filtered. If True, the returned
-        filter omits the "Bug.private IS FALSE" clause.
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
-    if use_flat:
-        public_bug_filter = (
-            'BugTaskFlat.information_type IN %s'
-            % sqlvalues(PUBLIC_INFORMATION_TYPES))
-    else:
-        public_bug_filter = 'Bug.private IS FALSE'
+    if private_only or not use_flat:
+        raise AssertionError("Only public+private flat mode is supported.")
+
+    public_bug_filter = (
+        'BugTaskFlat.information_type IN %s'
+        % sqlvalues(PUBLIC_INFORMATION_TYPES))
 
     if user is None:
         return public_bug_filter, _nocache_bug_decorator
@@ -1425,38 +1422,21 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
     if user.inTeam(admin_team):
         return "", _nocache_bug_decorator
 
-    if use_flat:
-        artifact_grant_query = ("""
-            BugTaskFlat.access_grants &&
-            (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
-            """ % user.id)
-        policy_grant_query = ("""
-            BugTaskFlat.access_policies &&
-            (SELECT array_agg(policy) FROM
-                accesspolicygrant
-                JOIN teamparticipation
-                    ON teamparticipation.team = accesspolicygrant.grantee
-                WHERE person = %d)
-            """ % user.id)
-        query = "%s OR %s" % (artifact_grant_query, policy_grant_query)
-    else:
-        # A subselect is used here because joining through
-        # TeamParticipation is only relevant to the "user-aware"
-        # part of the WHERE condition (i.e. the bit below.) The
-        # other half of this condition (see code above) does not
-        # use TeamParticipation at all.
-        query = ("""
-            EXISTS (
-                WITH teams AS (
-                    SELECT team from TeamParticipation
-                    WHERE person = %d
-                )
-                SELECT BugSubscription.bug
-                FROM BugSubscription
-                WHERE BugSubscription.person IN (SELECT team FROM teams) AND
-                    BugSubscription.bug = Bug.id
-                )
-            """ % user.id)
+    artifact_grant_query = ("""
+        BugTaskFlat.access_grants &&
+        (SELECT array_agg(team) FROM teamparticipation WHERE person = %d)
+        """ % user.id)
+    policy_grant_query = ("""
+        BugTaskFlat.access_policies &&
+        (SELECT array_agg(policy) FROM
+            accesspolicygrant
+            JOIN teamparticipation
+                ON teamparticipation.team = accesspolicygrant.grantee
+            WHERE person = %d)
+        """ % user.id)
+    query = "%s OR %s" % (artifact_grant_query, policy_grant_query)
     if not private_only:
         query = '%s OR %s' % (public_bug_filter, query)
-    return '(%s)' % query, _make_cache_user_can_view_bug(user)
+    return (
+        '(%s OR %s)' % (public_bug_filter, query),
+        _make_cache_user_can_view_bug(user))
