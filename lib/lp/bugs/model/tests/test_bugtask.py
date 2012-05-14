@@ -2363,7 +2363,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
     def test_conjoined_milestone(self):
         """Milestone attribute will sync across conjoined tasks."""
         data = self._setupBugData()
-
+        login('foo.bar@canonical.com')
         launchbag = getUtility(ILaunchBag)
         conjoined = getUtility(IProductSet)['alsa-utils']
         con_generic_task = getUtility(IBugTaskSet).createTask(
