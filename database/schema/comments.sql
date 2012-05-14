@@ -1830,6 +1830,7 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsib
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.packageupload IS 'The PackageUpload that caused this publication to be created.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
