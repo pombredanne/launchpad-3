@@ -40,14 +40,14 @@ class TestRunMissingJobs(TestCaseWithFactory):
 
     def test_run_missing_ready_not_enabled(self):
         """run_missing_ready does nothing if the class isn't enabled."""
-        job = self.createMissingJob()
+        self.createMissingJob()
         with monitor_celery() as responses:
             self.run_missing_ready(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
         """run_missing_ready requests the job to run if not scheduled."""
-        job = self.createMissingJob()
+        self.createMissingJob()
         self.useFixture(
             FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))
         with monitor_celery() as responses:
