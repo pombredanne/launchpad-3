@@ -22,6 +22,7 @@ from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized as zopeUnauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
@@ -360,7 +361,7 @@ class TestEditingBugTask(TestCase):
 
         # An anonymous user cannot edit the bugtask.
         login(ANONYMOUS)
-        with ExpectedException(Unauthorized, ''):
+        with ExpectedException(zopeUnauthorized, ''):
             upstream_task.transitionToStatus(
                 BugTaskStatus.CONFIRMED, getUtility(ILaunchBag.user))
 
@@ -381,13 +382,13 @@ class TestEditingBugTask(TestCase):
         distro_task = bugtaskset.get(25)
 
         # Anonymous cannot change the status.
-        self.assertRaises(Unauthorized, distro_task.transitionToStatus,
-                BugTaskStatus.FIXRELEASED,
+        with ExpectedException(zopeUnauthorized):
+            distro_task.transitionToStatus(BugTaskStatus.FIXRELEASED,
                 getUtility(ILaunchBag).user)
 
         # Anonymous cannot change the assignee.
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        with ExpectedException(Unauthorized):
+        with ExpectedException(zopeUnauthorized):
             distro_task.transitionToAssignee(sample_person)
 
         login('test@canonical.com')
@@ -522,10 +523,10 @@ class TestBugTaskPrivacy(TestCase):
         # able to access or set properties of the bugtask.
         mr_no_privs = login_nopriv()
 
-        with ExpectedException(Unauthorized, ''):
+        with ExpectedException(zopeUnauthorized):
             bug_upstream_firefox_crashes.status
 
-        with ExpectedException(Unauthorized, ''):
+        with ExpectedException(zopeUnauthorized):
             bug_upstream_firefox_crashes.transitionToStatus(
                 BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
 
