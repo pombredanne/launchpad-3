@@ -957,27 +957,11 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # For efficiency, we do not want to perform several
             # TeamParticipation joins and we only want to do the user visible
             # bug filtering once. We use a With statement for the team
-            # participation check. For the bug query, we first filter on team
-            # association (subscribed to, assigned to etc) and then on user
-            # visibility.
+            # participation check.
 
             store = IStore(Person)
-            team_bugs_visible_select = """
-                SELECT bug_id FROM (
-                    -- The direct team bug subscriptions
-                    SELECT BugSubscription.bug as bug_id
-                    FROM BugSubscription
-                    WHERE BugSubscription.person IN
-                        (SELECT team FROM teams)
-                    UNION
-                    -- The bugs assigned to the team
-                    SELECT BugTask.bug as bug_id
-                    FROM BugTask
-                    WHERE BugTask.assignee IN (SELECT team FROM teams)
-                    ) as TeamBugs
-                """
             user_private_bugs_visible_filter = get_bug_privacy_filter(
-                user.person, private_only=True)
+                user.person, use_flat=True)
 
             # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
             query = """
@@ -995,23 +979,19 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                     UNION ALL
                     -- Find the bugs associated with the team and filter by
                     -- those that are visible to the user.
-                    -- Public bugs are simple to check and always visible so
-                    -- do those first.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE Bug.information_type IN
-                        (1, 2)
-                    )
-                    UNION ALL
-                    -- Now do the private bugs the user can see.
-                    %(team_bug_select)s
-                    WHERE bug_id in (
-                        SELECT Bug.id FROM Bug WHERE %(user_bug_filter)s
-                    )
+                    SELECT 1
+                    FROM BugTaskFlat
+                    WHERE
+                        %(user_bug_filter)s
+                        AND (
+                            bug IN (
+                                SELECT bug FROM bugsubscription
+                                WHERE person IN (SELECT team FROM teams))
+                            OR assignee IN (SELECT team FROM teams)
+                            )
                 )
                 """ % dict(
                         personid=quote(self.obj.id),
-                        team_bug_select=team_bugs_visible_select,
                         user_bug_filter=user_private_bugs_visible_filter)
 
             rs = store.execute(query)
