@@ -1179,8 +1179,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives = self.distribution.getArchiveIDList(archive)
 
         clause = """
-            SourcePackagePublishingHistory.sourcepackagerelease=
-                SourcePackageRelease.id AND
             SourcePackagePublishingHistory.sourcepackagename=
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.distroseries=%s AND
