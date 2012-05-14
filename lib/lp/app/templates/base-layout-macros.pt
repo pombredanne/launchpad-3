@@ -163,7 +163,6 @@
                 if (Y.one(document.body).hasClass('private')) {
                     var banner = new Y.lp.app.banner.privacy.PrivacyBanner();
                     banner.render();
-                    banner.show();
                 }
                 Y.lp.app.beta_features.display_beta_notification();
                 Y.lp.app.sorttable.SortTable.init();
