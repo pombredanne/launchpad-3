@@ -3,22 +3,22 @@
 
 __metaclass__ = type
 
-import subprocess
-import transaction
-import unittest
-
 from collections import namedtuple
 from datetime import (
     datetime,
     timedelta,
     )
 from operator import attrgetter
+import subprocess
+import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
+from storm.store import Store
 from testtools.matchers import Equals
 from testtools.testcase import ExpectedException
+import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
@@ -128,7 +128,6 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from storm.store import Store
 
 
 BugData = namedtuple("BugData", ['owner', 'distro', 'distro_release',
