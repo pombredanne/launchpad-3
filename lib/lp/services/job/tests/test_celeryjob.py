@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.code.model.branchjob import BranchScanJob
@@ -13,6 +13,8 @@ from lp.testing.layers import ZopelessAppServerLayer
 
 class TestRunMissingJobs(TestCaseWithFactory):
 
+    layer = ZopelessAppServerLayer
+
     def setUp(self):
         super(TestRunMissingJobs, self).setUp()
         from lp.services.job.celeryjob import (
@@ -21,8 +23,6 @@ class TestRunMissingJobs(TestCaseWithFactory):
         )
         self.find_missing_ready = find_missing_ready
         self.run_missing_ready = run_missing_ready
-
-    layer = ZopelessAppServerLayer
 
     def createMissingJob(self):
         job = BranchScanJob.create(self.factory.makeBranch())
@@ -39,12 +39,14 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.assertEqual([job], self.find_missing_ready(BranchScanJob))
 
     def test_run_missing_ready_not_enabled(self):
+        """run_missing_ready does nothing if the class isn't enabled."""
         job = self.createMissingJob()
         with monitor_celery() as responses:
             self.run_missing_ready(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
+        """run_missing_ready requests the job to run if not scheduled."""
         job = self.createMissingJob()
         self.useFixture(
             FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))

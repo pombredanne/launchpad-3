@@ -252,7 +252,14 @@ class UniversalJobSource:
     memory_limit = 2 * (1024 ** 3)
 
     @staticmethod
-    def rawGet(job_id, module_name, class_name):
+    def get(ujob_id):
+        """Return the named job database class.
+
+        :param ujob_id: A tuple of Job.id, module name, class name for the
+            class to retrieve.
+        Return derived job class.
+        """
+        job_id, module_name, class_name = ujob_id
         bc_module = __import__(module_name, fromlist=[class_name])
         db_class = getattr(bc_module, class_name)
         store = IStore(db_class)
@@ -260,7 +267,3 @@ class UniversalJobSource:
         if db_job is None:
             return None
         return db_job.makeDerived()
-
-    @classmethod
-    def get(cls, ujob_id):
-        return cls.rawGet(*ujob_id)

@@ -52,6 +52,13 @@ class CeleryRunJob(RunJob):
         return BaseJobRunner()
 
     def run(self, job_id, dbuser):
+        """Run the specified job.
+
+        :param job_id: The job to run, as expected by UniversalJobSource.
+            (Job.id, module_name, class_name)
+        :param dbuser: The database user to run under.  This should match the
+            dbuser specified by the job's config.
+        """
         task_init(dbuser)
         super(CeleryRunJob, self).run(job_id)
 
@@ -73,6 +80,11 @@ def find_missing_ready(job_source):
 
 @task
 def run_missing_ready(_no_init=False):
+    """Task to run any jobs that are ready but not scheduled.
+
+    Currently supports only BranchScanJob.
+    :param _no_init: For tests.  If True, do not perform the initialization.
+    """
     if not _no_init:
         task_init()
     count = 0
@@ -82,13 +94,13 @@ def run_missing_ready(_no_init=False):
         job.celeryCommitHook(True)
         count += 1
     info('Scheduled %d missing jobs.', count)
-    return
 
 
 needs_zcml = True
 
 
 def ensure_zcml():
+    """Ensure the zcml has been executed for the current process."""
     global needs_zcml
     if not needs_zcml:
         return
