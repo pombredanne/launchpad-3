@@ -26,7 +26,6 @@ from lp.services.webapp.interfaces import (
     )
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.vpoexport import (
     IVPOExport,
     IVPOExportSet,
@@ -66,16 +65,13 @@ class VPOExportSet:
         if component is not None:
             tables.extend([
                 SourcePackagePublishingHistory,
-                SourcePackageRelease,
                 Component,
                 ])
             conditions.extend([
                 SourcePackagePublishingHistory.distroseries == series,
-                SourcePackagePublishingHistory.sourcepackagerelease ==
-                     SourcePackageRelease.id,
                 SourcePackagePublishingHistory.component == Component.id,
                 POTemplate.sourcepackagename ==
-                    SourcePackageRelease.sourcepackagenameID,
+                    SourcePackagePublishingHistory.sourcepackagenameID,
                 Component.name == component,
                 SourcePackagePublishingHistory.dateremoved == None,
                 SourcePackagePublishingHistory.archive == series.main_archive,
