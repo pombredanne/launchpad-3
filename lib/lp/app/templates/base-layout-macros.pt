@@ -164,7 +164,9 @@
                     banner = Y.lp.app.banner.privacy.getPrivacyBanner();
                     banner.show();
                 }
-                Y.lp.app.beta_features.display_beta_notification();
+                var beta = Y.lp.app.banner.beta.BetaBanner();
+                beta.render();
+                beta.show();
                 Y.lp.app.sorttable.SortTable.init();
                 Y.lp.app.inlinehelp.init_help();
                 Y.lp.activate_collapsibles();
