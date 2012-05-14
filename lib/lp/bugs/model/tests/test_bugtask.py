@@ -130,6 +130,20 @@ from lp.testing.matchers import HasQueryCount
 from storm.store import Store
 
 
+BugData = namedtuple("BugData", [
+    'owner',
+    'distro',
+    'distro_release',
+    'source_package',
+    'bug',
+    'generic_task',
+    'series_task',
+])
+
+
+ConjoinedData = namedtuple("ConjoinedData", ['alsa_utils', 'generic_task',
+    'devel_focus_task'])
+
 def login_foobar():
     """Helper to get the foobar logged in user"""
     launchbag = getUtility(ILaunchBag)
@@ -367,14 +381,13 @@ class TestEditingBugTask(TestCase):
         distro_task = bugtaskset.get(25)
 
         # Anonymous cannot change the status.
-        with ExpectedException(Unauthorized, ''):
-            distro_task.transitionToStatus(
-            BugTaskStatus.FIXRELEASED,
-            getUtility(ILaunchBag).user)
+        self.assertRaises(Unauthorized, distro_task.transitionToStatus,
+                BugTaskStatus.FIXRELEASED,
+                getUtility(ILaunchBag).user)
 
         # Anonymous cannot change the assignee.
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        with ExpectedException(Unauthorized, ''):
+        with ExpectedException(Unauthorized):
             distro_task.transitionToAssignee(sample_person)
 
         login('test@canonical.com')
@@ -2286,234 +2299,129 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
+    def _setupBugData(self):
         super(TestConjoinedBugTasks, self).setUp()
-        self.owner = self.factory.makePerson()
-        self.distro = self.factory.makeDistribution(
-            name="eggs", owner=self.owner, bug_supervisor=self.owner)
-        self.distro_release = self.factory.makeDistroSeries(
-            distribution=self.distro, registrant=self.owner)
-        self.source_package = self.factory.makeSourcePackage(
-            sourcepackagename="spam", distroseries=self.distro_release)
-        self.bug = self.factory.makeBug(
-            distribution=self.distro,
-            sourcepackagename=self.source_package.sourcepackagename,
-            owner=self.owner)
-        with person_logged_in(self.owner):
-            nomination = self.bug.addNomination(
-                self.owner, self.distro_release)
-            nomination.approve(self.owner)
-            self.generic_task, self.series_task = self.bug.bugtasks
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(
+            name="eggs", owner=owner, bug_supervisor=owner)
+        distro_release = self.factory.makeDistroSeries(
+            distribution=distro, registrant=owner)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=distro_release)
+        bug = self.factory.makeBug(
+            distribution=distro,
+            sourcepackagename=source_package.sourcepackagename,
+            owner=owner)
+        with person_logged_in(owner):
+            nomination = bug.addNomination(
+                owner, distro_release)
+            nomination.approve(owner)
+            generic_task, series_task = bug.bugtasks
+        return BugData(owner, distro, distro_release, source_package, bug,
+            generic_task, series_task)
+
+    def _setupConjoinedTask(self, orig):
+        """Get the conjoind we're running against."""
+        login('foo.bar@canonical.com')
+        launchbag = getUtility(ILaunchBag)
+        alsa_utils = getUtility(IProductSet)['alsa-utils']
+        generic_task = getUtility(IBugTaskSet).createTask(
+            orig.bug, launchbag.user, alsa_utils)
+        devel_focus_task = getUtility(IBugTaskSet).createTask(
+            orig.bug, launchbag.user,
+            alsa_utils.getSeries("trunk"))
+
+        return ConjoinedData(alsa_utils, generic_task, devel_focus_task)
 
     def test_editing_generic_status_reflects_upon_conjoined_master(self):
         # If a change is made to the status of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
         # master.
-        with person_logged_in(self.owner):
+        data = self._setupBugData()
+        with person_logged_in(data.owner):
             # Both the generic task and the series task start off with the
             # status of NEW.
             self.assertEqual(
-                BugTaskStatus.NEW, self.generic_task.status)
+                BugTaskStatus.NEW, data.generic_task.status)
             self.assertEqual(
-                BugTaskStatus.NEW, self.series_task.status)
+                BugTaskStatus.NEW, data.series_task.status)
             # Transitioning the generic task to CONFIRMED.
-            self.generic_task.transitionToStatus(
-                BugTaskStatus.CONFIRMED, self.owner)
+            data.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, data.owner)
             # Also transitions the series_task.
             self.assertEqual(
-                BugTaskStatus.CONFIRMED, self.series_task.status)
+                BugTaskStatus.CONFIRMED, data.series_task.status)
 
     def test_editing_generic_importance_reflects_upon_conjoined_master(self):
         # If a change is made to the importance of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
         # master.
-        with person_logged_in(self.owner):
-            self.generic_task.transitionToImportance(
-                BugTaskImportance.HIGH, self.owner)
+        data = self._setupBugData()
+        with person_logged_in(data.owner):
+            data.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, data.owner)
             self.assertEqual(
-                BugTaskImportance.HIGH, self.series_task.importance)
+                BugTaskImportance.HIGH, data.series_task.importance)
 
     def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
         # If a change is made to the assignee of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
         # master.
-        with person_logged_in(self.owner):
-            self.generic_task.transitionToAssignee(self.owner)
+        data = self._setupBugData()
+        with person_logged_in(data.owner):
+            data.generic_task.transitionToAssignee(data.owner)
             self.assertEqual(
-                self.owner, self.series_task.assignee)
+                data.owner, data.series_task.assignee)
 
     def test_editing_generic_package_reflects_upon_conjoined_master(self):
         # If a change is made to the source package of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
         # master.
+        data = self._setupBugData()
         source_package_name = self.factory.makeSourcePackageName("ham")
         self.factory.makeSourcePackagePublishingHistory(
-            distroseries=self.distro.currentseries,
+            distroseries=data.distro.currentseries,
             sourcepackagename=source_package_name)
-        with person_logged_in(self.owner):
-            self.generic_task.transitionToTarget(
-                self.distro.getSourcePackage(source_package_name))
+        with person_logged_in(data.owner):
+            data.generic_task.transitionToTarget(
+                data.distro.getSourcePackage(source_package_name))
             self.assertEqual(
-                source_package_name, self.series_task.sourcepackagename)
-
-
-class TestConjoinedBugTasks2(TestCase):
-    """Current distro dev series bugtasks are kept in sync.
-
-    """
-
-    layer = DatabaseFunctionalLayer
-
-    def _build_ubuntu_netapplet_bug(self):
-        """Helper to build buuntu_netapplet_bug"""
-        login('test@canonical.com')
-        launchbag = getUtility(ILaunchBag)
-
-        BugHelper = namedtuple('BugHelper', ['distro', 'sourcepackage', 'bug'])
-        ubuntu = getUtility(IDistributionSet).get(1)
-        ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
-        ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
-        return BugHelper(ubuntu, ubuntu_netapplet, ubuntu_netapplet_bug)
-
-    def test_conjoined_tasks_sync(self):
-        """"""
-        login_foobar()
-        launchbag = getUtility(ILaunchBag)
-
-        sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-
-        ubuntu = getUtility(IDistributionSet).get(1)
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
-        ubuntu_bug = ubuntu.createBug(params)
-
-        ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
-        ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
-        generic_netapplet_task = ubuntu_netapplet_bug.bugtasks[0]
-
-        # First, we'll target the bug for the current Ubuntu series, Hoary.
-        # Note that the synced attributes are copied when the series-specific
-        # tasks are created. We'll set non-default attribute values for each
-        # generic task to demonstrate.
-        self.assertEqual('hoary', ubuntu.currentseries.name)
-
-        # Only owners, experts, or admins can create a milestone.
-        ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
-
-        login('test@canonical.com')
-        generic_netapplet_task.transitionToStatus(
-            BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
-        generic_netapplet_task.transitionToAssignee(sample_person)
-        generic_netapplet_task.milestone = ubuntu_edgy_milestone
-        generic_netapplet_task.transitionToImportance(
-            BugTaskImportance.CRITICAL, ubuntu.owner)
-
-        getUtility(IBugTaskSet).createTask(ubuntu_bug, launchbag.user,
-            ubuntu.currentseries)
-        current_series_netapplet_task = getUtility(IBugTaskSet).createTask(
-            ubuntu_netapplet_bug, launchbag.user,
-            ubuntu_netapplet.development_version)
-
-        # The attributes were synced with the generic task.
-        self.assertEqual('In Progress',
-            current_series_netapplet_task.status.title)
-        self.assertEqual('Sample Person',
-            current_series_netapplet_task.assignee.displayname)
-        self.assertEqual('knot1',
-            current_series_netapplet_task.milestone.name)
-        self.assertEqual('Critical',
-            current_series_netapplet_task.importance.title)
-
-        self.assertEqual(current_series_netapplet_task.date_assigned,
-            generic_netapplet_task.date_assigned)
-        self.assertEqual(current_series_netapplet_task.date_confirmed,
-           generic_netapplet_task.date_confirmed)
-        self.assertEqual(current_series_netapplet_task.date_inprogress,
-            generic_netapplet_task.date_inprogress)
-        self.assertEqual(current_series_netapplet_task.date_closed,
-           generic_netapplet_task.date_closed)
-
-        # We'll also add some product and productseries tasks.
-        alsa_utils = getUtility(IProductSet)['alsa-utils']
-        self.assertEqual('trunk', alsa_utils.development_focus.name)
-
-        self.assertIsInstance(generic_netapplet_task.date_left_new,
-            datetime,)
-        self.assertEqual(generic_netapplet_task.date_left_new,
-            current_series_netapplet_task.date_left_new)
-
-        self.assertIsInstance(generic_netapplet_task.date_triaged,
-            datetime)
-        self.assertEqual(generic_netapplet_task.date_triaged,
-            current_series_netapplet_task.date_triaged)
-
-        self.assertIsInstance(generic_netapplet_task.date_fix_committed,
-            datetime)
-        self.assertEqual(generic_netapplet_task.date_fix_committed,
-            current_series_netapplet_task.date_fix_committed)
-
-        self.assertEqual('Fix Released', generic_netapplet_task.status.title)
-        self.assertEqual('Fix Released',
-            current_series_netapplet_task.status.title)
-
-        self.assertIsInstance(generic_netapplet_task.date_closed,
-            datetime)
-        self.assertEqual(generic_netapplet_task.date_closed,
-            current_series_netapplet_task.date_closed)
-        self.assertIsInstance(generic_netapplet_task.date_fix_released,
-            datetime)
-        self.assertEqual(generic_netapplet_task.date_fix_released,
-            current_series_netapplet_task.date_fix_released)
+                source_package_name, data.series_task.sourcepackagename)
 
     def test_conjoined_milestone(self):
         """Milestone attribute will sync across conjoined tasks."""
-        data = self._build_ubuntu_netapplet_bug()
+        data = self._setupBugData()
+        conjoined, con_generic_task, con_devel_task = self._setupConjoinedTask(data)
+        test_milestone = conjoined.development_focus.newMilestone("test")
+        noway_milestone = conjoined.development_focus.newMilestone("noway")
 
-        login('foo.bar@canonical.com')
-        launchbag = getUtility(ILaunchBag)
-
-        alsa_utils = getUtility(IProductSet)['alsa-utils']
-        generic_alsa_utils_task = getUtility(IBugTaskSet).createTask(
-            data.bug, launchbag.user, alsa_utils)
-        devel_focus_alsa_utils_task = getUtility(IBugTaskSet).createTask(
-            data.bug, launchbag.user,
-            alsa_utils.getSeries("trunk"))
-
-        test_milestone = alsa_utils.development_focus.newMilestone("test")
-        noway_milestone = alsa_utils.development_focus.newMilestone("noway")
         Store.of(test_milestone).flush()
 
-        self.assertIsNone(generic_alsa_utils_task.milestone)
-        self.assertIsNone(devel_focus_alsa_utils_task.milestone)
+        self.assertIsNone(con_generic_task.milestone)
+        self.assertIsNone(con_devel_task.milestone)
 
-        devel_focus_alsa_utils_task.transitionToMilestone(
-            test_milestone, alsa_utils.owner)
+        con_devel_task.transitionToMilestone(
+            test_milestone, conjoined.owner)
 
-        self.assertEqual(generic_alsa_utils_task.milestone.name,
+        self.assertEqual(con_generic_task.milestone.name,
             'test')
-        self.assertEqual(devel_focus_alsa_utils_task.milestone.name,
+        self.assertEqual(con_devel_task.milestone.name,
             'test')
 
         # But a normal unprivileged user can't set the milestone.
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         with ExpectedException(UserCannotEditBugTaskMilestone, ''):
-            devel_focus_alsa_utils_task.transitionToMilestone(
+            con_devel_task.transitionToMilestone(
                 noway_milestone, no_priv)
-        self.assertEqual(devel_focus_alsa_utils_task.milestone.name,
+        self.assertEqual(con_devel_task.milestone.name,
             'test')
 
-        devel_focus_alsa_utils_task.transitionToMilestone(
-            test_milestone, alsa_utils.owner)
+        con_devel_task.transitionToMilestone(
+            test_milestone, conjoined.owner)
 
-        self.assertEqual(generic_alsa_utils_task.milestone.name,
+        self.assertEqual(con_generic_task.milestone.name,
             'test')
-        self.assertEqual(devel_focus_alsa_utils_task.milestone.name,
+        self.assertEqual(con_devel_task.milestone.name,
             'test')
 
     def test_non_current_dev_lacks_conjoined(self):
@@ -2584,19 +2492,10 @@ class TestConjoinedBugTasks2(TestCase):
         development task should be Won't Fix, while the generic task keeps the
         value it had before, allowing it to stay open.
         """
+        data = self._setupBugData()
         login('foo.bar@canonical.com')
-        launchbag = getUtility(ILaunchBag)
-        ubuntu = getUtility(IDistributionSet).get(1)
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
-        ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
-        ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
-        generic_netapplet_task = ubuntu_netapplet_bug.bugtasks[0]
-        current_series_netapplet_task = getUtility(IBugTaskSet).createTask(
-            ubuntu_netapplet_bug, launchbag.user,
-            ubuntu_netapplet.development_version)
+        generic_netapplet_task = data.generic_task
+        current_series_netapplet_task = data.series_task
 
         # First let's change the status from Fix Released, since it doesn't
         # make sense to reject such a task.
@@ -2648,6 +2547,100 @@ class TestConjoinedBugTasks2(TestCase):
         self.assertIsNotNone(current_series_netapplet_task.date_closed)
 
 
+    def test_conjoined_tasks_sync(self):
+        """Conjoined properties are sync'd."""
+        login_foobar()
+        launchbag = getUtility(ILaunchBag)
+
+        sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+        ubuntu = getUtility(IDistributionSet).get(1)
+        params = CreateBugParams(
+            owner=launchbag.user,
+            title="a test bug",
+            comment="test bug description")
+        ubuntu_bug = ubuntu.createBug(params)
+
+        ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
+        ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
+        generic_netapplet_task = ubuntu_netapplet_bug.bugtasks[0]
+
+        # First, we'll target the bug for the current Ubuntu series, Hoary.
+        # Note that the synced attributes are copied when the series-specific
+        # tasks are created. We'll set non-default attribute values for each
+        # generic task to demonstrate.
+        self.assertEqual('hoary', ubuntu.currentseries.name)
+
+        # Only owners, experts, or admins can create a milestone.
+        ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
+
+        login('test@canonical.com')
+        generic_netapplet_task.transitionToStatus(
+            BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+        generic_netapplet_task.transitionToAssignee(sample_person)
+        generic_netapplet_task.milestone = ubuntu_edgy_milestone
+        generic_netapplet_task.transitionToImportance(
+            BugTaskImportance.CRITICAL, ubuntu.owner)
+
+        getUtility(IBugTaskSet).createTask(ubuntu_bug, launchbag.user,
+            ubuntu.currentseries)
+        current_series_netapplet_task = getUtility(IBugTaskSet).createTask(
+            ubuntu_netapplet_bug, launchbag.user,
+            ubuntu_netapplet.development_version)
+
+        # The attributes were synced with the generic task.
+        self.assertEqual('In Progress',
+            current_series_netapplet_task.status.title)
+        self.assertEqual('Sample Person',
+            current_series_netapplet_task.assignee.displayname)
+        self.assertEqual('knot1',
+            current_series_netapplet_task.milestone.name)
+        self.assertEqual('Critical',
+            current_series_netapplet_task.importance.title)
+
+        self.assertEqual(current_series_netapplet_task.date_assigned,
+            generic_netapplet_task.date_assigned)
+        self.assertEqual(current_series_netapplet_task.date_confirmed,
+           generic_netapplet_task.date_confirmed)
+        self.assertEqual(current_series_netapplet_task.date_inprogress,
+            generic_netapplet_task.date_inprogress)
+        self.assertEqual(current_series_netapplet_task.date_closed,
+           generic_netapplet_task.date_closed)
+
+        # We'll also add some product and productseries tasks.
+        alsa_utils = getUtility(IProductSet)['alsa-utils']
+        self.assertEqual('trunk', alsa_utils.development_focus.name)
+
+        current_series_netapplet_task.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+
+        self.assertIsInstance(generic_netapplet_task.date_left_new,
+            datetime,)
+        self.assertEqual(generic_netapplet_task.date_left_new,
+            current_series_netapplet_task.date_left_new)
+
+        self.assertIsInstance(generic_netapplet_task.date_triaged,
+            datetime)
+        self.assertEqual(generic_netapplet_task.date_triaged,
+            current_series_netapplet_task.date_triaged)
+
+        self.assertIsInstance(generic_netapplet_task.date_fix_committed,
+            datetime)
+        self.assertEqual(generic_netapplet_task.date_fix_committed,
+            current_series_netapplet_task.date_fix_committed)
+
+        self.assertEqual('Fix Released', generic_netapplet_task.status.title)
+        self.assertEqual('Fix Released',
+            current_series_netapplet_task.status.title)
+
+        self.assertIsInstance(generic_netapplet_task.date_closed,
+            datetime)
+        self.assertEqual(generic_netapplet_task.date_closed,
+            current_series_netapplet_task.date_closed)
+        self.assertIsInstance(generic_netapplet_task.date_fix_released,
+            datetime)
+        self.assertEqual(generic_netapplet_task.date_fix_released,
+            current_series_netapplet_task.date_fix_released)
 
 # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 # When feature flag code is removed, delete these tests (up to "# END
