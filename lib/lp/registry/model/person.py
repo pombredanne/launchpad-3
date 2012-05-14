@@ -2988,7 +2988,8 @@ class Person(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
             description=description, private=private,
-            suppress_subscription_notifications=suppress_subscription_notifications)
+            suppress_subscription_notifications=(
+                suppress_subscription_notifications))
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
