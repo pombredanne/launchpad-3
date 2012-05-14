@@ -425,7 +425,7 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.sourcepackagename ==
                 self.sourcepackagename,
             SourcePackageRelease.id ==
-                SourcePackagePublishingHistory.sourcepackagerelease)
+                SourcePackagePublishingHistory.sourcepackagereleaseID)
         result.order_by(
             Desc(SourcePackageRelease.id),
             Desc(SourcePackagePublishingHistory.datecreated),
