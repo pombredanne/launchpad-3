@@ -505,7 +505,7 @@ class TestBugTaskPrivacy(TestCase):
         # able to access or set properties of the bugtask.
         launchbag = getUtility(ILaunchBag)
         login("no-priv@canonical.com")
-        mr_no_privs = launchbad.user
+        mr_no_privs = launchbag.user
 
         with ExpectedException(zopeUnauthorized):
             bug_upstream_firefox_crashes.status
@@ -555,7 +555,7 @@ class TestBugTaskPrivacy(TestCase):
         # Privacy and Team Awareness
         # No Privileges Person can't see the private bug, because he's not a
         # subscriber:
-        no_priv = login_nopriv()
+        no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         params = BugTaskSearchParams(
             status=any(BugTaskStatus.NEW, BugTaskStatus.CONFIRMED),
                 user=no_priv)
