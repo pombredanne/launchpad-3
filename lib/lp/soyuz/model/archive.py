@@ -514,7 +514,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID ==
+            SourcePackagePublishingHistory.sourcepackagenameID ==
                 SourcePackageName.id,
             ]
         orderBy = [
@@ -624,7 +624,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id
         """ % sqlvalues(self)]
 
@@ -2493,9 +2493,8 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED),
-            (SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == source_package_name,
+            SourcePackagePublishingHistory.sourcepackagename ==
+                source_package_name,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == distribution,
             )

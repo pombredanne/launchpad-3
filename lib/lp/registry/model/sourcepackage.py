@@ -17,7 +17,7 @@ from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
-    Select,
+    Join,
     Store,
     )
 from zope.component import getUtility
@@ -245,7 +245,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         clauses.append(
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
-                   SourcePackageRelease.sourcepackagename = %s AND
+                   SourcePackagePublishingHistory.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distroseries = %s AND
                    SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(
@@ -380,21 +380,21 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
 
         The results are ordered by descending version.
         """
-        subselect = Select(
-            SourcePackageRelease.id, And(
+        return IStore(SourcePackageRelease).using(
+            SourcePackageRelease,
+            Join(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id
+            ).find(
+                SourcePackageRelease,
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
                 SourcePackagePublishingHistory.distroseries ==
                     self.distroseries,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
-                    self.sourcepackagename,
-                SourcePackagePublishingHistory.archiveID.is_in(
-                    self.distribution.all_distro_archive_ids)))
-
-        return IStore(SourcePackageRelease).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
-                SourcePackageRelease.version))
+                SourcePackagePublishingHistory.sourcepackagename ==
+                    self.sourcepackagename)
+            ).order_by(Desc(SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -644,7 +644,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         condition_clauses = ["""
         BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
-        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
