@@ -74,8 +74,10 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distributionsourcepackage \
-    import IDistributionSourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage
+)
+
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -170,8 +172,6 @@ class TestBugTaskCreation(TestCaseWithFactory):
 
         self.assertEqual(upstream_task.product, evolution)
         self.assertEqual(upstream_task.target, evolution)
-        # getPackageComponent only applies to tasks that specify package info.
-        self.assertEqual(upstream_task.getPackageComponent(), None)
 
     def test_distro_specific_bug(self):
         """A bug that needs to be fixed in a specific distro."""
@@ -187,8 +187,6 @@ class TestBugTaskCreation(TestCaseWithFactory):
 
         self.assertEqual(distro_task.distribution, a_distro)
         self.assertEqual(distro_task.target, a_distro)
-        # getPackageComponent only applies to tasks that specify package info.
-        self.assertEqual(distro_task.getPackageComponent(), None)
 
     def test_distroseries_specific_bug(self):
         """A bug that needs to be fixed in a specific distro series
@@ -206,8 +204,6 @@ class TestBugTaskCreation(TestCaseWithFactory):
 
         self.assertEqual(distro_series_task.distroseries, warty)
         self.assertEqual(distro_series_task.target, warty)
-        # getPackageComponent only applies to tasks that specify package info.
-        self.assertEqual(distro_series_task.getPackageComponent(), None)
 
     def test_createmany_bugtasks(self):
         """We can create a set of bugtasks around different targets"""
@@ -226,6 +222,66 @@ class TestBugTaskCreation(TestCaseWithFactory):
         self.assertEqual(tasks[0][2], warty)
         self.assertEqual(tasks[1][1], a_distro)
         self.assertEqual(tasks[2][0], evolution)
+
+
+class TestBugTaskCreationPackageComponent(TestCase):
+    """IBugTask contains a convenience method to look up archive component
+
+    Obviously, it only applies to tasks that specify package information.
+    """
+
+    def test_doesnot_apply(self):
+        """Tasks without package information should return None"""
+        bug_one = getUtility(IBugSet).get(1)
+        bugtaskset = getUtility(IBugTaskSet)
+        evolution = getUtility(IProductSet).get(5)
+        mark = getUtility(IPersonSet).getByEmail('mark@example.com')
+        productset = getUtility(IProductSet)
+        warty = getUtility(IDistroSeriesSet).get(1)
+
+        upstream_task = bugtaskset.createTask(
+            bug_one, mark, evolution,
+            status=BugTaskStatus.NEW,
+            importance=BugTaskImportance.MEDIUM)
+        self.assertEqual(upstream_task.getPackageComponent(), None)
+
+        a_distro = self.factory.makeDistribution(name='tubuntu')
+        distro_task = bugtaskset.createTask(
+            bug_one, mark, a_distro,
+            status=BugTaskStatus.NEW,
+            importance=BugTaskImportance.MEDIUM)
+        self.assertEqual(distro_task.getPackageComponent(), None)
+
+        distro_series_task = bugtaskset.createTask(
+            bug_one, mark, warty,
+            status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
+        self.assertEqual(distro_series_task.getPackageComponent(), None)
+
+        firefox = productset['firefox']
+        firefox_1_0 = firefox.getSeries("1.0")
+        productseries_task = bugtaskset.createTask(bug_one, mark, firefox_1_0)
+        self.assertEqual(productseries_task.getPackageComponent(), None)
+
+        debian_ff_task = bugtaskset.get(4)
+        self.assertEqual(debian_ff_task.getPackageComponent(), None)
+
+    def test_does_apply(self):
+        """Tasks with package information return the archive component.
+
+        And it only applies to tasks whose packages which are published in
+        IDistribution.currentseries (for bugtasks on IDistributions) or the
+        bugtask's series (for bugtasks on IDistroSeries)
+        """
+        login('foo.bar@canonical.com')
+        bugtaskset = getUtility(IBugTaskSet)
+        ubuntu_linux_task = bugtaskset.get(25)
+        self.assertTrue(
+            IDistributionSourcePackage.providedBy(ubuntu_linux_task.target))
+        self.assertEqual(ubuntu_linux_task.getPackageComponent().name, 'main')
+
+        distro_series_sp_task = bugtaskset.get(16)
+        self.assertEqual(distro_series_sp_task.getPackageComponent().name,
+            'main')
 
 
 class TestBugTaskTargets(TestCase):
@@ -257,7 +313,6 @@ class TestBugTaskTargets(TestCase):
         debian_ff_task = bugtaskset.get(4)
         self.assertTrue(
             IDistributionSourcePackage.providedBy(debian_ff_task.target))
-        self.assertEqual(debian_ff_task.getPackageComponent(), None)
 
         target = debian_ff_task.target
         self.assertEqual(target.distribution.name, u'debian')
@@ -266,7 +321,6 @@ class TestBugTaskTargets(TestCase):
         ubuntu_linux_task = bugtaskset.get(25)
         self.assertTrue(
             IDistributionSourcePackage.providedBy(ubuntu_linux_task.target))
-        self.assertEqual(ubuntu_linux_task.getPackageComponent().name, 'main')
 
         target = ubuntu_linux_task.target
         self.assertEqual(target.distribution.name, u'ubuntu')
@@ -277,9 +331,6 @@ class TestBugTaskTargets(TestCase):
         login('foo.bar@canonical.com')
         bugtaskset = getUtility(IBugTaskSet)
         distro_series_sp_task = bugtaskset.get(16)
-
-        self.assertEqual(distro_series_sp_task.getPackageComponent().name,
-            'main')
 
         expected_target = SourcePackage(
             distroseries=distro_series_sp_task.distroseries,
