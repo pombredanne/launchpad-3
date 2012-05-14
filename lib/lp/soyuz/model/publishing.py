@@ -457,6 +457,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     sponsor = ForeignKey(
         dbName='sponsor', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
+    packageupload = ForeignKey(
+        dbName='packageupload', foreignKey='PackageUpload', default=None)
 
     @property
     def package_creator(self):
@@ -1502,7 +1504,7 @@ class PublishingSet:
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,
-                             creator=None, sponsor=None):
+                             creator=None, sponsor=None, packageupload=None):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
@@ -1520,7 +1522,8 @@ class PublishingSet:
             datecreated=UTC_NOW,
             ancestor=ancestor,
             creator=creator,
-            sponsor=sponsor)
+            sponsor=sponsor,
+            packageupload=packageupload)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:

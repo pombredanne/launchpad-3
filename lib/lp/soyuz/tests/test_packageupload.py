@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -248,7 +248,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
 
         expected_subject = (
-            '[ubuntutest/breezy-autotest-security]\n\t'
+            '[ubuntutest/breezy-autotest-security]\n '
             'dist-upgrader_20060302.0120_all.tar.gz, '
             'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
@@ -362,6 +362,16 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.addSource(spr)
         self.assertEqual(spr.sourcepackagename.name, upload.package_name)
         self.assertEqual(spr.version, upload.package_version)
+
+    def test_publish_sets_packageupload(self):
+        # Publishing a PackageUploadSource will pass itself to the source
+        # publication that was created.
+        upload = self.factory.makeSourcePackageUpload()
+        self.factory.makeComponentSelection(
+            upload.distroseries, upload.sourcepackagerelease.component)
+        upload.setAccepted()
+        [spph] = upload.realiseUpload()
+        self.assertEqual(spph.packageupload, upload)
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):

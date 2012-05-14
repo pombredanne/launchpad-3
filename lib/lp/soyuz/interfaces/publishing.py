@@ -499,7 +499,17 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         Reference(
             IPerson,
             title=_('Publication sponsor'),
-            description=_('The IPerson who sponsored the creation of'
+            description=_('The IPerson who sponsored the creation of '
+                'this publication.'),
+            required=False, readonly=True
+        ))
+
+    packageupload = exported(
+        Reference(
+            # Really IPackageUpload, fixed in _schema_circular_imports.
+            Interface,
+            title=_('Package upload'),
+            description=_('The Package Upload that caused the creation of '
                 'this publication.'),
             required=False, readonly=True
         ))
@@ -1023,6 +1033,8 @@ class IPublishingSet(Interface):
             sourcepackagerelease's creator will be used.
         :param sponsor: An optional `IPerson` indicating the sponsor of this
             publication.
+        :param packageupload: An optional `IPackageUpload` that caused this
+            publication to be created.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
