@@ -131,31 +131,11 @@ from lp.testing.matchers import HasQueryCount
 from storm.store import Store
 
 
-BugData = namedtuple("BugData", [
-    'owner',
-    'distro',
-    'distro_release',
-    'source_package',
-    'bug',
-    'generic_task',
-    'series_task',
-])
-
+BugData = namedtuple("BugData", [ 'owner', 'distro', 'distro_release',
+'source_package', 'bug', 'generic_task', 'series_task', ])
 
 ConjoinedData = namedtuple("ConjoinedData", ['alsa_utils', 'generic_task',
     'devel_focus_task'])
-
-def login_foobar():
-    """Helper to get the foobar logged in user"""
-    launchbag = getUtility(ILaunchBag)
-    login('foo.bar@canonical.com')
-    return launchbag.user
-
-
-def login_nopriv():
-    launchbag = getUtility(ILaunchBag)
-    login("no-priv@canonical.com")
-    return launchbag.user
 
 
 class TestBugTaskAdaptation(TestCase):
@@ -496,7 +476,9 @@ class TestBugTaskPrivacy(TestCase):
 
     def test_bugtask_privacy(self):
         # Let's log in as the user Foo Bar (to be allowed to edit bugs):
-        foobar = login_foobar()
+        launchbag = getUtility(ILaunchBag)
+        login('foo.bar@canonical.com')
+        foobar = launchbag.user
 
         # Mark one of the Firefox bugs private. While we do this, we're also
         # going to subscribe the Ubuntu team to the bug report to help
@@ -521,7 +503,9 @@ class TestBugTaskPrivacy(TestCase):
         # If we now login as someone who was neither implicitly nor explicitly
         # subscribed to this bug, e.g. No Privileges Person, they will not be
         # able to access or set properties of the bugtask.
-        mr_no_privs = login_nopriv()
+        launchbag = getUtility(ILaunchBag)
+        login("no-priv@canonical.com")
+        mr_no_privs = launchbad.user
 
         with ExpectedException(zopeUnauthorized):
             bug_upstream_firefox_crashes.status
@@ -2550,8 +2534,8 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
 
     def test_conjoined_tasks_sync(self):
         """Conjoined properties are sync'd."""
-        login_foobar()
         launchbag = getUtility(ILaunchBag)
+        login('foo.bar@canonical.com')
 
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
