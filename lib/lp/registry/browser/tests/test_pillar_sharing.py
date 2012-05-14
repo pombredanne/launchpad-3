@@ -300,7 +300,7 @@ class PillarSharingViewTestMixin:
             picker_config = simplejson.loads(view.json_sharing_picker_config)
             self.assertTrue('vocabulary_filters' in picker_config)
             self.assertEqual(
-                'Grant access to project artifacts',
+                'Share project information',
                 picker_config['header'])
             self.assertEqual(
                 'Search for user or exclusive team with whom to share',

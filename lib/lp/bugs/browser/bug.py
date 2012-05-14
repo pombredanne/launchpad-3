@@ -100,7 +100,10 @@ from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
-from lp.services.searchbuilder import any
+from lp.services.searchbuilder import (
+    any,
+    not_equals,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -422,7 +425,7 @@ class MaloneView(LaunchpadFormView):
         """Return the five most recently fixed bugs."""
         params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
-            orderby='-date_closed')
+            date_closed=not_equals(None), orderby='-date_closed')
         return getUtility(IBugSet).getDistinctBugsForBugTasks(
             self.context.searchTasks(params), self.user, limit=5)
 
