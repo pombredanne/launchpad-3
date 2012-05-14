@@ -1199,13 +1199,6 @@ class IBugSet(Interface):
         If it can't be found, NotFoundError will be raised.
         """
 
-    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided.
-
-        To search as an anonymous user, the user argument passed
-        should be None.
-        """
-
     def queryByRemoteBug(bugtracker, remotebug):
         """Find one or None bugs for the BugWatch and bug tracker.
 

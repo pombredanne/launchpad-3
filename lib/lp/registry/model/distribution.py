@@ -1249,9 +1249,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 # timeouts).
                 SourcePackagePublishingHistory.archiveID.is_in(
                     self.all_distro_archive_ids),
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename == sourcepackagename,
+                SourcePackagePublishingHistory.sourcepackagename ==
+                    sourcepackagename,
                 SourcePackagePublishingHistory.status.is_in(
                     (PackagePublishingStatus.PUBLISHED,
                      PackagePublishingStatus.PENDING)
