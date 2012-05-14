@@ -96,7 +96,10 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.distribution import (
@@ -1524,7 +1527,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND Bugtask.sourcepackagename = spn.id
                 AND Bugtask.distroseries IS NULL
                 AND Bugtask.status IN %(unresolved)s
-                AND Bug.private = 'F'
+                AND Bug.information_type IN %(public_types)s
                 AND Bug.duplicateof IS NULL
                 AND spn.name NOT IN %(excluded_packages)s
             GROUP BY SPN.id, SPN.name
@@ -1536,6 +1539,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'distro': self.id,
                'unresolved': quote(DB_UNRESOLVED_BUGTASK_STATUSES),
                'excluded_packages': quote(exclude_packages),
+               'public_types': quote(PUBLIC_INFORMATION_TYPES),
                 })
         counts = cur.fetchall()
         cur.close()
