@@ -10,8 +10,7 @@ First, set all the bugs to private.
     >>> import transaction
     >>> from lp.bugs.model.bug import Bug
     >>> from lp.registry.enums import InformationType
-    >>> IStore(Bug).find(Bug).set(
-    ...     information_type=InformationType.USERDATA, _private=True)
+    >>> IStore(Bug).find(Bug).set(information_type=InformationType.USERDATA)
     >>> transaction.commit()
 
 There should be zero entries in these feeds, since all the bugs are private.
