@@ -131,7 +131,7 @@ from lp.testing.matchers import HasQueryCount
 from storm.store import Store
 
 
-BugData = namedtuple("BugData", [ 'owner', 'distro', 'distro_release',
+BugData = namedtuple("BugData", ['owner', 'distro', 'distro_release',
 'source_package', 'bug', 'generic_task', 'series_task', ])
 
 ConjoinedData = namedtuple("ConjoinedData", ['alsa_utils', 'generic_task',
@@ -2305,19 +2305,6 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         return BugData(owner, distro, distro_release, source_package, bug,
             generic_task, series_task)
 
-    def _setupConjoinedTask(self, orig):
-        """Get the conjoind we're running against."""
-        login('foo.bar@canonical.com')
-        launchbag = getUtility(ILaunchBag)
-        alsa_utils = getUtility(IProductSet)['alsa-utils']
-        generic_task = getUtility(IBugTaskSet).createTask(
-            orig.bug, launchbag.user, alsa_utils)
-        devel_focus_task = getUtility(IBugTaskSet).createTask(
-            orig.bug, launchbag.user,
-            alsa_utils.getSeries("trunk"))
-
-        return ConjoinedData(alsa_utils, generic_task, devel_focus_task)
-
     def test_editing_generic_status_reflects_upon_conjoined_master(self):
         # If a change is made to the status of a conjoined slave
         # (generic) task, that change is reflected upon the conjoined
@@ -2376,7 +2363,15 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
     def test_conjoined_milestone(self):
         """Milestone attribute will sync across conjoined tasks."""
         data = self._setupBugData()
-        conjoined, con_generic_task, con_devel_task = self._setupConjoinedTask(data)
+
+        launchbag = getUtility(ILaunchBag)
+        conjoined = getUtility(IProductSet)['alsa-utils']
+        con_generic_task = getUtility(IBugTaskSet).createTask(
+            data.bug, launchbag.user, conjoined)
+        con_devel_task = getUtility(IBugTaskSet).createTask(
+            data.bug, launchbag.user,
+            conjoined.getSeries("trunk"))
+
         test_milestone = conjoined.development_focus.newMilestone("test")
         noway_milestone = conjoined.development_focus.newMilestone("noway")
 
@@ -2531,7 +2526,6 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         self.assertIsNotNone(generic_netapplet_task.date_closed)
         self.assertIsNotNone(current_series_netapplet_task.date_closed)
 
-
     def test_conjoined_tasks_sync(self):
         """Conjoined properties are sync'd."""
         launchbag = getUtility(ILaunchBag)
@@ -2630,6 +2624,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
 # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 # When feature flag code is removed, delete these tests (up to "# END
 # TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
+
 
 class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""
