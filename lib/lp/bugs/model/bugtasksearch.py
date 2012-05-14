@@ -1405,9 +1405,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
-    :param private_only: If a user is specified, this parameter determines
-        whether only private bugs will be filtered. If True, the returned
-        filter omits the "Bug.private IS FALSE" clause.
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
