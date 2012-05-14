@@ -522,7 +522,12 @@ class TestBugTaskBadges(TestCaseWithFactory):
 
 
 class TestBugTaskPrivacy(TestCase):
-    """Verify that the bug is either private or public."""
+    """Verify that the bug is either private or public.
+
+    XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
+    and do to much work. They should be split into simpler and better unit
+    tests.
+    """
 
     layer = DatabaseFunctionalLayer
 
@@ -1229,6 +1234,89 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
         self.assertEqual(
             [1, 2],
             [bugtask.bug.id for bugtask in bugtasks])
+
+
+class TestSimilarBugs(TestCaseWithFactory):
+    """It's possible to get a list of similar bugs."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _setupFirefoxBugTask(self):
+        """Helper to init the firefox bugtask bits."""
+        login('foo.bar@canonical.com')
+        firefox = getUtility(IProductSet).getByName("firefox")
+        new_ff_bug = self.factory.makeBug(product=firefox, title="Firefox")
+        ff_bugtask = new_ff_bug.bugtasks[0]
+        return firefox, new_ff_bug, ff_bugtask
+
+    def test_access_similar_bugs(self):
+        """The similar bugs property returns a list of similar bugs."""
+        firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
+        sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        similar_bugs = ff_bugtask.findSimilarBugs(user=sample_person)
+        similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
+
+        self.assertEqual(similar_bugs[0].id, 1)
+        self.assertEqual(similar_bugs[0].title, 'Firefox does not support SVG')
+        self.assertEqual(similar_bugs[1].id, 5)
+        self.assertEqual(
+            similar_bugs[1].title,
+            'Firefox install instructions should be complete')
+
+    def test_similar_bugs_for_distribution(self):
+        """This also works for distributions."""
+        firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
+        sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        ubuntu_bugtask = self.factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
+        similar_bugs = ubuntu_bugtask.findSimilarBugs(user=sample_person)
+        similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
+
+        self.assertEqual(similar_bugs[0].id, 1)
+        self.assertEqual(similar_bugs[0].title, 'Firefox does not support SVG')
+
+    def test_with_sourcepackages(self):
+        """This also works for SourcePackages."""
+        firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
+        sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        a_ff_bug = self.factory.makeBug(product=firefox, title="a Firefox")
+        firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+        firefox_package_bugtask = self.factory.makeBugTask(
+            bug=a_ff_bug, target=firefox_package)
+
+        similar_bugs = firefox_package_bugtask.findSimilarBugs(
+            user=sample_person)
+        similar_bugs  = sorted(similar_bugs, key=attrgetter('id'))
+        self.assertEqual(similar_bugs[0].id, 1)
+        self.assertEqual(similar_bugs[0].title, 'Firefox does not support SVG')
+
+    def test_private_bugs_do_not_show(self):
+        """Private bugs won't show up in the list of similar bugs.
+
+        Exception: the user is a direct subscriber. We'll demonstrate this by
+        creating a new bug against Firefox.
+        """
+        firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
+        second_ff_bug = self.factory.makeBug(
+            product=firefox, title="Yet another Firefox bug")
+        no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+        simliar_bugs =  sorted(similar_bugs, key=attrgetter('id'))
+
+        self.assertEqual(len(similar_bugs), 3)
+
+        # If we mark the new bug as private, it won't appear in the similar
+        # bugs list for no_priv any more, since they're not a direct
+        # subscriber.
+        launchbag = getUtility(ILaunchBag)
+        login('foo.bar@canonical.com')
+        foobar = launchbag.user
+        second_ff_bug.setPrivate(True, foobar)
+        similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+        similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
+
+        self.assertEqual(len(similar_bugs), 2)
 
 
 class TestBugTaskPermissionsToSetAssigneeMixin:
@@ -2327,6 +2415,11 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
     * date_triaged
     * date_fix_committed
     * date_fix_released
+
+
+    XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
+    and do to much work. They should be split into simpler and better unit
+    tests.
     """
 
     layer = DatabaseFunctionalLayer
@@ -3684,6 +3777,10 @@ class TestTargetNameCache(TestCase):
     `BugTask.bugtargetdisplayname` simply returns `targetnamecache`, and
     the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
     is used here.
+
+    XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
+    and do to much work. They should be split into simpler and better unit
+    tests.
     """
 
     layer = DatabaseFunctionalLayer

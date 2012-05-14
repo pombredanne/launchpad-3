@@ -22,13 +22,6 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-def login_foobar():
-    """Helper to get the foobar logged in user"""
-    launchbag = getUtility(ILaunchBag)
-    login('foo.bar@canonical.com')
-    return launchbag.user
-
-
 class TestCountsForProducts(TestCase):
     """Test BugTaskSet.getOpenBugTasksPerProduct"""
 
@@ -40,7 +33,9 @@ class TestCountsForProducts(TestCase):
         # the user given as a parameter is allowed to see. If a product,
         # such as id=3 does not have any open bugs, it will not appear
         # in the result.
-        foobar = login_foobar()
+        launchbag = getUtility(ILaunchBag)
+        login('foo.bar@canonical.com')
+        foobar = launchbag.user
 
         productset = getUtility(IProductSet)
         products = [productset.get(id) for id in (3, 5, 20)]
