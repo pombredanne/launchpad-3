@@ -538,6 +538,23 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "Regards,\n"
             "The Launchpad team")
 
+    def testNoEmailOnCancellationForSuppressedArchive(self):
+        """No email should be sent if the archive has
+        suppress_subscription_notifications set."""
+        subs, tokens = self.setupDummyTokens()
+        token = tokens[0]
+        token.archive.suppress_subscription_notifications = True
+        script = self.getScript()
+
+        # Clear out any existing email.
+        pop_notifications()
+
+        script.sendCancellationEmail(token)
+
+        num_emails = len(stub.test_emails)
+        self.assertEqual(
+            num_emails, 0, "Expected 0 emails, got %s" % num_emails)
+
     def test_getNewPrivatePPAs_no_previous_run(self):
         # All private PPAs are returned if there was no previous run.
         # This happens even if they have no tokens.

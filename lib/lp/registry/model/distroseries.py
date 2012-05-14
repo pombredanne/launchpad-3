@@ -738,49 +738,27 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def updatePackageCount(self):
         """See `IDistroSeries`."""
+        self.sourcecount = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory.sourcepackagenameID,
+            SourcePackagePublishingHistory.distroseries == self,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            SourcePackagePublishingHistory.pocket ==
+                PackagePublishingPocket.RELEASE).config(distinct=True).count()
 
-        # first update the source package count
-        query = """
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status IN %s AND
-            SourcePackagePublishingHistory.pocket = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id
-            """ % sqlvalues(
-                    self,
-                    self.distribution.all_distro_archive_ids,
-                    active_publishing_status,
-                    PackagePublishingPocket.RELEASE)
-        self.sourcecount = SourcePackageName.select(
-            query, distinct=True,
-            clauseTables=['SourcePackageRelease',
-                          'SourcePackagePublishingHistory']).count()
-
-        # next update the binary count
-        clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
-                        'BinaryPackageRelease']
-        query = """
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status IN %s AND
-            BinaryPackagePublishingHistory.pocket = %s AND
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s
-            """ % sqlvalues(
-                    active_publishing_status,
-                    PackagePublishingPocket.RELEASE,
-                    self,
-                    self.distribution.all_distro_archive_ids)
-        ret = BinaryPackageName.select(
-            query, distinct=True, clauseTables=clauseTables).count()
-        self.binarycount = ret
+        self.binarycount = IStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory.binarypackagenameID,
+            DistroArchSeries.distroseries == self,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackagePublishingHistory.pocket ==
+                PackagePublishingPocket.RELEASE).config(distinct=True).count()
 
     @property
     def architecturecount(self):
@@ -1201,9 +1179,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives = self.distribution.getArchiveIDList(archive)
 
         clause = """
-            SourcePackagePublishingHistory.sourcepackagerelease=
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename=
+            SourcePackagePublishingHistory.sourcepackagename=
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.distroseries=%s AND
             SourcePackagePublishingHistory.archive IN %s AND
@@ -1217,7 +1193,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 % sqlvalues(component))
 
         orderBy = ['SourcePackageName.name']
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        clauseTables = ['SourcePackageName']
 
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)

@@ -779,9 +779,6 @@ class IBugEdit(Interface):
     def removeWatch(bug_watch, owner):
         """Remove a bug watch from the bug."""
 
-    def addManyTasks(owners, targets):
-        """Create multiple bug tasks on this bug."""
-
     @call_with(owner=REQUEST_USER)
     @operation_parameters(target=copy_field(IBugTask['target']))
     @export_factory_operation(IBugTask, [])
@@ -1200,13 +1197,6 @@ class IBugSet(Interface):
         """Get a specific bug by its ID or nickname
 
         If it can't be found, NotFoundError will be raised.
-        """
-
-    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided.
-
-        To search as an anonymous user, the user argument passed
-        should be None.
         """
 
     def queryByRemoteBug(bugtracker, remotebug):

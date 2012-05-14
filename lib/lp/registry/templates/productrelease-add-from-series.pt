@@ -56,9 +56,7 @@
                 next_step: add_milestone_to_menu,
                 activate_node: create_milestone_link
                 };
-            if (!Y.UA.ie) {
-                Y.lp.registry.milestoneoverlay.attach_widget(config);
-            }
+            Y.lp.registry.milestoneoverlay.attach_widget(config);
         });
     });
   -->
