@@ -22,7 +22,7 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
-from zope.security.interfaces import Unauthorized as zopeUnauthorized
+from zope.security.interfaces import Unauthorized as ZopeUnAuthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import ServiceUsage
@@ -150,7 +150,7 @@ class TestBugTaskAdaptation(TestCase):
         bugtask_four = getUtility(IBugTaskSet).get(4)
         bug = IBug(bugtask_four)
         self.assertEqual(bug.title,
-            u'Firefox does not support SVG')
+                         u'Firefox does not support SVG')
 
 
 class TestBugTaskCreation(TestCaseWithFactory):
@@ -214,8 +214,10 @@ class TestBugTaskCreation(TestCaseWithFactory):
         bug_many = getUtility(IBugSet).get(4)
 
         a_distro = self.factory.makeDistribution(name='tubuntu')
-        taskset = bugtaskset.createManyTasks(bug_many, mark,
-            [evolution, a_distro, warty], status=BugTaskStatus.FIXRELEASED)
+        taskset = bugtaskset.createManyTasks(
+            bug_many, mark,
+            [evolution, a_distro, warty],
+            status=BugTaskStatus.FIXRELEASED)
         tasks = [(t.product, t.distribution, t.distroseries) for t in taskset]
         tasks.sort()
 
@@ -281,7 +283,7 @@ class TestBugTaskCreationPackageComponent(TestCase):
 
         distro_series_sp_task = bugtaskset.get(16)
         self.assertEqual(distro_series_sp_task.getPackageComponent().name,
-            'main')
+                         'main')
 
 
 class TestBugTaskTargets(TestCase):
@@ -339,9 +341,9 @@ class TestBugTaskTargets(TestCase):
         self.assertTrue(
             ISourcePackage.providedBy(distro_series_sp_task.target))
         self.assertEqual(got_target.distroseries,
-            expected_target.distroseries)
+                         expected_target.distroseries)
         self.assertEqual(got_target.sourcepackagename,
-            expected_target.sourcepackagename)
+                         expected_target.sourcepackagename)
 
 
 class TestBugTaskTargetName(TestCase):
@@ -391,14 +393,14 @@ class TestEditingBugTask(TestCase):
 
         # An anonymous user cannot edit the bugtask.
         login(ANONYMOUS)
-        with ExpectedException(zopeUnauthorized, ''):
-            upstream_task.transitionToStatus(
-                BugTaskStatus.CONFIRMED, getUtility(ILaunchBag.user))
+        with ExpectedException(ZopeUnAuthorized, ''):
+            upstream_task.transitionToStatus(BugTaskStatus.CONFIRMED,
+                                             getUtility(ILaunchBag.user))
 
         # A logged in user can edit the upstream bugtask.
         login('jeff.waugh@ubuntulinux.com')
-        upstream_task.transitionToStatus(
-            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+        upstream_task.transitionToStatus(BugTaskStatus.FIXRELEASED,
+                                         getUtility(ILaunchBag).user)
 
     def test_edit_distro_bugtasks(self):
         """Any logged-in user can edit tasks filed on distros
@@ -412,20 +414,19 @@ class TestEditingBugTask(TestCase):
         distro_task = bugtaskset.get(25)
 
         # Anonymous cannot change the status.
-        with ExpectedException(zopeUnauthorized):
+        with ExpectedException(ZopeUnAuthorized):
             distro_task.transitionToStatus(BugTaskStatus.FIXRELEASED,
-                getUtility(ILaunchBag).user)
+                                           getUtility(ILaunchBag).user)
 
         # Anonymous cannot change the assignee.
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        with ExpectedException(zopeUnauthorized):
+        with ExpectedException(ZopeUnAuthorized):
             distro_task.transitionToAssignee(sample_person)
 
         login('test@canonical.com')
 
-        distro_task.transitionToStatus(
-            BugTaskStatus.FIXRELEASED,
-            getUtility(ILaunchBag).user)
+        distro_task.transitionToStatus(BugTaskStatus.FIXRELEASED,
+                                       getUtility(ILaunchBag).user)
         distro_task.transitionToAssignee(sample_person)
 
 
@@ -451,7 +452,8 @@ class TestBugTaskTags(TestCase):
         tags_by_task = getUtility(IBugTaskSet).getBugTaskTags([
             some_bugtask, another_bugtask])
 
-        self.assertEqual(tags_by_task,
+        self.assertEqual(
+            tags_by_task,
             {3: [u'bar', u'foo'], 6: [u'baz', u'bop']})
 
 
@@ -487,13 +489,13 @@ class TestBugTaskBadges(TestCaseWithFactory):
 
         self.assertEqual(get_badge_properties(badge_properties),
            ['Properties for bug 2:',
-           ' has_branch: False',
-           ' has_patch: False',
-           ' has_specification: False',
-           'Properties for bug 3:',
-           ' has_branch: False',
-           ' has_patch: False',
-           ' has_specification: False'])
+            ' has_branch: False',
+            ' has_patch: False',
+            ' has_specification: False',
+            'Properties for bug 3:',
+            ' has_branch: False',
+            ' has_patch: False',
+            ' has_specification: False'])
 
         # a specification gets linked...
         spec = getUtility(ISpecificationSet).all_specifications[0]
@@ -508,15 +510,15 @@ class TestBugTaskBadges(TestCaseWithFactory):
         badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             [some_bugtask, another_bugtask])
         self.assertEqual(get_badge_properties(badge_properties), [
-        'Properties for bug 2:',
-        ' has_branch: False',
-        ' has_patch: False',
-        ' has_specification: True',
-        'Properties for bug 3:',
-        ' has_branch: True',
-        ' has_patch: False',
-        ' has_specification: False',
-         ])
+            'Properties for bug 2:',
+            ' has_branch: False',
+            ' has_patch: False',
+            ' has_specification: True',
+            'Properties for bug 3:',
+            ' has_branch: True',
+            ' has_patch: False',
+            ' has_specification: False',
+        ])
 
 
 class TestBugTaskPrivacy(TestCase):
@@ -540,13 +542,13 @@ class TestBugTaskPrivacy(TestCase):
         bug_upstream_firefox_crashes.bug.subscribe(ubuntu_team, ubuntu_team)
 
         old_state = Snapshot(bug_upstream_firefox_crashes.bug,
-            providing=IBug)
+                             providing=IBug)
         self.assertTrue(bug_upstream_firefox_crashes.bug.setPrivate(True,
-            foobar))
+                                                                    foobar))
 
-        bug_set_private = ObjectModifiedEvent(
-            bug_upstream_firefox_crashes.bug, old_state,
-            ["id", "title", "private"])
+        bug_set_private = ObjectModifiedEvent(bug_upstream_firefox_crashes.bug,
+                                              old_state,
+                                              ["id", "title", "private"])
         notify(bug_set_private)
         flush_database_updates()
 
@@ -557,10 +559,10 @@ class TestBugTaskPrivacy(TestCase):
         login("no-priv@canonical.com")
         mr_no_privs = launchbag.user
 
-        with ExpectedException(zopeUnauthorized):
+        with ExpectedException(ZopeUnAuthorized):
             bug_upstream_firefox_crashes.status
 
-        with ExpectedException(zopeUnauthorized):
+        with ExpectedException(ZopeUnAuthorized):
             bug_upstream_firefox_crashes.transitionToStatus(
                 BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
 
@@ -580,8 +582,7 @@ class TestBugTaskPrivacy(TestCase):
         # is targeted and No Privileges Person will have access to the private
         # bug
         aps = getUtility(IAccessPolicySource)
-        [policy] = aps.find(
-            [(upstream_mozilla, InformationType.USERDATA)])
+        [policy] = aps.find([(upstream_mozilla, InformationType.USERDATA)])
         apgs = getUtility(IAccessPolicyGrantSource)
         apgs.grant([(policy, mr_no_privs, ubuntu_team)])
         bugtasks = upstream_mozilla.searchTasks(params)
@@ -597,8 +598,7 @@ class TestBugTaskPrivacy(TestCase):
         login("mark@example.com")
 
         # And note that he can access and set the bugtask attributes:
-        self.assertEqual(bug_upstream_firefox_crashes.status.title,
-            'New')
+        self.assertEqual(bug_upstream_firefox_crashes.status.title, 'New')
         bug_upstream_firefox_crashes.transitionToStatus(
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
@@ -608,12 +608,12 @@ class TestBugTaskPrivacy(TestCase):
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         params = BugTaskSearchParams(
             status=any(BugTaskStatus.NEW, BugTaskStatus.CONFIRMED),
-                user=no_priv)
+            user=no_priv)
 
         firefox = getUtility(IProductSet)['firefox']
         firefox_bugtasks = firefox.searchTasks(params)
-        self.assertEqual([bugtask.bug.id for bugtask in firefox_bugtasks],
-            [1, 4, 5])
+        self.assertEqual(
+            [bugtask.bug.id for bugtask in firefox_bugtasks], [1, 4, 5])
 
         # But if we add No Privileges Person to the Ubuntu Team, and because
         # the Ubuntu Team *is* subscribed to the bug, No Privileges Person
@@ -625,10 +625,11 @@ class TestBugTaskPrivacy(TestCase):
         login("no-priv@canonical.com")
         params = BugTaskSearchParams(
             status=any(BugTaskStatus.NEW, BugTaskStatus.CONFIRMED),
-                user=foobar)
+            user=foobar)
+
         firefox_bugtasks = firefox.searchTasks(params)
-        self.assertEqual([bugtask.bug.id for bugtask in firefox_bugtasks],
-            [1, 4, 5, 6])
+        self.assertEqual(
+            [bugtask.bug.id for bugtask in firefox_bugtasks], [1, 4, 5, 6])
 
         # Privacy and Launchpad Admins
         # ----------------------------
@@ -644,14 +645,13 @@ class TestBugTaskPrivacy(TestCase):
                                                 BugTaskStatus.CONFIRMED),
                                      user=debonzi)
         firefox_bugtasks = firefox.searchTasks(params)
-        self.assertEqual([bugtask.bug.id for bugtask in firefox_bugtasks],
-            [1, 4, 5, 6])
+        self.assertEqual(
+            [bugtask.bug.id for bugtask in firefox_bugtasks], [1, 4, 5, 6])
 
         # Trying to retrieve the bug directly will work fine:
         bug_upstream_firefox_crashes = getUtility(IBugTaskSet).get(15)
         # As will attribute access:
-        self.assertEqual(bug_upstream_firefox_crashes.status.title,
-            'New')
+        self.assertEqual(bug_upstream_firefox_crashes.status.title, 'New')
 
         # And attribute setting:
         bug_upstream_firefox_crashes.transitionToStatus(
@@ -683,8 +683,7 @@ class TestBugTaskDelta(TestCaseWithFactory):
         names = set(
             name for interface in providedBy(delta) for name in interface)
         for name in names:
-            self.assertEquals(
-                getattr(delta, name), expected_delta.get(name))
+            self.assertEquals(getattr(delta, name), expected_delta.get(name))
 
     def test_get_bugwatch_delta(self):
         # Exercise getDelta() with a change to bugwatch.
@@ -710,17 +709,16 @@ class TestBugTaskDelta(TestCaseWithFactory):
         new_product = self.factory.makeProduct(owner=user)
         bug_task.transitionToTarget(new_product)
 
-        self.check_delta(
-            bug_task_before_modification, bug_task,
-            target=dict(old=product, new=new_product))
+        self.check_delta(bug_task_before_modification, bug_task,
+                         target=dict(old=product, new=new_product))
 
     def test_get_milestone_delta(self):
         # Exercise getDelta() with a change to milestone.
         user = self.factory.makePerson()
         product = self.factory.makeProduct(owner=user)
         bug_task = self.factory.makeBugTask(target=product)
-        bug_task_before_modification = Snapshot(
-            bug_task, providing=providedBy(bug_task))
+        bug_task_before_modification = Snapshot(bug_task,
+                                                providing=providedBy(bug_task))
 
         milestone = self.factory.makeMilestone(product=product)
         bug_task.milestone = milestone
@@ -1693,9 +1691,8 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Mark an upstream task on bug #1 "Fix Released"
         bug_one = bugset.get(1)
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
-        self.assertEqual(
-            ServiceUsage.LAUNCHPAD,
-            firefox_upstream.product.bug_tracking_usage)
+        self.assertEqual(ServiceUsage.LAUNCHPAD,
+                         firefox_upstream.product.bug_tracking_usage)
         self.old_firefox_status = firefox_upstream.status
         firefox_upstream.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
@@ -1705,8 +1702,8 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         bug_nine = bugset.get(9)
         thunderbird_upstream = self._getBugTaskByTarget(bug_nine, thunderbird)
         self.old_thunderbird_status = thunderbird_upstream.status
-        thunderbird_upstream.transitionToStatus(
-            BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
+        thunderbird_upstream.transitionToStatus(BugTaskStatus.FIXCOMMITTED,
+                                                getUtility(ILaunchBag).user)
         self.thunderbird_upstream = thunderbird_upstream
 
         # Add a watch to a Debian bug for bug #2, and mark the task Fix
@@ -1722,8 +1719,8 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Associate the watch to a Fix Released task.
         debian = getUtility(IDistributionSet).getByName("debian")
         debian_firefox = debian.getSourcePackage("mozilla-firefox")
-        bug_two_in_debian_firefox = self._getBugTaskByTarget(
-            bug_two, debian_firefox)
+        bug_two_in_debian_firefox = self._getBugTaskByTarget(bug_two,
+                                                            debian_firefox)
         bug_two_in_debian_firefox.bugwatch = watch_debbugs_327452
         bug_two_in_debian_firefox.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
@@ -2337,10 +2334,10 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
     def _setupBugData(self):
         super(TestConjoinedBugTasks, self).setUp()
         owner = self.factory.makePerson()
-        distro = self.factory.makeDistribution(
-            name="eggs", owner=owner, bug_supervisor=owner)
-        distro_release = self.factory.makeDistroSeries(
-            distribution=distro, registrant=owner)
+        distro = self.factory.makeDistribution(name="eggs", owner=owner,
+                                               bug_supervisor=owner)
+        distro_release = self.factory.makeDistroSeries(distribution=distro,
+                                                       registrant=owner)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename="spam", distroseries=distro_release)
         bug = self.factory.makeBug(
@@ -2348,12 +2345,11 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             sourcepackagename=source_package.sourcepackagename,
             owner=owner)
         with person_logged_in(owner):
-            nomination = bug.addNomination(
-                owner, distro_release)
+            nomination = bug.addNomination(owner, distro_release)
             nomination.approve(owner)
             generic_task, series_task = bug.bugtasks
         return BugData(owner, distro, distro_release, source_package, bug,
-            generic_task, series_task)
+                       generic_task, series_task)
 
     def test_editing_generic_status_reflects_upon_conjoined_master(self):
         # If a change is made to the status of a conjoined slave
@@ -2363,16 +2359,16 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         with person_logged_in(data.owner):
             # Both the generic task and the series task start off with the
             # status of NEW.
-            self.assertEqual(
-                BugTaskStatus.NEW, data.generic_task.status)
-            self.assertEqual(
-                BugTaskStatus.NEW, data.series_task.status)
+            self.assertEqual(BugTaskStatus.NEW,
+                             data.generic_task.status)
+            self.assertEqual(BugTaskStatus.NEW,
+                             data.series_task.status)
             # Transitioning the generic task to CONFIRMED.
-            data.generic_task.transitionToStatus(
-                BugTaskStatus.CONFIRMED, data.owner)
+            data.generic_task.transitionToStatus(BugTaskStatus.CONFIRMED,
+                                                 data.owner)
             # Also transitions the series_task.
-            self.assertEqual(
-                BugTaskStatus.CONFIRMED, data.series_task.status)
+            self.assertEqual(BugTaskStatus.CONFIRMED,
+                             data.series_task.status)
 
     def test_editing_generic_importance_reflects_upon_conjoined_master(self):
         # If a change is made to the importance of a conjoined slave
@@ -2380,10 +2376,10 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         # master.
         data = self._setupBugData()
         with person_logged_in(data.owner):
-            data.generic_task.transitionToImportance(
-                BugTaskImportance.HIGH, data.owner)
-            self.assertEqual(
-                BugTaskImportance.HIGH, data.series_task.importance)
+            data.generic_task.transitionToImportance(BugTaskImportance.HIGH,
+                                                     data.owner)
+            self.assertEqual(BugTaskImportance.HIGH,
+                             data.series_task.importance)
 
     def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
         # If a change is made to the assignee of a conjoined slave
@@ -2392,8 +2388,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         data = self._setupBugData()
         with person_logged_in(data.owner):
             data.generic_task.transitionToAssignee(data.owner)
-            self.assertEqual(
-                data.owner, data.series_task.assignee)
+            self.assertEqual(data.owner, data.series_task.assignee)
 
     def test_editing_generic_package_reflects_upon_conjoined_master(self):
         # If a change is made to the source package of a conjoined slave
@@ -2407,8 +2402,8 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         with person_logged_in(data.owner):
             data.generic_task.transitionToTarget(
                 data.distro.getSourcePackage(source_package_name))
-            self.assertEqual(
-                source_package_name, data.series_task.sourcepackagename)
+            self.assertEqual(source_package_name,
+                             data.series_task.sourcepackagename)
 
     def test_conjoined_milestone(self):
         """Milestone attribute will sync across conjoined tasks."""
@@ -2416,11 +2411,11 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         login('foo.bar@canonical.com')
         launchbag = getUtility(ILaunchBag)
         conjoined = getUtility(IProductSet)['alsa-utils']
-        con_generic_task = getUtility(IBugTaskSet).createTask(
-            data.bug, launchbag.user, conjoined)
+        con_generic_task = getUtility(IBugTaskSet).createTask(data.bug,
+                                                              launchbag.user,
+                                                              conjoined)
         con_devel_task = getUtility(IBugTaskSet).createTask(
-            data.bug, launchbag.user,
-            conjoined.getSeries("trunk"))
+            data.bug, launchbag.user, conjoined.getSeries("trunk"))
 
         test_milestone = conjoined.development_focus.newMilestone("test")
         noway_milestone = conjoined.development_focus.newMilestone("noway")
@@ -2430,29 +2425,22 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         self.assertIsNone(con_generic_task.milestone)
         self.assertIsNone(con_devel_task.milestone)
 
-        con_devel_task.transitionToMilestone(
-            test_milestone, conjoined.owner)
+        con_devel_task.transitionToMilestone(test_milestone,
+                                             conjoined.owner)
 
-        self.assertEqual(con_generic_task.milestone.name,
-            'test')
-        self.assertEqual(con_devel_task.milestone.name,
-            'test')
+        self.assertEqual(con_generic_task.milestone.name, 'test')
+        self.assertEqual(con_devel_task.milestone.name, 'test')
 
         # But a normal unprivileged user can't set the milestone.
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         with ExpectedException(UserCannotEditBugTaskMilestone, ''):
-            con_devel_task.transitionToMilestone(
-                noway_milestone, no_priv)
-        self.assertEqual(con_devel_task.milestone.name,
-            'test')
+            con_devel_task.transitionToMilestone(noway_milestone, no_priv)
+        self.assertEqual(con_devel_task.milestone.name, 'test')
 
-        con_devel_task.transitionToMilestone(
-            test_milestone, conjoined.owner)
+        con_devel_task.transitionToMilestone(test_milestone, conjoined.owner)
 
-        self.assertEqual(con_generic_task.milestone.name,
-            'test')
-        self.assertEqual(con_devel_task.milestone.name,
-            'test')
+        self.assertEqual(con_generic_task.milestone.name, 'test')
+        self.assertEqual(con_devel_task.milestone.name, 'test')
 
     def test_non_current_dev_lacks_conjoined(self):
         """Tasks not the current dev focus lacks conjoined masters or slaves.
@@ -2464,14 +2452,14 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         alsa_utils = getUtility(IProductSet)['alsa-utils']
         ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
 
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
+        params = CreateBugParams(owner=launchbag.user,
+                                 title="a test bug",
+                                 comment="test bug description")
         ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
 
-        alsa_utils_stable = alsa_utils.newSeries(
-            launchbag.user, 'stable', 'The stable series.')
+        alsa_utils_stable = alsa_utils.newSeries(launchbag.user,
+                                                 'stable',
+                                                 'The stable series.')
 
         login('test@canonical.com')
         Store.of(alsa_utils_stable).flush()
@@ -2499,10 +2487,9 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         launchbag = getUtility(ILaunchBag)
         ubuntu = getUtility(IDistributionSet).get(1)
         ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
+        params = CreateBugParams(owner=launchbag.user,
+                                 title="a test bug",
+                                 comment="test bug description")
         ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
 
         gentoo = getUtility(IDistributionSet).getByName('gentoo')
@@ -2584,10 +2571,9 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
         ubuntu = getUtility(IDistributionSet).get(1)
-        params = CreateBugParams(
-            owner=launchbag.user,
-            title="a test bug",
-            comment="test bug description")
+        params = CreateBugParams(owner=launchbag.user,
+                                 title="a test bug",
+                                 comment="test bug description")
         ubuntu_bug = ubuntu.createBug(params)
 
         ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
@@ -2643,33 +2629,31 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         current_series_netapplet_task.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
-        self.assertIsInstance(generic_netapplet_task.date_left_new,
-            datetime,)
+        self.assertIsInstance(generic_netapplet_task.date_left_new, datetime)
         self.assertEqual(generic_netapplet_task.date_left_new,
-            current_series_netapplet_task.date_left_new)
+                         current_series_netapplet_task.date_left_new)
 
-        self.assertIsInstance(generic_netapplet_task.date_triaged,
-            datetime)
+        self.assertIsInstance(generic_netapplet_task.date_triaged, datetime)
         self.assertEqual(generic_netapplet_task.date_triaged,
-            current_series_netapplet_task.date_triaged)
+                         current_series_netapplet_task.date_triaged)
 
         self.assertIsInstance(generic_netapplet_task.date_fix_committed,
-            datetime)
+                              datetime)
         self.assertEqual(generic_netapplet_task.date_fix_committed,
-            current_series_netapplet_task.date_fix_committed)
+                         current_series_netapplet_task.date_fix_committed)
 
         self.assertEqual('Fix Released', generic_netapplet_task.status.title)
         self.assertEqual('Fix Released',
-            current_series_netapplet_task.status.title)
+                         current_series_netapplet_task.status.title)
 
-        self.assertIsInstance(generic_netapplet_task.date_closed,
-            datetime)
+        self.assertIsInstance(generic_netapplet_task.date_closed, datetime)
         self.assertEqual(generic_netapplet_task.date_closed,
-            current_series_netapplet_task.date_closed)
+                         current_series_netapplet_task.date_closed)
         self.assertIsInstance(generic_netapplet_task.date_fix_released,
-            datetime)
+                              datetime)
         self.assertEqual(generic_netapplet_task.date_fix_released,
-            current_series_netapplet_task.date_fix_released)
+                         current_series_netapplet_task.date_fix_released)
+
 
 # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 # When feature flag code is removed, delete these tests (up to "# END
@@ -3714,14 +3698,13 @@ class TestTargetNameCache(TestCase):
         upstream_task = getUtility(IBugTaskSet).createTask(
             bug_one, mark, netapplet,
             status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
-        self.assertEqual(upstream_task.bugtargetdisplayname,
-            u'NetApplet')
+        self.assertEqual(upstream_task.bugtargetdisplayname, u'NetApplet')
 
         thunderbird = getUtility(IProductSet).get(8)
         upstream_task_id = upstream_task.id
         upstream_task.transitionToTarget(thunderbird)
         self.assertEqual(upstream_task.bugtargetdisplayname,
-            u'Mozilla Thunderbird')
+                         u'Mozilla Thunderbird')
 
         thunderbird.name = 'thunderbird-ng'
         thunderbird.displayname = 'Mozilla Thunderbird NG'
