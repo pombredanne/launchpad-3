@@ -385,7 +385,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             Join(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id
+                    SourcePackageRelease.id)
             ).find(
                 SourcePackageRelease,
                 SourcePackagePublishingHistory.archiveID.is_in(
@@ -393,8 +393,9 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
                 SourcePackagePublishingHistory.distroseries ==
                     self.distroseries,
                 SourcePackagePublishingHistory.sourcepackagename ==
-                    self.sourcepackagename)
-            ).order_by(Desc(SourcePackageRelease.version))
+                    self.sourcepackagename
+            ).config(distinct=True).order_by(
+                Desc(SourcePackageRelease.version))
 
     @property
     def name(self):
