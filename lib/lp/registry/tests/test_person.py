@@ -1161,7 +1161,7 @@ class Test_getAssignedSpecificationWorkItemsDueBefore(TestCaseWithFactory):
             product=self.product)
         # Create a workitem with no explicit assignee/milestone. This way it
         # will inherit the ones from the spec it belongs to.
-        workitem = self.factory.makeSpecificationWorkItem(
+        self.factory.makeSpecificationWorkItem(
             title=u'workitem', specification=assigned_spec, deleted=True)
 
         workitems = self.team.getAssignedSpecificationWorkItemsDueBefore(
