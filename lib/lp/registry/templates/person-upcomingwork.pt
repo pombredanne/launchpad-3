@@ -19,6 +19,11 @@
               var expander = new Y.lp.app.widgets.expander.Expander(
                   expander_icon, widget_body);
               expander.setUp(true);
+
+              var percent_done = e.one('[title=percentdone]').get('alt');
+              if (percent_done != "100% complete") {
+                  expander.render(true, false);
+              }
             })
           })
         });
@@ -100,10 +105,12 @@
                  style="border: 1px solid gray; width: 60px">
               <img tal:attributes="
                      id string:container_progressbar_${repeat/container/index};
-                     width string:${container/percent_done}%"
+                     width string:${container/percent_done}%;
+                     alt string:${container/percent_done}% complete;"
                    style="display: block"
                    src="/@@/green-bar"
-                   height="10"/>
+                   height="10"
+                   title="percentdone"/>
             </div>
           </td>
         </tr>
