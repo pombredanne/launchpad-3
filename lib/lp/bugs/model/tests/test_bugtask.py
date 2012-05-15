@@ -525,7 +525,7 @@ class TestBugTaskPrivacy(TestCase):
     """Verify that the bug is either private or public.
 
     XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
-    and do to much work. They should be split into simpler and better unit
+    and do too much work. They should be split into simpler and better unit
     tests.
     """
 
@@ -1268,7 +1268,8 @@ class TestSimilarBugs(TestCaseWithFactory):
         firefox, new_ff_bug, ff_bugtask = self._setupFirefoxBugTask()
         sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        ubuntu_bugtask = self.factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
+        ubuntu_bugtask = self.factory.makeBugTask(bug=new_ff_bug,
+                                                  target=ubuntu)
         similar_bugs = ubuntu_bugtask.findSimilarBugs(user=sample_person)
         similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
 
@@ -1287,9 +1288,10 @@ class TestSimilarBugs(TestCaseWithFactory):
 
         similar_bugs = firefox_package_bugtask.findSimilarBugs(
             user=sample_person)
-        similar_bugs  = sorted(similar_bugs, key=attrgetter('id'))
+        similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
         self.assertEqual(similar_bugs[0].id, 1)
-        self.assertEqual(similar_bugs[0].title, 'Firefox does not support SVG')
+        self.assertEqual(similar_bugs[0].title,
+                         'Firefox does not support SVG')
 
     def test_private_bugs_do_not_show(self):
         """Private bugs won't show up in the list of similar bugs.
@@ -1302,7 +1304,7 @@ class TestSimilarBugs(TestCaseWithFactory):
             product=firefox, title="Yet another Firefox bug")
         no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
-        simliar_bugs =  sorted(similar_bugs, key=attrgetter('id'))
+        similar_bugs = sorted(similar_bugs, key=attrgetter('id'))
 
         self.assertEqual(len(similar_bugs), 3)
 
@@ -2418,7 +2420,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
 
 
     XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
-    and do to much work. They should be split into simpler and better unit
+    and do too much work. They should be split into simpler and better unit
     tests.
     """
 
@@ -3779,7 +3781,7 @@ class TestTargetNameCache(TestCase):
     is used here.
 
     XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
-    and do to much work. They should be split into simpler and better unit
+    and do too much work. They should be split into simpler and better unit
     tests.
     """
 
