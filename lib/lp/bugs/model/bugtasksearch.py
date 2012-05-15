@@ -715,8 +715,7 @@ def _build_query(params):
             extra_clauses.append(
                 Milestone.dateexpected <= dateexpected_before)
 
-    clause, decorator = _get_bug_privacy_filter_with_decorator(
-        params.user, use_flat=True)
+    clause, decorator = _get_bug_privacy_filter_with_decorator(params.user)
     if clause:
         extra_clauses.append(SQL(clause))
         decorators.append(decorator)
@@ -1373,10 +1372,9 @@ def _build_tag_search_clause(tags_spec, cols):
 
 # Privacy restrictions
 
-def get_bug_privacy_filter(user, private_only=False, use_flat=False):
+def get_bug_privacy_filter(user):
     """An SQL filter for search results that adds privacy-awareness."""
-    return _get_bug_privacy_filter_with_decorator(
-        user, private_only, use_flat)[0]
+    return _get_bug_privacy_filter_with_decorator(user)[0]
 
 
 def _nocache_bug_decorator(obj):
@@ -1400,17 +1398,13 @@ def _make_cache_user_can_view_bug(user):
     return cache_user_can_view_bug
 
 
-def _get_bug_privacy_filter_with_decorator(user, private_only=False,
-                                           use_flat=False):
+def _get_bug_privacy_filter_with_decorator(user):
     """Return a SQL filter to limit returned bug tasks.
 
     :param user: The user whose visible bugs will be filtered.
     :return: A SQL filter, a decorator to cache visibility in a resultset that
         returns BugTask objects.
     """
-    if private_only or not use_flat:
-        raise AssertionError("Only public+private flat mode is supported.")
-
     public_bug_filter = (
         'BugTaskFlat.information_type IN %s'
         % sqlvalues(PUBLIC_INFORMATION_TYPES))
@@ -1435,8 +1429,6 @@ def _get_bug_privacy_filter_with_decorator(user, private_only=False,
             WHERE person = %d)
         """ % user.id)
     query = "%s OR %s" % (artifact_grant_query, policy_grant_query)
-    if not private_only:
-        query = '%s OR %s' % (public_bug_filter, query)
     return (
         '(%s OR %s)' % (public_bug_filter, query),
         _make_cache_user_can_view_bug(user))
