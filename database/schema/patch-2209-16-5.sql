@@ -12,4 +12,4 @@ ALTER TABLE BugTask DROP COLUMN heat_rank;
 ALTER TABLE Bug DROP COLUMN private;
 ALTER TABLE Bug DROP COLUMN security_related;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 16, 5);
