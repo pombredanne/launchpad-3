@@ -153,60 +153,25 @@ class TestBuildPackageJob(TestBuildJobBase):
         self.non_ppa.require_virtualized = False
 
         self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="firefox",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="cobblers",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="thunderpants",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="postgres",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
+        for sourcename in (
+            "gedit",
+            "firefox",
+            "cobblers",
+            "thunderpants",
+            "apg",
+            "vim",
+            "gcc",
+            "bison",
+            "flex",
+            "postgres",
+            ):
+            self.builds.extend(
+                self.publisher.getPubSource(
+                    sourcename=sourcename,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    archive=self.non_ppa,
+                    architecturehintlist='any').createMissingBuilds())
+
         # We want the builds to have a lot of variety when it comes to score
         # and estimated duration etc. so that the queries under test get
         # exercised properly.
