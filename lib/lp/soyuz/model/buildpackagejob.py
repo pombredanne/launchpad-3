@@ -97,13 +97,10 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         score = 0
 
         # Calculates the urgency-related part of the score.
-        urgency = SCORE_BY_URGENCY[
-            self.build.source_package_release.urgency]
-        score += urgency
+        score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
 
         # Calculates the pocket-related part of the score.
-        score_pocket = SCORE_BY_POCKET[self.build.pocket]
-        score += score_pocket
+        score += SCORE_BY_POCKET[self.build.pocket]
 
         # Calculates the component-related part of the score.
         score += SCORE_BY_COMPONENT.get(
