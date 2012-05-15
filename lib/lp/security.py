@@ -960,8 +960,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # participation check.
 
             store = IStore(Person)
-            user_private_bugs_visible_filter = get_bug_privacy_filter(
-                user.person, use_flat=True)
+            user_bugs_visible_filter = get_bug_privacy_filter(user.person)
 
             # 1 = PUBLIC, 2 = UNEMBARGOEDSECURITY
             query = """
@@ -992,7 +991,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
                 )
                 """ % dict(
                         personid=quote(self.obj.id),
-                        user_bug_filter=user_private_bugs_visible_filter)
+                        user_bug_filter=user_bugs_visible_filter)
 
             rs = store.execute(query)
             if rs.rowcount > 0:
