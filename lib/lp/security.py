@@ -2654,6 +2654,11 @@ class EditPackageset(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
+class ModeratePackageset(AdminByBuilddAdmin):
+    permission = 'launchpad.Moderate'
+    usedfor = IPackageset
+
+
 class EditPackagesetSet(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPackagesetSet

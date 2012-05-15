@@ -5,11 +5,13 @@
 
 from datetime import timedelta
 
+from lazr.restfulclient.errors import Unauthorized
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -24,7 +26,11 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -296,3 +302,36 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             pocket='RELEASE')
         job = build.makeJob()
         self.assertEquals(2505, job.score())
+
+    def test_score_packageset(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component="main", urgency="low")
+        packageset = self.factory.makePackageset(
+            distroseries=spph.distroseries)
+        removeSecurityProxy(packageset).add([spph.sourcepackagename])
+        removeSecurityProxy(packageset).score = 100
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket="RELEASE")
+        job = build.makeJob()
+        self.assertEquals(2605, job.score())
+
+    def test_score_packageset_forbids_non_buildd_admin(self):
+        # Being the owner of a packageset is not enough to allow changing
+        # its build score, since this affects a site-wide resource.
+        person = self.factory.makePerson()
+        packageset = self.factory.makePackageset(owner=person)
+        lp = launchpadlib_for("testing", person)
+        entry = lp.load(api_url(packageset))
+        entry.score = 100
+        self.assertRaises(Unauthorized, entry.lp_save)
+
+    def test_score_packageset_allows_buildd_admin(self):
+        buildd_admins = getUtility(IPersonSet).getByName(
+            "launchpad-buildd-admins")
+        buildd_admin = self.factory.makePerson(member_of=[buildd_admins])
+        packageset = self.factory.makePackageset()
+        lp = launchpadlib_for("testing", buildd_admin)
+        entry = lp.load(api_url(packageset))
+        entry.score = 100
+        entry.lp_save()

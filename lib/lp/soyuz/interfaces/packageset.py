@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    mutator_for,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
@@ -93,6 +94,10 @@ class IPackagesetViewOnly(IHasOwner):
         readonly=True,
         description=_(
             'Used internally to link package sets across distro series.'))
+
+    score = exported(Int(
+        title=_("Build score"), required=True, readonly=True,
+        description=_("Build score bonus for packages in this package set.")))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -348,7 +353,19 @@ class IPackagesetEdit(Interface):
         """
 
 
-class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
+class IPackagesetRestricted(Interface):
+    """A writeable interface for restricted attributes of package sets."""
+    export_as_webservice_entry(publish_web_link=False)
+
+    @mutator_for(IPackagesetViewOnly["score"])
+    @operation_parameters(score=copy_field(IPackagesetViewOnly["score"]))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setScore(score):
+        """Set the build score bonus for this package set."""
+
+
+class IPackageset(IPackagesetViewOnly, IPackagesetEdit, IPackagesetRestricted):
     """An interface for package sets."""
     export_as_webservice_entry(publish_web_link=False)
 

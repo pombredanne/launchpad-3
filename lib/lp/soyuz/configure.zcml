@@ -787,6 +787,9 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+        <require
+            permission="launchpad.Moderate"
+            interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
     </class>
     <class
         class="lp.soyuz.model.packageset.PackagesetSet">

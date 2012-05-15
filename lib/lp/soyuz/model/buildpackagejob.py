@@ -38,7 +38,9 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.model.packageset import Packageset
 
 
 class BuildPackageJob(BuildFarmJobOldDerived, Storm):
@@ -106,6 +108,13 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # Calculates the component-related part of the score.
         score += SCORE_BY_COMPONENT.get(
             self.build.current_component.name, 0)
+
+        # Calculates the package-set-related part of the score.
+        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
+            self.build.source_package_release.name,
+            distroseries=self.build.distro_series)
+        if not package_sets.is_empty():
+            score += package_sets.max(Packageset.score)
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))

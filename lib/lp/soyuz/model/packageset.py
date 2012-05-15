@@ -70,6 +70,8 @@ class Packageset(Storm):
     packagesetgroup_id = Int(name='packagesetgroup', allow_none=False)
     packagesetgroup = Reference(packagesetgroup_id, 'PackagesetGroup.id')
 
+    score = Int(allow_none=False)
+
     def add(self, data):
         """See `IPackageset`."""
         handlers = (
@@ -326,6 +328,10 @@ class Packageset(Storm):
             Packageset.packagesetgroup == self.packagesetgroup,
             Packageset.id != self.id)
         return _order_result_set(result_set)
+
+    def setScore(self, score):
+        """See `IPackageset`."""
+        self.score = score
 
 
 class PackagesetSet:
