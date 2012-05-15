@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from zope.component import (
-    getAdapter,
     getUtility,
     queryAdapter,
     )
