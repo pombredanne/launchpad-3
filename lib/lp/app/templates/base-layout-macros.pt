@@ -153,7 +153,7 @@
     <script id="base-layout-load-scripts" type="text/javascript">
         LPJS.use('base', 'node', 'console', 'event',
             'oop', 'lp', 'lp.app.banner.privacy',
-            'lp.app.beta_features', 'lp.app.foldables','lp.app.sorttable',
+            'lp.app.banner.beta', 'lp.app.foldables','lp.app.sorttable',
             'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
