@@ -224,6 +224,33 @@ class BaseRunnableJob(BaseRunnableJobSource):
         current = transaction.get()
         current.addAfterCommitHook(self.celeryCommitHook)
 
+    def queue(self, manage_transaction=False, abort_transaction=False):
+        """See `IJob`."""
+        # xxxxxxxxx add ETA
+        self.xxxRunExtraCommit()
+        self.job.queue(manage_transaction, abort_transaction)
+        #xxxx self.celeryRunOnCommit()
+
+    def xxxRunExtraCommit(self):
+        """Configure transaction so that commit runs this job via Celery."""
+        raise Exception('waaaaa2 %s %s %s' % (
+            self.__class__.__name__,
+            celery_enabled(self.__class__.__name__),
+            getFeatureFlag('jobs.celery.enabled_classes')))
+        if not celery_enabled(self.__class__.__name__):
+            return
+        current = transaction.get()
+        current.addAfterCommitHook(self.xxxextraCommitHook)
+
+    def xxxExtraCommitHook(self, succeeded):
+        """Hook function to call when a commit completes."""
+        if succeeded:
+            ignore_result = bool(BaseRunnableJob.celery_responses is None)
+            response = self.runViaCelery(ignore_result)
+            if not ignore_result:
+                BaseRunnableJob.celery_responses.append(response)
+
+
 
 class BaseJobRunner(LazrJobRunner):
     """Runner of Jobs."""

@@ -261,6 +261,10 @@ class UniversalJobSource:
     def rawGet(job_id, module_name, class_name):
         bc_module = __import__(module_name, fromlist=[class_name])
         db_class = getattr(bc_module, class_name)
+        try:
+            return db_class.makeInstance(job_id)
+        except AttributeError:
+            pass
         store = IStore(db_class)
         db_job = store.find(db_class, db_class.job == job_id).one()
         if db_job is None:
