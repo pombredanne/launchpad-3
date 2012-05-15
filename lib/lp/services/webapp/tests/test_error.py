@@ -133,7 +133,8 @@ class TestDatabaseErrorViews(TestCase):
             time.sleep(1)
         else:
             raise TimeoutException(
-                "Launchpad did not come up after {0} attempts.".format(retries))
+                "Launchpad did not come up after {0} attempts."
+                    .format(retries))
         # ...requests succeed again.
         urllib2.urlopen(url)
 

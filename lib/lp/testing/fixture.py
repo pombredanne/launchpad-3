@@ -25,7 +25,6 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
-import itertools
 from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
@@ -132,7 +131,6 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         """Start PGBouncer, waiting for it to accept connections if neccesary.
         """
         super(PGBouncerFixture, self).start()
-        s = socket.socket()
         for i in xrange(retries):
             try:
                 socket.create_connection((self.host, self.port))
@@ -144,7 +142,6 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             time.sleep(sleep)
         else:
             raise PGNotReadyError("Not ready after %d attempts." % retries)
-
 
 
 class ZopeAdapterFixture(Fixture):
