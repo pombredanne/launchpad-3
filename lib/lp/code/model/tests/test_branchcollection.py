@@ -430,6 +430,18 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([branch1, branch3, branch4]),
             sorted(collection.getBranches()))
 
+    def test_withIds(self):
+        # 'withIds' returns a new collection that only has branches with the
+        # given ids.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        self.factory.makeAnyBranch()
+        ids = [branch1.id, branch2.id]
+        collection = self.all_branches.withIds(*ids)
+        self.assertEqual(
+            sorted([branch1, branch2]),
+            sorted(collection.getBranches()))
+
     def test_registeredBy(self):
         # 'registeredBy' returns a new collection that only has branches that
         # were registered by the given user.
