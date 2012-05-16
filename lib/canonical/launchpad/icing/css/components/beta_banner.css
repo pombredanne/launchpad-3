@@ -1,7 +1,7 @@
 /* ===========
    Beta banner
 */
-.beta-banner {
+.yui3-betabanner-content .global-notification {
     position: fixed;
     z-index: 9;
     top: 0;
@@ -17,6 +17,7 @@
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
     font-size: 14px;
     line-height: 21px;
+    text-align: left;
     }
 .beta-banner .info-link {
     color: #4884ef;
