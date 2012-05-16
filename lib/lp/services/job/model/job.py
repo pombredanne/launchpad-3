@@ -265,9 +265,9 @@ class UniversalJobSource:
         job_id, module_name, class_name = ujob_id
         bc_module = __import__(module_name, fromlist=[class_name])
         db_class = getattr(bc_module, class_name)
-        generator = getattr(db_class, 'makeInstance', None)
-        if generator is not None:
-            return generator(job_id)
+        factory = getattr(db_class, 'makeInstance', None)
+        if factory is not None:
+            return factory(job_id)
         store = IStore(db_class)
         db_job = store.find(db_class, db_class.job == job_id).one()
         if db_job is None:

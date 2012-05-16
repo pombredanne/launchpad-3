@@ -112,7 +112,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     celery_responses = None
 
-    retry_delay = timedelta(seconds=1)
+    retry_delay = timedelta(minutes=10)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
