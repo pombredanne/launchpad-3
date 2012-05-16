@@ -23,6 +23,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 
 
 _schema_circular_imports
