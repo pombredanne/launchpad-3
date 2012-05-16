@@ -1339,7 +1339,6 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         AntiqueSessionPruner,
-        SpecificationWorkitemMigrator,
         ]
     experimental_tunable_loops = []
 
@@ -1362,6 +1361,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
+        SpecificationWorkitemMigrator,
         ]
     experimental_tunable_loops = []
 

@@ -194,20 +194,6 @@ class TestSpecificationWorkItemExtractionFromWhiteboard(TestCaseWithFactory):
             assignee=None, title="A single work item", milestone=milestone,
             status=SpecificationWorkItemStatus.TODO, specification=spec))
 
-    def test_work_item_with_inactive_milestone(self):
-        milestone = self.factory.makeMilestone(active=False)
-        whiteboard = dedent("""
-            Work items for %s:
-            A single work item: TODO
-            """ % milestone.name)
-        spec = self.factory.makeSpecification(
-            whiteboard=whiteboard, product=milestone.product)
-        work_items = extractWorkItemsFromWhiteboard(spec)
-        self.assertEqual(1, len(work_items))
-        self.assertThat(work_items[0], MatchesStructure.byEquality(
-            assignee=None, title="A single work item", milestone=milestone,
-            status=SpecificationWorkItemStatus.TODO, specification=spec))
-
     def test_work_item_with_unknown_milestone(self):
         whiteboard = dedent("""
             Work items for foo:
