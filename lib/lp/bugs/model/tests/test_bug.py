@@ -8,7 +8,6 @@ from datetime import (
     timedelta,
     )
 
-from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from pytz import UTC
 from storm.expr import Join
 from storm.store import Store
@@ -23,7 +22,6 @@ from lp.bugs.enums import (
     BugNotificationStatus,
     )
 from lp.bugs.errors import BugCannotBePrivate
-from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -43,7 +41,6 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.event import TestEventListener
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
