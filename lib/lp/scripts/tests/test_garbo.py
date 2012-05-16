@@ -55,7 +55,8 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -1044,8 +1045,7 @@ class TestGarbo(TestCaseWithFactory):
         # When the migration is successful we remove all work-items from the
         # whiteboard.
         switch_dbuser('testadmin')
-        product = self.factory.makeProduct(name='linaro')
-        milestone = self.factory.makeMilestone(product=product)
+        milestone = self.factory.makeMilestone()
         person = self.factory.makePerson()
         whiteboard = dedent("""
             Work items for %s:
@@ -1055,7 +1055,7 @@ class TestGarbo(TestCaseWithFactory):
             Another work item: DONE
             """ % (milestone.name, person.name))
         spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
+            product=milestone.product, whiteboard=whiteboard)
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
@@ -1073,20 +1073,6 @@ class TestGarbo(TestCaseWithFactory):
             status=SpecificationWorkItemStatus.DONE,
             milestone=None, specification=spec))
 
-    def test_SpecificationWorkitemMigrator_skips_ubuntu_blueprints(self):
-        switch_dbuser('testadmin')
-        whiteboard = "Work items:\nA work item: TODO"
-        spec = self.factory.makeSpecification(
-            whiteboard=whiteboard,
-            distribution=getUtility(IDistributionSet)['ubuntu'])
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
-        transaction.commit()
-        self.runFrequently()
-
-        self.assertEqual(whiteboard, spec.whiteboard)
-        self.assertEqual(0, spec.work_items.count())
-
     def test_SpecificationWorkitemMigrator_parse_error(self):
         # When we fail to parse any work items in the whiteboard we leave it
         # untouched and don't create any SpecificationWorkItem entries.
@@ -1096,9 +1082,7 @@ class TestGarbo(TestCaseWithFactory):
             A work item: TODO
             Another work item: UNKNOWNSTATUSWILLFAILTOPARSE
             """)
-        product = self.factory.makeProduct(name='linaro')
-        spec = self.factory.makeSpecification(
-            product=product, whiteboard=whiteboard)
+        spec = self.factory.makeSpecification(whiteboard=whiteboard)
         IMasterStore(FeatureFlag).add(FeatureFlag(
             u'default', 0, u'garbo.workitem_migrator.enabled', u'True'))
         transaction.commit()
