@@ -201,10 +201,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
         else:
             cls = CeleryRunJob
         db_class = self.getDBClass()
-        ujob_id = (
-            self.job_id, db_class.__module__, db_class.__name__,
-            self.config.dbuser)
-        return cls.apply_async((ujob_id,), queue=self.task_queue)
+        ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
+        return cls.apply_async(
+            (ujob_id, self.config.dbuser), queue=self.task_queue)
 
     def getDBClass(self):
         return self.context.__class__

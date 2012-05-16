@@ -928,25 +928,6 @@ class TestBugTaskSearch(TestCaseWithFactory):
         """Make an arbitrary bug target with no tasks on it."""
         return IBugTarget(self.factory.makeProduct())
 
-    def test_bug_privacy_filter_private_only_param_with_no_user(self):
-        # The bug privacy filter expression always has the "private is false"
-        # clause if the specified user is None, regardless of the value of the
-        # private_only parameter.
-        filter = get_bug_privacy_filter(None)
-        self.assertIn('Bug.private IS FALSE', filter)
-        filter = get_bug_privacy_filter(None, private_only=True)
-        self.assertIn('Bug.private IS FALSE', filter)
-
-    def test_bug_privacy_filter_private_only_param_with_user(self):
-        # The bug privacy filter expression omits has the "private is false"
-        # clause if the private_only parameter is True, provided a user is
-        # specified.
-        any_user = self.factory.makePerson()
-        filter = get_bug_privacy_filter(any_user)
-        self.assertIn('Bug.private IS FALSE', filter)
-        filter = get_bug_privacy_filter(any_user, private_only=True)
-        self.assertNotIn('Bug.private IS FALSE', filter)
-
     def test_no_tasks(self):
         # A brand new bug target has no tasks.
         target = self.makeBugTarget()
