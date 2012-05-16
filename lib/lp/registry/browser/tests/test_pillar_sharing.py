@@ -24,6 +24,7 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
@@ -193,7 +194,7 @@ class PillarSharingDetailsMixin:
         with FeatureFixture(DETAILS_ENABLED_FLAG):
             pillarperson = self.getPillarPerson()
             view = create_initialized_view(pillarperson, '+index')
-            bugtask = list(view.bugs)[0]
+            bugtask = list(view.bugtasks)[0]
             bug = bugtask.bug
             cache = IJSONRequestCache(view.request)
             request = get_current_web_service_request()
@@ -223,6 +224,20 @@ class PillarSharingDetailsMixin:
                         branch, path_only_if_possible=True),
                     'self_link': absoluteURL(branch, request),
                 }, cache.objects.get('branches')[0])
+
+    def test_view_query_count(self):
+        # Test that the view bulk loads artifacts.
+        with FeatureFixture(DETAILS_ENABLED_FLAG):
+            person = self.factory.makePerson()
+            for x in range(0, 15):
+                self.makeArtifactGrantee(person, True, True, False)
+            pillarperson = PillarPerson(self.pillar, person)
+
+            # Invalidate the Storm cache and check the query count.
+            IStore(self.pillar).invalidate()
+            with StormStatementRecorder() as recorder:
+                create_initialized_view(pillarperson, '+index')
+            self.assertThat(recorder, HasQueryCount(LessThan(12)))
 
     def test_view_write_enabled_without_feature_flag(self):
         # Test that sharing_write_enabled is not set without the feature flag.

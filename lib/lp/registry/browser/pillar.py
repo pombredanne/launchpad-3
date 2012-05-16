@@ -42,21 +42,13 @@ from lp.app.interfaces.services import IService
 from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     )
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
-    IBugTaskSet,
-    )
-from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import InformationType
-from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
@@ -391,7 +383,7 @@ class PillarPersonSharingView(LaunchpadView):
         cache = IJSONRequestCache(self.request)
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
-        bug_data = self._build_bug_template_data(self.bugs, request)
+        bug_data = self._build_bug_template_data(self.bugtasks, request)
         sharee_data = {
             'displayname': self.person.displayname,
             'self_link': absoluteURL(self.person, request)
@@ -409,42 +401,14 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['sharing_write_enabled'] = (write_flag_enabled
             and check_permission('launchpad.Edit', self.pillar))
 
-    def _getSafeBugs(self, bugs):
-        """Uses the bugsearch tools to safely get the list of bugs the user is
-        allowed to see."""
-        if bugs == set([]):
-            return []
-        params = []
-        for b in bugs:
-            param = BugTaskSearchParams(user=self.user, bug=b)
-            if IProduct.providedBy(self.pillar):
-                param.setProduct(self.pillar)
-            elif IDistribution.providedBy(self.pillar):
-                param.setDistribution(self.pillar)
-            params.append(param)
-
-        safe_bugs = getUtility(IBugTaskSet).search(params[0], *params[1:])
-        return list(safe_bugs)
-
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
         # filter out dupes.
-        bugs = set()
-        branches = set()
-        for artifact in self.sharing_service.getSharedArtifacts(
-                            self.pillar, self.person):
-            concrete = artifact.concrete_artifact
-            if IBug.providedBy(concrete):
-                bugs.add(concrete)
-            elif IBranch.providedBy(concrete):
-                branches.add(concrete)
-
-        # For security reasons, the bugs have to be refetched by ID through
-        # the normal querying mechanism. This prevents bugs the user shouldn't
-        # be able to see from being displayed.
-        self.bugs = self._getSafeBugs(bugs)
-        self.branches = branches
-        self.shared_bugs_count = len(self.bugs)
+        self.bugtasks, self.branches = (
+            self.sharing_service.getSharedArtifacts(
+                self.pillar, self.person, self.user))
+        bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])
+        self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
 
     def _build_branch_template_data(self, branches, request):
