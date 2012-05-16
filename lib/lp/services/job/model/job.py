@@ -33,12 +33,9 @@ from storm.locals import (
     Int,
     Reference,
     )
-from storm.zope.interfaces import IZStorm
 import transaction
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.config import dbconfig
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -49,7 +46,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
     )
-from lp.services import scripts
 
 
 UTC = pytz.timezone('UTC')
@@ -255,10 +251,15 @@ class UniversalJobSource:
 
     memory_limit = 2 * (1024 ** 3)
 
-    needs_init = True
-
     @staticmethod
-    def rawGet(job_id, module_name, class_name):
+    def get(ujob_id):
+        """Return the named job database class.
+
+        :param ujob_id: A tuple of Job.id, module name, class name for the
+            class to retrieve.
+        Return derived job class.
+        """
+        job_id, module_name, class_name = ujob_id
         bc_module = __import__(module_name, fromlist=[class_name])
         db_class = getattr(bc_module, class_name)
         store = IStore(db_class)
@@ -266,16 +267,3 @@ class UniversalJobSource:
         if db_job is None:
             return None
         return db_job.makeDerived()
-
-    @classmethod
-    def get(cls, ujob_id):
-        if cls.needs_init:
-            transaction.abort()
-            scripts.execute_zcml_for_scripts(use_web_security=False)
-            cls.needs_init = False
-        transaction.abort()
-        store = IStore(Job)
-        getUtility(IZStorm).remove(store)
-        store.close()
-        dbconfig.override(dbuser=ujob_id[3], isolation_level='read_committed')
-        return cls.rawGet(*ujob_id[:3])
