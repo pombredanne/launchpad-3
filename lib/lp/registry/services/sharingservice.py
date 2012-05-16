@@ -76,15 +76,12 @@ class SharingService:
         bugtasks = []
         if bug_ids:
             param = BugTaskSearchParams(user=user, bug=any(*bug_ids))
-            if IProduct.providedBy(pillar):
-                param.setProduct(pillar)
-            elif IDistribution.providedBy(pillar):
-                param.setDistribution(pillar)
+            param.setTarget(pillar)
             bugtasks = list(getUtility(IBugTaskSet).search(param))
         # Load the branches.
         branches = []
         if branch_ids:
-            all_branches = getUtility(IAllBranches).visibleByUser(user)
+            all_branches = getUtility(IAllBranches)
             wanted_branches = all_branches.visibleByUser(user).withIds(
                 *branch_ids)
             branches = list(wanted_branches.getBranches())
