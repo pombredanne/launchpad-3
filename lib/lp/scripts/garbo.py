@@ -26,7 +26,6 @@ from contrib.glock import (
 import iso8601
 from psycopg2 import IntegrityError
 import pytz
-from pytz import timezone
 from storm.expr import In
 from storm.locals import (
     Max,
