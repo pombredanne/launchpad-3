@@ -379,6 +379,14 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         removeSecurityProxy(packageset).score = 100
         self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
 
+    def test_score_packageset_readable(self):
+        # A packageset's build score is readable by anyone.
+        packageset = self.factory.makePackageset()
+        removeSecurityProxy(packageset).score = 100
+        lp = launchpadlib_for("testing", self.factory.makePerson())
+        entry = lp.load(api_url(packageset))
+        self.assertEqual(100, entry.score)
+
     def test_score_packageset_forbids_non_buildd_admin(self):
         # Being the owner of a packageset is not enough to allow changing
         # its build score, since this affects a site-wide resource.
