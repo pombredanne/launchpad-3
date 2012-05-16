@@ -139,7 +139,6 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         """Start PGBouncer, waiting for it to accept connections if neccesary.
         """
         super(PGBouncerFixture, self).start()
-        socket.socket()
         for i in xrange(retries):
             try:
                 socket.create_connection((self.host, self.port))

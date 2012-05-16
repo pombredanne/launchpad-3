@@ -45,8 +45,18 @@ class ISharingService(IService):
     # version 'devel'
     export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
-    def getSharedArtifacts(pillar, person):
-        """Return the artifacts shared between the pillar and person."""
+    def getSharedArtifacts(pillar, person, user):
+        """Return the artifacts shared between the pillar and person.
+
+        The result includes bugtasks rather than bugs since this is what the
+        pillar filtering is applied to and is what the calling code uses.
+        The shared bug can be obtained simply by reading the bugtask.bug
+        attribute.
+
+        :param user: the user making the request. Only artifacts visible to the
+             user will be included in the result.
+        :return: a (bugtasks, branches) tuple
+        """
 
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""

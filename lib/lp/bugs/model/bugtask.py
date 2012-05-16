@@ -46,13 +46,19 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
     Cast,
     Count,
+    Exists,
     Join,
+    LeftJoin,
+    Not,
     Or,
+    Select,
     SQL,
     Sum,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -119,9 +125,14 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    create,
+    load,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.nl_search import nl_phrase_search
@@ -150,31 +161,27 @@ def bugtask_sort_key(bugtask):
           - distro tasks, followed by their distroseries tasks
           - ubuntu first among the distros
     """
+    product_name = None
+    productseries_name = None
+    distribution_name = None
+    distroseries_name = None
+    sourcepackage_name = None
+
     if bugtask.product:
         product_name = bugtask.product.name
-        productseries_name = None
     elif bugtask.productseries:
         productseries_name = bugtask.productseries.name
         product_name = bugtask.productseries.product.name
-    else:
-        product_name = None
-        productseries_name = None
 
     if bugtask.distribution:
         distribution_name = bugtask.distribution.name
-    else:
-        distribution_name = None
 
     if bugtask.distroseries:
         distroseries_name = bugtask.distroseries.version
         distribution_name = bugtask.distroseries.distribution.name
-    else:
-        distroseries_name = None
 
     if bugtask.sourcepackagename:
         sourcepackage_name = bugtask.sourcepackagename.name
-    else:
-        sourcepackage_name = None
 
     # Move ubuntu to the top.
     if distribution_name == 'ubuntu':
@@ -1604,67 +1611,64 @@ class BugTaskSet:
         params = BugTaskSearchParams(user, **kwargs)
         return self.search(params)
 
-    def createTask(self, bug, owner, target,
-                   status=IBugTask['status'].default,
-                   importance=IBugTask['importance'].default,
+    def createManyTasks(self, bug, owner, targets, status=None,
+                        importance=None, assignee=None, milestone=None):
+        """See `IBugTaskSet`."""
+        if status is None:
+            status = IBugTask['status'].default
+        if importance is None:
+            importance = IBugTask['importance'].default
+        target_keys = []
+        pillars = set()
+        for target in targets:
+            validate_new_target(bug, target)
+            pillars.add(target.pillar)
+            target_keys.append(bug_target_to_key(target))
+        if bug.information_type == InformationType.UNEMBARGOEDSECURITY:
+            for pillar in pillars:
+                if pillar.security_contact:
+                    bug.subscribe(pillar.security_contact, owner)
+
+        values = [
+            (bug, owner, key['product'], key['productseries'],
+             key['distribution'], key['distroseries'],
+             key['sourcepackagename'], status, importance, assignee,
+             milestone)
+            for key in target_keys]
+        tasks = create(
+            (BugTask.bug, BugTask.owner, BugTask.product,
+             BugTask.productseries, BugTask.distribution,
+             BugTask.distroseries, BugTask.sourcepackagename, BugTask._status,
+             BugTask.importance, BugTask.assignee, BugTask.milestone),
+            values, get_objects=True)
+
+        del get_property_cache(bug).bugtasks
+        for bugtask in tasks:
+            bugtask.updateTargetNameCache()
+            if bugtask.conjoined_slave:
+                bugtask._syncFromConjoinedSlave()
+        return tasks
+
+    def createTask(self, bug, owner, target, status=None, importance=None,
                    assignee=None, milestone=None):
         """See `IBugTaskSet`."""
-        if not status:
-            status = IBugTask['status'].default
-        if not importance:
-            importance = IBugTask['importance'].default
-        if not assignee:
-            assignee = None
-        if not milestone:
-            milestone = None
+        # Create tasks for accepted nominations if this is a source
+        # package addition. Distribution nominations are for all the
+        # tasks.
+        targets = [target]
+        key = bug_target_to_key(target)
+        if key['distribution'] is not None:
+            for nomination in bug.getNominations(key['distribution']):
+                if not nomination.isApproved():
+                    continue
+                targets.append(
+                    nomination.distroseries.getSourcePackage(
+                        key['sourcepackagename']))
 
-        # Make sure there's no task for this bug already filed
-        # against the target.
-        validate_new_target(bug, target)
-
-        target_key = bug_target_to_key(target)
-        if not bug.private and bug.security_related:
-            product = target_key['product']
-            distribution = target_key['distribution']
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact, owner)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact, owner)
-
-        non_target_create_params = dict(
-            bug=bug,
-            _status=status,
-            importance=importance,
-            assignee=assignee,
-            owner=owner,
-            milestone=milestone)
-        create_params = non_target_create_params.copy()
-        create_params.update(target_key)
-        bugtask = BugTask(**create_params)
-        if target_key['distribution']:
-            # Create tasks for accepted nominations if this is a source
-            # package addition.
-            accepted_nominations = [
-                nomination for nomination in
-                bug.getNominations(target_key['distribution'])
-                if nomination.isApproved()]
-            for nomination in accepted_nominations:
-                accepted_series_task = BugTask(
-                    distroseries=nomination.distroseries,
-                    sourcepackagename=target_key['sourcepackagename'],
-                    **non_target_create_params)
-                accepted_series_task.updateTargetNameCache()
-
-        if bugtask.conjoined_slave:
-            bugtask._syncFromConjoinedSlave()
-
-        bugtask.updateTargetNameCache()
-        del get_property_cache(bug).bugtasks
-        # Because of block_implicit_flushes, it is possible for a new bugtask
-        # to be queued in appropriately, which leads to Bug.bugtasks not
-        # finding the bugtask.
-        Store.of(bugtask).flush()
-        return bugtask
+        tasks = self.createManyTasks(
+            bug, owner, targets, status=status, importance=importance,
+            assignee=assignee, milestone=milestone)
+        return [task for task in tasks if task.target == target][0]
 
     def getStatusCountsForProductSeries(self, user, product_series):
         """See `IBugTaskSet`."""
@@ -1740,129 +1744,55 @@ class BugTaskSet:
         Only bugtasks the specified user has permission to view are
         returned. The Janitor celebrity has permission to view all bugs.
         """
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+        from lp.bugs.model.bugwatch import BugWatch
 
-        if bug is None:
-            bug_clause = ''
-        else:
-            bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
-
-        if user == getUtility(ILaunchpadCelebrities).janitor:
-            # The janitor needs access to all bugs.
-            bug_privacy_filter = ''
-        else:
-            bug_privacy_filter = get_bug_privacy_filter(user)
-            if bug_privacy_filter != '':
-                bug_privacy_filter = "AND " + bug_privacy_filter
-        unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
-        (target_join, target_clause) = self._getTargetJoinAndClause(target)
-        query = """
-            BugTask.bug = Bug.id
-            AND BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask
-                    JOIN Bug ON BugTask.bug = Bug.id
-                    LEFT JOIN BugWatch on Bug.id = BugWatch.bug
-                """ + target_join + """
-                WHERE
-                """ + target_clause + """
-                """ + bug_clause + """
-                """ + bug_privacy_filter + """
-                    AND BugTask.status in (%s, %s, %s)
-                    AND BugTask.assignee IS NULL
-                    AND BugTask.milestone IS NULL
-                    AND Bug.duplicateof IS NULL
-                    AND Bug.date_last_updated < CURRENT_TIMESTAMP
-                        AT TIME ZONE 'UTC' - interval '%s days'
-                    AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE,
-                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, min_days_old)
-        expirable_bugtasks = BugTask.select(
-            query + unconfirmed_bug_condition,
-            clauseTables=['Bug'],
-            orderBy='Bug.date_last_updated')
-        if limit is not None:
-            expirable_bugtasks = expirable_bugtasks.limit(limit)
-        return expirable_bugtasks
-
-    def _getUnconfirmedBugCondition(self):
-        """Return the SQL to filter out BugTasks that has been confirmed
-
-        A bugtasks cannot expire if the bug is, has been, or
-        will be, confirmed to be legitimate. Once the bug is considered
-        valid for one target, it is valid for all targets.
-        """
         statuses_not_preventing_expiration = [
             BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
             BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
             BugTaskStatus.WONTFIX]
-
         unexpirable_status_list = [
             status for status in BugTaskStatus.items
             if status not in statuses_not_preventing_expiration]
+        RelatedBugTaskFlat = ClassAlias(BugTaskFlat)
 
-        return """
-             AND NOT EXISTS (
-                SELECT TRUE
-                FROM BugTask AS RelatedBugTask
-                WHERE RelatedBugTask.bug = BugTask.bug
-                    AND RelatedBugTask.status IN %s)
-            """ % sqlvalues(unexpirable_status_list)
+        (target_joins, target_conds) = self._getTargetJoinAndClause(target)
+        origin = IStore(BugTaskFlat).using(BugTaskFlat, *target_joins)
+        conds = [
+            BugTaskFlat.status.is_in(DB_INCOMPLETE_BUGTASK_STATUSES),
+            BugTaskFlat.assignee == None,
+            BugTaskFlat.milestone == None,
+            BugTaskFlat.duplicateof == None,
+            BugTaskFlat.date_last_updated <
+                UTC_NOW - SQL("INTERVAL ?", (u'%d days' % min_days_old,)),
+            Not(Exists(Select(
+                1, tables=[BugWatch],
+                where=[BugWatch.bugID == BugTaskFlat.bug_id]))),
+            Not(Exists(Select(
+                1, tables=[RelatedBugTaskFlat],
+                where=And(
+                    RelatedBugTaskFlat.bug_id == BugTaskFlat.bug_id,
+                    RelatedBugTaskFlat.status.is_in(
+                        unexpirable_status_list))))),
+            ]
+        conds.extend(target_conds)
+        if bug is not None:
+            conds.append(BugTaskFlat.bug_id == bug.id)
+        # The janitor needs access to all bugs.
+        if user != getUtility(ILaunchpadCelebrities).janitor:
+            bug_privacy_filter = get_bug_privacy_filter(user)
+            if bug_privacy_filter != '':
+                conds.append(bug_privacy_filter)
 
-    TARGET_SELECT = {
-        IDistribution: """
-            SELECT Distribution.id, NULL, NULL, NULL,
-                Distribution.id, NULL
-            FROM Distribution
-            WHERE Distribution.enable_bug_expiration IS TRUE""",
-        IDistroSeries: """
-            SELECT NULL, DistroSeries.id, NULL, NULL,
-                Distribution.id, NULL
-            FROM DistroSeries
-                JOIN Distribution
-                    ON DistroSeries.distribution = Distribution.id
-            WHERE Distribution.enable_bug_expiration IS TRUE""",
-        IProduct: """
-            SELECT NULL, NULL, Product.id, NULL,
-                NULL, Product.id
-            FROM Product
-            WHERE Product.enable_bug_expiration IS TRUE""",
-        IProductSeries: """
-            SELECT NULL, NULL, NULL, ProductSeries.id,
-                NULL, Product.id
-            FROM ProductSeries
-                JOIN Product
-                    ON ProductSeries.Product = Product.id
-            WHERE Product.enable_bug_expiration IS TRUE""",
-        }
+        ids = origin.find(BugTaskFlat.bugtask_id, conds)
+        ids = ids.order_by(BugTaskFlat.date_last_updated)
+        if limit is not None:
+            ids = ids[:limit]
 
-    TARGET_JOIN_CLAUSE = {
-        IDistribution: "BugTask.distribution = target.distribution",
-        IDistroSeries: "BugTask.distroseries = target.distroseries",
-        IProduct: "BugTask.product = target.product",
-        IProductSeries: "BugTask.productseries = target.productseries",
-        }
-
-    def _getJoinForTargets(self, *targets):
-        """Build the UNION of the sub-query for the given set of targets."""
-        selects = ' UNION '.join(
-            self.TARGET_SELECT[target] for target in targets)
-        join_clause = ' OR '.join(
-            self.TARGET_JOIN_CLAUSE[target] for target in targets)
-        # We create this rather bizarre looking structure
-        # because we must replicate the behaviour of BugTask since
-        # we are joining to it. So when distroseries is set,
-        # distribution should be NULL. The two pillar columns will
-        # be used in the WHERE clause.
-        return """
-        JOIN (
-            SELECT 0 AS distribution, 0 AS distroseries,
-                   0 AS product , 0 AS productseries,
-                   0 AS distribution_pillar, 0 AS product_pillar
-            UNION %s
-            ) target
-            ON (%s)""" % (selects, join_clause)
+        return DecoratedResultSet(
+            ids, lambda id: BugTask.get(id),
+            pre_iter_hook=lambda rows: load(BugTask, rows))
 
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
@@ -1876,24 +1806,51 @@ class BugTaskSet:
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
-        if target is None:
-            target_join = self._getJoinForTargets(
-                IDistribution, IDistroSeries, IProduct, IProductSeries)
-            target_clause = "TRUE IS TRUE"
-        elif IDistribution.providedBy(target):
-            target_join = self._getJoinForTargets(
-                IDistribution, IDistroSeries)
-            target_clause = "target.distribution_pillar = %s" % sqlvalues(
-                target)
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+
+        join_map = {
+            Product: (
+                LeftJoin(
+                    ProductSeries,
+                    ProductSeries.id == BugTaskFlat.productseries_id),
+                LeftJoin(
+                    Product,
+                    Product.id.is_in(
+                        (BugTaskFlat.product_id, ProductSeries.productID)))),
+            Distribution: (
+                LeftJoin(
+                    DistroSeries,
+                    DistroSeries.id == BugTaskFlat.distroseries_id),
+                LeftJoin(
+                    Distribution,
+                    Distribution.id.is_in((
+                        BugTaskFlat.distribution_id,
+                        DistroSeries.distributionID)))),
+            }
+        pred_map = {
+            Distribution: Distribution.enable_bug_expiration,
+            Product: Product.enable_bug_expiration,
+            }
+
+        if IDistribution.providedBy(target):
+            want = [Distribution]
+            target_col = Distribution.id
         elif IDistroSeries.providedBy(target):
-            target_join = self._getJoinForTargets(IDistroSeries)
-            target_clause = "BugTask.distroseries = %s" % sqlvalues(target)
+            want = [Distribution]
+            target_col = DistroSeries.id
         elif IProduct.providedBy(target):
-            target_join = self._getJoinForTargets(IProduct, IProductSeries)
-            target_clause = "target.product_pillar = %s" % sqlvalues(target)
+            want = [Product]
+            target_col = Product.id
         elif IProductSeries.providedBy(target):
-            target_join = self._getJoinForTargets(IProductSeries)
-            target_clause = "BugTask.productseries = %s" % sqlvalues(target)
+            want = [Product]
+            target_col = ProductSeries.id
+        elif target is None:
+            want = [Product, Distribution]
+            target_col = None
         elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
@@ -1902,7 +1859,16 @@ class BugTaskSet:
         else:
             raise AssertionError("Unknown BugTarget type.")
 
-        return (target_join, target_clause)
+        joins = []
+        target_expirability_preds = []
+        for cls in want:
+            joins.extend(join_map[cls])
+            target_expirability_preds.append(pred_map[cls])
+        preds = [Or(*target_expirability_preds)]
+        if target_col:
+            preds.append(target_col == target.id)
+
+        return (joins, preds)
 
     def getOpenBugTasksPerProduct(self, user, products):
         """See `IBugTaskSet`."""
@@ -1915,7 +1881,7 @@ class BugTaskSet:
             BugTaskFlat.status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
             BugTaskFlat.duplicateof == None,
             BugTaskFlat.product_id.is_in(product.id for product in products),
-            SQL(get_bug_privacy_filter(user, use_flat=True) or True)
+            SQL(get_bug_privacy_filter(user) or True)
             ).group_by(BugTaskFlat.product_id)
         # The result will return a list of product ids and counts,
         # which will be converted into key-value pairs in the dictionary.
@@ -1966,7 +1932,7 @@ class BugTaskSet:
             BugTaskFlat.sourcepackagename_id.is_in(package_name_ids),
             BugTaskFlat.distribution == distribution,
             BugTaskFlat.duplicateof == None,
-            SQL(get_bug_privacy_filter(user, use_flat=True) or True)
+            SQL(get_bug_privacy_filter(user) or True)
             ).group_by(
                 BugTaskFlat.distribution_id, BugTaskFlat.sourcepackagename_id)
 

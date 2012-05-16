@@ -14,6 +14,7 @@ from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
@@ -784,6 +785,68 @@ class TestSharingService(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, self.service.revokeAccessGrants,
             product, product.owner, sharee, bugs=[bug])
+
+    def test_getSharedArtifacts(self):
+        # Test the getSharedArtifacts method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+
+        bugs = []
+        bug_tasks = []
+        for x in range(0, 10):
+            bug = self.factory.makeBug(
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
+            bugs.append(bug)
+            bug_tasks.append(bug.default_bugtask)
+        branches = []
+        for x in range(0, 10):
+            branch = self.factory.makeBranch(
+                product=product, owner=owner, private=True)
+            branches.append(branch)
+
+        # Grant access to grantee as well as the person who will be doing the
+        # query. The person who will be doing the query is not granted access
+        # to the last bug/branch so those won't be in the result.
+        grantee = self.factory.makePerson()
+        user = self.factory.makePerson()
+
+        def grant_access(artifact, grantee_only):
+            access_artifact = self.factory.makeAccessArtifact(
+                concrete=artifact)
+            self.factory.makeAccessArtifactGrant(
+                artifact=access_artifact, grantee=grantee, grantor=owner)
+            if not grantee_only:
+                self.factory.makeAccessArtifactGrant(
+                    artifact=access_artifact, grantee=user, grantor=owner)
+            return access_artifact
+
+        for i, bug in enumerate(bugs):
+            grant_access(bug, i == 9)
+        # For branches we also need to call makeAccessPolicyArtifact.
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        for i, branch in enumerate(branches):
+            artifact = grant_access(branch, i == 9)
+            # XXX for now we need to subscribe users to the branch in order
+            # for the underlying BranchCollection to allow access. This will
+            # no longer be the case when BranchCollection supports the new
+            # access policy framework.
+            if i < 9:
+                branch.subscribe(
+                    user, BranchSubscriptionNotificationLevel.NOEMAIL,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    owner)
+            self.factory.makeAccessPolicyArtifact(
+                artifact=artifact, policy=policy)
+
+        # Check the results.
+        shared_bugtasks, shared_branches = self.service.getSharedArtifacts(
+            product, grantee, user)
+        self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
+        self.assertContentEqual(branches[:9], shared_branches)
 
 
 class ApiTestMixin:

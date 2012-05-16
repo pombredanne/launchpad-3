@@ -6,9 +6,6 @@
 <metal:form-picker use-macro="context/@@form-picker-macros/form-picker"/>
 <script tal:content="structure string:
 LPJS.use('lp.bugs.bugtracker_overlay', function(Y) {
-    if (Y.UA.ie) {
-        return;
-    }
     Y.on('domready', function () {
         // After the success handler finishes, it calls the
         // next_step function.

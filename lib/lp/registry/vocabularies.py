@@ -1053,7 +1053,7 @@ class NewPillarShareeVocabulary(ValidPersonOrClosedTeamVocabulary):
     existing sharee for the pillar.
     """
 
-    displayname = 'Grant access to project artifacts'
+    displayname = 'Share project information'
     step_title = 'Search for user or exclusive team with whom to share'
 
     def __init__(self, context):

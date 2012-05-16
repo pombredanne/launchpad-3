@@ -191,7 +191,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
                                  source_component=None):
         # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
         def eager_load(rows):
@@ -201,7 +200,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
-                (SourcePackageRelease.sourcepackagenameID,
+                (SourcePackagePublishingHistory.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
                  SourcePackagePublishingHistory.sectionID),
                 SourcePackagePublishingHistory.archiveID == archive.id,
@@ -209,15 +208,14 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
                     active_publishing_status),
-                SourcePackageRelease.id ==
-                    SourcePackagePublishingHistory.sourcepackagereleaseID,
-                SourcePackageRelease.sourcepackagenameID.is_in(
+                SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
-                        SourcePackageRelease.sourcepackagenameID,
+                        SourcePackagePublishingHistory.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id),
                 ).config(
-                    distinct=(SourcePackageRelease.sourcepackagenameID,)),
+                    distinct=(
+                        SourcePackagePublishingHistory.sourcepackagenameID,)),
             id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
         return [

@@ -33,6 +33,8 @@ class IAccessArtifact(Interface):
 
     id = Attribute("ID")
     concrete_artifact = Attribute("Concrete artifact")
+    bug_id = Attribute("bug_id")
+    branch_id = Attribute("branch_id")
 
 
 class IAccessArtifactGrant(Interface):
