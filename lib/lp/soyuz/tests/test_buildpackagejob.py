@@ -3,9 +3,13 @@
 
 """Test BuildQueue features."""
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.restfulclient.errors import Unauthorized
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -228,52 +232,131 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_build(self, purpose=None, component=None, urgency=None, pocket=None):
-        if purpose is not None:
-            archive = self.factory.makeArchive(purpose=purpose)
+    def make_build_job(self, purpose=None, private=False, component="main",
+                       urgency="high", pocket="RELEASE", age=None):
+        if purpose is not None or private:
+            archive = self.factory.makeArchive(
+                purpose=purpose, private=private)
         else:
             archive = None
         spph = self.factory.makeSourcePackagePublishingHistory(
             archive=archive, component=component, urgency=urgency)
-        return self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease, pocket=pocket)
+        naked_spph = removeSecurityProxy(spph)  # needed for private archives
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=naked_spph.sourcepackagerelease,
+            pocket=pocket)
+        job = removeSecurityProxy(build).makeJob()
+        if age is not None:
+            removeSecurityProxy(job).job.date_created = (
+                datetime.now(pytz.timezone("UTC")) - timedelta(seconds=age))
+        return job
 
     def test_score_unusual_component(self):
-        build = self.make_build(component="unusual")
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component="unusual")
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease)
         build.queueBuild()
         job = build.buildqueue_record.specific_job
         # For now just test that it doesn't raise an Exception
         job.score()
 
     def test_main_release_low_score(self):
-        build = self.make_build(
-            component="main", urgency="low", pocket="RELEASE")
-        job = build.makeJob()
-        self.assertEquals(2505, job.score())
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
+        job = self.make_build_job(component="main", urgency="low")
+        self.assertEqual(2505, job.score())
 
     def test_copy_archive_main_release_low_score(self):
-        build = self.make_build(
-            purpose="COPY", component="main", urgency="low", pocket="RELEASE")
-        job = build.makeJob()
-        self.assertEquals(-95, job.score())
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) - 2600 (copy archive) = -95.
+        # With this penalty, even language-packs and build retries will be
+        # built before copy archives.
+        job = self.make_build_job(
+            purpose="COPY", component="main", urgency="low")
+        self.assertEqual(-95, job.score())
 
     def test_copy_archive_relative_score_is_applied(self):
-        build = self.make_build(
-            purpose="COPY", component="main", urgency="low", pocket="RELEASE")
-        removeSecurityProxy(build.archive).relative_build_score = 2600
-        job = build.makeJob()
-        self.assertEquals(2505, job.score())
+        # Per-archive relative build scores are applied, in this case
+        # exactly offsetting the copy-archive penalty.
+        job = self.make_build_job(
+            purpose="COPY", component="main", urgency="low")
+        removeSecurityProxy(job.build.archive).relative_build_score = 2600
+        self.assertEqual(2505, job.score())
+
+    def test_archive_negative_relative_score_is_applied(self):
+        # Negative per-archive relative build scores are allowed.
+        job = self.make_build_job(component="main", urgency="low")
+        removeSecurityProxy(job.build.archive).relative_build_score = -100
+        self.assertEqual(2405, job.score())
+
+    def test_private_archive_bonus_is_applied(self):
+        # Private archives get a bonus of 10000.
+        job = self.make_build_job(
+            private=True, component="main", urgency="high")
+        self.assertEqual(12515, job.score())
+
+    def test_main_release_low_recent_score(self):
+        # Builds created less than five minutes ago get no bonus.
+        job = self.make_build_job(component="main", urgency="low", age=290)
+        self.assertEqual(2505, job.score())
+
+    def test_universe_release_high_five_minutes_score(self):
+        # 1500 (RELEASE) + 250 (universe) + 15 (high) + 5 (>300s) = 1770.
+        job = self.make_build_job(
+            component="universe", urgency="high", age=310)
+        self.assertEqual(1770, job.score())
+
+    def test_multiverse_release_medium_fifteen_minutes_score(self):
+        # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) + 10 (>900s) = 1520.
+        job = self.make_build_job(
+            component="multiverse", urgency="medium", age=1000)
+        self.assertEqual(1520, job.score())
+
+    def test_main_release_emergency_thirty_minutes_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 20 (emergency) + 15 (>1800s) = 2535.
+        job = self.make_build_job(
+            component="main", urgency="emergency", age=1801)
+        self.assertEqual(2535, job.score())
+
+    def test_restricted_release_low_one_hour_score(self):
+        # 1500 (RELEASE) + 750 (restricted) + 5 (low) + 20 (>3600s) = 2275.
+        job = self.make_build_job(
+            component="restricted", urgency="low", age=4000)
+        self.assertEqual(2275, job.score())
+
+    def test_backports_score(self):
+        # BACKPORTS is the lowest-priority pocket.
+        job = self.make_build_job(pocket="BACKPORTS")
+        self.assertEqual(1015, job.score())
+
+    def test_release_score(self):
+        # RELEASE ranks next above BACKPORTS.
+        job = self.make_build_job(pocket="RELEASE")
+        self.assertEqual(2515, job.score())
+
+    def test_proposed_updates_score(self):
+        # PROPOSED and UPDATES both rank next above RELEASE.  The reason why
+        # PROPOSED and UPDATES have the same priority is because sources in
+        # both pockets are submitted to the same policy and should reach
+        # their audience as soon as possible (see more information about
+        # this decision in bug #372491).
+        proposed_job = self.make_build_job(pocket="PROPOSED")
+        self.assertEqual(4015, proposed_job.score())
+        updates_job = self.make_build_job(pocket="UPDATES")
+        self.assertEqual(4015, updates_job.score())
+
+    def test_security_updates_score(self):
+        # SECURITY is the top-ranked pocket.
+        job = self.make_build_job(pocket="SECURITY")
+        self.assertEqual(5515, job.score())
 
     def test_score_packageset(self):
-        build = self.make_build(
-            component="main", urgency="low", pocket="RELEASE")
+        job = self.make_build_job(component="main", urgency="low")
         packageset = self.factory.makePackageset(
-            distroseries=build.distro_series)
+            distroseries=job.build.distro_series)
         removeSecurityProxy(packageset).add(
-            [build.source_package_release.sourcepackagename])
+            [job.build.source_package_release.sourcepackagename])
         removeSecurityProxy(packageset).score = 100
-        job = build.makeJob()
-        self.assertEquals(2605, job.score())
+        self.assertEqual(2605, job.score())
 
     def test_score_packageset_forbids_non_buildd_admin(self):
         # Being the owner of a packageset is not enough to allow changing

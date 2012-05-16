@@ -1412,3 +1412,19 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         assign_to_builder(self, 'xxr-daptup', 1, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)
+
+
+class TestBuildQueueManual(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makeBuildQueue(self):
+        """Produce a `BuildQueue` object to test."""
+        return self.factory.makeSourcePackageRecipeBuildJob()
+
+    def test_manualScore_prevents_rescoring(self):
+        # Manually-set scores are fixed.
+        buildqueue = self._makeBuildQueue()
+        initial_score = buildqueue.lastscore
+        buildqueue.manualScore(initial_score + 5000)
+        buildqueue.score()
+        self.assertEqual(initial_score + 5000, buildqueue.lastscore)
