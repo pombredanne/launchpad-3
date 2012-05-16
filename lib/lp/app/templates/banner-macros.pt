@@ -1,0 +1,16 @@
+<macros
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="launchpad"
+  tal:omit-tag=""
+>
+
+<metal:privacy define-macro="privacy-banner">
+</metal:privacy>
+
+<metal:beta define-macro="beta-banner">
+</metal:beta>
+
+</macros>
