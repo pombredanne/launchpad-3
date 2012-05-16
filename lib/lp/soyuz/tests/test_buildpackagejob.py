@@ -8,7 +8,6 @@ from datetime import (
     timedelta,
     )
 
-from lazr.restfulclient.errors import Unauthorized
 import pytz
 from simplejson import dumps
 from zope.component import getUtility
