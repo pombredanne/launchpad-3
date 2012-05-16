@@ -41,8 +41,8 @@
 .beta-feature {
     font-weight: bold;
     }
-.beta-banner .global-notification-close,
-.beta-banner .global-notification-close:active,
-.beta-banner .global-notification-close:visited {
+.yui3-betabanner-content .global-notification-close,
+.yui3-betabanner-content .global-notification-close:active,
+.yui3-betabanner-content .global-notification-close:visited {
     color: #fff;
     }
