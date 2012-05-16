@@ -95,10 +95,6 @@ class IPackagesetViewOnly(IHasOwner):
         description=_(
             'Used internally to link package sets across distro series.'))
 
-    score = exported(Int(
-        title=_("Build score"), required=True, readonly=True,
-        description=_("Build score bonus for packages in this package set.")))
-
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
 
@@ -357,12 +353,9 @@ class IPackagesetRestricted(Interface):
     """A writeable interface for restricted attributes of package sets."""
     export_as_webservice_entry(publish_web_link=False)
 
-    @mutator_for(IPackagesetViewOnly["score"])
-    @operation_parameters(score=copy_field(IPackagesetViewOnly["score"]))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def setScore(score):
-        """Set the build score bonus for this package set."""
+    score = exported(Int(
+        title=_("Build score"), required=True, readonly=False,
+        description=_("Build score bonus for packages in this package set.")))
 
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit, IPackagesetRestricted):

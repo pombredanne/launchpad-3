@@ -329,10 +329,6 @@ class Packageset(Storm):
             Packageset.id != self.id)
         return _order_result_set(result_set)
 
-    def setScore(self, score):
-        """See `IPackageset`."""
-        self.score = score
-
 
 class PackagesetSet:
     """See `IPackagesetSet`."""

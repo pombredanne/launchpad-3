@@ -784,12 +784,14 @@
         class="lp.soyuz.model.packageset.Packageset">
         <allow
             interface="lp.soyuz.interfaces.packageset.IPackagesetViewOnly"/>
+        <allow
+            interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
         <require
             permission="launchpad.Moderate"
-            interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
+            set_schema="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
     </class>
     <class
         class="lp.soyuz.model.packageset.PackagesetSet">
