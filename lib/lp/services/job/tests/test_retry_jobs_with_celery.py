@@ -4,6 +4,12 @@
 """Tests for running jobs via Celery."""
 
 
+from datetime import datetime
+import pytz
+from time import (
+    sleep,
+    time,
+    )
 import transaction
 from lazr.delegates import delegates
 from zope.interface import implements
@@ -42,8 +48,8 @@ class TestJob(BaseRunnableJob):
         pass
 
     @classmethod
-    def makeInstance(cls, ujob_id):
-        return cls(ujob_id)
+    def makeInstance(cls, job_id):
+        return cls(job_id)
 
     @classmethod
     def getDBClass(cls):
@@ -53,13 +59,19 @@ class TestJob(BaseRunnableJob):
 class RetryException(Exception):
     """An exception used as a retry exception in TestJobWithRetryError."""
 
+
 class TestJobWithRetryError(TestJob):
     """A dummy job."""
 
     retry_error_types = (RetryException, )
 
     def run(self):
+        """Raise a retry exception on the the first attempt to run the job."""
         if self.job.attempt_count < 2:
+            # Shorten the lease time: We don't want to wait the
+            # default 300 seconds until the job is queued again.
+            self.job.lease_expires = datetime.fromtimestamp(
+                time() + 1, pytz.timezone('UTC'))
             raise RetryException
 
 
@@ -83,7 +95,8 @@ class TestRetryJobsViaCelery(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, dbjob.status)
 
     def test_jobs_with_retry_exceptions_are_queued_again(self):
-        # TestJob can be run via Celery.
+        # A job that raises a retry error is automatically queued
+        # and executed again.
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes': 'TestJobWithRetryError'
         }))
@@ -91,11 +104,23 @@ class TestRetryJobsViaCelery(TestCaseWithFactory):
             job = TestJobWithRetryError()
             job.celeryRunOnCommit()
             job_id = job.job_id
-            import pdb; pdb.set_trace()
             transaction.commit()
-            import pdb; pdb.set_trace()
-        store = IStore(Job)
-        store.invalidate()
+            store = IStore(Job)
+
+            # block_on_job() is not aware of the Celery request
+            # issued when the retry exception occurs, but we can
+            # check the status of the job in the database.
+            def job_finished():
+                transaction.abort()
+                dbjob = store.find(Job, id=job_id)[0]
+                return (
+                    dbjob.status == JobStatus.COMPLETED and
+                    dbjob.attempt_count == 2)
+            count = 0
+            while count < 50 and not job_finished():
+                sleep(0.2)
+                count += 1
+
         dbjob = store.find(Job, id=job_id)[0]
         self.assertEqual(2, dbjob.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, dbjob.status)

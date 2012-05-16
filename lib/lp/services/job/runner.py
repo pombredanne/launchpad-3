@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -19,9 +19,11 @@ __all__ = [
 
 from calendar import timegm
 from collections import defaultdict
+from datetime import datetime
 import contextlib
 import logging
 import os
+import pytz
 from resource import (
     getrlimit,
     RLIMIT_AS,
@@ -202,8 +204,18 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJob
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
+        if self.job.lease_expires is not None:
+            # Don't try to run the task before the lease expires:
+            # lazr.jobrunner.celerytask.RunJob.run() will silently ignore
+            # it. lease_expires has a timezone, but Celery does not like
+            # datetime instances with a timezone.
+            utc_now = datetime.now(tz=pytz.timezone('UTC'))
+            delta = self.job.lease_expires - utc_now
+            eta = datetime.now() + delta
+        else:
+            eta = None
         return cls.apply_async(
-            (ujob_id, self.config.dbuser), queue=self.task_queue)
+            (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta)
 
     def getDBClass(self):
         return self.context.__class__
@@ -225,30 +237,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def queue(self, manage_transaction=False, abort_transaction=False):
         """See `IJob`."""
-        # xxxxxxxxx add ETA
-        self.xxxRunExtraCommit()
-        self.job.queue(manage_transaction, abort_transaction)
-        #xxxx self.celeryRunOnCommit()
-
-    def xxxRunExtraCommit(self):
-        """Configure transaction so that commit runs this job via Celery."""
-        raise Exception('waaaaa2 %s %s %s' % (
-            self.__class__.__name__,
-            celery_enabled(self.__class__.__name__),
-            getFeatureFlag('jobs.celery.enabled_classes')))
-        if not celery_enabled(self.__class__.__name__):
-            return
-        current = transaction.get()
-        current.addAfterCommitHook(self.xxxextraCommitHook)
-
-    def xxxExtraCommitHook(self, succeeded):
-        """Hook function to call when a commit completes."""
-        if succeeded:
-            ignore_result = bool(BaseRunnableJob.celery_responses is None)
-            response = self.runViaCelery(ignore_result)
-            if not ignore_result:
-                BaseRunnableJob.celery_responses.append(response)
-
+        self.job.queue(
+            manage_transaction, abort_transaction,
+            add_commit_hook=self.celeryRunOnCommit)
 
 
 class BaseJobRunner(LazrJobRunner):
