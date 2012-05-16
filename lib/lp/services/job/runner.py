@@ -26,7 +26,6 @@ from datetime import (
 import contextlib
 import logging
 import os
-import pytz
 from resource import (
     getrlimit,
     RLIMIT_AS,
