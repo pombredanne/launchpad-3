@@ -10,6 +10,7 @@ from datetime import (
 
 from lazr.restfulclient.errors import Unauthorized
 import pytz
+from simplejson import dumps
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -22,6 +23,7 @@ from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -41,13 +43,13 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     api_url,
-    launchpadlib_for,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.pages import webservice_for_person
 
 
 def find_job(test, name, processor='386'):
@@ -383,26 +385,38 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         # A packageset's build score is readable by anyone.
         packageset = self.factory.makePackageset()
         removeSecurityProxy(packageset).score = 100
-        lp = launchpadlib_for("testing", self.factory.makePerson())
-        entry = lp.load(api_url(packageset))
-        self.assertEqual(100, entry.score)
+        webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        self.assertEqual(100, entry["score"])
 
     def test_score_packageset_forbids_non_buildd_admin(self):
         # Being the owner of a packageset is not enough to allow changing
         # its build score, since this affects a site-wide resource.
         person = self.factory.makePerson()
         packageset = self.factory.makePackageset(owner=person)
-        lp = launchpadlib_for("testing", person)
-        entry = lp.load(api_url(packageset))
-        entry.score = 100
-        self.assertRaises(Unauthorized, entry.lp_save)
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json", dumps(dict(score=100)))
+        self.assertEqual(401, response.status)
+        new_entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        self.assertEqual(0, new_entry["score"])
 
     def test_score_packageset_allows_buildd_admin(self):
         buildd_admins = getUtility(IPersonSet).getByName(
             "launchpad-buildd-admins")
         buildd_admin = self.factory.makePerson(member_of=[buildd_admins])
         packageset = self.factory.makePackageset()
-        lp = launchpadlib_for("testing", buildd_admin)
-        entry = lp.load(api_url(packageset))
-        entry.score = 100
-        entry.lp_save()
+        webservice = webservice_for_person(
+            buildd_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json", dumps(dict(score=100)))
+        self.assertEqual(209, response.status)
+        self.assertEqual(100, response.jsonBody()["score"])
