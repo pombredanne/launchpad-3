@@ -50,9 +50,8 @@ class TestInformationTypeVocabulary(TestCase):
             term = vocab.getTermByToken('USERDATA')
             self.assertEqual('Private', term.title)
             self.assertEqual(
-                "Only users with permission to see the project's artifacts "
-                "containing\nprivate information can see this "
-                "information.\n",
+                "Visible only to users with whom the project has shared "
+                "information\ncontaining private information.\n",
                 term.description)
 
     def test_userdata(self):
@@ -60,6 +59,6 @@ class TestInformationTypeVocabulary(TestCase):
         term = vocab.getTermByToken('USERDATA')
         self.assertEqual('User Data', term.title)
         self.assertEqual(
-            "Only users with permission to see the project's artifacts "
-            "containing\nuser data can see this information.\n",
+            "Visible only to users with whom the project has shared "
+            "information\ncontaining user data.\n",
             term.description)
