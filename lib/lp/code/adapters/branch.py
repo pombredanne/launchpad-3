@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components related to branches."""
@@ -8,6 +8,7 @@ __all__ = [
     "BranchDelta",
     "BranchMergeProposalDelta",
     "BranchMergeProposalNoPreviewDiffDelta",
+    "convert_to_information_type",
     ]
 
 from contextlib import contextmanager
@@ -23,6 +24,7 @@ from lp.code.interfaces.branch import (
     IBranchDelta,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.registry.enums import InformationType
 
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
@@ -150,3 +152,10 @@ class BranchMergeProposalNoPreviewDiffDelta(BranchMergeProposalDelta):
     new_values = tuple(
         name for name in BranchMergeProposalDelta.new_values
         if name != "preview_diff")
+
+
+def convert_to_information_type(private):
+    if private:
+        return InformationType.USERDATA
+    else:
+        return InformationType.PUBLIC

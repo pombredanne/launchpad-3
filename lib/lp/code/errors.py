@@ -155,6 +155,10 @@ class BranchCannotBePrivate(Exception):
     """The branch cannot be made private."""
 
 
+class BranchCannotChangeInformationType(Exception):
+    """The branch cannot change its information type."""
+
+
 class InvalidBranchException(Exception):
     """Base exception for an error resolving a branch for a component.
 

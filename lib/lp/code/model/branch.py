@@ -61,6 +61,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.adapters.branch import convert_to_information_type
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -77,6 +78,7 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
+    BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
@@ -128,7 +130,10 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
-from lp.registry.enums import InformationType
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -186,34 +191,45 @@ class Branch(SQLBase, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
 
     @property
-    def private(self):
+    def _private(self):
         return self.transitively_private
+
+    @property
+    def private(self):
+        return self.information_type in PRIVATE_INFORMATION_TYPES
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.explicitly_private:
+        return self.transitionToInformationType(
+            convert_to_information_type(private), user)
+
+    def transitionToInformationType(self, information_type, who):
+        """See `IBranch`."""
+        if self.information_type == information_type:
             return
+        if (
+            self.stacked_on and self.stacked_on.information_type !=
+            InformationType.PUBLIC and information_type !=
+            self.stacked_on.information_type):
+            raise BranchCannotChangeInformationType()
+        private = information_type in PRIVATE_INFORMATION_TYPES
         # Only check the privacy policy if the user is not special.
-        if (not user_has_special_branch_access(user)):
+        if (not user_has_special_branch_access(who)):
             policy = IBranchNamespacePolicy(self.namespace)
 
             if private and not policy.canBranchesBePrivate():
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
+        self.information_type = information_type
+        # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
         # otherwise we need to reload the value.
         if private:
             self.transitively_private = True
-            self.information_type = InformationType.USERDATA
         else:
             self.transitively_private = AutoReload
-            self.information_type = InformationType.PUBLIC
-
-    def transitionToInformationType(self, information_type, who):
-        """See `IBranch`."""
-        self.information_type = information_type
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1052,6 +1068,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
+        if self.stacked_on.information_type != InformationType.PUBLIC:
+            self.information_type = self.stacked_on.information_type
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
         else:
@@ -1207,7 +1225,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.explicitly_private:
+        if self.information_type not in PRIVATE_INFORMATION_TYPES:
             return True
         if user is None:
             return False
