@@ -226,14 +226,17 @@ class TestBugTaskCreation(TestCaseWithFactory):
         self.assertEqual(tasks[2][0], evolution)
 
 
-class TestBugTaskCreationPackageComponent(TestCase):
+class TestBugTaskCreationPackageComponent(TestCaseWithFactory):
     """IBugTask contains a convenience method to look up archive component
 
     Obviously, it only applies to tasks that specify package information.
     """
 
+    layer = DatabaseFunctionalLayer
+
     def test_doesnot_apply(self):
         """Tasks without package information should return None"""
+        login('foo.bar@canonical.com')
         bug_one = getUtility(IBugSet).get(1)
         bugtaskset = getUtility(IBugTaskSet)
         evolution = getUtility(IProductSet).get(5)
