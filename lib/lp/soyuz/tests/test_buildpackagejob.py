@@ -157,7 +157,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         self.non_ppa.require_virtualized = False
 
         self.builds = []
-        for sourcename in (
+        sourcenames = [
             "gedit",
             "firefox",
             "cobblers",
@@ -168,7 +168,8 @@ class TestBuildPackageJob(TestBuildJobBase):
             "bison",
             "flex",
             "postgres",
-            ):
+            ]
+        for sourcename in sourcenames:
             self.builds.extend(
                 self.publisher.getPubSource(
                     sourcename=sourcename,
