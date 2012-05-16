@@ -19,7 +19,10 @@ __all__ = [
 
 from calendar import timegm
 from collections import defaultdict
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import contextlib
 import logging
 import os
@@ -211,7 +214,9 @@ class BaseRunnableJob(BaseRunnableJobSource):
             # datetime instances with a timezone.
             utc_now = datetime.now(tz=pytz.timezone('UTC'))
             delta = self.job.lease_expires - utc_now
-            eta = datetime.now() + delta
+            # Add one second of "slack time" so that the lease really
+            # expires before the job will be run again.
+            eta = datetime.now() + delta + timedelta(seconds=1)
         else:
             eta = None
         return cls.apply_async(
