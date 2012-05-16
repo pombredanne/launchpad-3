@@ -3,14 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-CREATE OR REPLACE FUNCTION public.bug_row(bug_id integer)
- RETURNS bug
- LANGUAGE sql
- STABLE
-AS $function$
-    SELECT * FROM Bug WHERE id=$1;
-$function$
-
 CREATE OR REPLACE FUNCTION public.bug_summary_dec(bugsummary)
  RETURNS void
  LANGUAGE sql
