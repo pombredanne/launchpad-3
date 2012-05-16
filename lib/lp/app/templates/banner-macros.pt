@@ -8,6 +8,12 @@
 >
 
 <metal:privacy define-macro="privacy-banner">
+  <div class="yui3-privacybanner-content">
+    <div id="privacy-banner" class="global-notification">
+      <span class="sprite notification-private"></span>
+      <span class="banner-text">The information on this page is private.</span>
+    </div>
+  </div>
 </metal:privacy>
 
 <metal:beta define-macro="beta-banner">
