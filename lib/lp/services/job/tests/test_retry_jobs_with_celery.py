@@ -4,7 +4,10 @@
 """Tests for running jobs via Celery."""
 
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import pytz
 from time import (
     sleep,
@@ -65,13 +68,14 @@ class TestJobWithRetryError(TestJob):
 
     retry_error_types = (RetryException, )
 
+    retry_delay = timedelta(seconds=1)
+
     def run(self):
         """Raise a retry exception on the the first attempt to run the job."""
         if self.job.attempt_count < 2:
-            # Shorten the lease time: We don't want to wait the
-            # default 300 seconds until the job is queued again.
-            self.job.lease_expires = datetime.fromtimestamp(
-                time() + 1, pytz.timezone('UTC'))
+            # Reset the lease so that the next attempt to run the
+            # job does not fail with a LeaseHeld error.
+            self.job.lease_expires = None
             raise RetryException
 
 

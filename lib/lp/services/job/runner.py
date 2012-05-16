@@ -112,6 +112,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     celery_responses = None
 
+    retry_delay = timedelta(seconds=1)
+
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
@@ -208,15 +210,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
         if self.job.lease_expires is not None:
-            # Don't try to run the task before the lease expires:
-            # lazr.jobrunner.celerytask.RunJob.run() will silently ignore
-            # it. lease_expires has a timezone, but Celery does not like
-            # datetime instances with a timezone.
-            utc_now = datetime.now(tz=pytz.timezone('UTC'))
-            delta = self.job.lease_expires - utc_now
-            # Add one second of "slack time" so that the lease really
-            # expires before the job will be run again.
-            eta = datetime.now() + delta + timedelta(seconds=1)
+            eta = datetime.now() + self.retry_delay
         else:
             eta = None
         return cls.apply_async(
