@@ -1225,13 +1225,6 @@ is the approver.
     ...     print spec.name
     extension-manager-upgrades
 
-The Foo Bar person has a single spec which has feedback requested:
-
-    >>> filter = [SpecificationFilter.FEEDBACK]
-    >>> for spec in foobar.specifications(filter=filter):
-    ...     print spec.name
-    e4x
-
 But has registered 5 of them:
 
     >>> filter = [SpecificationFilter.CREATOR]

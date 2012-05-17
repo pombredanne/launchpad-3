@@ -57,7 +57,6 @@ from lp.blueprints.model.specificationbug import SpecificationBug
 from lp.blueprints.model.specificationdependency import (
     SpecificationDependency,
     )
-from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
@@ -191,8 +190,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription',
         orderBy=['displayname', 'name'])
-    feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
-        joinColumn='specification', orderBy='id')
     sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
@@ -434,12 +431,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if sprintspecification.sprint.name == sprintname:
                 return sprintspecification
         return None
-
-    def getFeedbackRequests(self, person):
-        """See ISpecification."""
-        fb = SpecificationFeedback.selectBy(
-            specification=self, reviewer=person)
-        return fb.prejoin(['requester'])
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""
@@ -698,32 +689,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return False
 
         return bool(self.subscription(person))
-
-    # queueing
-    def queue(self, reviewer, requester, queuemsg=None):
-        """See ISpecification."""
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester == requester.id):
-                # we have a relevant request already, update it
-                fbreq.queuemsg = queuemsg
-                return fbreq
-        # since no previous feedback request existed for this person,
-        # create a new one
-        return SpecificationFeedback(
-            specification=self,
-            reviewer=reviewer,
-            requester=requester,
-            queuemsg=queuemsg)
-
-    def unqueue(self, reviewer, requester):
-        """See ISpecification."""
-        # see if a relevant queue entry exists, and if so, delete it
-        for fbreq in self.feedbackrequests:
-            if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requester.id == requester.id):
-                SpecificationFeedback.delete(fbreq.id)
-                return
 
     # Template methods for BugLinkTargetMixin
     buglinkClass = SpecificationBug

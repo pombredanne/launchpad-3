@@ -840,7 +840,6 @@ class Person(
             SpecificationFilter.ASSIGNEE,
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
-            SpecificationFilter.FEEDBACK,
             SpecificationFilter.SUBSCRIBER])
         for role in roles:
             if role in filter:
@@ -880,10 +879,6 @@ class Person(
             base += """ OR Specification.id in
                 (SELECT specification FROM SpecificationSubscription
                  WHERE person = %(my_id)d)"""
-        if SpecificationFilter.FEEDBACK in filter:
-            base += """ OR Specification.id in
-                (SELECT specification FROM SpecificationFeedback
-                 WHERE reviewer = %(my_id)d)"""
         base += ') '
 
         # filter out specs on inactive products
@@ -3882,40 +3877,6 @@ class PersonSet:
             DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
             ''' % vars())
 
-    def _mergeSpecificationFeedback(self, cur, from_id, to_id):
-        # Update the SpecificationFeedback entries that will not conflict
-        # and trash the rest.
-
-        # First we handle the reviewer.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET reviewer=%(to_id)d
-            WHERE reviewer=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE reviewer = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
-            ''' % vars())
-
-        # And now we handle the requester.
-        cur.execute('''
-            UPDATE SpecificationFeedback
-            SET requester=%(to_id)d
-            WHERE requester=%(from_id)d AND specification NOT IN
-                (
-                SELECT specification
-                FROM SpecificationFeedback
-                WHERE requester = %(to_id)d
-                )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
-            ''' % vars())
-
     def _mergeSpecificationSubscription(self, cur, from_id, to_id):
         # Update the SpecificationSubscription entries that will not conflict
         # and trash the rest
@@ -4311,10 +4272,6 @@ class PersonSet:
 
         self._mergeStructuralSubscriptions(cur, from_id, to_id)
         skip.append(('structuralsubscription', 'subscriber'))
-
-        self._mergeSpecificationFeedback(cur, from_id, to_id)
-        skip.append(('specificationfeedback', 'reviewer'))
-        skip.append(('specificationfeedback', 'requester'))
 
         self._mergeSpecificationSubscription(cur, from_id, to_id)
         skip.append(('specificationsubscription', 'person'))

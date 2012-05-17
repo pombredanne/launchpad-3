@@ -43,7 +43,6 @@ __all__ = [
     'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
-    'PersonSpecFeedbackView',
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
@@ -602,8 +601,7 @@ class PersonSpecsMenu(NavigationMenu):
     usedfor = IPerson
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
-             'subscriber', 'registrant', 'feedback',
-             'workload']
+             'subscriber', 'registrant', 'workload']
 
     def registrant(self):
         text = 'Registrant'
@@ -630,12 +628,6 @@ class PersonSpecsMenu(NavigationMenu):
     def subscriber(self):
         text = 'Subscriber'
         return Link('+specs?role=subscriber', text, icon='blueprint')
-
-    def feedback(self):
-        text = 'Feedback requests'
-        summary = 'List specs where feedback has been requested from %s' % (
-            self.context.displayname)
-        return Link('+specfeedback', text, summary, icon='info')
 
     def workload(self):
         text = 'Workload'
@@ -1354,17 +1346,6 @@ class PersonSpecWorkloadTableView(LaunchpadView):
         """
         return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
-
-
-class PersonSpecFeedbackView(HasSpecificationsView):
-
-    label = 'Feature feedback requests'
-    page_title = label
-
-    @cachedproperty
-    def feedback_specs(self):
-        filter = [SpecificationFilter.FEEDBACK]
-        return self.context.specifications(filter=filter)
 
 
 class PersonVouchersView(LaunchpadFormView):
