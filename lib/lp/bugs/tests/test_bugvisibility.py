@@ -137,7 +137,7 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
                     self.bug.subscribe(user, self.owner)
                     self.assertTrue(self.bug.userCanView(user))
 
-    def test_subscribeGrantsVisibilityUsingTriggerss(self):
+    def test_subscribeGrantsVisibilityUsingTriggers(self):
         # When a user is subscribed to a bug, they are granted access. In this
         # test, the database triggers are used.
         user = self.factory.makePerson()
