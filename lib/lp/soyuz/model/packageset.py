@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -69,6 +69,8 @@ class Packageset(Storm):
 
     packagesetgroup_id = Int(name='packagesetgroup', allow_none=False)
     packagesetgroup = Reference(packagesetgroup_id, 'PackagesetGroup.id')
+
+    score = Int(allow_none=False)
 
     def add(self, data):
         """See `IPackageset`."""
