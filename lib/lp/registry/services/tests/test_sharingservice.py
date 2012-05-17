@@ -914,7 +914,8 @@ class TestSharingService(TestCaseWithFactory):
             [(product, InformationType.USERDATA)])
         for i, branch in enumerate(branches):
             artifact = grant_access(branch, i == 9)
-            # XXX for now we need to subscribe users to the branch in order
+            # XXX bug=1001042 wallyworld 2012-05-18
+            # for now we need to subscribe users to the branch in order
             # for the underlying BranchCollection to allow access. This will
             # no longer be the case when BranchCollection supports the new
             # access policy framework.
@@ -964,7 +965,8 @@ class TestSharingService(TestCaseWithFactory):
             grant_access(bug)
         for branch in branches[:5]:
             grant_access(branch)
-            # XXX for now we need to subscribe users to the branch in order
+            # XXX bug=1001042 wallyworld 2012-05-18
+            # for now we need to subscribe users to the branch in order
             # for the underlying BranchCollection to allow access. This will
             # no longer be the case when BranchCollection supports the new
             # access policy framework.
