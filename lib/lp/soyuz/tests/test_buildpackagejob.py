@@ -377,18 +377,18 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             distroseries=job.build.distro_series)
         removeSecurityProxy(packageset).add(
             [job.build.source_package_release.sourcepackagename])
-        removeSecurityProxy(packageset).score = 100
+        removeSecurityProxy(packageset).relative_build_score = 100
         self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
 
     def test_score_packageset_readable(self):
         # A packageset's build score is readable by anyone.
         packageset = self.factory.makePackageset()
-        removeSecurityProxy(packageset).score = 100
+        removeSecurityProxy(packageset).relative_build_score = 100
         webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
         entry = webservice.get(
             api_url(packageset), api_version="devel").jsonBody()
-        self.assertEqual(100, entry["score"])
+        self.assertEqual(100, entry["relative_build_score"])
 
     def test_score_packageset_forbids_non_buildd_admin(self):
         # Being the owner of a packageset is not enough to allow changing
@@ -400,11 +400,12 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         entry = webservice.get(
             api_url(packageset), api_version="devel").jsonBody()
         response = webservice.patch(
-            entry["self_link"], "application/json", dumps(dict(score=100)))
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
         self.assertEqual(401, response.status)
         new_entry = webservice.get(
             api_url(packageset), api_version="devel").jsonBody()
-        self.assertEqual(0, new_entry["score"])
+        self.assertEqual(0, new_entry["relative_build_score"])
 
     def test_score_packageset_allows_buildd_admin(self):
         buildd_admins = getUtility(IPersonSet).getByName(
@@ -416,6 +417,7 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         entry = webservice.get(
             api_url(packageset), api_version="devel").jsonBody()
         response = webservice.patch(
-            entry["self_link"], "application/json", dumps(dict(score=100)))
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
         self.assertEqual(209, response.status)
-        self.assertEqual(100, response.jsonBody()["score"])
+        self.assertEqual(100, response.jsonBody()["relative_build_score"])
