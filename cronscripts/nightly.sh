@@ -10,28 +10,8 @@
 # Note that http/ftp proxies are needed by the product
 # release finder
 
-# Only run this script on loganberry
-THISHOST=$(uname -n)
-if [ "loganberry" != "$THISHOST" ]
-then
-        echo "This script must be run on loganberry."
-        exit 1
-fi
 
-# Only run this as the launchpad user
-USER=$(whoami)
-if [ "launchpad" != "$USER" ]
-then
-        echo "Must be launchpad user to run this script."
-        exit 1
-fi
-
-
-export LPCONFIG=production
-export http_proxy=http://squid.internal:3128/
-export ftp_proxy=http://squid.internal:3128/
-
-LOGDIR=/srv/launchpad.net/production-logs/nightly
+LOGDIR=$1
 LOGFILE=$LOGDIR/nightly.log
 
 LOCK=/var/lock/launchpad_nightly.lock
@@ -42,7 +22,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-cd /srv/launchpad.net/production/launchpad/cronscripts
+cd `dirname $0`
 
 echo $(date): Grabbed lock >> $LOGFILE
 
