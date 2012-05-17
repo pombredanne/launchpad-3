@@ -352,7 +352,7 @@ class IPackagesetRestricted(Interface):
     """A writeable interface for restricted attributes of package sets."""
     export_as_webservice_entry(publish_web_link=False)
 
-    score = exported(Int(
+    relative_build_score = exported(Int(
         title=_("Build score"), required=True, readonly=False,
         description=_("Build score bonus for packages in this package set.")))
 
