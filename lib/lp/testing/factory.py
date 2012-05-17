@@ -1122,6 +1122,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if private:
             removeSecurityProxy(branch).explicitly_private = True
             removeSecurityProxy(branch).transitively_private = True
+            # XXX this is here till branch properly supports information_type
+            [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+            [policy] = getUtility(IAccessPolicySource).find(
+                [(branch.target.context, InformationType.USERDATA)])
+            getUtility(IAccessPolicyArtifactSource).create([(artifact, policy)])
+
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:

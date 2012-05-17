@@ -8,6 +8,8 @@ __all__ = [
     'SharingService',
     ]
 
+from itertools import product
+
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from lazr.restful.utils import get_current_web_service_request
 from zope.component import getUtility
@@ -31,7 +33,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
-from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
@@ -39,7 +40,10 @@ from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
 from lp.services.searchbuilder import any
-from lp.services.webapp.authorization import available_with_permission
+from lp.services.webapp.authorization import (
+    available_with_permission,
+    check_permission,
+    )
 
 
 class SharingService:
@@ -58,8 +62,11 @@ class SharingService:
 
     @property
     def write_enabled(self):
-        return bool(getFeatureFlag(
-            'disclosure.enhanced_sharing.writable'))
+        return (
+            bool(getFeatureFlag(
+            'disclosure.enhanced_sharing.writable') or
+            bool(getFeatureFlag(
+            'disclosure.access_mirror_triggers.removed'))))
 
     def getSharedArtifacts(self, pillar, person, user):
         """See `ISharingService`."""
@@ -88,6 +95,33 @@ class SharingService:
             branches = list(wanted_branches.getBranches())
 
         return bugtasks, branches
+
+    def getVisibleArtifacts(self, person, branches=None, bugs=None):
+        """See `ISharingService`."""
+        bugs_by_id = {}
+        branches_by_id = {}
+        for bug in bugs or []:
+            bugs_by_id[bug.id] = bug
+        for branch in branches or []:
+            branches_by_id[branch.id] = branch
+
+        # Load the bugs.
+        visible_bug_ids = []
+        if bugs_by_id:
+            param = BugTaskSearchParams(
+                user=person, bug=any(*bugs_by_id.keys()))
+            visible_bug_ids = list(getUtility(IBugTaskSet).searchBugIds(param))
+        visible_bugs = [bugs_by_id[bug_id] for bug_id in visible_bug_ids]
+
+        # Load the branches.
+        visible_branches = []
+        if branches_by_id:
+            all_branches = getUtility(IAllBranches)
+            wanted_branches = all_branches.visibleByUser(person).withIds(
+                *branches_by_id.keys())
+            visible_branches = list(wanted_branches.getBranches())
+
+        return visible_bugs, visible_branches
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""
@@ -313,3 +347,27 @@ class SharingService:
         # longer see.
         getUtility(IRemoveSubscriptionsJobSource).create(
             pillar, sharee, user, bugs=bugs, branches=branches)
+
+    def createAccessGrants(self, user, sharee, branches=None, bugs=None):
+        """See `ISharingService`."""
+
+        if not self.write_enabled:
+            raise Unauthorized("This feature is not yet enabled.")
+
+        artifacts = []
+        if branches:
+            artifacts.extend(branches)
+        if bugs:
+            artifacts.extend(bugs)
+        # The user needs to have launchpad.Edit permission on all supplied
+        # bugs and branches or else we raise an Unauthorized exception.
+        for artifact in artifacts or []:
+            if not check_permission('launchpad.Edit', artifact):
+                raise Unauthorized
+
+        # Ensure there are access artifacts associated with the bugs and
+        # branches.
+        artifacts = getUtility(IAccessArtifactSource).ensure(artifacts)
+        # Create access to bugs/branches for the specified sharee.
+        getUtility(IAccessArtifactGrantSource).grant(
+            list(product(artifacts, [sharee], [user])))

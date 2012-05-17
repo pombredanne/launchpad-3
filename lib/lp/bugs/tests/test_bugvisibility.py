@@ -18,6 +18,8 @@ from lp.testing.layers import (
 
 LEGACY_VISIBILITY_FLAG = {
     u"disclosure.legacy_subscription_visibility.enabled": u"true"}
+TRIGGERS_REMOVED_FLAG = {
+    u"disclosure.access_mirror_triggers.removed": u"true"}
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
@@ -123,3 +125,23 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
             with self.disable_trigger_fixture:
                 self.bug.unsubscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
+
+    def test_subscribeGrantsVisibilityWithTriggersRemoved(self):
+        # When a user is subscribed to a bug, they are granted access. In this
+        # test, the database triggers are removed and so model code is used.
+        with FeatureFixture(TRIGGERS_REMOVED_FLAG):
+            with self.disable_trigger_fixture:
+                user = self.factory.makePerson()
+                self.assertFalse(self.bug.userCanView(user))
+                with celebrity_logged_in('admin'):
+                    self.bug.subscribe(user, self.owner)
+                    self.assertTrue(self.bug.userCanView(user))
+
+    def test_subscribeGrantsVisibilityUsingTriggerss(self):
+        # When a user is subscribed to a bug, they are granted access. In this
+        # test, the database triggers are used.
+        user = self.factory.makePerson()
+        self.assertFalse(self.bug.userCanView(user))
+        with celebrity_logged_in('admin'):
+            self.bug.subscribe(user, self.owner)
+            self.assertTrue(self.bug.userCanView(user))

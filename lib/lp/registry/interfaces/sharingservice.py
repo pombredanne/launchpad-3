@@ -58,6 +58,18 @@ class ISharingService(IService):
         :return: a (bugtasks, branches) tuple
         """
 
+    def getVisibleArtifacts(person, branches=None, bugs=None):
+        """Return the artifacts shared with person.
+
+        Given lists of artifacts, return those a person has access to either
+        via a policy grant or artifact grant.
+
+        :param person: the person whose access is being checked.
+        :param branches: the branches to check for which a person has access.
+        :param bugs: the bugs to check for which a person has access.
+        :return: a collection of artifacts the person can see.
+        """
+
     def getInformationTypes(pillar):
         """Return the allowed information types for the given pillar."""
 
@@ -148,4 +160,22 @@ class ISharingService(IService):
         :param sharee: the person or team for whom to revoke access
         :param bugs: the bugs for which to revoke access
         :param branches: the branches for which to revoke access
+        """
+
+    @export_write_operation()
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        sharee=Reference(IPerson, title=_('Sharee'), required=True),
+        bugs=List(
+            Reference(schema=IBug), title=_('Bugs'), required=False),
+        branches=List(
+            Reference(schema=IBranch), title=_('Branches'), required=False))
+    @operation_for_version('devel')
+    def createAccessGrants(user, sharee, branches=None, bugs=None):
+        """Grant a sharee access to the specified artifacts.
+
+        :param user: the user making the request
+        :param sharee: the person or team for whom to grant access
+        :param bugs: the bugs for which to grant access
+        :param branches: the branches for which to grant access
         """

@@ -283,5 +283,5 @@ class IAccessPolicyGrantFlatSource(Interface):
         """Find the `IAccessArtifact`s for grantee and policies.
 
         :param grantee: the access artifact grantee.
-        :param policies: a collection of `IAccesPolicy`s.
+        :param policies: a collection of `IAccessPolicy`s.
         """

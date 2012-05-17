@@ -13,11 +13,13 @@ from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
 from lp.app.interfaces.services import IService
+from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
+from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
@@ -786,6 +788,89 @@ class TestSharingService(TestCaseWithFactory):
             Unauthorized, self.service.revokeAccessGrants,
             product, product.owner, sharee, bugs=[bug])
 
+    def _assert_createAccessGrants(self, user, bugs, branches):
+        # Creating access grants works as expected.
+        grantee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            self.service.createAccessGrants(
+                user, grantee, bugs=bugs, branches=branches)
+
+        # Check that grantee has expected access grants.
+        shared_bugs = []
+        shared_branches = []
+        all_pillars = []
+        for bug in bugs or []:
+            all_pillars.extend(bug.affected_pillars)
+        for branch in branches or []:
+            all_pillars.append(branch.target.context)
+        policies = getUtility(IAccessPolicySource).findByPillar(all_pillars)
+
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        access_artifacts = apgfs.findArtifactsByGrantee(grantee, policies)
+        for a in access_artifacts:
+            if IBug.providedBy(a.concrete_artifact):
+                shared_bugs.append(a.concrete_artifact)
+            elif IBranch.providedBy(a.concrete_artifact):
+                shared_branches.append(a.concrete_artifact)
+        self.assertContentEqual(bugs or [], shared_bugs)
+        self.assertContentEqual(branches or [], shared_branches)
+
+    def test_createAccessGrantsBugs(self):
+        # Access grants can be created for bugs.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(owner=owner)
+        login_person(owner)
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.USERDATA)
+        self._assert_createAccessGrants(owner, [bug], None)
+
+    def test_createAccessGrantsBranches(self):
+        # Access grants can be created for branches.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        login_person(owner)
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, private=True)
+        self._assert_createAccessGrants(owner, None, [branch])
+
+    def _assert_createAccessGrantsUnauthorized(self, user):
+        # createAccessGrants raises an Unauthorized exception if the user
+        # is not permitted to do so.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        sharee = self.factory.makePerson()
+        with FeatureFixture(WRITE_FLAG):
+            self.assertRaises(
+                Unauthorized, self.service.createAccessGrants,
+                user, sharee, bugs=[bug])
+
+    def test_createAccessGrantsAnonymous(self):
+        # Anonymous users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            login(ANONYMOUS)
+            self._assert_createAccessGrantsUnauthorized(ANONYMOUS)
+
+    def test_createAccessGrantsAnyone(self):
+        # Unauthorized users are not allowed.
+        with FeatureFixture(WRITE_FLAG):
+            anyone = self.factory.makePerson()
+            login_person(anyone)
+            self._assert_createAccessGrantsUnauthorized(anyone)
+
+    def test_createAccessGrants_without_flag(self):
+        # The feature flag needs to be enabled.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        bug = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA)
+        sharee = self.factory.makePerson()
+        login_person(owner)
+        self.assertRaises(
+            Unauthorized, self.service.createAccessGrants,
+            product.owner, sharee, bugs=[bug])
+
     def test_getSharedArtifacts(self):
         # Test the getSharedArtifacts method.
         owner = self.factory.makePerson()
@@ -847,6 +932,53 @@ class TestSharingService(TestCaseWithFactory):
             product, grantee, user)
         self.assertContentEqual(bug_tasks[:9], shared_bugtasks)
         self.assertContentEqual(branches[:9], shared_branches)
+
+    def test_getVisibleArtifacts(self):
+        # Test the getVisibleArtifacts method.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        grantee = self.factory.makePerson()
+        login_person(owner)
+
+        bugs = []
+        for x in range(0, 10):
+            bug = self.factory.makeBug(
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
+            bugs.append(bug)
+        branches = []
+        for x in range(0, 10):
+            branch = self.factory.makeBranch(
+                product=product, owner=owner, private=True)
+            branches.append(branch)
+
+        def grant_access(artifact):
+            access_artifact = self.factory.makeAccessArtifact(
+                concrete=artifact)
+            self.factory.makeAccessArtifactGrant(
+                artifact=access_artifact, grantee=grantee, grantor=owner)
+            return access_artifact
+
+        # Grant access to some of the bugs and branches.
+        for bug in bugs[:5]:
+            grant_access(bug)
+        for branch in branches[:5]:
+            grant_access(branch)
+            # XXX for now we need to subscribe users to the branch in order
+            # for the underlying BranchCollection to allow access. This will
+            # no longer be the case when BranchCollection supports the new
+            # access policy framework.
+            branch.subscribe(
+                grantee, BranchSubscriptionNotificationLevel.NOEMAIL,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                owner)
+
+        # Check the results.
+        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
+            grantee, branches, bugs)
+        self.assertContentEqual(bugs[:5], shared_bugs)
+        self.assertContentEqual(branches[:5], shared_branches)
 
 
 class ApiTestMixin:

@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
+from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -841,6 +842,15 @@ class Bug(SQLBase):
 
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
+
+        # Grant the subscriber access if they can't see the bug (if the
+        # database triggers aren't going to do it for us).
+        trigger_flag = 'disclosure.access_mirror_triggers.removed'
+        if bool(getFeatureFlag(trigger_flag)):
+            service = getUtility(IService, 'sharing')
+            bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
+            if not bugs:
+                service.createAccessGrants(subscribed_by, person, bugs=[self])
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
