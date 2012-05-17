@@ -93,7 +93,6 @@ caused the entry to be created.
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
-    >>> import transaction
     >>> transaction.commit()
     >>> p.teamowner is None
     True

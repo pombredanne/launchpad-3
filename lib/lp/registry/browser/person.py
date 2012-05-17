@@ -147,9 +147,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,
     )
-from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
-    SpecificationFilter,
     SpecificationWorkItemStatus,
     )
 from lp.bugs.interfaces.bugtask import (
