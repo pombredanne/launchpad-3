@@ -10,6 +10,7 @@ __all__ = [
     'BadStateTransition',
     'BranchCannotBePrivate',
     'BranchCannotBePublic',
+    'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',

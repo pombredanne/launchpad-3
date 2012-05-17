@@ -1068,7 +1068,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
-        if self.stacked_on.information_type != InformationType.PUBLIC:
+        if (
+            self.stacked_on and self.stacked_on.information_type != 
+            InformationType.PUBLIC):
             self.information_type = self.stacked_on.information_type
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
