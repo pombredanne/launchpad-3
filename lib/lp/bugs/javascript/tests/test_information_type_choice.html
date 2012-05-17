@@ -26,21 +26,37 @@ GNU Affero General Public License version 3 (see the file LICENSE).
 
       <!-- Dependencies -->
       <script type="text/javascript"
+          src="../../../../../build/js/lp/app/lp.js"></script>
+      <script type="text/javascript"
           src="../../../../../build/js/lp/app/testing/mockio.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/client.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/extras/extras.js"></script>
       <script type="text/javascript"
+          src="../../../../../build/js/lp/app/activator/activator.js"></script>
+      <script type="text/javascript"
           src="../../../../../build/js/lp/app/anim/anim.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/effects/effects.js"></script>
       <script type="text/javascript"
+          src="../../../../../build/js/lp/app/indicator/indicator.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/inlineedit/editor.js"></script>
+      <script type="text/javascript"
           src="../../../../../build/js/lp/app/lazr/lazr.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
       <script type="text/javascript"
+          src="../../../../../build/js/lp/app/confirmationoverlay/confirmationoverlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
+      <script type="text/javascript"
           src="../../../../../build/js/lp/app/overlay/overlay.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/picker/picker.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/expander.js"></script>
       <script type="text/javascript"
@@ -68,15 +84,20 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <ul id="suites">
             <li>lp.bugs.information_type_choice.test</li>
         </ul>
-        <div id="privacy">
-            <div id="privacy-text">
-                This report contains <strong id="information-type">Public</strong> information <a class="sprite edit" id="privacy-link" href="#">edit</a>
+        <div id="fixture"></div>
+        <script type="text/x-template" id="portlet-template">
+            <div id="privacy">
+                <div id="privacy-text">
+                    This report contains <strong id="information-type">Public</strong> information
+                    <a class="sprite edit" id="privacy-link" href="#">edit</a>
+                    <div id='information-type-description'>Everyone can see this information.</div>
+                </div>
             </div>
-        </div>
-        <div id="current_user_subscription">
-            <span></span>
-            <a href="#" text="" class="menu-link-mute_subscription unmute"></a>
-            <a href="#" text="" class="menu-link-mute_subscription mute"></a>
-        </div>
+            <div id="current_user_subscription">
+                <span></span>
+                <a href="#" text="" class="menu-link-mute_subscription unmute"></a>
+                <a href="#" text="" class="menu-link-mute_subscription mute"></a>
+            </div>
+        </script>
     </body>
 </html>

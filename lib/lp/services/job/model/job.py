@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -185,7 +185,8 @@ class Job(SQLBase):
         if manage_transaction:
             transaction.commit()
 
-    def queue(self, manage_transaction=False, abort_transaction=False):
+    def queue(self, manage_transaction=False, abort_transaction=False,
+              add_commit_hook=None):
         """See `IJob`."""
         if manage_transaction:
             if abort_transaction:
@@ -194,6 +195,8 @@ class Job(SQLBase):
             transaction.commit()
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+        if add_commit_hook is not None:
+            add_commit_hook()
         if manage_transaction:
             transaction.commit()
 
@@ -262,6 +265,9 @@ class UniversalJobSource:
         job_id, module_name, class_name = ujob_id
         bc_module = __import__(module_name, fromlist=[class_name])
         db_class = getattr(bc_module, class_name)
+        factory = getattr(db_class, 'makeInstance', None)
+        if factory is not None:
+            return factory(job_id)
         store = IStore(db_class)
         db_job = store.find(db_class, db_class.job == job_id).one()
         if db_job is None:
