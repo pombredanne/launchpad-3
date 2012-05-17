@@ -19,11 +19,6 @@
               var expander = new Y.lp.app.widgets.expander.Expander(
                   expander_icon, widget_body);
               expander.setUp(true);
-
-              var percent_done = e.one('[title=percentdone]').get('alt');
-              if (percent_done != "100% complete") {
-                  expander.render(true, false);
-              }
             })
           })
         });
@@ -94,7 +89,10 @@
       <tbody>
         <tr class="expandable">
           <td>
-            <a href="#" class="expander">&nbsp;</a>
+            <a href="#" class="expander"
+              tal:condition="not: container/has_incomplete_work">&nbsp;</a>
+            <a href="#" class="expander expanded"
+              tal:condition="container/has_incomplete_work">&nbsp;</a>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />

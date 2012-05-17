@@ -173,6 +173,16 @@ class TestWorkItemContainer(TestCase):
         container.append(self.MockWorkItem(True))
         self.assertEqual('67', container.percent_done)
 
+    def test_has_incomplete_work(self):
+        # If there are incomplete work items,
+        # WorkItemContainer.has_incomplete_work will return True.
+        container = WorkItemContainer()
+        item = self.MockWorkItem(False)
+        container.append(item)
+        self.assertTrue(container.has_incomplete_work)
+        item.is_complete = True
+        self.assertFalse(container.has_incomplete_work)
+
 
 class TestPersonUpcomingWork(BrowserTestCase):
 

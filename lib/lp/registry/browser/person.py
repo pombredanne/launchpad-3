@@ -4520,6 +4520,11 @@ class WorkItemContainer:
         return '{0:.0f}'.format(
             100.0 * len(self.done_items) / len(self._items))
 
+    @property
+    def has_incomplete_work(self):
+        """Return True if there are incomplete work items."""
+        return len(self.done_items) < len(self._items)
+
     def append(self, item):
         self._items.append(item)
 
