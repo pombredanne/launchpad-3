@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from zope.component import (
-    getAdapter,
     getUtility,
     queryAdapter,
     )
@@ -2652,6 +2651,11 @@ class EditPackageset(AuthorizationBase):
     def checkAuthenticated(self, user):
         """The owner of a package set can edit the object."""
         return user.isOwner(self.obj) or user.in_admin
+
+
+class ModeratePackageset(AdminByBuilddAdmin):
+    permission = 'launchpad.Moderate'
+    usedfor = IPackageset
 
 
 class EditPackagesetSet(AuthorizationBase):

@@ -540,7 +540,9 @@ class BugView(LaunchpadView, BugViewMixin):
         cache = IJSONRequestCache(self.request)
         cache.objects['information_types'] = [
             {'value': term.value, 'description': term.description,
-            'name': term.title} for term in InformationTypeVocabulary()]
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary()]
         cache.objects['private_types'] = [
             type.title for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
@@ -840,7 +842,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-# XXX: This can move to using LaunchpadEditFormView when 
+# XXX: This can move to using LaunchpadEditFormView when
 # show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
