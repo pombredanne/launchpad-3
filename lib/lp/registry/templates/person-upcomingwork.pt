@@ -103,12 +103,10 @@
                  style="border: 1px solid gray; width: 60px">
               <img tal:attributes="
                      id string:container_progressbar_${repeat/container/index};
-                     width string:${container/percent_done}%;
-                     alt string:${container/percent_done}% complete;"
+                     width string:${container/percent_done}%"
                    style="display: block"
                    src="/@@/green-bar"
-                   height="10"
-                   title="percentdone"/>
+                   height="10"/>
             </div>
           </td>
         </tr>
