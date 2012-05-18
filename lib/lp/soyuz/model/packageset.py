@@ -70,7 +70,7 @@ class Packageset(Storm):
     packagesetgroup_id = Int(name='packagesetgroup', allow_none=False)
     packagesetgroup = Reference(packagesetgroup_id, 'PackagesetGroup.id')
 
-    score = Int(allow_none=False)
+    relative_build_score = Int(name="score", allow_none=False)
 
     def add(self, data):
         """See `IPackageset`."""

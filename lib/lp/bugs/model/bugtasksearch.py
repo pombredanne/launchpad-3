@@ -78,6 +78,7 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
     Array,
+    get_where_for_reference,
     NullCount,
     )
 from lp.services.propertycache import get_property_cache
@@ -209,10 +210,7 @@ def search_value_to_storm_where_condition(comp, search_value):
         if not search_value.query_values:
             return None
         if isinstance(comp, Reference):
-            # References don't have an is_in.
-            return Or(*[
-                comp._relation.get_where_for_local(value)
-                for value in search_value.query_values])
+            return get_where_for_reference(comp, search_value.query_values)
         else:
             return comp.is_in(search_value.query_values)
     elif zope_isinstance(search_value, not_equals):
