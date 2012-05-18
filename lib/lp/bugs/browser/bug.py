@@ -609,6 +609,21 @@ class BugView(LaunchpadView, BugViewMixin):
             return 'Private'
         return title
 
+    @property
+    def information_type_description(self):
+        # This can be replaced with just a return when the feature flag is
+        # dropped.
+        description = self.context.information_type.description
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if (
+            self.context.information_type == InformationType.USERDATA and
+            show_userdata_as_private):
+                description = (
+                    description.replace('user data', 'private information'))
+
+        return description
+
 
 class BugActivity(BugView):
 

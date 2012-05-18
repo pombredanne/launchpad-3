@@ -350,13 +350,10 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    _private = BoolCol(dbName='private', notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    _security_related = BoolCol(
-        dbName='security_related', notNull=True, default=False)
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
@@ -1784,10 +1781,6 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self.updateHeat()
-        # Set the legacy attributes for now.
-        self._private = information_type in PRIVATE_INFORMATION_TYPES
-        self._security_related = (
-            information_type in SECURITY_INFORMATION_TYPES)
         return True
 
     def getRequiredSubscribers(self, information_type, who):

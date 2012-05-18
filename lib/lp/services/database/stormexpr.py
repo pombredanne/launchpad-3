@@ -11,10 +11,12 @@ __all__ = [
     'Concatenate',
     'CountDistinct',
     'Greatest',
+    'get_where_for_reference',
     'NullCount',
     'TryAdvisoryLock',
     ]
 
+from storm.exceptions import ClassInfoError
 from storm.expr import (
     BinaryOper,
     ComparableExpr,
@@ -22,8 +24,11 @@ from storm.expr import (
     compile,
     EXPR,
     Expr,
+    In,
     NamedFunc,
+    Or,
     )
+from storm.info import get_obj_info
 
 
 class Greatest(NamedFunc):
@@ -109,3 +114,55 @@ class ArrayIntersects(CompoundOper):
     "True iff the left side shares at least one element with the right side."
     __slots__ = ()
     oper = "&&"
+
+
+def get_where_for_reference(reference, other):
+    """Generate a column comparison expression for a reference property.
+
+    The returned expression may be used to find referenced objects referring
+    to C{other}.
+
+    If the right hand side is a collection of values, then an OR in IN
+    expression is returned - if the relation uses composite keys, then an OR
+    expression is used; single key references produce an IN expression which is
+    more efficient for large collections of values.
+    """
+    relation = reference._relation
+    if isinstance(other, (list, set, tuple,)):
+        return _get_where_for_local_many(relation, other)
+    else:
+        return relation.get_where_for_local(other)
+
+
+def _remote_variables(relation, obj):
+    """A helper function to extract the foreign key values of an object.
+    """
+    try:
+        get_obj_info(obj)
+    except ClassInfoError:
+        if type(obj) is not tuple:
+            remote_variables = (obj,)
+        else:
+            remote_variables = obj
+    else:
+        # Don't use other here, as it might be
+        # security proxied or something.
+        obj = get_obj_info(obj).get_obj()
+        remote_variables = relation.get_remote_variables(obj)
+    return remote_variables
+
+
+def _get_where_for_local_many(relation, others):
+    """Generate an OR or IN expression used to find others.
+
+    If the relation uses composite keys, then an OR expression is used;
+    single key references produce an IN expression which is more efficient for
+    large collections of values.
+    """
+
+    if len(relation.local_key) == 1:
+        return In(
+            relation.local_key[0],
+            [_remote_variables(relation, value) for value in others])
+    else:
+        return Or(*[relation.get_where_for_local(value) for value in others])

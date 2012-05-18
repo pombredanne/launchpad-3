@@ -111,7 +111,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             self.build.source_package_release.name,
             distroseries=self.build.distro_series)
         if not package_sets.is_empty():
-            score += package_sets.max(Packageset.score)
+            score += package_sets.max(Packageset.relative_build_score)
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))
