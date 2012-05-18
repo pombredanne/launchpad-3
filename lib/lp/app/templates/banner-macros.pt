@@ -34,9 +34,6 @@
         </tal:features>
       <span>
     </span>
-    <a href="#" class="global-notification-close">
-      Hide<span class="notification-close sprite"></span>
-    </a>
   </div>
 </div>
 </metal:beta>
