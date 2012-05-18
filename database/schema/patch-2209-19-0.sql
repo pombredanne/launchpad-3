@@ -253,6 +253,33 @@ BEGIN
 END;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.bug_maintain_bug_summary()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO public
+AS $function$
+BEGIN
+    -- There is no INSERT logic, as a bug will not have any summary
+    -- information until BugTask rows have been attached.
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.duplicateof IS DISTINCT FROM NEW.duplicateof
+            OR OLD.information_type IS DISTINCT FROM NEW.information_type
+            OR (OLD.latest_patch_uploaded IS NULL)
+                <> (NEW.latest_patch_uploaded IS NULL) THEN
+            PERFORM unsummarise_bug(OLD);
+            PERFORM summarise_bug(NEW);
+        END IF;
+
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM unsummarise_bug(OLD);
+    END IF;
+
+    PERFORM bug_summary_flush_temp_journal();
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.bugtask_maintain_bug_summary()
  RETURNS trigger
  LANGUAGE plpgsql
