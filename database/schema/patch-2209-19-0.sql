@@ -267,12 +267,12 @@ BEGIN
             OR OLD.information_type IS DISTINCT FROM NEW.information_type
             OR (OLD.latest_patch_uploaded IS NULL)
                 <> (NEW.latest_patch_uploaded IS NULL) THEN
-            PERFORM unsummarise_bug(OLD);
-            PERFORM summarise_bug(NEW);
+            PERFORM bugsummary_journal_bug(OLD, -1);
+            PERFORM bugsummary_journal_bug(NEW, 1);
         END IF;
 
     ELSIF TG_OP = 'DELETE' THEN
-        PERFORM unsummarise_bug(OLD);
+        PERFORM bugsummary_journal_bug(OLD, -1);
     END IF;
 
     PERFORM bug_summary_flush_temp_journal();
