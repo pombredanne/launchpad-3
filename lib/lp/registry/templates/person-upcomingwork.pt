@@ -89,10 +89,7 @@
       <tbody>
         <tr class="expandable">
           <td>
-            <a href="#" class="expander"
-              tal:condition="not: container/has_incomplete_work">&nbsp;</a>
-            <a href="#" class="expander expanded"
-              tal:condition="container/has_incomplete_work">&nbsp;</a>
+            <a href="#" class="expander">&nbsp;</a>
             <span tal:replace="structure container/html_link" />
           </td>
           <td tal:content="structure container/target_link" />
@@ -111,7 +108,16 @@
           </td>
         </tr>
       </tbody>
-      <tbody class="collapsible-body">
+
+      <tal:conditional condition="container/has_incomplete_work">
+        <div tal:define="global classname string:collapsible-body expanded"/>
+      </tal:conditional>
+
+      <tal:conditional condition="not: container/has_incomplete_work">
+        <div tal:define="global classname string:collapsible-body"/>
+      </tal:conditional>
+
+      <tbody tal:attributes="class string:${classname}">
         <tr tal:repeat="workitem container/items" class="padded">
           <td>
             <span tal:condition="not: container/spec|nothing"
@@ -139,3 +145,4 @@
 
 </body>
 </html>
+
