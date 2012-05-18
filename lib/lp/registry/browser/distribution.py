@@ -2,9 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
-from zope.security.checker import canWrite
-from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
-from lp.app.browser.tales import format_link
 
 __metaclass__ = type
 
@@ -52,6 +49,7 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
+from zope.security.checker import canWrite
 from zope.security.interfaces import Unauthorized
 
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
@@ -59,11 +57,13 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.browser.tales import format_link
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
