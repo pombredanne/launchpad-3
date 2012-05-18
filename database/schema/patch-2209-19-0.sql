@@ -61,9 +61,9 @@ BEGIN
             RETURN NEW;
         END IF;
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(NEW.bug));
+            PERFORM unsummarise_bug(NEW.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(NEW.bug));
+            PERFORM summarise_bug(NEW.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN NEW;
@@ -73,9 +73,9 @@ BEGIN
             RETURN OLD;
         END IF;
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            PERFORM unsummarise_bug(OLD.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
+            PERFORM summarise_bug(OLD.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN OLD;
@@ -85,20 +85,20 @@ BEGIN
             IF TG_WHEN = 'BEFORE' THEN
                 IF (bug_row(OLD.bug)).information_type IN (3, 4, 5) THEN
                     -- Public subscriptions are not aggregated.
-                    PERFORM unsummarise_bug(bug_row(OLD.bug));
+                    PERFORM unsummarise_bug(OLD.bug);
                 END IF;
                 IF OLD.bug <> NEW.bug AND (bug_row(NEW.bug)).information_type IN (3, 4, 5) THEN
                     -- Public subscriptions are not aggregated.
-                    PERFORM unsummarise_bug(bug_row(NEW.bug));
+                    PERFORM unsummarise_bug(NEW.bug);
                 END IF;
             ELSE
                 IF (bug_row(OLD.bug)).information_type IN (3, 4, 5) THEN
                     -- Public subscriptions are not aggregated.
-                    PERFORM summarise_bug(bug_row(OLD.bug));
+                    PERFORM summarise_bug(OLD.bug);
                 END IF;
                 IF OLD.bug <> NEW.bug AND (bug_row(NEW.bug)).information_type IN (3, 4, 5) THEN
                     -- Public subscriptions are not aggregated.
-                    PERFORM summarise_bug(bug_row(NEW.bug));
+                    PERFORM summarise_bug(NEW.bug);
                 END IF;
             END IF;
         END IF;
@@ -221,30 +221,30 @@ AS $function$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(NEW.bug));
+            PERFORM unsummarise_bug(NEW.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(NEW.bug));
+            PERFORM summarise_bug(NEW.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN NEW;
     ELSIF TG_OP = 'DELETE' THEN
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            PERFORM unsummarise_bug(OLD.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
+            PERFORM summarise_bug(OLD.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN OLD;
     ELSE
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            PERFORM unsummarise_bug(OLD.bug);
             IF OLD.bug <> NEW.bug THEN
-                PERFORM unsummarise_bug(bug_row(NEW.bug));
+                PERFORM unsummarise_bug(NEW.bug);
             END IF;
         ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
+            PERFORM summarise_bug(OLD.bug);
             IF OLD.bug <> NEW.bug THEN
-                PERFORM summarise_bug(bug_row(NEW.bug));
+                PERFORM summarise_bug(NEW.bug);
             END IF;
         END IF;
         PERFORM bug_summary_flush_temp_journal();
@@ -268,18 +268,18 @@ BEGIN
     -- we install this trigger as both a BEFORE and an AFTER trigger.
     IF TG_OP = 'INSERT' THEN
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(NEW.bug));
+            PERFORM unsummarise_bug(NEW.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(NEW.bug));
+            PERFORM summarise_bug(NEW.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE' THEN
         IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            PERFORM unsummarise_bug(OLD.bug);
         ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
+            PERFORM summarise_bug(OLD.bug);
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN OLD;
@@ -296,14 +296,14 @@ BEGIN
             OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
 
             IF TG_WHEN = 'BEFORE' THEN
-                PERFORM unsummarise_bug(bug_row(OLD.bug));
+                PERFORM unsummarise_bug(OLD.bug);
                 IF OLD.bug <> NEW.bug THEN
-                    PERFORM unsummarise_bug(bug_row(NEW.bug));
+                    PERFORM unsummarise_bug(NEW.bug);
                 END IF;
             ELSE
-                PERFORM summarise_bug(bug_row(OLD.bug));
+                PERFORM summarise_bug(OLD.bug);
                 IF OLD.bug <> NEW.bug THEN
-                    PERFORM summarise_bug(bug_row(NEW.bug));
+                    PERFORM summarise_bug(NEW.bug);
                 END IF;
             END IF;
         END IF;
@@ -328,21 +328,21 @@ EXCEPTION
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.summarise_bug(bug_row bug)
+CREATE OR REPLACE FUNCTION public.summarise_bug(bug integer)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-    PERFORM bugsummary_journal_bug(bug_row, 1);
+    PERFORM bugsummary_journal_bug(bug_row(bug), 1);
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.unsummarise_bug(bug_row bug)
+CREATE OR REPLACE FUNCTION public.unsummarise_bug(bug integer)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-    PERFORM bugsummary_journal_bug(bug_row, -1);
+    PERFORM bugsummary_journal_bug(bug_row(bug), -1);
 END;
 $function$;
 
@@ -497,6 +497,8 @@ AS $function$
         AND fixed_upstream = $1.fixed_upstream;
 $function$;
 
+DROP FUNCTION unsummarise_bug(bug);
+DROP FUNCTION summarise_bug(bug);
 DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
 DROP FUNCTION bugsummary_journal_ins(bugsummary);
 
