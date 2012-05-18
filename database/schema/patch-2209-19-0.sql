@@ -15,27 +15,34 @@ BEGIN
     -- may get called even though no summaries were made (for simplicity in the
     -- callers)
     PERFORM ensure_bugsummary_temp_journal();
-    FOR d IN SELECT * FROM bugsummary_temp_journal LOOP
-        PERFORM bugsummary_journal_ins(d);
-    END LOOP;
+    INSERT INTO BugSummaryJournal(
+        count, product, productseries, distribution,
+        distroseries, sourcepackagename, viewed_by, tag,
+        status, milestone, importance, has_patch, fixed_upstream)
+    SELECT
+        count, product, productseries, distribution,
+        distroseries, sourcepackagename, viewed_by, tag,
+        status, milestone, importance, has_patch, fixed_upstream
+        FROM bugsummary_temp_journal;
     TRUNCATE bugsummary_temp_journal;
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.bug_summary_temp_journal_ins(d bugsummary)
+CREATE OR REPLACE FUNCTION bugsummary_journal_bug(bug_row bug, _count integer)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
 BEGIN
+    PERFORM ensure_bugsummary_temp_journal();
     INSERT INTO BugSummary_Temp_Journal(
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
         status, milestone, importance, has_patch, fixed_upstream)
-    VALUES (
-        d.count, d.product, d.productseries, d.distribution,
-        d.distroseries, d.sourcepackagename, d.viewed_by, d.tag,
-        d.status, d.milestone, d.importance, d.has_patch, d.fixed_upstream);
-    RETURN;
+    SELECT
+        _count, product, productseries, distribution,
+        distroseries, sourcepackagename, viewed_by, tag,
+        status, milestone, importance, has_patch, fixed_upstream
+        FROM bugsummary_locations(BUG_ROW);
 END;
 $function$;
 
@@ -97,26 +104,6 @@ BEGIN
         END IF;
         PERFORM bug_summary_flush_temp_journal();
         RETURN NEW;
-    END IF;
-END;
-$function$;
-
-CREATE OR REPLACE FUNCTION public.bugsummary_journal_ins(d bugsummary)
- RETURNS void
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-    IF d.count <> 0 THEN
-        INSERT INTO BugSummaryJournal (
-            count, product, productseries, distribution,
-            distroseries, sourcepackagename, viewed_by, tag,
-            status, milestone,
-            importance, has_patch, fixed_upstream)
-        VALUES (
-            d.count, d.product, d.productseries, d.distribution,
-            d.distroseries, d.sourcepackagename, d.viewed_by, d.tag,
-            d.status, d.milestone,
-            d.importance, d.has_patch, d.fixed_upstream);
     END IF;
 END;
 $function$;
@@ -345,14 +332,8 @@ CREATE OR REPLACE FUNCTION public.summarise_bug(bug_row bug)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
-DECLARE
-    d bugsummary%ROWTYPE;
 BEGIN
-    PERFORM ensure_bugsummary_temp_journal();
-    FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
-        d.count = 1;
-        PERFORM bug_summary_temp_journal_ins(d);
-    END LOOP;
+    PERFORM bugsummary_journal_bug(bug_row, 1);
 END;
 $function$;
 
@@ -360,14 +341,8 @@ CREATE OR REPLACE FUNCTION public.unsummarise_bug(bug_row bug)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
-DECLARE
-    d bugsummary%ROWTYPE;
 BEGIN
-    PERFORM ensure_bugsummary_temp_journal();
-    FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
-        d.count = -1;
-        PERFORM bug_summary_temp_journal_ins(d);
-    END LOOP;
+    PERFORM bugsummary_journal_bug(bug_row, -1);
 END;
 $function$;
 
@@ -521,5 +496,8 @@ AS $function$
         AND has_patch = $1.has_patch
         AND fixed_upstream = $1.fixed_upstream;
 $function$;
+
+DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
+DROP FUNCTION bugsummary_journal_ins(bugsummary);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 19, 0);
