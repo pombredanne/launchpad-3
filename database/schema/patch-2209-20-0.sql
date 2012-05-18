@@ -8,4 +8,4 @@ ALTER TABLE SpecificationFeedback
 ALTER TABLE SpecificationFeedback
     DROP CONSTRAINT specificationfeedback_requester_fk;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 98, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 20, 0);
