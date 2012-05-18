@@ -20,7 +20,7 @@ BEGIN
     END LOOP;
     TRUNCATE bugsummary_temp_journal;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bug_summary_temp_journal_ins(d bugsummary)
  RETURNS void
@@ -37,7 +37,7 @@ BEGIN
         d.status, d.milestone, d.importance, d.has_patch, d.fixed_upstream);
     RETURN;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsubscription_maintain_bug_summary()
  RETURNS trigger
@@ -99,7 +99,7 @@ BEGIN
         RETURN NEW;
     END IF;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsummary_journal_ins(d bugsummary)
  RETURNS void
@@ -119,7 +119,7 @@ BEGIN
             d.importance, d.has_patch, d.fixed_upstream);
     END IF;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsummary_locations(bug_row bug)
  RETURNS SETOF bugsummary
@@ -162,7 +162,7 @@ BEGIN
         JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
         LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsummary_tags(bug_row bug)
  RETURNS SETOF bugtag
@@ -172,7 +172,7 @@ AS $function$
     SELECT * FROM BugTag WHERE BugTag.bug = $1.id
     UNION ALL
     SELECT NULL::integer, $1.id, NULL::text;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsummary_tasks(bug_row bug)
  RETURNS SETOF bugtask
@@ -211,7 +211,7 @@ BEGIN
         RETURN NEXT bt;
     END LOOP;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugsummary_viewers(bug_row bug)
  RETURNS SETOF bugsubscription
@@ -223,7 +223,7 @@ AS $function$
     WHERE
         bugsubscription.bug=$1.id
         AND $1.information_type IN (3, 4, 5);
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugtag_maintain_bug_summary()
  RETURNS trigger
@@ -264,7 +264,7 @@ BEGIN
         RETURN NEW;
     END IF;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bugtask_maintain_bug_summary()
  RETURNS trigger
@@ -324,7 +324,7 @@ BEGIN
         RETURN NEW;
     END IF;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.ensure_bugsummary_temp_journal()
  RETURNS void
@@ -339,7 +339,7 @@ EXCEPTION
     WHEN duplicate_table THEN
         NULL;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.summarise_bug(bug_row bug)
  RETURNS void
@@ -354,7 +354,7 @@ BEGIN
         PERFORM bug_summary_temp_journal_ins(d);
     END LOOP;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.unsummarise_bug(bug_row bug)
  RETURNS void
@@ -369,7 +369,7 @@ BEGIN
         PERFORM bug_summary_temp_journal_ins(d);
     END LOOP;
 END;
-$function$
+$function$;
 
 
 -- Rollup functions. Speed isn't critical, as it's done post-request by garbo.
@@ -434,7 +434,7 @@ BEGIN
     -- Clean out the journal entries we have handled.
     DELETE FROM BugSummaryJournal WHERE id <= max_id;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.bug_summary_inc(d bugsummary)
@@ -490,7 +490,7 @@ BEGIN
         END;
     END LOOP;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.bug_summary_dec(bugsummary)
  RETURNS void
@@ -520,6 +520,6 @@ AS $function$
         AND importance = $1.importance
         AND has_patch = $1.has_patch
         AND fixed_upstream = $1.fixed_upstream;
-$function$
+$function$;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 19, 0);
