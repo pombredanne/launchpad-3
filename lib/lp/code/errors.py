@@ -157,7 +157,7 @@ class BranchCannotBePrivate(Exception):
 
 
 class BranchCannotChangeInformationType(Exception):
-    """The branch cannot change its information type."""
+    """The information type of this branch cannot be changed."""
 
 
 class InvalidBranchException(Exception):

@@ -140,6 +140,7 @@ from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     InformationType,
+    PRIVATE_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.accesspolicy import (
     IAccessArtifactGrantSource,
@@ -1072,7 +1073,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, information_type=None, stacked_on=None,
+                   private=None, information_type=None, stacked_on=None,
                    sourcepackage=None, reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -1119,14 +1120,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
+        assert information_type is None or private is None, (
+            "Can not specify both information_type and private")
         if information_type:
-            removeSecurityProxy(branch).information_type = information_type
+            private = information_type in PRIVATE_INFORMATION_TYPES
+        else:
+            information_type = (
+                InformationType.USERDATA if private else
+                InformationType.PUBLIC)
         if private:
             removeSecurityProxy(branch).explicitly_private = True
             removeSecurityProxy(branch).transitively_private = True
-            if not information_type:
-                removeSecurityProxy(branch).information_type = (
-                    InformationType.USERDATA)
+        removeSecurityProxy(branch).information_type = information_type
         if stacked_on is not None:
             removeSecurityProxy(branch).branchChanged(
                 stacked_on.unique_name, 'rev1', None, None, None)

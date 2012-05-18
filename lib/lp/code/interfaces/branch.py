@@ -53,7 +53,6 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,

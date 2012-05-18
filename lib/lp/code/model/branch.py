@@ -61,7 +61,6 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.code.adapters.branch import convert_to_information_type
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -200,15 +199,17 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        return self.transitionToInformationType(
-            convert_to_information_type(private), user)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        return self.transitionToInformationType(information_type, user)
 
     def transitionToInformationType(self, information_type, who):
         """See `IBranch`."""
         if self.information_type == information_type:
             return
-        if (
-            self.stacked_on and self.stacked_on.information_type !=
+        if (self.stacked_on and self.stacked_on.information_type !=
             InformationType.PUBLIC and information_type !=
             self.stacked_on.information_type):
             raise BranchCannotChangeInformationType()
@@ -1068,8 +1069,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
-        if (
-            self.stacked_on and self.stacked_on.information_type != 
+        # If the branch we are stacking on is not public, force our
+        # information_type into line.
+        if (self.stacked_on and self.stacked_on.information_type != 
             InformationType.PUBLIC):
             self.information_type = self.stacked_on.information_type
         if self.branch_type == BranchType.HOSTED:
