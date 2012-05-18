@@ -96,9 +96,9 @@
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
-        <metal:privacy-banner
-          use-macro="view/@@+banner-macros/privacy-banner"/>
         <div id="maincontent" class="yui-main">
+          <metal:privacy-banner
+            use-macro="view/@@+banner-macros/privacy-banner"/>
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;

@@ -65,6 +65,7 @@ from zope.security.checker import (
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.versioninfo import revno
 from lp.layers import (
     LaunchpadLayer,
@@ -288,7 +289,14 @@ class LaunchpadView(UserAttributeCache):
     - publishTraverse() <-- override this to support traversing-through.
     """
 
-    private = False
+    @property
+    def private(self):
+        """A view is private if its context is."""
+        privacy = IPrivacy(self.context, None)
+        if privacy is not None:
+            return privacy.private
+        else:
+            return False
 
     def __init__(self, context, request):
         self.context = context
