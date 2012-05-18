@@ -28,7 +28,7 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION bugsummary_journal_bug(bug_row bug, _count integer)
+CREATE OR REPLACE FUNCTION public.bugsummary_journal_bug(bug_row bug, _count integer)
  RETURNS void
  LANGUAGE plpgsql
 AS $function$
