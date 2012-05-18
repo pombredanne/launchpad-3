@@ -19,6 +19,26 @@
 </metal:privacy>
 
 <metal:beta define-macro="beta-banner">
+<div class="yui3-betabanner-content">
+  <div id="beta-banner" class="global-notification">
+    <span class="beta-warning">BETA!</span>
+    <span class="banner-text">
+      Some parts of this page are in beta:&nbsp;
+      <span class="beta-feature">
+        <tal:features
+          repeat="feature view/beta_features">
+          <tal:feature replace="feature/title" />
+          <tal:link condition="feature/url">
+            (<a tal:attributes="href feature/url" class="info-link">read more</a>)
+          </tal:link>
+        </tal:features>
+      <span>
+    </span>
+    <a href="#" class="global-notification-close">
+      Hide<span class="notification-close sprite"></span>
+    </a>
+  </div>
+</div>
 </metal:beta>
 
 </macros>

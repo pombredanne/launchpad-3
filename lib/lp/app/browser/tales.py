@@ -559,7 +559,7 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'pagetitle': 'pagetitle',
-        'public-private-css': 'public_private_css',
+        'global-css': 'global_css',
         }
 
     def __init__(self, context):
@@ -658,14 +658,20 @@ class ObjectFormatterAPI:
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
 
-    def public_private_css(self):
-        """Return the CSS class that represents the object's privacy."""
+    def global_css(self):
+        css_classes = set([])
         view = self._context
         private = getattr(view, 'private', False)
         if private:
-            return 'private global-notification-visible'
+            css_classes.add('private')
+            css_classes.add('global-notification-visible')
         else:
-            return 'public'
+            css_classes.add('public')
+        beta = getattr(view, 'beta_features', [])
+        if beta != []:
+            css_classes.add('global-notification-visible')
+        return ' '.join(list(css_classes))
+
 
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail

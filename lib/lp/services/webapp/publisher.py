@@ -321,6 +321,15 @@ class LaunchpadView(UserAttributeCache):
         related_features = cache.setdefault('related_features', {})
         related_features.update(self.related_feature_info)
 
+    def beta_features(self):
+        try:
+            cache = IJSONRequestCache(self.request).objects
+        except TypeError, error:
+            if error.args[0] == 'Could not adapt':
+                return
+        related_features = cache.setdefault('related_features', {}).values()
+        return [f for f in related_features if f['is_beta']]
+
     def initialize(self):
         """Override this in subclasses.
 

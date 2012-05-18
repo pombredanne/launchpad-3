@@ -62,7 +62,7 @@
     itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
-      ${view/fmt:public-private-css}
+      ${view/fmt:global-css}
       yui3-skin-sam">
         <script type="text/javascript"
           tal:condition="python: is_lpnet">
@@ -97,6 +97,8 @@
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
+          <metal:privacy-banner
+            use-macro="view/@@+banner-macros/beta-banner"/>
           <metal:privacy-banner
             use-macro="view/@@+banner-macros/privacy-banner"/>
           <div class="yui-b"
