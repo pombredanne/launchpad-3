@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from functools import partial
 import logging
 from optparse import OptionValueError
 import os
@@ -582,6 +583,26 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertContentEqual(
             ["%s/%s  Build-Essential  yes" % (package.name, arch)], overrides)
 
+    def test_removes_only_stale_files(self):
+        # removeStaleOutputs removes only stale germinate output files.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        series_name = distroseries.name
+        script = self.makeScript(distro)
+        seed_old_file = "old_flavour_%s_i386" % series_name
+        seed_new_file = "new_flavour_%s_i386" % series_name
+        other_file = "other-file"
+        for base in (seed_old_file, seed_new_file, other_file):
+            with open(os.path.join(script.config.germinateroot, base), "w"):
+                pass
+        script.removeStaleOutputs(series_name, set([seed_new_file]))
+        self.assertFalse(os.path.exists(
+            os.path.join(script.config.germinateroot, seed_old_file)))
+        self.assertTrue(os.path.exists(
+            os.path.join(script.config.germinateroot, seed_new_file)))
+        self.assertTrue(os.path.exists(
+            os.path.join(script.config.germinateroot, other_file)))
+
     def test_process_missing_seeds(self):
         # The script ignores series with no seed structures.
         distro = self.makeDistro()
@@ -608,6 +629,38 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.assertTrue(os.path.exists(os.path.join(
             script.config.miscroot,
             "more-extra.override.%s.main" % distroseries_two.name)))
+
+    def test_process_removes_only_stale_files(self):
+        # The script removes only stale germinate output files.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        series_name = distroseries.name
+        component = self.factory.makeComponent()
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component=component)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        arch = das.architecturetag
+        flavour = self.factory.getUniqueString()
+        script = self.makeScript(distro, extra_args=[flavour])
+        self.makeIndexFiles(script, distroseries)
+
+        seed_old = self.factory.getUniqueString()
+        seed_new = self.factory.getUniqueString()
+        self.makeSeedStructure(flavour, series_name, [seed_old])
+        self.makeSeed(flavour, series_name, seed_old, [])
+        script.process(seed_bases=["file://%s" % self.seeddir])
+        composer = partial(
+            script.composeOutputPath, flavour, series_name, arch)
+        self.assertTrue(os.path.exists(composer(seed_old)))
+        self.makeSeedStructure(flavour, series_name, [seed_new])
+        self.makeSeed(flavour, series_name, seed_new, [])
+        script.process(seed_bases=["file://%s" % self.seeddir])
+        self.assertTrue(os.path.exists(os.path.join(script.log_file)))
+        self.assertTrue(os.path.exists(composer("structure")))
+        self.assertTrue(os.path.exists(composer("all")))
+        self.assertTrue(os.path.exists(composer("all.sources")))
+        self.assertTrue(os.path.exists(composer(seed_new)))
+        self.assertFalse(os.path.exists(composer(seed_old)))
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
