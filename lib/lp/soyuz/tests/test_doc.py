@@ -132,11 +132,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'buildd-scoring.txt': LayeredDocFileSuite(
-        '../doc/buildd-scoring.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
     'package-cache.txt': LayeredDocFileSuite(
         '../doc/package-cache.txt',
         setUp=statisticianSetUp, tearDown=statisticianTearDown,

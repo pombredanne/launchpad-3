@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -19,6 +19,10 @@ __all__ = [
 
 from calendar import timegm
 from collections import defaultdict
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import contextlib
 import logging
 import os
@@ -106,6 +110,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     task_queue = 'job'
 
     celery_responses = None
+
+    retry_delay = timedelta(minutes=10)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -202,8 +208,12 @@ class BaseRunnableJob(BaseRunnableJobSource):
             cls = CeleryRunJob
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
+        if self.job.lease_expires is not None:
+            eta = datetime.now() + self.retry_delay
+        else:
+            eta = None
         return cls.apply_async(
-            (ujob_id, self.config.dbuser), queue=self.task_queue)
+            (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta)
 
     def getDBClass(self):
         return self.context.__class__
@@ -222,6 +232,12 @@ class BaseRunnableJob(BaseRunnableJobSource):
             return
         current = transaction.get()
         current.addAfterCommitHook(self.celeryCommitHook)
+
+    def queue(self, manage_transaction=False, abort_transaction=False):
+        """See `IJob`."""
+        self.job.queue(
+            manage_transaction, abort_transaction,
+            add_commit_hook=self.celeryRunOnCommit)
 
 
 class BaseJobRunner(LazrJobRunner):
@@ -605,11 +621,7 @@ class JobCronScript(LaunchpadCronScript):
         return getattr(config, self.config_name)
 
     def main(self):
-        section = self.config_section
-        if getattr(section, 'error_dir', None) is not None:
-            # If the error_dir is not set, we will let the error
-            # utility default to using the [error_reports] config.
-            errorlog.globalErrorUtility.configure(self.config_name)
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         kwargs = {}
         if self.log_twisted:

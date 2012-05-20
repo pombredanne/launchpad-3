@@ -45,22 +45,22 @@ class InformationType(DBEnumeratedType):
     EMBARGOEDSECURITY = DBItem(3, """
         Embargoed Security
 
-        Only users with permission to see the project's security related
-        artifacts can see this information.
+        Visible only to users with whom the project has shared embargoed
+        security information.
         """)
 
     USERDATA = DBItem(4, """
         User Data
 
-        Only users with permission to see the project's artifacts containing
-        user data can see this information.
+        Visible only to users with whom the project has shared information
+        containing user data.
         """)
 
     PROPRIETARY = DBItem(5, """
         Proprietary
 
-        Only users with permission to see the project's artifacts containing
-        proprietary data can see this information.
+        Visible only to users with whom the project has shared proprietary
+        information.
         """)
 
 
