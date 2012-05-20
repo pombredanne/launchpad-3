@@ -239,10 +239,10 @@ class IDistributionPublic(
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = PublicPersonChoice(
+    members = exported(PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPersonOrTeam'))
     mirror_admin = exported(PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to review and "
