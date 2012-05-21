@@ -13,6 +13,7 @@ from simplejson import dumps
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.person import IPersonSet
@@ -41,7 +42,9 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    anonymous_logged_in,
     api_url,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -380,44 +383,81 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         removeSecurityProxy(packageset).relative_build_score = 100
         self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
 
-    def test_score_packageset_readable(self):
-        # A packageset's build score is readable by anyone.
-        packageset = self.factory.makePackageset()
-        removeSecurityProxy(packageset).relative_build_score = 100
+    def assertScoreReadableByAnyone(self, obj):
+        """An object's build score is readable by anyone."""
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
+        removeSecurityProxy(obj).relative_build_score = 100
         webservice = webservice_for_person(
             self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
-        entry = webservice.get(
-            api_url(packageset), api_version="devel").jsonBody()
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
         self.assertEqual(100, entry["relative_build_score"])
 
-    def test_score_packageset_forbids_non_buildd_admin(self):
-        # Being the owner of a packageset is not enough to allow changing
-        # its build score, since this affects a site-wide resource.
-        person = self.factory.makePerson()
-        packageset = self.factory.makePackageset(owner=person)
+    def assertScoreNotWriteableByOwner(self, obj):
+        """Being an object's owner does not allow changing its build score.
+
+        This affects a site-wide resource, and is thus restricted to
+        launchpad-buildd-admins.
+        """
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
         webservice = webservice_for_person(
-            person, permission=OAuthPermission.WRITE_PUBLIC)
-        entry = webservice.get(
-            api_url(packageset), api_version="devel").jsonBody()
+            obj.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
         response = webservice.patch(
             entry["self_link"], "application/json",
             dumps(dict(relative_build_score=100)))
         self.assertEqual(401, response.status)
-        new_entry = webservice.get(
-            api_url(packageset), api_version="devel").jsonBody()
+        new_entry = webservice.get(obj_url, api_version="devel").jsonBody()
         self.assertEqual(0, new_entry["relative_build_score"])
 
-    def test_score_packageset_allows_buildd_admin(self):
-        buildd_admins = getUtility(IPersonSet).getByName(
-            "launchpad-buildd-admins")
-        buildd_admin = self.factory.makePerson(member_of=[buildd_admins])
-        packageset = self.factory.makePackageset()
+    def assertScoreWriteableByTeam(self, obj, team):
+        """Members of TEAM can change an object's build score."""
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
+        person = self.factory.makePerson(member_of=[team])
         webservice = webservice_for_person(
-            buildd_admin, permission=OAuthPermission.WRITE_PUBLIC)
-        entry = webservice.get(
-            api_url(packageset), api_version="devel").jsonBody()
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
         response = webservice.patch(
             entry["self_link"], "application/json",
             dumps(dict(relative_build_score=100)))
         self.assertEqual(209, response.status)
         self.assertEqual(100, response.jsonBody()["relative_build_score"])
+
+    def test_score_packageset_readable(self):
+        # A packageset's build score is readable by anyone.
+        packageset = self.factory.makePackageset()
+        self.assertScoreReadableByAnyone(packageset)
+
+    def test_score_packageset_forbids_non_buildd_admin(self):
+        # Being the owner of a packageset is not enough to allow changing
+        # its build score, since this affects a site-wide resource.
+        packageset = self.factory.makePackageset()
+        self.assertScoreNotWriteableByOwner(packageset)
+
+    def test_score_packageset_allows_buildd_admin(self):
+        # Buildd admins can change a packageset's build score.
+        packageset = self.factory.makePackageset()
+        self.assertScoreWriteableByTeam(
+            packageset, getUtility(ILaunchpadCelebrities).buildd_admin)
+
+    def test_score_archive_readable(self):
+        # An archive's build score is readable by anyone.
+        archive = self.factory.makeArchive()
+        self.assertScoreReadableByAnyone(archive)
+
+    def test_score_archive_forbids_non_buildd_admin(self):
+        # Being the owner of an archive is not enough to allow changing its
+        # build score, since this affects a site-wide resource.
+        archive = self.factory.makeArchive()
+        self.assertScoreNotWriteableByOwner(archive)
+
+    def test_score_archive_allows_buildd_and_commercial_admin(self):
+        # Buildd and commercial admins can change an archive's build score.
+        archive = self.factory.makeArchive()
+        self.assertScoreWriteableByTeam(
+            archive, getUtility(ILaunchpadCelebrities).buildd_admin)
+        with anonymous_logged_in():
+            self.assertScoreWriteableByTeam(
+                archive, getUtility(ILaunchpadCelebrities).commercial_admin)
