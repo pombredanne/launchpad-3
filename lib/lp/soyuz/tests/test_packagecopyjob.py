@@ -355,6 +355,24 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertEqual(1, naked_job.reportFailure.call_count)
 
+    def test_copy_with_packageupload(self):
+        # When a PCJ with a PackageUpload gets processed, the resulting
+        # publication is linked to the PackageUpload.
+        spn = self.factory.getUniqueString()
+        pcj = self.createCopyJob(spn, 'universe', 'web', '1.0-1', True)
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [pcj.id]).one()
+        pu.acceptFromQueue()
+        owner = pcj.target_archive.owner
+        switch_dbuser("launchpad_main")
+        with person_logged_in(owner):
+            pcj.target_archive.newComponentUploader(
+                pcj.requester, 'universe')
+        self.runJob(pcj)
+        new_publication = pcj.target_archive.getPublishedSources(
+            name=spn).one()
+        self.assertEqual(new_publication.packageupload, pu)
+
     def test_target_ppa_non_release_pocket(self):
         # When copying to a PPA archive the target must be the release pocket.
         distroseries = self.factory.makeDistroSeries()
@@ -812,7 +830,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # UnknownOverridePolicy policy.
         self.assertEqual('universe', pcj.metadata['component_override'])
 
-    def createCopyJob(self, sourcename, component, section, version):
+    def createCopyJob(self, sourcename, component, section, version,
+                      return_job=False):
         # Helper method to create a package copy job for a package with
         # the given sourcename, component, section and version.
         publisher = SoyuzTestPublisher()
@@ -846,6 +865,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Run the job so it gains a PackageUpload.
         self.assertRaises(SuspendJobException, self.runJob, job)
+        job.suspend()
+        if return_job:
+            return job
         pcj = removeSecurityProxy(job).context
         return pcj
 

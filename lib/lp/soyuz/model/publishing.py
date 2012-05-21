@@ -819,7 +819,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True, creator=None, sponsor=None):
+               create_dsd_job=True, creator=None, sponsor=None,
+               packageupload=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -838,7 +839,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             ancestor=self,
             create_dsd_job=create_dsd_job,
             creator=creator,
-            sponsor=sponsor)
+            sponsor=sponsor,
+            packageupload=packageupload)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""

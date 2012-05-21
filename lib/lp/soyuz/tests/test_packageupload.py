@@ -35,6 +35,7 @@ from lp.soyuz.interfaces.queue import (
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -381,7 +382,6 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
     def makeUploadWithPackageCopyJob(self, sourcepackagename=None):
         """Create a `PackageUpload` plus attached `PlainPackageCopyJob`."""
-        from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
         upload = self.factory.makeCopyJobPackageUpload(
             sourcepackagename=sourcepackagename)
         return upload, getUtility(IPackageCopyJobSource).wrap(

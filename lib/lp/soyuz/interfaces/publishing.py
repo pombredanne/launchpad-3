@@ -647,6 +647,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             `IOverridePolicy`.
         :param creator: the `IPerson` to use as the creator for the copied
             publication.
+        :param packageupload: The `IPackageUpload` that caused this
+            publication to be created.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
