@@ -44,11 +44,11 @@
 
     <div>
       <div style="float: left">Overall completion: &nbsp;</div>
-      <div tal:define="percent_done python: view.progress_per_date[date]"
-           tal:attributes="title string:${percent_done}% of items completed;"
+      <div tal:define="percent_done_or_postponed python: view.progress_per_date[date]"
+           tal:attributes="title string:${percent_done_or_postponed}% of items completed;"
            style="border: 1px solid gray; width: 300px; float:left">
         <img tal:attributes="id string:progressbar_${repeat/pair/index};
-                             width string:${percent_done}%"
+                             width string:${percent_done_or_postponed}%"
              style="display: block"
              src="/@@/green-bar"
              height="15"/>
@@ -96,11 +96,11 @@
           <td tal:content="structure container/assignee_link" />
           <td tal:content="container/priority_title" />
           <td>
-            <div tal:attributes="title string:${container/percent_done}% of items completed;"
+            <div tal:attributes="title string:${container/percent_done_or_postponed}% of items completed;"
                  style="border: 1px solid gray; width: 60px">
               <img tal:attributes="
                      id string:container_progressbar_${repeat/container/index};
-                     width string:${container/percent_done}%"
+                     width string:${container/percent_done_or_postponed}%"
                    style="display: block"
                    src="/@@/green-bar"
                    height="10"/>

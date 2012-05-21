@@ -163,15 +163,20 @@ class TestWorkItemContainer(TestCase):
 
     class MockWorkItem:
 
-        def __init__(self, is_complete):
+        def __init__(self, is_complete, is_postponed):
             self.is_complete = is_complete
 
-    def test_percent_done(self):
+            if is_postponed:
+                self.status = SpecificationWorkItemStatus.POSTPONED
+            else:
+                self.status = None
+
+    def test_percent_done_or_postponed(self):
         container = WorkItemContainer()
-        container.append(self.MockWorkItem(True))
-        container.append(self.MockWorkItem(False))
-        container.append(self.MockWorkItem(True))
-        self.assertEqual('67', container.percent_done)
+        container.append(self.MockWorkItem(True, False))
+        container.append(self.MockWorkItem(False, False))
+        container.append(self.MockWorkItem(False, True))
+        self.assertEqual('67', container.percent_done_or_postponed)
 
 
 class TestPersonUpcomingWork(BrowserTestCase):
@@ -270,6 +275,9 @@ class TestPersonUpcomingWork(BrowserTestCase):
         spec2 = self.factory.makeSpecification(
             product=self.today_milestone.product,
             priority=SpecificationPriority.LOW)
+        spec3 = self.factory.makeSpecification(
+            product=self.today_milestone.product,
+            priority=SpecificationPriority.LOW)
         self.factory.makeSpecificationWorkItem(
             specification=spec1, assignee=self.team.teamowner,
             milestone=self.today_milestone,
@@ -278,6 +286,10 @@ class TestPersonUpcomingWork(BrowserTestCase):
             specification=spec2, assignee=self.team.teamowner,
             milestone=self.today_milestone,
             status=SpecificationWorkItemStatus.INPROGRESS)
+        self.factory.makeSpecificationWorkItem(
+            specification=spec3, assignee=self.team.teamowner,
+            milestone=self.today_milestone,
+            status=SpecificationWorkItemStatus.POSTPONED)
 
         browser = self.getViewBrowser(
             self.team, view_name='+upcomingwork', no_login=True)
@@ -289,8 +301,11 @@ class TestPersonUpcomingWork(BrowserTestCase):
             browser.contents, 'container_progressbar_0')
         container2_progressbar = find_tag_by_id(
             browser.contents, 'container_progressbar_1')
+        container3_progressbar = find_tag_by_id(
+            browser.contents, 'container_progressbar_2')
         self.assertEqual('100%', container1_progressbar.get('width'))
         self.assertEqual('0%', container2_progressbar.get('width'))
+        self.assertEqual('100%', container3_progressbar.get('width'))
 
     def test_basic_for_person(self):
         """Check that the page shows the bugs/work items assigned to a person.
