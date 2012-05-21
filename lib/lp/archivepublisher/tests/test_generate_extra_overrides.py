@@ -194,11 +194,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             self.seeddir, "%s.%s" % (flavour, series_name), seed_name)
 
     def makeSeedStructure(self, flavour, series_name, seed_names,
-                          seed_inherit=None):
+                          seed_inherit={}):
         """Create a simple seed structure file."""
-        if seed_inherit is None:
-            seed_inherit = {}
-
         structure_path = self.composeSeedPath(
             flavour, series_name, "STRUCTURE")
         with open_for_writing(structure_path, "w") as structure:
@@ -557,17 +554,14 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         seed_old_file = "old_flavour_%s_i386" % series_name
         seed_new_file = "new_flavour_%s_i386" % series_name
         other_file = "other-file"
+        output = partial(os.path.join, self.script.config.germinateroot)
         for base in (seed_old_file, seed_new_file, other_file):
-            with open(os.path.join(
-                self.script.config.germinateroot, base), "w"):
+            with open(output(base), "w"):
                 pass
         self.script.removeStaleOutputs(series_name, set([seed_new_file]))
-        self.assertFalse(os.path.exists(
-            os.path.join(self.script.config.germinateroot, seed_old_file)))
-        self.assertTrue(os.path.exists(
-            os.path.join(self.script.config.germinateroot, seed_new_file)))
-        self.assertTrue(os.path.exists(
-            os.path.join(self.script.config.germinateroot, other_file)))
+        self.assertFalse(os.path.exists(output(seed_old_file)))
+        self.assertTrue(os.path.exists(output(seed_new_file)))
+        self.assertTrue(os.path.exists(output(other_file)))
 
     def test_process_missing_seeds(self):
         # The script ignores series with no seed structures.
