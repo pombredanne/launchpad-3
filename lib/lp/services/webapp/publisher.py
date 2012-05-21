@@ -333,7 +333,7 @@ class LaunchpadView(UserAttributeCache):
     def beta_features(self):
         cache = self._get_json_cache()
         if cache is None:
-            return []
+            return None
         related_features = cache.setdefault('related_features', {}).values()
         return [f for f in related_features if f['is_beta']]
 

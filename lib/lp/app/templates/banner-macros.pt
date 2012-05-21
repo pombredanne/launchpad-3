@@ -19,6 +19,7 @@
 </metal:privacy>
 
 <metal:beta define-macro="beta-banner">
+<tal:show-banner condition="view/beta_features">
 <div class="yui3-betabanner-content">
   <div id="beta-banner" class="global-notification">
     <span class="beta-warning">BETA!</span>
@@ -36,6 +37,7 @@
     </span>
   </div>
 </div>
+</tal:show-banner>
 </metal:beta>
 
 </macros>
