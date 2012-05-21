@@ -4536,6 +4536,11 @@ class WorkItemContainer:
             percent_done = 100.0 * done_or_postponed / len(self._items)
         return '{0:.0f}'.format(percent_done)
 
+    @property
+    def has_incomplete_work(self):
+        """Return True if there are incomplete work items."""
+        return len(self.done_items) < len(self._items)
+
     def append(self, item):
         self._items.append(item)
 
