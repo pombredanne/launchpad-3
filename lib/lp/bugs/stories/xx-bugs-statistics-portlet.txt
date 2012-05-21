@@ -37,7 +37,7 @@ general stats.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     2 Open CVE bugs - CVE reports
 
@@ -71,7 +71,7 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     2 Open CVE bugs - CVE reports
 
@@ -107,7 +107,7 @@ link to review nominations.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug - CVE report
 
@@ -140,7 +140,7 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug - CVE report
 
@@ -175,7 +175,7 @@ If the user is not logged-in general stats are shown.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     2 Open CVE bugs
 
@@ -208,7 +208,7 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     2 Open CVE bugs
 
@@ -247,7 +247,7 @@ option to subscribe to bug mail.
     0 Critical bugs
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug
 
@@ -280,7 +280,7 @@ reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug
 
@@ -318,7 +318,7 @@ If the user is not logged-in general stats are shown.
     1 Critical bug
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug
 
@@ -352,7 +352,7 @@ and reported bugs.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug
 
@@ -390,7 +390,7 @@ If the user is not logged-in general stats are shown.
     1 Critical bug
     0 High importance bugs
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug - CVE report
 
@@ -424,7 +424,7 @@ bugs is also shown.
     0 Bugs reported by me
       Bugs affecting me
     <BLANKLINE>
-    0 Bugs fixed elsewhere
+      Bugs fixed elsewhere
     0 Bugs with patches
     1 Open CVE bug - CVE report
 
@@ -433,30 +433,3 @@ The content includes a link to the distribution CVE report.
 
     >>> print user_browser.getLink('CVE report').url
     http://bugs.launchpad.dev/firefox/+cve
-
-
-Hiding "Bugs fixed elsewhere" counts
-------------------------------------
-
-The count of bugs fixed elsewhere is of dubious utility, and it's
-expensive to calculate when generating BugSummary. As a trial before we
-remove it, there's a feature flag to hide the count.
-
-    >>> print_bugfilters_portlet_filled(user_browser, path)
-    3 New bugs
-    ...
-    <BLANKLINE>
-    0 Bugs fixed elsewhere
-    0 Bugs with patches
-    ...
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> with FeatureFixture(
-    ...     {'bugs.statistics_portlet.hide_fixed_elsewhere_count': 'true'}):
-    ...     print print_bugfilters_portlet_filled(user_browser, path)
-    3 New bugs
-    ...
-    <BLANKLINE>
-      Bugs fixed elsewhere
-    0 Bugs with patches
-    ...
