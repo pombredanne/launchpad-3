@@ -529,4 +529,11 @@ DROP FUNCTION summarise_bug(bug);
 DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
 DROP FUNCTION bugsummary_journal_ins(bugsummary);
 
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_distribution_fkey;
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_distroseries_fkey;
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_milestone_fkey;
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_product_fkey;
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_productseries_fkey;
+ALTER TABLE bugsummaryjournal DROP CONSTRAINT bugsummaryjournal_sourcepackagename_fkey;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 19, 0);
