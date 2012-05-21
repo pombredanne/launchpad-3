@@ -600,18 +600,18 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         self.makeSeedStructure(flavour, series_name, [seed_old])
         self.makeSeed(flavour, series_name, seed_old, [])
         self.script.process(seed_bases=["file://%s" % self.seeddir])
-        composer = partial(
+        output = partial(
             self.script.composeOutputPath, flavour, series_name, arch)
-        self.assertTrue(os.path.exists(composer(seed_old)))
+        self.assertTrue(os.path.exists(output(seed_old)))
         self.makeSeedStructure(flavour, series_name, [seed_new])
         self.makeSeed(flavour, series_name, seed_new, [])
         self.script.process(seed_bases=["file://%s" % self.seeddir])
         self.assertTrue(os.path.exists(os.path.join(self.script.log_file)))
-        self.assertTrue(os.path.exists(composer("structure")))
-        self.assertTrue(os.path.exists(composer("all")))
-        self.assertTrue(os.path.exists(composer("all.sources")))
-        self.assertTrue(os.path.exists(composer(seed_new)))
-        self.assertFalse(os.path.exists(composer(seed_old)))
+        self.assertTrue(os.path.exists(output("structure")))
+        self.assertTrue(os.path.exists(output("all")))
+        self.assertTrue(os.path.exists(output("all.sources")))
+        self.assertTrue(os.path.exists(output(seed_new)))
+        self.assertFalse(os.path.exists(output(seed_old)))
 
     def test_main(self):
         # If run end-to-end, the script generates override files containing
