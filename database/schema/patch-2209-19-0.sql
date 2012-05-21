@@ -124,27 +124,7 @@ BEGIN
             sourcepackagename, person AS viewed_by, tag, status, milestone,
             importance,
             BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
-            (EXISTS (
-                SELECT TRUE FROM BugTask AS RBT
-                WHERE
-                    RBT.bug = tasks.bug
-                    -- This would just be 'RBT.id <> tasks.id', except
-                    -- that the records from tasks are summaries and not
-                    -- real bugtasks, and do not have an id.
-                    AND (RBT.product IS DISTINCT FROM tasks.product
-                        OR RBT.productseries
-                            IS DISTINCT FROM tasks.productseries
-                        OR RBT.distribution IS DISTINCT FROM tasks.distribution
-                        OR RBT.distroseries IS DISTINCT FROM tasks.distroseries
-                        OR RBT.sourcepackagename
-                            IS DISTINCT FROM tasks.sourcepackagename)
-                    -- Flagged as INVALID, FIXCOMMITTED or FIXRELEASED
-                    -- via a bugwatch, or FIXCOMMITTED or FIXRELEASED on
-                    -- the product.
-                    AND ((bugwatch IS NOT NULL AND status IN (17, 25, 30))
-                        OR (bugwatch IS NULL AND product IS NOT NULL
-                            AND status IN (25, 30))))
-                )::boolean AS fixed_upstream
+            false AS fixed_upstream
         FROM bugsummary_tasks(BUG_ROW) AS tasks
         JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
         LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
