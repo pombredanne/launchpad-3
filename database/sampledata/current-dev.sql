@@ -4293,7 +4293,13 @@ ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2011-10-06 12:44:04.317554');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_choice_popup.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_sharing.writable', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.enhanced_sharing_details.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.information_type_notifications.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'disclosure.show_information_type_in_ui.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'js.combo_loader.enabled', 'true', '2012-05-18 07:34:39.239649');
+INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2012-05-18 07:34:39.239649');
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
