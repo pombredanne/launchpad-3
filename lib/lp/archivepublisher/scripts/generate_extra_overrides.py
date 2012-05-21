@@ -71,7 +71,6 @@ class GenerateExtraOverrides(LaunchpadScript):
     def __init__(self, *args, **kwargs):
         super(GenerateExtraOverrides, self).__init__(*args, **kwargs)
         self.germinate_logger = None
-        self.written_files = set()
 
     def add_my_options(self):
         """Add a 'distribution' context option."""
