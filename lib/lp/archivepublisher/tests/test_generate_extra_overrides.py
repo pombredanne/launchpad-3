@@ -568,7 +568,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         flavour = self.factory.getUniqueString()
         self.setUpDistroAndScript(
             ["DEVELOPMENT", "DEVELOPMENT"], extra_args=[flavour])
-        component = self.setUpComponent()
+        self.setUpComponent()
         self.factory.makeDistroArchSeries(distroseries=self.distroseries[0])
         self.factory.makeDistroArchSeries(distroseries=self.distroseries[1])
         self.makeIndexFiles(self.script, self.distroseries[1])
@@ -589,7 +589,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         flavour = self.factory.getUniqueString()
         self.setUpDistroAndScript(extra_args=[flavour])
         series_name = self.distroseries[0].name
-        component = self.setUpComponent()
+        self.setUpComponent()
         das = self.factory.makeDistroArchSeries(
             distroseries=self.distroseries[0])
         arch = das.architecturetag
