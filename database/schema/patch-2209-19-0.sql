@@ -549,7 +549,7 @@ AS $function$
         AND fixed_upstream = $1.fixed_upstream;
 $function$;
 
-CREATE VIEW combinedbugsummary AS
+CREATE OR REPLACE VIEW combinedbugsummary AS
     SELECT
         bugsummary.id, bugsummary.count, bugsummary.product,
         bugsummary.productseries, bugsummary.distribution,
