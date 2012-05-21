@@ -4528,7 +4528,7 @@ class WorkItemContainer:
 
     @property
     def percent_done_or_postponed(self):
-        """Returns % of work items to be worked on this milestone."""
+        """Returns % of work items to be worked on."""
         percent_done = 0
         if len(self._items) > 0:
             done_or_postponed = (len(self.done_items) +
