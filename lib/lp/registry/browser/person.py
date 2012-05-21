@@ -4451,12 +4451,14 @@ class PersonUpcomingWorkView(LaunchpadView):
         for date, containers in self.work_item_containers:
             total_items = 0
             total_done = 0
+            total_postponed = 0
             milestones = set()
             self.bugtask_counts[date] = 0
             self.workitem_counts[date] = 0
             for container in containers:
                 total_items += len(container.items)
                 total_done += len(container.done_items)
+                total_postponed += len(container.postponed_items)
                 if isinstance(container, AggregatedBugsContainer):
                     self.bugtask_counts[date] += len(container.items)
                 else:
@@ -4465,8 +4467,12 @@ class PersonUpcomingWorkView(LaunchpadView):
                     milestones.add(item.milestone)
             self.milestones_per_date[date] = sorted(
                 milestones, key=attrgetter('displayname'))
-            self.progress_per_date[date] = '{0:.0f}'.format(
-                100.0 * total_done / float(total_items))
+
+            percent_done = 0
+            if total_items > 0:
+                done_or_postponed = total_done + total_postponed
+                percent_done = 100.0 * done_or_postponed / float(total_items)
+            self.progress_per_date[date] = '{0:.0f}'.format(percent_done)
 
     @property
     def label(self):
@@ -4516,9 +4522,19 @@ class WorkItemContainer:
         return [item for item in self._items if item.is_complete]
 
     @property
-    def percent_done(self):
-        return '{0:.0f}'.format(
-            100.0 * len(self.done_items) / len(self._items))
+    def postponed_items(self):
+        return [item for item in self._items
+                if item.status == SpecificationWorkItemStatus.POSTPONED]
+
+    @property
+    def percent_done_or_postponed(self):
+        """Returns % of work items to be worked on this milestone."""
+        percent_done = 0
+        if len(self._items) > 0:
+            done_or_postponed = (len(self.done_items) +
+                                 len(self.postponed_items))
+            percent_done = 100.0 * done_or_postponed / float(len(self._items))
+        return '{0:.0f}'.format(percent_done)
 
     def append(self, item):
         self._items.append(item)
