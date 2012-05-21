@@ -86,11 +86,13 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         person = self.factory.makePerson()
         view = create_view(person, name="+index")
         formatter = ObjectFormatterAPI(view)
-        self.assertEqual('public', formatter.public_private_css())
+        self.assertEqual('public', formatter.global_css())
 
         view = create_view(person, name="+archivesubscriptions")
         formatter = ObjectFormatterAPI(view)
-        self.assertEqual('private', formatter.public_private_css())
+        self.assertEqual(
+            'private global-notification-visible',
+            formatter.global_css())
 
 class TestPillarFormatterAPI(TestCaseWithFactory):
 
