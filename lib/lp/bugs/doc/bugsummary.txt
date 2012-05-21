@@ -14,20 +14,19 @@ or more rows row for every unique public BugTask targetting:
     - milestone
     - importance
     - has_patch
-    - fixed_upstream
 
 
 First we should setup some helpers to use in the examples. These will
 let us dump the BugSummary table in a readable format.
 
     ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
+    prod ps   dist ds   spn   tag mile status import pa vis    #
     ---------------------------------------------------------------
 
 The columns are product, productseries, distribution, distroseries,
 sourcepackagename, tag, milestone, status, importance, has_patch,
-fixed_upstream, viewed_by and the count. viewed_by is a team reference
-and used to query private bug counts.
+viewed_by and the count. viewed_by is a team reference and used to
+query private bug counts.
 
     >>> from lp.services.database.lpstorm import IMasterStore
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -60,14 +59,13 @@ and used to query private bug counts.
     ...         BugSummary.sourcepackagename_id, BugSummary.tag,
     ...         BugSummary.milestone_id, BugSummary.status,
     ...         BugSummary.importance, BugSummary.has_patch,
-    ...         BugSummary.fixed_upstream, BugSummary.viewed_by_id,
-    ...         BugSummary.id)
+    ...         BugSummary.viewed_by_id, BugSummary.id)
     ...     fmt = (
     ...         "%-4s %-4s %-4s %-4s %-5s %-3s %-4s "
-    ...         "%-6s %-6s %-2s %-2s %-4s %3s")
+    ...         "%-6s %-6s %-2s %-4s %3s")
     ...     header = fmt % (
     ...         'prod', 'ps', 'dist', 'ds', 'spn', 'tag', 'mile',
-    ...         'status', 'import', 'pa', 'up', 'vis', '#')
+    ...         'status', 'import', 'pa', 'vis', '#')
     ...     print "-" * len(header)
     ...     print header
     ...     print "-" * len(header)
@@ -83,7 +81,6 @@ and used to query private bug counts.
     ...             str(bugsummary.status)[:6],
     ...             str(bugsummary.importance)[:6],
     ...             str(bugsummary.has_patch)[:1],
-    ...             str(bugsummary.fixed_upstream)[:1],
     ...             name(bugsummary.viewed_by),
     ...             bugsummary.count)
     ...     print " " * (len(header) - 4),
@@ -122,12 +119,12 @@ We can query for how many bugs are targeted to a product.
     ...     BugSummary.tag == None)
 
     >>> print_result(bug_summaries)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    pr-a x    x    x    x     x   x    New    Undeci F  F  x      1
-                                                                ===
-                                                                  1
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    pr-a x    x    x    x     x   x    New    Undeci F  x      1
+                                                             ===
+                                                               1
 
 There is one row per tag per combination of product, status and milestone.
 If we are interested in all bugs targeted to a product regardless of how
@@ -148,13 +145,13 @@ Confirmed bug tasks targetted to the pr-a product.:
     ...     BugSummary.product == prod_a,
     ...     BugSummary.tag == None,
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    pr-a x    x    x    x     x   x    New    Undeci F  F  x      2
-    pr-a x    x    x    x     x   x    Confir Undeci F  F  x      2
-                                                                ===
-                                                                  4
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    pr-a x    x    x    x     x   x    New    Undeci F  x      2
+    pr-a x    x    x    x     x   x    Confir Undeci F  x      2
+                                                             ===
+                                                               4
 
 Here are the rows associated with the 't-a' tag. There is 1 Confirmed
 bug task targetted to the pr-a product who's bug is tagged 't-a'.:
@@ -163,12 +160,12 @@ bug task targetted to the pr-a product who's bug is tagged 't-a'.:
     ...     BugSummary.product == prod_a,
     ...     BugSummary.tag == u't-a',
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    pr-a x    x    x    x     t-a x    Confir Undeci F  F  x      1
-                                                                ===
-                                                                  1
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    pr-a x    x    x    x     t-a x    Confir Undeci F  x      1
+                                                             ===
+                                                               1
 
 You will normally want to get the total count counted in the database
 rather than waste transmission time to calculate the rows client side.
@@ -208,17 +205,17 @@ been assigned to a milestone:
     >>> print_find(
     ...     BugSummary.product == prod_a,
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    pr-a x    x    x    x     t-a x    Confir Undeci F  F  x      1
-    pr-a x    x    x    x     t-b ms-a New    Undeci F  F  x      1
-    pr-a x    x    x    x     t-c ms-a New    Undeci F  F  x      1
-    pr-a x    x    x    x     x   ms-a New    Undeci F  F  x      1
-    pr-a x    x    x    x     x   x    New    Undeci F  F  x      2
-    pr-a x    x    x    x     x   x    Confir Undeci F  F  x      2
-                                                                ===
-                                                                  8
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    pr-a x    x    x    x     t-a x    Confir Undeci F  x      1
+    pr-a x    x    x    x     t-b ms-a New    Undeci F  x      1
+    pr-a x    x    x    x     t-c ms-a New    Undeci F  x      1
+    pr-a x    x    x    x     x   ms-a New    Undeci F  x      1
+    pr-a x    x    x    x     x   x    New    Undeci F  x      2
+    pr-a x    x    x    x     x   x    Confir Undeci F  x      2
+                                                             ===
+                                                               8
 
 Number of New bugs not targeted to a milestone. Note the difference
 between selecting records where tag is None, and where milestone is None:
@@ -272,13 +269,13 @@ ProductSeries' Product:
     ...         BugSummary.productseries == productseries_b,
     ...         BugSummary.product == prod_b),
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    pr-b x    x    x    x     x   x    New    Undeci F  F  x      1
-    x    ps-b x    x    x     x   x    New    Undeci F  F  x      1
-                                                                ===
-                                                                  2
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    pr-b x    x    x    x     x   x    New    Undeci F  x      1
+    x    ps-b x    x    x     x   x    New    Undeci F  x      1
+                                                             ===
+                                                               2
 
 Distribution Bug Counts
 -----------------------
@@ -300,14 +297,14 @@ the same as tag.
     >>> print_find(
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    x    x    di-a x    sp-a  x   x    New    Undeci F  F  x      1
-    x    x    di-a x    x     x   x    New    Undeci F  F  x      1
-    x    x    di-a x    x     x   x    Confir Undeci F  F  x      1
-                                                                ===
-                                                                  3
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    x    x    di-a x    sp-a  x   x    New    Undeci F  x      1
+    x    x    di-a x    x     x   x    New    Undeci F  x      1
+    x    x    di-a x    x     x   x    Confir Undeci F  x      1
+                                                             ===
+                                                               3
 
 How many bugs targeted to a distribution?
 
@@ -372,12 +369,12 @@ column.
     >>> print_find(
     ...     BugSummary.distroseries == series_c,
     ...     BugSummary.viewed_by == None)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    x    x    x    ds-c x     x   x    New    Undeci F  F  x      1
-                                                                ===
-                                                                  1
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    x    x    x    ds-c x     x   x    New    Undeci F  x      1
+                                                             ===
+                                                               1
 
 
 Privacy
@@ -444,18 +441,18 @@ Whew! Check out what the BugSummary records now look like:
     ...     BugSummary.distribution == distro_p,
     ...     BugSummary.distroseries == series_p)
     >>> print_find(distro_or_series)
-    ---------------------------------------------------------------
-    prod ps   dist ds   spn   tag mile status import pa up vis    #
-    ---------------------------------------------------------------
-    x    x    di-p x    x     x   x    New    Undeci F  F  p-b    1
-    x    x    di-p x    x     x   x    New    Undeci F  F  own    3
-    x    x    di-p x    x     x   x    New    Undeci F  F  t-a    1
-    x    x    di-p x    x     x   x    New    Undeci F  F  t-c    1
-    x    x    di-p x    x     x   x    New    Undeci F  F  x      1
-    x    x    x    ds-p x     x   x    New    Undeci F  F  own    1
-    x    x    x    ds-p x     x   x    New    Undeci F  F  t-c    1
-                                                                ===
-                                                                  9
+    ------------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status import pa vis    #
+    ------------------------------------------------------------
+    x    x    di-p x    x     x   x    New    Undeci F  p-b    1
+    x    x    di-p x    x     x   x    New    Undeci F  own    3
+    x    x    di-p x    x     x   x    New    Undeci F  t-a    1
+    x    x    di-p x    x     x   x    New    Undeci F  t-c    1
+    x    x    di-p x    x     x   x    New    Undeci F  x      1
+    x    x    x    ds-p x     x   x    New    Undeci F  own    1
+    x    x    x    ds-p x     x   x    New    Undeci F  t-c    1
+                                                             ===
+                                                               9
 
 So how many public bugs are there on the distro?
 
