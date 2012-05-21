@@ -331,9 +331,9 @@ class TestLaunchpadView(TestCaseWithFactory):
         class TestView(LaunchpadView):
             related_features = ['test_feature', 'test_feature2']
 
-        raw_flag_dicts = self.makeFeatureFlagDictionaries(u'', u'on')
         # Select one flag on 'default', one flag not on 'default. 'default'
         # setting determines whether flags correspond to 'beta' features.
+        raw_flag_dicts = self.makeFeatureFlagDictionaries(u'', u'on')
         flag_dicts = [raw_flag_dicts[1], raw_flag_dicts[2]]
 
         self.useFixture(FeatureFixture(
