@@ -110,14 +110,14 @@
       </tbody>
 
       <tal:conditional condition="container/has_incomplete_work">
-        <div tal:define="global classname string:expanded"/>
+        <tal:block define="global upcoming_work_class_name string:expanded"/>
       </tal:conditional>
 
       <tal:conditional condition="not: container/has_incomplete_work">
-        <div tal:define="global classname string:"/>
+        <tal:block define="global upcoming_work_class_name string:"/>
       </tal:conditional>
 
-      <tbody tal:attributes="class string:collapsible-body ${classname}">
+      <tbody tal:attributes="class string:collapsible-body ${upcoming_work_class_name}">
         <tr tal:repeat="workitem container/items" class="padded">
           <td>
             <span tal:condition="not: container/spec|nothing"
