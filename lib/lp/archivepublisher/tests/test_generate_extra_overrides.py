@@ -47,6 +47,12 @@ def file_contents(path):
         return handle.read()
 
 
+def touch(path):
+    """Create an empty file at path."""
+    with open_for_writing(path, "a"):
+        pass
+
+
 class TestAtomicFile(TestCaseWithFactory):
     """Tests for the AtomicFile helper class."""
 
@@ -556,8 +562,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         other_file = "other-file"
         output = partial(os.path.join, self.script.config.germinateroot)
         for base in (seed_old_file, seed_new_file, other_file):
-            with open(output(base), "w"):
-                pass
+            touch(output(base))
         self.script.removeStaleOutputs(series_name, set([seed_new_file]))
         self.assertFalse(os.path.exists(output(seed_old_file)))
         self.assertTrue(os.path.exists(output(seed_new_file)))
