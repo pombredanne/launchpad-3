@@ -4471,7 +4471,7 @@ class PersonUpcomingWorkView(LaunchpadView):
             percent_done = 0
             if total_items > 0:
                 done_or_postponed = total_done + total_postponed
-                percent_done = 100.0 * done_or_postponed / float(total_items)
+                percent_done = 100.0 * done_or_postponed / total_items
             self.progress_per_date[date] = '{0:.0f}'.format(percent_done)
 
     @property
@@ -4533,7 +4533,7 @@ class WorkItemContainer:
         if len(self._items) > 0:
             done_or_postponed = (len(self.done_items) +
                                  len(self.postponed_items))
-            percent_done = 100.0 * done_or_postponed / float(len(self._items))
+            percent_done = 100.0 * done_or_postponed / len(self._items)
         return '{0:.0f}'.format(percent_done)
 
     def append(self, item):
