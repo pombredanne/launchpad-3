@@ -5,6 +5,9 @@ SET client_min_messages=ERROR;
 
 -- Journal functions. Speed is critical -- these are run by appservers.
 
+ALTER TABLE bugsummary ADD COLUMN access_policy integer;
+ALTER TABLE bugsummaryjournal ADD COLUMN access_policy integer;
+
 CREATE OR REPLACE FUNCTION public.bug_summary_flush_temp_journal()
  RETURNS void
  LANGUAGE plpgsql
@@ -18,11 +21,13 @@ BEGIN
     INSERT INTO BugSummaryJournal(
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream)
+        status, milestone, importance, has_patch, fixed_upstream,
+        access_policy)
     SELECT
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream
+        status, milestone, importance, has_patch, fixed_upstream,
+        access_policy
         FROM bugsummary_temp_journal;
     TRUNCATE bugsummary_temp_journal;
 END;
@@ -37,11 +42,13 @@ BEGIN
     INSERT INTO BugSummary_Temp_Journal(
         count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream)
+        status, milestone, importance, has_patch, fixed_upstream,
+        access_policy)
     SELECT
         _count, product, productseries, distribution,
         distroseries, sourcepackagename, viewed_by, tag,
-        status, milestone, importance, has_patch, fixed_upstream
+        status, milestone, importance, has_patch, fixed_upstream,
+        access_policy
         FROM bugsummary_locations(BUG_ROW);
 END;
 $function$;
@@ -124,7 +131,7 @@ BEGIN
             sourcepackagename, person AS viewed_by, tag, status, milestone,
             importance,
             BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
-            false AS fixed_upstream
+            false AS fixed_upstream, NULL::integer AS access_policy
         FROM bugsummary_tasks(BUG_ROW) AS tasks
         JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
         LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
@@ -395,13 +402,14 @@ BEGIN
             milestone,
             importance,
             has_patch,
-            fixed_upstream
+            fixed_upstream,
+            access_policy
         FROM BugSummaryJournal
         WHERE id <= max_id
         GROUP BY
             product, productseries, distribution, distroseries,
             sourcepackagename, viewed_by, tag, status, milestone,
-            importance, has_patch, fixed_upstream
+            importance, has_patch, fixed_upstream, access_policy
         HAVING sum(count) <> 0
     LOOP
         IF d.count < 0 THEN
@@ -448,7 +456,8 @@ BEGIN
                 OR milestone = $1.milestone)
             AND importance = $1.importance
             AND has_patch = $1.has_patch
-            AND fixed_upstream = $1.fixed_upstream;
+            AND fixed_upstream = $1.fixed_upstream
+            AND access_policy IS NOT DISTINCT FROM $1.access_policy;
         IF found THEN
             RETURN;
         END IF;
@@ -459,13 +468,13 @@ BEGIN
             INSERT INTO BugSummary(
                 count, product, productseries, distribution,
                 distroseries, sourcepackagename, viewed_by, tag,
-                status, milestone,
-                importance, has_patch, fixed_upstream)
+                status, milestone, importance, has_patch, fixed_upstream,
+                access_policy)
             VALUES (
                 d.count, d.product, d.productseries, d.distribution,
                 d.distroseries, d.sourcepackagename, d.viewed_by, d.tag,
-                d.status, d.milestone,
-                d.importance, d.has_patch, d.fixed_upstream);
+                d.status, d.milestone, d.importance, d.has_patch,
+                d.fixed_upstream, d.access_policy);
             RETURN;
         EXCEPTION WHEN unique_violation THEN
             -- do nothing, and loop to try the UPDATE again
@@ -501,9 +510,11 @@ AS $function$
             OR milestone = $1.milestone)
         AND importance = $1.importance
         AND has_patch = $1.has_patch
-        AND fixed_upstream = $1.fixed_upstream;
+        AND fixed_upstream = $1.fixed_upstream
+        AND access_policy IS NOT DISTINCT FROM access_policy;
 $function$;
 
+DROP VIEW combinedbugsummary;
 CREATE OR REPLACE VIEW combinedbugsummary AS
     SELECT
         bugsummary.id, bugsummary.count, bugsummary.product,
@@ -511,7 +522,7 @@ CREATE OR REPLACE VIEW combinedbugsummary AS
         bugsummary.distroseries, bugsummary.sourcepackagename,
         bugsummary.viewed_by, bugsummary.tag, bugsummary.status,
         bugsummary.milestone, bugsummary.importance, bugsummary.has_patch,
-        bugsummary.fixed_upstream
+        bugsummary.fixed_upstream, bugsummary.access_policy
     FROM bugsummary
     UNION ALL 
     SELECT
@@ -521,7 +532,8 @@ CREATE OR REPLACE VIEW combinedbugsummary AS
         bugsummaryjournal.sourcepackagename, bugsummaryjournal.viewed_by,
         bugsummaryjournal.tag, bugsummaryjournal.status,
         bugsummaryjournal.milestone, bugsummaryjournal.importance,
-        bugsummaryjournal.has_patch, bugsummaryjournal.fixed_upstream
+        bugsummaryjournal.has_patch, bugsummaryjournal.fixed_upstream,
+        bugsummaryjournal.access_policy
     FROM bugsummaryjournal;
 
 DROP FUNCTION unsummarise_bug(bug);
