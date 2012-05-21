@@ -504,6 +504,26 @@ AS $function$
         AND fixed_upstream = $1.fixed_upstream;
 $function$;
 
+CREATE VIEW combinedbugsummary AS
+    SELECT
+        bugsummary.id, bugsummary.count, bugsummary.product,
+        bugsummary.productseries, bugsummary.distribution,
+        bugsummary.distroseries, bugsummary.sourcepackagename,
+        bugsummary.viewed_by, bugsummary.tag, bugsummary.status,
+        bugsummary.milestone, bugsummary.importance, bugsummary.has_patch,
+        bugsummary.fixed_upstream
+    FROM bugsummary
+    UNION ALL 
+    SELECT
+        -bugsummaryjournal.id AS id, bugsummaryjournal.count,
+        bugsummaryjournal.product, bugsummaryjournal.productseries,
+        bugsummaryjournal.distribution, bugsummaryjournal.distroseries,
+        bugsummaryjournal.sourcepackagename, bugsummaryjournal.viewed_by,
+        bugsummaryjournal.tag, bugsummaryjournal.status,
+        bugsummaryjournal.milestone, bugsummaryjournal.importance,
+        bugsummaryjournal.has_patch, bugsummaryjournal.fixed_upstream
+    FROM bugsummaryjournal;
+
 DROP FUNCTION unsummarise_bug(bug);
 DROP FUNCTION summarise_bug(bug);
 DROP FUNCTION bug_summary_temp_journal_ins(bugsummary);
