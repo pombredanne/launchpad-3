@@ -13,7 +13,9 @@ from unittest import (
 from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
+from zope.interface import implements
 
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.services.features.flags import flag_info
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import publisher
@@ -295,6 +297,19 @@ class TestLaunchpadView(TestCaseWithFactory):
         # Or when no request at all is passed.
         LaunchpadView(object(), None)
 
+    def test_view_privacy(self):
+        class PrivateObject(object):
+            implements(IPrivacy)
+
+            def __init__(self, private):
+                self.private = private
+
+        view = LaunchpadView(PrivateObject(True), FakeRequest())
+        self.assertTrue(view.private)
+
+        view = LaunchpadView(PrivateObject(False), FakeRequest())
+        self.assertFalse(view.private)
+        
 
 def test_suite():
     suite = TestSuite()

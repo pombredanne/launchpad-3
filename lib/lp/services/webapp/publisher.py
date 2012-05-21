@@ -287,6 +287,9 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - publishTraverse() <-- override this to support traversing-through.
+    - private      <-- used to indicate if the view contains private data.
+                       override this if the view has special privacy needs
+                       (i.e. context doesn't properly indicate privacy).
     """
 
     @property
@@ -307,6 +310,16 @@ class LaunchpadView(UserAttributeCache):
         # IJSONRequestCache adapter.
         if isinstance(request, FakeRequest):
             return
+        # Several view objects may be created for one page request:
+        # One view for the main context and template, and other views
+        # for macros included in the main template.
+        cache = self._get_json_cache()
+        if cache is None:
+            return
+        related_features = cache.setdefault('related_features', {})
+        related_features.update(self.related_feature_info)
+
+    def _get_json_cache(self):
         # Some tests create views without providing any request
         # object at all; other tests run without the component
         # infrastructure.
@@ -314,19 +327,13 @@ class LaunchpadView(UserAttributeCache):
             cache = IJSONRequestCache(self.request).objects
         except TypeError, error:
             if error.args[0] == 'Could not adapt':
-                return
-        # Several view objects may be created for one page request:
-        # One view for the main context and template, and other views
-        # for macros included in the main template.
-        related_features = cache.setdefault('related_features', {})
-        related_features.update(self.related_feature_info)
+                cache = None
+        return cache
 
     def beta_features(self):
-        try:
-            cache = IJSONRequestCache(self.request).objects
-        except TypeError, error:
-            if error.args[0] == 'Could not adapt':
-                return
+        cache = self._get_json_cache()
+        if cache is None:
+            return []
         related_features = cache.setdefault('related_features', {}).values()
         return [f for f in related_features if f['is_beta']]
 
