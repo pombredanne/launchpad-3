@@ -364,11 +364,8 @@ class ErrorReportingUtility:
             add_publisher(amqp_publisher)
         # We want to publish reports to disk for gathering to the central
         # analysis server, but only if we haven't already published to rabbit.
-        error_dir = config[section_name].error_dir
-        if error_dir is None:
-            # Inherit the base error_dir - sharing error dirs is safe.
-            error_dir = config[self._default_config_section].error_dir
-        self._oops_datedir_repo = DateDirRepo(error_dir)
+        self._oops_datedir_repo = DateDirRepo(
+            config[self._default_config_section].error_dir)
         add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
         # And send everything within the zope application server (only for
         # testing).
