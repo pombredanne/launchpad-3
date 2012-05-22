@@ -4,7 +4,6 @@
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
-from lp.app.interfaces.services import IService
 
 __metaclass__ = type
 
@@ -89,6 +88,7 @@ from lp.app.errors import (
     UserCannotUnsubscribePerson,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
@@ -177,6 +177,8 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
+from lp.registry.interfaces.sharingjob import (
+    IRemoveBugSubscriptionsJobSource)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -847,7 +849,9 @@ class Bug(SQLBase):
             service = getUtility(IService, 'sharing')
             bugs, ignored = service.getVisibleArtifacts(person, bugs=[self])
             if not bugs:
-                service.createAccessGrants(subscribed_by, person, bugs=[self])
+                service.createAccessGrants(
+                    subscribed_by, person, bugs=[self],
+                    ignore_permissions=True)
 
         # In some cases, a subscription should be created without
         # email notifications.  suppress_notify determines if
@@ -1803,6 +1807,12 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self.updateHeat()
+
+        # As a result of the transition, some subscribers may no longer have
+        # access to the bug. We need to run a job to remove any such
+        # subscriptions.
+        getUtility(IRemoveBugSubscriptionsJobSource).create([self], who)
+
         return True
 
     def getRequiredSubscribers(self, information_type, who):

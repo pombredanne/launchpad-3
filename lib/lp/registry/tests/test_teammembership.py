@@ -504,7 +504,7 @@ class TestParticipationCleanup(TeamParticipationTestCase):
         The number of db queries should be constant not O(depth).
         """
         self.assertStatementCount(
-            7,
+            9,
             self.team5.setMembershipData, self.no_priv,
             TeamMembershipStatus.DEACTIVATED, self.team5.teamowner)
 
@@ -998,7 +998,8 @@ class TestTeamMembershipJobs(TestCaseWithFactory):
 
     def setUp(self):
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'RemoveSubscriptionsJob',
+            'jobs.celery.enabled_classes':
+                'RemoveGranteeSubscriptionsJob',
         }))
         super(TestTeamMembershipJobs, self).setUp()
 

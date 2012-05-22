@@ -1609,7 +1609,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
         # from the form.
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            bugtask.transitionToTarget(new_target)
+            bugtask.transitionToTarget(new_target, self.user)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.

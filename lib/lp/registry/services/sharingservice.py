@@ -35,7 +35,9 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sharingjob import IRemoveSubscriptionsJobSource
+from lp.registry.interfaces.sharingjob import (
+    IRemoveGranteeSubscriptionsJobSource,
+    )
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
@@ -269,7 +271,8 @@ class SharingService:
         # For information types with permission 'nothing', we can simply
         # call the deletePillarSharee method directly.
         if len(info_types_for_nothing) > 0:
-            self.deletePillarSharee(pillar, sharee, info_types_for_nothing)
+            self.deletePillarSharee(
+                pillar, user, sharee, info_types_for_nothing)
 
         # Return sharee data to the caller.
         ap_grant_flat = getUtility(IAccessPolicyGrantFlatSource)
@@ -319,7 +322,7 @@ class SharingService:
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveSubscriptionsJobSource).create(
+        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
             pillar, sharee, user, information_types=information_types)
 
     @available_with_permission('launchpad.Edit', 'pillar')
@@ -345,10 +348,11 @@ class SharingService:
 
         # Create a job to remove subscriptions for artifacts the sharee can no
         # longer see.
-        getUtility(IRemoveSubscriptionsJobSource).create(
+        getUtility(IRemoveGranteeSubscriptionsJobSource).create(
             pillar, sharee, user, bugs=bugs, branches=branches)
 
-    def createAccessGrants(self, user, sharee, branches=None, bugs=None):
+    def createAccessGrants(self, user, sharee, branches=None, bugs=None,
+                           **kwargs):
         """See `ISharingService`."""
 
         if not self.write_enabled:
@@ -359,11 +363,13 @@ class SharingService:
             artifacts.extend(branches)
         if bugs:
             artifacts.extend(bugs)
-        # The user needs to have launchpad.Edit permission on all supplied
-        # bugs and branches or else we raise an Unauthorized exception.
-        for artifact in artifacts or []:
-            if not check_permission('launchpad.Edit', artifact):
-                raise Unauthorized
+        ignore_permissions = kwargs.get('ignore_permissions', False)
+        if not ignore_permissions:
+            # The user needs to have launchpad.Edit permission on all supplied
+            # bugs and branches or else we raise an Unauthorized exception.
+            for artifact in artifacts or []:
+                if not check_permission('launchpad.Edit', artifact):
+                    raise Unauthorized
 
         # Ensure there are access artifacts associated with the bugs and
         # branches.

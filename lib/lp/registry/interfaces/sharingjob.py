@@ -6,8 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'IRemoveSubscriptionsJob',
-    'IRemoveSubscriptionsJobSource',
+    'IRemoveBugSubscriptionsJob',
+    'IRemoveBugSubscriptionsJobSource',
+    'IRemoveGranteeSubscriptionsJob',
+    'IRemoveGranteeSubscriptionsJobSource',
     'ISharingJob',
     'ISharingJobSource',
     ]
@@ -66,8 +68,18 @@ class ISharingJob(IRunnableJob):
         """The person who initiated the job."""
 
 
-class IRemoveSubscriptionsJob(ISharingJob):
-    """Job to remove subscriptions to artifacts for which access is revoked."""
+class IRemoveBugSubscriptionsJob(ISharingJob):
+    """Job to remove subscriptions to artifacts for which access is revoked.
+
+    Invalid subscriptions for a specific bug are removed.
+    """
+
+
+class IRemoveGranteeSubscriptionsJob(ISharingJob):
+    """Job to remove subscriptions to artifacts for which access is revoked.
+
+    Invalid subscription for a specific grantee are removed.
+    """
 
 
 class ISharingJobSource(IJobSource):
@@ -77,8 +89,19 @@ class ISharingJobSource(IJobSource):
         """Create a new ISharingJob."""
 
 
-class IRemoveSubscriptionsJobSource(ISharingJobSource):
-    """An interface for acquiring IRemoveSubscriptionsJobs."""
+class IRemoveBugSubscriptionsJobSource(ISharingJobSource):
+    """An interface for acquiring IRemoveBugSubscriptionsJobs."""
+
+    def create(pillar, bugs, requestor):
+        """Create a new job to remove subscriptions for the specified bugs.
+
+        Subscriptions for users who no longer have access to the bugs are
+        removed.
+        """
+
+
+class IRemoveGranteeSubscriptionsJobSource(ISharingJobSource):
+    """An interface for acquiring IRemoveGranteeSubscriptionsJobs."""
 
     def create(pillar, grantee, requestor, bugs=None, branches=None):
         """Create a new job to revoke access to the specified artifacts.

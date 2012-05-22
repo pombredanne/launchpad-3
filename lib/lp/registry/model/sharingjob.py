@@ -8,7 +8,8 @@ __metaclass__ = type
 
 
 __all__ = [
-    'RemoveSubscriptionsJob',
+    'RemoveBugSubscriptionsJob',
+    'RemoveGranteeSubscriptionsJob',
     ]
 
 import contextlib
@@ -24,9 +25,12 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     And,
+    Coalesce,
     In,
+    Join,
     Not,
     Select,
+    SQL,
     )
 from storm.locals import (
     Int,
@@ -50,18 +54,26 @@ from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sharingjob import (
-    IRemoveSubscriptionsJob,
-    IRemoveSubscriptionsJobSource,
+    IRemoveBugSubscriptionsJob,
+    IRemoveBugSubscriptionsJobSource,
+    IRemoveGranteeSubscriptionsJob,
+    IRemoveGranteeSubscriptionsJobSource,
     ISharingJob,
     ISharingJobSource,
     )
+from lp.registry.model.accesspolicy import AccessPolicyGrant
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormbase import StormBase
+from lp.services.database.stormexpr import (
+    ArrayAgg,
+    ArrayIntersects,
+    )
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -76,11 +88,19 @@ from lp.services.webapp import errorlog
 class SharingJobType(DBEnumeratedType):
     """Values that ISharingJob.job_type can take."""
 
-    REMOVE_SUBSCRIPTIONS = DBItem(0, """
+    REMOVE_GRANTEE_SUBSCRIPTIONS = DBItem(0, """
         Remove subscriptions of artifacts which are inaccessible.
 
         This job removes subscriptions to artifacts when access is
         no longer possible because a user no longer has an access
+        grant (either direct or indirect via team membership).
+        """)
+
+    REMOVE_BUG_SUBSCRIPTIONS = DBItem(1, """
+        Remove subscriptions for users who can no longer access bugs.
+
+        This job removes subscriptions to a bug when access is
+        no longer possible because the subscriber no longer has an access
         grant (either direct or indirect via team membership).
         """)
 
@@ -161,10 +181,15 @@ class SharingJobDerived(BaseRunnableJob):
         self.context = job
 
     def __repr__(self):
-        return '<%(job_type)s job for %(grantee)s and %(pillar)s>' % {
-            'job_type': self.context.job_type.name,
-            'grantee': self.grantee.displayname,
-            'pillar': self.pillar_text,
+        if self.grantee:
+            return '<%(job_type)s job for %(grantee)s and %(pillar)s>' % {
+                'job_type': self.context.job_type.name,
+                'grantee': self.grantee.displayname,
+                'pillar': self.pillar_text,
+                }
+        else:
+            return '<%(job_type)s job>' % {
+                'job_type': self.context.job_type.name,
             }
 
     @property
@@ -223,8 +248,9 @@ class SharingJobDerived(BaseRunnableJob):
         vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('sharing_job_id', self.context.id),
-            ('sharing_job_type', self.context.job_type.title),
-            ('grantee', self.grantee.name)])
+            ('sharing_job_type', self.context.job_type.title)])
+        if self.grantee:
+            vars.append(('grantee', self.grantee.name))
         if self.product:
             vars.append(('product', self.product.name))
         if self.distro:
@@ -232,19 +258,19 @@ class SharingJobDerived(BaseRunnableJob):
         return vars
 
 
-class RemoveSubscriptionsJob(SharingJobDerived):
-    """See `IRemoveSubscriptionsJob`."""
+class RemoveGranteeSubscriptionsJob(SharingJobDerived):
+    """See `IRemoveGranteeSubscriptionsJob`."""
 
-    implements(IRemoveSubscriptionsJob)
-    classProvides(IRemoveSubscriptionsJobSource)
-    class_job_type = SharingJobType.REMOVE_SUBSCRIPTIONS
+    implements(IRemoveGranteeSubscriptionsJob)
+    classProvides(IRemoveGranteeSubscriptionsJobSource)
+    class_job_type = SharingJobType.REMOVE_GRANTEE_SUBSCRIPTIONS
 
     config = config.sharing_jobs
 
     @classmethod
     def create(cls, pillar, grantee, requestor, information_types=None,
                bugs=None, branches=None):
-        """See `IRemoveSubscriptionsJob`."""
+        """See `IRemoveGranteeSubscriptionsJob`."""
 
         bug_ids = [
             bug.id for bug in bugs or []
@@ -261,7 +287,7 @@ class RemoveSubscriptionsJob(SharingJobDerived):
             'information_types': information_types,
             'requestor.id': requestor.id
         }
-        return super(RemoveSubscriptionsJob, cls).create(
+        return super(RemoveGranteeSubscriptionsJob, cls).create(
             pillar, grantee, metadata)
 
     @property
@@ -300,7 +326,7 @@ class RemoveSubscriptionsJob(SharingJobDerived):
             'for %s on %s' % (self.grantee.displayname, self.pillar_text))
 
     def run(self):
-        """See `IRemoveSubscriptionsJob`."""
+        """See `IRemoveGranteeSubscriptionsJob`."""
 
         logger = logging.getLogger()
         logger.info(self.getOperationDescription())
@@ -333,7 +359,7 @@ class RemoveSubscriptionsJob(SharingJobDerived):
         # Branches are not handled until information_type is supported.
 
         # Do the bugs.
-        privacy_filter = get_bug_privacy_filter(self.grantee, use_flat=True)
+        privacy_filter = get_bug_privacy_filter(self.grantee)
         bug_filter = Not(In(
             Bug.id,
             Select(
@@ -353,3 +379,98 @@ class RemoveSubscriptionsJob(SharingJobDerived):
         for bug in subscribed_invisible_bugs:
             bug.unsubscribe(
                 self.grantee, self.requestor, ignore_permissions=True)
+
+
+class RemoveBugSubscriptionsJob(SharingJobDerived):
+    """See `IRemoveBugSubscriptionsJob`."""
+
+    implements(IRemoveBugSubscriptionsJob)
+    classProvides(IRemoveBugSubscriptionsJobSource)
+    class_job_type = SharingJobType.REMOVE_BUG_SUBSCRIPTIONS
+
+    config = config.sharing_jobs
+
+    @classmethod
+    def create(cls, bugs, requestor):
+        """See `IRemoveBugSubscriptionsJob`."""
+
+        bug_ids = [
+            bug.id for bug in bugs
+        ]
+        metadata = {
+            'bug_ids': bug_ids,
+            'requestor.id': requestor.id
+        }
+        return super(RemoveBugSubscriptionsJob, cls).create(
+            None, None, metadata)
+
+    @property
+    def requestor_id(self):
+        return self.metadata['requestor.id']
+
+    @property
+    def requestor(self):
+        return getUtility(IPersonSet).get(self.requestor_id)
+
+    @property
+    def bug_ids(self):
+        return self.metadata['bug_ids']
+
+    @property
+    def bugs(self):
+        return getUtility(IBugSet).getByNumbers(self.bug_ids)
+
+    def getErrorRecipients(self):
+        # If something goes wrong we want to let the requestor know as well
+        # as the pillar maintainer (if there is a pillar).
+        result = set()
+        result.add(format_address_for_person(self.requestor))
+        for bug in self.bugs:
+            for pillar in bug.affected_pillars:
+                if pillar.owner.preferredemail:
+                    result.add(format_address_for_person(pillar.owner))
+        return list(result)
+
+    def getOperationDescription(self):
+        return 'removing subscriptions for bugs %s' % self.bug_ids
+
+    def run(self):
+        """See `IRemoveBugSubscriptionsJob`."""
+
+        logger = logging.getLogger()
+        logger.info(self.getOperationDescription())
+
+        # Unsubscribe grantee from the specified bugs.
+        constraints = [
+            BugTaskFlat.bug_id.is_in(self.bug_ids),
+            Not(Coalesce(
+                ArrayIntersects(SQL('BugTaskFlat.access_grants'),
+                Select(
+                    ArrayAgg(TeamParticipation.teamID),
+                    tables=TeamParticipation,
+                    where=(TeamParticipation.personID ==
+                           BugSubscription.person_id)
+                )), False)),
+            Not(Coalesce(
+                ArrayIntersects(SQL('BugTaskFlat.access_policies'),
+                Select(
+                    ArrayAgg(AccessPolicyGrant.policy_id),
+                    tables=(AccessPolicyGrant,
+                            Join(TeamParticipation,
+                                TeamParticipation.teamID ==
+                                AccessPolicyGrant.grantee_id)),
+                    where=(
+                        TeamParticipation.personID ==
+                        BugSubscription.person_id)
+                )), False))
+        ]
+        subscriptions = IStore(BugSubscription).find(
+            BugSubscription,
+            In(BugSubscription.bug_id,
+                Select(
+                    BugTaskFlat.bug_id,
+                    where=And(*constraints)))
+        )
+        for sub in subscriptions:
+            sub.bug.unsubscribe(
+                sub.person, self.requestor, ignore_permissions=True)

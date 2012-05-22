@@ -91,6 +91,8 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
 
     @property
     def disable_trigger_fixture(self):
+        # XXX 2012-05-22 wallyworld bug=1002596
+        # No need to use this fixture when triggers are removed.
         return DisableTriggerFixture(
                 {'bugsubscription':
                      'bugsubscription_mirror_legacy_access_t',

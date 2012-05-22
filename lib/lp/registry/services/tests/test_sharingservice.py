@@ -55,7 +55,7 @@ from lp.testing.pages import LaunchpadWebServiceCaller
 WRITE_FLAG = {
     'disclosure.enhanced_sharing.writable': 'true',
     'disclosure.enhanced_sharing_details.enabled': 'true',
-    'jobs.celery.enabled_classes': 'RemoveSubscriptionsJob'}
+    'jobs.celery.enabled_classes': 'RemoveGranteeSubscriptionsJob'}
 DETAILS_FLAG = {'disclosure.enhanced_sharing_details.enabled': 'true'}
 
 
@@ -651,6 +651,7 @@ class TestSharingService(TestCaseWithFactory):
             expected_information_types = (
                 set(information_types).difference(types_to_delete))
         # Check that grantee is unsubscribed.
+        login_person(product.owner)
         for bug in bugs:
             if bug.information_type in expected_information_types:
                 self.assertIn(grantee, bug.getDirectSubscribers())
@@ -696,7 +697,7 @@ class TestSharingService(TestCaseWithFactory):
             for bug in bugs or []:
                 bug.subscribe(person, pillar.owner)
             for branch in branches or []:
-                branch.subscribe(grantee,
+                branch.subscribe(person,
                     BranchSubscriptionNotificationLevel.NOEMAIL, None,
                     CodeReviewNotificationLevel.NOEMAIL, pillar.owner)
 
@@ -720,7 +721,7 @@ class TestSharingService(TestCaseWithFactory):
 
         # Check that the grantee's subscriptions have been removed.
         # Branches will be done once they have the information_type attribute.
-        for bug in bugs:
+        for bug in bugs or []:
             self.assertNotIn(grantee, bug.getDirectSubscribers())
 
         # Someone else still has access to the bugs and branches.
@@ -728,9 +729,9 @@ class TestSharingService(TestCaseWithFactory):
             access_artifacts, [someone])
         self.assertEqual(1, grants.count())
         # Someone else still has subscriptions to the bugs and branches.
-        for bug in bugs:
+        for bug in bugs or []:
             self.assertIn(someone, bug.getDirectSubscribers())
-        for branch in branches:
+        for branch in branches or []:
             self.assertIn(someone, branch.subscribers)
 
     def test_revokeAccessGrantsBugs(self):
@@ -909,11 +910,8 @@ class TestSharingService(TestCaseWithFactory):
 
         for i, bug in enumerate(bugs):
             grant_access(bug, i == 9)
-        # For branches we also need to call makeAccessPolicyArtifact.
-        [policy] = getUtility(IAccessPolicySource).find(
-            [(product, InformationType.USERDATA)])
         for i, branch in enumerate(branches):
-            artifact = grant_access(branch, i == 9)
+            grant_access(branch, i == 9)
             # XXX bug=1001042 wallyworld 2012-05-18
             # for now we need to subscribe users to the branch in order
             # for the underlying BranchCollection to allow access. This will
@@ -925,8 +923,6 @@ class TestSharingService(TestCaseWithFactory):
                     BranchSubscriptionDiffSize.NODIFF,
                     CodeReviewNotificationLevel.NOEMAIL,
                     owner)
-            self.factory.makeAccessPolicyArtifact(
-                artifact=artifact, policy=policy)
 
         # Check the results.
         shared_bugtasks, shared_branches = self.service.getSharedArtifacts(
