@@ -192,6 +192,7 @@ class TestWorkItemContainer(TestCase):
         item.is_complete = False
         self.assertFalse(container.has_incomplete_work)
 
+
 class TestPersonUpcomingWork(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
