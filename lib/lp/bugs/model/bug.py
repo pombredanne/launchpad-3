@@ -177,8 +177,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
-from lp.registry.interfaces.sharingjob import (
-    IRemoveBugSubscriptionsJobSource)
+from lp.registry.interfaces.sharingjob import IRemoveBugSubscriptionsJobSource
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
