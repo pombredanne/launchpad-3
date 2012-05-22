@@ -174,7 +174,7 @@ attribute. If the context is private or there are beta features,
     >>> view = MainOnlyView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview main_only private global-notification-visible yui3-skin-sam
+    tab-overview main_only global-notification-visible private yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 

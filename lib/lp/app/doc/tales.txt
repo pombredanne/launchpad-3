@@ -1544,7 +1544,7 @@ is 'public'.
     >>> print bug.private
     False
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    >>> print test_tales('context/fmt:global-css', context=bug)
     public
 
 If the private attribute is True, the class is 'private'.
@@ -1554,8 +1554,8 @@ If the private attribute is True, the class is 'private'.
     >>> bug.setPrivate(True, owner)
     True
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
-    private global-notification-visible
+    >>> print test_tales('context/fmt:global-css', context=bug)
+    global-notification-visible private
 
     >>> login(ANONYMOUS)
 

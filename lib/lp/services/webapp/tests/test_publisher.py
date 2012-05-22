@@ -323,7 +323,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         expected_beta_features = [{
             'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
             'value': u'on', 'title': 'title'}]         
-        self.assertEqual(expected_beta_features, view.beta_features())
+        self.assertEqual(expected_beta_features, view.beta_features)
 
     def test_view_beta_features_mixed(self):
         # With multiple related features, only those in a beta condition are
@@ -343,7 +343,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         expected_beta_features = [{
             'url': 'http://wiki.lp.dev/LEP/sample', 'is_beta': True,
             'value': u'on', 'title': 'title'}]         
-        self.assertEqual(expected_beta_features, view.beta_features())
+        self.assertEqual(expected_beta_features, view.beta_features)
 
 def test_suite():
     suite = TestSuite()
