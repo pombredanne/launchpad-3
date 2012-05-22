@@ -82,7 +82,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         expected_title = u'%s...\u201d : Bugs : Fnord' % detail[0:64]
         self.assertEqual(expected_title, formatter.pagetitle())
 
-    def test_public_private_css(self):
+    def test_global_css(self):
         person = self.factory.makePerson()
         view = create_view(person, name="+index")
         formatter = ObjectFormatterAPI(view)
@@ -91,7 +91,7 @@ class ObjectFormatterAPITestCase(TestCaseWithFactory, FakeAdapterMixin):
         view = create_view(person, name="+archivesubscriptions")
         formatter = ObjectFormatterAPI(view)
         self.assertEqual(
-            'private global-notification-visible',
+            'global-notification-visible private',
             formatter.global_css())
 
 class TestPillarFormatterAPI(TestCaseWithFactory):
