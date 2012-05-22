@@ -182,7 +182,7 @@ class TestWorkItemContainer(TestCase):
         # If there are incomplete work items,
         # WorkItemContainer.has_incomplete_work will return True.
         container = WorkItemContainer()
-        item = self.MockWorkItem(False)
+        item = self.MockWorkItem(False, False)
         container.append(item)
         self.assertTrue(container.has_incomplete_work)
         item.is_complete = True
