@@ -903,7 +903,6 @@ class IArchiveView(IHasBuildRecords):
     def getOverridePolicy():
         """Returns an instantiated `IOverridePolicy` for the archive."""
 
-
     buildd_secret = TextLine(
         title=_("Build farm secret"), required=False,
         description=_(
