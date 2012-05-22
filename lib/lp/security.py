@@ -2414,6 +2414,22 @@ class AppendArchive(AuthorizationBase):
         return False
 
 
+class ModerateArchive(AuthorizationBase):
+    """Restrict changing the build score on archives.
+
+    Buildd admins can change this, as a site-wide resource that requires
+    arbitration, especially between distribution builds and builds in
+    non-virtualized PPAs.  Commercial admins can also change this since it
+    affects the relative priority of (private) PPAs.
+    """
+    permission = 'launchpad.Moderate'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        return (user.in_buildd_admin or user.in_commercial_admin or
+                user.in_admin)
+
+
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
 

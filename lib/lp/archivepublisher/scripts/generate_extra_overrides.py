@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generate extra overrides using Germinate."""
@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from functools import partial
+import glob
 import logging
 from optparse import OptionValueError
 import os
@@ -130,8 +131,9 @@ class GenerateExtraOverrides(LaunchpadScript):
 
         self.germinate_logger = logging.getLogger("germinate")
         self.germinate_logger.setLevel(logging.INFO)
-        log_file = os.path.join(self.config.germinateroot, "germinate.output")
-        handler = logging.FileHandler(log_file, mode="w")
+        self.log_file = os.path.join(
+            self.config.germinateroot, "germinate.output")
+        handler = logging.FileHandler(self.log_file, mode="w")
         handler.setFormatter(GerminateFormatter())
         self.germinate_logger.addHandler(handler)
         self.germinate_logger.propagate = False
@@ -186,8 +188,12 @@ class GenerateExtraOverrides(LaunchpadScript):
             self.config.germinateroot,
             "%s_%s_%s_%s" % (base, flavour, series_name, arch))
 
+    def recordOutput(self, path, seed_outputs):
+        if seed_outputs is not None:
+            seed_outputs.add(os.path.basename(path))
+
     def writeGerminateOutput(self, germinator, structure, flavour,
-                             series_name, arch):
+                             series_name, arch, seed_outputs=None):
         """Write dependency-expanded output files.
 
         These files are a reduced subset of those written by the germinate
@@ -198,18 +204,22 @@ class GenerateExtraOverrides(LaunchpadScript):
         # The structure file makes it possible to figure out how the other
         # output files relate to each other.
         structure.write(path("structure"))
+        self.recordOutput(path("structure"), seed_outputs)
 
         # "all" and "all.sources" list the full set of binary and source
         # packages respectively for a given flavour/suite/architecture
         # combination.
         germinator.write_all_list(structure, path("all"))
+        self.recordOutput(path("all"), seed_outputs)
         germinator.write_all_source_list(structure, path("all.sources"))
+        self.recordOutput(path("all.sources"), seed_outputs)
 
         # Write the dependency-expanded output for each seed.  Several of
         # these are used by archive administration tools, and others are
         # useful for debugging, so it's best to just write them all.
         for seedname in structure.names:
             germinator.write_full_list(structure, path(seedname), seedname)
+            self.recordOutput(path(seedname), seed_outputs)
 
     def parseTaskHeaders(self, seedtext):
         """Parse a seed for Task headers.
@@ -263,15 +273,17 @@ class GenerateExtraOverrides(LaunchpadScript):
                 package, arch, key, value)
 
     def germinateArchFlavour(self, override_file, germinator, series_name,
-                             arch, flavour, structure, primary_flavour):
+                             arch, flavour, structure, primary_flavour,
+                             seed_outputs=None):
         """Germinate seeds on a single flavour for a single architecture."""
         # Expand dependencies.
         germinator.plant_seeds(structure)
         germinator.grow(structure)
         germinator.add_extras(structure)
 
-        self.writeGerminateOutput(germinator, structure, flavour, series_name,
-                                  arch)
+        self.writeGerminateOutput(
+            germinator, structure, flavour, series_name, arch,
+            seed_outputs=seed_outputs)
 
         write_overrides = partial(
             self.writeOverrides, override_file, germinator, structure, arch)
@@ -295,7 +307,7 @@ class GenerateExtraOverrides(LaunchpadScript):
             write_overrides("build-essential", "Build-Essential", "yes")
 
     def germinateArch(self, override_file, series_name, components, arch,
-                      flavours, structures):
+                      flavours, structures, seed_outputs=None):
         """Germinate seeds on all flavours for a single architecture."""
         germinator = Germinator(arch)
 
@@ -316,7 +328,19 @@ class GenerateExtraOverrides(LaunchpadScript):
 
             self.germinateArchFlavour(
                 override_file, germinator, series_name, arch, flavour,
-                structures[flavour], flavour == flavours[0])
+                structures[flavour], flavour == flavours[0],
+                seed_outputs=seed_outputs)
+
+    def removeStaleOutputs(self, series_name, seed_outputs):
+        """Remove stale outputs for a series.
+
+        Any per-seed outputs not in seed_outputs are considered stale.
+        """
+        all_outputs = glob.glob(
+            os.path.join(self.config.germinateroot, "*_*_%s_*" % series_name))
+        for output in all_outputs:
+            if os.path.basename(output) not in seed_outputs:
+                os.remove(output)
 
     def generateExtraOverrides(self, series_name, components, architectures,
                                flavours, seed_bases=None):
@@ -324,6 +348,7 @@ class GenerateExtraOverrides(LaunchpadScript):
             series_name, flavours, seed_bases=seed_bases)
 
         if structures:
+            seed_outputs = set()
             override_path = os.path.join(
                 self.config.miscroot,
                 "more-extra.override.%s.main" % series_name)
@@ -331,7 +356,8 @@ class GenerateExtraOverrides(LaunchpadScript):
                 for arch in architectures:
                     self.germinateArch(
                         override_file, series_name, components, arch,
-                        flavours, structures)
+                        flavours, structures, seed_outputs=seed_outputs)
+            self.removeStaleOutputs(series_name, seed_outputs)
 
     def process(self, seed_bases=None):
         """Do the bulk of the work."""
