@@ -187,6 +187,10 @@ class TestWorkItemContainer(TestCase):
         self.assertTrue(container.has_incomplete_work)
         item.is_complete = True
         self.assertFalse(container.has_incomplete_work)
+        item.status = SpecificationWorkItemStatus.POSTPONED
+        self.assertFalse(container.has_incomplete_work)
+        item.is_complete = False
+        self.assertFalse(container.has_incomplete_work)
 
 
 class TestPersonUpcomingWork(BrowserTestCase):
