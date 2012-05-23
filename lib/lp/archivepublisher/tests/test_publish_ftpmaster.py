@@ -88,11 +88,6 @@ def get_distscopy_root(pub_config):
     return get_archive_root(pub_config) + "-distscopy"
 
 
-def get_run_parts_path():
-    """Get relative path to run-parts location the Launchpad source."""
-    return os.path.join("cronscripts", "publishing", "distro-parts")
-
-
 def write_marker_file(path, contents):
     """Write a marker file for checking directory movements.
 
@@ -133,12 +128,14 @@ class HelpersMixin:
     def enableRunParts(self, parts_directory=None):
         """Set up for run-parts execution.
 
-        :param parts_directory: Base location for the run-parts
-            directories.  If omitted, the run-parts directory from the
-            Launchpad source tree will be used.
+        :param parts_directory: Base location for the run-parts directories.
+            If omitted, a temporary directory will be used.
         """
         if parts_directory is None:
-            parts_directory = get_run_parts_path()
+            parts_directory = self.makeTemporaryDirectory()
+            os.makedirs(os.path.join(parts_directory, "ubuntu", "publish-distro.d"))
+            os.makedirs(os.path.join(parts_directory, "ubuntu", "finalize.d"))
+        self.parts_directory = parts_directory
 
         config.push("run-parts", dedent("""\
             [archivepublisher]
@@ -213,21 +210,13 @@ class TestPublishFTPMasterHelpers(TestCase):
 class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
     layer = ZopelessDatabaseLayer
 
-    def test_find_run_parts_dir_finds_relative_runparts_directory(self):
+    def test_find_run_parts_dir_finds_runparts_directory(self):
         self.enableRunParts()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertEqual(
             os.path.join(
-                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
+                config.root, self.parts_directory, "ubuntu", "finalize.d"),
             find_run_parts_dir(ubuntu, "finalize.d"))
-
-    def test_find_run_parts_dir_finds_absolute_runparts_directory(self):
-        self.enableRunParts(os.path.join(config.root, get_run_parts_path()))
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertEqual(
-            os.path.join(
-                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
-                find_run_parts_dir(ubuntu, "finalize.d"))
 
     def test_find_run_parts_dir_ignores_blank_config(self):
         self.enableRunParts("")
@@ -609,7 +598,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         command_line, = args
         self.assertIn("run-parts", command_line)
         self.assertIn(
-            "cronscripts/publishing/distro-parts/ubuntu/finalize.d",
+            os.path.join(self.parts_directory, "ubuntu/finalize.d"),
             command_line)
 
     def test_runParts_passes_parameters(self):
