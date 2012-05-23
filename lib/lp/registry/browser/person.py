@@ -4700,9 +4700,7 @@ def getWorkItemsDueBefore(person, cutoff_date, user):
             milestone = spec.milestone
         if milestone.dateexpected not in containers_by_date:
             containers_by_date[milestone.dateexpected] = []
-        if containers_by_spec.get(milestone) is None:
-            containers_by_spec[milestone] = {}
-        container = containers_by_spec.get(milestone).get(spec)
+        container = containers_by_spec.setdefault(milestone, {}).get(spec)
         if container is None:
             container = SpecWorkItemContainer(spec)
             containers_by_spec[milestone][spec] = container

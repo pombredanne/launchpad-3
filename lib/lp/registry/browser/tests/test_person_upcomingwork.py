@@ -153,22 +153,21 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         # Current milestone date has a single specification
         # with only the matching work item.
         containers_current = workitems[self.current_milestone.dateexpected]
-        self.assertContentEqual([spec],
-                                [container.spec
-                                 for container in containers_current])
-        self.assertContentEqual([current_workitem],
-                                [item.actual_workitem
-                                 for item in containers_current[0].items])
+        self.assertContentEqual(
+            [spec], [container.spec for container in containers_current])
+        self.assertContentEqual(
+            [current_workitem],
+            [item.actual_workitem for item in containers_current[0].items])
 
         # Future milestone date has the same specification
         # containing only the work item targetted to future.
         containers_future = workitems[self.future_milestone.dateexpected]
-        self.assertContentEqual([spec],
-                                [container.spec
-                                 for container in containers_future])
-        self.assertContentEqual([future_workitem],
-                                [item.actual_workitem
-                                 for item in containers_future[0].items])
+        self.assertContentEqual(
+            [spec],
+            [container.spec for container in containers_future])
+        self.assertContentEqual(
+            [future_workitem],
+            [item.actual_workitem for item in containers_future[0].items])
 
 
 class TestGenericWorkItem(TestCaseWithFactory):
