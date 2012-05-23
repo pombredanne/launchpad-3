@@ -30,20 +30,12 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_event(self, licenses, edited_fields='licenses'):
+    def make_product_event(self, licenses):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
         login_person(product.owner)
-        event = LicensesModifiedEvent(
-            product, product, edited_fields, user=product.owner)
+        event = LicensesModifiedEvent(product, user=product.owner)
         return product, event
-
-    def test_product_licenses_modified_licenses_not_edited(self):
-        product, event = self.make_product_event(
-            [License.OTHER_PROPRIETARY], edited_fields='_owner')
-        product_licenses_modified(product, event)
-        notifications = pop_notifications()
-        self.assertEqual(0, len(notifications))
 
     def test_product_licenses_modified_licenses_common_license(self):
         product, event = self.make_product_event([License.MIT])

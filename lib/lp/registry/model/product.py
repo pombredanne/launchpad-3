@@ -194,6 +194,10 @@ class LicensesModifiedEvent(ObjectModifiedEvent):
     """See `ILicensesModifiedEvent`."""
     implements(ILicensesModifiedEvent)
 
+    def __init__(self, product, user=None):
+        super(LicensesModifiedEvent, self).__init__(
+            product, product, [], user)
+
 
 def get_license_status(license_approved, project_reviewed, licenses):
     """Decide the license status for an `IProduct`.
@@ -795,8 +799,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 registrant=lp_janitor, purchaser=lp_janitor,
                 sales_system_id=sales_system_id, whiteboard=whiteboard)
             get_property_cache(self).commercial_subscription = subscription
-        # Do not use a snapshot because the past is unintersting.
-        notify(LicensesModifiedEvent(self, self, edited_fields=['licenses']))
+        notify(LicensesModifiedEvent(self))
 
     licenses = property(_getLicenses, _setLicenses)
 
