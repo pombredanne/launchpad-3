@@ -224,10 +224,10 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Confirm counts.
         self.assertCount(0, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 1)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(1, user=person_b, product=product)
         # Confirm implicit subscriptions work too.
-        self.assertEqual(self.getCount(bug.owner, product=product), 1)
+        self.assertCount(1, user=bug.owner, product=product)
 
     def test_makePublic(self):
         product = self.factory.makeProduct()
@@ -244,8 +244,8 @@ class TestBugSummary(TestCaseWithFactory):
         bug.setPrivate(False, bug.owner)
 
         self.assertCount(1, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 1)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(1, user=person_b, product=product)
 
     def test_subscribePrivate(self):
         product = self.factory.makeProduct()
@@ -257,8 +257,8 @@ class TestBugSummary(TestCaseWithFactory):
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         self.assertCount(0, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 0)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(0, user=person_b, product=product)
 
     def test_unsubscribePrivate(self):
         product = self.factory.makeProduct()
@@ -272,8 +272,8 @@ class TestBugSummary(TestCaseWithFactory):
         bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
 
         self.assertCount(0, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 0)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(0, user=person_b, product=product)
 
     def test_subscribePublic(self):
         product = self.factory.makeProduct()
@@ -284,8 +284,8 @@ class TestBugSummary(TestCaseWithFactory):
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         self.assertCount(1, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 1)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(1, user=person_b, product=product)
 
     def test_unsubscribePublic(self):
         product = self.factory.makeProduct()
@@ -298,8 +298,8 @@ class TestBugSummary(TestCaseWithFactory):
         bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
 
         self.assertCount(1, product=product)
-        self.assertEqual(self.getCount(person_a, product=product), 1)
-        self.assertEqual(self.getCount(person_b, product=product), 1)
+        self.assertCount(1, user=person_a, product=product)
+        self.assertCount(1, user=person_b, product=product)
 
     def test_addProduct(self):
         distribution = self.factory.makeDistribution()
@@ -369,16 +369,13 @@ class TestBugSummary(TestCaseWithFactory):
             bug=product_task.bug, target=productseries_a)
 
         self.assertCount(1, product=product)
-        self.assertEqual(
-            self.getPublicCount(productseries=productseries_a), 1)
+        self.assertCount(1, productseries=productseries_a)
 
         removeSecurityProxy(series_task).productseries = productseries_b
 
         self.assertCount(1, product=product)
-        self.assertEqual(
-            self.getPublicCount(productseries=productseries_a), 0)
-        self.assertEqual(
-            self.getPublicCount(productseries=productseries_b), 1)
+        self.assertCount(0, productseries=productseries_a)
+        self.assertCount(1, productseries=productseries_b)
 
     def test_removeProductSeries(self):
         series = self.factory.makeProductSeries()
@@ -534,22 +531,15 @@ class TestBugSummary(TestCaseWithFactory):
         sourcepackagename = package.sourcepackagename
         self.factory.makeBugTask(target=package)
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, sourcepackagename=None),
-            1)
+        self.assertCount(1, distribution=distribution, sourcepackagename=None)
         self.assertEqual(
             self.getPublicCount(
                 distribution=distribution,
                 sourcepackagename=sourcepackagename),
             1)
-        self.assertEqual(
-            self.getPublicCount(distroseries=series, sourcepackagename=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distroseries=series, sourcepackagename=sourcepackagename),
-            1)
+        self.assertCount(1, distroseries=series, sourcepackagename=None)
+        self.assertCount(
+            1, distroseries=series, sourcepackagename=sourcepackagename)
 
     def test_changeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
@@ -634,20 +624,12 @@ class TestBugSummary(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(distribution=distribution)
         bug_task = self.factory.makeBugTask(target=distribution)
 
-        self.assertEqual(
-            self.getPublicCount(distribution=distribution, milestone=None),
-            1)
+        self.assertCount(1, distribution=distribution, milestone=None)
 
         bug_task.milestone = milestone
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=None),
-            0)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone),
-            1)
+        self.assertCount(0, distribution=distribution, milestone=None)
+        self.assertCount(1, distribution=distribution, milestone=milestone)
 
     def test_changeMilestone(self):
         distribution = self.factory.makeDistribution()
@@ -661,29 +643,14 @@ class TestBugSummary(TestCaseWithFactory):
                 distribution=distribution,
                 milestone=None),
             0)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone_a),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone_b),
-            0)
+        self.assertCount(1, distribution=distribution, milestone=milestone_a)
+        self.assertCount(0, distribution=distribution, milestone=milestone_b)
 
         bug_task.milestone = milestone_b
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=None),
-            0)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone_a),
-            0)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone_b),
-            1)
+        self.assertCount(0, distribution=distribution, milestone=None)
+        self.assertCount(0, distribution=distribution, milestone=milestone_a)
+        self.assertCount(1, distribution=distribution, milestone=milestone_b)
 
     def test_removeMilestone(self):
         distribution = self.factory.makeDistribution()
@@ -691,54 +658,36 @@ class TestBugSummary(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(target=distribution)
         bug_task.milestone = milestone
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=None),
-            0)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone),
-            1)
+        self.assertCount(0, distribution=distribution, milestone=None)
+        self.assertCount(1, distribution=distribution, milestone=milestone)
 
         bug_task.milestone = None
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution, milestone=milestone),
-            0)
+        self.assertCount(1, distribution=distribution, milestone=None)
+        self.assertCount(0, distribution=distribution, milestone=milestone)
 
     def test_addPatch(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
 
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=True), 0)
+        self.assertCount(0, product=product, has_patch=True)
 
         removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
 
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=True), 1)
+        self.assertCount(1, product=product, has_patch=True)
 
     def test_removePatch(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
 
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=True), 1)
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=False), 0)
+        self.assertCount(1, product=product, has_patch=True)
+        self.assertCount(0, product=product, has_patch=False)
 
         removeSecurityProxy(bug).latest_patch_uploaded = None
 
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=True), 0)
-        self.assertEqual(
-            self.getPublicCount(product=product, has_patch=False), 1)
+        self.assertCount(0, product=product, has_patch=True)
+        self.assertCount(1, product=product, has_patch=False)
 
 
 class TestBugSummaryRolledUp(TestBugSummary):
