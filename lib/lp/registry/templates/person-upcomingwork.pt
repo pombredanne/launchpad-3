@@ -12,6 +12,8 @@
     <script type="text/javascript">
       LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
           Y.on('domready', function() {
+            var expanders = new Array();
+
             Y.all('[class=expandable]').each(function(e) {
               var expander_icon = e.one('[class=expander]');
               // Our parent's first sibling is the tbody we want to collapse.
@@ -19,7 +21,41 @@
               var expander = new Y.lp.app.widgets.expander.Expander(
                   expander_icon, widget_body);
               expander.setUp(true);
-            })
+
+              var index = e.ancestor('[class=workitems-group]').get('id');
+
+              // We record the expanders so we can reference them later
+              // First we have an array indexed by each milestone
+              if (expanders[index] === undefined){
+                expanders[index] = new Array();
+              }
+
+              // For each milestone, store an array containing the expander
+              // object and the default state for it
+              expanders[index].push(new Array(expander,
+                                              widget_body.hasClass('default-expanded')));
+            });
+
+            Y.all('.expandall_link').on("click", function(link){
+              var index = link.currentTarget.get('id');
+              Y.Array.forEach(expanders[index], function(expander, i){
+                expander[0].render(true, false);
+              });
+            });
+
+            Y.all('.collapseall_link').on("click", function(link){
+              var index = link.currentTarget.get('id');
+              Y.Array.forEach(expanders[index], function(expander, i){
+                expander[0].render(false, false);
+              });
+            });
+
+            Y.all('.defaultall_link').on("click", function(link){
+              var index = link.currentTarget.get('id');
+              Y.Array.forEach(expanders[index], function(expander, i){
+                expander[0].render(expander[1], false);
+              });
+            });
           })
         });
     </script>
@@ -38,7 +74,8 @@
 
 <div metal:fill-slot="main">
 
-  <div tal:repeat="pair view/work_item_containers" class="workitems-group">
+  <div tal:repeat="pair view/work_item_containers" class="workitems-group"
+       tal:attributes="id string:milestone_${repeat/pair/index}">
   <div tal:define="date python: pair[0]; containers python: pair[1]">
     <h2>Work items due in <span tal:replace="date/fmt:date" /></h2>
 
@@ -78,7 +115,16 @@
     <table class="listing">
       <thead>
       <tr>
-        <th>Blueprint</th>
+        <th>Blueprint
+          <div style="float: right; font-weight: normal;">
+            All: <a href="#expandall" class="expandall_link"
+                           tal:attributes="id string:milestone_${repeat/pair/index}">Expand</a>
+            <a href="#collapseall" class="collapseall_link"
+               tal:attributes="id string:milestone_${repeat/pair/index}">Collapse</a>
+            <a href="#defaultall" class="defaultall_link"
+            tal:attributes="id string:milestone_${repeat/pair/index}">Default</a>
+        </div>
+        </th>
         <th>Target</th>
         <th>Assignee</th>
         <th>Priority</th>
@@ -111,13 +157,15 @@
 
       <tal:conditional condition="container/has_incomplete_work">
         <tal:block define="global upcoming_work_class_name string:expanded"/>
+        <tal:block define="global expander_init_state string:default-expanded"/>
       </tal:conditional>
 
       <tal:conditional condition="not: container/has_incomplete_work">
         <tal:block define="global upcoming_work_class_name string:"/>
+        <tal:block define="global expander_init_state string:default-collapsed"/>
       </tal:conditional>
 
-      <tbody tal:attributes="class string:collapsible-body ${upcoming_work_class_name}">
+      <tbody tal:attributes="class string:collapsible-body ${upcoming_work_class_name} ${expander_init_state}">
         <tr tal:repeat="workitem container/items" class="padded">
           <td>
             <span tal:condition="not: container/spec|nothing"
