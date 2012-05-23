@@ -67,7 +67,6 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    description
     processor
     url
     manual
@@ -258,41 +257,25 @@ architectures.
     >>> i386 = Processor.selectOneBy(name='386')
     >>> amd64 = Processor.selectOneBy(name='amd64')
     >>> hppa = Processor.selectOneBy(name='hppa')
+    >>> def create_builder(name, arch, virtualized):
+    ...     url = 'http://%s' % name
+    ...     title = 'The %s Builder' % name.title
+    ...     ignored = builderset.new(
+    ...         arch, url=url, name=name, title=title, owner=cprov,
+    ...         virtualized=virtualized)
 
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://hamburger', name="hamburger",
-    ...     title="The Hamburger Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://cheese', name="cheese",
-    ...     title="The Cheese Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://bacon', name="bacon",
-    ...     title="The Bacon Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://egg', name="egg",
-    ...     title="The Egg Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://ham', name="ham",
-    ...     title="The Ham Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://prosciuto', name="prosciuto",
-    ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
+    >>> create_builder('hamburger', i386, True)
+    >>> create_builder('cheese', hppa, True)
+    >>> create_builder('bacon', amd64, True)
+    >>> create_builder('egg', i386, False)
+    >>> create_builder('ham', hppa, False)
+    >>> create_builder('prosciuto', amd64, False)
 
 Newly created builders will be in manual mode because we don't want
 them going straight into the build farm until tested.
 
-    >>> a_builder.manual
+    >>> ham = builderset.getByName('ham')
+    >>> ham.manual
     True
 
 The 'Other' builder category is a `BuilderCategory` class, which
