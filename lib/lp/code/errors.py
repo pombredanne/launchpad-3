@@ -10,7 +10,6 @@ __all__ = [
     'BadStateTransition',
     'BranchCannotBePrivate',
     'BranchCannotBePublic',
-    'BranchCannotChangeInformationType',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
@@ -154,10 +153,6 @@ class BranchCannotBePublic(Exception):
 
 class BranchCannotBePrivate(Exception):
     """The branch cannot be made private."""
-
-
-class BranchCannotChangeInformationType(Exception):
-    """The information type of this branch cannot be changed."""
 
 
 class InvalidBranchException(Exception):
