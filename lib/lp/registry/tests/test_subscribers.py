@@ -7,11 +7,11 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.product import License
+from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
@@ -34,7 +34,7 @@ class ProductLicensesModifiedTestCase(TestCaseWithFactory):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
         login_person(product.owner)
-        event = ObjectModifiedEvent(
+        event = LicensesModifiedEvent(
             product, product, edited_fields, user=product.owner)
         return product, event
 

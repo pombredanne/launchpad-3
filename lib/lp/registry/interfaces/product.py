@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ILicensesModifiedEvent',
     'InvalidProductName',
     'IProduct',
     'IProductModerateRestricted',
@@ -339,6 +340,10 @@ class License(DBEnumeratedType):
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
+
+
+class ILicensesModifiedEvent(Interface):
+    """A Product's licenses were changed."""
 
 
 class IProductDriverRestricted(Interface):
