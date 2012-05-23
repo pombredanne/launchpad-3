@@ -135,12 +135,10 @@ class TestBranchVisibility(TestCaseWithFactory):
         test_branches = []
         for x in range(5):
             # We want the first 3 public and the last 3 private.
-            branch = self.factory.makeBranch(
-                name='branch_%s' % x, private=x > 2)
+            branch = self.factory.makeBranch(private=x > 2)
             test_branches.append(branch)
         test_branches.append(
-            self.factory.makeBranch(
-                name='branch_5', private=True, owner=private_owner))
+            self.factory.makeBranch(private=True, owner=private_owner))
 
         # Anonymous users see just the public branches.
         branch_info = [(branch, branch.private)
