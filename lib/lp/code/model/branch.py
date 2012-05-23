@@ -1069,9 +1069,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
-        # If the branch we are stacking on is not public, force our
-        # information_type into line.
+        # If the branch we are stacking on is not public, and we are,
+        # set our information_type to the stacked on's.
         if (self.stacked_on and self.stacked_on.information_type != 
+            InformationType.PUBLIC and self.information_type ==
             InformationType.PUBLIC):
             self.information_type = self.stacked_on.information_type
         if self.branch_type == BranchType.HOSTED:

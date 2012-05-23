@@ -1122,16 +1122,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             url=url, **optional_branch_args)
         assert information_type is None or private is None, (
             "Can not specify both information_type and private")
-        if information_type:
-            private = information_type in PRIVATE_INFORMATION_TYPES
-        else:
-            information_type = (
-                InformationType.USERDATA if private else
-                InformationType.PUBLIC)
-        if private:
-            removeSecurityProxy(branch).explicitly_private = True
-            removeSecurityProxy(branch).transitively_private = True
-        removeSecurityProxy(branch).information_type = information_type
+        if information_type is not None or private is not None:
+            if information_type:
+                private = information_type in PRIVATE_INFORMATION_TYPES
+            else:
+                information_type = (
+                    InformationType.USERDATA if private else
+                    InformationType.PUBLIC)
+            if private:
+                removeSecurityProxy(branch).explicitly_private = True
+                removeSecurityProxy(branch).transitively_private = True
+            removeSecurityProxy(branch).information_type = information_type
         if stacked_on is not None:
             removeSecurityProxy(branch).branchChanged(
                 stacked_on.unique_name, 'rev1', None, None, None)
