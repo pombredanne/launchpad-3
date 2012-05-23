@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of branches.
@@ -134,11 +134,14 @@ class TestBranchVisibility(TestCaseWithFactory):
         private_owner = self.factory.makePerson()
         test_branches = []
         for x in range(5):
-            # We want the first 3 public and the last 3 private.
-            branch = self.factory.makeBranch(private=x > 2)
+            # We want the first 3 public and the last 3 private
+            branch = self.factory.makeBranch(name='branch_%s' % x)
+            # The 3rd, 4th and 5th will be explicitly private.
+            branch.explicitly_private = x > 2
             test_branches.append(branch)
         test_branches.append(
-            self.factory.makeBranch(private=True, owner=private_owner))
+            self.factory.makeBranch(
+                name='branch_5', private=True, owner=private_owner))
 
         # Anonymous users see just the public branches.
         branch_info = [(branch, branch.private)
