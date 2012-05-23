@@ -43,17 +43,6 @@ class TestBugSummary(TestCaseWithFactory):
         return self.getCount(None, **kw_find_expr)
 
     def getCount(self, person, **kw_find_expr):
-        # Flush any changes. This causes the database triggers to fire
-        # and BugSummary records to be created.
-        self.store.flush()
-
-        # Invalidate all BugSummary records from the cache. The current
-        # test may have already pulled in BugSummary records that may
-        # now be invalid. This normally isn't a problem, as normal code
-        # is only ever interested in BugSummary records created in
-        # previous transactions.
-        self.store.invalidate()
-
         self._maybe_rollup()
 
         public_summaries = self.store.find(
