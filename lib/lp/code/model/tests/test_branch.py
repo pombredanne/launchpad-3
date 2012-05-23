@@ -56,6 +56,7 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
+    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -2440,6 +2441,26 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             BranchCannotBePublic,
             branch.setPrivate,
             False, branch.owner)
+
+    def test_cannot_transition_with_private_stacked_on(self):
+        # If a public branch is stacked on a private branch, it can not
+        # change its information_type to public.
+        stacked_on = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(stacked_on=stacked_on)
+        self.assertRaises(
+            BranchCannotChangeInformationType,
+            branch.transitionToInformationType, InformationType.PUBLIC,
+            branch.owner)
+
+    def test_can_transition_with_public_stacked_on(self):
+        # If a private branch is stacked on a public branch, it can change
+        # its information_type.
+        stacked_on = self.factory.makeBranch()
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        branch.transitionToInformationType(
+            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+        self.assertEqual(
+            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):

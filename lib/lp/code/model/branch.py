@@ -132,6 +132,7 @@ from lp.codehosting.safe_open import safe_open
 from lp.registry.enums import (
     InformationType,
     PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
     )
 from lp.registry.interfaces.person import (
     validate_person,
@@ -209,9 +210,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         if self.information_type == information_type:
             return
-        if (self.stacked_on and self.stacked_on.information_type !=
-            InformationType.PUBLIC and information_type !=
-            self.stacked_on.information_type):
+        if (self.stacked_on and self.stacked_on.information_type in
+            PRIVATE_INFORMATION_TYPES and information_type in
+            PUBLIC_INFORMATION_TYPES):
             raise BranchCannotChangeInformationType()
         private = information_type in PRIVATE_INFORMATION_TYPES
         # Only check the privacy policy if the user is not special.
@@ -1071,9 +1072,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.stacked_on = stacked_on_branch
         # If the branch we are stacking on is not public, and we are,
         # set our information_type to the stacked on's.
-        if (self.stacked_on and self.stacked_on.information_type != 
-            InformationType.PUBLIC and self.information_type ==
-            InformationType.PUBLIC):
+        if (self.stacked_on and self.stacked_on.information_type not in
+            PUBLIC_INFORMATION_TYPES and self.information_type in
+            PUBLIC_INFORMATION_TYPES):
             self.information_type = self.stacked_on.information_type
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
