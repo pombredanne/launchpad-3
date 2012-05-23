@@ -133,7 +133,8 @@ class HelpersMixin:
         """
         if parts_directory is None:
             parts_directory = self.makeTemporaryDirectory()
-            os.makedirs(os.path.join(parts_directory, "ubuntu", "publish-distro.d"))
+            os.makedirs(os.path.join(
+                parts_directory, "ubuntu", "publish-distro.d"))
             os.makedirs(os.path.join(parts_directory, "ubuntu", "finalize.d"))
         self.parts_directory = parts_directory
 
