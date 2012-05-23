@@ -1825,6 +1825,7 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsib
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.packageupload IS 'The PackageUpload that caused this publication to be created.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -2155,8 +2156,6 @@ COMMENT ON COLUMN PillarName.alias_for IS 'An alias for another pillarname. Rows
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
 COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
 COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
-COMMENT ON COLUMN POFileTranslator.latest_message IS 'Latest translation
-message added to the translation file.';
 COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When was added latest
 translation message.';
 

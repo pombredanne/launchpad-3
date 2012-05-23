@@ -1,34 +1,54 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuildQueue features."""
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
+from simplejson import dumps
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.buildpackagejob import (
+    COPY_ARCHIVE_SCORE_PENALTY,
+    IBuildPackageJob,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.pages import webservice_for_person
 
 
 def find_job(test, name, processor='386'):
@@ -147,60 +167,26 @@ class TestBuildPackageJob(TestBuildJobBase):
         self.non_ppa.require_virtualized = False
 
         self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="firefox",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="cobblers",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="thunderpants",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="postgres",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa,
-                architecturehintlist='any').createMissingBuilds())
+        sourcenames = [
+            "gedit",
+            "firefox",
+            "cobblers",
+            "thunderpants",
+            "apg",
+            "vim",
+            "gcc",
+            "bison",
+            "flex",
+            "postgres",
+            ]
+        for sourcename in sourcenames:
+            self.builds.extend(
+                self.publisher.getPubSource(
+                    sourcename=sourcename,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    archive=self.non_ppa,
+                    architecturehintlist='any').createMissingBuilds())
+
         # We want the builds to have a lot of variety when it comes to score
         # and estimated duration etc. so that the queries under test get
         # exercised properly.
@@ -257,9 +243,38 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def makeBuildJob(self, purpose=None, private=False, component="main",
+                     urgency="high", pocket="RELEASE", age=None):
+        if purpose is not None or private:
+            archive = self.factory.makeArchive(
+                purpose=purpose, private=private)
+        else:
+            archive = None
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, component=component, urgency=urgency)
+        naked_spph = removeSecurityProxy(spph)  # needed for private archives
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=naked_spph.sourcepackagerelease,
+            pocket=pocket)
+        job = removeSecurityProxy(build).makeJob()
+        if age is not None:
+            removeSecurityProxy(job).job.date_created = (
+                datetime.now(pytz.timezone("UTC")) - timedelta(seconds=age))
+        return job
+
+    # The defaults for pocket, component, and urgency here match those in
+    # makeBuildJob.
+    def assertCorrectScore(self, job, pocket="RELEASE", component="main",
+                           urgency="high", other_bonus=0):
+        self.assertEqual(
+            (SCORE_BY_POCKET[PackagePublishingPocket.items[pocket.upper()]] +
+             SCORE_BY_COMPONENT[component] +
+             SCORE_BY_URGENCY[SourcePackageUrgency.items[urgency.upper()]] +
+             other_bonus), job.score())
+
     def test_score_unusual_component(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
-            component='unusual')
+            component="unusual")
         build = self.factory.makeBinaryPackageBuild(
             source_package_release=spph.sourcepackagerelease)
         build.queueBuild()
@@ -268,31 +283,141 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         job.score()
 
     def test_main_release_low_score(self):
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            component='main', urgency='low')
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease,
-            pocket='RELEASE')
-        job = build.makeJob()
-        self.assertEquals(2505, job.score())
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
+        job = self.makeBuildJob(component="main", urgency="low")
+        self.assertCorrectScore(job, "RELEASE", "main", "low")
 
     def test_copy_archive_main_release_low_score(self):
-        copy_archive = self.factory.makeArchive(purpose='COPY')
-        spph = self.factory.makeSourcePackagePublishingHistory(
-           archive=copy_archive, component='main', urgency='low')
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease,
-            pocket='RELEASE')
-        job = build.makeJob()
-        self.assertEquals(-95, job.score())
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) - 2600 (copy archive) = -95.
+        # With this penalty, even language-packs and build retries will be
+        # built before copy archives.
+        job = self.makeBuildJob(
+            purpose="COPY", component="main", urgency="low")
+        self.assertCorrectScore(
+            job, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY)
 
     def test_copy_archive_relative_score_is_applied(self):
-        copy_archive = self.factory.makeArchive(purpose='COPY')
-        removeSecurityProxy(copy_archive).relative_build_score = 2600
-        spph = self.factory.makeSourcePackagePublishingHistory(
-           archive=copy_archive, component='main', urgency='low')
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease,
-            pocket='RELEASE')
-        job = build.makeJob()
-        self.assertEquals(2505, job.score())
+        # Per-archive relative build scores are applied, in this case
+        # exactly offsetting the copy-archive penalty.
+        job = self.makeBuildJob(
+            purpose="COPY", component="main", urgency="low")
+        removeSecurityProxy(job.build.archive).relative_build_score = 2600
+        self.assertCorrectScore(
+            job, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY + 2600)
+
+    def test_archive_negative_relative_score_is_applied(self):
+        # Negative per-archive relative build scores are allowed.
+        job = self.makeBuildJob(component="main", urgency="low")
+        removeSecurityProxy(job.build.archive).relative_build_score = -100
+        self.assertCorrectScore(job, "RELEASE", "main", "low", -100)
+
+    def test_private_archive_bonus_is_applied(self):
+        # Private archives get a bonus of 10000.
+        job = self.makeBuildJob(private=True, component="main", urgency="high")
+        self.assertCorrectScore(
+            job, "RELEASE", "main", "high", PRIVATE_ARCHIVE_SCORE_BONUS)
+
+    def test_main_release_low_recent_score(self):
+        # Builds created less than five minutes ago get no bonus.
+        job = self.makeBuildJob(component="main", urgency="low", age=290)
+        self.assertCorrectScore(job, "RELEASE", "main", "low")
+
+    def test_universe_release_high_five_minutes_score(self):
+        # 1500 (RELEASE) + 250 (universe) + 15 (high) + 5 (>300s) = 1770.
+        job = self.makeBuildJob(component="universe", urgency="high", age=310)
+        self.assertCorrectScore(job, "RELEASE", "universe", "high", 5)
+
+    def test_multiverse_release_medium_fifteen_minutes_score(self):
+        # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) + 10 (>900s) = 1520.
+        job = self.makeBuildJob(
+            component="multiverse", urgency="medium", age=1000)
+        self.assertCorrectScore(job, "RELEASE", "multiverse", "medium", 10)
+
+    def test_main_release_emergency_thirty_minutes_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 20 (emergency) + 15 (>1800s) = 2535.
+        job = self.makeBuildJob(
+            component="main", urgency="emergency", age=1801)
+        self.assertCorrectScore(job, "RELEASE", "main", "emergency", 15)
+
+    def test_restricted_release_low_one_hour_score(self):
+        # 1500 (RELEASE) + 750 (restricted) + 5 (low) + 20 (>3600s) = 2275.
+        job = self.makeBuildJob(
+            component="restricted", urgency="low", age=4000)
+        self.assertCorrectScore(job, "RELEASE", "restricted", "low", 20)
+
+    def test_backports_score(self):
+        # BACKPORTS is the lowest-priority pocket.
+        job = self.makeBuildJob(pocket="BACKPORTS")
+        self.assertCorrectScore(job, "BACKPORTS")
+
+    def test_release_score(self):
+        # RELEASE ranks next above BACKPORTS.
+        job = self.makeBuildJob(pocket="RELEASE")
+        self.assertCorrectScore(job, "RELEASE")
+
+    def test_proposed_updates_score(self):
+        # PROPOSED and UPDATES both rank next above RELEASE.  The reason why
+        # PROPOSED and UPDATES have the same priority is because sources in
+        # both pockets are submitted to the same policy and should reach
+        # their audience as soon as possible (see more information about
+        # this decision in bug #372491).
+        proposed_job = self.makeBuildJob(pocket="PROPOSED")
+        self.assertCorrectScore(proposed_job, "PROPOSED")
+        updates_job = self.makeBuildJob(pocket="UPDATES")
+        self.assertCorrectScore(updates_job, "UPDATES")
+
+    def test_security_updates_score(self):
+        # SECURITY is the top-ranked pocket.
+        job = self.makeBuildJob(pocket="SECURITY")
+        self.assertCorrectScore(job, "SECURITY")
+
+    def test_score_packageset(self):
+        job = self.makeBuildJob(component="main", urgency="low")
+        packageset = self.factory.makePackageset(
+            distroseries=job.build.distro_series)
+        removeSecurityProxy(packageset).add(
+            [job.build.source_package_release.sourcepackagename])
+        removeSecurityProxy(packageset).relative_build_score = 100
+        self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
+
+    def test_score_packageset_readable(self):
+        # A packageset's build score is readable by anyone.
+        packageset = self.factory.makePackageset()
+        removeSecurityProxy(packageset).relative_build_score = 100
+        webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        self.assertEqual(100, entry["relative_build_score"])
+
+    def test_score_packageset_forbids_non_buildd_admin(self):
+        # Being the owner of a packageset is not enough to allow changing
+        # its build score, since this affects a site-wide resource.
+        person = self.factory.makePerson()
+        packageset = self.factory.makePackageset(owner=person)
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
+        self.assertEqual(401, response.status)
+        new_entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        self.assertEqual(0, new_entry["relative_build_score"])
+
+    def test_score_packageset_allows_buildd_admin(self):
+        buildd_admins = getUtility(IPersonSet).getByName(
+            "launchpad-buildd-admins")
+        buildd_admin = self.factory.makePerson(member_of=[buildd_admins])
+        packageset = self.factory.makePackageset()
+        webservice = webservice_for_person(
+            buildd_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(
+            api_url(packageset), api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
+        self.assertEqual(209, response.status)
+        self.assertEqual(100, response.jsonBody()["relative_build_score"])

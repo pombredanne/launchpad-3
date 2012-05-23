@@ -411,6 +411,7 @@ clean: clean_js clean_mailman clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
+	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)
 	$(RM) -r $(APIDOC_DIR)

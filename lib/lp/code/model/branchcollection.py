@@ -740,6 +740,10 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.last_scanned > epoch], symmetric=False)
 
+    def withIds(self, *branch_ids):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.id.is_in(branch_ids)], symmetric=False)
+
 
 class AnonymousBranchCollection(GenericBranchCollection):
     """Branch collection that only shows public branches."""
