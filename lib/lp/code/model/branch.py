@@ -191,10 +191,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         enum=InformationType, default=InformationType.PUBLIC)
 
     @property
-    def _private(self):
-        return self.transitively_private
-
-    @property
     def private(self):
         return self.information_type in PRIVATE_INFORMATION_TYPES
 
