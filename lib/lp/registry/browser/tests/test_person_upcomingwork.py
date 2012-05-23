@@ -127,6 +127,49 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         self.assertEqual(1, len(container.items))
         self.assertEqual(current_wi, container.items[0].actual_workitem)
 
+    def test_multiple_milestone_separation(self):
+        # A single blueprint with workitems targetted to multiple
+        # milestones is processed so that the same blueprint appears
+        # in both with only the relevant work items.
+        spec = self.factory.makeSpecification(
+            product=self.current_milestone.product,
+            assignee=self.team.teamowner)
+        current_workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 1', specification=spec,
+            milestone=self.current_milestone)
+        future_workitem = self.factory.makeSpecificationWorkItem(
+            title=u'workitem 2', specification=spec,
+            milestone=self.future_milestone)
+
+        workitems = getWorkItemsDueBefore(
+            self.team, self.future_milestone.dateexpected, user=None)
+
+        # Both milestone dates are present in the returned results.
+        self.assertContentEqual(
+            [self.current_milestone.dateexpected,
+             self.future_milestone.dateexpected],
+            workitems.keys())
+
+        # Current milestone date has a single specification
+        # with only the matching work item.
+        containers_current = workitems[self.current_milestone.dateexpected]
+        self.assertContentEqual([spec],
+                                [container.spec
+                                 for container in containers_current])
+        self.assertContentEqual([current_workitem],
+                                [item.actual_workitem
+                                 for item in containers_current[0].items])
+
+        # Future milestone date has the same specification
+        # containing only the work item targetted to future.
+        containers_future = workitems[self.future_milestone.dateexpected]
+        self.assertContentEqual([spec],
+                                [container.spec
+                                 for container in containers_future])
+        self.assertContentEqual([future_workitem],
+                                [item.actual_workitem
+                                 for item in containers_future[0].items])
+
 
 class TestGenericWorkItem(TestCaseWithFactory):
 
