@@ -80,9 +80,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in range(3):
             bug = self.factory.makeBug(product=product)
-            bug_tag = BugTag()
-            bug_tag.bug = bug
-            bug_tag.tag = tag
+            bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
@@ -103,9 +101,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in range(3):
             bug = self.factory.makeBug(product=product)
-            bug_tag = BugTag()
-            bug_tag.bug = bug
-            bug_tag.tag = old_tag
+            bug_tag = BugTag(bug=bug, tag=old_tag)
             self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
@@ -132,9 +128,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         for count in range(3):
             bug = self.factory.makeBug(product=product)
-            bug_tag = BugTag()
-            bug_tag.bug = bug
-            bug_tag.tag = tag
+            bug_tag = BugTag(bug=bug, tag=tag)
             self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
