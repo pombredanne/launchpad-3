@@ -49,6 +49,7 @@ from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     )
@@ -2373,7 +2374,8 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product, status=BugTaskStatus.INCOMPLETE)
+            product=product,
+            status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
             content = self.getMainContent(

@@ -78,7 +78,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.relative_build_score = 100
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'relative_build_score', 'launchpad.Commercial')
+    Unauthorized: (..., 'relative_build_score', 'launchpad.Moderate')
 
 external_dependencies is a text field that should contain a comma-separated
 list of sources.list entries in the format:

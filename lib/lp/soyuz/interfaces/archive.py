@@ -319,14 +319,21 @@ class IArchivePublic(IPrivacy, IHasOwner):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
-    commercial = exported(
+    commercial = Bool(
+        title=_("Commercial"),
+        required=True,
+        description=_(
+            "True if the archive is for commercial applications in the "
+            "Ubuntu Software Centre.  Governs whether subscribers or "
+            "uploaders get mail from Launchpad about archive events."))
+
+    suppress_subscription_notifications = exported(
         Bool(
-            title=_("Commercial"),
+            title=_("Suppress subscription notifications"),
             required=True,
             description=_(
-                "True if the archive is for commercial applications in the "
-                "Ubuntu Software Centre.  Governs whether subscribers or "
-                "uploaders get mail from Launchpad about archive events.")))
+                "Whether subscribers to private PPAs get emails about their "
+                "subscriptions.")))
 
     def checkArchivePermission(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
@@ -456,12 +463,6 @@ class IArchiveView(IHasBuildRecords):
     date_created = Datetime(
         title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
-
-    relative_build_score = Int(
-        title=_("Relative build score"), required=True, readonly=False,
-        description=_(
-            "A delta to apply to all build scores for the archive. Builds "
-            "with a higher score will build sooner."))
 
     external_dependencies = exported(
         Text(title=_("External dependencies"), required=False,
@@ -901,7 +902,6 @@ class IArchiveView(IHasBuildRecords):
 
     def getOverridePolicy():
         """Returns an instantiated `IOverridePolicy` for the archive."""
-
 
     buildd_secret = TextLine(
         title=_("Build farm secret"), required=False,
@@ -1703,8 +1703,18 @@ class IArchiveCommercial(Interface):
         """
 
 
+class IArchiveRestricted(Interface):
+    """A writeable interface for restricted attributes of archives."""
+
+    relative_build_score = exported(Int(
+        title=_("Relative build score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for the archive. Builds "
+            "with a higher score will build sooner.")))
+
+
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
-               IArchiveCommercial):
+               IArchiveCommercial, IArchiveRestricted):
     """Main Archive interface."""
     export_as_webservice_entry()
 
@@ -1743,7 +1753,7 @@ class IArchiveSet(Interface):
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,
-            private=False, commercial=False):
+            private=False, suppress_subscription_notifications=False):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -1766,6 +1776,8 @@ class IArchiveSet(Interface):
         :param require_virtualized: whether builds for the new archive shall
             be carried out on virtual builders
         :param private: whether or not to make the PPA private
+        :param suppress_subscription_notifications: whether to suppress
+            emails to subscribers about new subscriptions.
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.

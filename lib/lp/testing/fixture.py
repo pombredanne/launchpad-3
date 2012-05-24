@@ -17,6 +17,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 import os.path
+import socket
 import time
 
 import amqplib.client_0_8 as amqp
@@ -24,7 +25,6 @@ from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
-import itertools
 from lazr.restful.utils import get_current_browser_request
 import oops
 import oops_amqp
@@ -128,14 +128,20 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             reconnect_stores()
 
     def start(self, retries=20, sleep=0.5):
-        """Simply return to simulate an error starting PGBouncer."""
+        """Start PGBouncer, waiting for it to accept connections if neccesary.
+        """
         super(PGBouncerFixture, self).start()
-        for i in itertools.count(1):
-            if self.is_running:
-                return
-            if i == retries:
-                raise PGNotReadyError("Not ready after %d attempts." % i)
+        for i in xrange(retries):
+            try:
+                socket.create_connection((self.host, self.port))
+            except socket.error:
+                # Try again.
+                pass
+            else:
+                break
             time.sleep(sleep)
+        else:
+            raise PGNotReadyError("Not ready after %d attempts." % retries)
 
 
 class ZopeAdapterFixture(Fixture):

@@ -564,7 +564,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
                 INFO Job resulted in OOPS: .*
             """)))
 
-    def test_timeout_short(self):
+    # XXX: BradCrittenden 2012-05-09 bug=994777: Disabled as a spurious
+    # failure.  In isolation this test fails 5% of the time.
+    def disabled_test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope

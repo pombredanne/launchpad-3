@@ -1103,11 +1103,19 @@ class BugTaskFlattener(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugTaskFlattener, self).__init__(log, abort_time)
-        watermark = getUtility(IMemcacheClient).get(
-            '%s:bugtask-flattener' % config.instance_name)
-        self.start_at = watermark or 0
+        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
+        if generation is None:
+            self.start_at = None
+        else:
+            self.memcache_key = (
+                '%s:bugtask-flattener:%s'
+                % (config.instance_name, generation.encode('utf-8')))
+            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+            self.start_at = watermark or 0
 
     def findTaskIDs(self):
+        if self.start_at is None:
+            return EmptyResultSet()
         return IMasterStore(BugTask).find(
             (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
@@ -1122,8 +1130,7 @@ class BugTaskFlattener(TunableLoop):
 
         self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
-            '%s:bugtask-flattener' % config.instance_name,
-            self.start_at)
+            self.memcache_key, self.start_at)
         if not result:
             self.log.warning('Failed to set start_at in memcache.')
 

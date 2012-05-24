@@ -1487,12 +1487,12 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         displayname=TextLine(required=False),
         description=TextLine(required=False),
         private=Bool(required=False),
-        commercial=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None,
-                  private=False, commercial=False):
+                  private=False, suppress_subscription_notifications=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
@@ -1501,6 +1501,9 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         :param description: The description for the new PPA.
         :param private: Whether or not to create a private PPA. Defaults to
             False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.

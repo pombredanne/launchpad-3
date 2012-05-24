@@ -624,7 +624,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
         feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
+            'disclosure.information_type_notifications.enabled': 'on'}
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flag):
             bug.transitionToInformationType(
@@ -656,7 +656,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
         feature_flags = {
-            'disclosure.show_information_type_in_ui.enabled': 'on',
+            'disclosure.information_type_notifications.enabled': 'on',
             'disclosure.display_userdata_as_private.enabled': 'on'}
         bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         with FeatureFixture(feature_flags):
@@ -688,7 +688,7 @@ class TestBugChanges(TestCaseWithFactory):
         bug = self.factory.makeBug(owner=person)
         self.saveOldChanges(bug=bug)
         feature_flag = {
-            'disclosure.show_information_type_in_ui.enabled': 'on'}
+            'disclosure.information_type_notifications.enabled': 'on'}
         webservice = launchpadlib_for('test', person)
         lp_bug = webservice.load(api_url(bug))
         with FeatureFixture(feature_flag):

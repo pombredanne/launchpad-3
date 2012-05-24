@@ -70,9 +70,9 @@ class BugBranchSet:
     def getBranchesWithVisibleBugs(self, branches, user):
         """See `IBugBranchSet`."""
         # Avoid circular imports.
-        from lp.bugs.model.bug import Bug
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
         from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-        
+
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:
             return []
@@ -81,7 +81,7 @@ class BugBranchSet:
         return IStore(BugBranch).find(
             BugBranch.branchID,
             BugBranch.branch_id.is_in(branch_ids),
-            Bug.id == BugBranch.bugID,
+            BugTaskFlat.bug_id == BugBranch.bugID,
             visible).config(distinct=True)
 
     def getBugBranchesForBugTasks(self, tasks):

@@ -1501,9 +1501,9 @@ class Person(
         today = datetime.today().date()
         query = AND(
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
+            WorkItem.deleted == False,
             OR(WorkItem.assignee_id.is_in(self.participant_ids),
-               AND(WorkItem.assignee == None,
-                   Specification.assigneeID.is_in(self.participant_ids))))
+               Specification.assigneeID.is_in(self.participant_ids)))
         result = store.using(*origin).find(WorkItem, query)
 
         def eager_load(workitems):
@@ -2972,14 +2972,15 @@ class Person(
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def createPPA(self, name=None, displayname=None, description=None,
-                  private=False, commercial=False):
+                  private=False, suppress_subscription_notifications=False):
         """See `IPerson`."""
         # XXX: We pass through the Person on whom the PPA is being created,
         # but validatePPA assumes that that Person is also the one creating
         # the PPA.  This is not true in general, and particularly not for
         # teams.  Instead, both the acting user and the target of the PPA
         # creation ought to be passed through.
-        errors = Archive.validatePPA(self, name, private, commercial)
+        errors = Archive.validatePPA(
+            self, name, private, suppress_subscription_notifications)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2987,7 +2988,8 @@ class Person(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
             description=description, private=private,
-            commercial=commercial)
+            suppress_subscription_notifications=(
+                suppress_subscription_notifications))
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

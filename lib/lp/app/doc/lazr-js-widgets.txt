@@ -142,11 +142,13 @@ With no-one logged in, there are no edit buttons.
 
     >>> login(ANONYMOUS)
     >>> print widget()
-    <div id="edit-description" class="lazr-multiline-edit">
-      <div class="clearfix">
-        <h3>A title</h3>
+    <div>
+      <div id="edit-description" class="lazr-multiline-edit">
+        <div class="clearfix">
+          <h3>A title</h3>
+        </div>
+        <div class="yui3-editable_text-text"><p>short description</p></div>
       </div>
-      <div class="yui3-editable_text-text"><p>short description</p></div>
     </div>
 
 The initial text defaults to the value of the attribute, which is then passed
@@ -159,17 +161,19 @@ editor.
 
     >>> ignored = login_person(eric)
     >>> print widget()
-    <div id="edit-description" class="lazr-multiline-edit">
-      <div class="clearfix">
-        <div class="edit-controls">
-          &nbsp;
-          <a class="yui3-editable_text-trigger sprite edit"
-             href="http://launchpad.dev/~eric/+archive/ppa/+edit"
-             title=""></a>
+    <div>
+      <div id="edit-description" class="lazr-multiline-edit">
+        <div class="clearfix">
+          <div class="edit-controls">
+            &nbsp;
+            <a class="yui3-editable_text-trigger sprite edit"
+               href="http://launchpad.dev/~eric/+archive/ppa/+edit"
+               title=""></a>
+          </div>
+          <h3>A title</h3>
         </div>
-        <h3>A title</h3>
+        <div class="yui3-editable_text-text"><p>short description</p></div>
       </div>
-      <div class="yui3-editable_text-text"><p>short description</p></div>
       <script>...</script>
     </div>
 
@@ -197,6 +201,7 @@ tag.
     >>> from lp.services.propertycache import clear_property_cache
     >>> clear_property_cache(widget)
     >>> print widget()
+    <div>
     <div id="edit-description" class="lazr-multiline-edit unseen">
     ...
 
@@ -206,6 +211,7 @@ False.
     >>> widget = TextAreaEditorWidget(
     ...     archive, description, 'A title', hide_empty=False)
     >>> print widget()
+    <div>
     <div id="edit-description" class="lazr-multiline-edit">
     ...
 

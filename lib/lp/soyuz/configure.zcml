@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -391,6 +391,8 @@
         class="lp.soyuz.model.archive.Archive">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchivePublic"/>
+        <allow
+            interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
@@ -409,11 +411,15 @@
           -->
         <require
             permission="launchpad.Commercial"
-	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
+            interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
             set_attributes="authorized_size build_debug_symbols buildd_secret
-                            commercial enabled_restricted_families
+                            enabled_restricted_families
                             external_dependencies private
-                            require_virtualized relative_build_score "/>
+                            require_virtualized
+                            suppress_subscription_notifications"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>
@@ -783,9 +789,14 @@
         class="lp.soyuz.model.packageset.Packageset">
         <allow
             interface="lp.soyuz.interfaces.packageset.IPackagesetViewOnly"/>
+        <allow
+            interface="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.packageset.IPackagesetEdit"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.packageset.IPackagesetRestricted"/>
     </class>
     <class
         class="lp.soyuz.model.packageset.PackagesetSet">

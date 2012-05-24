@@ -1,0 +1,43 @@
+<macros
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="launchpad"
+  tal:omit-tag=""
+>
+
+<metal:privacy define-macro="privacy-banner">
+  <tal:show-banner condition="view/private">
+    <div class="yui3-privacybanner-content">
+      <div id="privacy-banner" class="global-notification">
+        <span class="sprite notification-private"></span>
+        <span class="banner-text">The information on this page is private.</span>
+      </div>
+    </div>
+  </tal:show-banner>
+</metal:privacy>
+
+<metal:beta define-macro="beta-banner">
+<tal:show-banner condition="view/beta_features">
+<div class="yui3-betabanner-content">
+  <div id="beta-banner" class="global-notification">
+    <span class="beta-warning">BETA!</span>
+    <span class="banner-text">
+      Some parts of this page are in beta:&nbsp;
+      <span class="beta-feature">
+        <tal:features
+          repeat="feature view/beta_features">
+          <tal:feature replace="feature/title" />
+          <tal:link condition="feature/url">
+            (<a tal:attributes="href feature/url" class="info-link">read more</a>)
+          </tal:link>
+        </tal:features>
+      <span>
+    </span>
+  </div>
+</div>
+</tal:show-banner>
+</metal:beta>
+
+</macros>
