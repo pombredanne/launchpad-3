@@ -10,52 +10,9 @@
 <head>
   <tal:block metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-      LPJS.use('node', 'event', 'lp.app.widgets.expander', function(Y) {
+      LPJS.use('node', 'event', 'lp.app.widgets.expander', 'lp.workitems.expanders', function(Y) {
           Y.on('domready', function() {
-            var expanders = new Array();
-
-            Y.all('[class=expandable]').each(function(e) {
-              var expander_icon = e.one('[class=expander]');
-              // Our parent's first sibling is the tbody we want to collapse.
-              var widget_body = e.ancestor().next();
-              var expander = new Y.lp.app.widgets.expander.Expander(
-                  expander_icon, widget_body);
-              expander.setUp(true);
-
-              var index = e.ancestor('[class=workitems-group]').get('id');
-
-              // We record the expanders so we can reference them later
-              // First we have an array indexed by each milestone
-              if (expanders[index] === undefined){
-                expanders[index] = new Array();
-              }
-
-              // For each milestone, store an array containing the expander
-              // object and the default state for it
-              expanders[index].push(new Array(expander,
-                                              widget_body.hasClass('default-expanded')));
-            });
-
-            Y.all('.expandall_link').on("click", function(link){
-              var index = link.currentTarget.get('id');
-              Y.Array.forEach(expanders[index], function(expander, i){
-                expander[0].render(true, false);
-              });
-            });
-
-            Y.all('.collapseall_link').on("click", function(link){
-              var index = link.currentTarget.get('id');
-              Y.Array.forEach(expanders[index], function(expander, i){
-                expander[0].render(false, false);
-              });
-            });
-
-            Y.all('.defaultall_link').on("click", function(link){
-              var index = link.currentTarget.get('id');
-              Y.Array.forEach(expanders[index], function(expander, i){
-                expander[0].render(expander[1], false);
-              });
-            });
+            Y.lp.workitems.expanders.setUpWorkItemExpanders();
           })
         });
     </script>
@@ -115,15 +72,16 @@
     <table class="listing">
       <thead>
       <tr>
-        <th>Blueprint
-          <div style="float: right; font-weight: normal;">
-            All: <a href="#expandall" class="expandall_link"
-                           tal:attributes="id string:milestone_${repeat/pair/index}">Expand</a>
+        <th>
+          <div style="float: right; font-weight: normal;">All:
+            <a href="#expandall" class="expandall_link"
+               tal:attributes="id string:expand_milestone_${repeat/pair/index}">Expand</a>
             <a href="#collapseall" class="collapseall_link"
-               tal:attributes="id string:milestone_${repeat/pair/index}">Collapse</a>
+               tal:attributes="id string:collapse_milestone_${repeat/pair/index}">Collapse</a>
             <a href="#defaultall" class="defaultall_link"
-            tal:attributes="id string:milestone_${repeat/pair/index}">Default</a>
-        </div>
+               tal:attributes="id string:default_milestone_${repeat/pair/index}">Default</a>
+          </div>
+          Blueprint
         </th>
         <th>Target</th>
         <th>Assignee</th>
