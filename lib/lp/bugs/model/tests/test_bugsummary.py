@@ -528,7 +528,8 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertCount(1, distroseries=series, sourcepackagename=spn_a)
         self.assertCount(0, distroseries=series, sourcepackagename=spn_b)
 
-        bug_task.transitionToTarget(series.getSourcePackage(spn_b))
+        bug_task.transitionToTarget(
+            series.getSourcePackage(spn_b), bug_task.owner)
 
         self.assertCount(1, distribution=distribution, sourcepackagename=None)
         self.assertCount(0, distribution=distribution, sourcepackagename=spn_a)
