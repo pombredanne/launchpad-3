@@ -174,7 +174,7 @@ class SharingJobDerived(BaseRunnableJob):
     @contextlib.contextmanager
     def contextManager():
         """See `IJobSource`."""
-        errorlog.globalErrorUtility.configure('sharing_jobs')
+        errorlog.globalErrorUtility.configure('ISharingJobSource')
         yield
 
     def __init__(self, job):
@@ -265,7 +265,7 @@ class RemoveGranteeSubscriptionsJob(SharingJobDerived):
     classProvides(IRemoveGranteeSubscriptionsJobSource)
     class_job_type = SharingJobType.REMOVE_GRANTEE_SUBSCRIPTIONS
 
-    config = config.sharing_jobs
+    config = config.IRemoveGranteeSubscriptionsJobSource
 
     @classmethod
     def create(cls, pillar, grantee, requestor, information_types=None,
@@ -388,7 +388,7 @@ class RemoveBugSubscriptionsJob(SharingJobDerived):
     classProvides(IRemoveBugSubscriptionsJobSource)
     class_job_type = SharingJobType.REMOVE_BUG_SUBSCRIPTIONS
 
-    config = config.sharing_jobs
+    config = config.IRemoveBugSubscriptionsJobSource
 
     @classmethod
     def create(cls, bugs, requestor):

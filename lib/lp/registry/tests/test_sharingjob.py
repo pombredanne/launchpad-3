@@ -2,11 +2,15 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SharingJobs."""
+from lp.services.database.lpstorm import IStore
+from lp.services.job.interfaces.job import JobStatus
 
 __metaclass__ = type
 
 import transaction
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -40,6 +44,7 @@ from lp.services.mail.sendmail import format_address_for_person
 from lp.testing import (
     login_person,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
 from lp.testing.fixture import DisableTriggerFixture
@@ -166,7 +171,7 @@ class RemoveGranteeSubscriptionsJobTestCase(TestCaseWithFactory):
     def setUp(self):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes':
-                'RemoveGranteeSubscriptionsJob',
+                'xRemoveGranteeSubscriptionsJob',
         }))
         super(RemoveGranteeSubscriptionsJobTestCase, self).setUp()
 
@@ -397,6 +402,73 @@ class RemoveGranteeSubscriptionsJobTestCase(TestCaseWithFactory):
             person_grantee, removeSecurityProxy(bug1).getDirectSubscribers())
         self.assertIn(
             person_grantee, removeSecurityProxy(bug2).getDirectSubscribers())
+
+
+class TestRunViaCron(TestCaseWithFactory):
+    """Sharing jobs run via cron."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_run_remove_grantee_subscriptions_cronscript(self):
+        # The cronscript is configured: schema-lazr.conf and security.cfg.
+        # The job runs correctly and the requested bug subscriptions are
+        # removed.
+        distro = self.factory.makeDistribution()
+        grantee = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, distribution=distro,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            bug.subscribe(grantee, owner)
+
+        job = getUtility(IRemoveGranteeSubscriptionsJobSource).create(
+            distro, grantee, owner, bugs=[bug])
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IRemoveGranteeSubscriptionsJobSource.getName()))
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
+        self.assertEqual(0, exit_code)
+        self.assertTrue(
+            'Traceback (most recent call last)' not in err)
+        IStore(job.job).invalidate()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertNotIn(
+            grantee, removeSecurityProxy(bug).getDirectSubscribers())
+
+    def test_run_remove_bug_subscriptions_cronscript(self):
+        # The cronscript is configured: schema-lazr.conf and security.cfg.
+        # The job runs correctly and the requested bug subscriptions are
+        # removed.
+        distro = self.factory.makeDistribution()
+        grantee = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            owner=owner, distribution=distro,
+            information_type=InformationType.USERDATA)
+        with person_logged_in(owner):
+            bug.subscribe(grantee, owner)
+
+        job = getUtility(IRemoveBugSubscriptionsJobSource).create([bug], owner)
+        removeSecurityProxy(bug).information_type = (
+                    InformationType.EMBARGOEDSECURITY)
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IRemoveBugSubscriptionsJobSource.getName()))
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
+        self.assertEqual(0, exit_code)
+        self.assertTrue(
+            'Traceback (most recent call last)' not in err)
+        IStore(job.job).invalidate()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertNotIn(
+            grantee, removeSecurityProxy(bug).getDirectSubscribers())
 
 
 class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
