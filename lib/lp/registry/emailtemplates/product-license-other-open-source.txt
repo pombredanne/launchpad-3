@@ -1,7 +1,7 @@
 Hello %(user_displayname)s,
 
 You recently stated that the project '%(product_name)s'
-in Launchpad has an 'Other/Open Source' license.
+in Launchpad has an 'Other/Open Source' licence.
 %(product_url)s
 
 Sometimes new projects are licensed as 'Other/Open Source' because the
@@ -9,12 +9,12 @@ licensing decisions have not yet been made.  If that is the case for
 your project, it's important that you update the licensing in Launchpad
 as soon as a licensing decision has been made.
 
-If you need to change the license for your project you can do this
+If you need to change the licence for your project you can do this
 by following the 'Change Details' link on your project's
 overview page.
 
 Launchpad is a collaboration site, free to use for projects with an
-approved open source license. When you registered your project, you'd
+approved open source licence. When you registered your project, you'd
 have seen a list of licenses presented. These are the licences we
 automatically recognise.
 

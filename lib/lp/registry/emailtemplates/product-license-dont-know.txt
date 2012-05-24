@@ -1,16 +1,16 @@
 Hello %(user_displayname)s,
 
-You recently stated that you don't know the license of the project
+You recently stated that you don't know the licence of the project
 '%(product_name)s' in Launchpad.
 %(product_url)s
 
-It's important that you find out what this license is soon, so that
+It's important that you find out what this licence is soon, so that
 other users understand the terms that the projects is distributed under.
 You can do this by following the 'Change Details' link on your project's
 overview page.
 
 Launchpad is a collaboration site, free to use for projects with an
-approved open source license.  When you registered your project, you'd
+approved open source licence.  When you registered your project, you'd
 have seen a list of licenses presented. These are the licences we
 automatically recognise.
 

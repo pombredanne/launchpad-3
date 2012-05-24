@@ -19,7 +19,7 @@ archives. Find out more about this here:
 https://help.launchpad.net/CommercialHosting
 
 Launchpad is a collaboration site, free to use for projects with an
-approved open source license.  When you registered your project, you'd
+approved open source licence.  When you registered your project, you'd
 have seen a list of licenses presented. These are the licences we
 automatically recognise.
 
@@ -32,7 +32,7 @@ Further information is on our FAQ "Can closed-source or proprietary
 projects use Launchpad?" The link is here:
 https://answers.launchpad.net/launchpad/+faq/208
 
-If the license for your project needs to be corrected, you can do this
+If the licence for your project needs to be corrected, you can do this
 by following the 'Change Details' link on your project's overview page.
 
 Thanks,

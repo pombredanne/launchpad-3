@@ -113,12 +113,12 @@ LPJS.use('node', 'lazr.effects', function(Y) {
         make_slider({which: 'special'});
 
         // Set a click event handler for the div containing all the
-        // license checkbox.  When any license checkbox is selected, the
-        // "I haven't specified the license yet" radio button is set to
+        // licence checkbox.  When any licence checkbox is selected, the
+        // "I haven't specified the licence yet" radio button is set to
         // "This project consists of code licensed under:".  However note
         // that the pending-div only shows up if the project has never
-        // selected a license.  In other cases, there's an "I don't know yet"
-        // choice in the "Other choices" license section.
+        // selected a licence.  In other cases, there's an "I don't know yet"
+        // choice in the "Other choices" licence section.
         var license_pending = Y.one('#license_pending');
         if (Y.Lang.isValue(license_pending)) {
             license_pending.on('click', reveal_details);
@@ -185,13 +185,13 @@ LPJS.use('node', 'lazr.effects', function(Y) {
     </div>
   </tal:copyright>
 
-  Select the license(s) under which you release your project.
+  Select the licence(s) under which you release your project.
   <div tal:condition="view/allow_pending_license"
        tal:define="is_empty not:view/_getFormInput">
     <input id="license_pending" name="license_status" type="radio"
            tal:attributes="checked is_empty"
             onClick="unset_licenses()" />
-    <label for="license_pending">I haven't specified the license yet</label>
+    <label for="license_pending">I haven't specified the licence yet</label>
     <br/>
 
     <input id="license_complete" name="license_status" type="radio"
@@ -243,8 +243,8 @@ LPJS.use('node', 'lazr.effects', function(Y) {
     <div id="license-details" style="margin-top: 10px">
       <label for="field.license_info">License details:</label>
       <input tal:replace="structure view/license_info_widget" />
-      <p class="formHelp">Additional license details are required.
-      Please include the URL to the license, its text, or other
+      <p class="formHelp">Additional licence details are required.
+      Please include the URL to the licence, or other
       detailed information.</p>
    </div>
   </div>
