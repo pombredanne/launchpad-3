@@ -22,15 +22,12 @@ Where:
  * BASE: base name (usually 'debian-installer-images')
 
  * VERSION: encoded version (something like '20061102ubuntu14')
-   * if the version string contains '.0.' we assume it is a
-     'daily-installer', otherwise, it is a normal 'installer'
 
  * ARCH: targeted architecture tag ('i386', 'amd64', etc)
 
-The contents are extracted in the archive, respecting its type
-('installer' or 'daily-installer'), in the following path:
+The contents are extracted in the archive in the following path:
 
- * <ARCHIVE>/dists/<SUITE>/main/<TYPE>-<ARCH>/
+ * <ARCHIVE>/dists/<SUITE>/main/installer-<ARCH>/
 
 
 Let's try one test upload and verify the results of its publication.
