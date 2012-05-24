@@ -36,7 +36,7 @@
                   (<a tal:attributes="href feature/url" class="info-link">read more</a>)
                 </tal:link>
               </tal:features>
-            <span>
+            </span>
           </span>
         </div>
       </div>
