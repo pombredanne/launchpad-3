@@ -11,6 +11,7 @@ from lp.services.job.tests import (
     monitor_celery,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import ZopelessAppServerLayer
 
 
@@ -44,9 +45,10 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def test_run_missing_ready_not_enabled(self):
         """run_missing_ready does nothing if the class isn't enabled."""
         self.createMissingJob()
-        transaction.commit()
         with monitor_celery() as responses:
-            self.run_missing_ready(_no_init=True)
+            with dbuser('run_missing_ready'):
+                with TransactionFreeOperation.require():
+                    self.run_missing_ready(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
@@ -54,8 +56,8 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.createMissingJob()
         self.useFixture(
             FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))
-        transaction.commit()
         with monitor_celery() as responses:
-            with TransactionFreeOperation.require():
-                self.run_missing_ready(_no_init=True)
+            with dbuser('run_missing_ready'):
+                with TransactionFreeOperation.require():
+                    self.run_missing_ready(_no_init=True)
         self.assertEqual(1, len(responses))
