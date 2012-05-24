@@ -1533,7 +1533,7 @@ Any object can be converted to the 'public' CSS class. The object does
 not need to implement IPrivacy.
 
     >>> thing = object()
-    >>> print test_tales('context/fmt:public-private-css', context=thing)
+    >>> print test_tales('context/fmt:global-css', context=thing)
     public
 
 The CSS class honors the state of the object's privacy if the object
@@ -1544,7 +1544,7 @@ is 'public'.
     >>> print bug.private
     False
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
+    >>> print test_tales('context/fmt:global-css', context=bug)
     public
 
 If the private attribute is True, the class is 'private'.
@@ -1554,8 +1554,8 @@ If the private attribute is True, the class is 'private'.
     >>> bug.setPrivate(True, owner)
     True
 
-    >>> print test_tales('context/fmt:public-private-css', context=bug)
-    private
+    >>> print test_tales('context/fmt:global-css', context=bug)
+    global-notification-visible private
 
     >>> login(ANONYMOUS)
 

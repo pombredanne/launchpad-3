@@ -93,35 +93,6 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
-cols = {
-    'Bug.id': BugTaskFlat.bug_id,
-    'Bug.duplicateof': BugTaskFlat.duplicateof,
-    'Bug.owner': BugTaskFlat.bug_owner,
-    'Bug.date_last_updated': BugTaskFlat.date_last_updated,
-    'BugTask.id': BugTaskFlat.bugtask_id,
-    'BugTask.bug': BugTaskFlat.bug,
-    'BugTask.bugID': BugTaskFlat.bug_id,
-    'BugTask.importance': BugTaskFlat.importance,
-    'BugTask.product': BugTaskFlat.product,
-    'BugTask.productID': BugTaskFlat.product_id,
-    'BugTask.productseries': BugTaskFlat.productseries,
-    'BugTask.productseriesID': BugTaskFlat.productseries_id,
-    'BugTask.distribution': BugTaskFlat.distribution,
-    'BugTask.distributionID': BugTaskFlat.distribution_id,
-    'BugTask.distroseries': BugTaskFlat.distroseries,
-    'BugTask.distroseriesID': BugTaskFlat.distroseries_id,
-    'BugTask.sourcepackagename': BugTaskFlat.sourcepackagename,
-    'BugTask.sourcepackagenameID': BugTaskFlat.sourcepackagename_id,
-    'BugTask.milestone': BugTaskFlat.milestone,
-    'BugTask.milestoneID': BugTaskFlat.milestone_id,
-    'BugTask.assignee': BugTaskFlat.assignee,
-    'BugTask.owner': BugTaskFlat.owner,
-    'BugTask.date_closed': BugTaskFlat.date_closed,
-    'BugTask.datecreated': BugTaskFlat.datecreated,
-    'BugTask._status': BugTaskFlat.status,
-    }
-
-
 Assignee = ClassAlias(Person)
 Reporter = ClassAlias(Person)
 bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
@@ -352,16 +323,16 @@ def _build_query(params):
     # These arguments can be processed in a loop without any other
     # special handling.
     standard_args = {
-        cols['BugTask.bug']: params.bug,
-        cols['BugTask.importance']: params.importance,
-        cols['BugTask.product']: params.product,
-        cols['BugTask.distribution']: params.distribution,
-        cols['BugTask.distroseries']: params.distroseries,
-        cols['BugTask.productseries']: params.productseries,
-        cols['BugTask.assignee']: params.assignee,
-        cols['BugTask.sourcepackagename']: params.sourcepackagename,
-        cols['BugTask.owner']: params.owner,
-        cols['BugTask.date_closed']: params.date_closed,
+        BugTaskFlat.bug: params.bug,
+        BugTaskFlat.importance: params.importance,
+        BugTaskFlat.product: params.product,
+        BugTaskFlat.distribution: params.distribution,
+        BugTaskFlat.distroseries: params.distroseries,
+        BugTaskFlat.productseries: params.productseries,
+        BugTaskFlat.assignee: params.assignee,
+        BugTaskFlat.sourcepackagename: params.sourcepackagename,
+        BugTaskFlat.owner: params.owner,
+        BugTaskFlat.date_closed: params.date_closed,
     }
 
     # Loop through the standard, "normal" arguments and build the
@@ -387,7 +358,7 @@ def _build_query(params):
 
     if params.status is not None:
         extra_clauses.append(
-            _build_status_clause(cols['BugTask._status'], params.status))
+            _build_status_clause(BugTaskFlat.status, params.status))
 
     if params.exclude_conjoined_tasks:
         # XXX: frankban 2012-01-05 bug=912370: excluding conjoined
@@ -404,7 +375,7 @@ def _build_query(params):
     if params.milestone:
         if IProjectGroupMilestone.providedBy(params.milestone):
             extra_clauses.append(
-                cols['BugTask.milestoneID'].is_in(
+                BugTaskFlat.milestone_id.is_in(
                     Select(
                         Milestone.id,
                         tables=[Milestone, Product],
@@ -415,17 +386,17 @@ def _build_query(params):
         else:
             extra_clauses.append(
                 search_value_to_storm_where_condition(
-                    cols['BugTask.milestone'], params.milestone))
+                    BugTaskFlat.milestone, params.milestone))
 
         if params.exclude_conjoined_tasks:
             tables, clauses = _build_exclude_conjoined_clause(
-                params.milestone, cols)
+                params.milestone)
             join_tables += tables
             extra_clauses += clauses
 
     if params.milestone_tag:
         extra_clauses.append(
-            cols['BugTask.milestoneID'].is_in(
+            BugTaskFlat.milestone_id.is_in(
                 Select(
                     Milestone.id,
                     tables=[Milestone, Product, MilestoneTag],
@@ -450,21 +421,21 @@ def _build_query(params):
     if params.project:
         clauseTables.append(Product)
         extra_clauses.append(And(
-            cols['BugTask.productID'] == Product.id,
+            BugTaskFlat.product_id == Product.id,
             search_value_to_storm_where_condition(
                 Product.project, params.project)))
 
     if params.omit_dupes:
-        extra_clauses.append(cols['Bug.duplicateof'] == None)
+        extra_clauses.append(BugTaskFlat.duplicateof == None)
 
     if params.omit_targeted:
         extra_clauses.append(And(
-            cols['BugTask.distroseries'] == None,
-            cols['BugTask.productseries'] == None))
+            BugTaskFlat.distroseries == None,
+            BugTaskFlat.productseries == None))
 
     if params.has_cve:
         extra_clauses.append(
-            cols['BugTask.bugID'].is_in(
+            BugTaskFlat.bug_id.is_in(
                 Select(BugCve.bugID, tables=[BugCve], distinct=True)))
 
     if params.attachmenttype is not None:
@@ -472,7 +443,7 @@ def _build_query(params):
             extra_clauses.append(BugTaskFlat.latest_patch_uploaded != None)
         else:
             extra_clauses.append(
-                cols['Bug.id'].is_in(
+                BugTaskFlat.bug_id.is_in(
                     Select(
                         BugAttachment.bugID, tables=[BugAttachment],
                         where=search_value_to_storm_where_condition(
@@ -487,7 +458,7 @@ def _build_query(params):
     if params.subscriber is not None:
         clauseTables.append(BugSubscription)
         extra_clauses.append(And(
-            cols['Bug.id'] == BugSubscription.bug_id,
+            BugTaskFlat.bug_id == BugSubscription.bug_id,
             BugSubscription.person == params.subscriber))
 
     if params.structural_subscriber is not None:
@@ -503,20 +474,20 @@ def _build_query(params):
 
         join_tables.append(
             (Product, LeftJoin(Product, And(
-                            cols['BugTask.productID'] == Product.id,
+                            BugTaskFlat.product_id == Product.id,
                             Product.active))))
         ProductSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProductSub,
             LeftJoin(
                 ProductSub,
-                cols['BugTask.productID'] == ProductSub.productID)))
+                BugTaskFlat.product_id == ProductSub.productID)))
         ProductSeriesSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             ProductSeriesSub,
             LeftJoin(
                 ProductSeriesSub,
-                cols['BugTask.productseriesID'] ==
+                BugTaskFlat.productseries_id ==
                     ProductSeriesSub.productseriesID)))
         ProjectSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
@@ -529,11 +500,11 @@ def _build_query(params):
             DistributionSub,
             LeftJoin(
                 DistributionSub,
-                And(cols['BugTask.distributionID'] ==
+                And(BugTaskFlat.distribution_id ==
                         DistributionSub.distributionID,
                     Or(
                         DistributionSub.sourcepackagenameID ==
-                            cols['BugTask.sourcepackagenameID'],
+                            BugTaskFlat.sourcepackagename_id,
                         DistributionSub.sourcepackagenameID == None)))))
         if params.distroseries is not None:
             parent_distro_id = params.distroseries.distributionID
@@ -544,7 +515,7 @@ def _build_query(params):
             DistroSeriesSub,
             LeftJoin(
                 DistroSeriesSub,
-                Or(cols['BugTask.distroseriesID'] ==
+                Or(BugTaskFlat.distroseries_id ==
                         DistroSeriesSub.distroseriesID,
                     # There is a mismatch between BugTask and
                     # StructuralSubscription. SS does not support
@@ -552,14 +523,14 @@ def _build_query(params):
                     # joins ensure the match bugtask is the right
                     # series.
                     And(parent_distro_id == DistroSeriesSub.distributionID,
-                        cols['BugTask.sourcepackagenameID'] ==
+                        BugTaskFlat.sourcepackagename_id ==
                             DistroSeriesSub.sourcepackagenameID)))))
         MilestoneSub = ClassAlias(StructuralSubscriptionCTE)
         join_tables.append((
             MilestoneSub,
             LeftJoin(
                 MilestoneSub,
-                cols['BugTask.milestoneID'] == MilestoneSub.milestoneID)))
+                BugTaskFlat.milestone_id == MilestoneSub.milestoneID)))
         extra_clauses.append(
             NullCount(Array(
                 ProductSub.id, ProductSeriesSub.id, ProjectSub.id,
@@ -579,10 +550,10 @@ def _build_query(params):
         params.productseries is None and
         params.distroseries is None):
         extra_clauses.append(
-            Or(cols['BugTask.product'] == None, Product.active == True))
+            Or(BugTaskFlat.product == None, Product.active == True))
         join_tables.append(
             (Product, LeftJoin(Product, And(
-                            cols['BugTask.productID'] == Product.id,
+                            BugTaskFlat.product_id == Product.id,
                             Product.active))))
 
     if params.component:
@@ -608,7 +579,7 @@ def _build_query(params):
             for c in components)
 
         extra_clauses.append(
-            cols['BugTask.sourcepackagenameID'].is_in(
+            BugTaskFlat.sourcepackagename_id.is_in(
                 Select(
                     SourcePackagePublishingHistory.sourcepackagenameID,
                     tables=[SourcePackagePublishingHistory],
@@ -622,12 +593,12 @@ def _build_query(params):
                         SourcePackagePublishingHistory.status ==
                             PackagePublishingStatus.PUBLISHED))))
 
-    upstream_clause = _build_upstream_clause(params, cols)
+    upstream_clause = _build_upstream_clause(params)
     if upstream_clause:
         extra_clauses.append(upstream_clause)
 
     if params.tag:
-        tag_clause = _build_tag_search_clause(params.tag, cols)
+        tag_clause = _build_tag_search_clause(params.tag)
         if tag_clause is not None:
             extra_clauses.append(tag_clause)
 
@@ -643,20 +614,20 @@ def _build_query(params):
     if params.bug_supervisor:
         extra_clauses.append(Or(
             In(
-                cols['BugTask.productID'],
+                BugTaskFlat.product_id,
                 Select(
                     Product.id, tables=[Product],
                     where=Product.bug_supervisor == params.bug_supervisor)),
             In(
-                cols['BugTask.distributionID'],
+                BugTaskFlat.distribution_id,
                 Select(
                     Distribution.id, tables=[Distribution],
                     where=(
                         Distribution.bug_supervisor ==
                             params.bug_supervisor))),
             In(
-                Row(cols['BugTask.distributionID'],
-                    cols['BugTask.sourcepackagenameID']),
+                Row(BugTaskFlat.distribution_id,
+                    BugTaskFlat.sourcepackagename_id),
                 Select(
                     ((StructuralSubscription.distributionID,
                      StructuralSubscription.sourcepackagenameID),),
@@ -666,11 +637,11 @@ def _build_query(params):
                             params.bug_supervisor)))))
 
     if params.bug_reporter:
-        extra_clauses.append(cols['Bug.owner'] == params.bug_reporter)
+        extra_clauses.append(BugTaskFlat.bug_owner == params.bug_reporter)
 
     if params.bug_commenter:
         extra_clauses.append(
-            cols['Bug.id'].is_in(Select(
+            BugTaskFlat.bug_id.is_in(Select(
                 BugMessage.bugID, tables=[BugMessage],
                 where=And(
                     BugMessage.index > 0,
@@ -683,7 +654,7 @@ def _build_query(params):
         join_tables.append(
             (BugAffectsPerson, Join(
                 BugAffectsPerson, And(
-                    cols['BugTask.bugID'] == BugAffectsPerson.bugID,
+                    BugTaskFlat.bug_id == BugAffectsPerson.bugID,
                     BugAffectsPerson.affected,
                     BugAffectsPerson.person == params.affected_user))))
 
@@ -696,7 +667,7 @@ def _build_query(params):
             raise AssertionError(
                 'Unknown nomination target: %r.' % params.nominated_for)
         extra_clauses.append(And(
-            BugNomination.bugID == cols['BugTask.bugID'],
+            BugNomination.bugID == BugTaskFlat.bug_id,
             BugNomination.status == BugNominationStatus.PROPOSED,
             target_col == params.nominated_for))
         clauseTables.append(BugNomination)
@@ -705,7 +676,7 @@ def _build_query(params):
     dateexpected_after = params.milestone_dateexpected_after
     if dateexpected_after or dateexpected_before:
         clauseTables.append(Milestone)
-        extra_clauses.append(cols['BugTask.milestoneID'] == Milestone.id)
+        extra_clauses.append(BugTaskFlat.milestone_id == Milestone.id)
         if dateexpected_after:
             extra_clauses.append(
                 Milestone.dateexpected >= dateexpected_after)
@@ -718,12 +689,12 @@ def _build_query(params):
         extra_clauses.append(SQL(clause))
         decorators.append(decorator)
 
-    hw_clause = _build_hardware_related_clause(params, cols)
+    hw_clause = _build_hardware_related_clause(params)
     if hw_clause is not None:
         extra_clauses.append(hw_clause)
 
     def make_branch_clause(branches=None):
-        where = [BugBranch.bugID == cols['Bug.id']]
+        where = [BugBranch.bugID == BugTaskFlat.bug_id]
         if branches is not None:
             where.append(
                 search_value_to_storm_where_condition(
@@ -740,17 +711,17 @@ def _build_query(params):
         # A specific search term has been supplied.
         extra_clauses.append(make_branch_clause(params.linked_branches))
 
-    linked_blueprints_clause = _build_blueprint_related_clause(params, cols)
+    linked_blueprints_clause = _build_blueprint_related_clause(params)
     if linked_blueprints_clause is not None:
         extra_clauses.append(linked_blueprints_clause)
 
     if params.modified_since:
         extra_clauses.append(
-            cols['Bug.date_last_updated'] > params.modified_since)
+            BugTaskFlat.date_last_updated > params.modified_since)
 
     if params.created_since:
         extra_clauses.append(
-            cols['BugTask.datecreated'] > params.created_since)
+            BugTaskFlat.datecreated > params.created_since)
 
     query = And(extra_clauses)
 
@@ -911,7 +882,7 @@ def _build_status_clause(col, status):
         raise ValueError('Unrecognized status value: %r' % (status,))
 
 
-def _build_exclude_conjoined_clause(milestone, cols):
+def _build_exclude_conjoined_clause(milestone):
     """Exclude bugtasks with a conjoined master.
 
     This search option only makes sense when searching for bugtasks
@@ -938,8 +909,8 @@ def _build_exclude_conjoined_clause(milestone, cols):
         current_series = milestone.distribution.currentseries
         join = LeftJoin(
             ConjoinedMaster,
-            And(ConjoinedMaster.bugID == cols['BugTask.bugID'],
-                cols['BugTask.distributionID'] == milestone.distribution.id,
+            And(ConjoinedMaster.bugID == BugTaskFlat.bug_id,
+                BugTaskFlat.distribution_id == milestone.distribution.id,
                 ConjoinedMaster.distroseriesID == current_series.id,
                 Not(ConjoinedMaster._status.is_in(
                         BugTask._NON_CONJOINED_STATUSES))))
@@ -951,11 +922,11 @@ def _build_exclude_conjoined_clause(milestone, cols):
             # bugtask is only excluded by a development focus series
             # bugtask on the same project.
             joins = [
-                Join(Milestone, cols['BugTask.milestoneID'] == Milestone.id),
-                LeftJoin(Product, cols['BugTask.productID'] == Product.id),
+                Join(Milestone, BugTaskFlat.milestone_id == Milestone.id),
+                LeftJoin(Product, BugTaskFlat.product_id == Product.id),
                 LeftJoin(
                     ConjoinedMaster,
-                    And(ConjoinedMaster.bugID == cols['BugTask.bugID'],
+                    And(ConjoinedMaster.bugID == BugTaskFlat.bug_id,
                         ConjoinedMaster.productseriesID
                             == Product.development_focusID,
                         Not(ConjoinedMaster._status.is_in(
@@ -968,8 +939,8 @@ def _build_exclude_conjoined_clause(milestone, cols):
                 milestone.product.development_focusID)
             join = LeftJoin(
                 ConjoinedMaster,
-                And(ConjoinedMaster.bugID == cols['BugTask.bugID'],
-                    cols['BugTask.productID'] == milestone.product.id,
+                And(ConjoinedMaster.bugID == BugTaskFlat.bug_id,
+                    BugTaskFlat.product_id == milestone.product.id,
                     ConjoinedMaster.productseriesID == dev_focus_id,
                     Not(ConjoinedMaster._status.is_in(
                             BugTask._NON_CONJOINED_STATUSES))))
@@ -981,7 +952,7 @@ def _build_exclude_conjoined_clause(milestone, cols):
     return (join_tables, extra_clauses)
 
 
-def _build_hardware_related_clause(params, cols):
+def _build_hardware_related_clause(params):
     """Hardware related SQL expressions and tables for bugtask searches.
 
     :return: (tables, clauses) where clauses is a list of SQL expressions
@@ -1046,16 +1017,16 @@ def _build_hardware_related_clause(params, cols):
     clauses.append(Or(*bug_link_clauses))
     clauses.append(_userCanAccessSubmissionStormClause(params.user))
 
-    return cols['Bug.id'].is_in(
+    return BugTaskFlat.bug_id.is_in(
         Select(Bug.id, tables=tables, where=And(*clauses), distinct=True))
 
 
-def _build_blueprint_related_clause(params, cols):
+def _build_blueprint_related_clause(params):
     """Find bugs related to Blueprints, or not."""
     linked_blueprints = params.linked_blueprints
 
     def make_clause(blueprints=None):
-        where = [SpecificationBug.bugID == cols['Bug.id']]
+        where = [SpecificationBug.bugID == BugTaskFlat.bug_id]
         if blueprints is not None:
             where.append(
                 search_value_to_storm_where_condition(
@@ -1077,14 +1048,14 @@ def _build_blueprint_related_clause(params, cols):
 
 # Upstream task restrictions
 
-def _build_pending_bugwatch_elsewhere_clause(params, cols):
+def _build_pending_bugwatch_elsewhere_clause(params):
     """Return a clause for BugTaskSearchParams.pending_bugwatch_elsewhere
     """
     RelatedBugTask = ClassAlias(BugTask)
     extra_joins = []
     # Normally we want to exclude the current task from the search,
     # unless we're looking at an upstream project.
-    task_match_clause = RelatedBugTask.id != cols['BugTask.id']
+    task_match_clause = RelatedBugTask.id != BugTaskFlat.bugtask_id
     target = None
     if params.product:
         # Looking for pending bugwatches in a project context is
@@ -1093,7 +1064,7 @@ def _build_pending_bugwatch_elsewhere_clause(params, cols):
         # does. So the task ID should match, and there is no need for a
         # target clause.
         target = params.product
-        task_match_clause = RelatedBugTask.id == cols['BugTask.id']
+        task_match_clause = RelatedBugTask.id == BugTaskFlat.bugtask_id
         target_clause = True
     elif params.upstream_target:
         # Restrict the target to params.upstream_target.
@@ -1136,14 +1107,14 @@ def _build_pending_bugwatch_elsewhere_clause(params, cols):
         1,
         tables=[RelatedBugTask] + extra_joins,
         where=And(
-            RelatedBugTask.bugID == cols['BugTask.bugID'],
+            RelatedBugTask.bugID == BugTaskFlat.bug_id,
             task_match_clause,
             RelatedBugTask.bugwatchID == None,
             RelatedBugTask._status != BugTaskStatus.INVALID,
             target_clause)))
 
 
-def _build_no_upstream_bugtask_clause(params, cols):
+def _build_no_upstream_bugtask_clause(params):
     """Return a clause for BugTaskSearchParams.has_no_upstream_bugtask."""
     OtherBugTask = ClassAlias(BugTask)
     if params.upstream_target is None:
@@ -1158,12 +1129,12 @@ def _build_no_upstream_bugtask_clause(params, cols):
             'a Product')
     return Not(Exists(Select(
         1, tables=[OtherBugTask],
-        where=And(OtherBugTask.bugID == cols['BugTask.bugID'], target))))
+        where=And(OtherBugTask.bugID == BugTaskFlat.bug_id, target))))
 
 
 def _build_open_or_resolved_upstream_clause(params,
                                       statuses_for_watch_tasks,
-                                      statuses_for_upstream_tasks, cols):
+                                      statuses_for_upstream_tasks):
     """Return a clause for BugTaskSearchParams.open_upstream or
     BugTaskSearchParams.resolved_upstream."""
     RelatedBugTask = ClassAlias(BugTask)
@@ -1189,8 +1160,8 @@ def _build_open_or_resolved_upstream_clause(params,
         1,
         tables=[RelatedBugTask],
         where=And(
-            RelatedBugTask.bugID == cols['BugTask.bugID'],
-            RelatedBugTask.id != cols['BugTask.id'],
+            RelatedBugTask.bugID == BugTaskFlat.bug_id,
+            RelatedBugTask.id != BugTaskFlat.bugtask_id,
             Or(
                 And(watch_target_clause,
                     RelatedBugTask.bugwatchID != None,
@@ -1200,7 +1171,7 @@ def _build_open_or_resolved_upstream_clause(params,
                     no_watch_status_clause)))))
 
 
-def _build_open_upstream_clause(params, cols):
+def _build_open_upstream_clause(params):
     """Return a clause for BugTaskSearchParams.open_upstream."""
     statuses_for_open_tasks = [
         BugTaskStatus.NEW,
@@ -1211,10 +1182,10 @@ def _build_open_upstream_clause(params, cols):
         BugTaskStatus.INPROGRESS,
         BugTaskStatus.UNKNOWN]
     return _build_open_or_resolved_upstream_clause(
-        params, statuses_for_open_tasks, statuses_for_open_tasks, cols)
+        params, statuses_for_open_tasks, statuses_for_open_tasks)
 
 
-def _build_resolved_upstream_clause(params, cols):
+def _build_resolved_upstream_clause(params):
     """Return a clause for BugTaskSearchParams.open_upstream."""
     # Our definition of "resolved upstream" means:
     #
@@ -1234,10 +1205,10 @@ def _build_resolved_upstream_clause(params, cols):
         BugTaskStatus.FIXCOMMITTED,
         BugTaskStatus.FIXRELEASED]
     return _build_open_or_resolved_upstream_clause(
-        params, statuses_for_watch_tasks, statuses_for_upstream_tasks, cols)
+        params, statuses_for_watch_tasks, statuses_for_upstream_tasks)
 
 
-def _build_upstream_clause(params, cols):
+def _build_upstream_clause(params):
     """Return an clause for returning upstream data if the data exists.
 
     This method will handles BugTasks that do not have upstream BugTasks
@@ -1247,16 +1218,16 @@ def _build_upstream_clause(params, cols):
     upstream_clauses = []
     if params.pending_bugwatch_elsewhere:
         upstream_clauses.append(
-            _build_pending_bugwatch_elsewhere_clause(params, cols))
+            _build_pending_bugwatch_elsewhere_clause(params))
     if params.has_no_upstream_bugtask:
         upstream_clauses.append(
-            _build_no_upstream_bugtask_clause(params, cols))
+            _build_no_upstream_bugtask_clause(params))
     if params.resolved_upstream:
         upstream_clauses.append(
-            _build_resolved_upstream_clause(params, cols))
+            _build_resolved_upstream_clause(params))
     if params.open_upstream:
         upstream_clauses.append(
-            _build_open_upstream_clause(params, cols))
+            _build_open_upstream_clause(params))
 
     if upstream_clauses:
         return Or(*upstream_clauses)
@@ -1265,10 +1236,10 @@ def _build_upstream_clause(params, cols):
 
 # Tag restrictions
 
-def _build_tag_set_query(clauses, cols):
+def _build_tag_set_query(clauses):
     subselects = [
         Select(
-            1, tables=[BugTag], where=And(BugTag.bugID == cols['Bug.id'],
+            1, tables=[BugTag], where=And(BugTag.bugID == BugTaskFlat.bug_id,
             clause))
         for clause in clauses]
     if len(subselects) == 1:
@@ -1277,7 +1248,7 @@ def _build_tag_set_query(clauses, cols):
         return And(*(Exists(subselect) for subselect in subselects))
 
 
-def _build_tag_set_query_all(tags, cols):
+def _build_tag_set_query_all(tags):
     """Return a Storm expression for bugs matching all given tags.
 
     :param tags: An iterable of valid tags without - or + and not wildcards.
@@ -1285,11 +1256,10 @@ def _build_tag_set_query_all(tags, cols):
     """
     if not tags:
         return None
-    return _build_tag_set_query(
-        [BugTag.tag == tag for tag in sorted(tags)], cols)
+    return _build_tag_set_query([BugTag.tag == tag for tag in sorted(tags)])
 
 
-def _build_tag_set_query_any(tags, cols):
+def _build_tag_set_query_any(tags):
     """Return a Storm expression for bugs matching any given tag.
 
     :param tags: An iterable of valid tags without - or + and not wildcards.
@@ -1297,10 +1267,10 @@ def _build_tag_set_query_any(tags, cols):
     """
     if not tags:
         return None
-    return _build_tag_set_query([BugTag.tag.is_in(sorted(tags))], cols)
+    return _build_tag_set_query([BugTag.tag.is_in(sorted(tags))])
 
 
-def _build_tag_search_clause(tags_spec, cols):
+def _build_tag_search_clause(tags_spec):
     """Return a tag search clause.
 
     :param tags_spec: An instance of `any` or `all` containing tag
@@ -1324,24 +1294,24 @@ def _build_tag_search_clause(tags_spec, cols):
         combine_with = And
         # The set of bugs that have *all* of the tags requested for
         # *inclusion*.
-        include_clause = _build_tag_set_query_all(include, cols)
+        include_clause = _build_tag_set_query_all(include)
         # The set of bugs that have *any* of the tags requested for
         # *exclusion*.
-        exclude_clause = _build_tag_set_query_any(exclude, cols)
+        exclude_clause = _build_tag_set_query_any(exclude)
     else:
         # How to combine an include clause and an exclude clause when
         # both are generated.
         combine_with = Or
         # The set of bugs that have *any* of the tags requested for
         # inclusion.
-        include_clause = _build_tag_set_query_any(include, cols)
+        include_clause = _build_tag_set_query_any(include)
         # The set of bugs that have *all* of the tags requested for
         # exclusion.
-        exclude_clause = _build_tag_set_query_all(exclude, cols)
+        exclude_clause = _build_tag_set_query_all(exclude)
 
     universal_clause = (
         Exists(Select(
-            1, tables=[BugTag], where=BugTag.bugID == cols['Bug.id'])))
+            1, tables=[BugTag], where=BugTag.bugID == BugTaskFlat.bug_id)))
 
     # Search for the *presence* of any tag.
     if '*' in wildcards:

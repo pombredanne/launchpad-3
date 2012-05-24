@@ -131,14 +131,7 @@ def find_run_parts_dir(distro, parts):
     if not run_parts_location:
         return
 
-    if run_parts_location.startswith("/"):
-        # Absolute path.
-        base_dir = run_parts_location
-    else:
-        # Relative path.
-        base_dir = os.path.join(config.root, run_parts_location)
-
-    parts_dir = os.path.join(base_dir, distro.name, parts)
+    parts_dir = os.path.join(run_parts_location, distro.name, parts)
     if file_exists(parts_dir):
         return parts_dir
     else:

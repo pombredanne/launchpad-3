@@ -391,6 +391,8 @@
         class="lp.soyuz.model.archive.Archive">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchivePublic"/>
+        <allow
+            interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
@@ -413,8 +415,11 @@
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             enabled_restricted_families
                             external_dependencies private
-                            require_virtualized relative_build_score
+                            require_virtualized
                             suppress_subscription_notifications"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.Admin"
             set_attributes="distribution name signing_key"/>

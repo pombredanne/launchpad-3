@@ -96,13 +96,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('bugs.statistics_portlet.hide_fixed_elsewhere_count',
-     'boolean',
-     ('Hides the "Bugs fixed elsewhere" count in the bug target statistics '
-      'portlet.'),
-     '',
-     '',
-     ''),
     ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
