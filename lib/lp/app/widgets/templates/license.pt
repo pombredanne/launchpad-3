@@ -241,7 +241,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
     </a>
     <input tal:replace="structure view/special" />
     <div id="license-details" style="margin-top: 10px">
-      <label for="field.license_info">License details:</label>
+      <label for="field.license_info">Licence details:</label>
       <input tal:replace="structure view/license_info_widget" />
       <p class="formHelp">Additional licence details are required.
       Please include the URL to the licence, or other

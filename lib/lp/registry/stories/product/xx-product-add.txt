@@ -108,7 +108,7 @@ summary.  She can also add a longer description.
     ...     'Control pesky aardvarkian fnords')
     >>> user_browser.getControl('Description').value = (
     ...     'The desktop aardvark is an ornery thing.')
-    >>> user_browser.getControl('Python License').click()
+    >>> user_browser.getControl('Python Licence').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
     Aardvark Center in Launchpad
