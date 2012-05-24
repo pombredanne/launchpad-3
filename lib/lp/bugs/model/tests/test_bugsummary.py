@@ -118,10 +118,8 @@ class TestBugSummary(TestCaseWithFactory):
             bug_tag = self.store.find(BugTag, tag=old_tag).any()
             bug_tag.tag = new_tag
 
-            self.assertEqual(
-                self.getPublicCount(product=product, tag=old_tag), count)
-            self.assertEqual(
-                self.getPublicCount(product=product, tag=new_tag), 3 - count)
+            self.assertCount(count, product=product, tag=old_tag)
+            self.assertCount(3 - count, product=product, tag=new_tag)
 
         # There should be no other BugSummary rows.
         self.assertCount(0, tag=old_tag)
@@ -148,8 +146,7 @@ class TestBugSummary(TestCaseWithFactory):
         for count in reversed(range(3)):
             bug_tag = self.store.find(BugTag, tag=tag).any()
             self.store.remove(bug_tag)
-            self.assertEqual(
-                self.getPublicCount(product=product, tag=tag), count)
+            self.assertCount(count, product=product, tag=tag)
 
         # There should be no other BugSummary rows.
         self.assertCount(0, tag=tag)
@@ -164,21 +161,14 @@ class TestBugSummary(TestCaseWithFactory):
             bug = self.factory.makeBug(product=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task._status = org_status
-
-            self.assertEqual(
-                self.getPublicCount(product=product, status=org_status),
-                count + 1)
+            self.assertCount(count + 1, product=product, status=org_status)
 
         for count in reversed(range(3)):
             bug_task = self.store.find(
                 BugTask, product=product, _status=org_status).any()
             bug_task._status = new_status
-            self.assertEqual(
-                self.getPublicCount(product=product, status=org_status),
-                count)
-            self.assertEqual(
-                self.getPublicCount(product=product, status=new_status),
-                3 - count)
+            self.assertCount(count, product=product, status=org_status)
+            self.assertCount(3 - count, product=product, status=new_status)
 
     def test_changeImportance(self):
         org_importance = BugTaskImportance.UNDECIDED
@@ -190,24 +180,17 @@ class TestBugSummary(TestCaseWithFactory):
             bug = self.factory.makeBug(product=product)
             bug_task = self.store.find(BugTask, bug=bug).one()
             bug_task.importance = org_importance
-
-            self.assertEqual(
-                self.getPublicCount(
-                    product=product, importance=org_importance),
-                count + 1)
+            self.assertCount(
+                count + 1, product=product, importance=org_importance)
 
         for count in reversed(range(3)):
             bug_task = self.store.find(
                 BugTask, product=product, importance=org_importance).any()
             bug_task.importance = new_importance
-            self.assertEqual(
-                self.getPublicCount(
-                    product=product, importance=org_importance),
-                count)
-            self.assertEqual(
-                self.getPublicCount(
-                    product=product, importance=new_importance),
-                3 - count)
+            self.assertCount(
+                count, product=product, importance=org_importance)
+            self.assertCount(
+                3 - count, product=product, importance=new_importance)
 
     def test_makePrivate(self):
         person_a = self.factory.makePerson()
@@ -528,18 +511,13 @@ class TestBugSummary(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distribution)
         package = self.factory.makeSourcePackage(distroseries=series)
-        sourcepackagename = package.sourcepackagename
+        spn = package.sourcepackagename
         self.factory.makeBugTask(target=package)
 
         self.assertCount(1, distribution=distribution, sourcepackagename=None)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                sourcepackagename=sourcepackagename),
-            1)
+        self.assertCount(1, distribution=distribution, sourcepackagename=spn)
         self.assertCount(1, distroseries=series, sourcepackagename=None)
-        self.assertCount(
-            1, distroseries=series, sourcepackagename=sourcepackagename)
+        self.assertCount(1, distroseries=series, sourcepackagename=spn)
 
     def test_changeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
@@ -572,52 +550,20 @@ class TestBugSummary(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distribution)
         package = self.factory.makeSourcePackage(distroseries=series)
-        sourcepackagename = package.sourcepackagename
+        spn = package.sourcepackagename
         bug_task = self.factory.makeBugTask(target=package)
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                sourcepackagename=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                sourcepackagename=sourcepackagename),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distroseries=series,
-                sourcepackagename=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distroseries=series,
-                sourcepackagename=sourcepackagename),
-            1)
+        self.assertCount(1, distribution=distribution, sourcepackagename=None)
+        self.assertCount(1, distribution=distribution, sourcepackagename=spn)
+        self.assertCount(1, distribution=series, sourcepackagename=None)
+        self.assertCount(1, distribution=series, sourcepackagename=spn)
 
         bug_task.transitionToTarget(series)
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                sourcepackagename=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                sourcepackagename=sourcepackagename),
-            0)
-        self.assertEqual(
-            self.getPublicCount(
-                distroseries=series,
-                sourcepackagename=None),
-            1)
-        self.assertEqual(
-            self.getPublicCount(
-                distroseries=series,
-                sourcepackagename=sourcepackagename),
-            0)
+        self.assertCount(1, distribution=distribution, sourcepackagename=None)
+        self.assertCount(0, distribution=distribution, sourcepackagename=spn)
+        self.assertCount(1, distribution=series, sourcepackagename=None)
+        self.assertCount(0, distribution=series, sourcepackagename=spn)
 
     def test_addMilestone(self):
         distribution = self.factory.makeDistribution()
@@ -638,11 +584,7 @@ class TestBugSummary(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(target=distribution)
         bug_task.milestone = milestone_a
 
-        self.assertEqual(
-            self.getPublicCount(
-                distribution=distribution,
-                milestone=None),
-            0)
+        self.assertCount(0, distribution=distribution, milestone=None)
         self.assertCount(1, distribution=distribution, milestone=milestone_a)
         self.assertCount(0, distribution=distribution, milestone=milestone_b)
 
