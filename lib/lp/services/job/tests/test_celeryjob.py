@@ -1,7 +1,10 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import transaction
+
 from lp.code.model.branchjob import BranchScanJob
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
     drain_celery_queues,
@@ -41,6 +44,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def test_run_missing_ready_not_enabled(self):
         """run_missing_ready does nothing if the class isn't enabled."""
         self.createMissingJob()
+        transaction.commit()
         with monitor_celery() as responses:
             self.run_missing_ready(_no_init=True)
         self.assertEqual([], responses)
@@ -50,6 +54,8 @@ class TestRunMissingJobs(TestCaseWithFactory):
         self.createMissingJob()
         self.useFixture(
             FeatureFixture({'jobs.celery.enabled_classes': 'BranchScanJob'}))
+        transaction.commit()
         with monitor_celery() as responses:
-            self.run_missing_ready(_no_init=True)
+            with TransactionFreeOperation.require():
+                self.run_missing_ready(_no_init=True)
         self.assertEqual(1, len(responses))

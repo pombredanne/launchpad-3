@@ -25,6 +25,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.code.model.branchjob import BranchScanJob
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import (
     config,
     dbconfig,
@@ -88,15 +89,17 @@ def run_missing_ready(_no_init=False):
     Currently supports only BranchScanJob.
     :param _no_init: For tests.  If True, do not perform the initialization.
     """
-    if not _no_init:
-        task_init(config.launchpad.dbuser)
-    count = 0
-    for job in find_missing_ready(BranchScanJob):
-        if not celery_enabled(job.__class__.__name__):
-            continue
-        job.celeryCommitHook(True)
-        count += 1
-    info('Scheduled %d missing jobs.', count)
+    with TransactionFreeOperation():
+        if not _no_init:
+            task_init(config.launchpad.dbuser)
+        count = 0
+        for job in find_missing_ready(BranchScanJob):
+            if not celery_enabled(job.__class__.__name__):
+                continue
+            job.celeryCommitHook(True)
+            count += 1
+        info('Scheduled %d missing jobs.', count)
+        transaction.commit()
 
 
 needs_zcml = True
