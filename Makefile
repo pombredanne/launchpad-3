@@ -137,13 +137,15 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build combobuild logs clean_logs
+codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+
+inplace: build combobuild logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
 		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
