@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the public codehosting API."""
@@ -16,7 +16,6 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import BRANCH_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
-from lp.registry.enums import InformationType
 from lp.services.xmlrpc import LaunchpadFault
 from lp.testing import (
     person_logged_in,
@@ -324,8 +323,7 @@ class TestExpandURL(TestCaseWithFactory):
     def test_private_branch_as_development_focus(self):
         # We resolve private linked branches using the writable alias.
         product, trunk = self.makeProdutWithTrunk()
-        removeSecurityProxy(trunk).information_type = (
-            InformationType.USERDATA)
+        removeSecurityProxy(trunk).explicitly_private = True
         self.assertOnlyWritableResolves(product.name)
 
     def test_private_branch_as_user(self):

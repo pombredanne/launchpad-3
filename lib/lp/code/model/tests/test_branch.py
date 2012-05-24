@@ -56,7 +56,6 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
-    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -2335,21 +2334,16 @@ class TestBranchPrivacy(TestCaseWithFactory):
     def test_public_stacked_on_private_is_private(self):
         # A public branch stacked on a private branch is private.
         stacked_on = self.factory.makeBranch(private=True)
-        branch = self.factory.makeBranch(
-            stacked_on=stacked_on, private=False)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
         self.assertTrue(branch.private)
-        self.assertEqual(
-            stacked_on.information_type, branch.information_type)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
-        # A private branch stacked on a public branch is private.
+        # A public branch stacked on a private branch is private.
         stacked_on = self.factory.makeBranch(private=False)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
         self.assertTrue(branch.private)
-        self.assertNotEqual(
-            stacked_on.information_type, branch.information_type)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
@@ -2441,26 +2435,6 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             BranchCannotBePublic,
             branch.setPrivate,
             False, branch.owner)
-
-    def test_cannot_transition_with_private_stacked_on(self):
-        # If a public branch is stacked on a private branch, it can not
-        # change its information_type to public.
-        stacked_on = self.factory.makeBranch(private=True)
-        branch = self.factory.makeBranch(stacked_on=stacked_on)
-        self.assertRaises(
-            BranchCannotChangeInformationType,
-            branch.transitionToInformationType, InformationType.PUBLIC,
-            branch.owner)
-
-    def test_can_transition_with_public_stacked_on(self):
-        # If a private branch is stacked on a public branch, it can change
-        # its information_type.
-        stacked_on = self.factory.makeBranch()
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
-        branch.transitionToInformationType(
-            InformationType.UNEMBARGOEDSECURITY, branch.owner)
-        self.assertEqual(
-            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
