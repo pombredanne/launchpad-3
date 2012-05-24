@@ -202,7 +202,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             information_type = InformationType.PUBLIC
         return self.transitionToInformationType(information_type, user)
 
-    def transitionToInformationType(self, information_type, who):
+    def transitionToInformationType(self, information_type, who,
+                                    verify_policy=True):
         """See `IBranch`."""
         if self.information_type == information_type:
             return
@@ -212,19 +213,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             raise BranchCannotChangeInformationType()
         private = information_type in PRIVATE_INFORMATION_TYPES
         # Only check the privacy policy if the user is not special.
-        if (not user_has_special_branch_access(who)):
+        if verify_policy and not user_has_special_branch_access(who):
             policy = IBranchNamespacePolicy(self.namespace)
-
             if private and not policy.canBranchesBePrivate():
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
-        # Change the information_type of any stacked branches.
-        children = list(self.getStackedBranches())
-        for child in children:
-            children.extend(list(child.getStackedBranches()))
-            child.information_type = information_type
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
@@ -1077,7 +1072,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         if (self.stacked_on
             and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
             and self.information_type in PUBLIC_INFORMATION_TYPES):
-            self.information_type = self.stacked_on.information_type
+            self.transitionToInformationType(
+                self.stacked_on.information_type, self.owner,
+                verify_policy=False)
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
         else:
