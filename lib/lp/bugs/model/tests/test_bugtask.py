@@ -3292,16 +3292,12 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
 
-        # Change bug bug attributes so that it can become inaccessible for
-        # some users.
-        change_callback(bug)
-
         # The artifact grantees will not lose access when the job is run.
         artifact_grantee = self.factory.makePerson()
 
         bug.subscribe(policy_grantee, owner)
         bug.subscribe(artifact_grantee, owner)
-        # Subscribing policy_grantee has created and artifact grant so we
+        # Subscribing policy_grantee has created an artifact grant so we
         # need to revoke that to test the job.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             getUtility(IAccessArtifactSource).find(
@@ -3310,6 +3306,10 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
         # policy grantees are subscribed because the job has not been run yet.
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
         self.assertIn(policy_grantee, subscribers)
+
+        # Change bug bug attributes so that it can become inaccessible for
+        # some users.
+        change_callback(bug, owner)
 
         with block_on_job(self):
             transaction.commit()
@@ -3322,19 +3322,19 @@ class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):
     def test_change_information_type(self):
         # Changing the information type of a bug unsubscribes users who can no
         # longer see the bug.
-        def change_information_type(bug):
+        def change_information_type(bug, owner):
             bug.transitionToInformationType(
-                InformationType.EMBARGOEDSECURITY)
+                InformationType.EMBARGOEDSECURITY, owner)
 
         self._assert_bug_change_unsubscribes(change_information_type)
 
     def test_change_target(self):
         # Changing the target of a bug unsubscribes users who can no
         # longer see the bug.
-        def change_target(bug):
+        def change_target(bug, owner):
             another_product = self.factory.makeProduct()
             removeSecurityProxy(bug).default_bugtask.transitionToTarget(
-                another_product)
+                another_product, owner)
 
         self._assert_bug_change_unsubscribes(change_target)
 

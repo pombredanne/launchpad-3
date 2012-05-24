@@ -463,10 +463,6 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
             owner=owner, product=product,
             information_type=InformationType.USERDATA)
 
-        # Change bug bug attributes so that it can become inaccessible for
-        # some users.
-        change_callback(bug)
-
         # The artifact grantees will not lose access when the job is run.
         artifact_indirect_grantee = self.factory.makePerson()
         artifact_team_grantee = self.factory.makeTeam(
@@ -477,7 +473,7 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         bug.subscribe(policy_indirect_grantee, owner)
         bug.subscribe(artifact_team_grantee, owner)
         bug.subscribe(artifact_indirect_grantee, owner)
-        # Subscribing policy_team_grantee has created and artifact grant so we
+        # Subscribing policy_team_grantee has created an artifact grant so we
         # need to revoke that to test the job.
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
             getUtility(IAccessArtifactSource).find(
@@ -487,6 +483,11 @@ class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
         subscribers = removeSecurityProxy(bug).getDirectSubscribers()
         self.assertIn(policy_team_grantee, subscribers)
         self.assertIn(policy_indirect_grantee, subscribers)
+
+        # Change bug bug attributes so that it can become inaccessible for
+        # some users.
+        removeSecurityProxy(bug).information_type = (
+            InformationType.EMBARGOEDSECURITY)
 
         getUtility(IRemoveBugSubscriptionsJobSource).create([bug], owner)
         with block_on_job(self):

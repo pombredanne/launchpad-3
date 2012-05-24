@@ -80,7 +80,10 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
     )
-from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -1119,19 +1122,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
+        naked_branch = removeSecurityProxy(branch)
         if private:
-            removeSecurityProxy(branch).explicitly_private = True
-            removeSecurityProxy(branch).transitively_private = True
+            naked_branch.explicitly_private = True
+            naked_branch.transitively_private = True
             # XXX this is here till branch properly supports information_type
-            [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
-            [policy] = getUtility(IAccessPolicySource).find(
-                [(branch.target.context, InformationType.USERDATA)])
-            getUtility(IAccessPolicyArtifactSource).create([(artifact, policy)])
+            target_context = naked_branch.target.context
+            if IBugTarget.providedBy(target_context):
+                pillar = target_context.pillar
+                [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
+                [policy] = getUtility(IAccessPolicySource).find(
+                    [(pillar, InformationType.USERDATA)])
+                getUtility(IAccessPolicyArtifactSource).create(
+                    [(artifact, policy)])
 
         if stacked_on is not None:
-            removeSecurityProxy(branch).stacked_on = stacked_on
+            naked_branch.stacked_on = stacked_on
         if reviewer is not None:
-            removeSecurityProxy(branch).reviewer = reviewer
+            naked_branch.reviewer = reviewer
         return branch
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,

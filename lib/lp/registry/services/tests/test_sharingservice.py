@@ -978,6 +978,56 @@ class TestSharingService(TestCaseWithFactory):
         self.assertContentEqual(bugs[:5], shared_bugs)
         self.assertContentEqual(branches[:5], shared_branches)
 
+    def _assert_getVisibleArtifacts_bug_change(self, change_callback):
+        # Test the getVisibleArtifacts method excludes bugs after a change of
+        # information_type or bugtask re-targetting.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        grantee = self.factory.makePerson()
+        login_person(owner)
+
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.factory.makeAccessPolicyGrant(
+            policy, grantee=grantee, grantor=owner)
+
+        bugs = []
+        for x in range(0, 10):
+            bug = self.factory.makeBug(
+                product=product, owner=owner,
+                information_type=InformationType.USERDATA)
+            bugs.append(bug)
+
+        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
+            grantee, bugs=bugs)
+        self.assertContentEqual(bugs, shared_bugs)
+
+        # Change some bugs.
+        for x in range(0, 5):
+            change_callback(bugs[x], owner)
+        # Check the results.
+        shared_bugs, shared_branches = self.service.getVisibleArtifacts(
+            grantee, bugs=bugs)
+        self.assertContentEqual(bugs[5:], shared_bugs)
+
+    def test_getVisibleArtifacts_bug_policy_change(self):
+        # getVisibleArtifacts excludes bugs after change of information type.
+        def change_info_type(bug, owner):
+            bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, owner)
+
+        self._assert_getVisibleArtifacts_bug_change(change_info_type)
+
+    def test_getVisibleArtifacts_bugtask_retarget(self):
+        # Test the getVisibleArtifacts method excludes items after a bugtask
+        # is re-targetted to a new pillar.
+        another_product = self.factory.makeProduct()
+
+        def retarget_bugtask(bug, owner):
+            bug.default_bugtask.transitionToTarget(another_product, owner)
+
+        self._assert_getVisibleArtifacts_bug_change(retarget_bugtask)
+
 
 class ApiTestMixin:
     """Common tests for launchpadlib and webservice."""

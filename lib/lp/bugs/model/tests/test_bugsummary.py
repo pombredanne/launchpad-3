@@ -797,7 +797,7 @@ class TestBugSummary(TestCaseWithFactory):
             0)
 
         bug_task.transitionToTarget(
-            series.getSourcePackage(sourcepackagename_b))
+            series.getSourcePackage(sourcepackagename_b), bug_task.owner)
 
         self.assertEqual(
             self.getPublicCount(
@@ -858,7 +858,7 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.sourcepackagename == sourcepackagename),
             1)
 
-        bug_task.transitionToTarget(series)
+        bug_task.transitionToTarget(series, bug_task.owner)
 
         self.assertEqual(
             self.getPublicCount(
