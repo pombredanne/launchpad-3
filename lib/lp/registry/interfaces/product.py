@@ -251,31 +251,31 @@ class License(DBEnumeratedType):
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
     ACADEMIC = DBItem(
-        10, "Academic Free License",
+        10, "Academic Free Licence",
         url='http://www.opensource.org/licenses/afl-3.0.php')
     AFFERO = DBItem(
         20, "GNU Affero GPL v3",
         url='http://www.opensource.org/licenses/agpl-v3.html')
     APACHE = DBItem(
-        30, "Apache License",
+        30, "Apache Licence",
         url='http://www.opensource.org/licenses/apache2.0.php')
     ARTISTIC = DBItem(
-        40, "Artistic License 1.0",
+        40, "Artistic Licence 1.0",
         url='http://opensource.org/licenses/artistic-license-1.0.php')
     ARTISTIC_2_0 = DBItem(
-        45, 'Artistic License 2.0',
+        45, 'Artistic Licence 2.0',
         url='http://www.opensource.org/licenses/artistic-license-2.0.php')
     BSD = DBItem(
-        50, "Simplified BSD License",
+        50, "Simplified BSD Licence",
         url='http://www.opensource.org/licenses/bsd-license.php')
     COMMON_PUBLIC = DBItem(
-        80, "Common Public License",
+        80, "Common Public Licence",
         url='http://www.opensource.org/licenses/cpl1.0.php')
     ECLIPSE = DBItem(
-        90, "Eclipse Public License",
+        90, "Eclipse Public Licence",
         url='http://www.opensource.org/licenses/eclipse-1.0.php')
     EDUCATIONAL_COMMUNITY = DBItem(
-        100, "Educational Community License",
+        100, "Educational Community Licence",
         url='http://www.opensource.org/licenses/ecl2.php')
     GNU_GPL_V2 = DBItem(
         130, "GNU GPL v2",
@@ -290,31 +290,31 @@ class License(DBEnumeratedType):
         155, "GNU LGPL v3",
         url='http://www.opensource.org/licenses/lgpl-3.0.html')
     MIT = DBItem(
-        160, "MIT / X / Expat License",
+        160, "MIT / X / Expat Licence",
         url='http://www.opensource.org/licenses/mit-license.php')
     MPL = DBItem(
-        170, "Mozilla Public License",
+        170, "Mozilla Public Licence",
         url='http://www.opensource.org/licenses/mozilla1.1.php')
     OPEN_SOFTWARE = DBItem(
-        190, "Open Software License v 3.0",
+        190, "Open Software Licence v 3.0",
         url='http://www.opensource.org/licenses/osl-3.0.php')
     # XXX BarryWarsaw 2009-06-10 There is really no such thing as the "Perl
-    # License".  See bug 326308 for details.  We can't remove this option
+    # Licence".  See bug 326308 for details.  We can't remove this option
     # because of the existing data in production, however the plan is to hide
     # this choice from users during project creation as part of bug 333932.
     PERL = DBItem(
-        200, "Perl License")
+        200, "Perl Licence")
     PHP = DBItem(
-        210, "PHP License",
+        210, "PHP Licence",
         url='http://www.opensource.org/licenses/php.php')
     PUBLIC_DOMAIN = DBItem(
         220, "Public Domain",
         url='https://answers.launchpad.net/launchpad/+faq/564')
     PYTHON = DBItem(
-        230, "Python License",
+        230, "Python Licence",
         url='http://www.opensource.org/licenses/PythonSoftFoundation.php')
     ZPL = DBItem(
-        280, "Zope Public License",
+        280, "Zope Public Licence",
         url='http://www.opensource.org/licenses/zpl.php')
     CC_BY = DBItem(
         300, 'Creative Commons - Attribution',
@@ -329,7 +329,7 @@ class License(DBEnumeratedType):
         330, "GNU GFDL no options",
         url='http://www.gnu.org/copyleft/fdl.html')
     OFL = DBItem(
-        340, "Open Font License v1.1",
+        340, "Open Font Licence v1.1",
         url='http://scripts.sil.org/OFL')
     # This is a placeholder "licence" for users who know they want something
     # open source but haven't yet chosen a licence for their project.  We do
@@ -404,9 +404,9 @@ class IProductModerateRestricted(Interface):
 
     license_approved = exported(
         Bool(
-            title=_("License approved"),
+            title=_("Licence approved"),
             description=_(
-                "The project is legitimate and its license appears valid. "
+                "The project is legitimate and its licence appears valid. "
                 "Not applicable to 'Other/Proprietary'.")))
 
 
