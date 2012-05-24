@@ -47,7 +47,6 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import (
     bug_target_from_key,
     bug_target_to_key,
@@ -59,7 +58,6 @@ from lp.bugs.model.bugtask import (
 from lp.bugs.model.bugtasksearch import (
     _build_status_clause,
     _build_tag_search_clause,
-    get_bug_privacy_filter,
     )
 from lp.bugs.scripts.bugtasktargetnamecaches import (
     BugTaskTargetNameCacheUpdater)
