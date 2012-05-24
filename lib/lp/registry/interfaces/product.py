@@ -220,20 +220,20 @@ def sourceforge_project_name_validator(project_name):
 
 
 class LicenseStatus(DBEnumeratedType):
-    """The status of a project's license review."""
+    """The status of a project's licence review."""
 
     OPEN_SOURCE = DBItem(
         10, "Open Source",
-        u"This project&rsquo;s license is open source.")
+        u"This project&rsquo;s licence is open source.")
     PROPRIETARY = DBItem(
         20, "Proprietary",
-        u"This project&rsquo;s license is proprietary.")
+        u"This project&rsquo;s licence is proprietary.")
     UNREVIEWED = DBItem(
         30, "Unreviewed",
-        u"This project&rsquo;s license has not been reviewed.")
+        u"This project&rsquo;s licence has not been reviewed.")
     UNSPECIFIED = DBItem(
         40, "Unspecified",
-        u"This project&rsquo;s license has not been specified.")
+        u"This project&rsquo;s licence has not been specified.")
 
 
 class License(DBEnumeratedType):
@@ -331,8 +331,8 @@ class License(DBEnumeratedType):
     OFL = DBItem(
         340, "Open Font License v1.1",
         url='http://scripts.sil.org/OFL')
-    # This is a placeholder "license" for users who know they want something
-    # open source but haven't yet chosen a license for their project.  We do
+    # This is a placeholder "licence" for users who know they want something
+    # open source but haven't yet chosen a licence for their project.  We do
     # not want to block them from registering their project, but this choice
     # will allow us to nag them later.
     DONT_KNOW = DBItem(3000, "I don't know yet")
@@ -383,7 +383,7 @@ class IProductModerateRestricted(Interface):
             title=_('Notes for the project reviewer'),
             required=False,
             description=_(
-                "Notes on the project's license, editable only by reviewers "
+                "Notes on the project's licence, editable only by reviewers "
                 "(Admins and Commercial Admins).")))
 
     is_permitted = exported(
@@ -733,7 +733,7 @@ class IProductPublic(
         Whether the project has a current commercial subscription.""")
 
     license_status = Attribute("""
-        Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
+        Whether the licence is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     remote_product = exported(
         TextLine(
@@ -939,7 +939,7 @@ class IProductSet(Interface):
     @operation_parameters(
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
-        project_reviewed=Bool(title=_("Is the project license reviewed")),
+        project_reviewed=Bool(title=_("Is the project licence reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         created_after=Date(title=_("Created after date")),

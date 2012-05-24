@@ -108,18 +108,6 @@ summary.  She can also add a longer description.
     ...     'Control pesky aardvarkian fnords')
     >>> user_browser.getControl('Description').value = (
     ...     'The desktop aardvark is an ornery thing.')
-
-Before a project can be created though, a license for it must be selected.
-
-    >>> user_browser.getControl('Complete Registration').click()
-    >>> print_errors(user_browser.contents)
-    There is 1 error.
-    ...
-    You must select at least one license. If you select Other/Proprietary or
-    Other/OpenSource you must include a description of the license.
-
-This time, Sample Person remembers to select a license.
-
     >>> user_browser.getControl('Python License').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title

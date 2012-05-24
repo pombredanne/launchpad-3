@@ -355,7 +355,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
 
     @property
     def _is_proprietary(self):
-        """Does the product have a proprietary license?"""
+        """Does the product have a proprietary licence?"""
         return License.OTHER_PROPRIETARY in self.product.licenses
 
     @property

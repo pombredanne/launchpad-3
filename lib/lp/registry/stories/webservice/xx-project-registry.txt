@@ -687,7 +687,7 @@ Similarly we can find new projects.
     APTonCD
     ...
 
-All of the projects of a given license can be found.
+All of the projects of a given licence can be found.
 
     >>> proprietary = webservice.named_get(
     ...     "/projects", "licensing_search",

@@ -217,7 +217,7 @@ also reactivate the project at the same time.
     >>> print firefox.reviewer_whiteboard
     Reinstated old project
 
-A project with proprietary license cannot be approved; the owner must
+A project with proprietary licence cannot be approved; the owner must
 purchase a commercial subscription.
 
     >>> from lp.registry.interfaces.product import License
@@ -247,7 +247,7 @@ purchase a commercial subscription.
     >>> print firefox.reviewer_whiteboard
     None
 
-A project with additional license information must be approved by a reviewer.
+A project with additional licence information must be approved by a reviewer.
 If the reviewer does not approve the project, just review, the project does
 not qualify for free hosting. The owner must purchase a commercial
 subscription.
@@ -277,7 +277,7 @@ subscription.
     >>> firefox.qualifies_for_free_hosting
     False
 
-The owner can correct the license information and have it re-reviewed for
+The owner can correct the licence information and have it re-reviewed for
 approval.
 
     >>> login('test@canonical.com')
@@ -290,7 +290,7 @@ approval.
 
     >>> form = {
     ...     'field.active': 'on',
-    ...     'field.reviewer_whiteboard': 'This is not a free license',
+    ...     'field.reviewer_whiteboard': 'This is not a free licence',
     ...     'field.license_approved': 'on',
     ...     'field.actions.change': 'Change',
     ...     }
@@ -305,7 +305,7 @@ approval.
     >>> firefox.qualifies_for_free_hosting
     True
 
-If the owner updated the license by adding an Other/Open Source licenses,
+If the owner updated the licence by adding an Other/Open Source licences,
 the project must be reviewed again
 
     >>> login('test@canonical.com')

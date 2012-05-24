@@ -108,60 +108,11 @@ omit the homepage:
 Licensing alerts
 ================
 
-A project that has not set a license is marked as 'Unspecified'.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been specified.
-
-If the project doesn't have a license, a portlet is displayed to direct
-the owner to set a license.
-
-    >>> from lp.registry.interfaces.product import License
-    >>> firefox = Product.selectOneBy(name="firefox")
-    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> owner_browser.open('http://launchpad.dev/firefox')
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been specified.
-
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...     'portlet-requires-subscription')
-    None
-
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A non-owner does not see the warning that the project is missing
-licensing information.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(user_browser.contents,
-    ...     'portlet-missing-license')
-    None
-
-A member of the Launchpad Commercial team will see the warning.
-
-    >>> comm_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
-    >>> comm_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(comm_browser.contents,
-    ...     'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A Launchpad administrator will see the warning.
-
-    >>> admin_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...     'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A project that includes a license of "Other/Open Source" that has not
+A project that includes a licence of "Other/Open Source" that has not
 been reviewed by a Launchpad administrator will be displayed as
 'Unreviewed.'
 
+    >>> from lp.registry.interfaces.product import License
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/thunderbird/+edit')
     >>> owner_browser.getControl(name='field.licenses').value = [
@@ -169,12 +120,12 @@ been reviewed by a Launchpad administrator will be displayed as
     >>> owner_browser.getControl(name='field.license_info').value = 'foo'
     >>> owner_browser.getControl('Change').click()
 
-Any user can see that the project's license has not been reviewed.
+Any user can see that the project's licence has not been reviewed.
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been reviewed.
+    This project&rsquo;s licence has not been reviewed.
 
 Changing the state to reviewed but not approved results in the project
 being shown as proprietary.
@@ -186,7 +137,7 @@ being shown as proprietary.
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
     >>> user_browser.contents
-    '<...This project&rsquo;s license is proprietary...
+    '<...This project&rsquo;s licence is proprietary...
 
 If the project doesn't qualify for free hosting, or if it doesn't have
 much time left on its commercial subscription, a portlet is displayed to
@@ -199,7 +150,7 @@ direct the owner to purchase a subscription.
     >>> logout()
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
-    <...This project&rsquo;s license is proprietary...
+    <...This project&rsquo;s licence is proprietary...
 
     >>> print find_tag_by_id(owner_browser.contents,
     ...     'portlet-requires-subscription')
@@ -222,11 +173,11 @@ direct the owner to purchase a subscription.
     >>> owner_browser.getLink('voucher management page')
     <Link...url='http://launchpad.dev/~name12/+vouchers'...>
 
-Any user can see that the project's license is proprietary.
+Any user can see that the project's licence is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.contents
-    '<...This project&rsquo;s license is proprietary...
+    '<...This project&rsquo;s licence is proprietary...
 
 A non-owner does not see that a commercial subscription is due, and the
 +purchase-subscription page will display an error. A user would have to
@@ -263,7 +214,7 @@ and the +purchase-subscription page will display an error.
     <div...class="error message"...
     This project does not require a commercial subscription to be purchased...
 
-If the project's license is open source, the license status is not
+If the project's licence is open source, the licence status is not
 displayed on the index page, since most projects fall into this
 category.
 

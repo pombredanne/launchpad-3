@@ -189,7 +189,7 @@ from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 def get_license_status(license_approved, project_reviewed, licenses):
-    """Decide the license status for an `IProduct`.
+    """Decide the licence status for an `IProduct`.
 
     :return: A LicenseStatus enum value.
     """
@@ -200,22 +200,22 @@ def get_license_status(license_approved, project_reviewed, licenses):
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
     if len(licenses) == 0:
-        # We don't know what the license is.
+        # We don't know what the licence is.
         return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
         # Notice the difference between the License and LicenseStatus.
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
         if project_reviewed:
-            # The OTHER_OPEN_SOURCE license was not manually approved
+            # The OTHER_OPEN_SOURCE licence was not manually approved
             # by setting license_approved to true.
             return LicenseStatus.PROPRIETARY
         else:
             # The OTHER_OPEN_SOURCE is pending review.
             return LicenseStatus.UNREVIEWED
     else:
-        # The project has at least one license and does not have
-        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+        # The project has at least one licence and does not have
+        # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a licence.
         return LicenseStatus.OPEN_SOURCE
 
 
@@ -487,7 +487,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
             # Clear the project_reviewed and license_approved flags
-            # if the license changes.
+            # if the licence changes.
             self._resetLicenseReview()
         return value
 
@@ -495,16 +495,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                              storm_validator=_validate_license_info)
 
     def _validate_license_approved(self, attr, value):
-        """Ensure license approved is only applied to the correct licenses."""
+        """Ensure licence approved is only applied to the correct licences."""
         if not self._SO_creating:
             licenses = list(self.licenses)
             if value:
                 if (License.OTHER_PROPRIETARY in licenses
                     or [License.DONT_KNOW] == licenses):
                     raise ValueError(
-                        "Projects without a license or have "
+                        "Projects without a licence or have "
                         "'Other/Proprietary' may not be approved.")
-                # Approving a license implies it has been reviewed.  Force
+                # Approving a licence implies it has been reviewed.  Force
                 # `project_reviewed` to be True.
                 self.project_reviewed = True
         return value
@@ -621,7 +621,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def qualifies_for_free_hosting(self):
         """See `IProduct`."""
         if self.license_approved:
-            # The license was manually approved for free hosting.
+            # The licence was manually approved for free hosting.
             return True
         elif License.OTHER_PROPRIETARY in self.licenses:
             # Proprietary licenses need a subscription without
@@ -630,15 +630,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         elif (self.project_reviewed and
               (License.OTHER_OPEN_SOURCE in self.licenses or
                self.license_info not in ('', None))):
-            # We only know that an unknown open source license
+            # We only know that an unknown open source licence
             # requires a subscription after we have reviewed it
             # when we have not set license_approved to True.
             return False
         elif len(self.licenses) == 0:
-            # The owner needs to choose a license.
+            # The owner needs to choose a licence.
             return False
         else:
-            # The project has only valid open source license(s).
+            # The project has only valid open source licence(s).
             return True
 
     @property
@@ -688,7 +688,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.license_approved, self.project_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
-        """When the license is modified, it must be reviewed again."""
+        """When the licence is modified, it must be reviewed again."""
         self.project_reviewed = False
         self.license_approved = False
 
@@ -754,7 +754,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if licenses == old_licenses:
             return
         # Clear the project_reviewed and license_approved flags
-        # if the license changes.
+        # if the licence changes.
         # ProductSet.createProduct() passes in reset_project_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
         # project_reviewed & licenses at the same time.
