@@ -39,9 +39,6 @@ class TestBugSummary(TestCaseWithFactory):
 
         self.store = IMasterStore(BugSummary)
 
-    def getPublicCount(self, **kw_find_expr):
-        return self.getCount(None, **kw_find_expr)
-
     def getCount(self, person, **kw_find_expr):
         self._maybe_rollup()
 
