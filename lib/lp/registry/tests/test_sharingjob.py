@@ -409,7 +409,7 @@ class TestRunViaCron(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_run_remove_grantee_subscriptions_cronscript(self):
+    def _assert_run_cronscript(self, create_job):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
         # The job runs correctly and the requested bug subscriptions are
         # removed.
@@ -422,13 +422,12 @@ class TestRunViaCron(TestCaseWithFactory):
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
 
-        job = getUtility(IRemoveGranteeSubscriptionsJobSource).create(
-            distro, grantee, owner, bugs=[bug])
+        job, job_type = create_job(distro, bug, grantee, owner)
         transaction.commit()
 
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
-                IRemoveGranteeSubscriptionsJobSource.getName()))
+                job_type))
         self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
         self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
         self.assertEqual(0, exit_code)
@@ -438,37 +437,33 @@ class TestRunViaCron(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
         self.assertNotIn(
             grantee, removeSecurityProxy(bug).getDirectSubscribers())
+
+    def test_run_remove_grantee_subscriptions_cronscript(self):
+        # The cronscript is configured: schema-lazr.conf and security.cfg.
+        # The job runs correctly and the requested bug subscriptions are
+        # removed.
+
+        def create_job(distro, bug, grantee, owner):
+            return (
+                getUtility(IRemoveGranteeSubscriptionsJobSource).create(
+                    distro, grantee, owner, bugs=[bug]),
+                IRemoveGranteeSubscriptionsJobSource.getName())
+
+        self._assert_run_cronscript(create_job)
 
     def test_run_remove_bug_subscriptions_cronscript(self):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
         # The job runs correctly and the requested bug subscriptions are
         # removed.
-        distro = self.factory.makeDistribution()
-        grantee = self.factory.makePerson()
-        owner = self.factory.makePerson()
-        bug = self.factory.makeBug(
-            owner=owner, distribution=distro,
-            information_type=InformationType.USERDATA)
-        with person_logged_in(owner):
-            bug.subscribe(grantee, owner)
 
-        job = getUtility(IRemoveBugSubscriptionsJobSource).create([bug], owner)
-        removeSecurityProxy(bug).information_type = (
-                    InformationType.EMBARGOEDSECURITY)
-        transaction.commit()
+        def create_job(distro, bug, grantee, owner):
+            job = getUtility(IRemoveBugSubscriptionsJobSource).create(
+                [bug], owner)
+            removeSecurityProxy(bug).information_type = (
+                        InformationType.EMBARGOEDSECURITY)
+            return job, IRemoveBugSubscriptionsJobSource.getName()
 
-        out, err, exit_code = run_script(
-            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
-                IRemoveBugSubscriptionsJobSource.getName()))
-        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
-        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
-        self.assertEqual(0, exit_code)
-        self.assertTrue(
-            'Traceback (most recent call last)' not in err)
-        IStore(job.job).invalidate()
-        self.assertEqual(JobStatus.COMPLETED, job.job.status)
-        self.assertNotIn(
-            grantee, removeSecurityProxy(bug).getDirectSubscribers())
+        self._assert_run_cronscript(create_job)
 
 
 class RemoveBugSubscriptionsJobTestCase(TestCaseWithFactory):
