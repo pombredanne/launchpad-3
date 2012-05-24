@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SharingJobs."""
-from lp.services.database.lpstorm import IStore
-from lp.services.job.interfaces.job import JobStatus
 
 __metaclass__ = type
 
@@ -38,7 +36,9 @@ from lp.registry.model.sharingjob import (
     SharingJobDerived,
     SharingJobType,
     )
+from lp.services.database.lpstorm import IStore
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.tests import block_on_job
 from lp.services.mail.sendmail import format_address_for_person
 from lp.testing import (
@@ -171,7 +171,7 @@ class RemoveGranteeSubscriptionsJobTestCase(TestCaseWithFactory):
     def setUp(self):
         self.useFixture(FeatureFixture({
             'jobs.celery.enabled_classes':
-                'xRemoveGranteeSubscriptionsJob',
+                'RemoveGranteeSubscriptionsJob',
         }))
         super(RemoveGranteeSubscriptionsJobTestCase, self).setUp()
 
