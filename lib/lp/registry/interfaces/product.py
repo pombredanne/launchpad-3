@@ -237,9 +237,9 @@ class LicenseStatus(DBEnumeratedType):
 
 
 class License(DBEnumeratedType):
-    """Licenses under which a project's code can be released."""
+    """Licences under which a project's code can be released."""
 
-    # Sort licenses alphabetically by their description.
+    # Sort licences alphabetically by their description.
     sort_order = (
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
@@ -627,10 +627,10 @@ class IProductPublic(
 
     license_info = exported(
         Description(
-            title=_('Description of additional licenses'),
+            title=_('Description of additional licences'),
             required=False,
             description=_(
-                "Description of licenses that do not appear in the list "
+                "Description of licences that do not appear in the list "
                 "above.")))
 
     bugtracker = exported(

@@ -33,7 +33,7 @@ from lp.services.webapp.publisher import (
 
 
 def product_licenses_modified(product, event):
-    """Send a notification if licenses changed and a licence is special."""
+    """Send a notification if licences changed and a licence is special."""
     if not event.edited_fields:
         return
     licenses_changed = 'licenses' in event.edited_fields
@@ -46,7 +46,7 @@ def product_licenses_modified(product, event):
 
 
 class LicenseNotification:
-    """Send notification about special licenses to the user."""
+    """Send notification about special licences to the user."""
 
     def __init__(self, product, user):
         self.product = product

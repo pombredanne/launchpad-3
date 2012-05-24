@@ -311,7 +311,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
     def __init__(self, field, vocabulary, request):
         # pylint: disable-msg=E1002
         super(LicenseWidget, self).__init__(field, vocabulary, request)
-        # We want to put the license_info widget inside the licenses widget's
+        # We want to put the license_info widget inside the licences widget's
         # HTML, for better alignment and JavaScript dynamism.  This is
         # accomplished by ghosting the form's license_info widget (see
         # lp/registry/browser/product.py and the GhostWidget implementation
@@ -331,9 +331,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
             context=field.context)
         self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
-        # selected licenses in the category.  The actual count doesn't matter,
+        # selected licences in the category.  The actual count doesn't matter,
         # since if it's greater than 0 it will start opened.  NOte that we
-        # always want the recommended licenses to be opened, so we initialize
+        # always want the recommended licences to be opened, so we initialize
         # its value to 1.
         self.recommended_count = 1
         self.more_count = 0

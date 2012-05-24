@@ -281,24 +281,6 @@ But registry experts can change a product name and set an alias.
     trebucket
 
 
-Display error when trying to remove all licenses
-================================================
-
-After a product has one or more licenses selected, it can never again
-have zero licenses.
-
-    >>> browser.open('http://launchpad.dev/newproductname/+edit')
-    >>> browser.getControl(name='field.licenses').value = []
-    >>> browser.getControl('Change').click()
-    >>> print browser.url
-    http://launchpad.dev/newproductname/+edit
-
-    >>> print "\n".join(get_feedback_messages(browser.contents))
-    There is 1 error.
-    You must select at least one licence. If you select Other/Proprietary
-    or Other/OpenSource you must include a description of the licence.
-
-
 Launchpad developers can use the reviewer whiteboard
 ====================================================
 

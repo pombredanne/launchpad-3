@@ -45,7 +45,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
                 // The table starts either collapsed or expanded.  The
                 // animation lives on the link target.  The initial state of
                 // the slider depends on whether there are any checked
-                // licenses in that category.  A '0' means 'no'.
+                // licences in that category.  A '0' means 'no'.
                 var arrow = Y.one(arrow_name);
                 if (arrow.getAttribute('start_expanded') == '0') {
                     target.slide = Y.lazr.effects.slide_in(table_name);
@@ -205,29 +205,29 @@ LPJS.use('node', 'lazr.effects', function(Y) {
     <a href="" id="recommended-expand" class="js-action">
       <img id="recommended-expand-arrow"
            src="/@@/treeExpanded"
-           title="Recommended open source licenses"
-           alt="Recommended open source licenses"
+           title="Recommended open source licences"
+           alt="Recommended open source licences"
            tal:attributes="start_expanded view/recommended_count"/>
-      Recommended open source licenses
+      Recommended open source licences
     </a>
     <input tal:replace="structure view/recommended" />
     <a href="" id="more-expand" class="js-action">
       <img id="more-expand-arrow"
            src="/@@/treeCollapsed"
-           title="More open source licenses"
-           alt="More open source licenses"
+           title="More open source licences"
+           alt="More open source licences"
            tal:attributes="start_expanded view/more_count"/>
-      More open source licenses
+      More open source licences
     </a>
     <input tal:replace="structure view/more" />
     <div tal:condition="view/deprecated_count">
       <a href="" id="deprecated-expand" class="js-action">
         <img id="deprecated-expand-arrow"
              src="/@@/treeCollapsed"
-             title="Deprecated licenses"
-             alt="Deprecated licenses"
+             title="Deprecated licences"
+             alt="Deprecated licences"
              tal:attributes="start_expanded view/deprecated_count"/>
-        Deprecated licenses
+        Deprecated licences
       </a>
       <input tal:replace="structure view/deprecated" />
     </div>

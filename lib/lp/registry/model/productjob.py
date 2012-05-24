@@ -362,7 +362,7 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
     def email_template_name(self):
         """See `IProductNotificationJob`.
 
-        The email template is determined by the product's licenses.
+        The email template is determined by the product's licences.
         """
         if self._is_proprietary:
             return 'product-commercial-subscription-expired-proprietary'

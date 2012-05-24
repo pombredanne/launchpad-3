@@ -259,10 +259,10 @@ class ProductWithLicenses:
 
     @classmethod
     def composeLicensesColumn(cls, for_class=None):
-        """Compose a Storm column specification for licenses.
+        """Compose a Storm column specification for licences.
 
         Use this to render a list of `Product` linkes without querying
-        licenses for each one individually.
+        licences for each one individually.
 
         It lets you prefetch the licensing information in the same
         query that fetches a `Product`.  Just add the column spec
@@ -757,7 +757,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # if the licence changes.
         # ProductSet.createProduct() passes in reset_project_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
-        # project_reviewed & licenses at the same time.
+        # project_reviewed & licences at the same time.
         if reset_project_reviewed:
             self._resetLicenseReview()
         if len(licenses) == 0:

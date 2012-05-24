@@ -361,7 +361,7 @@ A second licence is selected.
     [ ] GNU GPL v3 view licence
     ...
 
-There are three Creative Commons licenses.
+There are three Creative Commons licences.
 
     >>> form['field.licenses'] = []
     >>> request = LaunchpadTestRequest(form=form)
@@ -377,7 +377,7 @@ There are three Creative Commons licenses.
     [ ] Creative Commons - Attribution Share Alike ...
     ...
 
-Any of the three Creative Commons licenses can be selected.
+Any of the three Creative Commons licences can be selected.
 
     >>> form['field.licenses'] = ['CC_BY', 'CC_BY_SA', 'CC_0']
     >>> request = LaunchpadTestRequest(form=form)
@@ -419,7 +419,7 @@ blocked from creating their project.
     [X] I don't know yet
     ...
 
-There are two Perl-inspired Artistic licenses.  The first is the original 1.0
+There are two Perl-inspired Artistic licences.  The first is the original 1.0
 license which most of Perl-land is licensed by, and there's the 2.0 version
 that is used by newer project such as Parrot.
 
@@ -435,10 +435,10 @@ that is used by newer project such as Parrot.
     [X] Artistic License 2.0 ...
     ...
 
-Many licenses have links to the official pages describing their licenses.
+Many licences have links to the official pages describing their licences.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
+    [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     [ ] GNU LGPL v2.1 ... <http://www.opensource.org/licenses/lgpl-2.1.php>
     [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3...>
     ...
@@ -446,7 +446,7 @@ Many licenses have links to the official pages describing their licenses.
 But not all of them.
 
     >>> print_checked_items(license_widget(), links=True)
-    [ ] Apache License ... <http://www.opensource.org/licenses/apache2.0.php>
+    [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
     [ ] I don't know yet
     [ ] Other/Proprietary

@@ -117,7 +117,7 @@ Reviewing a project's licensing
 ===============================
 
 Launchpad admins and members of the registry experts team can review a
-project's licenses.
+project's licences.
 
 The Commercial Admin user is not in the registry admins team so he
 cannot access the page.
@@ -150,7 +150,7 @@ him access.
     Review project
 
 The view allow the reviewer to see and change project privileges and
-judge the licenses.
+judge the licences.
 
     >>> view.field_names
     ['project_reviewed', 'license_approved', 'active', 'private_bugs',

@@ -396,7 +396,7 @@ You can search for whether the product is marked reviewed or not.
     obsolete-junk
 
 You can search for products by licence. This will match products with
-any one of the licenses listed.
+any one of the licences listed.
 
     >>> for product in product_set.forReview(
     ...     licenses=[License.GNU_GPL_V2, License.BSD]):

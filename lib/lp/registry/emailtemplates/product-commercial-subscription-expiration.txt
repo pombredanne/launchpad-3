@@ -27,7 +27,7 @@ private.
 
 Launchpad is a collaboration site, free to use for projects with an
 approved open source licence.  When you registered your project, you'd
-have seen a list of licenses presented. These are the licences we
+have seen a list of licences presented. These are the licences we
 automatically recognise.
 
 If you have a different licence to one on the approved list, it must

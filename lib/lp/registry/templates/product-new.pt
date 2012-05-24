@@ -324,7 +324,7 @@ LPJS.use('node', 'lazr.effects', function(Y) {
               style="margin-top: 3em;"
               tal:condition="view/search_results_count"
               >Registration details</h3>
-          Select the licenses for project
+          Select the licences for project
           <strong><tal:displayname tal:replace="view/request/field.displayname" />
           (<tal:name  tal:replace="view/request/field.name" />)</strong>
           and complete the registration.  You may also update the project's
