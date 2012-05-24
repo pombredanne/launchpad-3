@@ -1002,11 +1002,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return True
 
 
-class FileBugInlineFormView(FileBugViewBase):
-    """A browser view for displaying the inline filebug form."""
-    schema = IBugAddForm
-
-
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 

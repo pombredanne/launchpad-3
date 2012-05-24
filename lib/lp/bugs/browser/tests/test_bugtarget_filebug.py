@@ -13,7 +13,6 @@ from zope.schema.interfaces import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.browser.bugtarget import (
-    FileBugInlineFormView,
     FileBugViewBase,
     )
 from lp.bugs.interfaces.bug import (
@@ -51,7 +50,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If there is not customized confirmation message, a default
         # message is displayed.
         product = self.factory.makeProduct()
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -61,7 +60,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # FilebugViewBase.bug_reported_acknowledgement
         product.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(product))
@@ -69,7 +68,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the custom message is set to a string containing only white,
         # space, the default message is used again.
         product.bug_reported_acknowledgement = ' \t'
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -83,7 +82,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product))
@@ -91,7 +90,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the project group has a customized message, it is used.
         project_group.bug_reported_acknowledgement = (
             "Thanks for filing a bug for one of our many products.")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for one of our many products.",
             view.getAcknowledgementMessage(product))
@@ -100,29 +99,10 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # message is used instead of the project group's message.
         product.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for this very special product.")
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for this very special product.",
             view.getAcknowledgementMessage(product))
-
-    def test_getAcknowledgementMessage_product_series(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        product_series = self.factory.makeProductSeries()
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(product_series))
-
-        # If a product contains a customized bug filing confirmation
-        # message, it is retrieved for a product series context by
-        # FilebugViewBase.bug_reported_acknowledgement
-        product_series.product.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(product_series))
 
     def test_getAcknowledgementMessage_product_series_in_project_group(self):
         # If a product_series is part of a project group and if the project
@@ -134,7 +114,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(product_series))
@@ -142,7 +122,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If the project group has a customized message, it is used.
         project_group.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for one of our many product_seriess.")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for one of our many product_seriess.",
             view.getAcknowledgementMessage(product_series))
@@ -151,7 +131,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # message is used instead of the project group's message.
         product.bug_reported_acknowledgement = (
             u"Thanks for filing a bug for this very special product.")
-        view = FileBugInlineFormView(product_series, LaunchpadTestRequest())
+        view = create_initialized_view(product, name='+filebug')
         self.assertEqual(
             u"Thanks for filing a bug for this very special product.",
             view.getAcknowledgementMessage(product_series))
@@ -160,7 +140,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # If there is not customized confirmation message, a default
         # message is displayed.
         distribution = self.factory.makeDistribution()
-        view = FileBugInlineFormView(distribution, LaunchpadTestRequest())
+        view = create_initialized_view(distribution, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(distribution))
@@ -170,54 +150,16 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # FilebugViewBase.bug_reported_acknowledgement
         distribution.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(distribution, LaunchpadTestRequest())
+        view = create_initialized_view(distribution, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(distribution))
-
-    def test_getAcknowledgementMessage_distroseries(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        distroseries = self.factory.makeDistroSeries()
-        view = FileBugInlineFormView(distroseries, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(distroseries))
-
-        # DistroSeries objects do not have their own, independent
-        # property bug_reported_acknowledgement; instead, it is
-        # acquired from the parent distribution.
-        distroseries.distribution.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(distroseries, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(distroseries))
-
-    def test_getAcknowledgementMessage_sourcepackage(self):
-        # If there is not customized confirmation message, a default
-        # message is displayed.
-        sourcepackage = self.factory.makeSourcePackage()
-        view = FileBugInlineFormView(sourcepackage, LaunchpadTestRequest())
-        self.assertEqual(
-            u"Thank you for your bug report.",
-            view.getAcknowledgementMessage(sourcepackage))
-
-        # SourcePackage objects do not have their own, independent
-        # property bug_reported_acknowledgement; instead, it is
-        # acquired from the parent distribution.
-        sourcepackage.distribution.bug_reported_acknowledgement = (
-            u"We really appreciate your bug report")
-        view = FileBugInlineFormView(sourcepackage, LaunchpadTestRequest())
-        self.assertEqual(
-            u"We really appreciate your bug report",
-            view.getAcknowledgementMessage(sourcepackage))
 
     def test_getAcknowledgementMessage_distributionsourcepackage(self):
         # If there is not customized confirmation message, a default
         # message is displayed.
         dsp = self.factory.makeDistributionSourcePackage()
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for your bug report.",
             view.getAcknowledgementMessage(dsp))
@@ -226,7 +168,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # the default message.
         dsp.bug_reported_acknowledgement = (
             u"We really appreciate your bug report")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"We really appreciate your bug report",
             view.getAcknowledgementMessage(dsp))
@@ -237,7 +179,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         dsp = self.factory.makeDistributionSourcePackage()
         dsp.distribution.bug_reported_acknowledgement = (
             u"Thank you for filing a bug in our distribution")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for filing a bug in our distribution",
             view.getAcknowledgementMessage(dsp))
@@ -246,7 +188,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # the message for the distribution.
         dsp.bug_reported_acknowledgement = (
             u"Thank you for filing a bug for this DSP")
-        view = FileBugInlineFormView(dsp, LaunchpadTestRequest())
+        view = create_initialized_view(dsp, name='+filebug')
         self.assertEqual(
             u"Thank you for filing a bug for this DSP",
             view.getAcknowledgementMessage(dsp))
@@ -256,7 +198,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # to the response.
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = FileBugInlineFormView(product, LaunchpadTestRequest())
+        create_initialized_view(product, name='+filebug')
         form_data = {
             'title': 'A bug title',
             'comment': 'whatever',
