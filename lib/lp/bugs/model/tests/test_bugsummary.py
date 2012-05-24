@@ -546,15 +546,15 @@ class TestBugSummary(TestCaseWithFactory):
 
         self.assertCount(1, distribution=distribution, sourcepackagename=None)
         self.assertCount(1, distribution=distribution, sourcepackagename=spn)
-        self.assertCount(1, distribution=series, sourcepackagename=None)
-        self.assertCount(1, distribution=series, sourcepackagename=spn)
+        self.assertCount(1, distroseries=series, sourcepackagename=None)
+        self.assertCount(1, distroseries=series, sourcepackagename=spn)
 
         bug_task.transitionToTarget(series)
 
         self.assertCount(1, distribution=distribution, sourcepackagename=None)
         self.assertCount(0, distribution=distribution, sourcepackagename=spn)
-        self.assertCount(1, distribution=series, sourcepackagename=None)
-        self.assertCount(0, distribution=series, sourcepackagename=spn)
+        self.assertCount(1, distroseries=series, sourcepackagename=None)
+        self.assertCount(0, distroseries=series, sourcepackagename=spn)
 
     def test_addMilestone(self):
         distribution = self.factory.makeDistribution()
