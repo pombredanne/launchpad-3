@@ -129,6 +129,7 @@ publication to play with first.
     package_creator_link: u'http://.../beta/~name16'
     package_maintainer_link: u'http://.../beta/~name16'
     package_signer_link: u'http://.../beta/~name16'
+    packageupload_link: None
     pocket: u'Release'
     removal_comment: None
     removed_by_link: None

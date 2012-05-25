@@ -1,5 +1,5 @@
 # copyright 2009-2010 canonical ltd.  this software is licensed under the
-# gnu affero general public license version 3 (see the file license).
+# gnu affero general public license version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,W0401
 

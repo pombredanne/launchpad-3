@@ -66,14 +66,14 @@
         <dd tal:content="structure view/active_widget" />
         <dt>Project reviewed</dt>
         <dd tal:content="structure view/project_reviewed_widget" />
-        <dt>License approved</dt>
-        <dd title="Approving a license also marks the project reviewed."
+        <dt>Licence approved</dt>
+        <dd title="Approving a licence also marks the project reviewed."
           tal:content="structure view/license_approved_widget" />
       </dl>
 
       <dl class="horizontal"
         tal:attributes="id string:${context/name/fmt:css-id}-licenses">
-        <dt>Licenses</dt>
+        <dt>Licences</dt>
         <dd>
           <ul class="horizontal">
             <li tal:condition="not: context/licenses">None</li>
@@ -98,7 +98,7 @@
       <dl class="horizontal"
         tal:condition="view/show_license_info"
         tal:attributes="id string:${context/name/fmt:css-id}-license-info">
-        <dt>Licenses info</dt>
+        <dt>Licences info</dt>
         <dd class="scrolled"
           tal:content="structure context/license_info/fmt:text-to-html" />
       </dl>
