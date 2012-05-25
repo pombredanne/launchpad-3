@@ -1,6 +1,5 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from lazr.restful.interfaces._rest import IJSONRequestCache
 
 __metaclass__ = type
 
@@ -13,6 +12,7 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.restful.interfaces import IJSONRequestCache
 from lp.bugs.browser.bugtarget import (
     FileBugViewBase,
     )
@@ -21,7 +21,10 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import InformationType, PRIVATE_INFORMATION_TYPES
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
