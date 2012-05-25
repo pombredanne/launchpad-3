@@ -423,8 +423,8 @@ class PackagePublishingStatus(DBEnumeratedType):
 
 
 # If you change this (add items, change the meaning, whatever) search for
-# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
-# update the stuff marked with it.
+# the token ##CUSTOMFORMAT## e.g. queue.py or nascentupload.py and update
+# the stuff marked with it.
 class PackageUploadCustomFormat(DBEnumeratedType):
     """Custom formats valid for the upload queue
 

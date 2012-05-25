@@ -1238,7 +1238,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish(self, logger=None):
         """See `IPackageUploadCustom`."""
-        # This is a marker as per the comment in dbschema.py.
+        # This is a marker as per the comment in lib/lp/soyuz/enums.py:
         ##CUSTOMFORMAT##
         # Essentially, if you alter anything to do with what custom formats
         # are, what their tags are, or anything along those lines, you should
