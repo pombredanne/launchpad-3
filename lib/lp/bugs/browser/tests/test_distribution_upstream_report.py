@@ -71,6 +71,21 @@ class BugReportDataTestCase(TestCase):
         self.assertEqual('', bug_data._as_value_class(50, 50))
         self.assertEqual('', bug_data._as_value_class(40, 50))
 
+    def test_value_class(self):
+        bug_data = self.make_bug_report_data()
+        bug_data.watched_bugs = 80
+        self.assertEqual('', bug_data.triaged_bugs_class)
+        self.assertEqual('', bug_data.upstream_bugs_class)
+        self.assertEqual('good', bug_data.watched_bugs_class)
+
+    def test_row_class(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual('', bug_data.row_class)
+        bug_data.watched_bugs = 80
+        self.assertEqual('good', bug_data.row_class)
+        bug_data.watched_bugs = 11
+        self.assertEqual('bad', bug_data.row_class)
+
 
 class TestDistributionUpstreamReport(TestCaseWithFactory):
 

@@ -110,21 +110,18 @@ class BugReportData:
 
     @property
     def triaged_bugs_class(self):
-        if self.triaged_bugs_percentage > self.TRIAGED_THRESHOLD:
-            return "good"
-        return ""
+        return self._as_value_class(
+            self.triaged_bugs_percentage, self.TRIAGED_THRESHOLD)
 
     @property
     def upstream_bugs_class(self):
-        if self.upstream_bugs_percentage > self.UPSTREAM_THRESHOLD:
-            return "good"
-        return ""
+        return self._as_value_class(
+            self.upstream_bugs_percentage, self.UPSTREAM_THRESHOLD)
 
     @property
     def watched_bugs_class(self):
-        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
-            return "good"
-        return ""
+        return self._as_value_class(
+            self.watched_bugs_percentage, self.WATCH_THRESHOLD)
 
     @property
     def triaged_bugs_delta(self):
