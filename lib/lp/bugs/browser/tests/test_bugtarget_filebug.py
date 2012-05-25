@@ -1,5 +1,6 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lazr.restful.interfaces._rest import IJSONRequestCache
 
 __metaclass__ = type
 
@@ -20,7 +21,7 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.publisher import BugsLayer
-from lp.registry.enums import InformationType
+from lp.registry.enums import InformationType, PRIVATE_INFORMATION_TYPES
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -433,3 +434,86 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
             notification.message
             for notification in view.request.response.notifications])
         self.assertIn("Thank you for your bug report.", msg)
+
+
+class TestFileBugGuidelinesRequestCache(TestCaseWithFactory):
+    # Tests to ensure the request cache contains the expected values for
+    # file bug guidelines views.
+
+    layer = DatabaseFunctionalLayer
+
+    def _assert_cache_values(self, view, private_bugs, duplicate_search):
+        cache = IJSONRequestCache(view.request).objects
+        self.assertContentEqual(cache['private_types'], [
+            type.name for type in PRIVATE_INFORMATION_TYPES])
+        self.assertEqual(cache['bug_private_by_default'], private_bugs)
+        self.assertEqual(
+            cache['enable_bugfiling_duplicate_search'], duplicate_search)
+
+    def test_product(self):
+        project = self.factory.makeProduct(official_malone=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, True)
+
+    def test_product_default_private(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).private_bugs = True
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, True, True)
+
+    def test_product_no_duplicate_search(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, False)
+
+    def test_project_group(self):
+        project = self.factory.makeProject()
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project,
+            '+filebug-reporting-guidelines', principal=user)
+        self._assert_cache_values(view, False, True)
+
+
+class TestFileBugRequestCache(TestCaseWithFactory):
+    # Tests to ensure the request cache contains the expected values for
+    # file bug views.
+
+    layer = DatabaseFunctionalLayer
+
+    def _assert_cache_values(self, view, duplicate_search):
+        cache = IJSONRequestCache(view.request).objects
+        self.assertEqual(
+            cache['enable_bugfiling_duplicate_search'], duplicate_search)
+
+    def test_product(self):
+        project = self.factory.makeProduct(official_malone=True)
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True)
+
+    def test_product_no_duplicate_search(self):
+        product = self.factory.makeProduct(official_malone=True)
+        removeSecurityProxy(product).enable_bugfiling_duplicate_search = False
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(product, '+filebug', principal=user)
+        self._assert_cache_values(view, False)
+
+    def test_project_group(self):
+        project = self.factory.makeProject()
+        user = self.factory.makePerson()
+        login_person(user)
+        view = create_initialized_view(project, '+filebug', principal=user)
+        self._assert_cache_values(view, True)

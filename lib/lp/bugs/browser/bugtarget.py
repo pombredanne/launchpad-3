@@ -275,6 +275,11 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             type.name for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
             self.show_information_type_in_ui)
+        cache.objects['bug_private_by_default'] = (
+            IProduct.providedBy(self.context) and self.context.private_bugs)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
@@ -380,8 +385,11 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if self.redirect_ubuntu_filebug:
             pass
         LaunchpadFormView.initialize(self)
-        if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None and
+        cache = IJSONRequestCache(self.request)
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            IProjectGroup.providedBy(self.context)
+            or self.context.enable_bugfiling_duplicate_search)
+        if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
@@ -465,10 +473,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             return {}
 
         return {'packagename': self.context.name}
-
-    def isPrivate(self):
-        """Whether bug reports on this target are private by default."""
-        return IProduct.providedBy(self.context) and self.context.private_bugs
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
