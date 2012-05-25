@@ -280,7 +280,7 @@ class ProductLicenseMixin:
         if (len(licenses) == 0 and
             license_widget is not None and
             not license_widget.allow_pending_license):
-            # License is optional on +edit page if not already set.
+            # Licence is optional on +edit page if not already set.
             self.setFieldError(
                 'licenses',
                 'You must select at least one licence.  If you select '
@@ -1133,7 +1133,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         if License.OTHER_PROPRIETARY in licenses:
             return 'Commercial subscription required'
         elif [License.DONT_KNOW] == licenses or [] == licenses:
-            return 'License required'
+            return 'Licence required'
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
             content_box_id='%s-edit-license-approved' % FormattersAPI(

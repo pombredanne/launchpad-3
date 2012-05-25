@@ -635,7 +635,7 @@ class IProductPublic(
                             "Whether or not bugs reported into this project "
                             "are private by default.")))
     licenses = exported(
-        Set(title=_('Licenses'),
+        Set(title=_('Licences'),
             value_type=Choice(vocabulary=License)))
 
     license_info = exported(

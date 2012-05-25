@@ -102,7 +102,7 @@ class LicenseNotification:
             )
         # Email the user about licence policy.
         subject = (
-            "License information for %(product_name)s "
+            "Licence information for %(product_name)s "
             "in Launchpad" % substitutions)
         template = get_email_template(
             self.getTemplateName(), app='registry')

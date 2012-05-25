@@ -211,10 +211,9 @@ def get_license_status(license_approved, project_reviewed, licenses):
     if license_approved:
         return LicenseStatus.OPEN_SOURCE
     if len(licenses) == 0:
-        # We don't know what the licence is.
+        # This can only happen in bad sample data.
         return LicenseStatus.UNSPECIFIED
     elif License.OTHER_PROPRIETARY in licenses:
-        # Notice the difference between the License and LicenseStatus.
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
         if project_reviewed:
