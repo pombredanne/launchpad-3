@@ -1,7 +1,7 @@
-Distribution upstream bug report pages
-======================================
+Distribution upstream report pages
+==================================
 
-Upstream bug report pages for distributions contain all sorts of fun
+Upstream report pages for distributions contain all sorts of fun
 information that describe how well the bugs are forwarded to upstreams.
 
 We start this test off by creating some bugs and tasks to ensure we have
@@ -362,8 +362,7 @@ Empty distributions
 -------------------
 
 If a distribution does not use Launchpad for bug tracking, no
-upstream bug report is shown, only a message that no data is
-available.
+upstream report is shown, only a message that no data is available.
 
     >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')

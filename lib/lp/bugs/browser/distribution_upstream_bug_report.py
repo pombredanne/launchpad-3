@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionUpstreamBugReport',
+    'DistributionUpstreamReport',
     ]
 
 from operator import attrgetter
@@ -250,8 +250,8 @@ class PackageBugReportData(BugReportData):
             dsp_bugs_url, bugs_with_upstream_patches_filter_url)
 
 
-class DistributionUpstreamBugReport(LaunchpadView):
-    """Implements the actual upstream bug report.
+class DistributionUpstreamReport(LaunchpadView):
+    """Implements the actual upstream report.
 
     Most of the work is actually done in the
     getPackagesAndPublicUpstreamBugCounts API, and in the *Data classes
@@ -286,7 +286,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Upstream Bug Report for %s' % self.context.title
+        return 'Upstream Report for %s' % self.context.title
 
     @property
     def sort_order(self):
@@ -363,7 +363,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
-        # The upstream bug report is not useful if the distibution
+        # The upstream report is not useful if the distibution
         # does not track its bugs on Lauchpad or if it does not have a
         # current distroseries.
         self.has_upstream_report = (

@@ -1,5 +1,5 @@
-Upstream Bug reports
-====================
+Upstream reports
+================
 
 For a distribution's bug tracking process to be successful, it's vital
 that it is able to communicate upstream bugs to the relevant upstream
@@ -491,7 +491,7 @@ be reversed.
     >>> view.sort_order
     ('product', True)
 
-The DistributionUpstreamBugReport view has a list of valid sort keys. If
+The DistributionUpstreamReport view has a list of valid sort keys. If
 we try to sort by a key that isn't in that list we'll get the default
 sort_order back. (See test_distribution_upstream_bug_report.py in
 browser/tests for further testing of this).
@@ -502,7 +502,7 @@ browser/tests for further testing of this).
     >>> view.sort_order
     ('open_bugs', True)
 
-The DistributionUpstreamBugReport view also has a sort_order_links
+The DistributionUpstreamReport view also has a sort_order_links
 property. This is a dict of URLs which is used to create the links in
 the sortable table header on the +upstreamreport page for the
 distribution.
