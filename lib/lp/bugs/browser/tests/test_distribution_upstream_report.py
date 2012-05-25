@@ -15,7 +15,7 @@ from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.browser.distribution_upstream_bug_report import (
+from lp.bugs.browser.distribution_upstream_report import (
     DistributionUpstreamReport,
     )
 from lp.testing import (

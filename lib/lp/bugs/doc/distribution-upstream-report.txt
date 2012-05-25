@@ -192,8 +192,8 @@ PackageBugReportData, which sublcassess BugReportData. We'll create a
 BugReportData instance using some made up figures to demonstrate the
 properties offered by BugReportData.
 
-    >>> from lp.bugs.browser import distribution_upstream_bug_report
-    >>> bug_data = distribution_upstream_bug_report.BugReportData(
+    >>> from lp.bugs.browser import distribution_upstream_report
+    >>> bug_data = distribution_upstream_report.BugReportData(
     ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
     ...     watched_bugs=60)
 
@@ -493,7 +493,7 @@ be reversed.
 
 The DistributionUpstreamReport view has a list of valid sort keys. If
 we try to sort by a key that isn't in that list we'll get the default
-sort_order back. (See test_distribution_upstream_bug_report.py in
+sort_order back. (See test_distribution_upstream_report.py in
 browser/tests for further testing of this).
 
     >>> form = {'sort_by': 'ifthisisvalidilleatmyhat'}
@@ -605,4 +605,4 @@ accordingly.
     bugtracker_name /@@/arrowDown...
 
 PS: This page is actually browser-tested in pagetests.distribution-
-upstream-bug-report. Look there for more details.
+upstream-report. Look there for more details.
