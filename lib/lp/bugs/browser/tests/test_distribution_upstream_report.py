@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for DistributionUpstreamReport."""
@@ -19,29 +19,21 @@ from lp.bugs.browser.distribution_upstream_report import (
     DistributionUpstreamReport,
     )
 from lp.testing import (
-    ANONYMOUS,
     BrowserTestCase,
-    login,
-    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.systemdocs import create_view
 from lp.testing.views import create_initialized_view
 
 
 class TestDistributionUpstreamReport(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestDistributionUpstreamReport, self).setUp()
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        logout()
-        super(TestDistributionUpstreamReport, self).tearDown()
+    layer = DatabaseFunctionalLayer
 
     def test_valid_sort_keys_are_valid(self):
         # The valid_sort_keys property of the
