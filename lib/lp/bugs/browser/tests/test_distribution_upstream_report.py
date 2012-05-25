@@ -16,19 +16,48 @@ from zope.component import getUtility
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.distribution_upstream_report import (
+    BugReportData,
     DistributionUpstreamReport,
     )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.testing.systemdocs import create_view
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
+
+
+class BugReportDataTestCase(TestCase):
+
+    def make_bug_report_data(self):
+        return BugReportData(
+            open_bugs=90, triaged_bugs=50, upstream_bugs=70, watched_bugs=60)
+
+    def test_init(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual(90, bug_data.open_bugs)
+        self.assertEqual(50, bug_data.triaged_bugs)
+        self.assertEqual(70, bug_data.upstream_bugs)
+        self.assertEqual(60, bug_data.watched_bugs)
+
+    def test_percentage_properties(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual(55.56, bug_data.triaged_bugs_percentage)
+        self.assertEqual(77.78, bug_data.upstream_bugs_percentage)
+        self.assertEqual(85.71, bug_data.watched_bugs_percentage)
+
+    def test_as_percentage(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual(55.56, bug_data._as_percentage(50, 90))
+        self.assertEqual(0.0, bug_data._as_percentage(50, 0))
 
 
 class TestDistributionUpstreamReport(TestCaseWithFactory):

@@ -197,31 +197,6 @@ properties offered by BugReportData.
     ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
     ...     watched_bugs=60)
 
-
-Percentages
-...........
-
-BugReportData offers a set of *_percentage properties.
-
-BugReportData.triaged_bugs_percentage is the percentage of open bugs
-that have been triaged.
-
-    >>> bug_data.triaged_bugs_percentage
-    55.555555555555557
-
-BugReportData.upstream_bugs_percentage is the percentage of open bugs
-that have been forwarded upstream.
-
-    >>> bug_data.upstream_bugs_percentage
-    77.777777777777771
-
-BugReportData.watched_bugs_percentage is the percentage of bugs
-forwarded upstream that have a bug watch against a remote bug.
-
-    >>> bug_data.watched_bugs_percentage
-    85.714285714285708
-
-
 Deltas
 ......
 

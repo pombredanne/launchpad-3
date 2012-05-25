@@ -68,26 +68,24 @@ class BugReportData:
         self.watched_bugs = watched_bugs
         self.bugs_with_upstream_patches = bugs_with_upstream_patches
 
-    @property
-    def triaged_bugs_percentage(self):
-        if self.open_bugs:
-            return 100.0 * self.triaged_bugs / self.open_bugs
+    @staticmethod
+    def _as_percentage(number, total):
+        if total:
+            return round(100.0 * number / total, 2)
         else:
             return 0.0
+
+    @property
+    def triaged_bugs_percentage(self):
+        return self._as_percentage(self.triaged_bugs, self.open_bugs)
 
     @property
     def upstream_bugs_percentage(self):
-        if self.open_bugs:
-            return 100.0 * self.upstream_bugs / self.open_bugs
-        else:
-            return 0.0
+        return self._as_percentage(self.upstream_bugs, self.open_bugs)
 
     @property
     def watched_bugs_percentage(self):
-        if self.upstream_bugs:
-            return 100.0 * self.watched_bugs / self.upstream_bugs
-        else:
-            return 0.0
+        return self._as_percentage(self.watched_bugs, self.upstream_bugs)
 
     @property
     def row_class(self):
