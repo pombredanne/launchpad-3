@@ -409,6 +409,13 @@ class TestRunViaCron(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        self.useFixture(FeatureFixture({
+            'disclosure.access_mirror_triggers.removed': 'true',
+        }))
+        self.useFixture(disable_trigger_fixture())
+        super(TestRunViaCron, self).setUp()
+
     def _assert_run_cronscript(self, create_job):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
         # The job runs correctly and the requested bug subscriptions are
@@ -421,6 +428,11 @@ class TestRunViaCron(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             bug.subscribe(grantee, owner)
+        # Subscribing grantee has created an artifact grant so we need to
+        # revoke that to test the job.
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            getUtility(IAccessArtifactSource).find(
+                [bug]), [grantee])
 
         job, job_type = create_job(distro, bug, grantee, owner)
         transaction.commit()
@@ -459,8 +471,9 @@ class TestRunViaCron(TestCaseWithFactory):
         def create_job(distro, bug, grantee, owner):
             job = getUtility(IRemoveBugSubscriptionsJobSource).create(
                 [bug], owner)
-            removeSecurityProxy(bug).information_type = (
-                        InformationType.EMBARGOEDSECURITY)
+            with person_logged_in(owner):
+                bug.transitionToInformationType(
+                            InformationType.EMBARGOEDSECURITY, owner)
             return job, IRemoveBugSubscriptionsJobSource.getName()
 
         self._assert_run_cronscript(create_job)
