@@ -929,8 +929,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        removeSecurityProxy(bmp.source_branch).explicitly_private = True
-        removeSecurityProxy(bmp.target_branch).explicitly_private = True
+        for branch in (bmp.source_branch, bmp.target_branch):
+            removeSecurityProxy(branch).information_type = (
+                InformationType.USERDATA)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertFalse(bob in recipients)
@@ -1505,7 +1506,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         base_branch = self.factory.makeBranch(
             owner=owner, private=True, product=product)
         source_branch = self.factory.makeBranch(
-            stacked_on=base_branch, product=product)
+            stacked_on=base_branch, product=product, owner=owner)
         target_branch = self.factory.makeBranch(owner=owner, product=product)
         target_branch.product.setBranchVisibilityTeamPolicy(
             owner, BranchVisibilityRule.PRIVATE)

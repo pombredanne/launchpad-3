@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,6 +17,7 @@ from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
+from lp.registry.enums import InformationType
 from lp.services.job.model.job import Job
 from lp.services.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -249,7 +250,8 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def test_private_branch(self):
         # We don't generate templates for private branches.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         self.assertFalse(self.jobsource.generatesTemplates(branch))
 
     def test_scheduleTranslationTemplatesBuild_subscribed(self):

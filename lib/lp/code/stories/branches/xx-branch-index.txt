@@ -409,21 +409,6 @@ The stacked branch is initially public:
     >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
 
-We mark the stacked-on branch as private:
-
-    >>> admin_browser.open(stacked_on_url)
-    >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Keep branch confidential').selected = True
-    >>> admin_browser.getControl('Change Branch').click()
-
-Now the stacked branch is private:
-
-    >>> admin_browser.open(url)
-    >>> content = find_tag_by_id(admin_browser.contents, 'document')
-    >>> print extract_text(find_tag_by_id(content, 'privacy'))
-    This branch is private because it is stacked on a private branch.
-
-
 Navigation Context
 ..................
 
