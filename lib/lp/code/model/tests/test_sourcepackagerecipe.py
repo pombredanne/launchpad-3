@@ -50,6 +50,7 @@ from lp.code.model.sourcepackagerecipebuild import (
     )
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
@@ -529,7 +530,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))

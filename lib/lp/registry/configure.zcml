@@ -1070,7 +1070,7 @@
             interface="lp.registry.interfaces.milestonetag.IProjectGroupMilestoneTag"/>
     </class>
     <subscriber
-        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.registry.interfaces.product.IProduct lp.registry.interfaces.product.ILicensesModifiedEvent"
         handler="lp.registry.subscribers.product_licenses_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">

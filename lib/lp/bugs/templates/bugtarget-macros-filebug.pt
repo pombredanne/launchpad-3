@@ -330,11 +330,10 @@
         <script type="text/javascript">
             LPJS.use('lp.app.banner.privacy',  function(Y) {
                 Y.on('domready', function() {
-                var cfg = {
-                    notification_text: "This report will be private. "
-                    + "You can disclose it later."
-                };
-                var banner = new Y.lp.app.banner.privacy.PrivacyBanner(cfg);
+                    var notification_text = "This report will be private. " +
+                                            "You can disclose it later.";
+                    var banner = Y.lp.app.banner.privacy.getPrivacyBanner(
+                                     notification_text);
                 banner.show();
                 });
             });
@@ -358,13 +357,14 @@
                         }, "input[name='field.information_type']");
                 };
                 var setup_security_related = function() {
-                    var cfg = {
-                      notification_text: "This report will be private "
-                          + "because it is a security vulnerability. You "
-                          + "can disclose it later."
+                    var notification_text: "This report will be private " +
+                                           "because it is a security " +
+                                           "vulnerability. You can " +
+                                           "disclose it later.";
                     };
                     var privacy_ns = Y.lp.app.banner.privacy;
-                    var banner = new privacy_ns.PrivacyBanner(cfg);
+                    var banner = privacy_ns.getPrivacyBanner(
+                                     notification_text);
                     banner.render();
                     var sec = Y.one('[id="field.security_related"]');
                     sec.on('change', function() {

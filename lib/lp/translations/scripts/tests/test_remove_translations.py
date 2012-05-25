@@ -537,7 +537,7 @@ class TestRemoveTranslations(TestCase):
 
     def test_remove_unlicensed_none(self):
         # Removing translations whose submitters rejected our
-        # translations license does not affect translations by those who
+        # translations licence does not affect translations by those who
         # haven't answered the question yet.
         self._removeMessages(reject_license=True)
 
@@ -545,7 +545,7 @@ class TestRemoveTranslations(TestCase):
 
     def test_remove_unlicensed_when_licensed(self):
         # Removing translations whose submitters rejected our
-        # translations license does not affect translations by those who
+        # translations licence does not affect translations by those who
         # agreed to license.
         answer = TranslationRelicensingAgreement(
             person=self.nl_message.submitter, allow_relicensing=True)

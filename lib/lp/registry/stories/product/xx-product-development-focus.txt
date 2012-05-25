@@ -14,7 +14,9 @@ section on the product overview page.
     >>> eric = factory.makePerson(name='eric', email='eric@example.com')
     >>> fooix = factory.makeProduct(name='fooix', owner=eric)
     >>> branch = factory.makeBranch(owner=eric, product=fooix, name='trunk')
-    >>> # Make revisions for the branch so it has a codebrowse link.
+
+Make revisions for the branch so it has a codebrowse link.
+
     >>> factory.makeRevisionsForBranch(branch)
     >>> logout()
 
@@ -145,7 +147,9 @@ appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(branch).explicitly_private = True
+    >>> from lp.registry.enums import InformationType
+    >>> removeSecurityProxy(branch).information_type = (
+    ...     InformationType.USERDATA)
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/fooix')
