@@ -53,15 +53,20 @@ def filter_tests(list_name):
         # Read the tests, filtering out any blank lines.
         tests = filter(None, [line.strip() for line in open(list_name, 'rb')])
         test_lookup = {}
+        # Multiple unique testcases can be represented by a single id and they
+        # must be tracked separately.
         for layer_name, suite in tests_by_layer_name.iteritems():
             for testcase in suite:
-                test_lookup[testcase.id()] = (testcase, layer_name)
+                layer, testlist = test_lookup.setdefault(
+                    testcase.id(), (layer_name, []))
+                testlist.append(testcase)
 
         result = {}
         for testname in tests:
-            testcase, layer = test_lookup.get(testname, (None, None))
+            layer, testcases = test_lookup.get(testname, (None, None))
             if layer is not None:
                 suite = result.setdefault(layer, TestSuite())
-                suite.addTest(testcase)
+                for testcase in testcases:
+                    suite.addTest(testcase)
         return result
     return do_filter
