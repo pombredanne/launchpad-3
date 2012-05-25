@@ -346,7 +346,7 @@ class ILicensesModifiedEvent(Interface):
     """A Product's licenses were changed."""
 
     def __init__(self, product, user=None):
-        """Create an an event about a license change to a product.
+        """Create an an event about a licence change to a product.
 
         :param product: The product that was modified.
         :param user: The user who modified the object. The user comes from

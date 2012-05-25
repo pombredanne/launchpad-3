@@ -755,7 +755,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_project_reviewed=True):
-        """Set the licenses from a tuple of license enums.
+        """Set the licences from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
         """
