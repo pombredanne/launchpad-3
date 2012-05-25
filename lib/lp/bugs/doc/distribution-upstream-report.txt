@@ -282,21 +282,6 @@ And the total line:
     >>> print_numbers(view.total)
     5   4   3   3  80.0   60.0   100.0  good       good 1  2  0
 
-A Kubuntu view is not nearly as interesting, though:
-
-    >>> view = create_view(kubuntu, '+upstreamreport')
-    >>> view.initialize()
-    >>> for item in view.data:
-    ...     print_helpers(item)
-
-    >>> for item in view.data:
-    ...     print_numbers(item)
-
-Nada!
-
-    >>> print_numbers(view.total)
-    0   0   0   0   0.0    0.0   0.0            0  0  0
-
 
 Sorting the report
 ------------------
@@ -445,6 +430,3 @@ accordingly.
     bug_supervisor_name /@@/arrowBlank
     bugs_with_upstream_patches /@@/arrowBlank
     bugtracker_name /@@/arrowDown...
-
-PS: This page is actually browser-tested in pagetests.distribution-
-upstream-report. Look there for more details.
