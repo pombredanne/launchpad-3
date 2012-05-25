@@ -506,7 +506,6 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual((License.MIT, ), product.licenses)
         self.assertEqual(1, len(self.events))
         self.assertEqual(product, self.events[0].object)
-        self.assertEqual(['licenses'], self.events[0].edited_fields)
 
     def test_setLicense_also_sets_reviewed(self):
         # The project_reviewed attribute it set to False if the licenses

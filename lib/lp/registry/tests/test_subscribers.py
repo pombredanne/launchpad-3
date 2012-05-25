@@ -7,11 +7,11 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.product import License
+from lp.registry.model.product import LicensesModifiedEvent
 from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
@@ -26,24 +26,36 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
 
 
+class LicensesModifiedEventTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        event = LicensesModifiedEvent(product)
+        self.assertEqual(product.owner, event.user.person)
+        self.assertEqual(product, event.object)
+        self.assertEqual(product, event.object_before_modification)
+        self.assertEqual([], event.edited_fields)
+
+    def test_init_with_user(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        event = LicensesModifiedEvent(product, user=product.owner)
+        self.assertEqual(product.owner, event.user)
+
+
 class ProductLicensesModifiedTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_event(self, licenses, edited_fields='licenses'):
+    def make_product_event(self, licenses):
         product = self.factory.makeProduct(licenses=licenses)
         pop_notifications()
         login_person(product.owner)
-        event = ObjectModifiedEvent(
-            product, product, edited_fields, user=product.owner)
+        event = LicensesModifiedEvent(product, user=product.owner)
         return product, event
-
-    def test_product_licenses_modified_licenses_not_edited(self):
-        product, event = self.make_product_event(
-            [License.OTHER_PROPRIETARY], edited_fields='_owner')
-        product_licenses_modified(product, event)
-        notifications = pop_notifications()
-        self.assertEqual(0, len(notifications))
 
     def test_product_licenses_modified_licenses_common_license(self):
         product, event = self.make_product_event([License.MIT])

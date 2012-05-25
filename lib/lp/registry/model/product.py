@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LicensesModifiedEvent',
     'Product',
     'ProductSet',
     'ProductWithLicenses',
@@ -127,6 +128,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
+    ILicensesModifiedEvent,
     IProduct,
     IProductSet,
     License,
@@ -186,6 +188,15 @@ from lp.translations.model.hastranslationimports import (
     )
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
+
+
+class LicensesModifiedEvent(ObjectModifiedEvent):
+    """See `ILicensesModifiedEvent`."""
+    implements(ILicensesModifiedEvent)
+
+    def __init__(self, product, user=None):
+        super(LicensesModifiedEvent, self).__init__(
+            product, product, [], user)
 
 
 def get_license_status(license_approved, project_reviewed, licenses):
@@ -788,8 +799,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 registrant=lp_janitor, purchaser=lp_janitor,
                 sales_system_id=sales_system_id, whiteboard=whiteboard)
             get_property_cache(self).commercial_subscription = subscription
-        # Do not use a snapshot because the past is unintersting.
-        notify(ObjectModifiedEvent(self, self, edited_fields=['licenses']))
+        notify(LicensesModifiedEvent(self))
 
     licenses = property(_getLicenses, _setLicenses)
 

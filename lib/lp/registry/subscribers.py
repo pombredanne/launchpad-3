@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Functions and classes that are subscribed to registry events."""
 
@@ -16,7 +16,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonViewRestricted,
     )
 from lp.registry.interfaces.product import License
 from lp.services.config import config
@@ -33,12 +32,8 @@ from lp.services.webapp.publisher import (
 
 
 def product_licenses_modified(product, event):
-    """Send a notification if licences changed and a licence is special."""
-    if not event.edited_fields:
-        return
-    licenses_changed = 'licenses' in event.edited_fields
-    needs_notification = LicenseNotification.needs_notification(product)
-    if licenses_changed and needs_notification:
+    """Send a notification if licences changed and a license is special."""
+    if LicenseNotification.needs_notification(product):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
         notification.send()

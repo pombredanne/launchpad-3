@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ILicensesModifiedEvent',
     'InvalidProductName',
     'IProduct',
     'IProductModerateRestricted',
@@ -339,6 +340,18 @@ class License(DBEnumeratedType):
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
+
+
+class ILicensesModifiedEvent(Interface):
+    """A Product's licenses were changed."""
+
+    def __init__(self, product, user=None):
+        """Create an an event about a license change to a product.
+
+        :param product: The product that was modified.
+        :param user: The user who modified the object. The user comes from
+            the current interaction if the user is not provided.
+        """
 
 
 class IProductDriverRestricted(Interface):

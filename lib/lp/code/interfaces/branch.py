@@ -1120,11 +1120,14 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
-    def transitionToInformationType(information_type, who):
-         """Set the information type for this branch.
+    def transitionToInformationType(information_type, who,
+                                    verify_policy=True):
+        """Set the information type for this branch.
 
-        :information_type: The `InformationType` to transition to.
-        :who: The `IPerson` who is making the change.
+        :param information_type: The `InformationType` to transition to.
+        :param who: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IBranchNamespacePolicy`.
         """
 
 
