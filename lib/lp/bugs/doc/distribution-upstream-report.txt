@@ -197,31 +197,6 @@ properties offered by BugReportData.
     ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
     ...     watched_bugs=60)
 
-Deltas
-......
-
-BugReportData also offers a set of *_delta properties along with the
-*_percentage properties.
-
-BugReportData.triaged_bugs_delta is the difference between the number of
-open bugs and the number of triaged bugs.
-
-    >>> bug_data.triaged_bugs_delta
-    40
-
-BugReportData.upstream bugs_delta is the difference between the number
-of open bugs and the number of bugs forwarded upstream.
-
-    >>> bug_data.upstream_bugs_delta
-    20
-
-BugReportData.watched_bugs_delta is the difference between the number of
-upstream bugs and the number of bugs that have a bug watch against an
-upstream bug.
-
-    >>> bug_data.watched_bugs_delta
-    10
-
 
 Classes
 .......

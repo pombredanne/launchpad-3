@@ -102,6 +102,12 @@ class BugReportData:
         else:
             return ''
 
+    @staticmethod
+    def _as_value_class(percentage, threshold):
+        if percentage > threshold:
+            return "good"
+        return ""
+
     @property
     def triaged_bugs_class(self):
         if self.triaged_bugs_percentage > self.TRIAGED_THRESHOLD:

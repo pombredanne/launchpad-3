@@ -59,6 +59,18 @@ class BugReportDataTestCase(TestCase):
         self.assertEqual(55.56, bug_data._as_percentage(50, 90))
         self.assertEqual(0.0, bug_data._as_percentage(50, 0))
 
+    def test_delta_properties(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual(40, bug_data.triaged_bugs_delta)
+        self.assertEqual(20, bug_data.upstream_bugs_delta)
+        self.assertEqual(10, bug_data.watched_bugs_delta)
+
+    def test_as_value_class(self):
+        bug_data = self.make_bug_report_data()
+        self.assertEqual('good', bug_data._as_value_class(60, 50))
+        self.assertEqual('', bug_data._as_value_class(50, 50))
+        self.assertEqual('', bug_data._as_value_class(40, 50))
+
 
 class TestDistributionUpstreamReport(TestCaseWithFactory):
 
