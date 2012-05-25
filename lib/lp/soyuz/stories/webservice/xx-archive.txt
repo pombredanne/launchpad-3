@@ -1172,6 +1172,18 @@ error is returned.
     foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
+Suppressing notifications
+-------------------------
+
+The owner of the archive can suppress notifications on subscription
+changes over the API.
+
+    >>> private_archive = cprov_webservice.get(
+    ...     cprov_private_ppa['self_link']).jsonBody()
+    >>> private_archive['suppress_subscription_notifications'] = True
+    >>> print modify_archive(cprov_webservice, private_archive)
+    HTTP/1.1 209 ...
+    ...
 
 Archive dependencies
 ====================

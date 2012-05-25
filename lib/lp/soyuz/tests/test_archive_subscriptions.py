@@ -107,14 +107,9 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
             notifications[0]['to'])
 
     def test_new_commercial_subscription_no_email(self):
-        # As per bug 611568, an email is not sent for commercial PPAs.
-        with celebrity_logged_in('commercial_admin'):
-            self.archive.suppress_subscription_notifications = True
-
-        # Logging in as a celebrity team causes an email to be sent
-        # because a person is added as a member of the team, so this
-        # needs to be cleared out before calling newSubscription().
-        pop_notifications()
+        # As per bug 611568, an email is not sent for
+        # suppress_subscription_notifications PPAs.
+        self.archive.suppress_subscription_notifications = True
 
         self.archive.newSubscription(
             self.subscriber, registrant=self.archive.owner)

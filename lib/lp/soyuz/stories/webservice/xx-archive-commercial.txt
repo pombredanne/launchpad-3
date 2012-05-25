@@ -2,18 +2,7 @@
 Using the webservice with commercial archives
 =============================================
 
-(See also soyuz/stories/webservice/xx-archive.txt and
-soyuz/doc/archive-commercial.txt)
-
-Start by making a commercial PPA that we can fetch via the webservice:
-
-    >>> login("admin@canonical.com")
-    >>> ppa = factory.makeArchive(private=True, name="cpppa",
-    ...     suppress_subscription_notifications=True)
-    >>> import transaction
-    >>> transaction.commit()
-    >>> logout()
-
+(See also soyuz/stories/webservice/xx-archive.txt)
 
 == Software Center Agent ==
 
@@ -26,7 +15,7 @@ Create the P3A where software_center_agent is an owner.
     >>> owner = factory.makePerson()
     >>> ppa_owner = factory.makeTeam(members=[celebrity, owner])
     >>> archive = factory.makeArchive(name='commercial', private=True,
-    ...     owner=ppa_owner)
+    ...     owner=ppa_owner, suppress_subscription_notifications=True)
     >>> url = "/~%s/+archive/commercial" % archive.owner.name
     >>> person = factory.makePerson(name='joe')
     >>> logout()
