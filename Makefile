@@ -401,10 +401,13 @@ else
 endif
 
 lxc-clean: clean_js clean_mailman clean_buildout clean_logs
+	# XXX: BradCrittenden 2012-05-25 bug=1004514:
 	# It is important for parallel tests inside LXC that the
 	# $(CODEHOSTING_ROOT) directory not be completely removed.
 	# This target removes its contents but not the directory and
-	# it does everything expected from a clean target.
+	# it does everything expected from a clean target.  When the
+	# referenced bug is fixed, this target may be reunited with
+	# the 'clean' target.
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
