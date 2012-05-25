@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of debian installer tarballs."""
@@ -21,9 +21,9 @@ from lp.archivepublisher.customupload import (
 
 class DebianInstallerAlreadyExists(CustomUploadError):
     """A build for this type, architecture, and version already exists."""
-    def __init__(self, build_type, arch, version):
-        message = ('%s build %s for architecture %s already exists' %
-                   (build_type, arch, version))
+    def __init__(self, arch, version):
+        message = ('installer build %s for architecture %s already exists' %
+                   (arch, version))
         CustomUploadError.__init__(self, message)
 
 
@@ -38,14 +38,11 @@ class DebianInstallerUpload(CustomUpload):
 
       * BASE: base name (usually 'debian-installer-images');
       * VERSION: encoded version (something like '20061102ubuntu14');
-      * if the version string contains '.0.' we assume it is a
-        'daily-installer', otherwise, it is a normal 'installer';
       * ARCH: targeted architecture tag ('i386', 'amd64', etc);
 
-    The contents are extracted in the archive, respecting its type
-    ('installer' or 'daily-installer'), in the following path:
+    The contents are extracted in the archive in the following path:
 
-         <ARCHIVE>/dists/<SUITE>/main/<TYPE>-<ARCH>/<VERSION>
+         <ARCHIVE>/dists/<SUITE>/main/installer-<ARCH>/<VERSION>
 
     A 'current' symbolic link points to the most recent version.
     """
@@ -57,19 +54,12 @@ class DebianInstallerUpload(CustomUpload):
         self.version = components[1]
         self.arch = components[2].split('.')[0]
 
-        # Is this a full build or a daily build?
-        if '.0.' not in self.version:
-            build_type = 'installer'
-        else:
-            build_type = 'daily-installer'
-
         self.targetdir = os.path.join(
             archive_root, 'dists', distroseries, 'main',
-            '%s-%s' % (build_type, self.arch))
+            'installer-%s' % self.arch)
 
         if os.path.exists(os.path.join(self.targetdir, self.version)):
-            raise DebianInstallerAlreadyExists(
-                build_type, self.arch, self.version)
+            raise DebianInstallerAlreadyExists(self.arch, self.version)
 
     def extract(self):
         CustomUpload.extract(self)

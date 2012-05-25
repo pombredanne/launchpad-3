@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -38,6 +38,7 @@ from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.lpstorm import IStore
@@ -176,7 +177,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
             self.assertTrue(check_permission('launchpad.View', job))
-        removeSecurityProxy(branch).explicitly_private = True
+        removeSecurityProxy(branch).information_type = (
+            InformationType.USERDATA)
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
             self.assertFalse(check_permission('launchpad.View', job))

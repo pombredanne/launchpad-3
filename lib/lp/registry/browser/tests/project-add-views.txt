@@ -114,8 +114,8 @@ The search results are displayed on the page.
     firefox
     mozilla
 
-The project's license has not yet been selected, so posting this form will
-result in an error, since the license is required.
+The project's licence has not yet been selected, so posting this form will
+result in an error, since the licence is required.
 
     >>> form.update({
     ...     'field.__visited_steps__': '%s|%s' % (
@@ -128,10 +128,10 @@ result in an error, since the license is required.
     >>> view.initialize()
     >>> for error in view.errors:
     ...     print error
-    You must select at least one license.  If you select Other/Proprietary
-    or Other/OpenSource you must include a description of the license.
+    You must select at least one licence.  If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the licence.
 
-When an open source license is selected, the project is created.
+When an open source licence is selected, the project is created.
 
     # The form keys have the 'field.' prefix here because the form data will
     # be processed.

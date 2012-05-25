@@ -497,8 +497,8 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
         self.assertIs(True, job._is_proprietary)
 
     def test_email_template_name(self):
-        # Redefine the inherited test to verify the open source license case.
-        # The state of the product's license defines the email_template_name.
+        # Redefine the inherited test to verify the open source licence case.
+        # The state of the product's licence defines the email_template_name.
         product, reviewer = self.make_notification_data(licenses=[License.MIT])
         job = CommercialExpiredJob.create(product, reviewer)
         self.assertEqual(
@@ -506,7 +506,7 @@ class CommercialExpiredJobTestCase(CommericialExpirationMixin,
             job.email_template_name)
 
     def test_email_template_name_proprietary(self):
-        # The state of the product's license defines the email_template_name.
+        # The state of the product's licence defines the email_template_name.
         product, reviewer = self.make_notification_data(
             licenses=[License.OTHER_PROPRIETARY])
         job = CommercialExpiredJob.create(product, reviewer)

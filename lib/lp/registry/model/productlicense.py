@@ -19,7 +19,7 @@ from lp.services.database.sqlbase import SQLBase
 
 
 class ProductLicense(SQLBase):
-    """A product's license."""
+    """A product's licence."""
     implements(IProductLicense)
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)

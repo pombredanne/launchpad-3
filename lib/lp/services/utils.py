@@ -81,7 +81,7 @@ def base(number, radix):
     """Convert 'number' to an arbitrary base numbering scheme, 'radix'.
 
     This function is based on work from the Python Cookbook and is under the
-    Python license.
+    Python licence.
 
     Inverse function to int(str, radix) and long(str, radix)
     """

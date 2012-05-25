@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -370,6 +370,8 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackagePublishingHistory, 'ancestor',
     ISourcePackagePublishingHistory)
+patch_reference_property(
+    ISourcePackagePublishingHistory, 'packageupload', IPackageUpload)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
