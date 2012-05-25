@@ -30,6 +30,12 @@ from lp.soyuz.model.queue import PackageUploadCustom
 class CustomUploadsCopier:
     """Copy `PackageUploadCustom` objects into a new `DistroSeries`."""
 
+    # This is a marker as per the comment in lib/lp/soyuz/enums.py:
+    ##CUSTOMFORMAT##
+    # Essentially, if you alter anything to do with what custom formats are,
+    # what their tags are, or anything along those lines, you should grep
+    # for the marker in the source tree and fix it up in every place so
+    # marked.
     copyable_types = [
         PackageUploadCustomFormat.DEBIAN_INSTALLER,
         PackageUploadCustomFormat.DIST_UPGRADER,
