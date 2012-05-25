@@ -268,6 +268,25 @@ of bugs with patches for upstream increases for linux-source-2.6.15.
     thunderbird          Missing corresponding project.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0  -
 
+Finally, you can associate default branches to products. This is done by
+specifying a branch for the product's main_series:
+
+    >>> admin_browser.open("http://launchpad.dev/firefox/trunk/+linkbranch")
+    >>> branch_control = admin_browser.getControl(name="field.branch")
+    >>> branch_control.value = "~name12/firefox/main"
+    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/firefox/trunk'
+
+The report now renders an icon and a link to the branch page:
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> browser.getLink('branch').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/firefox/main'
+
+(This means that anyone can use bzr branch lp:firefox to pull this code.)
+
 
 Empty distributions
 -------------------
