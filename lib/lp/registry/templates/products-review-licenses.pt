@@ -44,7 +44,7 @@
     <table id="product-listing" class="listing">
       <thead>
         <th style="width: 45em">Project information</th>
-        <th>Status and Licenses</th>
+        <th>Status and Licences</th>
       </thead>
       <tbody>
         <div tal:repeat="product batch/currentBatch"

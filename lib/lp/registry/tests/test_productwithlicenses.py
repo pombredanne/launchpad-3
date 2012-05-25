@@ -89,7 +89,7 @@ class TestProductWithLicenses(TestCaseWithFactory):
 
     def test_licenses_column_aggregates(self):
         # Adding a licensing column for a product with multiple licenses
-        # still finds a single product, not one per license.
+        # still finds a single product, not one per licence.
         licenses = [License.AFFERO, License.GNU_GPL_V3]
         product = self.factory.makeProduct(licenses=licenses)
         column = ProductWithLicenses.composeLicensesColumn()

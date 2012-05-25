@@ -111,10 +111,10 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         entries = naked_product.reviewer_whiteboard.split('\n')
         whiteboard, stamp = entries[-1].rsplit(' ', 1)
         self.assertEqual(
-            'User notified of license policy on', whiteboard)
+            'User notified of licence policy on', whiteboard)
 
     def verify_user_email(self, notification):
-        # Verify that the user was sent an email about the license change.
+        # Verify that the user was sent an email about the licence change.
         self.assertEqual(
             'License information for ball in Launchpad',
             notification['Subject'])
@@ -126,7 +126,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
             notification['Reply-To'])
 
     def test_send_known_license(self):
-        # A known license does not generate an email.
+        # A known licence does not generate an email.
         product, user = self.make_product_user([License.GNU_GPL_V2])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -134,7 +134,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertEqual(0, len(pop_notifications()))
 
     def test_send_other_dont_know(self):
-        # An Other/I don't know license sends one email.
+        # An Other/I don't know licence sends one email.
         product, user = self.make_product_user([License.DONT_KNOW])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -145,7 +145,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_send_other_open_source(self):
-        # An Other/Open Source license sends one email.
+        # An Other/Open Source licence sends one email.
         product, user = self.make_product_user([License.OTHER_OPEN_SOURCE])
         notification = LicenseNotification(product, user)
         result = notification.send()
@@ -156,7 +156,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_send_other_proprietary(self):
-        # An Other/Proprietary license sends one email.
+        # An Other/Proprietary licence sends one email.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
         notification = LicenseNotification(product, user)
         result = notification.send()

@@ -355,14 +355,14 @@ class CommercialExpiredJob(CommericialExpirationMixin, ProductNotificationJob):
 
     @property
     def _is_proprietary(self):
-        """Does the product have a proprietary license?"""
+        """Does the product have a proprietary licence?"""
         return License.OTHER_PROPRIETARY in self.product.licenses
 
     @property
     def email_template_name(self):
         """See `IProductNotificationJob`.
 
-        The email template is determined by the product's licenses.
+        The email template is determined by the product's licences.
         """
         if self._is_proprietary:
             return 'product-commercial-subscription-expired-proprietary'

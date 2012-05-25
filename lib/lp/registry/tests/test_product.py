@@ -460,7 +460,7 @@ class ProductAttributeCacheTestCase(TestCaseWithFactory):
 
 
 class ProductLicensingTestCase(TestCaseWithFactory):
-    """Test the rules of licenses and commercial subscriptions."""
+    """Test the rules of licences and commercial subscriptions."""
 
     layer = DatabaseFunctionalLayer
     event_listener = None
@@ -484,8 +484,8 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual((License.GNU_GPL_V2, License.MIT), product.licenses)
 
     def test_setLicense_handles_no_change(self):
-        # The project_reviewed property is not reset, if the new licenses
-        # are identical to the current licenses.
+        # The project_reviewed property is not reset, if the new licences
+        # are identical to the current licences.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with celebrity_logged_in('registry_experts'):
             product.project_reviewed = True
@@ -497,8 +497,8 @@ class ProductLicensingTestCase(TestCaseWithFactory):
         self.assertEqual([], self.events)
 
     def test_setLicense(self):
-        # The project_reviewed property is not reset, if the new licenses
-        # are identical to the current licenses.
+        # The project_reviewed property is not reset, if the new licences
+        # are identical to the current licences.
         product = self.factory.makeProduct()
         self.setup_event_listener()
         with person_logged_in(product.owner):
@@ -531,14 +531,14 @@ class ProductLicensingTestCase(TestCaseWithFactory):
             self.assertIs(False, product.project_reviewed)
 
     def test_setLicense_without_empty_licenses_error(self):
-        # A project must have at least one license.
+        # A project must have at least one licence.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with person_logged_in(product.owner):
             self.assertRaises(
                 ValueError, setattr, product, 'licenses', [])
 
     def test_setLicense_without_non_licenses_error(self):
-        # A project must have at least one license.
+        # A project must have at least one licence.
         product = self.factory.makeProduct(licenses=[License.MIT])
         with person_logged_in(product.owner):
             self.assertRaises(

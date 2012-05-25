@@ -32,7 +32,7 @@ from lp.services.webapp.publisher import (
 
 
 def product_licenses_modified(product, event):
-    """Send a notification if licenses changed and a license is special."""
+    """Send a notification if licences changed and a license is special."""
     if LicenseNotification.needs_notification(product):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
@@ -41,7 +41,7 @@ def product_licenses_modified(product, event):
 
 
 class LicenseNotification:
-    """Send notification about special licenses to the user."""
+    """Send notification about special licences to the user."""
 
     def __init__(self, product, user):
         self.product = product
@@ -83,9 +83,9 @@ class LicenseNotification:
         return textwrap.fill(message, 72)
 
     def send(self):
-        """Send a message to the user about the product's license."""
+        """Send a message to the user about the product's licence."""
         if not self.needs_notification(self.product):
-            # The project has a common license.
+            # The project has a common licence.
             return False
         user_address = format_address(
             self.user.displayname, self.user.preferredemail.email)
@@ -100,7 +100,7 @@ class LicenseNotification:
             product_url=canonical_url(self.product),
             commercial_use_expiration=self.getCommercialUseMessage(),
             )
-        # Email the user about license policy.
+        # Email the user about licence policy.
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
@@ -110,12 +110,12 @@ class LicenseNotification:
         simple_sendmail(
             from_address, user_address,
             subject, message, headers={'Reply-To': commercial_address})
-        # Inform that Launchpad recognized the license change.
+        # Inform that Launchpad recognized the licence change.
         self._addLicenseChangeToReviewWhiteboard()
         return True
 
     def display(self):
-        """Show a message in a browser page about the product's license."""
+        """Show a message in a browser page about the product's licence."""
         request = get_current_browser_request()
         message = self.getCommercialUseMessage()
         if request is None or message == '':
@@ -137,7 +137,7 @@ class LicenseNotification:
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
         now = self._formatDate()
-        whiteboard = 'User notified of license policy on %s.' % now
+        whiteboard = 'User notified of licence policy on %s.' % now
         naked_product = removeSecurityProxy(self.product)
         if naked_product.reviewer_whiteboard is None:
             naked_product.reviewer_whiteboard = whiteboard
