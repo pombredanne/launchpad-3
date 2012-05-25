@@ -303,7 +303,7 @@ There is a deprecated section that is generally not visible...
     >>> license_widget = LicenseWidget(licenses_field, vtype, request)
     >>> html = license_widget()
     >>> print extract_text(find_tag_by_id(html, 'deprecated'))
-    Perl License
+    Perl Licence
 
 One licence, the GNU GPL v2, is selected.
 
@@ -330,10 +330,10 @@ One licence, the GNU GPL v2, is selected.
     set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
-    [ ] Apache License ...
+    [ ] Apache Licence ...
     [ ] GNU Affero GPL v3 view licence
     [ ] GNU LGPL v2.1 view licence
-    [ ] Simplified BSD License view licence
+    [ ] Simplified BSD Licence view licence
     [X] GNU GPL v2 view licence
     [ ] GNU LGPL v3 view licence
     [ ] Creative Commons - No Rights Reserved view licence
@@ -351,96 +351,20 @@ A second licence is selected.
      <DBItem License.GNU_LGPL_V2_1, (150) GNU LGPL v2.1>]
 
     >>> print_checked_items(license_widget())
-    [ ] Apache License ...
+    [ ] Apache Licence ...
     [ ] GNU Affero GPL v3 view licence
     [X] GNU LGPL v2.1 view licence
-    [ ] Simplified BSD License view licence
+    [ ] Simplified BSD Licence view licence
     [X] GNU GPL v2 view licence
     [ ] GNU LGPL v3 view licence
     [ ] Creative Commons - No Rights Reserved view licence
     [ ] GNU GPL v3 view licence
     ...
 
-There are three Creative Commons licences.
-
-    >>> form['field.licenses'] = []
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [ ] Creative Commons - No Rights Reserved ...
-    ...
-    [ ] Creative Commons - Attribution ...
-    ...
-    [ ] Creative Commons - Attribution Share Alike ...
-    ...
-
-Any of the three Creative Commons licences can be selected.
-
-    >>> form['field.licenses'] = ['CC_BY', 'CC_BY_SA', 'CC_0']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Creative Commons - No Rights Reserved ...
-    ...
-    [X] Creative Commons - Attribution ...
-    ...
-    [X] Creative Commons - Attribution Share Alike ...
-    ...
-
-The BSD License can be selected.
-
-    >>> form['field.licenses'] = ['BSD']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Simplified BSD License ...
-    ...
-
-There's also a placeholder for when a user knows they want an open source
-licence but hasn't yet decided on one.  In this case, the user should not be
-blocked from creating their project.
-
-    >>> form['field.licenses'] = ['DONT_KNOW']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] I don't know yet
-    ...
-
-There are two Perl-inspired Artistic licences.  The first is the original 1.0
-license which most of Perl-land is licensed by, and there's the 2.0 version
-that is used by newer project such as Parrot.
-
-    >>> form['field.licenses'] = ['ARTISTIC', 'ARTISTIC_2_0']
-    >>> request = LaunchpadTestRequest(form=form)
-    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
-
-    >>> print_checked_items(license_widget())
-    [ ] Apache License ...
-    ...
-    [X] Artistic License 1.0 ...
-    ...
-    [X] Artistic License 2.0 ...
-    ...
-
 Many licences have links to the official pages describing their licences.
 
     >>> print_checked_items(license_widget(), links=True)
     [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
-    [ ] GNU LGPL v2.1 ... <http://www.opensource.org/licenses/lgpl-2.1.php>
-    [ ] GNU Affero GPL v3 ... <http://www.opensource.org/licenses/agpl-v3...>
     ...
 
 But not all of them.

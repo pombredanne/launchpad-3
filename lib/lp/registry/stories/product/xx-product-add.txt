@@ -154,7 +154,7 @@ interested in being the project maintainer for the long run.
     >>> user_browser.getControl('Summary').value = (
     ...     'Kitty Hawk Air Traffic Simulator')
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('Python License').click()
+    >>> user_browser.getControl('Python Licence').click()
     >>> disclaim = user_browser.getControl(name='field.disclaim_maintainer')
     >>> disclaim.value = ['checked']
     >>> user_browser.getControl('Complete Registration').click()

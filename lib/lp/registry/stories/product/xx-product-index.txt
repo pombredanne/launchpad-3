@@ -143,6 +143,7 @@ If the project doesn't qualify for free hosting, or if it doesn't have
 much time left on its commercial subscription, a portlet is displayed to
 direct the owner to purchase a subscription.
 
+    >>> firefox = Product.selectOneBy(name="firefox")
     >>> ignored = login_person(firefox.owner)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
     >>> flush_database_updates()
