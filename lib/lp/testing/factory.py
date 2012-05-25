@@ -1127,7 +1127,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 InformationType.PUBLIC)
         if information_type is not None:
             removeSecurityProxy(branch).transitionToInformationType(
-                information_type, branch.owner, verify_policy=False)
+                information_type, registrant, verify_policy=False)
         if stacked_on is not None:
             removeSecurityProxy(branch).branchChanged(
                 removeSecurityProxy(stacked_on).unique_name, 'rev1', None,

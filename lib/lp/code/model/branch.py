@@ -1230,7 +1230,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if self.information_type not in PRIVATE_INFORMATION_TYPES:
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
             return False

@@ -2341,7 +2341,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         self.assertEqual(
             stacked_on.information_type, branch.information_type)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
         # A private branch stacked on a public branch is private.
