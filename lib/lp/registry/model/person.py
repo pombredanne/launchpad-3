@@ -2979,8 +2979,7 @@ class Person(
         # the PPA.  This is not true in general, and particularly not for
         # teams.  Instead, both the acting user and the target of the PPA
         # creation ought to be passed through.
-        errors = Archive.validatePPA(
-            self, name, private, suppress_subscription_notifications)
+        errors = Archive.validatePPA(self, name, private)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
