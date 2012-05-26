@@ -4,7 +4,8 @@ Using the webservice with commercial archives
 
 (See also soyuz/stories/webservice/xx-archive.txt)
 
-== Software Center Agent ==
+Software Center Agent
+---------------------
 
 Create the P3A where software_center_agent is an owner.
 

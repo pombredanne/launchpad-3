@@ -9,7 +9,6 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
-    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
