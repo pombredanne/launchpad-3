@@ -1,4 +1,4 @@
-<distribution-upstream-bug-report
+<distribution-upstream-report
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -18,7 +18,7 @@
 
   <div metal:fill-slot="heading">
     <h1>
-      Upstream bug report for
+      Upstream report for
       <tal:distro replace="context/displayname" />
     </h1>
   </div>
@@ -295,4 +295,4 @@
     </div>
   </div>
 
-</distribution-upstream-bug-report>
+</distribution-upstream-report>
