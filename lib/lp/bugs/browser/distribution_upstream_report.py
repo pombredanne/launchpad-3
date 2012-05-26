@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionUpstreamBugReport',
+    'DistributionUpstreamReport',
     ]
 
 from operator import attrgetter
@@ -68,26 +68,24 @@ class BugReportData:
         self.watched_bugs = watched_bugs
         self.bugs_with_upstream_patches = bugs_with_upstream_patches
 
-    @property
-    def triaged_bugs_percentage(self):
-        if self.open_bugs:
-            return 100.0 * self.triaged_bugs / self.open_bugs
+    @staticmethod
+    def _as_percentage(number, total):
+        if total:
+            return round(100.0 * number / total, 2)
         else:
             return 0.0
+
+    @property
+    def triaged_bugs_percentage(self):
+        return self._as_percentage(self.triaged_bugs, self.open_bugs)
 
     @property
     def upstream_bugs_percentage(self):
-        if self.open_bugs:
-            return 100.0 * self.upstream_bugs / self.open_bugs
-        else:
-            return 0.0
+        return self._as_percentage(self.upstream_bugs, self.open_bugs)
 
     @property
     def watched_bugs_percentage(self):
-        if self.upstream_bugs:
-            return 100.0 * self.watched_bugs / self.upstream_bugs
-        else:
-            return 0.0
+        return self._as_percentage(self.watched_bugs, self.upstream_bugs)
 
     @property
     def row_class(self):
@@ -104,23 +102,26 @@ class BugReportData:
         else:
             return ''
 
-    @property
-    def triaged_bugs_class(self):
-        if self.triaged_bugs_percentage > self.TRIAGED_THRESHOLD:
+    @staticmethod
+    def _as_value_class(percentage, threshold):
+        if percentage > threshold:
             return "good"
         return ""
+
+    @property
+    def triaged_bugs_class(self):
+        return self._as_value_class(
+            self.triaged_bugs_percentage, self.TRIAGED_THRESHOLD)
 
     @property
     def upstream_bugs_class(self):
-        if self.upstream_bugs_percentage > self.UPSTREAM_THRESHOLD:
-            return "good"
-        return ""
+        return self._as_value_class(
+            self.upstream_bugs_percentage, self.UPSTREAM_THRESHOLD)
 
     @property
     def watched_bugs_class(self):
-        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
-            return "good"
-        return ""
+        return self._as_value_class(
+            self.watched_bugs_percentage, self.WATCH_THRESHOLD)
 
     @property
     def triaged_bugs_delta(self):
@@ -250,8 +251,8 @@ class PackageBugReportData(BugReportData):
             dsp_bugs_url, bugs_with_upstream_patches_filter_url)
 
 
-class DistributionUpstreamBugReport(LaunchpadView):
-    """Implements the actual upstream bug report.
+class DistributionUpstreamReport(LaunchpadView):
+    """Implements the actual upstream report.
 
     Most of the work is actually done in the
     getPackagesAndPublicUpstreamBugCounts API, and in the *Data classes
@@ -286,7 +287,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Upstream Bug Report for %s' % self.context.title
+        return 'Upstream Report for %s' % self.context.title
 
     @property
     def sort_order(self):
@@ -363,7 +364,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
-        # The upstream bug report is not useful if the distibution
+        # The upstream report is not useful if the distibution
         # does not track its bugs on Lauchpad or if it does not have a
         # current distroseries.
         self.has_upstream_report = (
