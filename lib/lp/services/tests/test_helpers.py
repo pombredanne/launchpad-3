@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -6,7 +6,7 @@ from textwrap import dedent
 import unittest
 
 from lp.services import helpers
-from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 
 
 def make_test_tarball_1():

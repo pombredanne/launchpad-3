@@ -15,6 +15,11 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.traversing.browser.absoluteurl import absoluteURL
 
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     InformationType,
     SharingPermission,
@@ -26,11 +31,13 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyGrantSource,
     IAccessPolicySource,
     )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sharingservice import ISharingService
 from lp.registry.model.person import Person
 from lp.services.features import getFeatureFlag
+from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import available_with_permission
 
 
@@ -53,11 +60,33 @@ class SharingService:
         return bool(getFeatureFlag(
             'disclosure.enhanced_sharing.writable'))
 
-    def getSharedArtifacts(self, pillar, person):
+    def getSharedArtifacts(self, pillar, person, user):
+        """See `ISharingService`."""
         policies = getUtility(IAccessPolicySource).findByPillar([pillar])
         flat_source = getUtility(IAccessPolicyGrantFlatSource)
-        return [a for a in
-            flat_source.findArtifactsByGrantee(person, policies)]
+        bug_ids = set()
+        branch_ids = set()
+        for artifact in flat_source.findArtifactsByGrantee(person, policies):
+            if artifact.bug_id:
+                bug_ids.add(artifact.bug_id)
+            elif artifact.branch_id:
+                branch_ids.add(artifact.branch_id)
+
+        # Load the bugs.
+        bugtasks = []
+        if bug_ids:
+            param = BugTaskSearchParams(user=user, bug=any(*bug_ids))
+            param.setTarget(pillar)
+            bugtasks = list(getUtility(IBugTaskSet).search(param))
+        # Load the branches.
+        branches = []
+        if branch_ids:
+            all_branches = getUtility(IAllBranches)
+            wanted_branches = all_branches.visibleByUser(user).withIds(
+                *branch_ids)
+            branches = list(wanted_branches.getBranches())
+
+        return bugtasks, branches
 
     def getInformationTypes(self, pillar):
         """See `ISharingService`."""

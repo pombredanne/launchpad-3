@@ -105,6 +105,9 @@ from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
+from lp.translations.scripts.scrub_pofiletranslator import (
+    ScrubPOFileTranslator,
+    )
 
 
 ONE_DAY_IN_SECONDS = 24 * 60 * 60
@@ -1418,6 +1421,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,

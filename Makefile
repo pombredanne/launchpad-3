@@ -137,13 +137,15 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build combobuild logs clean_logs
+codehosting-dir:
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+
+inplace: build combobuild logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
 		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
@@ -398,7 +400,14 @@ else
 	$(RM) -r lib/mailman
 endif
 
-clean: clean_js clean_mailman clean_buildout clean_logs
+lxc-clean: clean_js clean_mailman clean_buildout clean_logs
+	# XXX: BradCrittenden 2012-05-25 bug=1004514:
+	# It is important for parallel tests inside LXC that the
+	# $(CODEHOSTING_ROOT) directory not be completely removed.
+	# This target removes its contents but not the directory and
+	# it does everything expected from a clean target.  When the
+	# referenced bug is fixed, this target may be reunited with
+	# the 'clean' target.
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -411,8 +420,9 @@ clean: clean_js clean_mailman clean_buildout clean_logs
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
+	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
-	$(RM) -r $(CODEHOSTING_ROOT)
+	$(RM) -r $(CODEHOSTING_ROOT)/*
 	$(RM) -r $(APIDOC_DIR)
 	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) -r build
@@ -437,6 +447,8 @@ clean: clean_js clean_mailman clean_buildout clean_logs
 		$(RM) -r /var/tmp/launchpad_mailqueue; \
 	fi
 
+clean: lxc-clean
+	$(RM) -r $(CODEHOSTING_ROOT)
 
 realclean: clean
 	$(RM) TAGS tags
@@ -469,8 +481,8 @@ copy-apache-config:
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/local-launchpad
-	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
-	chown -R $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \

@@ -25,10 +25,6 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
@@ -45,7 +41,6 @@ from lazr.restful import (
     )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
-import pytz
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
@@ -107,7 +102,7 @@ from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 from lp.services.searchbuilder import (
     any,
-    greater_than,
+    not_equals,
     )
 from lp.services.webapp import (
     canonical_url,
@@ -425,39 +420,21 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5, when=None):
-        """Return the ten most recently fixed bugs."""
-        if when is None:
-            when = datetime.now(pytz.timezone('UTC'))
-        date_closed_limits = [
-            timedelta(days=1),
-            timedelta(days=7),
-            timedelta(days=30),
-            None,
-        ]
-        for date_closed_limit in date_closed_limits:
-            fixed_bugs = []
-            search_params = BugTaskSearchParams(
-                self.user, status=BugTaskStatus.FIXRELEASED,
-                orderby='-date_closed')
-            if date_closed_limit is not None:
-                search_params.date_closed = greater_than(
-                    when - date_closed_limit)
-            fixed_bugtasks = self.context.searchTasks(search_params)
-            # XXX: Bjorn Tillenius 2006-12-13:
-            #      We might end up returning less than :limit: bugs, but in
-            #      most cases we won't, and '4*limit' is here to prevent
-            #      this page from timing out in production. Later I'll fix
-            #      this properly by selecting bugs instead of bugtasks.
-            #      If fixed_bugtasks isn't sliced, it will take a long time
-            #      to iterate over it, even over just 10, because
-            #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4 * limit]:
-                if bugtask.bug not in fixed_bugs:
-                    fixed_bugs.append(bugtask.bug)
-                    if len(fixed_bugs) >= limit:
-                        return fixed_bugs
-        return fixed_bugs
+    @property
+    def most_recently_fixed_bugs(self):
+        """Return the five most recently fixed bugs."""
+        params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            date_closed=not_equals(None), orderby='-date_closed')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
+
+    @property
+    def most_recently_reported_bugs(self):
+        """Return the five most recently reported bugs."""
+        params = BugTaskSearchParams(self.user, orderby='-datecreated')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
 
     def getCveBugLinkCount(self):
         """Return the number of links between bugs and CVEs there are."""
@@ -563,7 +540,9 @@ class BugView(LaunchpadView, BugViewMixin):
         cache = IJSONRequestCache(self.request)
         cache.objects['information_types'] = [
             {'value': term.value, 'description': term.description,
-            'name': term.title} for term in InformationTypeVocabulary()]
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary()]
         cache.objects['private_types'] = [
             type.title for type in PRIVATE_INFORMATION_TYPES]
         cache.objects['show_information_type_in_ui'] = (
@@ -629,6 +608,21 @@ class BugView(LaunchpadView, BugViewMixin):
             show_userdata_as_private):
             return 'Private'
         return title
+
+    @property
+    def information_type_description(self):
+        # This can be replaced with just a return when the feature flag is
+        # dropped.
+        description = self.context.information_type.description
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if (
+            self.context.information_type == InformationType.USERDATA and
+            show_userdata_as_private):
+                description = (
+                    description.replace('user data', 'private information'))
+
+        return description
 
 
 class BugActivity(BugView):
@@ -863,7 +857,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-# XXX: This can move to using LaunchpadEditFormView when 
+# XXX: This can move to using LaunchpadEditFormView when
 # show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""

@@ -49,6 +49,7 @@ from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     )
@@ -139,7 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(88)))
+        # If this test is run in isolation, the query count is 88.
+        # Other tests in this TestCase could cache the
+        # "SELECT id, product, project, distribution FROM PillarName ..."
+        # query by previously browsing the task url, in which case the
+        # query count is decreased by one.
+        self.assertThat(recorder, HasQueryCount(LessThan(89)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -2373,7 +2379,8 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product, status=BugTaskStatus.INCOMPLETE)
+            product=product,
+            status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
             content = self.getMainContent(

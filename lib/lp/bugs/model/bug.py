@@ -350,13 +350,10 @@ class Bug(SQLBase):
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    _private = BoolCol(dbName='private', notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
         storm_validator=validate_public_person, default=None)
-    _security_related = BoolCol(
-        dbName='security_related', notNull=True, default=False)
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
 
@@ -1784,10 +1781,6 @@ class Bug(SQLBase):
 
         self.information_type = information_type
         self.updateHeat()
-        # Set the legacy attributes for now.
-        self._private = information_type in PRIVATE_INFORMATION_TYPES
-        self._security_related = (
-            information_type in SECURITY_INFORMATION_TYPES)
         return True
 
     def getRequiredSubscribers(self, information_type, who):
@@ -2050,7 +2043,7 @@ class Bug(SQLBase):
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
-        Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
+        bugtasksearch's get_bug_privacy_filter.
         """
         from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
@@ -2666,27 +2659,6 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with nickname %s." % bugid)
         return bug
-
-    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
-        """See `IBugSet`."""
-        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
-
-        where_clauses = []
-        if duplicateof:
-            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
-
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            where_clauses.append(privacy_filter)
-
-        other_params = {}
-        if orderBy:
-            other_params['orderBy'] = orderBy
-        if limit:
-            other_params['limit'] = limit
-
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See `IBugSet`."""
