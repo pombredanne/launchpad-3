@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from BeautifulSoup import BeautifulSoup
+import transaction
 from zope.component import getUtility
 from zope.schema.interfaces import (
     TooLong,
@@ -283,6 +284,7 @@ class TestFileBugViewBase(TestCaseWithFactory):
     def setUp(self):
         super(TestFileBugViewBase, self).setUp()
         self.target = self.factory.makeProduct()
+        transaction.commit()
         login_person(self.target.owner)
         self.target.official_malone = True
 
