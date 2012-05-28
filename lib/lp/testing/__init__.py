@@ -650,7 +650,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         # Remove all log handlers, tests should not depend on global logging
         # config but should make their own config instead.
         logger = logging.getLogger()
-        for handler in logger.handlers:
+        for handler in list(logger.handlers):
             logger.removeHandler(handler)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
