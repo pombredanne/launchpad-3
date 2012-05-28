@@ -3173,9 +3173,11 @@ class PersonSet:
         # Launchpad- or Ubuntu-branded OpenID services. But we only
         # store the unique suffix of the identifier, so we need to strip
         # the rest of the URL.
+        # + is reserved, so is not allowed to be reencoded in transit, so
+        # should never appear as its percent-encoded equivalent.
         identifier_suffix = None
         for vhost in ('openid', 'ubuntu_openid'):
-            root = allvhosts.configs[vhost].rooturl
+            root = '%s+id/' % allvhosts.configs[vhost].rooturl
             if identifier.startswith(root):
                 identifier_suffix = identifier.replace(root, '', 1)
                 break

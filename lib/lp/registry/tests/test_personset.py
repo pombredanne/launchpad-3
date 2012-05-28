@@ -149,18 +149,18 @@ class TestPersonSet(TestCaseWithFactory):
         self.assertEqual(
             person,
             self.person_set.getByOpenIDIdentifier(
-                u'http://openid.launchpad.dev/%s' % identifier))
+                u'http://openid.launchpad.dev/+id/%s' % identifier))
         self.assertEqual(
             person,
             self.person_set.getByOpenIDIdentifier(
-                u'http://ubuntu-openid.launchpad.dev/%s' % identifier))
+                u'http://ubuntu-openid.launchpad.dev/+id/%s' % identifier))
 
     def test_getByOpenIDIdentifier_for_nonexistent_identifier_is_none(self):
         # None is returned if there's no matching person.
         self.assertIs(
             None,
             self.person_set.getByOpenIDIdentifier(
-                u'http://openid.launchpad.dev/notanid'))
+                u'http://openid.launchpad.dev/+id/notanid'))
 
     def test_getByOpenIDIdentifier_for_bad_domain_is_none(self):
         # Even though the OpenIDIdentifier table doesn't store the
@@ -172,7 +172,7 @@ class TestPersonSet(TestCaseWithFactory):
         self.assertIs(
             None,
             self.person_set.getByOpenIDIdentifier(
-                u'http://not.launchpad.dev/%s' % identifier))
+                u'http://not.launchpad.dev/+id/%s' % identifier))
 
 
 class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):
