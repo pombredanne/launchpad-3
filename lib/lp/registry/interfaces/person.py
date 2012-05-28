@@ -2174,7 +2174,8 @@ class IPersonSet(Interface):
         If there is no existing Launchpad person for the account, we
         create it.
 
-        :param openid_identifier: representing the authenticated user.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
         :param creation_rationale: When an account or person needs to

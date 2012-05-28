@@ -304,6 +304,7 @@ from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -3168,9 +3169,22 @@ class PersonSet:
 
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IPersonSet`."""
+        # We accept a full OpenID identifier URL from either the
+        # Launchpad- or Ubuntu-branded OpenID services. But we only
+        # store the unique suffix of the identifier, so we need to strip
+        # the rest of the URL.
+        identifier_suffix = None
+        for vhost in ('openid', 'ubuntu_openid'):
+            root = allvhosts.configs[vhost].rooturl
+            if openid_identifier.startswith(root):
+                identifier_suffix = openid_identifier.replace(root, '', 1)
+                break
+        if identifier_suffix is None:
+            return None
+
         try:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                openid_identifier)
+                identifier_suffix)
         except LookupError:
             return None
         return IPerson(account)
