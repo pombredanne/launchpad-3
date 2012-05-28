@@ -1149,6 +1149,16 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
         self.assertEqual((task.id,), get_flat())
 
+    def test_PopulateSourcePackagePublishingHistoryPackageUpload(self):
+        with dbuser('testadmin'):
+            spph = self.factory.makeSourcePackagePublishingHistory()
+            pu = self.factory.makePackageUpload()
+            pu.addSource(spph.sourcepackagerelease)
+            self.assertIs(None, spph.packageupload)
+        self.runHourly()
+        with dbuser('testadmin'):
+            self.assertEqual(pu, spph.packageupload)
+
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer

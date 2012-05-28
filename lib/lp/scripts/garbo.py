@@ -98,6 +98,11 @@ from lp.services.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadSource,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
@@ -1137,6 +1142,47 @@ class BugTaskFlattener(TunableLoop):
         transaction.commit()
 
 
+class PopulateSourcePackagePublishingHistoryPackageUpload(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(
+            PopulateSourcePackagePublishingHistoryPackageUpload,
+            self).__init__(log, abort_time)
+        self.store = IMasterStore(SourcePackagePublishingHistory)
+        self.memcache_key = '%s:populate-spph-pu' % config.instance_name
+        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+        self.start_at = watermark or 0
+
+    def findSPPHs(self):
+        return self.store.find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.packageuploadID == None,
+            SourcePackagePublishingHistory.id >= self.start_at).order_by(
+                SourcePackagePublishingHistory.id)
+
+    def isDone(self):
+        return self.findSPPHs().is_empty()
+
+    def __call__(self, chunk_size):
+        for spph in self.findSPPHs()[:chunk_size]:
+            pu = self.store.find(
+                PackageUpload,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                PackageUploadSource.sourcepackagereleaseID,
+                PackageUploadSource.packageuploadID == PackageUpload.id,
+                SourcePackagePublishingHistory.id == spph.id).one()
+            if pu is not None:
+                spph.packageupload = pu
+            self.start_at = spph.id + 1
+        result = getUtility(IMemcacheClient).set(
+            self.memcache_key, self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1392,6 +1438,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         BugTaskFlattener,
+        PopulateSourcePackagePublishingHistoryPackageUpload,
         ]
     experimental_tunable_loops = []
 
