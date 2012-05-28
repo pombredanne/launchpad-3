@@ -64,7 +64,7 @@ def filter_tests(list_name):
         result = {}
         for testname in tests:
             layer, testcases = test_lookup.get(testname, (None, None))
-            if layer is not None:
+            if testcases is not None:
                 suite = result.setdefault(layer, TestSuite())
                 for testcase in testcases:
                     suite.addTest(testcase)

@@ -7,17 +7,11 @@ __metaclass__ = type
 
 import string
 import tempfile
-
-from testtools import (
-    TestCase,
-    )
-
-from lp.services.testing.customresult import (
-    filter_tests,
-    )
-from lp.testing.layers import BaseLayer
-
+from testtools import TestCase
 import unittest
+
+from lp.services.testing.customresult import filter_tests
+from lp.testing.layers import BaseLayer
 
 
 NEWLINE = '\n'
@@ -28,27 +22,37 @@ class FakeTestCase(unittest.TestCase):
     def __init__(self, name, *args, **kwargs):
         super(FakeTestCase, self).__init__(*args, **kwargs)
         self.name = name
+
     def id(self):
         return self.name
+
     def runTest(self):
         pass
-    def __str__(self):
-        return self.id()
-    def __repr__(self):
-        return str(self)
 
 
 class TestFilterTests(TestCase):
 
     layer = BaseLayer
 
-    def setUp(self):
-        super(TestFilterTests, self).setUp()
-
     def writeFile(self, fd, contents):
         for line in contents:
             fd.write(line + NEWLINE)
         fd.flush()
+
+    def make_suites(self):
+        """Make two suites.
+
+        The first has 'a'..'m' and the second 'n'..'z'.
+        """
+        suite_am = unittest.suite.TestSuite()
+        suite_nz = unittest.suite.TestSuite()
+        # Create one layer with the 'a'..'m'.
+        for letter in string.lowercase[:13]:
+            suite_am.addTest(FakeTestCase(letter))
+        # And another layer with 'n'..'z'.
+        for letter in string.lowercase[13:]:
+            suite_nz.addTest(FakeTestCase(letter))
+        return suite_am, suite_nz
 
     def test_ordering(self):
         # Tests should be returned in the order seen in the testfile.
@@ -62,20 +66,13 @@ class TestFilterTests(TestCase):
             do_filter = filter_tests(fd.name)
             results = do_filter({layername: suite})
         self.assertEqual(1, len(results))
-        self.assertTrue(layername in results)
+        self.assertIn(layername, results)
         suite = results[layername]
         self.assertEqual(testnames, [t.id() for t in suite])
 
     def test_layer_separation(self):
         # Tests must be kept in their layer.
-        suite1 = unittest.suite.TestSuite()
-        suite2 = unittest.suite.TestSuite()
-        # Create one layer with the 'a'..'m'.
-        for letter in string.lowercase[:13]:
-            suite1.addTest(FakeTestCase(letter))
-        # And another layer with 'n'..'z'.
-        for letter in string.lowercase[13:]:
-            suite2.addTest(FakeTestCase(letter))
+        suite1, suite2 = self.make_suites()
         testnames = ['a', 'b', 'c', 'z', 'y', 'x']
         with tempfile.NamedTemporaryFile() as fd:
             self.writeFile(fd, testnames)
@@ -103,7 +100,21 @@ class TestFilterTests(TestCase):
             do_filter = filter_tests(fd.name)
             results = do_filter({layername: suite})
         self.assertEqual(1, len(results))
-        self.assertTrue(layername in results)
+        self.assertIn(layername, results)
         suite = results[layername]
         expected = ['1', '2', '2', '3', '3', '3']
         self.assertEqual(expected, [t.id() for t in suite])
+
+    def test_no_layer(self):
+        # If tests have no layer (None) work.
+        testnames = ['a', 'b', 'y', 'z']
+        suite1, suite2 = self.make_suites()
+        with tempfile.NamedTemporaryFile() as fd:
+            self.writeFile(fd, testnames)
+            do_filter = filter_tests(fd.name)
+            results = do_filter({'layer1': suite1,
+                                 None: suite2})
+        self.assertEqual(2, len(results))
+        self.assertEqual([None, 'layer1'], sorted(results.keys()))
+        self.assertEqual(['a', 'b'], [t.id() for t in results['layer1']])
+        self.assertEqual(['y', 'z'], [t.id() for t in results[None]])
