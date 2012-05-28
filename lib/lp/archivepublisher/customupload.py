@@ -69,14 +69,6 @@ class CustomUploadTarballBadSymLink(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
-class CustomUploadAlreadyExists(CustomUploadError):
-    """A build for this type, architecture, and version already exists."""
-    def __init__(self, custom_type, arch, version):
-        message = ('%s build %s for architecture %s already exists' %
-                   (custom_type, arch, version))
-        CustomUploadError.__init__(self, message)
-
-
 class CustomUploadTarballBadFile(CustomUploadError):
     """A file was found which resolves outside the immediate tree.
 
@@ -85,6 +77,14 @@ class CustomUploadTarballBadFile(CustomUploadError):
     def __init__(self, tarfile_path, file_name):
         message = "Tarfile %s has a file %s which is illegal" % (
             tarfile_path, file_name)
+        CustomUploadError.__init__(self, message)
+
+
+class CustomUploadAlreadyExists(CustomUploadError):
+    """A build for this type, architecture, and version already exists."""
+    def __init__(self, custom_type, arch, version):
+        message = ('%s build %s for architecture %s already exists' %
+                   (custom_type, arch, version))
         CustomUploadError.__init__(self, message)
 
 
