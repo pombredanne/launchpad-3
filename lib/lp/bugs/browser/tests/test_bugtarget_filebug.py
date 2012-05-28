@@ -21,6 +21,10 @@ from lp.bugs.interfaces.bug import (
     IBugAddForm,
     IBugSet,
     )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.publisher import BugsLayer
 from lp.registry.enums import (
     InformationType,
@@ -496,10 +500,58 @@ class TestFileBugRequestCache(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestFileBugRequestCache, self).setUp()
+        self.useFixture(FeatureFixture({
+            'disclosure.enhanced_choice_popup.enabled': 'true'
+        }))
+
     def _assert_cache_values(self, view, duplicate_search):
         cache = IJSONRequestCache(view.request).objects
         self.assertEqual(
-            cache['enable_bugfiling_duplicate_search'], duplicate_search)
+            duplicate_search, cache['enable_bugfiling_duplicate_search'])
+        excluded_statuses = [
+            BugTaskStatus.UNKNOWN,
+            BugTaskStatus.EXPIRED,
+            BugTaskStatus.OPINION,
+            BugTaskStatus.WONTFIX,
+            BugTaskStatus.INCOMPLETE]
+        bugtask_status_data = []
+        for item in BugTaskStatus:
+            item = item.value
+            if item in excluded_statuses:
+                continue
+            name = item.title
+            value = item.title
+            description = item.description
+            new_item = {'name': name, 'value': value,
+                        'description': description,
+                        'description_css_class': 'choice-description',
+                        'style': '',
+                        'help': '', 'disabled': False,
+                        'css_class': 'status' + item.name}
+            bugtask_status_data.append(new_item)
+        self.assertEqual(
+            bugtask_status_data, cache['bugtask_status_data'])
+        excluded_importances = [
+            BugTaskImportance.UNKNOWN]
+        bugtask_importance_data = []
+        for item in BugTaskImportance:
+            item = item.value
+            if item in excluded_importances:
+                continue
+            name = item.title
+            value = item.title
+            description = item.description
+            new_item = {'name': name, 'value': value,
+                        'description': description,
+                        'description_css_class': 'choice-description',
+                        'style': '',
+                        'help': '', 'disabled': False,
+                        'css_class': 'importance' + item.name}
+            bugtask_importance_data.append(new_item)
+        self.assertEqual(
+            bugtask_importance_data, cache['bugtask_importance_data'])
 
     def test_product(self):
         project = self.factory.makeProduct(official_malone=True)
