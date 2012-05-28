@@ -2152,6 +2152,18 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
     def getOrCreateByOpenIDIdentifier(openid_identifier, email,
                                       full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.
@@ -2166,7 +2178,8 @@ class IPersonSet(Interface):
         If there is no existing Launchpad person for the account, we
         create it.
 
-        :param openid_identifier: representing the authenticated user.
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
         :param email_address: the email address of the user.
         :param full_name: the full name of the user.
         :param creation_rationale: When an account or person needs to

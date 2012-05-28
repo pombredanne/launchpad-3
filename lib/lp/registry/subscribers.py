@@ -32,7 +32,7 @@ from lp.services.webapp.publisher import (
 
 
 def product_licenses_modified(product, event):
-    """Send a notification if licences changed and a license is special."""
+    """Send a notification if licences changed and a licence is special."""
     if LicenseNotification.needs_notification(product):
         user = IPerson(event.user)
         notification = LicenseNotification(product, user)
@@ -102,7 +102,7 @@ class LicenseNotification:
             )
         # Email the user about licence policy.
         subject = (
-            "License information for %(product_name)s "
+            "Licence information for %(product_name)s "
             "in Launchpad" % substitutions)
         template = get_email_template(
             self.getTemplateName(), app='registry')
