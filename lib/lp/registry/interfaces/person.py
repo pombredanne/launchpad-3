@@ -2152,7 +2152,11 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def getByOpenIDIdentifier(openid_identifier):
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
         """Get the person for a given OpenID identifier.
 
         :param openid_identifier: full OpenID identifier URL for the user.

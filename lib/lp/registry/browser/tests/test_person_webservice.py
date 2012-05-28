@@ -149,3 +149,16 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             self.webservice.get(
                 '/people?ws.op=getByEmail&email=foo@').jsonBody)
         self.assertEqual("email: Invalid email 'foo@'.", e[0])
+
+    def test_getByOpenIDIdentifier(self):
+        # You can get a person by their OpenID identifier URL.
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            person_name = person.name
+            person_openid = person.account.openid_identifiers.one().identifier
+        self.assertEqual(
+            person_name,
+            self.webservice.get(
+                '/people?ws.op=getByOpenIDIdentifier&'
+                'identifier=http://openid.launchpad.dev/%s' % person_openid,
+                api_version='devel').jsonBody()['name'])

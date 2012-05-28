@@ -3167,7 +3167,7 @@ class PersonSet:
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
 
-    def getByOpenIDIdentifier(self, openid_identifier):
+    def getByOpenIDIdentifier(self, identifier):
         """See `IPersonSet`."""
         # We accept a full OpenID identifier URL from either the
         # Launchpad- or Ubuntu-branded OpenID services. But we only
@@ -3176,8 +3176,8 @@ class PersonSet:
         identifier_suffix = None
         for vhost in ('openid', 'ubuntu_openid'):
             root = allvhosts.configs[vhost].rooturl
-            if openid_identifier.startswith(root):
-                identifier_suffix = openid_identifier.replace(root, '', 1)
+            if identifier.startswith(root):
+                identifier_suffix = identifier.replace(root, '', 1)
                 break
         if identifier_suffix is None:
             return None
