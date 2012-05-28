@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -69,9 +69,17 @@ class CustomUploadTarballBadSymLink(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+class CustomUploadAlreadyExists(CustomUploadError):
+    """A build for this type, architecture, and version already exists."""
+    def __init__(self, custom_type, arch, version):
+        message = ('%s build %s for architecture %s already exists' %
+                   (custom_type, arch, version))
+        CustomUploadError.__init__(self, message)
+
+
 class CustomUploadTarballBadFile(CustomUploadError):
     """A file was found which resolves outside the immediate tree.
-    
+
     This can happen if someone embeds ../file in the tar, for example.
     """
     def __init__(self, tarfile_path, file_name):
@@ -86,7 +94,9 @@ class CustomUpload:
     # The following should be overridden by subclasses, probably in
     # their __init__
     targetdir = None
+    custom_type = None
     version = None
+    arch = None
 
     def __init__(self, archive_root, tarfile_path, distroseries):
         self.archive_root = archive_root
@@ -98,11 +108,18 @@ class CustomUpload:
     def process(self):
         """Process the upload and install it into the archive."""
         try:
+            self.checkForConflicts()
             self.extract()
             self.installFiles()
             self.fixCurrentSymlink()
         finally:
             self.cleanup()
+
+    def checkForConflicts(self):
+        """Check for conflicts with existing publications in the archive."""
+        if os.path.exists(os.path.join(self.targetdir, self.version)):
+            raise CustomUploadAlreadyExists(
+                self.custom_type, self.arch, self.version)
 
     def verifyBeforeExtracting(self, tar):
         """Verify the tarball before extracting it.

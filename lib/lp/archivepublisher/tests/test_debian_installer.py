@@ -9,11 +9,11 @@ high-level tests of debian-installer upload and queue manipulation.
 
 import os
 
-from lp.archivepublisher.customupload import CustomUploadBadUmask
-from lp.archivepublisher.debian_installer import (
-    DebianInstallerAlreadyExists,
-    process_debian_installer,
+from lp.archivepublisher.customupload import (
+    CustomUploadAlreadyExists,
+    CustomUploadBadUmask,
     )
+from lp.archivepublisher.debian_installer import process_debian_installer
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
@@ -69,7 +69,7 @@ class TestDebianInstaller(TestCase):
         # If the target directory already exists, processing fails.
         self.openArchive()
         os.makedirs(self.getInstallerPath("."))
-        self.assertRaises(DebianInstallerAlreadyExists, self.process)
+        self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
         # The umask must be 022 to avoid incorrect permissions.

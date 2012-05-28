@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of dist-upgrader tarballs."""
@@ -17,14 +17,6 @@ from lp.archivepublisher.debversion import (
     BadUpstreamError,
     Version as make_version,
     )
-
-
-class DistUpgraderAlreadyExists(CustomUploadError):
-    """A build for this type, version already exists."""
-    def __init__(self, arch, version):
-        message = ('dist-upgrader build %s for architecture %s already exists'%
-                   (arch, version))
-        CustomUploadError.__init__(self, message)
 
 
 class DistUpgraderBadVersion(CustomUploadError):
@@ -62,18 +54,14 @@ class DistUpgraderUpload(CustomUpload):
     """
     def __init__(self, archive_root, tarfile_path, distroseries):
         CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
+        self.custom_type = "dist-upgrader"
 
         tarfile_base = os.path.basename(tarfile_path)
-        name, self.version, arch = tarfile_base.split('_')
-        arch = arch.split('.')[0]
+        name, self.version, self.arch = tarfile_base.split('_')
+        self.arch = self.arch.split('.')[0]
 
         self.targetdir = os.path.join(archive_root, 'dists', distroseries,
-                                      'main', 'dist-upgrader-%s' % arch)
-
-        # Make sure the target version doesn't already exist. If it does, raise
-        # DistUpgraderAlreadyExists.
-        if os.path.exists(os.path.join(self.targetdir, self.version)):
-            raise DistUpgraderAlreadyExists(arch, self.version)
+                                      'main', 'dist-upgrader-%s' % self.arch)
 
     def shouldInstall(self, filename):
         """ Install files from a dist-upgrader tarball.

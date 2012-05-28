@@ -9,9 +9,11 @@ tests of dist-upgrader upload and queue manipulation.
 
 import os
 
-from lp.archivepublisher.customupload import CustomUploadBadUmask
+from lp.archivepublisher.customupload import (
+    CustomUploadAlreadyExists,
+    CustomUploadBadUmask,
+    )
 from lp.archivepublisher.dist_upgrader import (
-    DistUpgraderAlreadyExists,
     DistUpgraderBadVersion,
     process_dist_upgrader,
     )
@@ -55,7 +57,7 @@ class TestDistUpgrader(TestCase):
         self.openArchive("20060302.0120")
         self.archive.add_file("20060302.0120/hello", "world")
         os.makedirs(os.path.join(self.getUpgraderPath(), "20060302.0120"))
-        self.assertRaises(DistUpgraderAlreadyExists, self.process)
+        self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
         # The umask must be 022 to avoid incorrect permissions.
