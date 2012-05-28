@@ -1994,8 +1994,7 @@ class Archive(SQLBase):
             # permissions.
             role = IPersonRoles(person)
             if not (role.in_admin or role.in_commercial_admin):
-                return (
-                    '%s is not allowed to make private PPAs' % person.name)
+                return '%s is not allowed to make private PPAs' % person.name
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
