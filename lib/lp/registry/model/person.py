@@ -3166,6 +3166,15 @@ class PersonSet:
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
 
+    def getByOpenIDIdentifier(self, openid_identifier):
+        """See `IPersonSet`."""
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                openid_identifier)
+        except LookupError:
+            return None
+        return IPerson(account)
+
     def getOrCreateByOpenIDIdentifier(
         self, openid_identifier, email_address, full_name,
         creation_rationale, comment):

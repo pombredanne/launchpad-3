@@ -2152,6 +2152,14 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    def getByOpenIDIdentifier(openid_identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
     def getOrCreateByOpenIDIdentifier(openid_identifier, email,
                                       full_name, creation_rationale, comment):
         """Get or create a person for a given OpenID identifier.

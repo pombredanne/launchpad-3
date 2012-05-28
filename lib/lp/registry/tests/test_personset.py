@@ -140,6 +140,16 @@ class TestPersonSet(TestCaseWithFactory):
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
+    def test_getByOpenIDIdentifier_returns_person(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            identifier = person.account.openid_identifiers.one().identifier
+        self.assertEqual(
+            person, self.person_set.getByOpenIDIdentifier(identifier))
+
+    def test_getByOpenIDIdentifier_for_nonexistent_identifier_is_none(self):
+        self.assertIs(None, self.person_set.getByOpenIDIdentifier(u'notanid'))
+
 
 class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):
 
