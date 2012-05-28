@@ -35,10 +35,9 @@ class DebianInstallerUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
-        self.custom_type = "installer"
+    custom_type = "installer"
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
         components = tarfile_base.split('_')
         self.version = components[1]
@@ -68,5 +67,5 @@ def process_debian_installer(archive_root, tarfile_path, distroseries):
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DebianInstallerUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
+    upload = DebianInstallerUpload()
+    upload.process(archive_root, tarfile_path, distroseries)

@@ -42,10 +42,9 @@ class DdtpTarballUpload(CustomUpload):
 
     Old contents will be preserved.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
-        self.custom_type = "ddtp-tarball"
+    custom_type = "ddtp-tarball"
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
         name, component, self.version = tarfile_base.split('_')
         self.arch = None
@@ -73,5 +72,5 @@ def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     Raises CustomUploadError (or some subclass thereof) if
     anything goes wrong.
     """
-    upload = DdtpTarballUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
+    upload = DdtpTarballUpload()
+    upload.process(archive_root, tarfile_path, distroseries)

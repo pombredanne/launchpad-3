@@ -91,29 +91,35 @@ class CustomUploadTarballBadFile(CustomUploadError):
 class CustomUpload:
     """Base class for custom upload handlers"""
 
-    # The following should be overridden by subclasses, probably in
-    # their __init__
-    targetdir = None
+    # This should be set as a class property on each subclass.
     custom_type = None
-    version = None
-    arch = None
 
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        self.archive_root = archive_root
-        self.tarfile_path = tarfile_path
-        self.distroseries = distroseries
+    def __init__(self):
+        self.targetdir = None
+        self.version = None
+        self.arch = None
 
         self.tmpdir = None
 
-    def process(self):
+    def process(self, archive_root, tarfile_path, distroseries):
         """Process the upload and install it into the archive."""
+        self.tarfile_path = tarfile_path
         try:
+            self.setTargetDirectory(archive_root, tarfile_path, distroseries)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
             self.fixCurrentSymlink()
         finally:
             self.cleanup()
+
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
+        """Set self.targetdir based on parameters.
+
+        This should also set self.version and self.arch (if applicable) as a
+        side-effect.
+        """
+        raise NotImplementedError
 
     def checkForConflicts(self):
         """Check for conflicts with existing publications in the archive."""

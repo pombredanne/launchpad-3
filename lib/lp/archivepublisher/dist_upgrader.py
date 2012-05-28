@@ -52,10 +52,9 @@ class DistUpgraderUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.
     """
-    def __init__(self, archive_root, tarfile_path, distroseries):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
-        self.custom_type = "dist-upgrader"
+    custom_type = "dist-upgrader"
 
+    def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
         name, self.version, self.arch = tarfile_base.split('_')
         self.arch = self.arch.split('.')[0]
@@ -92,5 +91,5 @@ def process_dist_upgrader(archive_root, tarfile_path, distroseries):
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DistUpgraderUpload(archive_root, tarfile_path, distroseries)
-    upload.process()
+    upload = DistUpgraderUpload()
+    upload.process(archive_root, tarfile_path, distroseries)
