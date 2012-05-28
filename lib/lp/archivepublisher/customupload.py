@@ -121,6 +121,16 @@ class CustomUpload:
         """
         raise NotImplementedError
 
+    def getSeriesKey(self, tarfile_path):
+        """Get a unique key for instances of this custom upload type.
+
+        The key should differ for any uploads that may be published
+        simultaneously, but should be identical for (e.g.) different
+        versions of the same type of upload on the same architecture in the
+        same series.  Returns None on failure to parse tarfile_path.
+        """
+        raise NotImplementedError
+
     def checkForConflicts(self):
         """Check for conflicts with existing publications in the archive."""
         if os.path.exists(os.path.join(self.targetdir, self.version)):

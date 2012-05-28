@@ -13,7 +13,10 @@ from lp.archivepublisher.customupload import (
     CustomUploadAlreadyExists,
     CustomUploadBadUmask,
     )
-from lp.archivepublisher.debian_installer import process_debian_installer
+from lp.archivepublisher.debian_installer import (
+    DebianInstallerUpload,
+    process_debian_installer,
+    )
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import TestCase
 
@@ -145,3 +148,21 @@ class TestDebianInstaller(TestCase):
             0644, os.stat(self.getInstallerPath(filename)).st_mode & 0777)
         self.assertEqual(
             0755, os.stat(self.getInstallerPath(directory)).st_mode & 0777)
+
+    def test_getSeriesKey_extracts_architecture(self):
+        # getSeriesKey extracts the architecture from an upload's filename.
+        self.openArchive()
+        self.assertEqual(
+            self.arch, DebianInstallerUpload().getSeriesKey(self.path))
+
+    def test_getSeriesKey_returns_None_on_mismatch(self):
+        # getSeriesKey returns None if the filename does not match the
+        # expected pattern.
+        self.assertIsNone(DebianInstallerUpload().getSeriesKey("argh_1.0.jpg"))
+
+    def test_getSeriesKey_refuses_names_with_wrong_number_of_fields(self):
+        # getSeriesKey requires exactly three fields.
+        self.assertIsNone(DebianInstallerUpload().getSeriesKey(
+            "package_1.0.tar.gz"))
+        self.assertIsNone(DebianInstallerUpload().getSeriesKey(
+            "one_two_three_four_5.tar.gz"))

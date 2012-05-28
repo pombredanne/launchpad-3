@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-__all__ = ['process_dist_upgrader']
+__all__ = [
+    'DistUpgraderUpload',
+    'process_dist_upgrader',
+    ]
 
 import os
 
@@ -56,11 +59,18 @@ class DistUpgraderUpload(CustomUpload):
 
     def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
-        name, self.version, self.arch = tarfile_base.split('_')
-        self.arch = self.arch.split('.')[0]
+        name, self.version, self.arch = tarfile_base.split("_")
+        self.arch = self.arch.split(".")[0]
 
         self.targetdir = os.path.join(archive_root, 'dists', distroseries,
                                       'main', 'dist-upgrader-%s' % self.arch)
+
+    def getSeriesKey(self, tarfile_path):
+        try:
+            _, _, arch = os.path.basename(tarfile_path).split("_")
+            return arch.split(".")[0]
+        except ValueError:
+            return None
 
     def shouldInstall(self, filename):
         """ Install files from a dist-upgrader tarball.

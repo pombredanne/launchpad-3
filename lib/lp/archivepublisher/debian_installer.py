@@ -8,7 +8,10 @@
 
 __metaclass__ = type
 
-__all__ = ['process_debian_installer']
+__all__ = [
+    'DebianInstallerUpload',
+    'process_debian_installer',
+    ]
 
 import os
 import shutil
@@ -39,13 +42,19 @@ class DebianInstallerUpload(CustomUpload):
 
     def setTargetDirectory(self, archive_root, tarfile_path, distroseries):
         tarfile_base = os.path.basename(tarfile_path)
-        components = tarfile_base.split('_')
-        self.version = components[1]
-        self.arch = components[2].split('.')[0]
+        _, self.version, self.arch = tarfile_base.split("_")
+        self.arch = self.arch.split(".")[0]
 
         self.targetdir = os.path.join(
             archive_root, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)
+
+    def getSeriesKey(self, tarfile_path):
+        try:
+            _, _, arch = os.path.basename(tarfile_path).split("_")
+            return arch.split(".")[0]
+        except ValueError:
+            return None
 
     def extract(self):
         CustomUpload.extract(self)
