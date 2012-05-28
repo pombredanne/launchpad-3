@@ -397,6 +397,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             excluded_items=[
                 BugTaskStatus.UNKNOWN,
                 BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
                 BugTaskStatus.OPINION,
                 BugTaskStatus.WONTFIX,
                 BugTaskStatus.INCOMPLETE])

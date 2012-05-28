@@ -513,6 +513,7 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         excluded_statuses = [
             BugTaskStatus.UNKNOWN,
             BugTaskStatus.EXPIRED,
+            BugTaskStatus.INVALID,
             BugTaskStatus.OPINION,
             BugTaskStatus.WONTFIX,
             BugTaskStatus.INCOMPLETE]
