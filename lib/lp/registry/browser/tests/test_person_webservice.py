@@ -7,8 +7,10 @@ from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import (
+    admin_logged_in,
     launchpadlib_for,
     login,
+    logout,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -74,3 +76,76 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
+
+
+class PersonSetWebServiceTests(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(PersonSetWebServiceTests, self).setUp()
+        self.webservice = LaunchpadWebServiceCaller('test', None)
+        logout()
+
+    def assertReturnsPeople(self, expected_names, path):
+        self.assertEqual(
+            expected_names,
+            [person['name'] for person in
+             self.webservice.get(path).jsonBody()['entries']])
+
+    def test_default_content(self):
+        # /people lists the 50 people with the most karma, excluding
+        # those with no karma at all.
+        self.assertEqual(
+            4, len(self.webservice.get('/people').jsonBody()['entries']))
+
+    def test_find(self):
+        # It's possible to find people by name.
+        with admin_logged_in():
+            person_name = self.factory.makePerson().name
+        self.assertReturnsPeople(
+            [person_name], '/people?ws.op=find&text=%s' % person_name)
+
+    def test_findTeam(self):
+        # The search can be restricted to teams.
+        with admin_logged_in():
+            person_name = self.factory.makePerson().name
+            team_name = self.factory.makeTeam(
+                name='%s-team' % person_name).name
+        self.assertReturnsPeople(
+            [team_name], '/people?ws.op=findTeam&text=%s' % person_name)
+
+    def test_findPerson(self):
+        # The search can be restricted to people.
+        with admin_logged_in():
+            person_name = self.factory.makePerson().name
+            self.factory.makeTeam(name='%s-team' % person_name)
+        self.assertReturnsPeople(
+            [person_name], '/people?ws.op=findPerson&text=%s' % person_name)
+
+    def test_find_by_date(self):
+        # Creation date filtering is supported.
+        self.assertReturnsPeople(
+            [u'bac'],
+            '/people?ws.op=findPerson&text='
+            '&created_after=2008-06-27&created_before=2008-07-01')
+
+    def test_getByEmail(self):
+        # You can get a person by their email address.
+        with admin_logged_in():
+            person = self.factory.makePerson()
+            person_name = person.name
+            person_email = person.preferredemail.email
+        self.assertEqual(
+            person_name,
+            self.webservice.get(
+                '/people?ws.op=getByEmail&email=%s' % person_email
+                ).jsonBody()['name'])
+
+    def test_getByEmail_checks_format(self):
+        # A malformed email address is rejected.
+        e = self.assertRaises(
+            ValueError,
+            self.webservice.get(
+                '/people?ws.op=getByEmail&email=foo@').jsonBody)
+        self.assertEqual("email: Invalid email 'foo@'.", e[0])
