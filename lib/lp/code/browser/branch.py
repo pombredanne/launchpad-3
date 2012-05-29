@@ -777,6 +777,10 @@ class BranchEditFormView(LaunchpadEditFormView):
         if 'private' in data:
             # Read only for display.
             data.pop('private')
+        if 'information_type' in data:
+            information_type = data.pop('information_type')
+            self.context.transitionToInformationType(
+                information_type, self.user)
         if 'explicitly_private' in data:
             private = data.pop('explicitly_private')
             if (private != self.context.private

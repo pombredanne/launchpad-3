@@ -519,7 +519,7 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(LaunchpadView, BugViewMixin, InformationTypePortlet):
+class BugView(InformationTypePortlet, LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be

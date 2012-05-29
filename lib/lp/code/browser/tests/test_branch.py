@@ -10,10 +10,12 @@ from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
 import pytz
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -905,13 +907,31 @@ class TestBranchEditView(TestCaseWithFactory):
         branch = self.factory.makeProductBranch(owner=person)
         feature_flag = {
             'disclosure.show_information_type_in_branch_ui.enabled': 'on'}
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admin = admins.teamowner
         with FeatureFixture(feature_flag):
             browser = self.getUserBrowser(
-                canonical_url(branch) + '/+edit', user=person)
+                canonical_url(branch) + '/+edit', user=admin)
             browser.getControl("Embargoed Security").click()
             browser.getControl("Change Branch").click()
-        self.assertEqual(
-            InformationType.EMBARGOEDSECURITY, branch.information_type)
+        with person_logged_in(person):
+            self.assertEqual(
+                InformationType.EMBARGOEDSECURITY, branch.information_type)
+
+    def test_information_type_in_ui_vocabulary(self):
+        # The vocabulary that Branch:+edit uses for the information_type
+        # has been correctly created.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        feature_flags = {
+            'disclosure.show_information_type_in_branch_ui.enabled': 'on',
+            'disclosure.proprietary_information_type.disabled': 'on'}
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admin = admins.teamowner
+        with FeatureFixture(feature_flags):
+            browser = self.getUserBrowser(
+                canonical_url(branch) + '/+edit', user=admin)
+            self.assertRaises(LookupError, browser.getControl, "Proprietary")
 
 
 class TestBranchUpgradeView(TestCaseWithFactory):
