@@ -234,7 +234,7 @@ bin/buildout: download-cache eggs
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: $(BUILDOUT_BIN)
+build_eggs: $(BUILDOUT_BIN) clean_buildout
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
