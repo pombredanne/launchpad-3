@@ -2480,3 +2480,16 @@ class TestRemovingCopyNotifications(TestCaseWithFactory):
         with person_logged_in(archive2.owner):
             self.assertRaises(
                 AssertionError, archive2.removeCopyNotification, job2.id)
+
+
+class TestCommercialRename(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_makeArchive(self):
+        a = self.factory.makeArchive()
+        self.assertEqual(False, a.suppress_subscription_notifications)
+        with celebrity_logged_in('commercial_admin'):
+            a.suppress_subscription_notifications = True
+            self.assertEqual(True, a.suppress_subscription_notifications)
+
