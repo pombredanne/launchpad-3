@@ -13,16 +13,7 @@
       <div class="yui3-privacybanner-content">
         <div class="global-notification">
           <span class="sprite notification-private"></span>
-          <tal:info_type
-             define="info_type python: getattr(view, 'information_type', None)">
-            <span tal:condition="not: info_type" class="banner-text">
-              The information on this page is private.
-            </span>
-            <span tal:condition="info_type" class="banner-text">
-              <tal:text
-                content="string: This page contains ${info_type} information."/>
-            </span>
-          </tal:info_type>
+          <span class="banner-text">The information on this page is private.</span>
         </div>
       </div>
     </div>
