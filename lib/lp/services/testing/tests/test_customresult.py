@@ -44,8 +44,8 @@ class TestFilterTests(TestCase):
 
         The first has 'a'..'m' and the second 'n'..'z'.
         """
-        suite_am = unittest.suite.TestSuite()
-        suite_nz = unittest.suite.TestSuite()
+        suite_am = unittest.TestSuite()
+        suite_nz = unittest.TestSuite()
         # Create one layer with the 'a'..'m'.
         for letter in string.lowercase[:13]:
             suite_am.addTest(FakeTestCase(letter))
