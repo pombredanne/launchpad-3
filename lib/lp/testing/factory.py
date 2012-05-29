@@ -2735,8 +2735,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
-                    description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None, manual=False):
+                    owner=None, active=True, virtualized=True, vm_host=None,
+                    manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2752,14 +2752,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString('builder-name')
         if title is None:
             title = self.getUniqueString('builder-title')
-        if description is None:
-            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, description, owner, active,
-            virtualized, vm_host, manual=manual)
+            processor, url, name, title, owner, active, virtualized, vm_host,
+            manual=manual)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
