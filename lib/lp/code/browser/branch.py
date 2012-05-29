@@ -75,6 +75,7 @@ from zope.schema.vocabulary import (
 from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
+from lp.app.browser.information_type import InformationTypePortlet
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -123,10 +124,14 @@ from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.registry.vocabularies import (
+    InformationTypeVocabulary,
+    UserTeamsParticipationPlusSelfVocabulary,
+    )
 from lp.services import searchbuilder
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import (
     BranchFeedLink,
     FeedsMixin,
@@ -425,7 +430,8 @@ class BranchMirrorMixin:
         return branch.url
 
 
-class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
+class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
+                 InformationTypePortlet):
 
     feed_types = (
         BranchFeedLink,
@@ -438,6 +444,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     label = page_title
 
     def initialize(self):
+        super(BranchView, self).initialize()
         self.branch = self.context
         self.notices = []
         # Cache permission so private team owner can be rendered.
@@ -723,6 +730,9 @@ class BranchEditSchema(Interface):
         ])
     explicitly_private = copy_field(
         IBranch['explicitly_private'], readonly=False)
+    information_type = copy_field(
+        IBranch['information_type'], readonly=False,
+        vocabulary=InformationTypeVocabulary())
     reviewer = copy_field(IBranch['reviewer'], required=True)
     owner = copy_field(IBranch['owner'], readonly=False)
 
@@ -1014,13 +1024,24 @@ class BranchUpgradeView(LaunchpadFormView):
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch view for editing the branch attributes."""
+    """The main branch for editing the branch attributes."""
 
-    field_names = [
-        'owner', 'name', 'explicitly_private', 'url', 'description',
-        'lifecycle_status']
+    @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_branch_ui.enabled'))
+
+    @property
+    def field_names(self):
+        fields = [
+            'owner', 'name', 'explicitly_private', 'url', 'description',
+            'lifecycle_status']
+        if self.show_information_type_in_ui:
+            fields[2] = 'information_type'
+        return fields
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
@@ -1061,7 +1082,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            self.form_fields = self.form_fields.omit('explicitly_private')
+            if self.show_information_type_in_ui:
+                omit = 'information_type'
+            else:
+                omit = 'explicitly_private'
+            self.form_fields = self.form_fields.omit(omit)
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.

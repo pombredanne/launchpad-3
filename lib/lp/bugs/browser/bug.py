@@ -55,6 +55,7 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from lp import _
+from lp.app.browser.information_type import InformationTypePortlet
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -518,7 +519,7 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(LaunchpadView, BugViewMixin):
+class BugView(LaunchpadView, BugViewMixin, InformationTypePortlet):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -530,23 +531,8 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
-    @property
-    def show_information_type_in_ui(self):
-        return bool(getFeatureFlag(
-            'disclosure.show_information_type_in_ui.enabled'))
-
     def initialize(self):
         super(BugView, self).initialize()
-        cache = IJSONRequestCache(self.request)
-        cache.objects['information_types'] = [
-            {'value': term.value, 'description': term.description,
-            'name': term.title,
-            'description_css_class': 'choice-description'}
-            for term in InformationTypeVocabulary()]
-        cache.objects['private_types'] = [
-            type.title for type in PRIVATE_INFORMATION_TYPES]
-        cache.objects['show_information_type_in_ui'] = (
-            self.show_information_type_in_ui)
 
     @cachedproperty
     def page_description(self):
@@ -595,34 +581,6 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
-
-    @property
-    def information_type(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        title = self.context.information_type.title
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if (
-            self.context.information_type == InformationType.USERDATA and
-            show_userdata_as_private):
-            return 'Private'
-        return title
-
-    @property
-    def information_type_description(self):
-        # This can be replaced with just a return when the feature flag is
-        # dropped.
-        description = self.context.information_type.description
-        show_userdata_as_private = bool(getFeatureFlag(
-            'disclosure.display_userdata_as_private.enabled'))
-        if (
-            self.context.information_type == InformationType.USERDATA and
-            show_userdata_as_private):
-                description = (
-                    description.replace('user data', 'private information'))
-
-        return description
 
 
 class BugActivity(BugView):
