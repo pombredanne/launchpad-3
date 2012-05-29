@@ -77,6 +77,9 @@ a.help:hover, a.help:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.sprite:hover {
+    text-decoration: none;
+    }
 a.invalid-link {
     disabled: True;
     color: #909090;
