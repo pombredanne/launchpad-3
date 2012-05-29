@@ -147,7 +147,8 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         owner = self.factory.makePerson()
         private_branch = self.factory.makeAnyBranch(
             owner=owner, private=True)
-        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        branch = self.factory.makeAnyBranch(
+            stacked_on=private_branch, owner=owner)
         with person_logged_in(owner):
             path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)

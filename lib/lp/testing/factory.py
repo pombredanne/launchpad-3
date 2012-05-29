@@ -1075,8 +1075,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None,
                    name=None, product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, sourcepackage=None,
-                   reviewer=None, **optional_branch_args):
+                   private=None, information_type=None, stacked_on=None,
+                   sourcepackage=None, reviewer=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for `IBranchNamespace.createBranch` can be specified to
@@ -1122,22 +1122,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         branch = namespace.createBranch(
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
+        assert information_type is None or private is None, (
+            "Can not specify both information_type and private")
+        if private is not None:
+            information_type = (
+                InformationType.USERDATA if private else
+                InformationType.PUBLIC)
         naked_branch = removeSecurityProxy(branch)
-        if private:
-            naked_branch.explicitly_private = True
-            naked_branch.transitively_private = True
-            # XXX this is here till branch properly supports information_type
-            target_context = naked_branch.target.context
-            if IBugTarget.providedBy(target_context):
-                pillar = target_context.pillar
-                [artifact] = getUtility(IAccessArtifactSource).ensure([branch])
-                [policy] = getUtility(IAccessPolicySource).find(
-                    [(pillar, InformationType.USERDATA)])
-                getUtility(IAccessPolicyArtifactSource).create(
-                    [(artifact, policy)])
-
+        if information_type is not None:
+            naked_branch.transitionToInformationType(
+                information_type, registrant, verify_policy=False)
         if stacked_on is not None:
-            naked_branch.stacked_on = stacked_on
+            naked_branch.branchChanged(
+                removeSecurityProxy(stacked_on).unique_name, 'rev1', None,
+                None, None)
         if reviewer is not None:
             naked_branch.reviewer = reviewer
         return branch

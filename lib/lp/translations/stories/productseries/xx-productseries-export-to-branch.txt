@@ -131,7 +131,7 @@ Security
 --------
 
 You can only set the translations_branch to a branch that you own.
-Otherwise you'd be giving Launchpad a blanket license to commit
+Otherwise you'd be giving Launchpad a blanket licence to commit
 translations to someone else's branch.
 
     >>> owner_browser.open(link_page)

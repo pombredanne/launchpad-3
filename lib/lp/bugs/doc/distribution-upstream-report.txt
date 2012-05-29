@@ -1,5 +1,5 @@
-Upstream Bug reports
-====================
+Upstream reports
+================
 
 For a distribution's bug tracking process to be successful, it's vital
 that it is able to communicate upstream bugs to the relevant upstream
@@ -182,164 +182,6 @@ the count of bugs having patches but no bug watch.
     mozilla-firefox     firefox 1 1 1 1 0
 
 
-Properties of BugReportData
----------------------------
-
-The API listed above is based around BugReportData instances, each of
-which offers a set of properties that can be used to accessed data. Each
-row in the upstream report table is represented by an instance of
-PackageBugReportData, which sublcassess BugReportData. We'll create a
-BugReportData instance using some made up figures to demonstrate the
-properties offered by BugReportData.
-
-    >>> from lp.bugs.browser import distribution_upstream_bug_report
-    >>> bug_data = distribution_upstream_bug_report.BugReportData(
-    ...     open_bugs=90, triaged_bugs=50, upstream_bugs=70,
-    ...     watched_bugs=60)
-
-
-Percentages
-...........
-
-BugReportData offers a set of *_percentage properties.
-
-BugReportData.triaged_bugs_percentage is the percentage of open bugs
-that have been triaged.
-
-    >>> bug_data.triaged_bugs_percentage
-    55.555555555555557
-
-BugReportData.upstream_bugs_percentage is the percentage of open bugs
-that have been forwarded upstream.
-
-    >>> bug_data.upstream_bugs_percentage
-    77.777777777777771
-
-BugReportData.watched_bugs_percentage is the percentage of bugs
-forwarded upstream that have a bug watch against a remote bug.
-
-    >>> bug_data.watched_bugs_percentage
-    85.714285714285708
-
-
-Deltas
-......
-
-BugReportData also offers a set of *_delta properties along with the
-*_percentage properties.
-
-BugReportData.triaged_bugs_delta is the difference between the number of
-open bugs and the number of triaged bugs.
-
-    >>> bug_data.triaged_bugs_delta
-    40
-
-BugReportData.upstream bugs_delta is the difference between the number
-of open bugs and the number of bugs forwarded upstream.
-
-    >>> bug_data.upstream_bugs_delta
-    20
-
-BugReportData.watched_bugs_delta is the difference between the number of
-upstream bugs and the number of bugs that have a bug watch against an
-upstream bug.
-
-    >>> bug_data.watched_bugs_delta
-    10
-
-
-Classes
-.......
-
-Finally, BugReportData offers a set of *_class properties. These provide
-the correct CSS class to use for rendering the data in a table. They
-return 'good' if the property that they represent is above a certain
-threshold or an empty string if not.
-
-BugReportData.triaged_bugs_class returns 'good' if the
-triaged_bugs_percentage is greater than BugReportData.TRIAGED_THRESHOLD.
-
-    >>> bug_data.TRIAGED_THRESHOLD
-    75
-
-    >>> bug_data.triaged_bugs_class
-    ''
-
-Increasing the number of triaged bugs will put the percentage over the
-threshold and so triaged_bugs_class will be 'good'.
-
-    >>> bug_data.triaged_bugs = 70
-    >>> bug_data.triaged_bugs_class
-    'good'
-
-BugReportData.upstream_bugs_class returns 'good' if the percentage of
-open bugs forwarded upstream is higher than
-BugReportData.UPSTREAM_THRESHOLD.
-
-    >>> bug_data.UPSTREAM_THRESHOLD
-    90
-
-    >>> bug_data.upstream_bugs_class
-    ''
-
-Increasing the number of upstream bugs will put the percentage over the
-threshold and make upstream_bugs_class 'good'.
-
-    >>> bug_data.upstream_bugs = 85
-    >>> bug_data.upstream_bugs_class
-    'good'
-
-BugReportData.watched_bugs_class returns 'good' if the percentage of
-upstream bugs that have a bug watch is greater than
-BugReportData.WATCH_THRESHOLD.
-
-    >>> bug_data.WATCH_THRESHOLD
-    90
-
-    >>> bug_data.watched_bugs_class
-    ''
-
-Increasing the number of watched bugs will put the percentage over the
-threshold and make watched_bugs_class 'good'.
-
-    >>> bug_data.watched_bugs = 80
-    >>> bug_data.watched_bugs_class
-    'good'
-
-There is also a row_class property, which is used to colour the entire
-table row. Its return value is based on the watched_bugs_percentage just
-like watched_bugs_class is above. However, it is kept separate since the
-behaviour for colouring the row differs from the behaviour for colouring
-the watched bugs cell.
-
-If the watched_bugs_percentage property is < 20%, the row is marked as
-'bad'.
-
-    >>> bug_data.open_bugs = 100
-    >>> bug_data.triaged_bugs = 100
-    >>> bug_data.upstream_bugs = 50
-    >>> bug_data.watched_bugs = 5
-    >>> print bug_data.row_class
-    bad
-
-If the watched_bugs_percentage property is > 90%, the row is marked as
-'good'.
-
-    >>> bug_data.watched_bugs = 46
-    >>> print bug_data.row_class
-    good
-
-Otherwise, row_class returns an empty string.
-
-    >>> bug_data.watched_bugs = 40
-    >>> bug_data.row_class
-    ''
-
-    >>> bug_data.watched_bugs = 11
-    >>> bug_data.row_class
-    ''
-
-
 The view
 --------
 
@@ -440,21 +282,6 @@ And the total line:
     >>> print_numbers(view.total)
     5   4   3   3  80.0   60.0   100.0  good       good 1  2  0
 
-A Kubuntu view is not nearly as interesting, though:
-
-    >>> view = create_view(kubuntu, '+upstreamreport')
-    >>> view.initialize()
-    >>> for item in view.data:
-    ...     print_helpers(item)
-
-    >>> for item in view.data:
-    ...     print_numbers(item)
-
-Nada!
-
-    >>> print_numbers(view.total)
-    0   0   0   0   0.0    0.0   0.0            0  0  0
-
 
 Sorting the report
 ------------------
@@ -491,9 +318,9 @@ be reversed.
     >>> view.sort_order
     ('product', True)
 
-The DistributionUpstreamBugReport view has a list of valid sort keys. If
+The DistributionUpstreamReport view has a list of valid sort keys. If
 we try to sort by a key that isn't in that list we'll get the default
-sort_order back. (See test_distribution_upstream_bug_report.py in
+sort_order back. (See test_distribution_upstream_report.py in
 browser/tests for further testing of this).
 
     >>> form = {'sort_by': 'ifthisisvalidilleatmyhat'}
@@ -502,7 +329,7 @@ browser/tests for further testing of this).
     >>> view.sort_order
     ('open_bugs', True)
 
-The DistributionUpstreamBugReport view also has a sort_order_links
+The DistributionUpstreamReport view also has a sort_order_links
 property. This is a dict of URLs which is used to create the links in
 the sortable table header on the +upstreamreport page for the
 distribution.
@@ -603,6 +430,3 @@ accordingly.
     bug_supervisor_name /@@/arrowBlank
     bugs_with_upstream_patches /@@/arrowBlank
     bugtracker_name /@@/arrowDown...
-
-PS: This page is actually browser-tested in pagetests.distribution-
-upstream-bug-report. Look there for more details.
