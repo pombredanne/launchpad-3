@@ -222,20 +222,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
         self.information_type = information_type
-
-        # Ensure an access policy artifact exists.
-        target_context = self.target.context
-        if private and IBugTarget.providedBy(target_context):
-            pillar = target_context.pillar
-            [artifact] = getUtility(IAccessArtifactSource).ensure([self])
-            [policy] = getUtility(IAccessPolicySource).find(
-                [(pillar, information_type)])
-            existing = list(getUtility(IAccessPolicyArtifactSource).find(
-                [(artifact, policy)]))
-            if len(existing) == 0:
-                getUtility(IAccessPolicyArtifactSource).create(
-                    [(artifact, policy)])
-
         # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
