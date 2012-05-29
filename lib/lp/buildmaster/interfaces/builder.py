@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -102,11 +102,11 @@ class IBuilder(IHasOwner):
     Builder instance represents a single builder slave machine within the
     Launchpad Auto Build System. It should specify a 'processor' on which the
     machine is based and is able to build packages for; a URL, by which the
-    machine is accessed through an XML-RPC interface; name, title,
-    description for entity identification and browsing purposes; an LP-like
-    owner which has unrestricted access to the instance; the build slave
-    machine status representation, including the field/properties:
-    virtualized, builderok, status, failnotes and currentjob.
+    machine is accessed through an XML-RPC interface; name, title for entity
+    identification and browsing purposes; an LP-like owner which has
+    unrestricted access to the instance; the build slave machine status
+    representation, including the field/properties: virtualized, builderok,
+    status, failnotes and currentjob.
     """
     export_as_webservice_entry()
 
@@ -138,12 +138,6 @@ class IBuilder(IHasOwner):
         title=_('Title'), required=True,
         description=_(
             'The builder slave title. Should be just a few words.')))
-
-    description = exported(Description(
-        title=_('Description'), required=False,
-        description=_('The builder slave description, may be several '
-                      'paragraphs of text, giving the highlights and '
-                      'details.')))
 
     virtualized = exported(Bool(
         title=_('Virtualized'), required=True, default=False,
@@ -367,8 +361,8 @@ class IBuilderSet(Interface):
     def getByName(name):
         """Retrieve a builder by name"""
 
-    def new(processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+    def new(processor, url, name, title, owner, active=True,
+            virtualized=False, vm_host=None):
         """Create a new Builder entry.
 
         Additionally to the given arguments, builder are created with
