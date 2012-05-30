@@ -978,7 +978,7 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             description.renderContents())
 
     def test_information_type_in_ui_with_display_as_private(self):
-        # With both show_information_type_in_branch_ui and 
+        # With both show_information_type_in_branch_ui and
         # display_userdata_as_private, the information_type is shown with
         # User Data masked as Private.
         owner = self.factory.makePerson()
