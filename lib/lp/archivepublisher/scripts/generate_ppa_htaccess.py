@@ -376,5 +376,4 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.logger.info('Committing transaction...')
             self.txn.commit()
 
-        # XXX: At this point, or later, log how long the script took.
         self.logger.info('Finished PPA .htaccess generation')

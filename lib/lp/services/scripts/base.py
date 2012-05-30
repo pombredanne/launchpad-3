@@ -424,6 +424,24 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+        # date_started is recorded *after* the lock is acquired and we've
+        # initialized Zope components and the database.  Thus this time is
+        # only for the script proper, rather than total execution time.
+        seconds_taken = total_seconds(date_completed - date_started)
+        self.logger.debug(
+            "%s ran in %ss (excl. load & lock)" % (self.name, seconds_taken))
+
+
+def total_seconds(duration):
+    """The number of total seconds in a timedelta.
+
+    In Python 2.7, spell this as duration.total_seconds().  Only needed for
+    Python 2.6 or earlier.
+    """
+    return (
+        (duration.microseconds +
+         (duration.seconds + duration.days * 24 * 3600) * 1e6)
+        / 1e6)
 
 
 @contextmanager
