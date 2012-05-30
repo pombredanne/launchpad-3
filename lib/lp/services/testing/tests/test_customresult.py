@@ -58,7 +58,7 @@ class TestFilterTests(TestCase):
         # Tests should be returned in the order seen in the testfile.
         layername = 'layer-1'
         testnames = ['d', 'c', 'a']
-        suite = unittest.suite.TestSuite()
+        suite = unittest.TestSuite()
         for letter in string.lowercase:
             suite.addTest(FakeTestCase(letter))
         with tempfile.NamedTemporaryFile() as fd:
@@ -90,7 +90,7 @@ class TestFilterTests(TestCase):
         # collapsed and lost.
         layername = 'layer-1'
         testnames = ['1', '2', '3']
-        suite = unittest.suite.TestSuite()
+        suite = unittest.TestSuite()
         for t in testnames:
             # Each test will be repeated equal to the number represented.
             for i in range(int(t)):
