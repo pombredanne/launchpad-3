@@ -204,7 +204,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             num_tokens += 1
         self.logger.debug(
             "Deactivated %s tokens, %s PPAs affected"
-            % (len(tokens), len(affected_ppas)))
+            % (num_tokens, len(affected_ppas)))
         return affected_ppas
 
     def deactivateInvalidTokens(self, send_email=False):
