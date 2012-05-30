@@ -127,7 +127,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         # Generate the passwd file.
         script = self.getScript()
-        filename = script.generateHtpasswd(self.ppa, tokens)
+        filename = script.generateHtpasswd(self.ppa)
 
         # It should be a temp file in the same directory as the intended
         # target file when it's renamed, so that os.rename() won't
@@ -701,7 +701,7 @@ class TestPerformance(TestCaseWithFactory):
         return open(filename).read()
 
 
-    def test_initial_ppa_creation(self):
+    def disabled_test_initial_ppa_creation(self):
         ppa = self.factory.makeArchive(private=True)
         print 'adding subscribers'
         self.add_subscribers(ppa, 5000)
