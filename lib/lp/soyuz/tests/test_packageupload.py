@@ -8,6 +8,11 @@ from email import message_from_string
 import os
 import shutil
 
+from lazr.restfulclient.errors import (
+    BadRequest,
+    Unauthorized,
+    )
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,6 +34,7 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
@@ -37,9 +43,18 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    admin_logged_in,
+    api_url,
+    launchpadlib_for,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import switch_dbuser
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.testing.matchers import Provides
 
 
@@ -855,3 +870,89 @@ class TestPackageUploadSet(TestCaseWithFactory):
         pu.changesfile = None
         pu.rejectFromQueue()
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
+
+
+class TestPackageUploadWebservice(TestCaseWithFactory):
+    """Test the exposure of queue methods to the web service."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPackageUploadWebservice, self).setUp()
+        self.webservice = None
+
+    def makeDistroSeries(self):
+        self.distroseries = self.factory.makeDistroSeries()
+        self.main = self.factory.makeComponent("main")
+        self.factory.makeComponentSelection(
+            distroseries=self.distroseries, component=self.main)
+
+    def makeQueueAdmin(self, components):
+        person = self.factory.makePerson()
+        for component in components:
+            getUtility(IArchivePermissionSet).newQueueAdmin(
+                self.distroseries.main_archive, person, component)
+        return person
+
+    def load(self, obj, person=None):
+        if person is None:
+            with admin_logged_in():
+                person = self.factory.makePerson()
+        if self.webservice is None:
+            self.webservice = launchpadlib_for("testing", person)
+        return self.webservice.load(api_url(obj))
+
+    def assertRequiresEdit(self, method_name, **kwargs):
+        """Test that a web service queue method requires launchpad.Edit."""
+        with admin_logged_in():
+            upload = self.factory.makeSourcePackageUpload()
+        transaction.commit()
+        ws_upload = self.load(upload)
+        self.assertRaises(Unauthorized, getattr(ws_upload, method_name),
+                          **kwargs)
+
+    def test_edit_permissions(self):
+        self.assertRequiresEdit("acceptFromQueue")
+        self.assertRequiresEdit("rejectFromQueue")
+
+    def test_acceptFromQueue_archive_admin(self):
+        # acceptFromQueue as an archive admin accepts the upload.
+        self.makeDistroSeries()
+        person = self.makeQueueAdmin([self.main])
+        with person_logged_in(person):
+            upload = self.factory.makeSourcePackageUpload(
+                distroseries=self.distroseries, component=self.main)
+        transaction.commit()
+
+        ws_upload = self.load(upload, person)
+        self.assertEqual("New", ws_upload.status)
+        ws_upload.acceptFromQueue()
+        self.assertEqual("Done", ws_upload.status)
+
+    def test_double_accept_raises_BadRequest(self):
+        # Trying to accept an upload twice returns 400 instead of OOPSing.
+        self.makeDistroSeries()
+        person = self.makeQueueAdmin([self.main])
+        with person_logged_in(person):
+            upload = self.factory.makeSourcePackageUpload(
+                distroseries=self.distroseries, component=self.main)
+            upload.setAccepted()
+        transaction.commit()
+
+        ws_upload = self.load(upload, person)
+        self.assertEqual("Accepted", ws_upload.status)
+        self.assertRaises(BadRequest, ws_upload.acceptFromQueue)
+
+    def test_rejectFromQueue_archive_admin(self):
+        # rejectFromQueue as an archive admin rejects the upload.
+        self.makeDistroSeries()
+        person = self.makeQueueAdmin([self.main])
+        with person_logged_in(person):
+            upload = self.factory.makeSourcePackageUpload(
+                distroseries=self.distroseries, component=self.main)
+        transaction.commit()
+
+        ws_upload = self.load(upload, person)
+        self.assertEqual("New", ws_upload.status)
+        ws_upload.rejectFromQueue()
+        self.assertEqual("Rejected", ws_upload.status)
