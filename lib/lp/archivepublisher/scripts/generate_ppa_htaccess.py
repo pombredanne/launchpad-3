@@ -257,6 +257,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # NTP is running on our servers and therefore we can assume
             # only minimal skew, we include a fudge-factor of 1s so that
             # even the minimal skew cannot demonstrate bug 627608.
+            #
+            # XXX: Pass date_started in.
             last_script_start_with_skew = last_success.date_started - (
                 timedelta(seconds=1))
             extra_expr = [
@@ -296,6 +298,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         last_success = getUtility(IScriptActivitySet).getLastActivity(
             'generate-ppa-htaccess')
         extra_expr = []
+        # XXX: This uses date_completed, other point uses date_started.
         if last_success:
             extra_expr = [
                 Archive.date_created >= last_success.date_completed]
@@ -373,4 +376,5 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             self.logger.info('Committing transaction...')
             self.txn.commit()
 
+        # XXX: At this point, or later, log how long the script took.
         self.logger.info('Finished PPA .htaccess generation')
