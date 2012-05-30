@@ -28,6 +28,10 @@ GNU Affero General Public License version 3 (see the file LICENSE).
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/mustache.js"></script>
       <script type="text/javascript"
+          src="../../../../../build/js/lp/app/choice.js"></script>
+      <script type="text/javascript"
+          src="../../../../../build/js/lp/app/choiceedit/choiceedit.js"></script>
+      <script type="text/javascript"
           src="../../../../../build/js/lp/app/expander.js"></script>
       <script type="text/javascript"
           src="../../../../../build/js/lp/app/formoverlay/formoverlay.js"></script>
@@ -98,6 +102,18 @@ GNU Affero General Public License version 3 (see the file LICENSE).
             </tr>
             </tbody>
         </table>
+        <div class="value">
+            <select size="1" name="field.status" id="field.status">
+            <option value="New" selected="selected">New</option>
+            <option value="Incomplete">Incomplete</option>
+            </select>
+        </div>
+        <div class="value">
+            <select size="1" name="field.status" id="field.importance">
+            <option value="Undecided" selected="selected">Undecided</option>
+            <option value="High">High</option>
+            </select>
+        </div>
         </script>
     </body>
 </html>

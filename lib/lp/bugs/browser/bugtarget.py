@@ -58,6 +58,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -98,6 +99,8 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -389,6 +392,21 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         cache.objects['enable_bugfiling_duplicate_search'] = (
             IProjectGroup.providedBy(self.context)
             or self.context.enable_bugfiling_duplicate_search)
+        bugtask_status_data = vocabulary_to_choice_edit_items(
+            BugTaskStatus, include_description=True, css_class_prefix='status',
+            excluded_items=[
+                BugTaskStatus.UNKNOWN,
+                BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
+                BugTaskStatus.OPINION,
+                BugTaskStatus.WONTFIX,
+                BugTaskStatus.INCOMPLETE])
+        cache.objects['bugtask_status_data'] = bugtask_status_data
+        bugtask_importance_data = vocabulary_to_choice_edit_items(
+            BugTaskImportance, include_description=True,
+            css_class_prefix='importance',
+            excluded_items=[BugTaskImportance.UNKNOWN])
+        cache.objects['bugtask_importance_data'] = bugtask_importance_data
         if (self.extra_data_token is not None and
             not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
