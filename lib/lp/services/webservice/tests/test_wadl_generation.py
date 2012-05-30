@@ -24,7 +24,7 @@ class SmokeTestWadlAndDocGeneration(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_wadl(self):
-        preexisting_wadl_cache = WebServiceApplication.cached_wadl
+        preexisting_wadl_cache = WebServiceApplication.cached_wadl.copy()
         config = getUtility(IWebServiceConfiguration)
         for version in config.active_versions:
             wadl = generate_wadl(version)

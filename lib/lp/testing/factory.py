@@ -947,7 +947,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None,
+        translations_usage=None, bug_supervisor=None, private_bugs=False,
         driver=None, security_contact=None, icon=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
@@ -989,6 +989,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.driver = driver
         if security_contact is not None:
             naked_product.security_contact = security_contact
+        if private_bugs:
+            naked_product.private_bugs = private_bugs
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -2743,8 +2745,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return person
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
-                    description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None, manual=False):
+                    owner=None, active=True, virtualized=True, vm_host=None,
+                    manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -2760,14 +2762,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString('builder-name')
         if title is None:
             title = self.getUniqueString('builder-title')
-        if description is None:
-            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, description, owner, active,
-            virtualized, vm_host, manual=manual)
+            processor, url, name, title, owner, active, virtualized, vm_host,
+            manual=manual)
 
     def makeRecipeText(self, *branches):
         if len(branches) == 0:
@@ -3511,14 +3511,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return package_upload
 
     def makeSourcePackageUpload(self, distroseries=None,
-                                sourcepackagename=None):
+                                sourcepackagename=None, component=None):
         """Make a `PackageUpload` with a `PackageUploadSource` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         upload = self.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
         upload.addSource(self.makeSourcePackageRelease(
-            sourcepackagename=sourcepackagename))
+            sourcepackagename=sourcepackagename, component=component))
         return upload
 
     def makeBuildPackageUpload(self, distroseries=None,
