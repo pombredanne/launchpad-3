@@ -8,7 +8,7 @@
   "
 >
   <tal:information_type tal:condition="view/show_information_type_in_ui">
-    This branch contains <strong id="information-type" tal:content="view/information_type"></strong> information&nbsp;
+    This branch contains <strong id="information-type" tal:content="view/information_type"></strong> information
     <div id='information-type-description' style='padding-top: 5px' tal:content="view/information_type_description"></div>
   </tal:information_type>
   <tal:privacy tal:condition="not:view/show_information_type_in_ui">

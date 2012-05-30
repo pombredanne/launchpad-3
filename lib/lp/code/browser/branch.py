@@ -75,7 +75,7 @@ from zope.schema.vocabulary import (
 from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
-from lp.app.browser.information_type import InformationTypePortlet
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -431,7 +431,7 @@ class BranchMirrorMixin:
 
 
 class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
-                 InformationTypePortlet):
+                 InformationTypePortletMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -442,6 +442,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin,
         return self.context.bzr_identity
 
     label = page_title
+
+    @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_branch_ui.enabled'))
 
     def initialize(self):
         super(BranchView, self).initialize()

@@ -55,7 +55,7 @@ from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from lp import _
-from lp.app.browser.information_type import InformationTypePortlet
+from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -519,7 +519,7 @@ class BugViewMixin:
         return getUtility(ILaunchBag).bugtask
 
 
-class BugView(InformationTypePortlet, LaunchpadView, BugViewMixin):
+class BugView(InformationTypePortletMixin, LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
@@ -531,8 +531,10 @@ class BugView(InformationTypePortlet, LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
-    def initialize(self):
-        super(BugView, self).initialize()
+    @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
 
     @cachedproperty
     def page_description(self):
