@@ -30,9 +30,15 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactSource,
+    IAccessPolicySource,
+    IAccessPolicyArtifactSource,
+    )
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    admin_logged_in,
     feature_flags,
     login_person,
     person_logged_in,
@@ -41,12 +47,27 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbtriggers import triggers_disabled
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
     Equals,
     HasQueryCount,
     LessThan,
     )
+
+
+def get_policies_for_bug(bug):
+    [artifact] = getUtility(IAccessArtifactSource).find([bug])
+    return [
+        apa.policy for apa in
+        getUtility(IAccessPolicyArtifactSource).findByArtifact([artifact])]
+
+
+LEGACY_ACCESS_TRIGGERS = [
+    ('bug', 'bug_mirror_legacy_access_t'),
+    ('bugtask', 'bugtask_mirror_legacy_access_t'),
+    ('bugsubscription', 'bugsubscription_mirror_legacy_access_t'),
+    ]
 
 
 class TestBug(TestCaseWithFactory):
@@ -810,6 +831,24 @@ class TestBugPrivacy(TestCaseWithFactory):
             (private_sec_bug, InformationType.EMBARGOEDSECURITY),
             )
         [self.assertEqual(m[1], m[0].information_type) for m in mapping]
+
+    def test_accesspolicyartifacts_updated(self):
+        # transitionToTarget updates the AccessPolicyArtifacts related
+        # to the bug.
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY)
+
+        # There are also transitional triggers that do this. Disable
+        # them temporarily so we can be sure the application side works.
+        with triggers_disabled(LEGACY_ACCESS_TRIGGERS):
+            with admin_logged_in():
+                product = bug.default_bugtask.product
+                bug.transitionToInformationType(
+                    InformationType.USERDATA, bug.owner)
+
+        [expected_policy] = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)])
+        self.assertContentEqual([expected_policy], get_policies_for_bug(bug))
 
     def test_private_to_public_information_type(self):
         # A private bug transitioning to public has the correct information
