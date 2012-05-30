@@ -59,9 +59,9 @@ class CustomUploadsCopier:
         customs.sort(key=attrgetter('id'), reverse=True)
         return customs
 
-    def extractSeriesKey(self, custom_obj, filename):
-        """Get the relevant fields out of `filename` for `custom_obj`."""
-        return custom_obj.getSeriesKey(filename)
+    def extractSeriesKey(self, custom_type, filename):
+        """Get the relevant fields out of `filename` for `custom_type`."""
+        return custom_type.getSeriesKey(filename)
 
     def getKey(self, upload):
         """Get an indexing key for `upload`."""
@@ -70,7 +70,7 @@ class CustomUploadsCopier:
         # name as well.
         custom_format = upload.customformat
         series_key = self.extractSeriesKey(
-            self.copyable_types[custom_format](),
+            self.copyable_types[custom_format],
             upload.libraryfilealias.filename)
         if series_key is None:
             return None

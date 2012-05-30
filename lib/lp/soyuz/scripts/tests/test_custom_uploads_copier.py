@@ -77,7 +77,8 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
     def test_getKey_calls_correct_custom_upload_method(self):
         # getKey calls the getSeriesKey method on the correct custom upload.
         class FakeCustomUpload:
-            def getSeriesKey(self, tarfile_path):
+            @classmethod
+            def getSeriesKey(cls, tarfile_path):
                 return "dummy"
 
         copier = CustomUploadsCopier(FakeDistroSeries())

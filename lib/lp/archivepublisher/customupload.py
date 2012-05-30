@@ -121,7 +121,8 @@ class CustomUpload:
         """
         raise NotImplementedError
 
-    def getSeriesKey(self, tarfile_path):
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
         """Get a unique key for instances of this custom upload type.
 
         The key should differ for any uploads that may be published

@@ -153,16 +153,16 @@ class TestDebianInstaller(TestCase):
         # getSeriesKey extracts the architecture from an upload's filename.
         self.openArchive()
         self.assertEqual(
-            self.arch, DebianInstallerUpload().getSeriesKey(self.path))
+            self.arch, DebianInstallerUpload.getSeriesKey(self.path))
 
     def test_getSeriesKey_returns_None_on_mismatch(self):
         # getSeriesKey returns None if the filename does not match the
         # expected pattern.
-        self.assertIsNone(DebianInstallerUpload().getSeriesKey("argh_1.0.jpg"))
+        self.assertIsNone(DebianInstallerUpload.getSeriesKey("argh_1.0.jpg"))
 
     def test_getSeriesKey_refuses_names_with_wrong_number_of_fields(self):
         # getSeriesKey requires exactly three fields.
-        self.assertIsNone(DebianInstallerUpload().getSeriesKey(
+        self.assertIsNone(DebianInstallerUpload.getSeriesKey(
             "package_1.0.tar.gz"))
-        self.assertIsNone(DebianInstallerUpload().getSeriesKey(
+        self.assertIsNone(DebianInstallerUpload.getSeriesKey(
             "one_two_three_four_5.tar.gz"))

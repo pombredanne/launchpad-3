@@ -49,7 +49,8 @@ class DebianInstallerUpload(CustomUpload):
             archive_root, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)
 
-    def getSeriesKey(self, tarfile_path):
+    @classmethod
+    def getSeriesKey(cls, tarfile_path):
         try:
             _, _, arch = os.path.basename(tarfile_path).split("_")
             return arch.split(".")[0]

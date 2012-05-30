@@ -91,16 +91,16 @@ class TestDistUpgrader(TestCase):
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.
         self.openArchive("20060302.0120")
-        self.assertEqual("all", DistUpgraderUpload().getSeriesKey(self.path))
+        self.assertEqual("all", DistUpgraderUpload.getSeriesKey(self.path))
 
     def test_getSeriesKey_returns_None_on_mismatch(self):
         # getSeriesKey returns None if the filename does not match the
         # expected pattern.
-        self.assertIsNone(DistUpgraderUpload().getSeriesKey("argh_1.0.jpg"))
+        self.assertIsNone(DistUpgraderUpload.getSeriesKey("argh_1.0.jpg"))
 
     def test_getSeriesKey_refuses_names_with_wrong_number_of_fields(self):
         # getSeriesKey requires exactly three fields.
-        self.assertIsNone(DistUpgraderUpload().getSeriesKey(
+        self.assertIsNone(DistUpgraderUpload.getSeriesKey(
             "package_1.0.tar.gz"))
-        self.assertIsNone(DistUpgraderUpload().getSeriesKey(
+        self.assertIsNone(DistUpgraderUpload.getSeriesKey(
             "one_two_three_four_5.tar.gz"))
