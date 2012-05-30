@@ -82,6 +82,7 @@ def htpasswd_credentials_for_archive(archive, tokens=None):
 
     if tokens is None:
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(archive)
+    # We iterate tokens more than once - materialise it.
     tokens = list(tokens)
 
     # The first .htpasswd entry is the buildd_secret.
