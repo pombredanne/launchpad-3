@@ -24,6 +24,7 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
 HTACCESS_TEMPLATE = """
