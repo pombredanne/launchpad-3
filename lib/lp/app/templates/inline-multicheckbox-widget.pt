@@ -11,7 +11,7 @@
                          href view/edit_url;
                          title view/edit_title"
          class="sprite edit lazr-btn yui3-activator-act"
-         >&nbsp;<span class="invisible-link">Edit</span></a>
+         ><span class="invisible-link">Edit</span></a>
     </tal:has_choices>
   <tal:label-close-tag replace="structure view/label_close_tag"/>
   <span class="yui3-activator-data-box">
