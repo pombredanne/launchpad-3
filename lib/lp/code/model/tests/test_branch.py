@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -13,6 +13,7 @@ from datetime import (
     timedelta,
     )
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
@@ -20,6 +21,10 @@ import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 from testtools import ExpectedException
+from testtools.matchers import (
+    Not,
+    PathExists,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -51,6 +56,7 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
+    BranchCannotChangeInformationType,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
@@ -103,12 +109,19 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
+from lp.codehosting.vfs.branchfs import get_real_branch_path
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.lpstorm import IStore
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.tests import (
+    block_on_job,
+    monitor_celery,
+    )
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import IOpenLaunchBag
@@ -129,12 +142,24 @@ from lp.testing import (
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
+    CeleryBranchWriteJobLayer,
+    CeleryJobLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 from lp.translations.model.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
+
+
+def create_knit(test_case):
+    db_branch, tree = test_case.create_branch_and_tree(format='knit')
+    with person_logged_in(db_branch.owner):
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+    return db_branch, tree
 
 
 class TestCodeImport(TestCase):
@@ -159,7 +184,7 @@ class TestCodeImport(TestCase):
 class TestBranchChanged(TestCaseWithFactory):
     """Tests for `IBranch.branchChanged`."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -282,6 +307,78 @@ class TestBranchChanged(TestCaseWithFactory):
              RepositoryFormat.BZR_KNITPACK_1),
             (branch.control_format, branch.branch_format,
              branch.repository_format))
+
+
+class TestBranchJobViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def test_branchChanged_via_celery(self):
+        """Running a job via Celery succeeds and emits expected output."""
+        # Delay importing anything that uses Celery until RabbitMQLayer is
+        # running, so that config.rabbitmq.host is defined when
+        # lp.services.job.celeryconfig is loaded.
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchScanJob'}))
+        self.useBzrBranches()
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit(
+            'First commit', rev_id='rev1', committer='me@example.org')
+        with person_logged_in(db_branch.owner):
+            db_branch.branchChanged(None, 'rev1', None, None, None)
+        with block_on_job():
+            transaction.commit()
+        self.assertEqual(db_branch.revision_count, 1)
+
+    def test_branchChanged_via_celery_no_enabled(self):
+        """With no feature flag, no task is created."""
+        self.useBzrBranches()
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit(
+            'First commit', rev_id='rev1', committer='me@example.org')
+        with person_logged_in(db_branch.owner):
+            db_branch.branchChanged(None, 'rev1', None, None, None)
+        with monitor_celery() as responses:
+            transaction.commit()
+            self.assertEqual([], responses)
+
+
+class TestBranchWriteJobViaCelery(TestCaseWithFactory):
+
+    layer = CeleryBranchWriteJobLayer
+
+    def test_destroySelf_via_celery(self):
+        """Calling destroySelf causes Celery to delete the branch."""
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'ReclaimBranchSpaceJob'}))
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        branch_path = get_real_branch_path(db_branch.id)
+        self.assertThat(branch_path, PathExists())
+        with person_logged_in(db_branch.owner):
+            db_branch.destroySelf()
+        with block_on_job():
+            transaction.commit()
+        self.assertThat(branch_path, Not(PathExists()))
+
+    def test_requestUpgradeUsesCelery(self):
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'BranchUpgradeJob'}))
+        self.useBzrBranches()
+        db_branch, tree = create_knit(self)
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        with person_logged_in(db_branch.owner):
+            db_branch.requestUpgrade(db_branch.owner)
+        with block_on_job():
+            transaction.commit()
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+        self.assertFalse(db_branch.needs_upgrading)
 
 
 class TestBranchRevisionMethods(TestCaseWithFactory):
@@ -584,7 +681,7 @@ class TestBranch(TestCaseWithFactory):
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
 
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessAppServerLayer
 
     def test_needsUpgrading_empty_formats(self):
         branch = self.factory.makePersonalBranch()
@@ -2144,7 +2241,7 @@ class TestBranchNamespace(TestCaseWithFactory):
 class TestPendingWrites(TestCaseWithFactory):
     """Are there changes to this branch not reflected in the database?"""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_new_branch_no_writes(self):
         # New branches have no pending writes.
@@ -2238,16 +2335,21 @@ class TestBranchPrivacy(TestCaseWithFactory):
     def test_public_stacked_on_private_is_private(self):
         # A public branch stacked on a private branch is private.
         stacked_on = self.factory.makeBranch(private=True)
-        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
+        branch = self.factory.makeBranch(
+            stacked_on=stacked_on, private=False)
         self.assertTrue(branch.private)
+        self.assertEqual(
+            stacked_on.information_type, branch.information_type)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
-        self.assertFalse(branch.explicitly_private)
+        self.assertTrue(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
-        # A public branch stacked on a private branch is private.
+        # A private branch stacked on a public branch is private.
         stacked_on = self.factory.makeBranch(private=False)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
         self.assertTrue(branch.private)
+        self.assertNotEqual(
+            stacked_on.information_type, branch.information_type)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
 
@@ -2255,6 +2357,7 @@ class TestBranchPrivacy(TestCaseWithFactory):
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
         branch = self.factory.makePersonalBranch(owner=team)
         self.assertTrue(branch.private)
+        self.assertEqual(InformationType.USERDATA, branch.information_type)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
@@ -2285,6 +2388,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertTrue(branch.private)
         self.assertTrue(removeSecurityProxy(branch).transitively_private)
         self.assertTrue(branch.explicitly_private)
+        self.assertEqual(InformationType.USERDATA, branch.information_type)
 
     def test_public_to_private_not_allowed(self):
         # If there are no privacy policies allowing private branches, then
@@ -2323,6 +2427,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertFalse(branch.private)
         self.assertFalse(removeSecurityProxy(branch).transitively_private)
         self.assertFalse(branch.explicitly_private)
+        self.assertEqual(InformationType.PUBLIC, branch.information_type)
 
     def test_private_to_public_not_allowed(self):
         # If the namespace policy does not allow public branches, attempting
@@ -2336,6 +2441,26 @@ class TestBranchSetPrivate(TestCaseWithFactory):
             BranchCannotBePublic,
             branch.setPrivate,
             False, branch.owner)
+
+    def test_cannot_transition_with_private_stacked_on(self):
+        # If a public branch is stacked on a private branch, it can not
+        # change its information_type to public.
+        stacked_on = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(stacked_on=stacked_on)
+        self.assertRaises(
+            BranchCannotChangeInformationType,
+            branch.transitionToInformationType, InformationType.PUBLIC,
+            branch.owner)
+
+    def test_can_transition_with_public_stacked_on(self):
+        # If a private branch is stacked on a public branch, it can change
+        # its information_type.
+        stacked_on = self.factory.makeBranch()
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        branch.transitionToInformationType(
+            InformationType.UNEMBARGOEDSECURITY, branch.owner)
+        self.assertEqual(
+            InformationType.UNEMBARGOEDSECURITY, branch.information_type)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):

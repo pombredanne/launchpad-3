@@ -22,16 +22,15 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    )
+from lp.services.database.lpstorm import IStore
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -284,6 +283,9 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds[1:3]:
             spr = build.source_package_release
             removeSecurityProxy(spr).sourcepackagename = gedit_name
+            IStore(SourcePackagePublishingHistory).find(
+                SourcePackagePublishingHistory, sourcepackagerelease=spr
+                ).set(sourcepackagenameID=gedit_name.id)
 
         # Set them as sucessfully built
         for build in self.builds:

@@ -18,7 +18,7 @@ team.
     >>> person_set = getUtility(IPersonSet)
     >>> merge_job_source = getUtility(IPersonMergeJobSource)
     >>> registry_expert= factory.makeRegistryExpert()
-    >>> login_person(registry_expert)
+    >>> ignored = login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).
 
@@ -63,7 +63,7 @@ ownership of the merged profile's email addresses, so it's not possible for
 them to merge a profile which has no email address.
 
     >>> admin = person_set.getByName('name16')
-    >>> login_person(registry_expert)
+    >>> ignored = login_person(registry_expert)
 
     # First we need to forge a person without a single email address.
     >>> from lp.registry.interfaces.person import PersonCreationRationale
@@ -105,19 +105,19 @@ can delete teams.
     >>> team_owner = factory.makePerson()
     >>> team_member = factory.makePerson()
     >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
-    >>> login_person(team_owner)
+    >>> ignored = login_person(team_owner)
     >>> ignore = deletable_team.addMember(team_member, reviewer=team_owner)
     >>> view = create_initialized_view(deletable_team, '+delete')
 
-    >>> login_person(team_member)
+    >>> ignored = login_person(team_member)
     >>> check_permission('launchpad.Moderate', view)
     False
 
-    >>> login_person(registry_expert)
+    >>> ignored = login_person(registry_expert)
     >>> check_permission('launchpad.Moderate', view)
     True
 
-    >>> login_person(team_owner)
+    >>> ignored = login_person(team_owner)
     >>> check_permission('launchpad.Moderate', view)
     True
 
@@ -212,7 +212,7 @@ A team with a mailing list cannot be deleted.
 
     >>> team, mailing_list = factory.makeTeamAndMailingList(
     ...     'not-deletable', 'rock')
-    >>> login_person(team.teamowner)
+    >>> ignored = login_person(team.teamowner)
     >>> view = create_initialized_view(
     ...     team, '+delete', principal=team.teamowner)
     >>> view.canDelete(data={})

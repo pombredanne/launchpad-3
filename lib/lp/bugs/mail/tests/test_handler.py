@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test MaloneHandler."""
@@ -28,8 +28,8 @@ from lp.bugs.mail.handler import (
     MaloneHandler,
     )
 from lp.bugs.model.bugnotification import BugNotification
+from lp.registry.enums import InformationType
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.mail import stub
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
@@ -287,7 +287,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('unsecure code', bug.title)
-        self.assertEqual(True, bug.security_related)
+        self.assertTrue(bug.security_related)
         self.assertEqual(['ajax'], bug.tags)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
@@ -310,7 +310,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         notification = self.getLatestBugNotification()
         bug = notification.bug
         self.assertEqual('security issue', bug.title)
-        self.assertEqual(True, bug.security_related)
+        self.assertTrue(bug.security_related)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
         recipients = set()
@@ -318,6 +318,23 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
             for recipient in notification.recipients:
                 recipients.add(recipient.person)
         self.assertContentEqual([maintainer], recipients)
+
+    def test_information_type(self):
+        project = self.factory.makeProduct(name='fnord')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='unsecure\n informationtype userdata\n affects fnord',
+                subject='unsecure code',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('unsecure code', bug.title)
+        self.assertEqual(InformationType.USERDATA, bug.information_type)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
 
 
 class BugTaskCommandGroupTestCase(TestCase):
@@ -679,7 +696,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         handler = MaloneHandler()
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])
@@ -699,7 +716,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
         del stub.test_emails[:]
         with person_logged_in(self.factory.makePerson()):
             handler.process(msg, msg['To'])
-        commit()
+        transaction.commit()
         # Since there were no commands in the poorly-timestamped message, no
         # error emails were generated.
         self.assertEqual(stub.test_emails, [])

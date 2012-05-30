@@ -18,7 +18,6 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
-from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -26,11 +25,6 @@ from lp.testing.layers import DatabaseFunctionalLayer
 class TestBugMirrorAccessTriggers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugMirrorAccessTriggers, self).setUp()
-        self.useFixture(FeatureFixture(
-            {'disclosure.allow_multipillar_private_bugs.enabled': 'true'}))
 
     def assertMirrored(self, bug):
         """Check that a bug has been correctly mirrored to the new schema.
@@ -80,7 +74,12 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
 
     def makeBugAndPolicies(self, private=False):
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(private=private, product=product)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        bug = self.factory.makeBug(
+            product=product, information_type=information_type)
         return removeSecurityProxy(bug)
 
     def getPoliciesForArtifact(self, artifact):
@@ -94,7 +93,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
             policy.type for policy in self.getPoliciesForArtifact(artifact))
 
     def test_public_has_nothing(self):
-        bug = self.factory.makeBug(private=False)
+        bug = self.factory.makeBug(information_type=InformationType.PUBLIC)
         artifact = getUtility(IAccessArtifactSource).find([bug]).one()
         self.assertIs(None, artifact)
 
@@ -136,7 +135,7 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=True)
         self.assertIsNot(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        bug.private = False
+        bug.setPrivate(False, bug.owner)
         self.assertIs(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
 
@@ -144,10 +143,12 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         bug = self.makeBugAndPolicies(private=False)
         self.assertIs(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        bug.private = True
+        bug.setPrivate(True, bug.owner)
         self.assertIsNot(
             None, getUtility(IAccessArtifactSource).find([bug]).one())
-        self.assertEqual((1, 1), self.assertMirrored(bug))
+        # There are two grants--one for the reporter, one for the product
+        # owner or supervisor (if set). There is only one policy, USERDATA.
+        self.assertEqual((2, 1), self.assertMirrored(bug))
 
     def test_security_related(self):
         # Setting the security_related flag uses EMBARGOEDSECURITY
@@ -158,8 +159,10 @@ class TestBugMirrorAccessTriggers(TestCaseWithFactory):
         self.assertContentEqual(
             [InformationType.USERDATA],
             self.getPolicyTypesForArtifact(artifact))
-        bug.security_related = True
-        self.assertEqual((1, 1), self.assertMirrored(bug))
+        bug.setSecurityRelated(True, bug.owner)
+        # Both the reporter and either the product owner or the product's
+        # security contact have grants.
+        self.assertEqual((2, 1), self.assertMirrored(bug))
         self.assertContentEqual(
             [InformationType.EMBARGOEDSECURITY],
             self.getPolicyTypesForArtifact(artifact))

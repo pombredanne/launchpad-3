@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'Library',
-    'read_transaction',
-    'write_transaction',
     ]
 
 from sqlobject.sqlbuilder import AND

@@ -352,9 +352,9 @@
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         name="+upstreamreport"
-        class="lp.bugs.browser.distribution_upstream_bug_report.DistributionUpstreamBugReport"
+        class="lp.bugs.browser.distribution_upstream_report.DistributionUpstreamReport"
         permission="zope.Public"
-        template="../templates/distribution-upstream-bug-report.pt"/>
+        template="../templates/distribution-upstream-report.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.cvereport.CVEReportView"

@@ -13,8 +13,6 @@ __all__ = [
     'IRunnableJob',
     'ITwistedJobSource',
     'JobStatus',
-    'LeaseHeld',
-    'SuspendJobException',
     ]
 
 
@@ -37,18 +35,6 @@ from zope.schema import (
 
 from lp import _
 from lp.registry.interfaces.person import IPerson
-
-
-class SuspendJobException(Exception):
-    """Raised when a running job wants to suspend itself."""
-    pass
-
-
-class LeaseHeld(Exception):
-    """Raised when attempting to acquire a list that is already held."""
-
-    def __init__(self):
-        Exception.__init__(self, 'Lease is already held.')
 
 
 class JobStatus(DBEnumeratedType):
@@ -88,6 +74,9 @@ class JobStatus(DBEnumeratedType):
 class IJob(Interface):
     """Basic attributes of a job."""
 
+    job_id = Int(title=_(
+        'A unique identifier for this job.'))
+
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
 
@@ -126,22 +115,22 @@ class IJob(Interface):
     def getTimeout():
         """Determine how long this job can run before timing out."""
 
-    def start():
+    def start(manage_transaction=False):
         """Mark the job as started."""
 
-    def complete():
+    def complete(manage_transaction=False):
         """Mark the job as completed."""
 
-    def fail():
+    def fail(manage_transaction=False):
         """Indicate that the job has failed permanently.
 
         Only running jobs can fail.
         """
 
-    def queue():
+    def queue(manage_transaction=False, abort_transaction=False):
         """Mark the job as queued for processing."""
 
-    def suspend():
+    def suspend(manage_transaction=False):
         """Mark the job as suspended.
 
         Only waiting jobs can be suspended."""
@@ -181,6 +170,9 @@ class IRunnableJob(IJob):
 
     def run():
         """Run this job."""
+
+    def celeryRunOnCommit():
+        """Request Celery to run this job on transaction commit."""
 
 
 class IJobSource(Interface):

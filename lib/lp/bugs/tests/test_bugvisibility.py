@@ -1,19 +1,24 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of a bug."""
 
+from lp.registry.enums import InformationType
 from lp.testing import (
     celebrity_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
+    #layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestPublicBugVisibility, self).setUp()
@@ -50,7 +55,8 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
                 bug_supervisor=self.bug_team,
                 user=self.product.owner)
         self.bug = self.factory.makeBug(
-            owner=self.owner, private=True, product=self.product)
+            owner=self.owner, product=self.product,
+            information_type=InformationType.USERDATA)
 
     def test_privateBugRegularUser(self):
         # A regular (non-privileged) user can not view a private bug.
@@ -71,13 +77,6 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             self.bug.subscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
-
-    def test_privateBugAssignee(self):
-        # The bug assignee can see the private bug.
-        bug_assignee = self.factory.makePerson(name="bugassignee")
-        with celebrity_logged_in('admin'):
-            self.bug.default_bugtask.transitionToAssignee(bug_assignee)
-        self.assertTrue(self.bug.userCanView(bug_assignee))
 
     def test_publicBugAnonUser(self):
         # Since the bug is private, the anonymous user cannot see it.

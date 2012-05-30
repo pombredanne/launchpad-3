@@ -62,6 +62,31 @@ Splicing works as normal:
     Dist name is: gentoo
     Dist name is: guadalinex
 
+It's also possible to ask the set to return both the normal and
+decorated results:
+
+    >>> decorated_result_set.config(return_both=True)
+    <lp.services.database.decoratedresultset.DecoratedResultSet object at ...>
+    >>> for dist in decorated_result_set:
+    ...     print dist
+    (<Distribution 'Debian' (debian)>, u'Dist name is: debian')
+    (<Distribution 'Gentoo' (gentoo)>, u'Dist name is: gentoo')
+    ...
+    (<Distribution 'ubuntutest' (ubuntutest)>, u'Dist name is: ubuntutest')
+    >>> decorated_result_set.first()
+    (<Distribution 'Debian' (debian)>, u'Dist name is: debian')
+
+This works even if there are multiple levels:
+
+    >>> drs_squared = DecoratedResultSet(
+    ...     decorated_result_set, lambda x: len(x)).config(return_both=True)
+    >>> for dist in drs_squared:
+    ...     print dist
+    (<Distribution 'Debian' (debian)>, 20)
+    (<Distribution 'Gentoo' (gentoo)>, 20)
+    ...
+    (<Distribution 'ubuntutest' (ubuntutest)>, 24)
+
 Some methods of the DecoratedResultSet are not actually decorated and
 just work like normally:
 

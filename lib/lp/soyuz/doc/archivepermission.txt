@@ -124,7 +124,7 @@ person:
     >>> permissions = permission_set.permissionsForPerson(
     ...     ubuntu.main_archive,  ubuntu_team)
     >>> permissions.count()
-    8
+    7
 
 uploadersForComponent() returns ArchivePermission records where a person
 or team has permission to upload to the supplied component:

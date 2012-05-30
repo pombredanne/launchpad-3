@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test milestone views."""
@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
 from lp.services.config import config
@@ -282,15 +283,19 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     def test_bugtasks_queries(self):
         # The view.bugtasks attribute will make several queries:
-        #  1. Load bugtasks and bugs.
-        #  2. Loads the target (sourcepackagename / product)
-        #  3. Load assignees (Person, Account, and EmailAddress).
-        #  4. Load links to specifications.
-        #  5. Load links to branches.
-        #  6. Loads milestones
+        #  1. Search for bugtask IDs.
+        #  2. Load bugtasks
+        #  3. Load bugs.
+        #  4. Loads the target (sourcepackagename / product)
+        #  5. Load assignees (Person, Account, and EmailAddress).
+        #  6. Load links to specifications.
+        #  7. Load links to branches.
+        #  8. Loads milestones
+        #  9. Loads tags
+        #  10. All related people
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=7)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -314,7 +319,8 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
-        bug1 = self.factory.makeBug(product=product, private=True,
+        bug1 = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug1.bugtasks[0].transitionToMilestone(milestone, product.owner)
         # We look at the page as someone who is a member of a team and the
@@ -343,12 +349,14 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         with_1_queries = ["%s: %s" % (pos, stmt[3]) for (pos, stmt) in
             enumerate(collector.queries)]
         login_person(product.owner)
-        bug2 = self.factory.makeBug(product=product, private=True,
+        bug2 = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug2.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug2.subscribe(subscribed_team, product.owner)
         bug2_url = canonical_url(bug2)
-        bug3 = self.factory.makeBug(product=product, private=True,
+        bug3 = self.factory.makeBug(
+            product=product, information_type=InformationType.USERDATA,
             owner=product.owner)
         bug3.bugtasks[0].transitionToMilestone(milestone, product.owner)
         bug3.subscribe(subscribed_team, product.owner)
@@ -403,16 +411,20 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         logout()
 
     def test_bugtasks_queries(self):
-        # The view.bugtasks attribute will make five queries:
+        # The view.bugtasks attribute will make several queries:
         #  1. For each project in the group load all the dev focus series ids.
-        #  2. Load bugtasks and bugs.
-        #  3. Load assignees (Person, Account, and EmailAddress).
-        #  4. Load links to specifications.
-        #  5. Load links to branches.
-        #  6. Loads milestones.
+        #  2. Search for bugtask IDs.
+        #  3. Load bugtasks.
+        #  4. Load bugs.
+        #  5. Load assignees (Person, Account, and EmailAddress).
+        #  6. Load links to specifications.
+        #  7. Load links to branches.
+        #  8. Loads milestones.
+        #  9. Loads tags.
+        #  10. All related people.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=7)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more

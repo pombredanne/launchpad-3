@@ -70,7 +70,7 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
             list(self.bugtask_set.search(self.params))
         # 1 query for the tasks, 1 query for the product (target) eager
         # loading.
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -98,7 +98,7 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
             self.assertIn(
                 (bug.id, self.product),
                 [(task.bug.id, task.product) for task in tasks])
-            bugtask = self.factory.makeBugTask(
+            self.factory.makeBugTask(
                 bug=bug, target=self.product.development_focus)
             tasks = list(self.bugtask_set.search(self.params))
             # The product bugtask is excluded from the results.
@@ -166,7 +166,7 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
             list(self.bugtask_set.search(self.params))
         # 1 query for the tasks, 1 query for the product (target) eager
         # loading.
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -278,7 +278,7 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
         Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.bugtask_set.search(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to

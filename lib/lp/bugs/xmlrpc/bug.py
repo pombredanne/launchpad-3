@@ -1,10 +1,13 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XML-RPC APIs for Malone."""
 
 __metaclass__ = type
-__all__ = ["FileBugAPI", "ExternalBugTrackerTokenAPI"]
+__all__ = [
+    "ExternalBugTrackerTokenAPI",
+    "FileBugAPI",
+    ]
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -12,6 +15,7 @@ from zope.interface import implements
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -100,14 +104,14 @@ class FileBugAPI(LaunchpadXMLRPCView):
                 else:
                     subscriber_list.append(subscriber)
 
-        security_related = bool(security_related)
-
-        # Privacy is always set the same as security, by default.
-        private = security_related
+        if security_related:
+            information_type = InformationType.EMBARGOEDSECURITY
+        else:
+            information_type = InformationType.PUBLIC
 
         params = CreateBugParams(
             owner=self.user, title=summary, comment=comment,
-            security_related=security_related, private=private,
+            information_type=information_type,
             subscribers=subscriber_list)
 
         bug = target.createBug(params)

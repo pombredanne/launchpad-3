@@ -169,37 +169,39 @@ table.form td td {
     color: #666;
     font-weight: bold;
     }
-fieldset.collapsible {
+.collapsible {
     /* Collapsible sections
        Some page sections are hidden by default, expanded by clicking a link.
        see lp.js:activate_collapsibles() */
     border: none;
     margin: 0;
+    }
+fieldset.collapsible {
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
-fieldset.collapsible h2 {
+.collapsible h2 {
     margin-top: 0;
-}
-fieldset .collapsed {
+    }
+.collapsible .collapsed {
     display: none;
     }
-fieldset .expanded {
+.collapsible .expanded {
     display: block;
     }
-fieldset.collapsible legend {
+.collapsible > :first-child {
     font-weight: normal;
     }
-.collapsible legend a, .collapsible legend a:hover {
+.collapsible > :first-child, .collapsible :first-child a:hover {
     text-decoration: none;
+    }
+.collapsible > :first-child a span {
+    text-decoration: underline;
     }
 img.collapseIcon {
     text-decoration: none;
     vertical-align: middle;
     }
-.collapsible legend a span {
-    text-decoration: underline;
-    }
-.collapsed {
+.collapsible .collapsed {
     border: none;
     margin-bottom: 0;
     }

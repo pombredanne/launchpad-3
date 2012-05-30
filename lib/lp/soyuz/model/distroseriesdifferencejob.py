@@ -21,6 +21,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.config import config
 from lp.services.database import bulk
 from lp.services.database.lpstorm import (
     IMasterStore,
@@ -40,7 +41,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
@@ -65,12 +65,14 @@ def create_job(derived_series, sourcepackagename, parent_series):
         `derived_series`.  The difference is between the versions of
         `sourcepackagename` in `parent_series` and `derived_series`.
     """
-    job = DistributionJob(
+    db_job = DistributionJob(
         distribution=derived_series.distribution, distroseries=derived_series,
         job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
         metadata=make_metadata(sourcepackagename.id, parent_series.id))
-    IMasterStore(DistributionJob).add(job)
-    return DistroSeriesDifferenceJob(job)
+    IMasterStore(DistributionJob).add(db_job)
+    job = DistroSeriesDifferenceJob(db_job)
+    job.celeryRunOnCommit()
+    return job
 
 
 def create_multiple_jobs(derived_series, parent_series):
@@ -82,21 +84,17 @@ def create_multiple_jobs(derived_series, parent_series):
         `derived_series`.
     :return: A list of newly-created `DistributionJob` ids.
     """
-    store = IStore(SourcePackageRelease)
-    source_package_releases = store.find(
-        SourcePackageRelease,
-        SourcePackagePublishingHistory.sourcepackagerelease ==
-            SourcePackageRelease.id,
+    store = IStore(SourcePackagePublishingHistory)
+    spn_ids = store.find(
+        SourcePackagePublishingHistory.sourcepackagenameID,
         SourcePackagePublishingHistory.distroseries == derived_series.id,
         SourcePackagePublishingHistory.status.is_in(active_publishing_status))
-    nb_jobs = source_package_releases.count()
+    spn_ids = list(spn_ids)
 
-    if nb_jobs == 0:
+    if len(spn_ids) == 0:
         return []
 
-    sourcepackagenames = source_package_releases.values(
-        SourcePackageRelease.sourcepackagenameID)
-    job_ids = Job.createMultiple(store, nb_jobs)
+    job_ids = Job.createMultiple(store, len(spn_ids))
     return bulk.create(
             (DistributionJob.distribution, DistributionJob.distroseries,
              DistributionJob.job_type, DistributionJob.job_id,
@@ -104,7 +102,7 @@ def create_multiple_jobs(derived_series, parent_series):
             [(derived_series.distribution, derived_series,
               DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
               make_metadata(spn_id, parent_series.id))
-             for job_id, spn_id in zip(job_ids, sourcepackagenames)],
+             for job_id, spn_id in zip(job_ids, spn_ids)],
             get_primary_keys=True)
 
 
@@ -164,6 +162,8 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     classProvides(IDistroSeriesDifferenceJobSource)
 
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
+
+    config = config.distroseriesdifferencejob
 
     @classmethod
     def createForPackagePublication(cls, derived_series, sourcepackagename,

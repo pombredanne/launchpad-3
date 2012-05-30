@@ -3,13 +3,15 @@
 
 """Test error views."""
 
-import urllib2
 
+import httplib
 from storm.exceptions import (
     DisconnectionError,
     OperationalError,
     )
+import time
 import transaction
+import urllib2
 
 from lp.services.webapp.error import (
     DisconnectionErrorView,
@@ -24,6 +26,10 @@ from lp.testing.fixture import (
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
+
+
+class TimeoutException(Exception):
+    pass
 
 
 class TestSystemErrorView(TestCase):
@@ -106,13 +112,30 @@ class TestDatabaseErrorViews(TestCase):
         bouncer.stop()
         url = 'http://launchpad.dev/'
         error = self.getHTTPError(url)
-        self.assertEqual(503, error.code)
+        self.assertEqual(httplib.SERVICE_UNAVAILABLE, error.code)
         self.assertThat(error.read(),
                         Contains(OperationalErrorView.reason))
         # We keep seeing the correct exception on subsequent requests.
-        self.assertEqual(503, self.getHTTPError(url).code)
-        # When the database is available again, requests succeed.
+        self.assertEqual(httplib.SERVICE_UNAVAILABLE,
+                         self.getHTTPError(url).code)
+        # When the database is available again...
         bouncer.start()
+        # ...and Launchpad has succesfully connected to it...
+        retries = 10
+        for i in xrange(retries):
+            try:
+                urllib2.urlopen(url)
+            except urllib2.HTTPError as e:
+                if e.code != httplib.SERVICE_UNAVAILABLE:
+                    raise
+            else:
+                break
+            time.sleep(1)
+        else:
+            raise TimeoutException(
+                "Launchpad did not come up after {0} attempts."
+                    .format(retries))
+        # ...requests succeed again.
         urllib2.urlopen(url)
 
     def test_operationalerror_view(self):

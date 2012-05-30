@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 import atexit
-import errno
 import httplib
 import os
 import shutil
@@ -127,20 +126,6 @@ class GPGHandler:
             filename = os.path.join(self.home, filename)
             if os.path.exists(filename):
                 os.remove(filename)
-
-    def touchConfigurationDirectory(self):
-        """See IGPGHandler."""
-        os.utime(self.home, None)
-        for file in os.listdir(self.home):
-            try:
-                os.utime(os.path.join(self.home, file), None)
-            except OSError as e:
-                if e.errno == errno.ENOENT:
-                    # The file has been deleted.
-                    pass
-                else:
-                    # Some other unexpected error.
-                    raise e
 
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""

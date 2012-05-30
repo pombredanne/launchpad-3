@@ -110,18 +110,7 @@
 
   <tr><td colspan="2"><br /></td></tr>
 
-  <tr tal:condition="not: request/features/bugs.statistics_portlet.hide_fixed_elsewhere_count"
-      tal:define="count view/bugs_fixed_elsewhere_count|nothing;
-                  plural string: Bugs fixed elsewhere;
-                  singular string: Bug fixed elsewhere;">
-    <td class="bugs-count" tal:content="count" />
-    <td class="bugs-link">
-      <a tal:attributes="href string:${view/bugs_fixed_elsewhere_url}">
-      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
-      </a>
-    </td>
-  </tr>
-  <tr tal:condition="request/features/bugs.statistics_portlet.hide_fixed_elsewhere_count">
+  <tr>
     <tal:comment condition="nothing">
       No count here, because generating it is expensive.
     </tal:comment>

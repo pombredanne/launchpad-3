@@ -47,8 +47,9 @@ class SpecificationWorkItem(StormBase):
 
     def __repr__(self):
         title = self.title.encode('ASCII', 'backslashreplace')
+        assignee = getattr(self.assignee, 'name', None)
         return '<SpecificationWorkItem [%s] %s: %s of %s>' % (
-            self.assignee, title, self.status, self.specification)
+            assignee, title, self.status.name, self.specification)
 
     def __init__(self, title, status, specification, assignee, milestone,
                  sequence):
@@ -58,3 +59,8 @@ class SpecificationWorkItem(StormBase):
         self.assignee=assignee
         self.milestone=milestone
         self.sequence=sequence
+
+    @property
+    def is_complete(self):
+        """See `ISpecificationWorkItem`."""
+        return self.status == SpecificationWorkItemStatus.DONE

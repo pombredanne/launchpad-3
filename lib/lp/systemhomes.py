@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -21,9 +21,11 @@ import os
 
 from lazr.restful import ServiceRootResource
 from lazr.restful.interfaces import ITopLevelEntryLink
+from storm.expr import Max
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -39,6 +41,7 @@ from lp.bugs.interfaces.malone import (
     IMaloneApplication,
     IPrivateMaloneApplication,
     )
+from lp.bugs.model.bug import Bug
 from lp.code.interfaces.codehosting import (
     IBazaarApplication,
     ICodehostingApplication,
@@ -66,6 +69,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.services.config import config
+from lp.services.database.lpstorm import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import (
@@ -118,17 +122,18 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params, prejoins=[]):
+    def searchTasks(self, search_params):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(
-            search_params, prejoins=prejoins)
+        return getUtility(IBugTaskSet).search(search_params)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
         """See `IMaloneApplication`."""
+        information_type = convert_to_information_type(
+            private, security_related)
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
-            security_related=security_related, private=private, tags=tags)
+            information_type=information_type, tags=tags)
         if IProduct.providedBy(target):
             params.setBugTarget(product=target)
         elif IDistribution.providedBy(target):
@@ -144,8 +149,7 @@ class MaloneApplication:
 
     @property
     def bug_count(self):
-        user = getUtility(ILaunchBag).user
-        return getUtility(IBugSet).searchAsUser(user=user).count()
+        return IStore(Bug).find(Max(Bug.id)).one()
 
     @property
     def bugwatch_count(self):
@@ -173,14 +177,9 @@ class MaloneApplication:
     def top_bugtrackers(self):
         return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
-    @property
-    def latest_bugs(self):
-        user = getUtility(ILaunchBag).user
-        return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy=['-datecreated'], limit=5)
-
-    def default_bug_list(self, user=None):
-        return getUtility(IBugSet).searchAsUser(user)
+    def empty_list(self):
+        """See `IMaloneApplication`."""
+        return []
 
 
 class BazaarApplication:

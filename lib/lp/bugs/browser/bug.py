@@ -25,10 +25,6 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
@@ -45,7 +41,6 @@ from lazr.restful import (
     )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
-import pytz
 from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
@@ -69,6 +64,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.enums import BugNotificationLevel
@@ -94,14 +90,19 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.services import features
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    )
+from lp.registry.vocabularies import InformationTypeVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 from lp.services.searchbuilder import (
     any,
-    greater_than,
+    not_equals,
     )
 from lp.services.webapp import (
     canonical_url,
@@ -419,39 +420,21 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5, when=None):
-        """Return the ten most recently fixed bugs."""
-        if when is None:
-            when = datetime.now(pytz.timezone('UTC'))
-        date_closed_limits = [
-            timedelta(days=1),
-            timedelta(days=7),
-            timedelta(days=30),
-            None,
-        ]
-        for date_closed_limit in date_closed_limits:
-            fixed_bugs = []
-            search_params = BugTaskSearchParams(
-                self.user, status=BugTaskStatus.FIXRELEASED,
-                orderby='-date_closed')
-            if date_closed_limit is not None:
-                search_params.date_closed = greater_than(
-                    when - date_closed_limit)
-            fixed_bugtasks = self.context.searchTasks(search_params)
-            # XXX: Bjorn Tillenius 2006-12-13:
-            #      We might end up returning less than :limit: bugs, but in
-            #      most cases we won't, and '4*limit' is here to prevent
-            #      this page from timing out in production. Later I'll fix
-            #      this properly by selecting bugs instead of bugtasks.
-            #      If fixed_bugtasks isn't sliced, it will take a long time
-            #      to iterate over it, even over just 10, because
-            #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4 * limit]:
-                if bugtask.bug not in fixed_bugs:
-                    fixed_bugs.append(bugtask.bug)
-                    if len(fixed_bugs) >= limit:
-                        return fixed_bugs
-        return fixed_bugs
+    @property
+    def most_recently_fixed_bugs(self):
+        """Return the five most recently fixed bugs."""
+        params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            date_closed=not_equals(None), orderby='-date_closed')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
+
+    @property
+    def most_recently_reported_bugs(self):
+        """Return the five most recently reported bugs."""
+        params = BugTaskSearchParams(self.user, orderby='-datecreated')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
 
     def getCveBugLinkCount(self):
         """Return the number of links between bugs and CVEs there are."""
@@ -547,6 +530,24 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
+    @property
+    def show_information_type_in_ui(self):
+        return bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled'))
+
+    def initialize(self):
+        super(BugView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects['information_types'] = [
+            {'value': term.value, 'description': term.description,
+            'name': term.title,
+            'description_css_class': 'choice-description'}
+            for term in InformationTypeVocabulary()]
+        cache.objects['private_types'] = [
+            type.title for type in PRIVATE_INFORMATION_TYPES]
+        cache.objects['show_information_type_in_ui'] = (
+            self.show_information_type_in_ui)
+
     @cachedproperty
     def page_description(self):
         return IBug(self.context).description
@@ -594,6 +595,34 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
+
+    @property
+    def information_type(self):
+        # This can be replaced with just a return when the feature flag is
+        # dropped.
+        title = self.context.information_type.title
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if (
+            self.context.information_type == InformationType.USERDATA and
+            show_userdata_as_private):
+            return 'Private'
+        return title
+
+    @property
+    def information_type_description(self):
+        # This can be replaced with just a return when the feature flag is
+        # dropped.
+        description = self.context.information_type.description
+        show_userdata_as_private = bool(getFeatureFlag(
+            'disclosure.display_userdata_as_private.enabled'))
+        if (
+            self.context.information_type == InformationType.USERDATA and
+            show_userdata_as_private):
+                description = (
+                    description.replace('user data', 'private information'))
+
+        return description
 
 
 class BugActivity(BugView):
@@ -819,8 +848,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         # We handle duplicate changes by hand instead of leaving it to
         # the usual machinery because we must use bug.markAsDuplicate().
         bug = self.context.bug
-        bug_before_modification = Snapshot(
-            bug, providing=providedBy(bug))
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
         duplicateof = data.pop('duplicateof')
         bug.markAsDuplicate(duplicateof)
         notify(
@@ -829,29 +857,60 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
+# XXX: This can move to using LaunchpadEditFormView when
+# show_information_type_in_ui is removed.
 class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
     """Form for marking a bug as a private/public."""
 
     @property
     def label(self):
-        return 'Bug #%i - Set visibility and security' % self.context.bug.id
+        label = 'Bug #%i - Set ' % self.context.bug.id
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            label += 'information type'
+        else:
+            label += 'visibility and security'
+        return label
 
     page_title = label
 
-    class schema(Interface):
-        """Schema for editing secrecy info."""
-        private_field = copy_field(IBug['private'], readonly=False)
-        security_related_field = copy_field(
-            IBug['security_related'], readonly=False)
+    @property
+    def field_names(self):
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return ['information_type']
+        else:
+            return ['private', 'security_related']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        class privacy_schema(Interface):
+            private_field = copy_field(IBug['private'], readonly=False)
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return information_type_schema
+        else:
+            return privacy_schema
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
-        LaunchpadFormView.setUpFields(self)
-        allow_multi_pillar_private = bool(features.getFeatureFlag(
-                'disclosure.allow_multipillar_private_bugs.enabled'))
-        if (not allow_multi_pillar_private
-                and len(self.context.bug.affected_pillars) > 1):
-            self.form_fields = self.form_fields.omit('private')
+        super(BugSecrecyEditView, self).setUpFields()
+        if not bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            bug = self.context.bug
+            if (bug.information_type == InformationType.PROPRIETARY
+                and len(bug.affected_pillars) > 1):
+                self.form_fields = self.form_fields.omit('private')
 
     @property
     def next_url(self):
@@ -860,34 +919,52 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             return canonical_url(self.context)
         return None
 
+    cancel_url = next_url
+
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        return {'private': self.context.bug.private,
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            return {'information_type': self.context.bug.information_type}
+        else:
+            return {
+                'private': self.context.bug.private,
                 'security_related': self.context.bug.security_related}
 
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
-        # We will modify data later, so take a copy now.
         data = dict(data)
-
-        # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use
-        # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
-        # recorded.
         bug = self.context.bug
-        private = data.pop('private', bug.private)
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        if bool(getFeatureFlag(
+            'disclosure.show_information_type_in_ui.enabled')):
+            information_type = data.pop('information_type')
+            changed_fields = ['information_type']
+        else:
+            changed_fields = []
+            private = data.pop('private', bug.private)
+            if bug.private != private:
+                changed_fields.append('private')
+            security_related = data.pop('security_related')
+            if bug.security_related != security_related:
+                changed_fields.append('security_related')
+            information_type = convert_to_information_type(
+                private, security_related)
         user_will_be_subscribed = (
-            private and bug.getSubscribersForPerson(self.user).is_empty())
-        security_related = data.pop('security_related')
-        user = getUtility(ILaunchBag).user
-        (private_changed, security_related_changed) = (
-            bug.setPrivacyAndSecurityRelated(private, security_related, user))
-        if private_changed:
+            information_type in PRIVATE_INFORMATION_TYPES and
+            bug.getSubscribersForPerson(self.user).is_empty())
+        changed = bug.transitionToInformationType(
+            information_type, self.user)
+        if changed:
             self._handlePrivacyChanged(user_will_be_subscribed)
+            notify(
+                ObjectModifiedEvent(
+                    bug, bug_before_modification, changed_fields,
+                    user=self.user))
         if self.request.is_ajax:
-            if private_changed or security_related_changed:
+            if changed:
                 return self._getSubscriptionDetails()
             else:
                 return ''
@@ -951,7 +1028,7 @@ class DeprecatedAssignedBugsView(RedirectionView):
         self.context = context
         self.request = request
         self.status = 303
-    
+
     def __call__(self):
         self.target = canonical_url(
             getUtility(ILaunchBag).user, view_name='+assignedbugs')

@@ -71,7 +71,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     urlappend,
@@ -560,7 +559,7 @@ class ObjectFormatterAPI:
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
         'pagetitle': 'pagetitle',
-        'public-private-css': 'public_private_css',
+        'global-css': 'global_css',
         }
 
     def __init__(self, context):
@@ -659,13 +658,20 @@ class ObjectFormatterAPI:
             "No link implementation for %r, IPathAdapter implementation "
             "for %r." % (self, self._context))
 
-    def public_private_css(self):
-        """Return the CSS class that represents the object's privacy."""
-        privacy = IPrivacy(self._context, None)
-        if privacy is not None and privacy.private:
-            return 'private'
+    def global_css(self):
+        css_classes = set([])
+        view = self._context
+        private = getattr(view, 'private', False)
+        if private:
+            css_classes.add('private')
+            css_classes.add('global-notification-visible')
         else:
-            return 'public'
+            css_classes.add('public')
+        beta = getattr(view, 'beta_features', [])
+        if beta != []:
+            css_classes.add('global-notification-visible')
+        return ' '.join(list(css_classes))
+
 
     def _getSaneBreadcrumbDetail(self, breadcrumb):
         text = breadcrumb.detail
@@ -1311,13 +1317,12 @@ class TeamFormatterAPI(PersonFormatterAPI):
         return super(TeamFormatterAPI, self).unique_displayname(view_name)
 
     def _report_visibility_leak(self):
-        if bool(getFeatureFlag('disclosure.log_private_team_leaks.enabled')):
-            request = get_current_browser_request()
-            try:
-                raise MixedVisibilityError()
-            except MixedVisibilityError:
-                getUtility(IErrorReportingUtility).raising(
-                    sys.exc_info(), request)
+        request = get_current_browser_request()
+        try:
+            raise MixedVisibilityError()
+        except MixedVisibilityError:
+            getUtility(IErrorReportingUtility).raising(
+                sys.exc_info(), request)
 
 
 class CustomizableFormatter(ObjectFormatterAPI):
@@ -2520,6 +2525,7 @@ class PageMacroDispatcher:
         view/macro:pagetype
 
         view/macro:is-page-contentless
+        view/macro:has-watermark
     """
 
     implements(ITraversable)
@@ -2554,6 +2560,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'is-page-contentless':
             return self.isPageContentless()
+        elif name == 'has-watermark':
+            return self.hasWatermark()
         else:
             raise TraversalError(name)
 
@@ -2568,6 +2576,14 @@ class PageMacroDispatcher:
         if pagetype is None:
             pagetype = 'unset'
         return self._pagetypes[pagetype][layoutelement]
+
+    def hasWatermark(self):
+        """Does the page havethe watermark block.
+
+        The default value is True, but the view can provide has_watermark
+        to force the page not render the standard location information.
+        """
+        return getattr(self.context, 'has_watermark', True)
 
     def isPageContentless(self):
         """Should the template avoid rendering detailed information.

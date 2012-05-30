@@ -13,13 +13,10 @@ __all__ = [
 
 from lazr.restful.declarations import (
     call_with,
-    export_as_webservice_entry,
-    export_operation_as,
     export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
-    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -30,7 +27,6 @@ from zope.interface import Interface
 
 from lp import _
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 
 
 class IHasLinkedBranches(Interface):

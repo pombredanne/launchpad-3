@@ -33,7 +33,7 @@ class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
     export_as_webservice_collection(IBug)
 
-    def searchTasks(search_params, prejoins=[]):
+    def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
@@ -45,14 +45,10 @@ class IMaloneApplication(ILaunchpadApplication):
         "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
 
-    @collection_default_content(user=REQUEST_USER)
-    def default_bug_list(user):
-        """Return a default list of bugs.
-
-        :param user: The user who's doing the search.
-        """
+    @collection_default_content()
+    def empty_list():
+        """Return an empty set - only exists to keep lazr.restful happy."""
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(

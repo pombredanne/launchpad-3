@@ -199,7 +199,8 @@ could not be created.
     >>> user_browser.title
     'Bug #12 ...'
 
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    >>> message = find_tag_by_id(user_browser.contents, 'bug-is-question')
+    >>> print extract_text(message)
     This bug report was converted into a question:...question #16...
 
     >>> user_browser.goBack(count=1)
@@ -207,8 +208,6 @@ could not be created.
     >>> user_browser.getControl('Convert this Bug into a Question').click()
     >>> print "\n".join(get_feedback_messages(user_browser.contents))
     This bug could not be converted into a question.
-    This bug report was converted into a question: question #16:
-    Copy, Cut and Delete operations should work on selections.
 
 
 Remove the question

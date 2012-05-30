@@ -142,6 +142,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.security import ModerateByRegistryExpertsOrAdmins
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PublicPersonChoice
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.privacy.interfaces import IObjectPrivacy
@@ -223,9 +224,7 @@ class TeamFormMixin:
 
     The visibility field is shown if
     * The user has launchpad.Commercial permission.
-    * Or the feature flag
-    disclosure.show_visibility_for_team_add.enabled is on, and the user has
-    a current commercial subscription.
+    * The user has a current commercial subscription.
     """
     field_names = [
         "name", "visibility", "displayname", "contactemail",
@@ -1589,6 +1588,14 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
 
+    def upcomingwork(self):
+        target = '+upcomingwork'
+        text = 'Upcoming work for this team'
+        enabled = False
+        if getFeatureFlag('registry.upcoming_work_view.enabled'):
+            enabled = True
+        return Link(target, text, icon='team', enabled=enabled)
+
 
 class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
@@ -1622,6 +1629,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'view_recipes',
         'subscriptions',
         'structural_subscriptions',
+        'upcomingwork',
         ]
 
 
@@ -1986,6 +1994,10 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     schema = Interface
 
     @property
+    def is_private_team(self):
+        return self.context.visibility == PersonVisibility.PRIVATE
+
+    @property
     def label(self):
         return 'Leave ' + cgi.escape(self.context.displayname)
 
@@ -1995,12 +2007,22 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    next_url = cancel_url
+    @property
+    def next_url(self):
+        if self.is_private_team:
+            return canonical_url(self.user)
+        else:
+            return self.cancel_url
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
+            if self.is_private_team:
+                self.request.response.addNotification(
+                    "You are no longer a member of private team %s "
+                    "and are not authorised to view the team."
+                        % self.context.displayname)
 
 
 class TeamReassignmentView(ObjectReassignmentView):
@@ -2089,6 +2111,10 @@ class ITeamEditMenu(Interface):
     """A marker interface for the edit navigation menu."""
 
 
+classImplements(TeamIndexView, ITeamIndexMenu)
+classImplements(TeamEditView, ITeamEditMenu)
+
+
 class TeamNavigationMenuBase(NavigationMenu, TeamMenuMixin):
 
     @property
@@ -2133,7 +2159,3 @@ class TeamMugshotView(LaunchpadView):
         batch_nav = BatchNavigator(
             self.context.allmembers, self.request, size=self.batch_size)
         return batch_nav
-
-
-classImplements(TeamIndexView, ITeamIndexMenu)
-classImplements(TeamEditView, ITeamEditMenu)

@@ -31,8 +31,7 @@ First, uploading a new source does not assign karma immediately.
 Nothing is printed from the listener yet, so no karma was assigned.
 We'll accept the upload now.
 
-    >>> from lp.services.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
     >>> bar_src.queue_root.acceptFromQueue()
     Karma added: action=distributionuploadaccepted, distribution=ubuntu
 
@@ -54,7 +53,7 @@ Poke the queue entry so it looks like Foo Bar (name16) uploaded it:
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> key = getUtility(IGPGKeySet).getGPGKeysForPeople([name16])[0]
     >>> removeSecurityProxy(foo_src.queue_root).signing_key = key
-    >>> commit()
+    >>> transaction.commit()
     >>> foo_src.queue_root.acceptFromQueue()
     Karma added: action=distributionuploadaccepted, distribution=ubuntu
     Karma added: action=sponsoruploadaccepted, distribution=ubuntu

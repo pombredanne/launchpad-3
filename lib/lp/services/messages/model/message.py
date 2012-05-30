@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -8,8 +8,6 @@ __all__ = [
     'DirectEmailAuthorization',
     'Message',
     'MessageChunk',
-    'MessageJob',
-    'MessageJobAction',
     'MessageSet',
     'UserToUserEmail',
     ]
@@ -32,10 +30,6 @@ from operator import attrgetter
 import os.path
 
 from lazr.config import as_timedelta
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 import pytz
 from sqlobject import (
     BoolCol,
@@ -67,27 +61,19 @@ from lp.registry.interfaces.person import (
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
     IMessageChunk,
-    IMessageJob,
     IMessageSet,
     InvalidEmailMessage,
     IUserToUserEmail,
     UnknownSender,
     )
 from lp.services.propertycache import cachedproperty
-
-# this is a hard limit on the size of email we will be willing to store in
-# the database.
-MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 
 def utcdatetime_from_field(field_value):
@@ -310,10 +296,7 @@ class MessageSet:
         if not rfc822msgid:
             raise InvalidEmailMessage('Missing Message-Id')
 
-        # make sure we don't process anything too long
-        if len(email_message) > MAX_EMAIL_SIZE:
-            raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
-                rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
+        # Over-long messages are checked for at the handle_on_message level.
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.
@@ -642,59 +625,6 @@ class UserToUserEmail(Storm):
         # constructor to add self to the store.  Also, this closely mimics
         # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
-
-
-class MessageJobAction(DBEnumeratedType):
-    """MessageJob action
-
-    The action that a job should perform.
-    """
-
-    CREATE_MERGE_PROPOSAL = DBItem(1, """
-        Create a merge proposal.
-
-        Create a merge proposal from a message which must contain a merge
-        directive.
-        """)
-
-
-class MessageJob(Storm):
-    """A job for processing messages."""
-
-    implements(IMessageJob)
-    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
-    __storm_table__ = 'MergeDirectiveJob'
-
-    id = Int(primary=True)
-
-    jobID = Int('job', allow_none=False)
-    job = Reference(jobID, Job.id)
-
-    message_bytesID = Int('merge_directive', allow_none=False)
-    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
-
-    action = EnumCol(enum=MessageJobAction)
-
-    def __init__(self, message_bytes, action):
-        Storm.__init__(self)
-        self.job = Job()
-        self.message_bytes = message_bytes
-        self.action = action
-
-    def destroySelf(self):
-        """See `IMessageJob`."""
-        self.job.destroySelf()
-        Store.of(self).remove(self)
-
-    def sync(self):
-        """Update the database with all changes for this object."""
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def getMessage(self):
-        """See `IMessageJob`."""
-        return signed_message_from_string(self.message_bytes.read())
 
 
 class DirectEmailAuthorization:

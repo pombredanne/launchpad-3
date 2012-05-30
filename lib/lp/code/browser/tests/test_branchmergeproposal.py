@@ -53,6 +53,7 @@ from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
     )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.messages.model.message import MessageSet
 from lp.services.webapp import canonical_url
@@ -488,7 +489,39 @@ class TestRegisterBranchMergeProposalView(BrowserTestCase):
                 {'target_branch': target_branch,
                  'reviewer': reviewer,
                  'needs_review': True})
+        self.assertEqual(
+            '400 Branch Visibility',
+            view.request.response.getStatusString())
         self.assertEqual(expected_data, simplejson.loads(result_data))
+
+    def test_register_ajax_request_with_validation_errors(self):
+        # Ajax submits where there is a validation error in the submitted data
+        # return the expected json response containing the error info.
+        owner = self.factory.makePerson()
+        target_branch = self._makeTargetBranch(owner=owner, private=True)
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        with person_logged_in(owner):
+            request = LaunchpadTestRequest(
+                method='POST', principal=owner,
+                form={
+                    'field.actions.register': 'Propose Merge',
+                    'field.target_branch.target_branch':
+                        target_branch.unique_name},
+                **extra)
+            view = create_initialized_view(
+                target_branch,
+                name='+register-merge',
+                request=request)
+        self.assertEqual(
+            '400 Validation', view.request.response.getStatusString())
+        self.assertEqual(
+            {'error_summary': 'There is 1 error.',
+            'errors': {
+                'field.target_branch':
+                    ('The target branch cannot be the same as the '
+                    'source branch.')},
+            'form_wide_errors': []},
+            simplejson.loads(view.form_result))
 
     def test_register_ajax_request_with_no_confirmation(self):
         # Ajax submits where there is no confirmation required return a 201
@@ -858,7 +891,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        private_bug = self.factory.makeBug(owner=person, private=True)
+        private_bug = self.factory.makeBug(
+            owner=person, information_type=InformationType.USERDATA)
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         with person_logged_in(person):
             self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
@@ -1256,7 +1290,8 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp2.source_branch).information_type = (
+            InformationType.USERDATA)
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 

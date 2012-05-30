@@ -62,6 +62,7 @@ from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
+    Coalesce,
     Desc,
     Exists,
     In,
@@ -131,6 +132,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -145,6 +147,7 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
+from lp.registry.enums import PRIVATE_INFORMATION_TYPES
 from lp.registry.errors import (
     InvalidName,
     JoinNotAllowed,
@@ -221,6 +224,7 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
+from lp.registry.model.milestone import Milestone
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -230,7 +234,10 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.services.config import config
-from lp.services.database import postgresql
+from lp.services.database import (
+    bulk,
+    postgresql,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -247,7 +254,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -276,6 +282,7 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.oauth.model import (
     OAuthAccessToken,
     OAuthRequestToken,
@@ -290,12 +297,14 @@ from lp.services.salesforce.interfaces import (
     REDEEMABLE_VOUCHER_STATUSES,
     VOUCHER_STATUSES,
     )
+from lp.services.searchbuilder import any
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webapp.dbpolicy import MasterDatabasePolicy
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.vhosts import allvhosts
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1468,6 +1477,105 @@ class Person(
         """See `IPerson`."""
         self._inTeam_cache = {}
 
+    @cachedproperty
+    def participant_ids(self):
+        """See `IPerson`."""
+        return list(Store.of(self).find(
+            TeamParticipation.personID, TeamParticipation.teamID == self.id))
+
+    def getAssignedSpecificationWorkItemsDueBefore(self, date):
+        """See `IPerson`."""
+        from lp.registry.model.person import Person
+        from lp.registry.model.product import Product
+        from lp.registry.model.distribution import Distribution
+        store = Store.of(self)
+        WorkItem = SpecificationWorkItem
+        origin = [
+            WorkItem,
+            Join(Specification, WorkItem.specification == Specification.id),
+            # WorkItems may not have a milestone and in that case they inherit
+            # the one from the spec.
+            Join(Milestone,
+                 Coalesce(WorkItem.milestone_id,
+                          Specification.milestoneID) == Milestone.id),
+            ]
+        today = datetime.today().date()
+        query = AND(
+            Milestone.dateexpected <= date, Milestone.dateexpected >= today,
+            WorkItem.deleted == False,
+            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+               Specification.assigneeID.is_in(self.participant_ids)))
+        result = store.using(*origin).find(WorkItem, query)
+
+        def eager_load(workitems):
+            specs = bulk.load_related(
+                Specification, workitems, ['specification_id'])
+            bulk.load_related(Product, specs, ['productID'])
+            bulk.load_related(Distribution, specs, ['distributionID'])
+            assignee_ids = set(
+                [workitem.assignee_id for workitem in workitems]
+                + [spec.assigneeID for spec in specs])
+            assignee_ids.discard(None)
+            bulk.load(Person, assignee_ids, store)
+            milestone_ids = set(
+                [workitem.milestone_id for workitem in workitems]
+                + [spec.milestoneID for spec in specs])
+            milestone_ids.discard(None)
+            bulk.load(Milestone, milestone_ids, store)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    def getAssignedBugTasksDueBefore(self, date, user):
+        """See `IPerson`."""
+        from lp.bugs.model.bugtask import BugTask
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.productseries import ProductSeries
+        today = datetime.today().date()
+        search_params = BugTaskSearchParams(
+            user, assignee=any(*self.participant_ids),
+            milestone_dateexpected_before=date,
+            milestone_dateexpected_after=today)
+
+        # Cast to a list to avoid DecoratedResultSet running pre_iter_hook
+        # multiple times when load_related() iterates over the tasks.
+        tasks = list(getUtility(IBugTaskSet).search(search_params))
+        # Eager load the things we need that are not already eager loaded by
+        # BugTaskSet.search().
+        bulk.load_related(ProductSeries, tasks, ['productseriesID'])
+        bulk.load_related(Distribution, tasks, ['distributionID'])
+        bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
+        bulk.load_related(Person, tasks, ['assigneeID'])
+        bulk.load_related(Milestone, tasks, ['milestoneID'])
+
+        for task in tasks:
+            # We skip masters (instead of slaves) from conjoined relationships
+            # because we can do that without hittind the DB, which would not
+            # be possible if we wanted to skip the slaves. The simple (but
+            # expensive) way to skip the slaves would be to skip any tasks
+            # that have a non-None .conjoined_master.
+            productseries = task.productseries
+            distroseries = task.distroseries
+            if productseries is not None and task.product is None:
+                dev_focus_id = productseries.product.development_focusID
+                if (productseries.id == dev_focus_id and
+                    task.status not in BugTask._NON_CONJOINED_STATUSES):
+                    continue
+            elif distroseries is not None:
+                candidate = None
+                for possible_slave in tasks:
+                    sourcepackagename_id = possible_slave.sourcepackagenameID
+                    if sourcepackagename_id == task.sourcepackagenameID:
+                        candidate = possible_slave
+                # Distribution.currentseries is expensive to run for every
+                # bugtask (as it goes through every series of that
+                # distribution), but it's a cached property and there's only
+                # one distribution with bugs in LP, so we can afford to do
+                # it here.
+                if (candidate is not None and
+                    distroseries.distribution.currentseries == distroseries):
+                    continue
+            yield task
+
     #
     # ITeam methods
     #
@@ -1744,14 +1852,16 @@ class Person(
                     Bug,
                     Join(BugSubscription, BugSubscription.bug_id == Bug.id)),
                 where=And(
-                    Bug.private == True,
+                    Bug.information_type.is_in(PRIVATE_INFORMATION_TYPES),
                     BugSubscription.person_id == self.id)),
             Select(
                 Bug.id,
                 tables=(
                     Bug,
                     Join(BugTask, BugTask.bugID == Bug.id)),
-                where=And(Bug.private == True, BugTask.assignee == self.id)),
+                where=And(Bug.information_type.is_in(
+                    PRIVATE_INFORMATION_TYPES),
+                    BugTask.assignee == self.id)),
             limit=1))
         if private_bugs_involved.rowcount:
             raise TeamSubscriptionPolicyError(
@@ -2563,13 +2673,14 @@ class Person(
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.personID == self.id
-
         existing_preferred_email = IMasterStore(EmailAddress).find(
             EmailAddress, personID=self.id,
             status=EmailAddressStatus.PREFERRED).one()
-
         if existing_preferred_email is not None:
+            original_recipients = existing_preferred_email.email
             existing_preferred_email.status = EmailAddressStatus.VALIDATED
+        else:
+            original_recipients = None
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
@@ -2577,6 +2688,11 @@ class Person(
 
         # Now we update our cache of the preferredemail.
         get_property_cache(self).preferredemail = email
+        if original_recipients:
+            self.security_field_changed(
+                "Preferred email address changed on Launchpad.",
+                "Your preferred email address is now <%s>." % email.email,
+                original_recipients)
 
     @cachedproperty
     def preferredemail(self):
@@ -2857,16 +2973,24 @@ class Person(
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def createPPA(self, name=None, displayname=None, description=None,
-                  private=False):
+                  private=False, suppress_subscription_notifications=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name, private)
+        # XXX: We pass through the Person on whom the PPA is being created,
+        # but validatePPA assumes that that Person is also the one creating
+        # the PPA.  This is not true in general, and particularly not for
+        # teams.  Instead, both the acting user and the target of the PPA
+        # creation ought to be passed through.
+        errors = Archive.validatePPA(
+            self, name, private, suppress_subscription_notifications)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description, private=private)
+            description=description, private=private,
+            suppress_subscription_notifications=(
+                suppress_subscription_notifications))
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -2975,13 +3099,28 @@ class Person(
 
     def checkAllowVisibility(self):
         role = IPersonRoles(self)
-        if role.in_commercial_admin or role.in_admin:
+        if (role.in_commercial_admin
+            or role.in_admin
+            or self.hasCurrentCommercialSubscription()):
             return True
-        feature_flag = getFeatureFlag(
-            'disclosure.show_visibility_for_team_add.enabled')
-        if feature_flag and self.hasCurrentCommercialSubscription():
-            return True
-        return False
+        else:
+            return False
+
+    def security_field_changed(self, subject, change_description,
+        recipient_emails=None):
+        """See `IPerson`."""
+        tpl_substitutions = dict(
+            field_changed=change_description,
+            )
+        template = get_email_template(
+            'person-details-change.txt', app='registry')
+        body = template % tpl_substitutions
+        from_addr = config.canonical.bounce_address
+        if not recipient_emails:
+            to_addrs = self.preferredemail.email
+        else:
+            to_addrs = recipient_emails
+        simple_sendmail(from_addr, to_addrs, subject, body)
 
     def transitionVisibility(self, visibility, user):
         if self.visibility == visibility:
@@ -3027,6 +3166,30 @@ class PersonSet:
             top_people,
             key=lambda obj: (obj.karma, obj.displayname, obj.id),
             reverse=True)
+
+    def getByOpenIDIdentifier(self, identifier):
+        """See `IPersonSet`."""
+        # We accept a full OpenID identifier URL from either the
+        # Launchpad- or Ubuntu-branded OpenID services. But we only
+        # store the unique suffix of the identifier, so we need to strip
+        # the rest of the URL.
+        # + is reserved, so is not allowed to be reencoded in transit, so
+        # should never appear as its percent-encoded equivalent.
+        identifier_suffix = None
+        for vhost in ('openid', 'ubuntu_openid'):
+            root = '%s+id/' % allvhosts.configs[vhost].rooturl
+            if identifier.startswith(root):
+                identifier_suffix = identifier.replace(root, '', 1)
+                break
+        if identifier_suffix is None:
+            return None
+
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                identifier_suffix)
+        except LookupError:
+            return None
+        return IPerson(account)
 
     def getOrCreateByOpenIDIdentifier(
         self, openid_identifier, email_address, full_name,
@@ -4511,6 +4674,14 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    def destroySelf(self):
+        # For security reasons we want to notify the preferred email address
+        # that this sshkey has been removed.
+        self.person.security_field_changed(
+            "SSH Key removed from your Launchpad account.",
+            "The SSH Key %s was removed from your account." % self.comment)
+        super(SSHKey, self).destroySelf()
+
 
 class SSHKeySet:
     implements(ISSHKeySet)
@@ -4537,6 +4708,10 @@ class SSHKeySet:
             keytype = SSHKeyType.DSA
         else:
             raise SSHKeyAdditionError
+
+        person.security_field_changed(
+            "New SSH key added to your account.",
+            "The SSH key '%s' has been added to your account." % comment)
 
         return SSHKey(person=person, keytype=keytype, keytext=keytext,
                       comment=comment)

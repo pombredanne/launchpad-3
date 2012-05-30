@@ -41,14 +41,24 @@ from lp.bugs.browser.bugtask import (
     BugTaskListingItem,
     BugTasksAndNominationsView,
     )
+from lp.bugs.feed.bug import (
+    BugTargetBugsFeed,
+    PersonBugsFeed,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     )
 from lp.bugs.model.bugtasksearch import orderby_expression
+from lp.layers import (
+    FeedsLayer,
+    setFirstLayer,
+    )
+from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -90,6 +100,18 @@ from lp.testing.sampledata import (
 from lp.testing.views import create_initialized_view
 
 
+def getFeedViewCache(target, feed_cls):
+    """Return JSON cache for a feed's delegate view."""
+    with dynamic_listings():
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://feeds.example.com/latest-bugs.atom')
+        setFirstLayer(request, FeedsLayer)
+        feed = feed_cls(target, request)
+        delegate_view = feed._createView()
+        delegate_view.initialize()
+        return IJSONRequestCache(delegate_view.request)
+
+
 class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -118,7 +140,12 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(85)))
+        # If this test is run in isolation, the query count is 88.
+        # Other tests in this TestCase could cache the
+        # "SELECT id, product, project, distribution FROM PillarName ..."
+        # query by previously browsing the task url, in which case the
+        # query count is decreased by one.
+        self.assertThat(recorder, HasQueryCount(LessThan(89)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -134,7 +161,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                88, self.factory.makePerson())
+                91, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -179,7 +206,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.invalidate_caches(task)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(107)))
+        self.assertThat(recorder, HasQueryCount(LessThan(110)))
         count_with_no_branches = recorder.count
         for sp in sourcepackages:
             self.makeLinkedBranchMergeProposal(sp, bug, owner)
@@ -1038,33 +1065,28 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
 
 
 class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
-    """ Tests the boolean methods on the view used to indicate whether the
-        Also Affects... links should be allowed or not. Currently these
-        restrictions are only used for private bugs. ie where body.private
-        is true.
-
-        A feature flag is used to turn off the new restrictions. Each test
-        is performed with and without the feature flag.
-    """
+    """Tests the boolean methods on the view used to indicate whether the
+       Also Affects... links should be allowed or not. These restrictions
+       are only used for proprietary bugs. """
 
     layer = DatabaseFunctionalLayer
 
-    feature_flag = {'disclosure.allow_multipillar_private_bugs.enabled': 'on'}
-
     def _createView(self, bug):
         request = LaunchpadTestRequest()
-        bugtasks_and_nominations_view = getMultiAdapter(
+        return getMultiAdapter(
             (bug, request), name="+bugtasks-and-nominations-portal")
-        return bugtasks_and_nominations_view
 
     def test_project_bug_cannot_affect_something_else(self):
         # A bug affecting a project cannot also affect another project or
         # package.
-        bug = self.factory.makeBug()
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertFalse(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertFalse(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1072,11 +1094,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         # A bug affecting a distro cannot also affect another project but it
         # could affect another package.
         distro = self.factory.makeDistribution()
-        bug = self.factory.makeBug(distribution=distro)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            distribution=distro, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1088,12 +1114,15 @@ class TestBugTasksAndNominationsViewAlsoAffects(TestCaseWithFactory):
         sp_name = self.factory.getOrMakeSourcePackageName()
         self.factory.makeSourcePackage(
             sourcepackagename=sp_name, distroseries=distroseries)
+        owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            distribution=distro, sourcepackagename=sp_name)
-        view = self._createView(bug)
-        self.assertFalse(view.canAddProjectTask())
-        self.assertTrue(view.canAddPackageTask())
-        with FeatureFixture(self.feature_flag):
+            distribution=distro, sourcepackagename=sp_name, owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            view = self._createView(bug)
+            self.assertFalse(view.canAddProjectTask())
+            self.assertTrue(view.canAddPackageTask())
+            bug.transitionToInformationType(InformationType.USERDATA, owner)
             self.assertTrue(view.canAddProjectTask())
             self.assertTrue(view.canAddPackageTask())
 
@@ -1425,6 +1454,11 @@ class TestPersonBugs(TestCaseWithFactory):
             'Project, distribution, package, or series subscriber',
             view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, PersonBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistributionBugs(TestCaseWithFactory):
     """Test the bugs overview page for distributions."""
@@ -1445,6 +1479,11 @@ class TestDistributionBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Package or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestDistroSeriesBugs(TestCaseWithFactory):
@@ -1467,6 +1506,11 @@ class TestDistroSeriesBugs(TestCaseWithFactory):
         self.assertEqual(
             'Package subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistributionSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distribution source packages."""
@@ -1482,6 +1526,11 @@ class TestDistributionSourcePackageBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
     """Test the bugs overview page for distro series source packages."""
@@ -1496,6 +1545,11 @@ class TestDistroSeriesSourcePackageBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestProductBugs(TestCaseWithFactory):
@@ -1518,6 +1572,11 @@ class TestProductBugs(TestCaseWithFactory):
         self.assertEqual(
             'Series subscriber', view.structural_subscriber_label)
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProductSeriesBugs(TestCaseWithFactory):
     """Test the bugs overview page for project series."""
@@ -1533,6 +1592,11 @@ class TestProductSeriesBugs(TestCaseWithFactory):
             self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.shouldShowStructuralSubscriberWidget())
 
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
+
 
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for project groups."""
@@ -1542,38 +1606,38 @@ class TestProjectGroupBugs(TestCaseWithFactory):
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
         self.owner = self.factory.makePerson(name='bob')
-        self.projectgroup = self.factory.makeProject(name='container',
+        self.target = self.factory.makeProject(name='container',
                                                      owner=self.owner)
 
     def makeSubordinateProduct(self, tracks_bugs_in_lp):
         """Create a new product and add it to the project group."""
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
-            product.project = self.projectgroup
+            product.project = self.target
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
-        self.assertFalse(self.projectgroup.hasProducts())
+            self.target, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.target.hasProducts())
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_not_using_launchpad(self):
         # A project group with all subordinates not using Launchpad
         # will itself be marked as not using Launchpad for bugs.
         self.makeSubordinateProduct(False)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertFalse(view.should_show_bug_information)
 
     def test_project_group_with_subordinate_using_launchpad(self):
         # A project group with one subordinate using Launchpad
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_with_mixed_subordinates(self):
@@ -1581,9 +1645,9 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # will itself be marked as using Launchpad for bugs.
         self.makeSubordinateProduct(False)
         self.makeSubordinateProduct(True)
-        self.assertTrue(self.projectgroup.hasProducts())
+        self.assertTrue(self.target.hasProducts())
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_has_no_portlets_if_not_using_LP(self):
@@ -1591,7 +1655,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # bug portlets.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertFalse(view.should_show_bug_information)
         contents = view.render()
@@ -1603,7 +1667,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # portlets.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         self.assertTrue(view.should_show_bug_information)
         contents = view.render()
@@ -1615,7 +1679,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1626,7 +1690,7 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            self.target, name=u'+bugs', rootsite='bugs',
             current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
@@ -1634,14 +1698,19 @@ class TestProjectGroupBugs(TestCaseWithFactory):
 
     def test_shouldShowStructuralSubscriberWidget(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.shouldShowStructuralSubscriberWidget())
 
     def test_structural_subscriber_label(self):
         view = create_initialized_view(
-            self.projectgroup, name=u'+bugs', rootsite='bugs')
+            self.target, name=u'+bugs', rootsite='bugs')
         self.assertEqual(
             'Project or series subscriber', view.structural_subscriber_label)
+
+    def test_mustache_cache_is_none_for_feed(self):
+        """The mustache model should not be added to JSON cache for feeds."""
+        cache = getFeedViewCache(self.target, BugTargetBugsFeed)
+        self.assertIsNone(cache.objects.get('mustache_model'))
 
 
 class TestBugActivityItem(TestCaseWithFactory):
@@ -1793,22 +1862,31 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
             batched_view.activity_and_comments)
 
 
-def make_bug_task_listing_item(factory, tags=()):
-    owner = factory.makePerson()
-    bug = factory.makeBug(
-        owner=owner, private=True, security_related=True)
-    with person_logged_in(owner):
-        bugtask = bug.default_bugtask
+def make_bug_task_listing_item(factory, bugtask=None):
+    if bugtask is None:
+        owner = factory.makePerson()
+        bug = factory.makeBug(
+            owner=owner, information_type=InformationType.EMBARGOEDSECURITY)
+        with person_logged_in(owner):
+            bugtask = bug.default_bugtask
+    else:
+        owner = bugtask.bug.owner
+    bugtask = removeSecurityProxy(bugtask)
     bug_task_set = getUtility(IBugTaskSet)
     bug_badge_properties = bug_task_set.getBugTaskBadgeProperties(
         [bugtask])
     badge_property = bug_badge_properties[bugtask]
+    tags = bug_task_set.getBugTaskTags([bugtask])
+    if tags != {}:
+        tags = tags[bugtask.id]
+    people = bug_task_set.getBugTaskPeople([bugtask])
     return owner, BugTaskListingItem(
         bugtask,
         badge_property['has_branch'],
         badge_property['has_specification'],
         badge_property['has_patch'],
         tags,
+        people,
         target_context=bugtask.target)
 
 
@@ -2301,7 +2379,8 @@ class TestBugTaskExpirableListingView(BrowserTestCase):
         with person_logged_in(product.owner):
             product.enable_bug_expiration = True
         bug = self.factory.makeBug(
-            product=product, status=BugTaskStatus.INCOMPLETE)
+            product=product,
+            status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         title = bug.title
         with dynamic_listings():
             content = self.getMainContent(
@@ -2351,11 +2430,14 @@ class TestBugTaskListingItem(TestCaseWithFactory):
 
     def test_model_assignee(self):
         """Model contains expected fields with expected values."""
-        owner, item = make_bug_task_listing_item(self.factory)
+        assignee = self.factory.makePerson(displayname='Example Person')
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            removeSecurityProxy(bug).default_bugtask.transitionToAssignee(
+                assignee)
+        owner, item = make_bug_task_listing_item(
+            self.factory, bugtask=bug.default_bugtask)
         with person_logged_in(owner):
-            self.assertIs(None, item.model['assignee'])
-            assignee = self.factory.makePerson(displayname='Example Person')
-            item.bugtask.transitionToAssignee(assignee)
             self.assertEqual('Example Person', item.model['assignee'])
 
     def test_model_age(self):
@@ -2368,8 +2450,11 @@ class TestBugTaskListingItem(TestCaseWithFactory):
 
     def test_model_tags(self):
         """Model contains bug tags."""
+        bug = self.factory.makeBug()
         tags = ['tag1', 'tag2']
-        owner, item = make_bug_task_listing_item(self.factory, tags=tags)
+        removeSecurityProxy(bug).tags = tags
+        owner, item = make_bug_task_listing_item(
+            self.factory, bug.default_bugtask)
         with person_logged_in(owner):
             self.assertEqual(2, len(item.model['tags']))
             self.assertTrue('tag' in item.model['tags'][0].keys())

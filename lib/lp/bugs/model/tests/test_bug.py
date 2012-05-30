@@ -9,11 +9,13 @@ from datetime import (
     )
 
 from pytz import UTC
+from storm.expr import Join
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTitleChange
 from lp.bugs.enums import (
     BugNotificationLevel,
@@ -28,11 +30,8 @@ from lp.bugs.model.bug import (
     BugSubscriptionInfo,
     )
 from lp.bugs.model.bugnotification import BugNotificationRecipient
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.registry.enums import InformationType
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     feature_flags,
     login_person,
@@ -551,18 +550,20 @@ class TestBug(TestCaseWithFactory):
         self.assertThat(
             recorder2, HasQueryCount(Equals(recorder1.count)))
 
+    def test_transitionToInformationType_forbids_proprietary(self):
+        # Calling IBug.transitionToInformationType(PROPRIETARY) over the API
+        # is forbidden currently.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            self.assertRaisesWithContent(
+                BugCannotBePrivate, "Cannot transition the information type "
+                "to proprietary.", bug.transitionToInformationType,
+                InformationType.PROPRIETARY, bug.owner, True)
+
 
 class TestBugPrivateAndSecurityRelatedUpdatesMixin:
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugPrivateAndSecurityRelatedUpdatesMixin, self).setUp()
-        f_flag_str = 'disclosure.enhanced_private_bug_subscriptions.enabled'
-        feature_flag = {f_flag_str: 'on'}
-        flags = FeatureFixture(feature_flag)
-        flags.setUp()
-        self.addCleanup(flags.cleanUp)
 
     def test_setPrivate_subscribes_person_who_makes_bug_private(self):
         # When setPrivate(True) is called on a bug, the person who is
@@ -578,8 +579,8 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         # marking the bug private will not be subscribed if they're
         # already a member of a team which is a direct subscriber.
         bug = self.factory.makeBug()
-        team = self.factory.makeTeam()
-        person = team.teamowner
+        person = self.factory.makePerson(name='teamowner')
+        team = self.factory.makeTeam(owner=person, name='team')
         with person_logged_in(person):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
@@ -602,8 +603,11 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             removeSecurityProxy(bug_product).private_bugs = True
         bug = self.factory.makeBug(owner=bug_owner, product=bug_product)
         with person_logged_in(bug_owner):
-            bug.setPrivacyAndSecurityRelated(
-                private_security_related, private_security_related, bug_owner)
+            if private_security_related:
+                information_type = InformationType.EMBARGOEDSECURITY
+            else:
+                information_type = InformationType.PUBLIC
+            bug.transitionToInformationType(information_type, bug_owner)
         owner_a = self.factory.makePerson(name='ownera')
         product_series_a = self.factory.makeProductSeries(
             product=bug_product, owner=owner_a)
@@ -618,79 +622,71 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         return (bug, bug_owner, naked_bugtask_a, naked_bugtask_b,
                 naked_default_bugtask)
 
-    def test_setPrivateTrueAndSecurityRelatedTrue(self):
-        # When a bug is marked as private=true and security_related=true, the
-        # direct subscribers should include:
+    def test_transition_to_EMBARGOEDSECURITY_information_type(self):
+        # When a bug is marked as EMBARGOEDSECURITY, the direct subscribers
+        # should include:
         # - the bug reporter
         # - the bugtask pillar security contacts (if set)
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers())
         initial_subscribers = set((
-            self.factory.makePerson(), bugtask_a.owner, bug_owner,
-            bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+            self.factory.makePerson(name='subscriber'), bugtask_a.owner,
+            bug_owner, bugtask_a.pillar.security_contact,
+            bugtask_a.pillar.driver))
+        initial_subscribers.update(bug.getDirectSubscribers())
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=True, who=who)
+            who = self.factory.makePerson(name='who')
+            bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, who=who)
             subscribers = bug.getDirectSubscribers()
+            initial_subscribers.update(bug.getDirectSubscribers())
         expected_subscribers = set((
             bugtask_a.owner,
-            default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
             bug_owner, who))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateTrueAndSecurityRelatedFalse(self):
-        # When a bug is marked as private=true and security_related=false, the
-        # direct subscribers should include:
+    def test_transition_to_USERDATA_information_type(self):
+        # When a bug is marked as USERDATA, the direct subscribers should
+        # include:
         # - the bug reporter
         # - the bugtask pillar bug supervisors (if set)
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(), bug_owner,
+            self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=False, who=who)
+            who = self.factory.makePerson(name='who')
+            bug.transitionToInformationType(InformationType.USERDATA, who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
             default_bugtask.pillar.bug_supervisor,
             default_bugtask.pillar.driver,
             bug_owner, who))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
-            expected_subscribers.remove(bugtask_a.pillar.security_contact)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateFalseAndSecurityRelatedTrue(self):
-        # When a bug is marked as private=false and security_related=true, the
-        # direct subscribers should include:
+    def test_transition_to_UNEMBARGOEDSECURITY_information_type(self):
+        # When a security bug is unembargoed, direct subscribers should
+        # include:
         # - the bug reporter
         # - the bugtask pillar security contacts (if set)
         # - and bug/pillar owners, drivers if they are already subscribed
-        # If the bug is for a private project, then other direct subscribers
-        # should be unsubscribed.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
@@ -702,52 +698,47 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
-            bug.setPrivacyAndSecurityRelated(
-                private=False, security_related=True, who=who)
+            who = self.factory.makePerson(name='who')
+            bug.transitionToInformationType(
+                InformationType.UNEMBARGOEDSECURITY, who)
             subscribers = bug.getDirectSubscribers()
         expected_subscribers = set((
             default_bugtask.pillar.driver,
             default_bugtask.pillar.security_contact,
             bug_owner))
-        if not self.private_project:
-            expected_subscribers.update(initial_subscribers)
-            expected_subscribers.remove(default_bugtask.pillar.bug_supervisor)
+        expected_subscribers.update(initial_subscribers)
         self.assertContentEqual(expected_subscribers, subscribers)
 
-    def test_setPrivateFalseAndSecurityRelatedFalse(self):
-        # When a bug is marked as private=false and security_related=false,
-        # any existing subscriptions are left alone.
+    def test_transition_to_PUBLIC_information_type(self):
+        # Subscriptions aren't altered when a bug is transitioned to the
+        # PUBLIC information type.
 
         (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
             self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set((
-            self.factory.makePerson(), bug_owner,
+            self.factory.makePerson(name='subscriber'), bug_owner,
             bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
                 bug.subscribe(subscriber, bug_owner)
-            who = self.factory.makePerson()
-            expected_direct_subscribers = set(bug.getDirectSubscribers())
-            bug.setPrivacyAndSecurityRelated(
-                private=False, security_related=False, who=who)
-        subscribers = set(bug.getDirectSubscribers())
-        expected_direct_subscribers.difference_update(
-            (default_bugtask.pillar.security_contact,
-             default_bugtask.pillar.bug_supervisor,
-             bugtask_a.pillar.security_contact))
-        self.assertContentEqual(expected_direct_subscribers, subscribers)
+            who = self.factory.makePerson(name='who')
+            subscribers_before_public = set(bug.getDirectSubscribers())
+            bug.transitionToInformationType(InformationType.PUBLIC, who)
+        subscribers_after_public = set(bug.getDirectSubscribers())
+        self.assertContentEqual(
+            subscribers_before_public,
+            subscribers_after_public)
 
     def test_setPillarOwnerSubscribedIfNoBugSupervisor(self):
-        # The pillar owner is subscribed if the bug supervisor is not set.
+        # The pillar owner is subscribed if the bug supervisor is not set and
+        # the bug is marked as USERDATA.
 
         bug_owner = self.factory.makePerson(name='bugowner')
         bug = self.factory.makeBug(owner=bug_owner)
         with person_logged_in(bug_owner):
             who = self.factory.makePerson()
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=False, who=who)
+            bug.transitionToInformationType(InformationType.USERDATA, who)
             subscribers = bug.getDirectSubscribers()
         naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
@@ -755,98 +746,20 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
             subscribers)
 
     def test_setPillarOwnerSubscribedIfNoSecurityContact(self):
-        # The pillar owner is subscribed if the security contact is not set.
+        # The pillar owner is subscribed if the security contact is not set
+        # and the bug is marked as EMBARGOEDSECURITY.
 
         bug_owner = self.factory.makePerson(name='bugowner')
         bug = self.factory.makeBug(owner=bug_owner)
         with person_logged_in(bug_owner):
-            who = self.factory.makePerson()
-            bug.setPrivacyAndSecurityRelated(
-                private=False, security_related=True, who=who)
+            who = self.factory.makePerson(name='who')
+            bug.transitionToInformationType(
+                InformationType.EMBARGOEDSECURITY, who)
             subscribers = bug.getDirectSubscribers()
         naked_bugtask = removeSecurityProxy(bug).default_bugtask
         self.assertContentEqual(
-            set((naked_bugtask.pillar.owner, bug_owner)),
+            set((naked_bugtask.pillar.owner, bug_owner, who)),
             subscribers)
-
-    def _fetch_notifications(self, bug, reason_header):
-        store = IStore(BugNotification)
-        return store.find(
-            BugNotification,
-            BugNotificationRecipient.bug_notificationID == BugNotification.id,
-            BugNotificationRecipient.reason_header == reason_header,
-            BugNotification.bug == bug,
-            BugNotification.status == BugNotificationStatus.PENDING,
-            BugNotification.date_emailed == None)
-
-    def _check_email_content(self, message, expected_headers,
-                             expected_body_text):
-        # Ensure that the email header values and message body text is as
-        # expected.
-        headers = {}
-        for header in ['X-Launchpad-Message-Rationale',
-                       'X-Launchpad-Bug-Security-Vulnerability',
-                       'X-Launchpad-Bug-Private']:
-            if message[header]:
-                headers[header] = message[header]
-        self.assertEqual(expected_headers, headers)
-        body_text = message.get_payload(decode=True)
-        self.assertTrue(expected_body_text in body_text)
-
-    def _check_notifications(self, bug, expected_recipients,
-                             expected_body_text, expected_reason_body,
-                             is_private, is_security_related, role):
-        # Ensure that the content of the pending email notifications is
-        # correct.
-        notifications = self._fetch_notifications(bug, role)
-        actual_recipients = []
-        email_notifications = get_email_notifications(notifications)
-        for bug_notifications, omitted, messages in email_notifications:
-            for message in messages:
-                expected_headers = {
-                    'X-Launchpad-Bug-Private':
-                        'yes' if is_private else 'no',
-                    'X-Launchpad-Bug-Security-Vulnerability':
-                        'yes' if is_security_related else 'no',
-                    'X-Launchpad-Message-Rationale': role,
-                }
-                self._check_email_content(
-                    message, expected_headers, expected_body_text)
-            expected_reason_header = role
-            for notification in bug_notifications:
-                for recipient in notification.recipients:
-                    self.assertEqual(
-                        expected_reason_header, recipient.reason_header)
-                    self.assertEqual(
-                        expected_reason_body, recipient.reason_body)
-                    actual_recipients.append(recipient.person)
-        self.assertContentEqual(expected_recipients, actual_recipients)
-
-    def test_bugSupervisorUnsubscribedIfBugMadePublic(self):
-        # The bug supervisors are unsubscribed if a bug is made public and an
-        # email is sent telling them they have been unsubscribed.
-
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(default_bugtask.pillar.bug_supervisor, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.setPrivacyAndSecurityRelated(
-                private=False, security_related=True, who=who)
-            subscribers = bug.getDirectSubscribers()
-            self.assertNotIn(
-                default_bugtask.pillar.bug_supervisor, subscribers)
-
-            expected_recipients = [
-                default_bugtask.pillar.bug_supervisor,
-                ]
-            expected_body_text = '** This bug is no longer private'
-            expected_reason_body = ('You received this bug notification '
-                    'because you are a bug supervisor.')
-            self._check_notifications(
-                bug, expected_recipients, expected_body_text,
-                expected_reason_body, False, True, 'Bug Supervisor')
 
     def test_structural_bug_supervisor_becomes_direct_on_private(self):
         # If a bug supervisor has a structural subscription to the bug, and
@@ -862,69 +775,35 @@ class TestBugPrivateAndSecurityRelatedUpdatesMixin:
         self.assertFalse(bug_supervisor in bug.getDirectSubscribers())
         with person_logged_in(bug_owner):
             who = self.factory.makePerson(name="who")
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=False, who=who)
+            bug.transitionToInformationType(InformationType.USERDATA, who)
         self.assertTrue(bug_supervisor in bug.getDirectSubscribers())
-
-    def test_securityContactUnsubscribedIfBugNotSecurityRelated(self):
-        # The security contacts are unsubscribed if a bug has security_related
-        # set to false and an email is sent telling them they have been
-        # unsubscribed.
-
-        (bug, bug_owner, bugtask_a, bugtask_b, default_bugtask) = (
-            self.createBugTasksAndSubscribers(private_security_related=True))
-
-        with person_logged_in(bug_owner):
-            bug.subscribe(bugtask_a.pillar.security_contact, bug_owner)
-            who = self.factory.makePerson(name="who")
-            bug.setPrivacyAndSecurityRelated(
-                private=True, security_related=False, who=who)
-            subscribers = bug.getDirectSubscribers()
-            self.assertFalse(bugtask_a.pillar.security_contact in subscribers)
-
-            expected_recipients = [
-                bugtask_a.pillar.security_contact,
-                ]
-            expected_body_text = '** This bug is no longer security related'
-            expected_reason_body = ('You received this bug notification '
-                    'because you are a security contact.')
-            self._check_notifications(
-                bug, expected_recipients, expected_body_text,
-                expected_reason_body, True, False, 'Security Contact')
 
 
 class TestBugPrivacy(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_multipillar_private_bugs_disallowed(self):
-        # A multi-pillar bug cannot be made private.
+    def test_multipillar_proprietary_bugs_disallowed(self):
+        # A multi-pillar bug cannot be made proprietary.
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
         self.factory.makeBugTask(bug=bug, target=product)
         login_person(bug.owner)
         self.assertRaises(
-            BugCannotBePrivate, bug.setPrivacyAndSecurityRelated, True, False,
-            bug.owner)
-        self.assertRaises(
-            BugCannotBePrivate, bug.setPrivate, True, bug.owner)
-
-        # Some teams though need multi-pillar private bugs.
-        feature_flag = {
-            'disclosure.allow_multipillar_private_bugs.enabled': 'on'
-            }
-        with FeatureFixture(feature_flag):
-            bug.setPrivacyAndSecurityRelated(True, False, bug.owner)
-            self.assertTrue(bug.private)
+            BugCannotBePrivate, bug.transitionToInformationType,
+            InformationType.PROPRIETARY, bug.owner)
+        bug.transitionToInformationType(InformationType.USERDATA, bug.owner)
+        self.assertTrue(bug.private)
 
     def test_bug_information_type(self):
         # Bugs have the correct corresponding information type.
         # Public security bugs are currently untested since it is impossible
         # to create one at the moment.
         bug = self.factory.makeBug()
-        private_bug = self.factory.makeBug(private=True)
+        private_bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA)
         private_sec_bug = self.factory.makeBug(
-            private=True, security_related=True)
+            information_type=InformationType.EMBARGOEDSECURITY)
         mapping = (
             (bug, InformationType.PUBLIC),
             (private_bug, InformationType.USERDATA),
@@ -936,7 +815,8 @@ class TestBugPrivacy(TestCaseWithFactory):
         # A private bug transitioning to public has the correct information
         # type.
         owner = self.factory.makePerson()
-        bug = self.factory.makeBug(private=True, owner=owner)
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
@@ -946,7 +826,7 @@ class TestBugPrivacy(TestCaseWithFactory):
         # correct information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
             bug.setPrivate(False, owner)
         self.assertEqual(
@@ -957,9 +837,9 @@ class TestBugPrivacy(TestCaseWithFactory):
         # information type.
         owner = self.factory.makePerson()
         bug = self.factory.makeBug(
-            private=True, security_related=True, owner=owner)
+            information_type=InformationType.EMBARGOEDSECURITY, owner=owner)
         with person_logged_in(owner):
-            bug.setPrivacyAndSecurityRelated(False, False, owner)
+            bug.transitionToInformationType(InformationType.PUBLIC, owner)
         self.assertEqual(InformationType.PUBLIC, bug.information_type)
 
     def test_public_to_private_information_type(self):
@@ -969,6 +849,25 @@ class TestBugPrivacy(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
         self.assertEqual(InformationType.USERDATA, bug.information_type)
+
+    def test_information_type_does_not_leak(self):
+        # Make sure that bug notifications for private bugs do not leak to
+        # people with a subscription on the product.
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            product.addSubscription(product.owner, product.owner)
+        reporter = self.factory.makePerson()
+        bug = self.factory.makeBug(
+            information_type=InformationType.USERDATA, product=product,
+            owner=reporter)
+        recipients = Store.of(bug).using(
+            BugNotificationRecipient,
+            Join(BugNotification, BugNotification.bugID == bug.id)).find(
+            BugNotificationRecipient,
+            BugNotificationRecipient.bug_notificationID ==
+                BugNotification.id)
+        self.assertEqual(
+            [reporter], [recipient.person for recipient in recipients])
 
 
 class TestBugPrivateAndSecurityRelatedUpdatesPrivateProject(
@@ -987,6 +886,34 @@ class TestBugPrivateAndSecurityRelatedUpdatesPublicProject(
         s = super(TestBugPrivateAndSecurityRelatedUpdatesPublicProject, self)
         s.setUp()
         self.private_project = False
+
+
+class TestBugPrivateAndSecurityRelatedUpdatesSpecialCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_transition_special_cased_for_ubuntu(self):
+        # When a bug on ubuntu is transitioned to USERDATA from
+        # EMBARGOEDSECURITY, the bug supervisor is not subscribed, and the
+        # bug's subscribers do not change.
+        # This is to protect ubuntu's workflow, which differs from the
+        # Launchpad norm.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        admin = getUtility(ILaunchpadCelebrities).admin
+        ubuntu = removeSecurityProxy(ubuntu)
+        ubuntu.setBugSupervisor(
+            self.factory.makePerson(name='supervisor'), admin)
+        bug = self.factory.makeBug(
+            information_type=InformationType.EMBARGOEDSECURITY,
+            distribution=ubuntu)
+        bug = removeSecurityProxy(bug)
+        initial_subscribers = bug.getDirectSubscribers()
+        self.assertTrue(ubuntu.bug_supervisor not in initial_subscribers)
+        bug.transitionToInformationType(
+            InformationType.USERDATA, who=bug.owner)
+        subscribers = bug.getDirectSubscribers()
+        self.assertContentEqual(initial_subscribers, subscribers)
+        ubuntu.setBugSupervisor(None, ubuntu.owner)
 
 
 class TestBugActivityMethods(TestCaseWithFactory):

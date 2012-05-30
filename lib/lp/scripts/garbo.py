@@ -44,6 +44,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
@@ -103,6 +104,9 @@ from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
+    )
+from lp.translations.scripts.scrub_pofiletranslator import (
+    ScrubPOFileTranslator,
     )
 
 
@@ -1092,56 +1096,41 @@ class SpecificationWorkitemMigrator(TunableLoop):
         self.offset += chunk_size
 
 
-class BugsInformationTypeMigrator(TunableLoop):
-    """A `TunableLoop` to populate information_type for all bugs."""
+class BugTaskFlattener(TunableLoop):
+    """A `TunableLoop` to populate BugTaskFlat for all bugtasks."""
 
     maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
-        super(BugsInformationTypeMigrator, self).__init__(log, abort_time)
-        self.transaction = transaction
-        self.store = IMasterStore(Bug)
+        super(BugTaskFlattener, self).__init__(log, abort_time)
+        generation = getFeatureFlag('bugs.bugtaskflattener.generation')
+        if generation is None:
+            self.start_at = None
+        else:
+            self.memcache_key = (
+                '%s:bugtask-flattener:%s'
+                % (config.instance_name, generation.encode('utf-8')))
+            watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+            self.start_at = watermark or 0
 
-    def findBugs(self):
-        return self.store.find(Bug, Bug.information_type == None)
-
-    def isDone(self):
-        return self.findBugs().is_empty()
-
-    def __call__(self, chunk_size):
-        for bug in self.findBugs()[:chunk_size]:
-            bug._setInformationType()
-        self.transaction.commit()
-
-
-class BugLegacyAccessMirrorer(TunableLoop):
-    """A `TunableLoop` to populate the access policy schema for all bugs."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BugLegacyAccessMirrorer, self).__init__(log, abort_time)
-        watermark = getUtility(IMemcacheClient).get(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name)
-        self.start_at = watermark or 0
-
-    def findBugIDs(self):
-        return IMasterStore(Bug).find(
-            (Bug.id,), Bug.id >= self.start_at).order_by(Bug.id)
+    def findTaskIDs(self):
+        if self.start_at is None:
+            return EmptyResultSet()
+        return IMasterStore(BugTask).find(
+            (BugTask.id,), BugTask.id >= self.start_at).order_by(BugTask.id)
 
     def isDone(self):
-        return self.findBugIDs().is_empty()
+        return self.findTaskIDs().is_empty()
 
     def __call__(self, chunk_size):
-        ids = [row[0] for row in self.findBugIDs()[:chunk_size]]
-        list(IMasterStore(Bug).using(Bug).find(
-            SQL('bug_mirror_legacy_access(Bug.id)'),
-            Bug.id.is_in(ids)))
+        ids = [row[0] for row in self.findTaskIDs()[:chunk_size]]
+        list(IMasterStore(BugTask).using(BugTask).find(
+            SQL('bugtask_flatten(BugTask.id, false)'),
+            BugTask.id.is_in(ids)))
 
         self.start_at = ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
-            '%s:bug-legacy-access-mirrorer' % config.instance_name,
-            self.start_at)
+            self.memcache_key, self.start_at)
         if not result:
             self.log.warning('Failed to set start_at in memcache.')
 
@@ -1298,10 +1287,13 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     threading.currentThread().name)
                 break
 
-            num_remaining_tasks = len(tunable_loops)
-            if not num_remaining_tasks:
+            try:
+                tunable_loop_class = tunable_loops.pop(0)
+            except IndexError:
+                # We catch the exception rather than checking the
+                # length first to avoid race conditions with other
+                # threads.
                 break
-            tunable_loop_class = tunable_loops.pop(0)
 
             loop_name = tunable_loop_class.__name__
 
@@ -1336,7 +1328,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             try:
                 loop_logger.info("Running %s", loop_name)
 
-                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                abort_time = self.get_loop_abort_time(len(tunable_loops) + 1)
                 loop_logger.debug2(
                     "Task will be terminated in %0.3f seconds",
                     abort_time)
@@ -1399,8 +1391,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BugsInformationTypeMigrator,
-        BugLegacyAccessMirrorer,
+        BugTaskFlattener,
         ]
     experimental_tunable_loops = []
 
@@ -1430,6 +1421,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
+        ScrubPOFileTranslator,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
         UnusedPOTMsgSetPruner,

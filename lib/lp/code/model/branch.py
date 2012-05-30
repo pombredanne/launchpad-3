@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -77,6 +77,7 @@ from lp.code.errors import (
     AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
+    BranchCannotChangeInformationType,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
@@ -128,6 +129,11 @@ from lp.code.model.revision import (
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.codehosting.safe_open import safe_open
+from lp.registry.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -181,23 +187,40 @@ class Branch(SQLBase, BzrIdentityMixin):
     # transitively private branch. The value of this attribute is maintained
     # by a database trigger.
     transitively_private = BoolCol(dbName='transitively_private')
+    information_type = EnumCol(
+        enum=InformationType, default=InformationType.PUBLIC)
 
     @property
     def private(self):
-        return self.transitively_private
+        return self.information_type in PRIVATE_INFORMATION_TYPES
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.explicitly_private:
-            return
-        # Only check the privacy policy if the user is not special.
-        if (not user_has_special_branch_access(user)):
-            policy = IBranchNamespacePolicy(self.namespace)
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        return self.transitionToInformationType(information_type, user)
 
+    def transitionToInformationType(self, information_type, who,
+                                    verify_policy=True):
+        """See `IBranch`."""
+        if self.information_type == information_type:
+            return
+        if (self.stacked_on
+            and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
+            and information_type in PUBLIC_INFORMATION_TYPES):
+            raise BranchCannotChangeInformationType()
+        private = information_type in PRIVATE_INFORMATION_TYPES
+        # Only check the privacy policy if the user is not special.
+        if verify_policy and not user_has_special_branch_access(who):
+            policy = IBranchNamespacePolicy(self.namespace)
             if private and not policy.canBranchesBePrivate():
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
+        self.information_type = information_type
+        # Set the legacy values for now.
         self.explicitly_private = private
         # If this branch is private, then it is also transitively_private
         # otherwise we need to reload the value.
@@ -884,8 +907,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             CREATE TEMPORARY TABLE RevidSequence
             (revision_id text, sequence integer)
             """)
+        # Force to Unicode or we will end up with bad quoting under
+        # PostgreSQL 9.1.
+        unicode_revid_sequence_pairs = [
+            (a and unicode(a) or None, b and unicode(b) or None)
+                for a, b in revision_id_sequence_pairs]
         store.execute(Insert(('revision_id', 'sequence'),
-            table=['RevidSequence'], expr=revision_id_sequence_pairs))
+            table=['RevidSequence'], values=unicode_revid_sequence_pairs))
         store.execute(
             """
             INSERT INTO BranchRevision (branch, revision, sequence)
@@ -1038,6 +1066,15 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
+        # If the branch we are stacking on is not public, and we are,
+        # set our information_type to the stacked on's, since having a
+        # public branch stacked on a private branch does not make sense.
+        if (self.stacked_on
+            and self.stacked_on.information_type in PRIVATE_INFORMATION_TYPES
+            and self.information_type in PUBLIC_INFORMATION_TYPES):
+            self.transitionToInformationType(
+                self.stacked_on.information_type, self.owner,
+                verify_policy=False)
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
         else:
@@ -1052,7 +1089,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirrored_id = last_revision_id
         if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
-            BranchScanJob.create(self)
+            job = BranchScanJob.create(self)
+            job.celeryRunOnCommit()
         self.control_format = control_format
         self.branch_format = branch_format
         self.repository_format = repository_format
@@ -1127,7 +1165,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         branch_id = self.id
         SQLBase.destroySelf(self)
         # And now create a job to remove the branch from disk when it's done.
-        getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
+        job.celeryRunOnCommit()
 
     def commitsForDays(self, since):
         """See `IBranch`."""
@@ -1181,7 +1220,9 @@ class Branch(SQLBase, BzrIdentityMixin):
     def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job = getUtility(IBranchUpgradeJobSource).create(self, requester)
+        job.celeryRunOnCommit()
+        return job
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
@@ -1189,7 +1230,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.explicitly_private:
+        if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
             return False

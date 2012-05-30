@@ -178,3 +178,9 @@ class IPersonalArchiveSubscription(Interface):
 
     title = TextLine(title=_("Subscription title"),
         required=False)
+
+
+def pas_to_privacy(pas):
+    """Converts a PersonalArchiveSubscription to privacy"""
+    from lp.app.interfaces.launchpad import IPrivacy
+    return IPrivacy(pas.archive)

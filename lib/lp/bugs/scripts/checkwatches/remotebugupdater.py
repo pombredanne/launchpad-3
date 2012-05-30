@@ -8,8 +8,6 @@ __all__ = [
     'RemoteBugUpdater',
     ]
 
-import sys
-
 from zope.component import getUtility
 
 from lp.bugs.externalbugtracker.base import (

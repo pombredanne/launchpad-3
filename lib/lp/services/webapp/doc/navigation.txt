@@ -88,6 +88,12 @@ we'll define one here.
     ...     def _stack(self):
     ...         return self.travstack
     ...
+    ...     def peek(self):
+    ...         try:
+    ...             return self.travstack[-1]
+    ...         except IndexError:
+    ...             return None
+    ...
     ...     def consume(self):
     ...         try:
     ...             return self.travstack.pop()

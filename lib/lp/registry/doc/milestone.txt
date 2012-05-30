@@ -381,7 +381,7 @@ edit them. These users play the roles of owners, drivers or Launchpad
 admins. The name, dateexpected, summary, and active, attributes are
 editable.
 
-    >>> login_person(upstream_firefox.owner)
+    >>> ignored = login_person(upstream_firefox.owner)
     >>> fizzy_milestone = ff_onedotzero.newMilestone('fuzzy')
 
     >>> print fizzy_milestone.name
@@ -437,11 +437,11 @@ driver of the series_target is a release manager can can make changes.
     >>> release_manager = factory.makePerson(name='release-manager')
     >>> fizzy_milestone.series_target.driver = release_manager
 
-    >>> login_person(driver)
+    >>> ignored = login_person(driver)
     >>> check_permission('launchpad.Edit', fizzy_milestone)
     False
 
-    >>> login_person(release_manager)
+    >>> ignored = login_person(release_manager)
     >>> check_permission('launchpad.Edit', fizzy_milestone)
     True
 
@@ -454,7 +454,7 @@ doesn't have an IProductRelease associated with it, nor any bugtasks or
 specifications targeted to it.
 
     >>> owner = getUtility(IPersonSet).getByName('name12')
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> milestone = ff_onedotzero.newMilestone('1.0.10')
     >>> print milestone.product_release
     None

@@ -65,7 +65,10 @@ from lp.registry.interfaces.person import (
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
@@ -337,6 +340,14 @@ class Archive(SQLBase):
         else:
             alsoProvides(self, IDistributionArchive)
 
+    @property
+    def suppress_subscription_notifications(self):
+        return self.commercial
+
+    @suppress_subscription_notifications.setter
+    def suppress_subscription_notifications(self, suppress):
+        self.commercial = suppress
+
     # Note: You may safely ignore lint when it complains about this
     # declaration.  As of Python 2.6, this is a perfectly valid way
     # of adding a setter
@@ -503,7 +514,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID ==
+            SourcePackagePublishingHistory.sourcepackagenameID ==
                 SourcePackageName.id,
             ]
         orderBy = [
@@ -613,7 +624,7 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+            SourcePackagePublishingHistory.sourcepackagename =
                 SourcePackageName.id
         """ % sqlvalues(self)]
 
@@ -1974,18 +1985,24 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name, private=False):
+    def validatePPA(self, person, proposed_name, private=False,
+                    suppress_subscription_notifications=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if private:
+        if private or suppress_subscription_notifications:
             # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
             # which says that one needs 'launchpad.Commercial' permission to
             # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
             # which determines who is granted launchpad.Commercial
             # permissions.
-            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-            admin = getUtility(ILaunchpadCelebrities).admin
-            if not person.inTeam(commercial) and not person.inTeam(admin):
-                return '%s is not allowed to make private PPAs' % person.name
+            role = IPersonRoles(person)
+            if not (role.in_admin or role.in_commercial_admin):
+                if private:
+                    return (
+                        '%s is not allowed to make private PPAs' % person.name)
+                if suppress_subscription_notifications:
+                    return (
+                        '%s is not allowed to make PPAs that suppress '
+                        'subscription notifications' % person.name)
         if person.is_team and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -2120,7 +2137,8 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True, private=False):
+            require_virtualized=True, private=False,
+            suppress_subscription_notifications=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2196,6 +2214,9 @@ class ArchiveSet:
             new_archive.private = True
         else:
             new_archive.private = private
+
+        new_archive.suppress_subscription_notifications = (
+            suppress_subscription_notifications)
 
         return new_archive
 
@@ -2393,14 +2414,6 @@ class ArchiveSet:
             Archive._private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
-    def getCommercialPPAs(self):
-        """See `IArchiveSet`."""
-        store = IStore(Archive)
-        return store.find(
-            Archive,
-            Archive.commercial == True,
-            Archive.purpose == ArchivePurpose.PPA)
-
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None,
                                    exclude_disabled=True):
@@ -2480,9 +2493,8 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED),
-            (SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == source_package_name,
+            SourcePackagePublishingHistory.sourcepackagename ==
+                source_package_name,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == distribution,
             )

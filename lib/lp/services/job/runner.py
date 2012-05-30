@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -6,8 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseJobRunner',
     'BaseRunnableJob',
     'BaseRunnableJobSource',
+    'celery_enabled',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -17,6 +19,10 @@ __all__ = [
 
 from calendar import timegm
 from collections import defaultdict
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import contextlib
 import logging
 import os
@@ -38,6 +44,10 @@ from ampoule import (
     pool,
     )
 from lazr.delegates import delegates
+from lazr.jobrunner.jobrunner import (
+    JobRunner as LazrJobRunner,
+    LeaseHeld,
+    )
 import transaction
 from twisted.internet import reactor
 from twisted.internet.defer import (
@@ -57,11 +67,10 @@ from lp.services.config import (
     config,
     dbconfig,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
-    LeaseHeld,
-    SuspendJobException,
     )
 from lp.services.mail.sendmail import (
     MailController,
@@ -97,6 +106,12 @@ class BaseRunnableJob(BaseRunnableJobSource):
     user_error_types = ()
 
     retry_error_types = ()
+
+    task_queue = 'job'
+
+    celery_responses = None
+
+    retry_delay = timedelta(minutes=10)
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -176,20 +191,67 @@ class BaseRunnableJob(BaseRunnableJobSource):
             return
         ctrl.send()
 
+    def makeOopsReport(self, oops_config, info):
+        """Generate an OOPS report using the given OOPS configuration."""
+        return oops_config.create(
+            context=dict(exc_info=info))
 
-class BaseJobRunner(object):
+    def runViaCelery(self, ignore_result=False):
+        """Request that this job be run via celery."""
+        # Avoid importing from lp.services.job.celeryjob where not needed, to
+        # avoid configuring Celery when Rabbit is not configured.
+        from lp.services.job.celeryjob import (
+            CeleryRunJob, CeleryRunJobIgnoreResult)
+        if ignore_result:
+            cls = CeleryRunJobIgnoreResult
+        else:
+            cls = CeleryRunJob
+        db_class = self.getDBClass()
+        ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
+        if self.job.lease_expires is not None:
+            eta = datetime.now() + self.retry_delay
+        else:
+            eta = None
+        return cls.apply_async(
+            (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta)
+
+    def getDBClass(self):
+        return self.context.__class__
+
+    def celeryCommitHook(self, succeeded):
+        """Hook function to call when a commit completes."""
+        if succeeded:
+            ignore_result = bool(BaseRunnableJob.celery_responses is None)
+            response = self.runViaCelery(ignore_result)
+            if not ignore_result:
+                BaseRunnableJob.celery_responses.append(response)
+
+    def celeryRunOnCommit(self):
+        """Configure transaction so that commit runs this job via Celery."""
+        if not celery_enabled(self.__class__.__name__):
+            return
+        current = transaction.get()
+        current.addAfterCommitHook(self.celeryCommitHook)
+
+    def queue(self, manage_transaction=False, abort_transaction=False):
+        """See `IJob`."""
+        self.job.queue(
+            manage_transaction, abort_transaction,
+            add_commit_hook=self.celeryRunOnCommit)
+
+
+class BaseJobRunner(LazrJobRunner):
     """Runner of Jobs."""
 
     def __init__(self, logger=None, error_utility=None):
-        self.completed_jobs = []
-        self.incomplete_jobs = []
-        if logger is None:
-            logger = logging.getLogger()
-        self.logger = logger
-        self.error_utility = error_utility
         self.oops_ids = []
-        if self.error_utility is None:
+        if error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
+        else:
+            self.error_utility = error_utility
+        super(BaseJobRunner, self).__init__(
+            logger, oops_config=self.error_utility._oops_config,
+            oopsMessage=self.error_utility.oopsMessage)
 
     def acquireLease(self, job):
         self.logger.debug(
@@ -204,83 +266,11 @@ class BaseJobRunner(object):
             return False
         return True
 
-    @staticmethod
-    def job_str(job):
-        class_name = job.__class__.__name__
-        ijob_id = removeSecurityProxy(job).job.id
-        return '%s (ID %d)' % (class_name, ijob_id)
+    def runJob(self, job, fallback):
+        super(BaseJobRunner, self).runJob(IRunnableJob(job), fallback)
 
-    def runJob(self, job):
-        """Attempt to run a job, updating its status as appropriate."""
-        job = IRunnableJob(job)
-
-        self.logger.info(
-            'Running %s in status %s' % (
-                self.job_str(job), job.status.title))
-        job.start()
-        transaction.commit()
-        do_retry = False
-        try:
-            try:
-                job.run()
-            except job.retry_error_types, e:
-                if job.attempt_count > job.max_retries:
-                    raise
-                self.logger.exception(
-                    "Scheduling retry due to %s.", e.__class__.__name__)
-                do_retry = True
-        except SuspendJobException:
-            self.logger.debug("Job suspended itself")
-            job.suspend()
-            self.incomplete_jobs.append(job)
-        except Exception:
-            transaction.abort()
-            job.fail()
-            # Record the failure.
-            transaction.commit()
-            self.incomplete_jobs.append(job)
-            raise
-        else:
-            # Commit transaction to update the DB time.
-            transaction.commit()
-            if do_retry:
-                job.queue()
-                self.incomplete_jobs.append(job)
-            else:
-                job.complete()
-                self.completed_jobs.append(job)
-        # Commit transaction to update job status.
-        transaction.commit()
-
-    def runJobHandleError(self, job):
-        """Run the specified job, handling errors.
-
-        Most errors will be logged as Oopses.  Jobs in user_error_types won't.
-        The list of complete or incomplete jobs will be updated.
-        """
-        job = IRunnableJob(job)
-        with self.error_utility.oopsMessage(
-            dict(job.getOopsVars())):
-            try:
-                try:
-                    self.logger.debug('Running %r', job)
-                    self.runJob(job)
-                except job.user_error_types, e:
-                    self.logger.info('Job %r failed with user error %r.' %
-                        (job, e))
-                    job.notifyUserError(e)
-                except Exception:
-                    info = sys.exc_info()
-                    return self._doOops(job, info)
-            except Exception:
-                # This only happens if sending attempting to notify users
-                # about errors fails for some reason (like a misconfigured
-                # email server).
-                self.logger.exception(
-                    "Failed to notify users about a failure.")
-                info = sys.exc_info()
-                # Returning the oops says something went wrong.
-                return self.error_utility.raising(info)
+    def retryErrorTypes(self, job):
+        return removeSecurityProxy(job).retry_error_types
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -291,6 +281,7 @@ class BaseJobRunner(object):
         """
         oops = self.error_utility.raising(info)
         job.notifyOops(oops)
+        self._logOopsId(oops['id'])
         return oops
 
     def _logOopsId(self, oops_id):
@@ -331,9 +322,7 @@ class JobRunner(BaseJobRunner):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
-            oops = self.runJobHandleError(job)
-            if oops is not None:
-                self._logOopsId(oops['id'])
+            self.runJobHandleError(job)
 
 
 class RunJobCommand(amp.Command):
@@ -632,12 +621,7 @@ class JobCronScript(LaunchpadCronScript):
         return getattr(config, self.config_name)
 
     def main(self):
-        section = self.config_section
-        if (getattr(section, 'error_dir', None) is not None
-            and getattr(section, 'oops_prefix', None) is not None):
-            # If the two variables are not set, we will let the error
-            # utility default to using the [error_reports] config.
-            errorlog.globalErrorUtility.configure(self.config_name)
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         kwargs = {}
         if self.log_twisted:
@@ -654,3 +638,14 @@ class TimeoutError(Exception):
 
     def __init__(self):
         Exception.__init__(self, "Job ran too long.")
+
+
+def celery_enabled(class_name):
+    """Determine whether a given class is configured to run via Celery.
+
+    The name of a BaseRunnableJob must be specified.
+    """
+    flag = getFeatureFlag('jobs.celery.enabled_classes')
+    if flag is None:
+        return False
+    return class_name in flag.split(' ')

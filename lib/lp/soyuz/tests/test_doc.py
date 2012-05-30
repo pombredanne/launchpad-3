@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -9,8 +9,9 @@ import logging
 import os
 import unittest
 
+import transaction
+
 from lp.services.config import config
-from lp.services.database.sqlbase import commit
 from lp.testing import logout
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
@@ -48,7 +49,7 @@ def lobotomize_stevea():
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW
-    commit()
+    transaction.commit()
 
 
 def uploaderSetUp(test):
@@ -73,24 +74,6 @@ def statisticianSetUp(test):
 
 
 def statisticianTearDown(test):
-    tearDown(test)
-
-
-def distroseriesqueueSetUp(test):
-    setUp(test)
-    # The test requires that the umask be set to 022, and in fact this comment
-    # was made in irc on 13-Apr-2007:
-    #
-    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
-    # enough for us to rely on it
-    #
-    # Setting it here reproduces the environment that the doctest expects.
-    # Save the old umask so we can reset it in the tearDown().
-    test.old_umask = os.umask(022)
-
-
-def distroseriesqueueTearDown(test):
-    os.umask(test.old_umask)
     tearDown(test)
 
 
@@ -131,11 +114,6 @@ def manageChrootSetup(test):
 
 
 special = {
-    'buildd-scoring.txt': LayeredDocFileSuite(
-        '../doc/buildd-scoring.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        ),
     'package-cache.txt': LayeredDocFileSuite(
         '../doc/package-cache.txt',
         setUp=statisticianSetUp, tearDown=statisticianTearDown,
@@ -145,11 +123,6 @@ special = {
         '../doc/distroarchseriesbinarypackage.txt',
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
-        ),
-    'distroseriesqueue-debian-installer.txt': LayeredDocFileSuite(
-        '../doc/distroseriesqueue-debian-installer.txt',
-        setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
-        layer=LaunchpadFunctionalLayer
         ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
         '../doc/closing-bugs-from-changelogs.txt',

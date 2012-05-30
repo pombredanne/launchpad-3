@@ -18,15 +18,10 @@ from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
-from lp.services.config import (
-    config,
-    dbconfig,
-    )
+from lp.services.config import config
 from lp.services.daemons import readyservice
-from lp.services.scripts import execute_zcml_for_scripts
 
 from lp.poppy import get_poppy_root
-from lp.poppy.twistedconfigreset import GPGHandlerConfigResetJob
 from lp.poppy.twistedftp import (
     FTPServiceFactory,
     )
@@ -36,10 +31,6 @@ from lp.services.sshserver.auth import (
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
-
-
-# Use a unique db user per policy and Bug #732510.
-dbconfig.override(dbuser='poppy_sftp')
 
 
 def make_portal():
@@ -123,12 +114,6 @@ svc = SSHService(
     factory_decorator=timeout_decorator,
     banner=config.poppy.banner)
 svc.setServiceParent(application)
-
-# We need Zope for looking up the GPG utilities.
-execute_zcml_for_scripts()
-
-# Set up the GPGHandler job
-GPGHandlerConfigResetJob().setServiceParent(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)

@@ -37,10 +37,8 @@ class TestDistributionMirror(unittest.TestCase):
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
-        self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'releases-mirror')
-        self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'archive-mirror')
+        self.cdimage_mirror = mirrorset.getByName('releases-mirror')
+        self.archive_mirror = mirrorset.getByName('archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 

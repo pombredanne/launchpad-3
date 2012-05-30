@@ -82,7 +82,8 @@ div.watermark-apps-portlet > div {
 div.watermark-apps-portlet > div.wide {
     width: 75%;
     }
-div.watermark-apps-portlet > div > img {
+div.watermark-apps-portlet > div > img,
+div.watermark-apps-portlet > div > a > img {
     display: block;
     margin: 0 1.5em 0 0;
     }

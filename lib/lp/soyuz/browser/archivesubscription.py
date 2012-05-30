@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonalArchiveSubscription',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber',
@@ -308,6 +309,7 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
     label = "Private PPA access"
+    private = True
 
     @cachedproperty
     def subscriptions_with_tokens(self):

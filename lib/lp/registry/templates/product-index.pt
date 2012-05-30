@@ -14,23 +14,6 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <style type="text/css">
-      div.collapsible {
-        border:medium none;
-        margin:0;
-        padding:16px 0 0;
-      }
-
-      div.collapsed {
-        display: None
-      }
-    </style>
-
-    <noscript>
-      <style type="text/css">
-        div.collapsible, div.collapsed {display: block;}
-      </style>
-    </noscript>
     <tal:uses_launchpad_bugtracker
        condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript">
@@ -139,7 +122,7 @@
               </dl>
 
               <dl id="licences">
-                <dt>Licenses:</dt>
+                <dt>Licences:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
                     <tal:license replace="license/title">GPL</tal:license><tal:comma

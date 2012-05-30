@@ -57,6 +57,13 @@
       <!-- Is your project registered yet? -->
 
       <div id="homepage" class="homepage">
+
+        <div class="top-portlet" style="border-bottom: 1px dotted #999;">
+          <img src="/@@/launchpad-logo-and-name.png"
+               id="launchpad-logo-and-name" alt=""
+               style="margin: 0 9em 1em 0"/>
+        </div>
+
         <div class="yui-g">
           <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"

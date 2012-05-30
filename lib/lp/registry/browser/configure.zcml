@@ -44,6 +44,12 @@
 
 <facet facet="overview">
     <browser:page
+        for="lp.services.webapp.interfaces.IBatchNavigator"
+        name="+sharee-table-view"
+        template="../templates/pillar-sharing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
         for="lp.services.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
         name="rdf"
@@ -1078,6 +1084,12 @@
             name="+mugshots"
             template="../templates/team-mugshots.pt"
             class="lp.registry.browser.team.TeamMugshotView"/>
+      <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.registry.browser.person.PersonUpcomingWorkView"
+            permission="zope.Public"
+            name="+upcomingwork"
+            template="../templates/person-upcomingwork.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             class="lp.registry.browser.team.TeamIndexView"
@@ -1381,8 +1393,7 @@
         name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.product"
-        classes="
-            ProductNavigation"/>
+        classes="ProductNavigation"/>
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
@@ -1428,6 +1439,25 @@
         name="+sharing"
         class="lp.registry.browser.pillar.PillarSharingView"
         template="../templates/pillar-sharing.pt"/>
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        factory="lp.registry.browser.pillar.PillarPersonBreadcrumb"
+        permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        path_expression="string:+sharing/${person/name}"
+        rootsite="mainsite"
+        attribute_to_parent="pillar"/>
+    <browser:page
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        permission="launchpad.Driver"
+        name="+index"
+        class="lp.registry.browser.pillar.PillarPersonSharingView"
+        template="../templates/pillar-sharing-details.pt"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.pillar.IPillarPerson"
+        name="+index"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
