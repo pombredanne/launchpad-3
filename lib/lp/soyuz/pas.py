@@ -3,6 +3,7 @@
 
 import operator
 import os
+import subprocess
 
 from sqlobject import SQLObjectNotFound
 
@@ -109,6 +110,29 @@ class BuildDaemonPackagesArchSpecific:
         return source_name, arch_tags
 
 
+class DpkgArchitectureCache:
+    """Cache the results of asking questions of dpkg-architecture."""
+
+    def __init__(self):
+        self._matches = {}
+
+    def match(self, arch, wildcard):
+        if (arch, wildcard) not in self._matches:
+            command = ["dpkg-architecture", "-i%s" % wildcard]
+            env = dict(os.environ)
+            env["DEB_HOST_ARCH"] = arch
+            ret = (subprocess.call(command, env=env) == 0)
+            self._matches[(arch, wildcard)] = ret
+        return self._matches[(arch, wildcard)]
+
+    def findAllMatches(self, arches, wildcards):
+        return [arch for arch in arches for wildcard in wildcards
+                if self.match(arch, wildcard)]
+
+
+dpkg_architecture = DpkgArchitectureCache()
+
+
 def determineArchitecturesToBuild(pubrec, legal_archseries,
                                   distroseries, pas_verify=None):
     """Return a list of architectures for which this publication should build.
@@ -168,29 +192,17 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
         arch.architecturetag for arch in legal_archseries if arch.enabled)
 
     hint_archs = set(hint_string.split())
+    package_tags = set(dpkg_architecture.findAllMatches(
+        legal_arch_tags, hint_archs))
 
-    # If a *-any architecture wildcard is present, build for everything
-    # we can. We only support Linux-based architectures at the moment,
-    # and any-any isn't a valid wildcard. See bug #605002.
-    if hint_archs.intersection(('any', 'linux-any')):
-        package_tags = legal_arch_tags
-    else:
-        # We need to support arch tags like any-foo and linux-foo, so remove
-        # supported kernel prefixes. See bug #73761.
-        stripped_archs = hint_archs
-        for kernel in ('linux', 'any'):
-            stripped_archs = set(
-                arch.replace("%s-" % kernel, "") for arch in stripped_archs)
-        package_tags = stripped_archs.intersection(legal_arch_tags)
-
-        # 'all' is only used as a last resort, to create an arch-indep
-        # build where no builds would otherwise exist.
-        if len(package_tags) == 0 and 'all' in hint_archs:
-            nominated_arch = distroseries.nominatedarchindep
-            if nominated_arch in legal_archseries:
-                package_tags = set([nominated_arch.architecturetag])
-            else:
-                package_tags = set()
+    # 'all' is only used as a last resort, to create an arch-indep build
+    # where no builds would otherwise exist.
+    if len(package_tags) == 0 and 'all' in hint_archs:
+        nominated_arch = distroseries.nominatedarchindep
+        if nominated_arch in legal_archseries:
+            package_tags = set([nominated_arch.architecturetag])
+        else:
+            package_tags = set()
 
     if pas_verify:
         build_tags = set()

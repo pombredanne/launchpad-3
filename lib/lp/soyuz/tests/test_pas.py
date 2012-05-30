@@ -1,6 +1,7 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -16,6 +17,11 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         super(TestDetermineArchitecturesToBuild, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
+        armel_family = ProcessorFamily.get(5)
+        if not armel_family.processors:
+            armel_family.addProcessor('armel', 'armel', 'armel')
+        self.publisher.breezy_autotest.newArch(
+            'armel', armel_family, False, self.publisher.person)
         self.publisher.addFakeChroots()
 
     def assertArchsForHint(self, hint_string, expected_arch_tags,
@@ -58,7 +64,7 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
 
     def test_wildcard(self):
         # 'any' is a wildcard that matches all available archs.
-        self.assertArchsForHint('any', ['hppa', 'i386'])
+        self.assertArchsForHint('any', ['armel', 'hppa', 'i386'])
 
     def test_kernel_specific_architecture(self):
         # Since we only support Linux-based architectures, 'linux-foo'
@@ -73,9 +79,14 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         # Wildcards work for kernels: 'any-foo' is treated like 'foo'.
         self.assertArchsForHint('any-hppa', ['hppa'])
 
+    def test_kernel_wildcard_architecture_arm(self):
+        # The second part of a wildcard matches the canonical CPU name, not
+        # on the Debian architecture, so 'any-arm' matches 'armel'.
+        self.assertArchsForHint('any-arm', ['armel'])
+
     def test_kernel_specific_architecture_wildcard(self):
         # Wildcards work for archs too: 'linux-any' is treated like 'any'.
-        self.assertArchsForHint('linux-any', ['hppa', 'i386'])
+        self.assertArchsForHint('linux-any', ['armel', 'hppa', 'i386'])
 
     def test_unknown_kernel_specific_architecture_wildcard(self):
         # But unknown kernels continue to result in nothing.
@@ -83,20 +94,21 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
 
     def test_wildcard_and_independent(self):
         # 'all' continues to be ignored alongside a valid wildcard.
-        self.assertArchsForHint('all linux-any', ['hppa', 'i386'])
+        self.assertArchsForHint('all linux-any', ['armel', 'hppa', 'i386'])
 
     def test_kernel_independent_is_invalid(self):
         # 'linux-all' isn't supported.
         self.assertArchsForHint('linux-all', [])
 
-    def test_double_wildcard_is_invalid(self):
-        # 'any-any' is invalid; you want 'any'.
-        self.assertArchsForHint('any-any', [])
+    def test_double_wildcard_is_same_as_single(self):
+        # 'any-any' is redundant with 'any', but dpkg-architecture supports
+        # it anyway.
+        self.assertArchsForHint('any-any', ['armel', 'hppa', 'i386'])
 
     def test_disabled_architectures_omitted(self):
         # Disabled architectures are not buildable, so are excluded.
         self.publisher.breezy_autotest['hppa'].enabled = False
-        self.assertArchsForHint('any', ['i386'])
+        self.assertArchsForHint('any', ['armel', 'i386'])
 
     def test_virtualized_archives_have_only_virtualized_archs(self):
         # For archives which must build on virtual builders, only
