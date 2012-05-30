@@ -249,7 +249,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         return new_ppa_tokens
 
     def _getValidTokensForPPAs(self, ppas):
-        """Yields (ppa, tokens) tuples for each PPA."""
+        """Yields (ppa, tokens_result_set) tuples for each PPA."""
         store = IStore(ArchiveAuthToken)
         for ppa in ppas:
             ppa_tokens = store.find(
