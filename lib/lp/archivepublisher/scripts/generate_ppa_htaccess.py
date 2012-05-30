@@ -195,11 +195,16 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         affected_ppas = set()
         # XXX: Perhaps we can do this with one call, rather than looping
         # through everything.
+        num_tokens = 0
         for token in tokens:
             if send_email:
                 self.sendCancellationEmail(token)
             token.deactivate()
             affected_ppas.add(token.archive)
+            num_tokens += 1
+        self.logger.debug(
+            "Deactivated %s tokens, %s PPAs affected"
+            % (len(tokens), len(affected_ppas)))
         return affected_ppas
 
     def deactivateInvalidTokens(self, send_email=False):
