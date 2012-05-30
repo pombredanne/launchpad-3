@@ -129,12 +129,11 @@ Administrators can create new builders.
     >>> print admin_browser.title
     Register a new...
 
-Registering a new builder involves setting its name, title,
-description and corresponding location.
+Registering a new builder involves setting its name, title and corresponding
+location.
 
     >>> admin_browser.getControl('Name').value = 'tubaina'
     >>> admin_browser.getControl('Title').value = 'Tubaina'
-    >>> admin_browser.getControl('Description').value = 'Bogus'
     >>> admin_browser.getControl(
     ...     'URL').value = 'http://tubaina.buildd'
 
