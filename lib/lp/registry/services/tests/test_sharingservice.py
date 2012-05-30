@@ -257,7 +257,7 @@ class TestSharingService(TestCaseWithFactory):
         login_person(driver)
         self._assert_getPillarShareeData(distro)
 
-    def _assert_QueryCount(self, func):
+    def _assert_QueryCount(self, func, count):
         """ getPillarSharees[Data] only should use 3 queries.
 
         1. load access policies for pillar
@@ -289,20 +289,20 @@ class TestSharingService(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
         self.assertEqual(10, len(sharees))
-        self.assertThat(recorder, HasQueryCount(Equals(3)))
+        self.assertThat(recorder, HasQueryCount(Equals(count)))
         # Make some more grants and check again.
         for x in range(5):
             makeGrants()
         with StormStatementRecorder() as recorder:
             sharees = list(func(product))
         self.assertEqual(20, len(sharees))
-        self.assertThat(recorder, HasQueryCount(Equals(3)))
+        self.assertThat(recorder, HasQueryCount(Equals(count)))
 
     def test_getPillarShareesQueryCount(self):
-        self._assert_QueryCount(self.service.getPillarSharees)
+        self._assert_QueryCount(self.service.getPillarSharees, 3)
 
     def test_getPillarShareeDataQueryCount(self):
-        self._assert_QueryCount(self.service.getPillarShareeData)
+        self._assert_QueryCount(self.service.getPillarShareeData, 4)
 
     def _assert_getPillarShareeDataUnauthorized(self, pillar):
         # getPillarShareeData raises an Unauthorized exception if the user is
