@@ -287,6 +287,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.logger.info('Starting the PPA .htaccess generation')
         self.expireSubscriptions()
         affected_ppas = self.deactivateTokens(send_email=True)
+        self.logger.debug(
+            '%s PPAs with deactivated tokens' % len(affected_ppas))
 
         # In addition to the ppas that are affected by deactivated
         # tokens, we also want to include any ppas that have tokens
@@ -301,6 +303,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             affected_ppas_with_tokens = self._getValidTokensForPPAs(
                 affected_ppas)
 
+        self.logger.debug(
+            '%s PPAs require updating' % (len(affected_ppas_with_tokens),))
         for ppa, valid_tokens in affected_ppas_with_tokens.iteritems():
             # If this PPA is blacklisted, do not touch it's htaccess/pwd
             # files.
