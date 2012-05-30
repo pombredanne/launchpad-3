@@ -17,7 +17,10 @@ __all__ = [
     'IThirtyDayCommercialExpirationJobSource',
     ]
 
-from zope.interface import Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Int,
     Object,
@@ -127,7 +130,7 @@ class IProductNotificationJobSource(IProductJobSource):
         """
 
 
-class ExpirationSourceMixin:
+class ExpirationSourceMixin(Interface):
 
     def create(product, reviewer):
         """Create a new job.
