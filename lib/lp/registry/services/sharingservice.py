@@ -170,11 +170,11 @@ class SharingService:
             shared_artifact_type_names = [
                 info_type.name for info_type in shared_artifact_types]
             display_api = ObjectImageDisplayAPI(grantee)
-            image_url = display_api.custom_icon_url() or None
+            image_url = display_api.custom_icon_url() or ''
             sprite_css = display_api.sprite_css() or 'sprite bullet'
             result.append({
                 'name': grantee.name,
-                'image_url': image_url or '',
+                'image_url': image_url,
                 'sprite_css': sprite_css,
                 'display_name': grantee.displayname,
                 'self_link': absoluteURL(grantee, request),
