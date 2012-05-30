@@ -23,6 +23,7 @@ import os
 from zope.component import getUtility
 
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
 HTACCESS_TEMPLATE = """
@@ -79,13 +80,14 @@ def htpasswd_credentials_for_archive(archive, tokens=None):
     assert archive.private, "Archive %r must be private" % archive
 
     if tokens is None:
-        tokens = getUtility(IArchiveAuthTokenSet).getByArchive(archive)
+        tokens = getUtility(IArchiveAuthTokenSet).getByArchive(
+            archive).order_by(ArchiveAuthToken.id)
 
     # The first .htpasswd entry is the buildd_secret.
     yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
 
     # Iterate over tokens and write the appropriate htpasswd
-    # entries for them.  Use a consistent sort order so that the
-    # generated file can be compared to an existing one later.
-    for token in sorted(tokens, key=attrgetter("id")):
+    # entries for them.  For consistent sort order, the tokens
+    # should be ordered by id.
+    for token in tokens:
         yield (token.person.name, token.token, token.person.name[:2])
