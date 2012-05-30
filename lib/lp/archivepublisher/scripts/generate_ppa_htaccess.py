@@ -328,7 +328,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         self.logger.debug(
             "%s new tokens since last run, %s PPAs affected"
             % (num_tokens, new_ppa_count - current_ppa_count))
-        new_ppa_count = current_ppa_count
+        current_ppa_count = new_ppa_count
 
         affected_ppas.update(self.getNewPrivatePPAs())
         new_ppa_count = len(affected_ppas)
