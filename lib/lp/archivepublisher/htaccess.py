@@ -22,6 +22,7 @@ import os
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 
 
@@ -80,12 +81,19 @@ def htpasswd_credentials_for_archive(archive, tokens=None):
 
     if tokens is None:
         tokens = getUtility(IArchiveAuthTokenSet).getByArchive(archive)
+    tokens = list(tokens)
 
     # The first .htpasswd entry is the buildd_secret.
     yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
 
+    person_ids = map(attrgetter('person_id'), tokens)
+    valid_persons = dict((person.id, person) for person in
+        getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True) if person.is_valid_person)
+    usable_tokens = [(token, valid_persons[token.person_id])
+        for token in tokens if token.person_id in valid_persons]
     # Iterate over tokens and write the appropriate htpasswd
     # entries for them.  Use a consistent sort order so that the
     # generated file can be compared to an existing one later.
-    for token in sorted(tokens, key=attrgetter("id")):
-        yield (token.person.name, token.token, token.person.name[:2])
+    for token, person in sorted(usable_tokens, key=lambda item:item[0].id):
+        yield (person.name, token.token, person.name[:2])
