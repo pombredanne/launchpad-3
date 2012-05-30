@@ -108,8 +108,8 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         name16 = getUtility(IPersonSet).getByName("name16")
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
-        first_created_token = self.ppa.newAuthToken(name12)
-        tokens = [self.ppa.newAuthToken(name16), first_created_token]
+        first_created_token = self.ppa.newAuthToken(name16)
+        tokens = [self.ppa.newAuthToken(name12), first_created_token]
 
         credentials = list(htpasswd_credentials_for_archive(self.ppa, tokens))
 

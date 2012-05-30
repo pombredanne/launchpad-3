@@ -87,5 +87,5 @@ def htpasswd_credentials_for_archive(archive, tokens=None):
     # Iterate over tokens and write the appropriate htpasswd
     # entries for them.  For consistent sort order, the tokens
     # should be ordered by id.
-    for token in sorted(tokens, key=attrgetter("id")):
+    for token in tokens:
         yield (token.person.name, token.token, token.person.name[:2])
