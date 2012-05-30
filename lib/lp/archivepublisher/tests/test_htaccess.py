@@ -103,15 +103,13 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
     def test_credentials_for_archive(self):
         # ArchiveAuthTokens for an archive are returned by
         # credentials_for_archive.
-        # Make some subscriptions and tokens.
         self.ppa.buildd_secret = "geheim"
         name12 = getUtility(IPersonSet).getByName("name12")
         name16 = getUtility(IPersonSet).getByName("name16")
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
-        tokens = []
-        tokens.append(self.ppa.newAuthToken(name12))
-        tokens.append(self.ppa.newAuthToken(name16))
+        first_created_token = self.ppa.newAuthToken(name12)
+        tokens = [self.ppa.newAuthToken(name16), first_created_token]
 
         credentials = list(htpasswd_credentials_for_archive(self.ppa, tokens))
 
