@@ -713,34 +713,37 @@ class BranchNameValidationMixin:
         self.setFieldError(field_name, structured(message))
 
 
-class BranchEditSchema(Interface):
-    """Defines the fields for the edit form.
-
-    This is necessary so as to make an editable field for the branch privacy.
-    Normally the field is not editable through the interface in order to stop
-    direct setting of the private attribute, but in this case we actually want
-    the user to be able to edit it.
-    """
-    use_template(IBranch, include=[
-        'name',
-        'url',
-        'description',
-        'lifecycle_status',
-        'whiteboard',
-        ])
-    explicitly_private = copy_field(
-        IBranch['explicitly_private'], readonly=False)
-    information_type = copy_field(
-        IBranch['information_type'], readonly=False)
-    reviewer = copy_field(IBranch['reviewer'], required=True)
-    owner = copy_field(IBranch['owner'], readonly=False)
-
-
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = BranchEditSchema
     field_names = None
+
+    @cachedproperty
+    def schema(self):
+        class BranchEditSchema(Interface):
+            """Defines the fields for the edit form.
+
+            This is necessary so as to make an editable field for the
+            branch privacy.  Normally the field is not editable through
+            the interface in order to stop direct setting of the private
+            attribute, but in this case we actually want the user to be
+            able to edit it.
+            """
+            use_template(IBranch, include=[
+                'name',
+                'url',
+                'description',
+                'lifecycle_status',
+                'whiteboard',
+                ])
+            information_type = copy_field(
+                IBranch['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary())
+            explicitly_private = copy_field(
+                IBranch['explicitly_private'], readonly=False)
+            reviewer = copy_field(IBranch['reviewer'], required=True)
+            owner = copy_field(IBranch['owner'], readonly=False)
+        return BranchEditSchema
 
     @property
     def page_title(self):
@@ -753,7 +756,7 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`"""
-        return {BranchEditSchema: self.context}
+        return {self.schema: self.context}
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
@@ -1047,19 +1050,12 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        super(BranchEditView, self).setUpFields()
         # This is to prevent users from converting push/import
         # branches to pull branches.
         branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
-
-        if self.show_information_type_in_ui:
-            self.form_fields = self.form_fields.omit('information_type')
-            information_type_field = copy_field(
-                IBranch['information_type'], readonly=False,
-                vocabulary=InformationTypeVocabulary())
-            self.form_fields += form.Fields(information_type_field)
 
         policy = IBranchNamespacePolicy(branch.namespace)
         if branch.private:
@@ -1092,11 +1088,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            if self.show_information_type_in_ui:
-                omit = 'information_type'
-            else:
-                omit = 'explicitly_private'
-            self.form_fields = self.form_fields.omit(omit)
+            self.form_fields = self.form_fields.omit(
+                'explicitly_private', 'information_type')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
