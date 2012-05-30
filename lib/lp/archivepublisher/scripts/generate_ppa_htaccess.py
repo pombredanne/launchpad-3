@@ -160,16 +160,12 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         simple_sendmail(from_address, to_address, subject, body, headers)
 
-    def deactivateTokens(self, send_email=False):
-        """Deactivate tokens as necessary.
+    def _getInvalidTokens(self):
+        """Return all invalid tokens.
 
-        If a subscriber no longer has an active token for the PPA, we
-        deactivate it.
-
-        :param send_email: Whether to send a cancellation email to the owner
-            of the token.  This defaults to False to speed up the test
-            suite.
-        :return: the set of ppas affected by token deactivations.
+        A token is invalid if it is active and the token owner is *not* a
+        subscriber to the archive that the token is for. The subscription can
+        be either direct or through a team.
         """
         # First we grab all the active tokens for which there is a
         # matching current archive subscription for a team of which the
@@ -188,18 +184,38 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         all_active_tokens = store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.date_deactivated == None)
-        invalid_tokens = all_active_tokens.difference(valid_tokens)
 
-        # We note the ppas affected by these token deactivations so that
-        # we can later update their htpasswd files.
+        return all_active_tokens.difference(valid_tokens)
+
+    def _deactivateTokens(self, tokens, send_email=False):
+        """Deactivate the given tokens.
+
+        :return: A set of PPAs affected by the deactivations.
+        """
         affected_ppas = set()
-        for token in invalid_tokens:
+        # XXX: Perhaps we can do this with one call, rather than looping
+        # through everything.
+        for token in tokens:
             if send_email:
                 self.sendCancellationEmail(token)
             token.deactivate()
             affected_ppas.add(token.archive)
-
         return affected_ppas
+
+    def deactivateTokens(self, send_email=False):
+        """Deactivate tokens as necessary.
+
+        If a subscriber no longer has an active token for the PPA, we
+        deactivate it.
+
+        :param send_email: Whether to send a cancellation email to the owner
+            of the token.  This defaults to False to speed up the test
+            suite.
+        :return: the set of ppas affected by token deactivations so that we
+            can later update their htpasswd files.
+        """
+        invalid_tokens = self._getInvalidTokens()
+        return self._deactivateTokens(invalid_tokens, send_email=send_email)
 
     def expireSubscriptions(self):
         """Expire subscriptions as necessary.
